@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARESWEB CI"
+  short_description: "Verify and deliver ARESWEB changes safely"
+  default_prompt: "Use $aresweb-ci to verify and prepare this ARESWEB change."

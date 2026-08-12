@@ -6,7 +6,8 @@
   --font-inter: "Inter", system-ui, sans-serif;
   --font-spartan: "League Spartan", sans-serif;
   --ares-red: #c00000;
-  --ares-red-light: var(--ares-red);
+  /* Text/icon red for dark surfaces: 6.27:1 against obsidian. */
+  --ares-red-light: #ff6b6b;
   --ares-bronze: #cd7f32;
   --ares-bronze-light: var(--ares-bronze);
   --ares-bronze-dark: var(--ares-bronze);
@@ -218,8 +219,9 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--ares-cyan);
-  outline-offset: 2px;
+  /* Override legacy per-component outline removal with a consistent indicator. */
+  outline: 2px solid var(--ares-cyan) !important;
+  outline-offset: 2px !important;
 }
 
 input, textarea, select {

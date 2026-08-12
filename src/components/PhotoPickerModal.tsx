@@ -13,6 +13,21 @@ interface PhotoPickerModalProps {
   mode?: "all" | "imageOnly";
 }
 
+interface GalleryPhoto {
+  id: string;
+  publicUrl: string;
+  thumbnailUrl?: string | null;
+  originalFilename?: string;
+  albumId?: string | null;
+}
+
+interface GalleryAlbum {
+  id: string;
+  title: string;
+  category: string;
+  coverImageUrl?: string | null;
+}
+
 export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "all" }: PhotoPickerModalProps) {
   const [tab, setTab] = useState<"upload" | "gallery" | "albums" | "google" | "url">("upload");
   const [error, setError] = useState<string | null>(null);
@@ -24,11 +39,11 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
   const [selectedGalleryUrl, setSelectedGalleryUrl] = useState("");
 
   // Gallery
-  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Albums
-  const [albums, setAlbums] = useState<any[]>([]);
+  const [albums, setAlbums] = useState<GalleryAlbum[]>([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>("");
 
   // Cropping State
@@ -39,8 +54,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
   const { uploadDirect, uploadCropped, loading: uploadLoading, error: uploadError } = usePhotoUpload();
 
-  const isTestEnv = typeof window !== "undefined" && 
-    ((window as any).__vitest_worker__ || (window as any).process?.env?.NODE_ENV === "test");
+  const isTestEnv = import.meta.env.MODE === "test";
 
   const displayError = error || uploadError;
   const displayLoading = loading || uploadLoading;
@@ -56,18 +70,18 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
       ]);
 
       if (photosRes.ok) {
-        const data = await photosRes.json();
+        const data = await photosRes.json() as { photos?: GalleryPhoto[] };
         setGalleryPhotos(data.photos || []);
       } else {
         throw new Error("Failed to load team photos gallery.");
       }
 
       if (albumsRes.ok) {
-        const data = await albumsRes.json();
+        const data = await albumsRes.json() as { albums?: GalleryAlbum[] };
         setAlbums(data.albums || []);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to load media gallery.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load media gallery.");
     } finally {
       setLoading(false);
     }
@@ -94,8 +108,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("Only image files are allowed.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Upload a JPEG, PNG, or WebP image.");
       return;
     }
 
@@ -122,7 +136,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
     }
   };
 
-  const handleSelectGalleryPhoto = (photo: any) => {
+  const handleSelectGalleryPhoto = (photo: GalleryPhoto) => {
     setSelectedGalleryUrl(photo.publicUrl);
     let titleClean = photo.originalFilename || "image";
     titleClean = titleClean.replace(/\.[^/.]+$/, "");
@@ -155,8 +169,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
         setLoading(false);
       };
       reader.readAsDataURL(blob);
-    } catch (err: any) {
-      setError(`Failed to retrieve gallery photo for editing: ${err.message}`);
+    } catch (err: unknown) {
+      setError(`Failed to retrieve gallery photo for editing: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
   };
@@ -278,13 +292,13 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                       id="photo-picker-file-input"
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={handleFileChange}
                     />
                     <Upload size={24} className="text-marble/40" />
                     <span className="text-xs font-bold text-white">Select image from your device</span>
-                    <span className="text-[9px] text-marble/40 uppercase font-mono">JPG, PNG, GIF, WEBP files permitted</span>
+                    <span className="text-[9px] text-marble/40 uppercase font-mono">JPG, PNG, or WEBP files permitted</span>
                   </label>
 
                   <div>
@@ -345,7 +359,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                       </div>
                     ) : (
                       <div className="grid grid-cols-3 gap-3 max-h-[180px] overflow-y-auto scrollbar-thin">
-                        {filteredPhotos.map((photo: any) => (
+                        {filteredPhotos.map((photo) => (
                           <div
                             key={photo.id}
                             onClick={() => handleSelectGalleryPhoto(photo)}
@@ -362,10 +376,11 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                             }`}
                           >
                             <img
-                              src={photo.publicUrl}
+                              src={photo.thumbnailUrl || photo.publicUrl}
                               alt={photo.originalFilename}
                               className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
                               loading="lazy"
+                              decoding="async"
                             />
                           </div>
                         ))}
@@ -420,7 +435,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-4 max-h-[200px] overflow-y-auto scrollbar-thin">
-                        {albums.map((album: any) => (
+                        {albums.map((album) => (
                           <div
                             key={album.id}
                             className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between hover:border-ares-gold transition-colors"

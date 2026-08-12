@@ -190,11 +190,14 @@ export default function DocFormDrawer({
     }
   };
 
-  const drawerRef = useFocusTrap(isOpen, handleClose);
+  const drawerRef = useFocusTrap(isOpen && !isPhotoPickerOpen, handleClose);
+  const initializationContextRef = useRef({ categories, currentUserNickname, defaultCategory, draftStorageKey });
+  initializationContextRef.current = { categories, currentUserNickname, defaultCategory, draftStorageKey };
 
   // Initialize form fields
   useEffect(() => {
     if (!isOpen) return;
+    const { categories, currentUserNickname, defaultCategory, draftStorageKey } = initializationContextRef.current;
     if (editDoc) {
       setFormTitle(editDoc.title || "");
       setFormSlug(editDoc.slug || "");
@@ -358,9 +361,9 @@ export default function DocFormDrawer({
   // Load revisions
   useEffect(() => {
     if (activeTab === "revisions" && editDoc?.slug) {
-      fetchRevisions(editDoc.slug);
+      void fetchRevisions(editDoc.slug);
     }
-  }, [activeTab, editDoc]);
+  }, [activeTab, editDoc, fetchRevisions]);
 
   // Auto-slug generator for new docs
   useEffect(() => {

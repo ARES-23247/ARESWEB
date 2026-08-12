@@ -54,10 +54,26 @@ vi.mock("../../middleware/auth", () => ({
 vi.mock("../../lib/googleAuth", () => ({ getGooglePhotosAccessToken: vi.fn() }));
 vi.mock("../../lib/imageImport", () => ({ validateImageMagicBytes: vi.fn() }));
 vi.mock("../../lib/vertex", () => ({ generatePhotoCaptionAndLabels: vi.fn() }));
+vi.mock("../../lib/photoDerivatives", () => ({
+  generatePhotoDerivatives: vi.fn(),
+  storePhotoAssets: vi.fn(),
+  deleteStoredPhotoAssets: vi.fn(),
+  photoDerivativeDtoFields: vi.fn((data: Record<string, unknown>) => ({
+    thumbnailUrl: data.thumbnailUrl ?? null,
+    thumbnailWidth: data.thumbnailWidth ?? null,
+    thumbnailHeight: data.thumbnailHeight ?? null,
+    mediumUrl: data.mediumUrl ?? null,
+    mediumWidth: data.mediumWidth ?? null,
+    mediumHeight: data.mediumHeight ?? null,
+    width: data.width ?? null,
+    height: data.height ?? null,
+  })),
+}));
 
 import { getGooglePhotosAccessToken } from "../../lib/googleAuth";
 import { validateImageMagicBytes } from "../../lib/imageImport";
 import { generatePhotoCaptionAndLabels } from "../../lib/vertex";
+import { deleteStoredPhotoAssets, generatePhotoDerivatives, storePhotoAssets } from "../../lib/photoDerivatives";
 import router from "../photosUpload";
 
 function handler() {
@@ -92,6 +108,30 @@ describe("Photos upload route", () => {
     vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true, format: "jpg" });
     vi.mocked(generatePhotoCaptionAndLabels).mockResolvedValue({ caption: "AI caption", labels: ["robot"] });
     vi.mocked(getGooglePhotosAccessToken).mockResolvedValue("team-token");
+    vi.mocked(generatePhotoDerivatives).mockResolvedValue({
+      width: 1600,
+      height: 900,
+      original: { buffer: Buffer.from("sanitized"), width: 1600, height: 900, fileSize: 7 },
+      thumbnail: { buffer: Buffer.from("thumb"), width: 480, height: 270, fileSize: 5 },
+      medium: { buffer: Buffer.from("medium"), width: 1280, height: 720, fileSize: 6 },
+    });
+    vi.mocked(storePhotoAssets).mockResolvedValue({
+      storagePath: "gallery/original.jpg",
+      publicUrl: "https://storage.test/original.jpg",
+      thumbnailPath: "gallery/thumbnail.webp",
+      thumbnailUrl: "https://storage.test/thumbnail.webp",
+      thumbnailWidth: 480,
+      thumbnailHeight: 270,
+      thumbnailFileSize: 5,
+      mediumPath: "gallery/medium.webp",
+      mediumUrl: "https://storage.test/medium.webp",
+      mediumWidth: 1280,
+      mediumHeight: 720,
+      mediumFileSize: 6,
+      width: 1600,
+      height: 900,
+    });
+    vi.mocked(deleteStoredPhotoAssets).mockResolvedValue(undefined);
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -185,11 +225,35 @@ describe("Photos upload route", () => {
       .mockResolvedValueOnce({ empty: true });
     const res = response();
     await handler()({ body: imageBody({ albumId: "album-1", runAiLabeling: true }) }, res);
-    expect(mockSave).toHaveBeenCalledWith(expect.any(Buffer), expect.objectContaining({ resumable: false }));
-    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0 }));
-    expect(mockUpdate).toHaveBeenCalled();
-    expect(mockSubSet).toHaveBeenCalled();
+    expect(storePhotoAssets).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mimeType: "image/jpeg" }), expect.stringContaining("gallery/derivatives/"), expect.anything());
+    expect(generatePhotoCaptionAndLabels).toHaveBeenCalledWith(Buffer.from("sanitized"), "image/jpeg");
+    expect(mockBatchSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0, fileSize: 7, thumbnailUrl: "https://storage.test/thumbnail.webp" }));
+    expect(mockBatchUpdate).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mediaCount: expect.anything() }));
+    expect(mockBatchCommit).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      photo: expect.objectContaining({
+        thumbnailUrl: "https://storage.test/thumbnail.webp",
+        mediumUrl: "https://storage.test/medium.webp",
+        width: 1600,
+        height: 900,
+      }),
+    }));
+  });
+
+  it("rejects an image that cannot be decoded without writing Storage", async () => {
+    vi.mocked(generatePhotoDerivatives).mockRejectedValueOnce(new Error("decode failed"));
+    await expect(handler()({ body: imageBody() }, response())).rejects.toMatchObject({
+      status: 400,
+      message: "The image could not be decoded safely.",
+    });
+    expect(storePhotoAssets).not.toHaveBeenCalled();
+  });
+
+  it("cleans up all assets when Firestore metadata persistence fails", async () => {
+    mockBatchCommit.mockRejectedValueOnce(new Error("Firestore unavailable"));
+    await expect(handler()({ body: imageBody() }, response())).rejects.toThrow("Firestore unavailable");
+    expect(deleteStoredPhotoAssets).toHaveBeenCalledOnce();
   });
 
   it("keeps a successful site upload when optional AI labeling fails", async () => {
@@ -206,6 +270,8 @@ describe("Photos upload route", () => {
     const res = response();
     await handler()({ body: imageBody({ uploadToGoogle: true, runAiLabeling: true }) }, res);
     expect(fetch).toHaveBeenCalledTimes(2);
+    const uploadBody = vi.mocked(fetch).mock.calls[0]?.[1]?.body;
+    expect(Buffer.from(uploadBody as Uint8Array)).toEqual(Buffer.from("sanitized"));
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       photo: expect.objectContaining({ isSynced: true }),
       googleSync: { requested: true, succeeded: true, warning: null },

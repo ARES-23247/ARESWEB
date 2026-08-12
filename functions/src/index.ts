@@ -27,6 +27,7 @@ import financeRouter from "./routes/finance";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { enforceAppCheck, observeAppCheck } from "./middleware/appCheck";
 import { ensureTeamMember } from "./middleware/auth";
+import { distributedQuota } from "./middleware/distributedQuota";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -91,7 +92,12 @@ app.use(observeAppCheck);
 app.use(enforceAppCheck);
 // Authenticate the only large JSON upload before allocating/parsing its body.
 // Base64 adds roughly one third to the validated 8 MB binary image limit.
-app.use("/api/photos/upload-unified", ensureTeamMember, express.json({ limit: "12mb" }));
+app.use(
+  "/api/photos/upload-unified",
+  ensureTeamMember,
+  distributedQuota({ scope: "photo-upload", limit: 30, windowMs: 15 * 60 * 1000 }),
+  express.json({ limit: "12mb" }),
+);
 app.use(express.json({ limit: "1mb" }));
 
 // Mount Sub-Routers
@@ -149,13 +155,15 @@ export const api = onRequest({
     "http://127.0.0.1:5173",
     /^https:\/\/aresfirst-portal--[a-z0-9-]+\.web\.app$/,
   ], 
-  maxInstances: 10, 
+  maxInstances: 10,
+  memory: "1GiB",
+  timeoutSeconds: 300,
+  concurrency: 10,
   secrets: [
     "ENCRYPTION_SECRET",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "GOOGLE_PHOTOS_REFRESH_TOKEN",
-    "GCP_PROJECT_ID",
     "GEMINI_API_KEY",
     "YOUTUBE_API_KEY",
     "RECAPTCHA_SECRET_KEY",

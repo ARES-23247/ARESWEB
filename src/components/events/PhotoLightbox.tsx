@@ -48,7 +48,7 @@ export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxP
 
         <div className="w-full flex-grow flex items-center justify-center my-6 overflow-hidden">
           <img
-            src={selectedPhoto.url}
+            src={selectedPhoto.mediumUrl ?? selectedPhoto.url}
             alt={selectedPhoto.filename}
             className="w-full h-auto max-h-[60vh] object-contain rounded-lg border border-white/5"
           />

@@ -138,7 +138,7 @@ export default function EventRsvps({
                 <button
                   type="button"
                   onClick={handleRsvpCancel}
-                  className="px-3 py-2.5 bg-white/5 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/40 text-marble hover:text-ares-red text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer"
+                  className="px-3 py-2.5 bg-white/5 hover:bg-ares-red/10 border border-white/10 hover:border-ares-red/40 text-marble hover:text-ares-red-light text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer"
                 >
                   Cancel RSVP
                 </button>

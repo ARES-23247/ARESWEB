@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../lib/firebaseAuth";
 import { authenticatedFetch } from "../lib/api";
+import { logger } from "../utils/logger";
 
 interface AuthorizedUser {
   email: string;
@@ -136,10 +137,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
-        console.log("⚡ Firebase Auth Emulator is active. Proceeding with standard emulator login.");
-      } catch (err) {
-        console.warn("⚡ Firebase Auth Emulator is offline or refused connection. Bypassing popup and signing in with Developer Mock session.");
-        loginWithMockUser("coach.david@gmail.com", "admin", "Coach David");
+        logger.debug("Firebase Auth Emulator is active; using emulator login.");
+      } catch {
+        logger.warn("Firebase Auth Emulator is unavailable; using the local developer mock session.");
+        loginWithMockUser("local.admin@example.test", "admin", "Local Administrator");
         return;
       }
     }
@@ -151,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (isLocalEnv) {
         console.warn("Auth Emulator offline or connection failed. Auto-logging in via developer bypass.");
-        loginWithMockUser("coach.david@gmail.com", "admin", "Coach David");
+        loginWithMockUser("local.admin@example.test", "admin", "Local Administrator");
         return;
       }
 
@@ -178,13 +179,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         try {
           await signInWithEmailAndPassword(auth, mockEmail, "password123");
-        } catch (authErr) {
+        } catch {
           // Create the user in the Auth Emulator if they don't exist yet
           await createUserWithEmailAndPassword(auth, mockEmail, "password123");
         }
-        console.log("⚡ Mock user authenticated with Firebase Auth Emulator:", mockEmail);
-      } catch (err) {
-        console.warn("Mock user client-only fallback (Auth Emulator offline/refused):", err);
+        logger.debug("Mock user authenticated with Firebase Auth Emulator.");
+      } catch {
+        logger.warn("Auth Emulator unavailable; using client-only mock authentication.");
       }
     }
 
@@ -199,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: name || "ARES Lead",
       photoURL: `https://api.dicebear.com/9.x/bottts/svg?seed=${mockEmail}`,
       emailVerified: true,
-    } as any;
+    } as unknown as User;
 
     setUser(mockUser);
     setAuthorizedUser({
@@ -219,8 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role,
           name: name || "ARES Lead",
         });
-      } catch (dbErr) {
-        console.warn("Could not bootstrap authorized_users doc in Firestore Emulator:", dbErr);
+      } catch {
+        logger.warn("Could not bootstrap the development authorization record in the Firestore Emulator.");
       }
     }
 

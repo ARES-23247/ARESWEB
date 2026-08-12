@@ -175,7 +175,7 @@
 .yesno-no {
   background: rgba(192, 0, 0, 0.2);
   border-color: var(--ares-red);
-  color: var(--ares-red);
+  color: var(--ares-red-light);
   text-align: center;
   font-weight: 600;
 }
@@ -235,7 +235,7 @@
 }
 
 .severity-high .solution-severity {
-  color: var(--ares-red);
+  color: var(--ares-red-light);
 }
 
 .severity-medium .solution-severity {
@@ -298,7 +298,7 @@
 }
 
 .doc-link {
-  color: var(--ares-red);
+  color: var(--ares-red-light);
   text-decoration: none;
   font-size: 14px;
 }
@@ -358,7 +358,7 @@
 }
 
 .wizard-footer a {
-  color: var(--ares-red);
+  color: var(--ares-red-light);
   text-decoration: none;
 }
 

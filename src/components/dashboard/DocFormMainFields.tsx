@@ -2,6 +2,7 @@ import React from "react";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import DocFormMetadataFields from "./DocFormMetadataFields";
 import DocFormAttachmentFields from "./DocFormAttachmentFields";
+import type { DocRecord } from "@/hooks/useDocumentSync";
 
 interface DocFormMainFieldsProps {
   variant: "docs" | "documents" | "blog";
@@ -9,7 +10,7 @@ interface DocFormMainFieldsProps {
   setFormTitle: (val: string) => void;
   formSlug: string;
   setFormSlug: (val: string) => void;
-  editDoc: any;
+  editDoc: DocRecord | null;
   categories: string[];
   formCategory: string;
   setFormCategory: (val: string) => void;

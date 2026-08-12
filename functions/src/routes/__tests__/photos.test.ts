@@ -71,6 +71,14 @@ describe("photos routes", () => {
       queryGet.mockResolvedValue({ docs: [
         photo("photo-1", {
           publicUrl: "https://storage.googleapis.com/photo.jpg",
+          thumbnailUrl: "https://storage.googleapis.com/photo-thumb.webp",
+          thumbnailWidth: 480,
+          thumbnailHeight: 270,
+          mediumUrl: "https://storage.googleapis.com/photo-medium.webp",
+          mediumWidth: 1280,
+          mediumHeight: 720,
+          width: 1600,
+          height: 900,
           caption: " Robot ",
           altText: " Match photo ",
           labels: ["robot", 23, "x".repeat(50)],
@@ -98,6 +106,10 @@ describe("photos routes", () => {
         caption: "Robot",
         labels: ["robot", "x".repeat(40)],
         isSynced: true,
+        thumbnailUrl: "https://storage.googleapis.com/photo-thumb.webp",
+        mediumUrl: "https://storage.googleapis.com/photo-medium.webp",
+        width: 1600,
+        height: 900,
       });
       expect(JSON.stringify(payload)).not.toContain("private/path");
       expect(JSON.stringify(payload)).not.toContain("provider-id");
@@ -174,6 +186,9 @@ describe("photos routes", () => {
           photo("active", {
             albumId: "album",
             publicUrl: "https://storage.googleapis.com/active.jpg",
+            thumbnailUrl: "https://storage.googleapis.com/active-thumb.webp",
+            thumbnailWidth: 480,
+            thumbnailHeight: 270,
             caption: " Robot ",
             altText: " Drive team ",
             capturedAt: "2026-01-01",
@@ -197,8 +212,16 @@ describe("photos routes", () => {
           category: "Competition",
           capturedAt: "2026-01-01",
           location: "Arena",
-          description: "Finals",
-        }],
+            description: "Finals",
+            thumbnailUrl: "https://storage.googleapis.com/active-thumb.webp",
+            thumbnailWidth: 480,
+            thumbnailHeight: 270,
+            mediumUrl: null,
+            mediumWidth: null,
+            mediumHeight: null,
+            width: null,
+            height: null,
+          }],
         hasMore: true,
         nextCursor: "active",
       });

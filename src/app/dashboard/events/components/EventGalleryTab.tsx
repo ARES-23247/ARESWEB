@@ -38,7 +38,7 @@ export default function EventGalleryTab({
                 {uploadingImage ? "Uploading..." : "Upload Photo"}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={handleImageUpload}
                   disabled={uploadingImage}
                   className="sr-only"
@@ -65,7 +65,13 @@ export default function EventGalleryTab({
                 key={p.id}
                 className="relative group border border-white/10 rounded-lg overflow-hidden bg-black aspect-video hover:border-white/20 transition-all"
               >
-                <img src={p.url} alt={p.filename || "Event gallery photo"} className="w-full h-full object-cover" />
+                <img
+                  src={p.thumbnailUrl ?? p.url}
+                  alt={p.filename || "Event gallery photo"}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <button type="button" onClick={() => setSelectedPhoto(p)} aria-label={`Open ${p.filename || "event photo"}`} className="absolute inset-0 cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ares-cyan" />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity motion-reduce:transition-none p-2 flex flex-col justify-between text-[8px] font-mono text-white/80 pointer-events-none">
                   <span className="truncate">{p.filename}</span>

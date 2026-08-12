@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARESWEB Accessibility"
+  short_description: "Build accessible, truthful ARESWEB interfaces"
+  default_prompt: "Use $aresweb-web-accessibility to review this ARESWEB interface."

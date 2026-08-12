@@ -130,7 +130,7 @@ describe("calendar API", () => {
       success: true,
       nextCursor: "event-2",
       events: expect.arrayContaining([
-        expect.objectContaining({ id: "event-1", title: "Team Practice", location: "Team Lab" }),
+        expect.objectContaining({ id: "event-1", title: "Team Practice" }),
       ]),
     }));
     const payload = res.json.mock.calls[0][0];
@@ -138,6 +138,8 @@ describe("calendar API", () => {
     expect(payload.events[0]).not.toHaveProperty("internalNotes");
     expect(payload.events[0]).not.toHaveProperty("status");
     expect(payload.events[0]).not.toHaveProperty("isDeleted");
+    expect(payload.events[0]).not.toHaveProperty("location");
+    expect(payload.events[0]).not.toHaveProperty("locationId");
   });
 
   it("returns one published event and hides archived or draft records", async () => {
@@ -153,6 +155,60 @@ describe("calendar API", () => {
     });
     await handler("/events/:id", "get")(req, res, next);
     expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404, code: "EVENT_NOT_FOUND" }));
+  });
+
+  it("returns a venue address only after an explicit publication opt-in", async () => {
+    req.params = { id: "event-1" };
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1", { locationId: "public-library", category: "outreach" }).data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          name: "Public Library",
+          address: "321 Main Street, Morgantown, WV 26505, US",
+          isAddressPublic: 1,
+          privateContact: "do not expose",
+        }),
+      });
+
+    await handler("/events/:id", "get")(req, res, next);
+
+    expect(adminDb.collection).toHaveBeenCalledWith("locations");
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      event: expect.objectContaining({
+        id: "event-1",
+        publicVenue: {
+          name: "Public Library",
+          address: "321 Main Street, Morgantown, WV 26505, US",
+        },
+      }),
+    });
+    expect(res.json.mock.calls[0][0].event.publicVenue).not.toHaveProperty("privateContact");
+
+    res.json.mockClear();
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1", { locationId: "team-home" }).data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          name: "Private team location",
+          address: "Private address",
+          isAddressPublic: 0,
+        }),
+      });
+
+    await handler("/events/:id", "get")(req, res, next);
+
+    expect(res.json.mock.calls[0][0].event.publicVenue).toBeNull();
+    expect(res.json.mock.calls[0][0].event).not.toHaveProperty("location");
+    expect(res.json.mock.calls[0][0].event).not.toHaveProperty("locationId");
   });
 
   it("rejects missing, archived, and malformed public event IDs", async () => {
@@ -183,6 +239,8 @@ describe("calendar API", () => {
           id: "photo-safe",
           data: () => ({
             url: "https://images.example.test/practice.jpg",
+            thumbnailUrl: "https://images.example.test/practice-thumb.webp",
+            mediumUrl: "javascript:alert(1)",
             filename: "Drive practice.jpg",
             uploadedBy: "student-private-id",
             uploadedAt: "2026-08-10T12:00:00.000Z",
@@ -210,6 +268,8 @@ describe("calendar API", () => {
       photos: [{
         id: "photo-safe",
         url: "https://images.example.test/practice.jpg",
+        thumbnailUrl: "https://images.example.test/practice-thumb.webp",
+        mediumUrl: null,
         filename: "Drive practice.jpg",
       }],
     });

@@ -64,7 +64,7 @@ export default function IdentityTab({
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-ares-gold/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-colors"
-            placeholder="e.g. David"
+            placeholder="e.g. Alex"
           />
         </div>
         <div>

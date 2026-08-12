@@ -41,6 +41,7 @@ export const locationWriteSchema = z.object({
   address: boundedText(300).min(1, "Venue address is required"),
   description: optionalText(1000),
   gmapsUrl: optionalHttpsUrl,
+  isAddressPublic: z.union([z.literal(0), z.literal(1)]).optional(),
 }).strict();
 
 export type EventWriteInput = z.infer<typeof eventWriteSchema>;
@@ -68,6 +69,7 @@ export interface LocationDocument {
   address?: unknown;
   description?: unknown;
   gmapsUrl?: unknown;
+  isAddressPublic?: unknown;
   isDeleted?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -76,6 +78,8 @@ export interface LocationDocument {
 
 export interface EventPhotoDocument {
   url?: unknown;
+  thumbnailUrl?: unknown;
+  mediumUrl?: unknown;
   filename?: unknown;
   isDeleted?: unknown;
   uploadedBy?: unknown;
@@ -96,8 +100,6 @@ export function eventDto(id: string, data: EventDocument, includeLifecycle: bool
     title: readString(data.title) ?? "Untitled event",
     dateStart: readString(data.dateStart) ?? "",
     dateEnd: readString(data.dateEnd),
-    locationId: readString(data.locationId),
-    location: readString(data.location),
     description: readString(data.description),
     category: data.category === "outreach" ? "outreach" as const : "internal" as const,
     coverImage: readString(data.coverImage),
@@ -108,6 +110,8 @@ export function eventDto(id: string, data: EventDocument, includeLifecycle: bool
   if (!includeLifecycle) return base;
   return {
     ...base,
+    locationId: readString(data.locationId),
+    location: readString(data.location),
     status: eventStatusSchema.safeParse(data.status).success
       ? data.status as z.infer<typeof eventStatusSchema>
       : "draft" as const,
@@ -125,6 +129,7 @@ export function locationDto(id: string, data: LocationDocument) {
     address: readString(data.address) ?? "",
     description: readString(data.description),
     gmapsUrl: readString(data.gmapsUrl),
+    isAddressPublic: readFlag(data.isAddressPublic),
     isDeleted: readFlag(data.isDeleted),
     createdAt: readString(data.createdAt),
     updatedAt: readString(data.updatedAt),
@@ -132,12 +137,24 @@ export function locationDto(id: string, data: LocationDocument) {
   };
 }
 
+export function publicVenueDto(data: LocationDocument) {
+  if (data.isDeleted === 1 || data.isAddressPublic !== 1) return null;
+  const name = readString(data.name)?.trim();
+  const address = readString(data.address)?.trim();
+  if (!name || !address) return null;
+  return { name, address };
+}
+
 export function eventPhotoDto(id: string, data: EventPhotoDocument) {
   const url = readString(data.url);
   if (!url?.startsWith("https://") || data.isDeleted === 1) return null;
+  const thumbnailUrl = readString(data.thumbnailUrl);
+  const mediumUrl = readString(data.mediumUrl);
   return {
     id,
     url,
+    thumbnailUrl: thumbnailUrl?.startsWith("https://") ? thumbnailUrl : null,
+    mediumUrl: mediumUrl?.startsWith("https://") ? mediumUrl : null,
     filename: readString(data.filename) ?? "Event photo",
   };
 }

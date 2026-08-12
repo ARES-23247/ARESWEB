@@ -27,10 +27,10 @@ export default function EventHero({
   const startDate = new Date(event.dateStart);
 
   const topGmapsUrl = useMemo(() => {
-    if (!event.location) return "";
+    if (!event.location && !event.publicVenue) return "";
     const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
-    const venueName = selected ? selected.name : event.location;
-    const address = selected ? selected.address : (event.locationId === "mars-building" || event.location === "MARS Building") ? "123 Science Way, Morgantown, WV" : "";
+    const venueName = selected?.name || event.publicVenue?.name || event.location || "";
+    const address = selected?.address || event.publicVenue?.address || "";
     return selected?.gmapsUrl || `https://maps.google.com/maps?q=${encodeURIComponent(address || venueName)}`;
   }, [event, locations]);
 
@@ -120,7 +120,7 @@ export default function EventHero({
               </p>
             )}
           </div>
-          {event.location && (
+          {(event.location || event.publicVenue) && (
             <div className="flex items-start md:items-center gap-1.5">
               <span className="text-white font-extrabold uppercase text-xs tracking-wider">Location:</span>
               <a
@@ -129,9 +129,12 @@ export default function EventHero({
                 rel="noopener noreferrer"
                 className="underline underline-offset-2 text-ares-bronze hover:text-white transition-colors"
               >
-                {event.location} ↗
+                {event.publicVenue?.name || event.location} ↗
               </a>
             </div>
+          )}
+          {event.publicVenue?.address && (
+            <p className="text-sm font-semibold text-marble/70">{event.publicVenue.address}</p>
           )}
         </div>
       </div>

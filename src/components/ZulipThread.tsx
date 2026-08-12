@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { MessageSquare, RefreshCw, Send } from 'lucide-react';
 import { sanitizeHtml } from '../lib/security';
 import { authenticatedFetch } from '../lib/api';
@@ -27,7 +27,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
-  const fetchMessages = async (showLoading = true) => {
+  const fetchMessages = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setIsLoading(true);
     }
@@ -43,25 +43,25 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
           if (errData && errData.error) {
             errorMsg = errData.error;
           }
-        } catch (_e) {
+        } catch {
           // ignore parse error
         }
         throw new Error(errorMsg);
       }
       const json = await res.json() as { success: boolean, messages: ZulipMessage[] };
       setMessages(json.messages || []);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch messages.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch messages.");
     } finally {
       if (showLoading) {
         setIsLoading(false);
       }
     }
-  };
+  }, [stream, topic]);
 
   useEffect(() => {
-    fetchMessages(true);
-  }, [stream, topic]);
+    void fetchMessages(true);
+  }, [fetchMessages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,15 +82,15 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
           if (errData?.error) {
             errorMsg = errData.error;
           }
-        } catch (_e) {
+        } catch {
           // ignore parse error
         }
         throw new Error(errorMsg);
       }
       setMessage("");
       await fetchMessages(false);
-    } catch (err: any) {
-      setSendError(err.message || "Failed to send message");
+    } catch (err: unknown) {
+      setSendError(err instanceof Error ? err.message : "Failed to send message");
     } finally {
       setIsSending(false);
     }

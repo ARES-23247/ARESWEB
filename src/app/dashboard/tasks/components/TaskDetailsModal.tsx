@@ -49,6 +49,12 @@ export default function TaskDetailsModal({
 }: TaskDetailsModalProps) {
   const task = taskId ? tasks.find((t) => t.id === taskId) : null;
   const isCreateMode = !taskId;
+  const taskTitle = task?.title;
+  const taskDescription = task?.description;
+  const taskPriority = task?.priority;
+  const taskSubteam = task?.subteam;
+  const taskStatus = task?.status;
+  const taskAssignees = task?.assignees;
 
   const [modalTitle, setModalTitle] = useState(task?.title || "");
   const [modalDesc, setModalDesc] = useState(task?.description || "");
@@ -89,13 +95,13 @@ export default function TaskDetailsModal({
   }, [deleteConfirmationOpen]);
 
   useEffect(() => {
-    if (task) {
-      setModalTitle(task.title);
-      setModalDesc(task.description);
-      setModalPriority(task.priority);
-      setModalSubteam(task.subteam);
-      setModalStatus(task.status);
-      setModalAssignees(task.assignees || []);
+    if (taskId && taskTitle !== undefined && taskDescription !== undefined && taskPriority !== undefined && taskSubteam !== undefined && taskStatus !== undefined) {
+      setModalTitle(taskTitle);
+      setModalDesc(taskDescription);
+      setModalPriority(taskPriority);
+      setModalSubteam(taskSubteam);
+      setModalStatus(taskStatus);
+      setModalAssignees(taskAssignees || []);
     } else {
       setModalTitle("");
       setModalDesc("");
@@ -104,7 +110,7 @@ export default function TaskDetailsModal({
       setModalStatus("todo");
       setModalAssignees([]);
     }
-  }, [task?.id, task?.title, task?.description, task?.priority, task?.subteam, task?.status, task?.assignees]);
+  }, [taskAssignees, taskDescription, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
 
   if (taskId && !task) return null;
 

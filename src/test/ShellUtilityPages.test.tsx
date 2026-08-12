@@ -166,7 +166,7 @@ describe("account navigation keyboard behavior", () => {
     expect(document.body.style.overflow).toBe("hidden");
     expect(container).toHaveAttribute("aria-hidden", "true");
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Mobile navigation menu" })).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(document.body.style.overflow).toBe("");

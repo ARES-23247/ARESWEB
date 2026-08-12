@@ -5,32 +5,33 @@
  * SAFETY: Uses optional chaining for browser production build compatibility.
  */
 const isDev = import.meta.env?.DEV ?? false;
+const browserConsole = globalThis.console;
 
 export const logger = {
   debug: (message: string, ...args: unknown[]) => {
     if (isDev) {
-      console.log(`[DEBUG] ${message}`, ...args);
+      browserConsole.debug(`[DEBUG] ${message}`, ...args);
     }
   },
 
   info: (message: string, ...args: unknown[]) => {
     if (isDev) {
-      console.info(`[INFO] ${message}`, ...args);
+      browserConsole.info(`[INFO] ${message}`, ...args);
     }
   },
 
   warn: (message: string, ...args: unknown[]) => {
     if (isDev) {
-      console.warn(`[WARN] ${message}`, ...args);
+      browserConsole.warn(`[WARN] ${message}`, ...args);
     }
   },
 
   error: (message: string, ...args: unknown[]) => {
     // Errors are always logged but without sensitive details in production
     if (isDev) {
-      console.error(`[ERROR] ${message}`, ...args);
+      browserConsole.error(`[ERROR] ${message}`, ...args);
     } else {
-      console.error(`[ERROR] ${message}`);
+      browserConsole.error(`[ERROR] ${message}`);
     }
   }
 };

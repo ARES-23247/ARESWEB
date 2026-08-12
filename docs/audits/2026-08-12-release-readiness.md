@@ -9,6 +9,103 @@
 This audit covers the current release branch. It does not prove that every old
 file has no defect. No critical or high-risk release blocker remains open.
 
+## Post-deployment crawl hardening
+
+The follow-up `codex/post-deploy-hardening` branch adds crawl controls that fit
+the existing Vite/Firebase architecture. These changes are source changes only
+until they pass review and the protected deployment workflow:
+
+- `/sitemap.xml` receives an exact Hosting `Cache-Control` rule after the broad
+  app-shell rule. Firebase applies matching header definitions in declaration
+  order, so the sitemap keeps the function's one-hour shared-cache policy while
+  retaining the shared security headers.
+- Sitemap collection reads use stable document-ID ordering, 250-document cursor
+  pages, and a 5,000-document cap per collection. The five collection caps plus
+  static entries remain below the sitemap protocol's 50,000-URL limit. A cap hit
+  is logged for operator action instead of silently selecting an arbitrary first
+  page.
+- Saved venue addresses remain private by default. Admins, coaches, and mentors
+  must explicitly enable **Publish this address**. Only then can the public event
+  detail DTO return the venue name and full address. Event JSON-LD is emitted
+  only for an outreach event with that public venue and represents the address
+  as a `PostalAddress`; private/internal events receive ordinary page metadata,
+  not ineligible Event rich-result markup.
+
+This follows Firebase's documented dynamic-content caching and query-cursor
+behavior and Google's requirement that physical Event markup contain a named
+place and detailed postal address:
+
+- <https://firebase.google.com/docs/hosting/manage-cache>
+- <https://firebase.google.com/docs/hosting/full-config#headers>
+- <https://firebase.google.com/docs/firestore/query-data/query-cursors>
+- <https://developers.google.com/search/docs/appearance/structured-data/event>
+
+### SSR, prerendering, and HTTP 404 decision
+
+No crawler rendering migration is included in this hardening branch. The active
+build has no server-render entry point or hydration boundary, and Firebase's
+catch-all rewrite serves `index.html` before a custom Hosting 404 can run. A
+static prerender also needs a reviewed build-time source for every published
+Firestore route; introducing production database reads into CI would create a
+new data-access boundary and could publish stale or non-approved records.
+
+Consequently, adding a `404.html` alone would not fix unknown routes, and routing
+only a manually duplicated allowlist of React paths would be brittle. Missing
+dynamic records would still return the app shell with HTTP 200. The safe backlog
+item is a deliberate architecture change: either a Vite SSR entry behind a
+server runtime or a generated static-route manifest and prerender artifact.
+Acceptance requires raw, JavaScript-disabled GET responses with final metadata
+and primary content, HTTP 404/410 for unknown and missing records, hydration
+without mismatch, no user-agent-specific rendering, and CI coverage for route
+manifest drift.
+
+## Distributed abuse controls and secret isolation
+
+The process-local Express limits remain useful burst protection, but they no
+longer provide the only allowance for the highest-cost authenticated work. A
+Firestore transaction now enforces a shared fixed-window quota across Cloud
+Functions instances for:
+
+| Operation | Shared allowance | Expensive work protected |
+| --- | --- | --- |
+| AI grammar, assistant, and simulation generation combined | 30 per verified admin/coach per 15 minutes | Gemini/Vertex model calls |
+| Unified photo upload | 30 per verified team member per 15 minutes | image decoding/derivatives, Storage, optional AI and Google upload |
+| Google Photos bulk import | 4 per verified admin/coach per hour | up to 100 downloads, image transformations, Storage objects, and metadata writes per request |
+| Google Drive folder sync | 10 per verified admin/coach per hour | Google API scan and Firestore batch |
+| YouTube playlist sync | 6 per verified admin/coach per hour | up to 20 YouTube pages and Firestore batches |
+
+Quota documents live in the server-only `internal_api_quotas` collection. Their
+IDs are HMAC-derived from a domain-separated scope, the verified Firebase UID,
+and the fixed window; neither a raw UID nor an IP address is stored. Each accepted
+attempt is counted atomically before upstream work begins, malformed counters
+fail closed, and a limit rejection returns HTTP 429
+with `Retry-After`. Correctness does not depend on prompt deletion because each
+window has a new document ID. After deployment, configure a Firestore TTL policy
+for `internal_api_quotas.expiresAt` so expired operational records are removed;
+TTL deletion delay does not grant extra requests.
+
+The API remains one function and currently binds 12 secrets. The formerly bound
+`GCP_PROJECT_ID` was removed because no runtime code reads it and Firebase already
+supplies the project identity through `GCLOUD_PROJECT`. A low-risk function split
+is not included: Hosting sends all `/api/**` traffic to `api`, Express owns route
+dispatch, and `index.ts` validates `ENCRYPTION_SECRET` at module initialization.
+Exporting a nominal no-secret sitemap function from the same module would still
+load that secret-dependent module, while splitting route prefixes without shared
+composition tests risks changing CORS, App Check, body limits, auth order, and
+error handling.
+
+The safe split acceptance criteria are:
+
+1. extract reusable app construction with identical middleware-order tests;
+2. define non-overlapping Hosting rewrites for public/core, media/AI, and external
+   integration groups, with direct and Hosting-emulator path tests;
+3. bind only the secrets proven by a source-derived route-to-secret inventory;
+4. replace the quota HMAC dependency on `ENCRYPTION_SECRET` with a dedicated,
+   least-privilege quota key before placing quotas in otherwise no-secret groups;
+5. verify App Check exemptions, upload-before-parser authentication, CORS,
+   generic 5xx handling, and scheduled exports for every resulting function;
+6. canary the split with independent health checks and rollback-ready rewrites.
+
 ## Summary scorecard
 
 | Pillar | Grade | Main result |
@@ -26,7 +123,9 @@ file has no defect. No critical or high-risk release blocker remains open.
 | DevOps and hygiene | A | Keyless deployment and fail-closed build settings are in place. |
 | Scalability and resilience | B+ | Work is bounded, but instance-local rate limits remain. |
 
-Overall grade: **A-**. The branch is ready for the protected merge process.
+Overall grade: **A-** within the documented automated scope. The branch still
+requires the protected merge process and the manual accessibility checks linked
+below; this grade is not a complete-security or WCAG-conformance claim.
 App Check now fails closed by default for production browser mutations. Continue
 reviewing observation metrics, and use `ENFORCE_APP_CHECK=false` only as a
 time-limited incident override while a supported client path is repaired.
@@ -219,7 +318,7 @@ No release-blocking finding remains.
 
 | ID | Severity | Finding | Status |
 | --- | --- | --- | --- |
-| SCALE-01 | Medium | Express rate limits apply per Functions instance. | Backlog |
+| SCALE-01 | Medium | Express rate limits apply per Functions instance. | Fixed for the highest-cost authenticated routes with transactional shared quotas; lower-cost routes retain burst limits |
 
 ## Release roadmap
 
@@ -241,22 +340,24 @@ No release-blocking finding remains.
 
 1. Tighten the Hosting CSP with hashes or nonces.
 2. Split the largest page and modal components.
-3. Plan distributed quotas for expensive API routes.
+3. Enable Firestore TTL on `internal_api_quotas.expiresAt` after the quota code is deployed.
 4. Reduce large editor chunks when the budget starts to tighten.
-5. Add thumbnail/medium derivatives and backfill existing gallery originals.
-6. Add prerendering or SSR if crawler-visible metadata and real HTTP 404 status
-   codes become a product requirement.
-7. Split the monolithic Functions API if secret blast radius or cold-start
-   coupling becomes material.
+5. Run the separately approved, bounded legacy gallery derivative backfill in
+   `docs/MEDIA_DERIVATIVE_BACKFILL.md`; new uploads already create derivatives.
+6. Design and deliver the reviewed SSR/static-prerender migration described in
+   the crawl-hardening decision above; client-side `noindex` is only an interim
+   mitigation for the existing raw-HTML and HTTP-status limitation.
+7. Split the monolithic Functions API when the acceptance criteria in the
+   secret-isolation section can be delivered and canaried as one reviewed change.
 
 ## Verification record
 
 - Frozen install: passed
 - ESLint: passed
 - TypeScript: passed
-- Frontend coverage: 67 files / 372 tests passed (72.03% lines, 67.53% functions)
+- Frontend coverage: 71 files / 388 tests passed (71.98% lines, 67.53% functions)
 - Cloud Functions build: passed
-- Cloud Functions coverage: 35 files / 463 tests passed (93.50% lines, 98.52% functions)
+- Cloud Functions coverage: 37 files / 495 tests passed (93.78% lines, 98.63% functions)
 - Firebase rules tests: 17 passed
 - Production frontend build: passed
 - Bundle budgets: passed

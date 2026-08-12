@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { 
@@ -98,7 +98,7 @@ export default function DashboardUsersPage() {
   const userRole = authorizedUser?.role || "Pending Verification";
   const isAdmin = userRole === "admin" || userRole === "coach";
 
-  const loadUsersPage = async (cursor: string | null, synchronize: boolean) => {
+  const loadUsersPage = useCallback(async (cursor: string | null, synchronize: boolean) => {
     if (!user || !isAdmin) return;
     const isAdditionalPage = Boolean(cursor);
     if (isAdditionalPage) setIsLoadingMore(true);
@@ -160,13 +160,13 @@ export default function DashboardUsersPage() {
       if (isAdditionalPage) setIsLoadingMore(false);
       else setIsLoading(false);
     }
-  };
+  }, [isAdmin, user]);
 
-  const fetchUsersData = async () => loadUsersPage(null, true);
+  const fetchUsersData = useCallback(async () => loadUsersPage(null, true), [loadUsersPage]);
 
   useEffect(() => {
-    fetchUsersData();
-  }, [user]);
+    void fetchUsersData();
+  }, [fetchUsersData]);
 
   const handleRoleChange = (userId: string, newRole: string) => {
     setEditedRoles(prev => ({
@@ -217,9 +217,9 @@ export default function DashboardUsersPage() {
       } else {
         setTimeout(() => setSuccess(null), 4000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating user role:", err);
-      setError(`Failed to update permissions: ${err.message}`);
+      setError(`Failed to update permissions: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSavingRoles(prev => ({ ...prev, [userId]: false }));
     }
@@ -250,12 +250,13 @@ export default function DashboardUsersPage() {
       await fetchUsersData();
       
       setTimeout(() => setSuccess(null), 4000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error provisioning Zulip user:", err);
-      if (err.message?.includes("bot requests") || err.message?.includes("administrator") || err.message?.includes("not accept")) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("bot requests") || message.includes("administrator") || message.includes("not accept")) {
         setError("Zulip did not accept the automated invitation. Ask a team administrator for the current approved join link.");
       } else {
-        setError(`Zulip account creation failed: ${err.message}`);
+        setError(`Zulip account creation failed: ${message}`);
       }
     } finally {
       setCreatingZulip(prev => ({ ...prev, [userId]: false }));
@@ -289,9 +290,9 @@ export default function DashboardUsersPage() {
       setSuccess(`Access revoked for ${targetUser.name || targetUser.email}. Their profile was archived and can be restored.`);
       await fetchUsersData();
       setTimeout(() => setSuccess(null), 4000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error removing user:", err);
-      setError(`Failed to revoke user access: ${err.message}`);
+      setError(`Failed to revoke user access: ${err instanceof Error ? err.message : String(err)}`);
       setIsLoading(false);
     }
   };
@@ -382,7 +383,7 @@ export default function DashboardUsersPage() {
         </div>
         <h1 className="text-3xl font-black uppercase tracking-wider text-white mb-2 font-heading">Access Denied</h1>
         <p className="text-marble/60 text-sm max-w-md">
-          You do not have the required credentials to access the ARES User Management console. Please contact Coach David if you need your permissions elevated.
+          You do not have the required credentials to access the ARES User Management console. Please contact a team administrator if you need your permissions elevated.
         </p>
       </div>
     );

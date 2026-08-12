@@ -1,6 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
+import { distributedQuota } from "../middleware/distributedQuota";
 import { adminDb } from "../lib/firebase-admin";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
@@ -309,7 +310,11 @@ async function commitBatches(operations: Array<(batch: FirebaseFirestore.WriteBa
   }
 }
 
-router.post("/sync", ensureAdmin, asyncHandler(async (req, res) => {
+router.post(
+  "/sync",
+  ensureAdmin,
+  distributedQuota({ scope: "youtube-sync", limit: 6, windowMs: 60 * 60 * 1000 }),
+  asyncHandler(async (req, res) => {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) throw new ApiError(503, "YouTube sync is not configured in Secret Manager.");
   const { items, pagesFetched } = await fetchCompletePlaylist(apiKey);
@@ -383,6 +388,7 @@ router.post("/sync", ensureAdmin, asyncHandler(async (req, res) => {
       ? "YouTube returned no usable videos. Existing records were preserved."
       : `Synced ${records.size} videos and archived ${archivedCount}.`,
   });
-}));
+  }),
+);
 
 export default router;

@@ -1,4 +1,5 @@
 import express from "express";
+import { FieldPath } from "firebase-admin/firestore";
 import { adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { ApiError } from "../middleware/errorHandler";
@@ -6,7 +7,8 @@ import { asyncHandler } from "../lib/utils";
 
 const router = express.Router();
 const BASE_URL = "https://aresfirst.org";
-const MAX_DOCUMENTS_PER_COLLECTION = 500;
+const QUERY_PAGE_SIZE = 250;
+const MAX_DOCUMENTS_PER_COLLECTION = 5_000;
 const CACHE_CONTROL = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
 const NON_PRODUCTION_RECORD_PATTERNS = [
   /(^|[-_])(e2e|fixture|wip)(?:$|[-_\d])/i,
@@ -27,12 +29,14 @@ const STATIC_URLS = [
   { loc: `${BASE_URL}/gallery`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/videos`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/join`, changefreq: "monthly", priority: "0.90" },
+  { loc: `${BASE_URL}/leaderboard`, changefreq: "weekly", priority: "0.50" },
   { loc: `${BASE_URL}/location-morgantown`, changefreq: "monthly", priority: "0.60" },
   { loc: `${BASE_URL}/outreach`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/robots`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/seasons`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/sponsors`, changefreq: "monthly", priority: "0.80" },
+  { loc: `${BASE_URL}/store`, changefreq: "monthly", priority: "0.60" },
   { loc: `${BASE_URL}/tech-stack`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.50" }
 ] as const;
@@ -46,6 +50,45 @@ interface SitemapEntry {
 
 interface FirestoreTimestampLike {
   toDate: () => Date;
+}
+
+interface SitemapCollectionQuery {
+  collection: string;
+  filters: ReadonlyArray<readonly [string, FirebaseFirestore.WhereFilterOp, unknown]>;
+}
+
+async function readCollectionPages({
+  collection,
+  filters,
+}: SitemapCollectionQuery): Promise<FirebaseFirestore.QueryDocumentSnapshot[]> {
+  let baseQuery: FirebaseFirestore.Query = adminDb.collection(collection);
+  for (const [field, operator, value] of filters) {
+    baseQuery = baseQuery.where(field, operator, value);
+  }
+  baseQuery = baseQuery.orderBy(FieldPath.documentId(), "asc");
+
+  const documents: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+
+  while (documents.length <= MAX_DOCUMENTS_PER_COLLECTION) {
+    const remaining = MAX_DOCUMENTS_PER_COLLECTION + 1 - documents.length;
+    const pageLimit = Math.min(QUERY_PAGE_SIZE, remaining);
+    const pageQuery = cursor ? baseQuery.startAfter(cursor) : baseQuery;
+    const snapshot = await pageQuery.limit(pageLimit).get();
+    if (snapshot.docs.length === 0) break;
+
+    documents.push(...snapshot.docs);
+    cursor = snapshot.docs.at(-1);
+    if (snapshot.docs.length < pageLimit) break;
+  }
+
+  if (documents.length > MAX_DOCUMENTS_PER_COLLECTION) {
+    logger.warn("sitemap", "Published collection exceeds the sitemap safety cap", {
+      collection,
+      limit: MAX_DOCUMENTS_PER_COLLECTION,
+    });
+  }
+  return documents.slice(0, MAX_DOCUMENTS_PER_COLLECTION);
 }
 
 export function isSitemapRecordIndexable(
@@ -105,30 +148,26 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   try {
     snapshots = await Promise.all([
-      adminDb.collection("posts")
-        .where("status", "==", "published")
-        .where("isDeleted", "==", 0)
-        .limit(MAX_DOCUMENTS_PER_COLLECTION)
-        .get(),
-      adminDb.collection("robots")
-        .where("isDeleted", "==", 0)
-        .limit(MAX_DOCUMENTS_PER_COLLECTION)
-        .get(),
-      adminDb.collection("academy")
-        .where("status", "==", "published")
-        .where("isDeleted", "==", 0)
-        .limit(MAX_DOCUMENTS_PER_COLLECTION)
-        .get(),
-      adminDb.collection("docs")
-        .where("status", "==", "published")
-        .where("isDeleted", "==", 0)
-        .limit(MAX_DOCUMENTS_PER_COLLECTION)
-        .get(),
-      adminDb.collection("events")
-        .where("status", "==", "published")
-        .where("isDeleted", "==", 0)
-        .limit(MAX_DOCUMENTS_PER_COLLECTION)
-        .get()
+      readCollectionPages({
+        collection: "posts",
+        filters: [["status", "==", "published"], ["isDeleted", "==", 0]],
+      }),
+      readCollectionPages({
+        collection: "robots",
+        filters: [["isDeleted", "==", 0]],
+      }),
+      readCollectionPages({
+        collection: "academy",
+        filters: [["status", "==", "published"], ["isDeleted", "==", 0]],
+      }),
+      readCollectionPages({
+        collection: "docs",
+        filters: [["status", "==", "published"], ["isDeleted", "==", 0]],
+      }),
+      readCollectionPages({
+        collection: "events",
+        filters: [["status", "==", "published"], ["isDeleted", "==", 0]],
+      }),
     ]);
   } catch (error) {
     logger.error("sitemap", "Unable to build the sitemap from published content", error);

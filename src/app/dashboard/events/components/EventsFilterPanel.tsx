@@ -106,7 +106,7 @@ export default function EventsFilterPanel({
         <div>
           <select
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value as any)}
+            onChange={(e) => setFilterCategory(e.target.value as "all" | "internal" | "outreach")}
             aria-label="Filter events by category"
             className="w-full bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
           >

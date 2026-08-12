@@ -19,21 +19,17 @@ After deployment, stale service workers serve HTML with old chunk hashes. Browse
 
 ## Deployment Best Practices
 
-**After backend changes (contract files):**
-```bash
-npm run build
-npx wrangler pages deploy dist --project-name aresweb --commit-dirty=true
-```
-
-Direct deploy bypasses edge compilation cache.
+Production deploys run only from the protected `master` GitHub Actions workflow
+after the complete verification gate. Never use a local Hosting-only deploy to
+work around stale chunks because it can create frontend/API/rules drift.
 
 ## Caching Strategy
 
 | Type | Strategy | Duration |
 |---|---|---|
-| API Routes | NetworkFirst | 7 days |
-| Static Assets | CacheFirst | 30 days |
-| JS/CSS | StaleWhileRevalidate | 7 days |
+| API Routes | Network only | Not cached by the service worker |
+| App shell | Precache | Replaced on an approved update |
+| Hashed JS/CSS | Immutable Hosting cache | 1 year |
 | Fonts | CacheFirst | 1 year |
 
 ## Bundle Splitting
@@ -46,4 +42,4 @@ Route-based chunks: `simulation`, `dashboard-features`, `content-editors`, `form
 - ❌ BANNED: localStorage for reload throttle (must be sessionStorage)
 - ✅ REQUIRED: Verify lazy-loaded routes after deployment
 - ✅ REQUIRED: ErrorBoundary wraps Suspense boundaries
-- ✅ REQUIRED: `prefetch="intent"` on dashboard nav links
+- ✅ REQUIRED: Verify Hosting headers and service-worker recovery in CI

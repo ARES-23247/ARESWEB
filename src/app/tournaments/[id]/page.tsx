@@ -88,7 +88,7 @@ export default function TournamentDetailPage() {
       if (!response.ok) throw await apiFailure(response, "Tournament photos could not load.");
       const payload = await response.json() as { photos: ManagedPhoto[] };
       return payload.photos
-        .map((photo) => ({ src: photo.publicUrl, caption: photo.caption }))
+        .map((photo) => ({ src: photo.publicUrl, previewSrc: photo.thumbnailUrl ?? undefined, caption: photo.caption }))
         .filter((photo) => photo.src);
     },
     enabled: Boolean(tournament?.photoAlbumId),

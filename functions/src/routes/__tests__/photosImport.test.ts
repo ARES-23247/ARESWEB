@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import router from "../photosImport";
 
+const { mockBatchSet, mockBatchUpdate, mockBatchCommit } = vi.hoisted(() => ({
+  mockBatchSet: vi.fn(),
+  mockBatchUpdate: vi.fn(),
+  mockBatchCommit: vi.fn(),
+}));
+
 vi.mock("../../lib/firebase-admin", () => {
   const mockDoc = vi.fn().mockImplementation((id: string) => {
     const docRef: any = {
@@ -28,8 +34,9 @@ vi.mock("../../lib/firebase-admin", () => {
         }));
       }),
       batch: vi.fn().mockReturnValue({
-        set: vi.fn(),
-        commit: vi.fn().mockResolvedValue(undefined),
+        set: mockBatchSet,
+        update: mockBatchUpdate,
+        commit: mockBatchCommit,
       }),
     },
     adminStorage: {
@@ -59,12 +66,42 @@ vi.mock("../../lib/imageImport", () => ({
   sanitizeAlbumName: vi.fn().mockReturnValue("sanitized-album"),
 }));
 
+vi.mock("../../lib/photoDerivatives", () => ({
+  generatePhotoDerivatives: vi.fn().mockResolvedValue({
+    width: 1600,
+    height: 900,
+    original: { buffer: Buffer.from("sanitized"), width: 1600, height: 900, fileSize: 7 },
+    thumbnail: { buffer: Buffer.from("thumb"), width: 480, height: 270, fileSize: 5 },
+    medium: { buffer: Buffer.from("medium"), width: 1280, height: 720, fileSize: 6 },
+  }),
+  storePhotoAssets: vi.fn().mockResolvedValue({
+    storagePath: "gallery/original.jpg",
+    publicUrl: "https://storage.test/original.jpg",
+    thumbnailPath: "gallery/thumbnail.webp",
+    thumbnailUrl: "https://storage.test/thumbnail.webp",
+    thumbnailWidth: 480,
+    thumbnailHeight: 270,
+    thumbnailFileSize: 5,
+    mediumPath: "gallery/medium.webp",
+    mediumUrl: "https://storage.test/medium.webp",
+    mediumWidth: 1280,
+    mediumHeight: 720,
+    mediumFileSize: 6,
+    width: 1600,
+    height: 900,
+  }),
+  deleteStoredPhotoAssets: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { deleteStoredPhotoAssets, storePhotoAssets } from "../../lib/photoDerivatives";
+
 describe("Photos Import Router Backend Endpoints", () => {
   let req: any;
   let res: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockBatchCommit.mockResolvedValue(undefined);
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -82,7 +119,11 @@ describe("Photos Import Router Backend Endpoints", () => {
     );
     expect(routeLayer).toBeDefined();
     const middlewareNames = routeLayer!.route!.stack.map((layer) => layer.name);
-    expect(middlewareNames).toContain("ensureAdmin");
+    expect(middlewareNames).toEqual([
+      "ensureAdmin",
+      "enforceDistributedQuota",
+      expect.any(String),
+    ]);
   });
 
   it("should throw error if items parameter is missing or empty", async () => {
@@ -115,10 +156,44 @@ describe("Photos Import Router Backend Endpoints", () => {
 
     await handler(req, res);
 
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       imported: 1,
       failed: 0,
     }));
+    expect(storePhotoAssets).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ mimeType: "image/jpeg" }),
+      expect.stringContaining("gallery/derivatives/"),
+      expect.anything(),
+    );
+    expect(mockBatchSet).toHaveBeenCalledTimes(2);
+    expect(mockBatchSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ fileSize: 7 }));
+    expect(mockBatchUpdate).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mediaCount: "increment" }));
+    expect(mockBatchCommit).toHaveBeenCalledOnce();
+  });
+
+  it("removes newly stored assets when the atomic metadata batch fails", async () => {
+    const handler = getHandler("/import", "post");
+    req = {
+      body: {
+        items: [{ id: "photo-cleanup", baseUrl: "https://lh3.googleusercontent.com/cleanup" }],
+      },
+    };
+    res = { json: vi.fn() };
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      arrayBuffer: async () => new ArrayBuffer(8),
+    } as Response);
+    mockBatchCommit.mockRejectedValueOnce(new Error("Firestore unavailable"));
+
+    await expect(handler(req, res)).rejects.toThrow("Firestore unavailable");
+    expect(deleteStoredPhotoAssets).toHaveBeenCalledOnce();
+    expect(res.json).not.toHaveBeenCalled();
   });
 
   it("reports an upstream download failure even when Google returns no readable error body", async () => {

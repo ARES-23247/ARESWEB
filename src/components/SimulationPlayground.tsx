@@ -4,8 +4,6 @@ import { GripVertical } from "lucide-react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { SimFileExplorer } from "./editor/SimFileExplorer";
-// TODO: implement component library picker UI
-// import { SimComponentLibrary } from "./editor/SimComponentLibrary";
 import { LogEntry, TestResult } from "./editor/SimConsole";
 import { useSimulationChat } from "../hooks/useSimulationChat";
 import { useSimulationFiles } from "../hooks/useSimulationFiles";
@@ -31,25 +29,6 @@ const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then(mod => (
 // Real production templates for AI context
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";
 import ElevatorPidSimRaw from "../sims/elevatorpid/index.tsx?raw";
-
-// TODO: use these types when library is implemented
-/*
-interface SavedSim {
-  id: string;
-  name: string;
-  author_id: string;
-  createdAt: string;
-  updatedAt: string;
-  type?: string;
-}
-
-interface GithubSim {
-  id: string;
-  name: string;
-  path: string;
-  requiresContext: boolean;
-}
-*/
 
 export default function SimulationPlayground() {
   const { authorizedUser } = useAuth();
@@ -84,7 +63,6 @@ export default function SimulationPlayground() {
 
   // Monaco Editor Hook
   const {
-    editorRef,
     isWordWrap,
     isMinimap,
     handleEditorDidMount,
@@ -95,8 +73,6 @@ export default function SimulationPlayground() {
   const [copied, setCopied] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  // TODO: implement auto-run feature
-  const [_isAutoRun, _setIsAutoRun] = useState(() => localStorage.getItem("ares_sim_autorun") === "true");
   const [readOnlyFiles] = useState<string[]>(["areslib.d.ts", "physics.d.ts"]);
   const [telemetry, setTelemetry] = useState<Record<string, {time: number, value: number}[]>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -257,23 +233,6 @@ export default function SimulationPlayground() {
     setConsoleLogs,
     setFps
   });
-
-  // TODO: implement code insertion from component library
-  const _handleInsertCode = useCallback((code: string) => {
-    if (editorRef.current) {
-      const editor = editorRef.current;
-      const position = editor.getPosition();
-      if (position) {
-        editor.executeEdits("component-library", [{
-          range: new ((window as unknown as { monaco: { Range: new (startLine: number, startCol: number, endLine: number, endCol: number) => { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number } } }).monaco.Range)(position.lineNumber, position.column, position.lineNumber, position.column),
-          text: code,
-          forceMoveMarkers: true
-        }]);
-        editor.focus();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const content = (
     <div

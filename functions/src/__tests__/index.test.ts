@@ -23,7 +23,7 @@ vi.mock("../lib/firebase-admin", () => {
 
 process.env.ENCRYPTION_SECRET = "temporary_deploy_secret_that_is_at_least_32_chars";
 
-import { cleanupOldInquiries } from "../index";
+import { api, cleanupOldInquiries } from "../index";
 import { adminDb } from "../lib/firebase-admin";
 
 describe("cleanupOldInquiries scheduled function", () => {
@@ -76,6 +76,31 @@ describe("cleanupOldInquiries scheduled function", () => {
 import { app } from "../index";
 
 describe("Express App Endpoints", () => {
+  it("exports explicit media-safe runtime resource bounds", () => {
+    const endpoint = (api as unknown as {
+      __endpoint: { availableMemoryMb: number; timeoutSeconds: number; concurrency: number; maxInstances: number };
+    }).__endpoint;
+
+    expect(endpoint).toMatchObject({
+      availableMemoryMb: 1024,
+      timeoutSeconds: 300,
+      concurrency: 10,
+      maxInstances: 10,
+    });
+  });
+
+  it("authenticates and applies the distributed upload quota before the large JSON parser", () => {
+    const uploadLayers = app._router.stack.filter(
+      (layer: any) => String(layer.regexp).includes("photos\\/upload-unified"),
+    );
+
+    expect(uploadLayers.map((layer: any) => layer.name)).toEqual([
+      "ensureTeamMember",
+      "enforceDistributedQuota",
+      "jsonParser",
+    ]);
+  });
+
   it("should mount and respond on the /api/reference endpoint", () => {
     const route = app._router.stack.find(
       (layer: any) => layer.route && layer.route.path === "/api/reference"

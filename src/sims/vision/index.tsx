@@ -77,7 +77,7 @@ export default function VisionSim() {
         ctx.fillText("REJECTED", ROBOT.x, ROBOT.y - 30);
         
         if (!isDraggingRef.current) {
-          setSolverLog({ text: `FILTRATION TRIGGERED: ${rejectReason}. Measurement discarded.`, color: "var(--ares-red)" });
+          setSolverLog({ text: `FILTRATION TRIGGERED: ${rejectReason}. Measurement discarded.`, color: "var(--ares-red-light)" });
         }
         ctx.textAlign = "left";
         animationFrameId = requestAnimationFrame(render);

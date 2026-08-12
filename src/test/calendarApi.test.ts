@@ -26,6 +26,10 @@ const event = {
   dateEnd: null,
   locationId: null,
   location: "Team Lab",
+  publicVenue: {
+    name: "Public Library",
+    address: "321 Main Street, Morgantown, WV 26505, US",
+  },
   description: null,
   category: "internal",
   coverImage: null,
@@ -42,6 +46,7 @@ const location = {
   description: null,
   gmapsUrl: null,
   isDeleted: 0,
+  isAddressPublic: 1,
 };
 
 function response(body: unknown, ok = true, status = 200, statusText = "OK") {
@@ -69,7 +74,13 @@ describe("calendar API client", () => {
       nextCursor: "event-1",
     });
     expect(authenticatedFetch).toHaveBeenNthCalledWith(1, "/api/calendar/events?limit=150&cursor=cursor-1", undefined);
-    await expect(fetchPublicEvent("event/1")).resolves.toEqual(expect.objectContaining({ id: "event-1" }));
+    await expect(fetchPublicEvent("event/1")).resolves.toEqual(expect.objectContaining({
+      id: "event-1",
+      publicVenue: {
+        name: "Public Library",
+        address: "321 Main Street, Morgantown, WV 26505, US",
+      },
+    }));
     expect(authenticatedFetch).toHaveBeenNthCalledWith(2, "/api/calendar/events/event%2F1", undefined);
     await expect(fetchManagedEvents()).resolves.toEqual({
       events: [expect.objectContaining({ isDeleted: 1, status: "published" })],
@@ -116,7 +127,9 @@ describe("calendar API client", () => {
     await archiveEvent("event-1");
     await restoreEvent("event-1");
     await publishEvent("event-1");
-    await expect(fetchLocations()).resolves.toEqual([expect.objectContaining({ id: "venue-1" })]);
+    await expect(fetchLocations()).resolves.toEqual([
+      expect.objectContaining({ id: "venue-1", isAddressPublic: 1 }),
+    ]);
     await createLocation(venueInput);
     await updateLocation("venue-1", venueInput);
     await archiveLocation("venue-1");

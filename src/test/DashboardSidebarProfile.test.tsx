@@ -31,8 +31,11 @@ describe("DashboardSidebar profile DTO", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { uid: "private_uid", displayName: "OAuth Legal Name", photoURL: null },
       authorizedUser: { role: "member" },
+      loading: false,
+      loginWithGoogle: vi.fn(),
       logout: vi.fn(),
-    } as any);
+      loginWithMockUser: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
   });
 
   it("loads nickname and avatar through the authenticated API without a UID-seeded fallback", async () => {

@@ -363,39 +363,36 @@ export default function EventEditorDrawer({
       </div>
 
       {/* Lightbox / Selected Photo Modal overlay */}
-      {selectedPhoto && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="event-photo-title"
-          onKeyDown={(event) => event.key === "Escape" && setSelectedPhoto(null)}
-          className="fixed inset-0 z-[120] bg-black/95 flex items-center justify-center p-4"
-        >
-          <h4 id="event-photo-title" className="sr-only">Event photo: {selectedPhoto.filename}</h4>
-          <button
-            type="button"
-            autoFocus
-            onClick={() => setSelectedPhoto(null)}
-            className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-full transition-colors cursor-pointer"
-            aria-label="Close Lightbox"
-          >
-            <X aria-hidden="true" size={18} />
-          </button>
-          <div className="max-w-4xl max-h-[85vh] flex flex-col gap-3">
-            <img
-              src={selectedPhoto.url}
-              alt="Enlarged gallery item"
-              className="max-h-[80vh] w-auto object-contain rounded-lg border border-white/5 shadow-2xl"
-            />
-            <div className="flex justify-between items-center text-[9px] font-mono text-marble/55 uppercase">
-              <span>{selectedPhoto.filename}</span>
-              <span>
-                By {selectedPhoto.uploadedBy} ● {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog.Root open={selectedPhoto !== null} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[120] bg-black/95" />
+          {selectedPhoto && (
+            <Dialog.Content aria-describedby={undefined} className="fixed left-1/2 top-1/2 z-[121] flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-lg border border-white/10 bg-black p-4 shadow-2xl focus:outline-none">
+              <Dialog.Title className="sr-only">Event photo: {selectedPhoto.filename}</Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/70 p-2 text-white transition-colors hover:bg-black focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  aria-label="Close lightbox"
+                >
+                  <X aria-hidden="true" size={18} />
+                </button>
+              </Dialog.Close>
+              <img
+                src={selectedPhoto.mediumUrl ?? selectedPhoto.url}
+                alt={selectedPhoto.filename}
+                className="max-h-[75vh] w-full object-contain rounded-lg"
+              />
+              <div className="flex flex-wrap justify-between gap-2 text-[9px] font-mono text-marble/65 uppercase">
+                <span>{selectedPhoto.filename}</span>
+                <span>
+                  By {selectedPhoto.uploadedBy} ● {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </Dialog.Content>
+          )}
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Google Photo Picker Modal overlay */}
       <PhotoPickerModal

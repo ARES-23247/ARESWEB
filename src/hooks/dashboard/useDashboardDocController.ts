@@ -80,7 +80,7 @@ export function useDashboardDocController(
         }
       }
     }
-  }, [editSlugQuery, docs, editorOnly, prefilledAction, prefilledSlug]);
+  }, [editSlugQuery, docs, editorOnly, isEditorOpen, prefilledAction, prefilledSlug]);
 
   const handleOpenEdit = (docItem: DocRecord) => {
     setSelectedDoc(docItem);

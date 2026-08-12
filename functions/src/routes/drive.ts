@@ -6,6 +6,7 @@ import { ensureAdmin } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { distributedQuota } from "../middleware/distributedQuota";
 
 const router = express.Router();
 
@@ -214,6 +215,7 @@ router.post(
 router.post(
   "/sync",
   ensureAdmin,
+  distributedQuota({ scope: "drive-sync", limit: 10, windowMs: 60 * 60 * 1000 }),
   asyncHandler(async (req, res) => {
     let targetFolderId = req.body?.folderId;
 

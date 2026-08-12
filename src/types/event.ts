@@ -5,6 +5,10 @@ export interface TeamEvent {
   dateEnd?: string;   // ISO datetime
   locationId?: string;
   location?: string;
+  publicVenue?: {
+    name: string;
+    address: string;
+  };
   description?: string;
   category: "internal" | "outreach";
   coverImage?: string;

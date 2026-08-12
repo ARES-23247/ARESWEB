@@ -21,7 +21,7 @@ export interface UserAuth {
   subteams: string[];
   memberType: string;
   profileExists: boolean;
-  zulipAccount: any | null;
+  zulipAccount: { full_name?: string } | null;
   isDeleted?: boolean;
 }
 

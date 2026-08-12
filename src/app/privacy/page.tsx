@@ -58,7 +58,7 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><i>FIRST</i>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
+              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red-light transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><i>FIRST</i>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
               <li>We <strong>never</strong> collect personal information from general web portal visitors.</li>
@@ -95,7 +95,7 @@ export default function PrivacyPage() {
 
         <div className="mt-16 text-center text-marble text-sm">
           <p>This privacy policy is actively maintained by ARES 23247.</p>
-          <p>For inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} robotics team`} className="text-marble hover:text-ares-red transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
+          <p>For inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} robotics team`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
         </div>
       </div>
     </motion.div>

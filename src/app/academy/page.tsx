@@ -538,7 +538,7 @@ export default function AcademyPage() {
                                 />{" "}
                                 Previous
                               </span>
-                              <span className="text-white font-bold group-hover:text-ares-red transition-colors">
+                              <span className="text-white font-bold group-hover:text-ares-red-light transition-colors">
                                 {prevDoc.title}
                               </span>
                             </Link>

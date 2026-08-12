@@ -38,6 +38,7 @@ export default function LocationManagerModal({
   const [locFormAddress, setLocFormAddress] = useState("");
   const [locFormDescription, setLocFormDescription] = useState("");
   const [locFormGmapsUrl, setLocFormGmapsUrl] = useState("");
+  const [locFormIsAddressPublic, setLocFormIsAddressPublic] = useState(false);
   const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
   const [operationStatus, setOperationStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,6 +49,7 @@ export default function LocationManagerModal({
     setLocFormAddress("");
     setLocFormDescription("");
     setLocFormGmapsUrl("");
+    setLocFormIsAddressPublic(false);
   };
 
   // Action: Save Location (Create or Update)
@@ -60,7 +62,8 @@ export default function LocationManagerModal({
       name: locFormName.trim(),
       address: locFormAddress.trim(),
       description: locFormDescription.trim() || undefined,
-      gmapsUrl: locFormGmapsUrl.trim() || undefined
+      gmapsUrl: locFormGmapsUrl.trim() || undefined,
+      isAddressPublic: locFormIsAddressPublic ? 1 as const : 0 as const,
     };
 
     try {
@@ -172,6 +175,11 @@ export default function LocationManagerModal({
                                 Archived
                               </span>
                             )}
+                            {loc.isDeleted !== 1 && loc.isAddressPublic === 1 && (
+                              <span className="bg-ares-gold/15 text-ares-gold text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-gold/30 uppercase shrink-0">
+                                Public address
+                              </span>
+                            )}
                           </p>
                           <p className="text-[10px] text-marble/60 font-medium truncate">{loc.address}</p>
                           {loc.description && (
@@ -188,6 +196,7 @@ export default function LocationManagerModal({
                               setLocFormAddress(loc.address);
                               setLocFormDescription(loc.description || "");
                               setLocFormGmapsUrl(loc.gmapsUrl || "");
+                              setLocFormIsAddressPublic(loc.isAddressPublic === 1);
                             }}
                             className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded border border-white/10 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
                             title="Edit Venue"
@@ -304,6 +313,24 @@ export default function LocationManagerModal({
                       onChange={(e) => setLocFormGmapsUrl(e.target.value)}
                       className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-cyan"
                     />
+                  </div>
+
+                  <div className="rounded border border-ares-gold/25 bg-ares-gold/5 p-3">
+                    <label htmlFor="loc-address-public" className="flex cursor-pointer items-start gap-3 text-xs text-white">
+                      <input
+                        id="loc-address-public"
+                        type="checkbox"
+                        checked={locFormIsAddressPublic}
+                        onChange={(event) => setLocFormIsAddressPublic(event.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      />
+                      <span>
+                        <span className="block font-bold">Publish this address</span>
+                        <span className="mt-1 block text-[10px] leading-relaxed text-marble/65">
+                          Allow the full venue name and address to appear on public event pages and in search metadata. Leave this off for homes, schools, or private team locations.
+                        </span>
+                      </span>
+                    </label>
                   </div>
                 </div>
 

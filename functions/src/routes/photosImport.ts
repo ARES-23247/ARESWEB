@@ -3,23 +3,29 @@ import admin, { adminDb, adminStorage } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
 import { ensureAdmin } from "../middleware/auth";
+import { distributedQuota } from "../middleware/distributedQuota";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import {
+  deleteStoredPhotoAssets,
+  generatePhotoDerivatives,
+  storePhotoAssets,
+  type StoredPhotoAssets,
+} from "../lib/photoDerivatives";
 
 const router = express.Router();
 
-async function updateAlbumMediaCount(albumId: string, delta: number) {
-  if (!albumId) return;
-  const albumRef = adminDb.collection("albums").doc(albumId);
-  await albumRef.update({
-    mediaCount: admin.firestore.FieldValue.increment(delta),
-    updatedAt: new Date().toISOString()
-  });
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 // POST /api/photos/import
-router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
+router.post(
+  "/import",
+  ensureAdmin,
+  distributedQuota({ scope: "photo-import", limit: 4, windowMs: 60 * 60 * 1000 }),
+  asyncHandler(async (req, res) => {
   const { items, albumId, albumName } = req.body as {
     items: Array<{
       id: string;
@@ -64,6 +70,8 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
 
   let successCount = 0;
   let failedCount = 0;
+  let createdCount = 0;
+  const storedAssetSets: StoredPhotoAssets[] = [];
 
   // EFF-F01 Batch Optimization: Read all existing photos in a single batch read
   const itemIds = items.map((item) => {
@@ -101,6 +109,7 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
         }
         const mimeType = "image/jpeg";
 
+        let storedForItem: StoredPhotoAssets | null = null;
         try {
           const docSnap = docMap.get(item.id);
 
@@ -128,13 +137,14 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
               throw new Error("Invalid photo base URL domain");
             }
             safeBaseUrl = `https://${parsedUrl.hostname}${parsedUrl.pathname}`;
-          } catch (err: any) {
-            throw new Error(`Invalid photo base URL format: ${err.message}`);
+          } catch (err: unknown) {
+            throw new Error(`Invalid photo base URL format: ${errorMessage(err, "invalid URL")}`);
           }
 
           const downloadUrl = `${safeBaseUrl}=w2048-h2048`;
           const downloadRes = await fetch(downloadUrl, {
             headers: { Authorization: `Bearer ${googleToken}` },
+            signal: AbortSignal.timeout(20_000),
           });
 
           if (!downloadRes.ok) {
@@ -148,30 +158,33 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
           if (!validation.valid) {
             throw new Error(validation.error ?? "File did not pass magic bytes verification");
           }
+          if (validation.format !== "jpg") {
+            throw new Error("Google Photos returned content that did not match its declared JPEG type");
+          }
 
           const fileKey = `${baseFolder}/${item.id}-${filename}`;
-          const storageFile = bucket.file(fileKey);
-
-          await storageFile.save(Buffer.from(buffer), {
-            metadata: {
-              contentType: mimeType,
+          const imageBuffer = Buffer.from(buffer);
+          const derivatives = await generatePhotoDerivatives(imageBuffer);
+          storedForItem = await storePhotoAssets(
+            bucket,
+            {
+              path: fileKey,
+              mimeType,
               metadata: {
                 googleMediaItemId: item.id,
                 importedBy: "ARES Team Picker",
               },
             },
-            resumable: false,
-          });
-
-          const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileKey)}?alt=media`;
+            `gallery/derivatives/${sanitizedAlbum}/${dateStr}/${item.id}`,
+            derivatives,
+          );
 
           const photoMeta = {
             id: item.id,
-            storagePath: fileKey,
-            publicUrl,
+            ...storedForItem,
             originalFilename: filename,
             mimeType,
-            fileSize: buffer.byteLength,
+            fileSize: derivatives.original.fileSize,
             importedAt: new Date().toISOString(),
             albumId: albumId || null,
             isDeleted: 0,
@@ -197,13 +210,16 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
           });
 
           successCount++;
-        } catch (err: any) {
+          createdCount++;
+          storedAssetSets.push(storedForItem);
+        } catch (err: unknown) {
+          if (storedForItem) await deleteStoredPhotoAssets(bucket, storedForItem);
           logger.error("photos", "A Google Photos import item failed", err);
           results.push({
             mediaItemId: item.id,
             status: "failed",
             filename,
-            error: err.message || "Unknown import error",
+            error: errorMessage(err, "Unknown import error"),
           });
           failedCount++;
         }
@@ -211,22 +227,27 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
     );
   }
 
-  // Commit all Firestore writes in chunks of max 400 operations to prevent 500 limit crash
+  // The request is bounded to 100 items, so even with album mirrors this is at
+  // most 200 document writes plus one album update—well below Firestore's 500
+  // operation limit. Keep them atomic with the album count.
   if (batchOperations.length > 0) {
-    const batchSize = 400;
-    for (let i = 0; i < batchOperations.length; i += batchSize) {
+    try {
       const batch = adminDb.batch();
-      const slice = batchOperations.slice(i, i + batchSize);
-      for (const op of slice) {
+      for (const op of batchOperations) {
         batch.set(op.ref, op.data);
       }
+      if (albumId && createdCount > 0) {
+        batch.update(adminDb.collection("albums").doc(albumId), {
+          mediaCount: admin.firestore.FieldValue.increment(createdCount),
+          updatedAt: new Date().toISOString(),
+        });
+      }
       await batch.commit();
+    } catch (error) {
+      await Promise.all(storedAssetSets.map((assets) => deleteStoredPhotoAssets(bucket, assets)));
+      throw error;
     }
-    logger.info("photos", `Batch committed ${successCount} entries successfully`);
-  }
-
-  if (albumId && successCount > 0) {
-    await updateAlbumMediaCount(albumId, successCount);
+    logger.info("photos", `Batch committed ${createdCount} new entries successfully`);
   }
 
   res.json({
@@ -234,6 +255,7 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
     failed: failedCount,
     results,
   });
-}));
+  }),
+);
 
 export default router;

@@ -108,9 +108,6 @@ Line two`} />);
     // Focus in the middle of Line two (index 14)
     textarea.focus();
     textarea.setSelectionRange(14, 14);
-    console.log("TEST DEBUG: value =", JSON.stringify(textarea.value));
-    console.log("TEST DEBUG: selectionStart =", textarea.selectionStart);
-
     // Click heading button
     const headingButton = screen.getByLabelText("Insert Heading 3");
     fireEvent.click(headingButton);
@@ -121,14 +118,12 @@ Line two`} />);
   });
 
   it("switches to preview mode and displays rendered markdown", async () => {
-    const { container } = render(<TestWrapper initialValue={`### Welcome to ARES
+    render(<TestWrapper initialValue={`### Welcome to ARES
 This is **bold** text`} />);
     
     // Switch to preview mode
     const previewButton = screen.getByText("Preview");
     fireEvent.click(previewButton);
-
-    console.log("TEST DEBUG: Rendered DOM =", container.innerHTML);
 
     // Textarea should no longer be visible
     expect(screen.queryByPlaceholderText("Type here...")).not.toBeInTheDocument();

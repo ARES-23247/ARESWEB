@@ -1,15 +1,45 @@
 import React from "react";
 import { ToggleLeft, ToggleRight } from "lucide-react";
 
+interface AvataaarsState {
+  top: string;
+  eyes: string;
+  eyebrows: string;
+  mouth: string;
+  hairColor: string;
+  clothing: string;
+  clothesColor: string;
+  skinColor: string;
+  facialHair: string;
+  facialHairColor: string;
+  accessories: string;
+  accessoriesColor: string;
+  showFacialHair: boolean;
+  showAccessories: boolean;
+}
+
+interface BotttsState {
+  face: string;
+  eyes: string;
+  mouth: string;
+  top: string;
+  sides: string;
+  texture: string;
+  baseColor: string;
+}
+
+type AvataaarsOptions = Record<Exclude<keyof AvataaarsState, "showFacialHair" | "showAccessories">, string[]>;
+type BotttsOptions = Record<keyof BotttsState, string[]>;
+
 interface AvatarPresetsGridProps {
   styleMode: "bottts" | "avataaars";
   setStyleMode: (val: "bottts" | "avataaars") => void;
-  avaState: any;
-  setAvaState: (val: any) => void;
-  botState: any;
-  setBotState: (val: any) => void;
-  AVATAAARS_OPTIONS: any;
-  BOTTTS_OPTIONS: any;
+  avaState: AvataaarsState;
+  setAvaState: React.Dispatch<React.SetStateAction<AvataaarsState>>;
+  botState: BotttsState;
+  setBotState: React.Dispatch<React.SetStateAction<BotttsState>>;
+  AVATAAARS_OPTIONS: AvataaarsOptions;
+  BOTTTS_OPTIONS: BotttsOptions;
 }
 
 export default function AvatarPresetsGrid({

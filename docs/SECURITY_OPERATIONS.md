@@ -114,6 +114,14 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 7. The Robots page loads through `/api/robots` without an index error.
 8. The Video Hub loads through `/api/videos/public` without an index error.
 
+## Photo derivative operations
+
+New image ingestion generates bounded WebP thumbnail and medium variants. The
+legacy-media backfill is deliberately separate from deployment and defaults to
+read-only inspection. Follow
+[`MEDIA_DERIVATIVE_BACKFILL.md`](./MEDIA_DERIVATIVE_BACKFILL.md); never add its
+apply command to CI, Hosting deployment, or Functions startup.
+
 ## GitHub Actions deployment controls
 
 - Pull-request jobs must not receive Firebase or Google Cloud credentials.

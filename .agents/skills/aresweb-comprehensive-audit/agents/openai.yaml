@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARESWEB Audit"
+  short_description: "Audit the complete ARESWEB repository"
+  default_prompt: "Use $aresweb-comprehensive-audit to audit this ARESWEB codebase."

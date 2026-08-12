@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { storage } from "@/lib/firebaseStorage";
@@ -69,7 +69,7 @@ export default function SponsorsManagerPage() {
   const [logoUrl, setLogoUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const fetchSponsors = async () => {
+  const fetchSponsors = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     setError("");
@@ -88,11 +88,11 @@ export default function SponsorsManagerPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    fetchSponsors();
-  }, [user]);
+    void fetchSponsors();
+  }, [fetchSponsors]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

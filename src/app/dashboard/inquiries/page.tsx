@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -26,10 +26,24 @@ interface Inquiry {
   name: string;
   email: string;
   status: "pending" | "approved" | "resolved" | "rejected";
-  metadata: any;
+  metadata: {
+    phone?: string;
+    school?: string;
+    grade?: string;
+    occupation?: string;
+    interests?: string[];
+    additional?: string;
+  };
   createdAt: string;
   isDeleted: boolean;
   archivedAt?: string | null;
+}
+
+interface InquiryPageResponse {
+  error?: string;
+  inquiries?: Inquiry[];
+  nextCursor?: string | null;
+  hasMore?: boolean;
 }
 
 export default function InquiriesPage() {
@@ -51,7 +65,7 @@ export default function InquiriesPage() {
   const userRole = authorizedUser?.role || "Pending Verification";
   const isAdmin = userRole === "admin" || userRole === "coach";
 
-  const fetchInquiries = async (cursor?: string) => {
+  const fetchInquiries = useCallback(async (cursor?: string) => {
     if (!user || !isAdmin) return;
     const append = Boolean(cursor);
     if (append) setIsLoadingMore(true);
@@ -62,7 +76,7 @@ export default function InquiriesPage() {
         ? `/api/inquiries?limit=50&cursor=${encodeURIComponent(cursor)}`
         : "/api/inquiries?limit=50";
       const res = await authenticatedFetch(url);
-      const data = await res.json();
+      const data = await res.json() as InquiryPageResponse;
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${data.error || res.statusText}`);
       }
@@ -76,18 +90,18 @@ export default function InquiriesPage() {
       const cursorValue = typeof data.nextCursor === "string" && data.nextCursor ? data.nextCursor : null;
       setNextCursor(cursorValue);
       setHasMore(data.hasMore === true && cursorValue !== null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to load inquiries.");
+      setError(err instanceof Error ? err.message : "Failed to load inquiries.");
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  };
+  }, [isAdmin, user]);
 
   useEffect(() => {
-    fetchInquiries();
-  }, [user]);
+    void fetchInquiries();
+  }, [fetchInquiries]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     if (!user) return;
@@ -107,7 +121,7 @@ export default function InquiriesPage() {
       }
       // Update local state
       setInquiries((prev) =>
-        prev.map((inq) => (inq.id === id ? { ...inq, status: newStatus as any } : inq))
+        prev.map((inq) => (inq.id === id ? { ...inq, status: newStatus as Inquiry["status"] } : inq))
       );
       setSuccess("Inquiry status updated.");
     } catch (err: unknown) {
@@ -228,7 +242,7 @@ export default function InquiriesPage() {
         </div>
         <h1 className="text-3xl font-black uppercase tracking-wider text-white mb-2 font-heading">Access Denied</h1>
         <p className="text-marble/60 text-sm max-w-md">
-          You do not have the required credentials to access the ARES Inquiries console. Please contact Coach David if you need your permissions elevated.
+          You do not have the required credentials to access the ARES Inquiries console. Please contact a team administrator if you need your permissions elevated.
         </p>
       </div>
     );
@@ -413,7 +427,7 @@ export default function InquiriesPage() {
                   <button
                     onClick={() => setPendingAction({ kind: "archive", inquiry: inq })}
                     aria-label={`Archive inquiry from ${inq.name}`}
-                    className="flex items-center justify-center p-2.5 bg-white/5 hover:bg-ares-red/25 border border-white/10 hover:border-ares-red/30 text-marble/60 hover:text-ares-red ares-cut-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    className="flex items-center justify-center p-2.5 bg-white/5 hover:bg-ares-red/25 border border-white/10 hover:border-ares-red/30 text-marble/60 hover:text-ares-red-light ares-cut-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                   >
                     <Trash2 aria-hidden="true" size={14} />
                   </button>

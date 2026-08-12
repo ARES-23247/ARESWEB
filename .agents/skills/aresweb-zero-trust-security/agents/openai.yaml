@@ -1,0 +1,4 @@
+interface:
+  display_name: "ARESWEB Security"
+  short_description: "Harden ARESWEB trust and privacy boundaries"
+  default_prompt: "Use $aresweb-zero-trust-security to secure this ARESWEB change."

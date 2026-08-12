@@ -6,6 +6,7 @@ import type { Tournament } from "@/types/tournament";
 
 export interface TournamentPhoto {
   src: string;
+  previewSrc?: string;
   caption: string;
 }
 
@@ -107,7 +108,7 @@ export function TournamentPhotosSection({ hasAlbum, photos, isError, error, onRe
             {photos.map((photo, index) => (
               <button type="button" key={`${photo.src}-${index}`} onClick={() => onOpenPhoto(photo)} aria-label={`Open photo: ${photo.caption}`} className="group cursor-pointer aspect-video relative overflow-hidden border border-white/10 rounded-xl bg-black/60 focus-visible:ring-2 focus-visible:ring-ares-cyan">
                 <img
-                  src={photo.src}
+                  src={photo.previewSrc ?? photo.src}
                   alt={photo.caption}
                   loading="lazy"
                   decoding="async"

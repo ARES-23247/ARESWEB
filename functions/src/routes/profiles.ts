@@ -300,8 +300,11 @@ router.post("/sync", validate(profileSyncSchema), asyncHandler(async (req, res) 
       const authUser = await adminAuth.getUserByEmail(cleanEmail);
       targetUid = authUser.uid;
       logger.info("profiles", "Found Firebase Auth user; routing the profile sync to the verified account");
-    } catch (err: any) {
-      if (err.code === "auth/user-not-found") {
+    } catch (err: unknown) {
+      const errorCode = typeof err === "object" && err !== null && "code" in err
+        ? String(err.code)
+        : "";
+      if (errorCode === "auth/user-not-found") {
         logger.info("profiles", "No Firebase Auth user found; retaining the legacy profile target");
       } else {
         logger.error("profiles", "Firebase Auth lookup failed during profile sync", err);
@@ -414,7 +417,7 @@ router.post("/session", ensureAuth, asyncHandler(async (req: AuthenticatedReques
     }
 
     if (normRole !== rawRole || memberType !== data.memberType) {
-      const updates: any = { role: normRole };
+      const updates: { role: string; memberType?: string } = { role: normRole };
       if (memberType) updates.memberType = memberType;
       await userRef.set(updates, { merge: true });
       data.role = normRole;
@@ -471,7 +474,7 @@ router.post("/session", ensureAuth, asyncHandler(async (req: AuthenticatedReques
     const bootstrapData = {
       email: cleanEmail,
       role: "admin",
-      name: "Coach David"
+      name: "Bootstrap Administrator"
     };
     await userRef.set(bootstrapData);
     res.json({ authorizedUser: bootstrapData });

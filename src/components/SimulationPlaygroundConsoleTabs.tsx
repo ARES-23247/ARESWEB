@@ -2,6 +2,7 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { SimConsole, LogEntry, TestResult } from "./editor/SimConsole";
 import { AiChatPanel } from "./simulation/AiChatPanel";
+import type { ChatMessage } from "../utils/ai";
 
 interface SimulationPlaygroundConsoleTabsProps {
   bottomRightTab: 'console' | 'ai';
@@ -11,7 +12,7 @@ interface SimulationPlaygroundConsoleTabsProps {
   testResults: TestResult[];
   setTestResults: React.Dispatch<React.SetStateAction<TestResult[]>>;
   handleFixWithAI: (error: string) => void;
-  chatMessages: any[];
+  chatMessages: ChatMessage[];
   isChatLoading: boolean;
   chatInput: string;
   setChatInput: (input: string) => void;

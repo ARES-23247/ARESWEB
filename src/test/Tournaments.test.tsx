@@ -17,6 +17,7 @@ import {
   setTournamentMatchCompletion,
   TournamentApiError,
 } from "../lib/tournamentApi";
+import type { User } from "firebase/auth";
 
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => {
@@ -67,6 +68,22 @@ const createTestQueryClient = () => new QueryClient({
   },
 });
 
+interface AuthTestValue {
+  user: { uid: string; email?: string | null } | null;
+  authorizedUser: { email: string; role: string } | null;
+  loading: boolean;
+}
+
+function mockAuth(value: AuthTestValue) {
+  vi.mocked(useAuth).mockReturnValue({
+    ...value,
+    user: value.user as unknown as User | null,
+    loginWithGoogle: vi.fn(),
+    logout: vi.fn(),
+    loginWithMockUser: vi.fn(),
+  });
+}
+
 const renderWithProviders = (
   ui: React.ReactElement,
   queryClient = createTestQueryClient(),
@@ -109,7 +126,7 @@ describe("Tournaments Module Lucide Check", () => {
     ];
     
     requiredIcons.forEach(iconName => {
-      const Icon = (LucideIcons as any)[iconName];
+      const Icon = LucideIcons[iconName as keyof typeof LucideIcons];
       expect(Icon).toBeDefined();
       expect(typeof Icon).not.toBe("undefined");
     });
@@ -122,7 +139,7 @@ describe("TournamentsFeedPage", () => {
   });
 
   it("renders locking administrative gate if user is not authorized", async () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: null,
       authorizedUser: null,
       loading: false,
@@ -137,7 +154,7 @@ describe("TournamentsFeedPage", () => {
   });
 
   it("renders tournaments dashboard list if user is authorized", async () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: { uid: "test-uid", email: "test@example.com" },
       authorizedUser: { email: "test@example.com", role: "student" },
       loading: false,
@@ -166,7 +183,7 @@ describe("TournamentsFeedPage", () => {
   });
 
   it("distinguishes an empty vault from filters with no matches", () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: { uid: "test-uid", email: "test@example.com" },
       authorizedUser: { email: "test@example.com", role: "student" },
       loading: false,
@@ -192,7 +209,7 @@ describe("TournamentsFeedPage", () => {
   });
 
   it("keeps the last confirmed tournament list visible when refresh fails", async () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: { uid: "test-uid", email: "test@example.com" },
       authorizedUser: { email: "test@example.com", role: "student" },
       loading: false,
@@ -225,7 +242,7 @@ describe("TournamentDetailPage", () => {
   });
 
   it("renders detail page layout and stats", async () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: { uid: "test-uid", email: "test@example.com" },
       authorizedUser: { email: "test@example.com", role: "student" },
       loading: false,
@@ -279,7 +296,7 @@ describe("TournamentDetailPage", () => {
   });
 
   it("fails closed on a stale match and refreshes without recreating it", async () => {
-    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockAuth({
       user: { uid: "admin-uid", email: "admin@example.com" },
       authorizedUser: { email: "admin@example.com", role: "admin" },
       loading: false,
@@ -319,7 +336,7 @@ describe("TournamentDetailPage", () => {
   });
 
   it("opens and closes a tournament photo in the accessible lightbox", async () => {
-    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockAuth({
       user: { uid: "student-uid", email: "student@example.com" },
       authorizedUser: { email: "student@example.com", role: "student" },
       loading: false,
@@ -360,7 +377,7 @@ describe("TournamentsManager", () => {
   });
 
   it("prevents access for unprivileged student role", async () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: { uid: "test-uid", email: "test@example.com" },
       authorizedUser: { email: "test@example.com", role: "student" },
       loading: false,
@@ -374,7 +391,7 @@ describe("TournamentsManager", () => {
   });
 
   it("does not give mentors tournament write controls", async () => {
-    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockAuth({
       user: { uid: "mentor-uid", email: "mentor@example.com" },
       authorizedUser: { email: "mentor@example.com", role: "mentor" },
       loading: false,
@@ -387,7 +404,7 @@ describe("TournamentsManager", () => {
   });
 
   it("renders manager control panel and lists tournaments for admins", async () => {
-    (useAuth as any).mockReturnValue({
+    mockAuth({
       user: { uid: "test-uid", email: "test@example.com" },
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
@@ -419,7 +436,7 @@ describe("TournamentsManager", () => {
   });
 
   it("creates a tournament through the decomposed manager form", async () => {
-    (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+    mockAuth({
       user: { uid: "admin-uid", email: "admin@example.com" },
       authorizedUser: { email: "admin@example.com", role: "admin" },
       loading: false,

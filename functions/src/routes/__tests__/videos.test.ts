@@ -53,6 +53,15 @@ describe("videos routes", () => {
     expect(videosRouter.stack[0].handle).toBe(videosLimiter);
   });
 
+  it("authorizes and applies the shared quota before YouTube sync", () => {
+    const layer = videosRouter.stack.find((entry) => entry.route?.path === "/sync");
+    expect(layer?.route?.stack.map((entry) => entry.name)).toEqual([
+      "ensureAdmin",
+      "enforceDistributedQuota",
+      expect.any(String),
+    ]);
+  });
+
   it("returns a bounded public DTO without sync metadata", async () => {
     queryGet.mockResolvedValue({ docs: [{ id: "video_abcdefghijk", data: () => ({ title: "Robot reveal", videoId: "abcdefghijk", thumbnailUrl: "https://img.youtube.com/vi/abcdefghijk/0.jpg", status: "published", isDeleted: 0, syncSource: "private" }) }] });
     await handler("/public", "get")({ query: {} }, res, next);

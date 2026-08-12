@@ -9,7 +9,6 @@
  */
 export const sanitizeUserInput = (input: string, maxLength: number = 5000): string => {
   // Remove control characters except newlines and tabs
-  // eslint-disable-next-line no-control-regex
   let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
   // Limit length to prevent DoS
   if (sanitized.length > maxLength) {
@@ -28,13 +27,11 @@ export const sanitizeFilesForAI = (files: Record<string, string>): Record<string
 
   for (const [filename, content] of Object.entries(files)) {
     // Validate filename is safe (allow subfolders)
-    // eslint-disable-next-line no-useless-escape
     if (!/^(?!.*?\.\.)[a-zA-Z0-9_\-\.\/]+\.(tsx?|jsx?|json)$/.test(filename)) {
       continue; // Skip files with suspicious names
     }
 
     // Sanitize content
-    // eslint-disable-next-line no-control-regex
     let sanitizedContent = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     if (sanitizedContent.length > MAX_FILE_SIZE) {
       sanitizedContent = sanitizedContent.slice(0, MAX_FILE_SIZE) + '\n// ... (truncated for AI context)';

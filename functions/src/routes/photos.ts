@@ -8,6 +8,7 @@ import albumsRouter from "./albums";
 import photosImportRouter from "./photosImport";
 import photosUploadRouter from "./photosUpload";
 import rateLimit from "express-rate-limit";
+import { photoDerivativeDtoFields } from "../lib/photoDerivatives";
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.use(rateLimit({
   legacyHeaders: false,
 }));
 
-interface PhotoRecord {
+interface PhotoRecord extends Record<string, unknown> {
   publicUrl?: unknown;
   originalFilename?: unknown;
   mimeType?: unknown;
@@ -80,6 +81,7 @@ function photoDto(id: string, data: PhotoRecord) {
     isSynced: typeof data.googleMediaItemId === "string" && data.googleMediaItemId.length > 0,
     isArchived: data.isDeleted === 1,
     archivedAt: typeof data.archivedAt === "string" ? data.archivedAt : undefined,
+    ...photoDerivativeDtoFields(data),
   };
 }
 
@@ -160,6 +162,7 @@ router.get("/public", asyncHandler(async (req, res) => {
       capturedAt: typeof data.capturedAt === "string" ? data.capturedAt : undefined,
       location: text(data.location, 120) || undefined,
       description: text(data.description, 1_000) || undefined,
+      ...photoDerivativeDtoFields(data),
     };
   }).filter((photo) => photo.publicUrl);
   res.json({

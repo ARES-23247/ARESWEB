@@ -170,7 +170,7 @@ export default function SimComponent() {
   // Initialize opponent ships
   useEffect(() => {
     const ships = generateRandomShips();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setOpponentShips(ships);
     setOpponentGrid(buildGridFromShips(ships));
   }, []);
