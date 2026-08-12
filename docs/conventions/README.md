@@ -36,8 +36,11 @@ patterns; historical audit and migration documents are not architecture guides.
 
 The six skills under `.agents/skills/` intentionally map to distinct live
 boundaries: API work, AST migration, CI/delivery, comprehensive auditing,
-accessibility, and zero-trust security. Read only the skill relevant to the
-change; do not load every skill as generic project context.
+accessibility, and zero-trust security. This is the single canonical tree used
+by Codex, Gemini CLI, and Google Antigravity. `GEMINI.md` and the Antigravity
+workspace rule import `AGENTS.md`; they do not copy the skill bodies. Read only
+the skill relevant to the change rather than loading every skill as generic
+project context. Run `pnpm run validate:agents` after changing this inventory.
 
 ## Verification
 

@@ -49,6 +49,9 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm run lint
 
+      - name: Validate shared agent skills
+        run: pnpm run validate:agents
+
       - name: Run Cloud Functions ESLint
         run: pnpm --filter functions lint
 

@@ -22,7 +22,7 @@ The platform uses a modern serverless architecture tailored for hosting and scal
 
 ```
 ARESWEB/
-├── .agents/            # Agent custom instructions, brand tokens, and audit skills
+├── .agents/            # Shared Codex, Gemini, and Antigravity skills and rules
 ├── docs/               # Development conventions and migration guides
 ├── functions/          # Backend Cloud Functions
 │   ├── src/
