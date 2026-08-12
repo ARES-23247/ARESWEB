@@ -9,6 +9,7 @@ import { ApiError } from "../middleware/errorHandler";
 const router = express.Router();
 const PICKER_API_BASE = "https://photospicker.googleapis.com/v1";
 const MAX_PICKER_PAGES = 10;
+const MAX_MEDIA_BYTES = 15 * 1024 * 1024;
 
 router.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -57,6 +58,13 @@ function requireSessionId(value: string, invalidStatus = 400): string {
   return value;
 }
 
+function requireMediaItemId(value: string): string {
+  if (!/^[A-Za-z0-9_-]{1,300}$/.test(value)) {
+    throw new ApiError(400, "Invalid picker media item ID.");
+  }
+  return value;
+}
+
 function safePickerUri(value: unknown): string {
   if (typeof value !== "string") throw new ApiError(502, "Google Photos did not return a picker link.");
   let url: URL;
@@ -74,9 +82,23 @@ function safePickerUri(value: unknown): string {
 function safePickerItem(item: PickerMediaItem): PickerMediaItem | null {
   const id = typeof item.id === "string" && /^[A-Za-z0-9_-]{1,300}$/.test(item.id) ? item.id : undefined;
   const source = item.mediaFile ?? item;
-  const baseUrl = typeof source.baseUrl === "string" && source.baseUrl.startsWith("https://lh3.googleusercontent.com/")
-    ? source.baseUrl
-    : undefined;
+  let baseUrl: string | undefined;
+  if (typeof source.baseUrl === "string") {
+    try {
+      const candidate = new URL(source.baseUrl);
+      if (
+        candidate.protocol === "https:"
+        && candidate.hostname === "lh3.googleusercontent.com"
+        && !candidate.port
+        && !candidate.username
+        && !candidate.password
+      ) {
+        baseUrl = candidate.toString();
+      }
+    } catch {
+      baseUrl = undefined;
+    }
+  }
   if (!id || !baseUrl) return null;
 
   const filename = typeof source.filename === "string" ? source.filename.slice(0, 180) : undefined;
@@ -105,6 +127,28 @@ async function pickerFetch(path: string, init?: RequestInit): Promise<globalThis
     throw new ApiError(502, `Google Photos Picker returned HTTP ${response.status}.`);
   }
   return response;
+}
+
+async function fetchPickerMediaItems(sessionId: string): Promise<PickerMediaItem[]> {
+  const mediaItems: PickerMediaItem[] = [];
+  let nextPageToken: string | undefined;
+  let page = 0;
+
+  do {
+    const query = new URLSearchParams({ sessionId, pageSize: "100" });
+    if (nextPageToken) query.set("pageToken", nextPageToken);
+    const response = await pickerFetch(`/mediaItems?${query.toString()}`);
+    const data = await response.json() as PickerItemsResponse;
+    for (const item of Array.isArray(data.mediaItems) ? data.mediaItems : []) {
+      const safe = safePickerItem(item);
+      if (safe) mediaItems.push(safe);
+    }
+    nextPageToken = data.nextPageToken;
+    page += 1;
+  } while (nextPageToken && page < MAX_PICKER_PAGES);
+
+  if (nextPageToken) throw new ApiError(422, "The picker selection exceeds the 1,000-photo import limit.");
+  return mediaItems;
 }
 
 // The team account is authorized out-of-band and stored in Secret Manager.
@@ -145,23 +189,19 @@ router.get("/auth", asyncHandler(async (_req, res) => {
 }));
 
 router.get("/picker/media-proxy", ensureAdmin, asyncHandler(async (req, res) => {
-  const rawUrl = typeof req.query.url === "string" ? req.query.url : "";
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(rawUrl);
-  } catch {
-    throw new ApiError(400, "A valid Google Photos media URL is required.");
-  }
-  if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== "lh3.googleusercontent.com") {
-    throw new ApiError(400, "The media URL host is not allowed.");
-  }
-  if (parsedUrl.pathname.includes("..") || parsedUrl.pathname.includes("//")) {
-    throw new ApiError(400, "The media URL path is invalid.");
-  }
+  const sessionId = requireSessionId(typeof req.query.sessionId === "string" ? req.query.sessionId : "");
+  const itemId = requireMediaItemId(typeof req.query.itemId === "string" ? req.query.itemId : "");
+  const mediaItems = await fetchPickerMediaItems(sessionId);
+  const selected = mediaItems.find(item => item.id === itemId);
+  const baseUrl = selected?.mediaFile?.baseUrl;
+  if (!baseUrl) throw new ApiError(404, "The selected Google Photos item was not found.");
 
-  const safeUrl = `https://lh3.googleusercontent.com${parsedUrl.pathname}${parsedUrl.search}`;
   const googleToken = await getGooglePhotosAccessToken();
-  const response = await fetch(safeUrl, { headers: { Authorization: `Bearer ${googleToken}` } });
+  const response = await fetch(`${baseUrl}=w1024`, {
+    headers: { Authorization: `Bearer ${googleToken}` },
+    redirect: "error",
+    signal: AbortSignal.timeout(15_000),
+  });
   if (!response.ok) {
     logger.error("photos", "Google Photos media proxy failed", { status: response.status });
     throw new ApiError(502, `Google Photos media returned HTTP ${response.status}.`);
@@ -169,7 +209,7 @@ router.get("/picker/media-proxy", ensureAdmin, asyncHandler(async (req, res) => 
   const contentType = response.headers.get("Content-Type") || "image/jpeg";
   if (!contentType.startsWith("image/")) throw new ApiError(502, "Google Photos returned a non-image file.");
   const buffer = await response.arrayBuffer();
-  if (buffer.byteLength > 15 * 1024 * 1024) throw new ApiError(413, "The selected image is too large to preview.");
+  if (buffer.byteLength > MAX_MEDIA_BYTES) throw new ApiError(413, "The selected image is too large to preview.");
   res.setHeader("Content-Type", contentType);
   res.setHeader("Cache-Control", "private, max-age=300");
   res.send(Buffer.from(buffer));
@@ -177,24 +217,7 @@ router.get("/picker/media-proxy", ensureAdmin, asyncHandler(async (req, res) => 
 
 router.get("/picker/:sessionId/items", ensureAdmin, asyncHandler(async (req, res) => {
   const sessionId = requireSessionId(req.params.sessionId);
-  const mediaItems: PickerMediaItem[] = [];
-  let nextPageToken: string | undefined;
-  let page = 0;
-
-  do {
-    const query = new URLSearchParams({ sessionId, pageSize: "100" });
-    if (nextPageToken) query.set("pageToken", nextPageToken);
-    const response = await pickerFetch(`/mediaItems?${query.toString()}`);
-    const data = await response.json() as PickerItemsResponse;
-    for (const item of Array.isArray(data.mediaItems) ? data.mediaItems : []) {
-      const safe = safePickerItem(item);
-      if (safe) mediaItems.push(safe);
-    }
-    nextPageToken = data.nextPageToken;
-    page += 1;
-  } while (nextPageToken && page < MAX_PICKER_PAGES);
-
-  if (nextPageToken) throw new ApiError(422, "The picker selection exceeds the 1,000-photo import limit.");
+  const mediaItems = await fetchPickerMediaItems(sessionId);
   res.json({ mediaItems, count: mediaItems.length });
 }));
 

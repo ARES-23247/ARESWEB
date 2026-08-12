@@ -37,6 +37,7 @@ App Check must remain in observation mode during the 72-hour review period.
 - Firestore and Storage rules have emulator tests.
 - The Zulip webhook checks its token before parsing the full payload.
 - The webhook now validates sizes, fields, and current Zulip trigger names.
+- The Google media proxy accepts IDs, not a client-provided URL.
 - The static API reference iframe receives no sandbox capabilities.
 - CI uses Workload Identity Federation instead of a stored cloud key.
 
@@ -48,6 +49,7 @@ App Check must remain in observation mode during the 72-hour review period.
 | SEC-02 | Medium | The Zulip webhook accepted an unbounded body shape and missed `direct_message`. | Fixed |
 | SEC-03 | Medium | App Check enforcement needs 72 hours of clean production data. | Operational watch |
 | SEC-04 | Medium | The Hosting CSP still permits some inline content. | Backlog |
+| SEC-05 | Critical | The Google media proxy URL depended on client input. | Fixed |
 
 ## 2. Privacy and youth protection
 

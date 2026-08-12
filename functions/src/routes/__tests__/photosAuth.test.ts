@@ -306,26 +306,50 @@ describe("Google Photos connection routes", () => {
   });
 
   it.each([
-    ["not-a-url", "valid Google Photos media URL"],
-    ["https://evil.example/image.jpg", "host is not allowed"],
-    ["http://lh3.googleusercontent.com/image.jpg", "host is not allowed"],
-    ["https://lh3.googleusercontent.com/folder/../..//image.jpg", "path is invalid"],
-  ])("rejects unsafe media proxy URL %s", async (url, message) => {
-    await handler("/picker/media-proxy", "get")({ query: { url } }, res, next);
+    [{ sessionId: "../secret", itemId: "photo_1" }, "session"],
+    [{ sessionId: "session_1", itemId: "bad/item" }, "media item"],
+    [{ sessionId: "session_1" }, "media item"],
+  ])("rejects invalid media proxy references: %s", async (query, message) => {
+    await handler("/picker/media-proxy", "get")({ query }, res, next);
     expect(next.mock.calls[0][0]).toMatchObject({ status: 400, message: expect.stringContaining(message) });
     expect(getGooglePhotosAccessTokenMock).not.toHaveBeenCalled();
   });
 
-  it("proxies a bounded image with private caching and strips URL credentials/fragments", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(mediaResponse());
+  it("rejects a picker item when Google returns an untrusted media host", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      mediaItems: [{ id: "photo_1", mediaFile: { baseUrl: "https://evil.example/photo.jpg" } }],
+    }));
     vi.stubGlobal("fetch", fetchMock);
-    const source = "https://user:pass@lh3.googleusercontent.com/photo/path.jpg?size=large#private";
 
-    await handler("/picker/media-proxy", "get")({ query: { url: source } }, res, next);
+    await handler("/picker/media-proxy", "get")({
+      query: { sessionId: "session_1", itemId: "photo_1" },
+    }, res, next);
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://lh3.googleusercontent.com/photo/path.jpg?size=large",
-      { headers: { Authorization: "Bearer access-token" } },
+    expect(next.mock.calls[0][0]).toMatchObject({ status: 404 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.send).not.toHaveBeenCalled();
+  });
+
+  it("proxies a bounded server-approved picker image with private caching", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        mediaItems: [{ id: "photo_1", mediaFile: { baseUrl: "https://lh3.googleusercontent.com/photo/path.jpg" } }],
+      }))
+      .mockResolvedValueOnce(mediaResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await handler("/picker/media-proxy", "get")({
+      query: { sessionId: "session_1", itemId: "photo_1" },
+    }, res, next);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://lh3.googleusercontent.com/photo/path.jpg=w1024",
+      expect.objectContaining({
+        headers: { Authorization: "Bearer access-token" },
+        redirect: "error",
+        signal: expect.any(AbortSignal),
+      }),
     );
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/jpeg");
     expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "private, max-age=300");
@@ -333,9 +357,13 @@ describe("Google Photos connection routes", () => {
   });
 
   it("uses a safe image default when Google omits Content-Type", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mediaResponse({ contentType: null })));
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        mediaItems: [{ id: "photo_1", mediaFile: { baseUrl: "https://lh3.googleusercontent.com/photo.jpg" } }],
+      }))
+      .mockResolvedValueOnce(mediaResponse({ contentType: null })));
     await handler("/picker/media-proxy", "get")({
-      query: { url: "https://lh3.googleusercontent.com/photo.jpg" },
+      query: { sessionId: "session_1", itemId: "photo_1" },
     }, res, next);
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/jpeg");
   });
@@ -345,9 +373,13 @@ describe("Google Photos connection routes", () => {
     [mediaResponse({ contentType: "text/html" }), 502, "non-image"],
     [mediaResponse({ size: (15 * 1024 * 1024) + 1 }), 413, "too large"],
   ])("rejects unsafe media proxy responses", async (response, status, message) => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        mediaItems: [{ id: "photo_1", mediaFile: { baseUrl: "https://lh3.googleusercontent.com/photo.jpg" } }],
+      }))
+      .mockResolvedValueOnce(response));
     await handler("/picker/media-proxy", "get")({
-      query: { url: "https://lh3.googleusercontent.com/photo.jpg" },
+      query: { sessionId: "session_1", itemId: "photo_1" },
     }, res, next);
     expect(next.mock.calls[0][0]).toMatchObject({ status, message: expect.stringContaining(message) });
     expect(res.send).not.toHaveBeenCalled();

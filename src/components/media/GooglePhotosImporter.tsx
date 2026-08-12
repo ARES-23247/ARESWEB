@@ -100,12 +100,13 @@ export default function GooglePhotosImporter({
     setLoading(true);
     setError(null);
     try {
-      const baseUrl = item.baseUrl || item.mediaFile?.baseUrl;
       const filename = item.filename || item.mediaFile?.filename || "google-photo.jpg";
-      if (!baseUrl) throw new Error("Could not find download URL.");
+      if (!pickerSessionId || typeof item.id !== "string") {
+        throw new Error("The selected Google Photo is missing its picker reference.");
+      }
 
-      // Fetch photo through proxy
-      const proxyUrl = `/api/photos/picker/media-proxy?url=${encodeURIComponent(baseUrl + "=w1024")}`;
+      const query = new URLSearchParams({ sessionId: pickerSessionId, itemId: item.id });
+      const proxyUrl = `/api/photos/picker/media-proxy?${query.toString()}`;
       const res = await authenticatedFetch(proxyUrl);
       if (!res.ok) throw new Error("Could not download Google Photo for cropping.");
 
