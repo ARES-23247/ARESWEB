@@ -38,6 +38,7 @@ App Check must remain in observation mode during the 72-hour review period.
 - The Zulip webhook checks its token before parsing the full payload.
 - The webhook now validates sizes, fields, and current Zulip trigger names.
 - The Google media proxy accepts IDs, not a client-provided URL.
+- Google Drive requests use strict IDs and a fixed Google API origin.
 - The static API reference iframe receives no sandbox capabilities.
 - CI uses Workload Identity Federation instead of a stored cloud key.
 
@@ -50,6 +51,8 @@ App Check must remain in observation mode during the 72-hour review period.
 | SEC-03 | Medium | App Check enforcement needs 72 hours of clean production data. | Operational watch |
 | SEC-04 | Medium | The Hosting CSP still permits some inline content. | Backlog |
 | SEC-05 | Critical | The Google media proxy URL depended on client input. | Fixed |
+| SEC-06 | Critical | Google Drive metadata requests used loosely extracted client input in the request URL. | Fixed |
+| SEC-07 | High | Drive buttons trusted URLs containing the Google hostname as a substring. | Fixed |
 
 ## 2. Privacy and youth protection
 
@@ -187,6 +190,7 @@ No release-blocking finding remains.
 - The release uses a tested, immutable build artifact.
 - The build stops when either public browser security key is missing.
 - Production dependencies have no known vulnerabilities.
+- CI audits and builds the standalone MCP server lockfile.
 - Git whitespace checks pass.
 
 ### Findings
@@ -194,6 +198,7 @@ No release-blocking finding remains.
 | ID | Severity | Finding | Status |
 | --- | --- | --- | --- |
 | DEVOPS-01 | High | CI could build without the required browser security keys. | Fixed |
+| DEVOPS-02 | High | The MCP server npm lockfile was outside the pnpm audit gate. | Fixed |
 
 ## 12. Scalability and resilience
 
@@ -246,3 +251,4 @@ No release-blocking finding remains.
 - Bundle budgets: passed
 - Playwright: 52 passed
 - Production dependency audit: no known vulnerabilities
+- MCP server dependency audit: no known vulnerabilities
