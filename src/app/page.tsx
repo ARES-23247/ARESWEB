@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, LogIn, LogOut, ShieldCheck, Cpu, Calendar as CalendarIcon, ClipboardList } from "lucide-react";
+import { ArrowRight, LogIn, LogOut, Cpu, Calendar as CalendarIcon, ClipboardList } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
 import { maskEmail } from "@/lib/utils";
@@ -108,7 +108,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
               <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading text-white">Portal Dashboard</h2>
-              <p className="text-marble/70 text-lg">Integrated engineering precision, telemetry diagnostics, and real-time coordination.</p>
+              <p className="text-marble/70 text-lg">Integrated engineering documentation, interactive learning, and real-time coordination.</p>
             </div>
             <div className="h-px flex-grow bg-white/5 mx-8 mb-4 hidden md:block"></div>
           </div>
@@ -201,22 +201,6 @@ export default function Home() {
               Team Application
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ─── TELEMETRY INGESTION NOTICE ─── */}
-      <section className="py-12 bg-obsidian text-marble border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 bg-marble/5 border border-white/5 p-6 ares-cut">
-          <div className="flex items-center gap-3">
-            <ShieldCheck size={28} className="text-ares-gold shrink-0 animate-pulse" />
-            <div>
-              <p className="text-sm font-bold text-white uppercase tracking-wider">Hardware Telemetry Ingestion</p>
-              <p className="text-xs text-marble/65 mt-1">Drivetrain telemetry logs upload directly to <code className="text-ares-cyan">/api/upload</code> for BigQuery & Vertex AI diagnostics.</p>
-            </div>
-          </div>
-          <span className="text-[10px] font-mono border border-white/20 text-marble/60 px-2.5 py-1 rounded uppercase bg-black/30">
-            Secure Endpoint Active
-          </span>
         </div>
       </section>
     </div>

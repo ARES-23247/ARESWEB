@@ -51,7 +51,7 @@ export default function TechStackPage() {
               {
                 title: "Gemini & Vertex AI",
                 icon: <Zap className="text-ares-gold" size={24} />,
-                desc: "We run Gemini 3.5 models via Vertex AI in Cloud Functions to inspect uploaded photos for safety compliance, auto-generate ALT tags, and run real-time robotic log analytics.",
+                desc: "We use Gemini through Vertex AI in Cloud Functions to generate accessibility descriptions and labels for approved media and to support team writing tools.",
                 cost: "Free Tier"
               },
               {
@@ -81,7 +81,7 @@ export default function TechStackPage() {
               {
                 title: "Progressive Offline (PWA)",
                 icon: <Globe className="text-ares-bronze" size={24} />,
-                desc: "Pit crews operate in arenas with terrible network signals. Our Service Worker caches local logs and telemetry frames, allowing full offline execution.",
+                desc: "Our Service Worker caches the application shell and selected static assets, giving previously loaded pages limited support during weak or interrupted connections.",
                 cost: "Open Source"
               },
               {
