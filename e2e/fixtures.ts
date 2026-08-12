@@ -36,11 +36,17 @@ export const test = base.extend<AresFixtures>({
 
 async function installMockSession(page: Page, role: MockRole, name: string) {
   await page.addInitScript(({ sessionRole, sessionName }) => {
-    window.sessionStorage.setItem('ares_mock_user', JSON.stringify({
-      email: `${sessionRole}@example.test`,
-      role: sessionRole,
-      name: sessionName,
-    }));
+    if (window !== window.top) return;
+    try {
+      window.sessionStorage.setItem('ares_mock_user', JSON.stringify({
+        email: `${sessionRole}@example.test`,
+        role: sessionRole,
+        name: sessionName,
+      }));
+    } catch {
+      // Chromium may run init scripts once in an opaque initial document. The
+      // script runs again after navigation, when the app origin has storage.
+    }
   }, { sessionRole: role, sessionName: name });
 }
 
