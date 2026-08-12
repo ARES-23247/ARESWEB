@@ -9,6 +9,12 @@ import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 
+const GOOGLE_DRIVE_API_ORIGIN = "https://www.googleapis.com";
+const GOOGLE_DRIVE_HOSTNAME = "drive.google.com";
+const DRIVE_FILE_ID_PATTERN = /^[a-zA-Z0-9_-]{10,200}$/;
+const RAW_DRIVE_FILE_ID_PATTERN = /^[a-zA-Z0-9_-]{20,200}$/;
+const GOOGLE_DRIVE_REQUEST_TIMEOUT_MS = 15_000;
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -24,25 +30,60 @@ router.use(limiter);
 export function extractDriveFileId(input: string): string | null {
   if (!input || typeof input !== "string") return null;
   const trimmed = input.trim();
-  
-  // Standard file URL: /file/d/{fileId}/view
-  const fileDMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileDMatch) return fileDMatch[1];
 
-  // Query param URL: ?id={fileId}
-  const idParamMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (idParamMatch) return idParamMatch[1];
-
-  // Folder URL: /folders/{folderId}
-  const folderMatch = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-  if (folderMatch) return folderMatch[1];
-
-  // Raw ID alphanumeric string (20+ chars)
-  if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed)) {
+  if (RAW_DRIVE_FILE_ID_PATTERN.test(trimmed)) {
     return trimmed;
   }
 
-  return null;
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== GOOGLE_DRIVE_HOSTNAME ||
+    url.port !== "" ||
+    url.username !== "" ||
+    url.password !== ""
+  ) {
+    return null;
+  }
+
+  const fileDMatch = url.pathname.match(/^\/file\/d\/([a-zA-Z0-9_-]+)(?:\/|$)/);
+  const folderMatch = url.pathname.match(/(?:^|\/)folders\/([a-zA-Z0-9_-]+)(?:\/|$)/);
+  const candidate = fileDMatch?.[1] ?? url.searchParams.get("id") ?? folderMatch?.[1];
+
+  return candidate && DRIVE_FILE_ID_PATTERN.test(candidate) ? candidate : null;
+}
+
+function buildDriveFileApiUrl(fileId: string, fields: string): URL {
+  if (!DRIVE_FILE_ID_PATTERN.test(fileId)) {
+    throw new ApiError(400, "Invalid Google Drive file ID.");
+  }
+
+  const url = new URL(`/drive/v3/files/${encodeURIComponent(fileId)}`, GOOGLE_DRIVE_API_ORIGIN);
+  url.searchParams.set("fields", fields);
+
+  if (url.origin !== GOOGLE_DRIVE_API_ORIGIN) {
+    throw new ApiError(500, "Google Drive API configuration is invalid.");
+  }
+
+  return url;
+}
+
+function buildDriveFolderApiUrl(folderId: string, fields: string): URL {
+  if (!DRIVE_FILE_ID_PATTERN.test(folderId)) {
+    throw new ApiError(400, "Invalid Google Drive folder ID.");
+  }
+
+  const url = new URL("/drive/v3/files", GOOGLE_DRIVE_API_ORIGIN);
+  url.searchParams.set("q", `'${folderId}' in parents and trashed = false`);
+  url.searchParams.set("fields", fields);
+  url.searchParams.set("pageSize", "100");
+  return url;
 }
 
 /**
@@ -100,7 +141,10 @@ router.post(
       throw new ApiError(400, "Invalid folderId provided.");
     }
 
-    const cleanFolderId = extractDriveFileId(folderId) || folderId.trim();
+    const cleanFolderId = extractDriveFileId(folderId);
+    if (!cleanFolderId) {
+      throw new ApiError(400, "Valid Google Drive folder URL or ID is required.");
+    }
 
     await adminDb.collection("system_settings").doc("drive_config").set(
       {
@@ -130,12 +174,11 @@ router.post(
     const token = await getGooglePhotosAccessToken();
 
     const fields = "id,name,mimeType,webViewLink,webContentLink,createdTime,modifiedTime,description";
-    const driveRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${targetId}?fields=${encodeURIComponent(fields)}`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
+    const driveRes = await fetch(buildDriveFileApiUrl(targetId, fields), {
+      headers: { Authorization: `Bearer ${token}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(GOOGLE_DRIVE_REQUEST_TIMEOUT_MS),
+    });
 
     if (!driveRes.ok) {
       const errorText = await driveRes.text();
@@ -187,18 +230,23 @@ router.post(
       );
     }
 
-    const cleanFolderId = extractDriveFileId(targetFolderId) || targetFolderId;
+    if (typeof targetFolderId !== "string") {
+      throw new ApiError(400, "Valid Google Drive folder URL or ID is required.");
+    }
+
+    const cleanFolderId = extractDriveFileId(targetFolderId);
+    if (!cleanFolderId) {
+      throw new ApiError(400, "Valid Google Drive folder URL or ID is required.");
+    }
     const token = await getGooglePhotosAccessToken();
 
-    const queryStr = `'${cleanFolderId}' in parents and trashed = false`;
     const fields = "files(id,name,mimeType,webViewLink,createdTime,modifiedTime,description)";
 
-    const driveRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(queryStr)}&fields=${encodeURIComponent(fields)}&pageSize=100`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
+    const driveRes = await fetch(buildDriveFolderApiUrl(cleanFolderId, fields), {
+      headers: { Authorization: `Bearer ${token}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(GOOGLE_DRIVE_REQUEST_TIMEOUT_MS),
+    });
 
     if (!driveRes.ok) {
       const errorText = await driveRes.text();

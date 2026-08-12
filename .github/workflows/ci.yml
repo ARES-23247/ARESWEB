@@ -44,6 +44,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install MCP server dependencies
+        run: npm ci --prefix mcp-server --ignore-scripts
+
       - name: Run ESLint
         env:
           NODE_OPTIONS: --max-old-space-size=8192
@@ -56,6 +59,9 @@ jobs:
 
       - name: Run production dependency audit
         run: pnpm audit --prod --audit-level=high
+
+      - name: Run MCP server dependency audit
+        run: npm audit --prefix mcp-server --omit=dev --audit-level=high
 
       - name: Run frontend tests with coverage
         env:
@@ -84,6 +90,9 @@ jobs:
 
       - name: Build Cloud Functions
         run: pnpm --filter functions build
+
+      - name: Build MCP server
+        run: npm run build --prefix mcp-server
 
       - name: Upload immutable release artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -257,11 +266,11 @@ jobs:
           cleanup_credentials: true
 
       - name: Deploy verified release to Firebase
-        run: pnpm exec firebase deploy --only hosting,functions,firestore:rules,storage --project aresfirst-portal --non-interactive
+        run: pnpm exec firebase deploy --only hosting,functions,firestore:rules,firestore:indexes,storage --project aresfirst-portal --non-interactive
 
       - name: Verify production health
         run: |
-          for url in https://aresfirst-portal.web.app/ https://aresfirst-portal.web.app/api/simulations https://aresfirst-portal.web.app/api/finance?limit=1; do
+          for url in https://aresfirst-portal.web.app/ https://aresfirst-portal.web.app/api/simulations https://aresfirst-portal.web.app/api/finance?limit=1 https://aresfirst-portal.web.app/api/robots?limit=1 https://aresfirst-portal.web.app/api/videos/public?limit=1; do
             healthy=false
             for attempt in 1 2 3 4 5; do
               if curl --fail --silent --show-error --max-time 20 "$url" > /dev/null; then

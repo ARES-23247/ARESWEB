@@ -57,6 +57,8 @@ describe("videos routes", () => {
     queryGet.mockResolvedValue({ docs: [{ id: "video_abcdefghijk", data: () => ({ title: "Robot reveal", videoId: "abcdefghijk", thumbnailUrl: "https://img.youtube.com/vi/abcdefghijk/0.jpg", status: "published", isDeleted: 0, syncSource: "private" }) }] });
     await handler("/public", "get")({ query: {} }, res, next);
     const payload = res.json.mock.calls[0][0];
+    expect(query.where).toHaveBeenNthCalledWith(1, "status", "==", "published");
+    expect(query.where).toHaveBeenNthCalledWith(2, "isDeleted", "==", 0);
     expect(payload.videos[0]).toMatchObject({ title: "Robot reveal", watchUrl: "https://www.youtube.com/watch?v=abcdefghijk" });
     expect(JSON.stringify(payload)).not.toContain("syncSource");
   });
