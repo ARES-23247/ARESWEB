@@ -38,6 +38,7 @@ following before handing off a code change:
 
 ```text
 pnpm install --frozen-lockfile
+npm ci --prefix mcp-server --ignore-scripts
 pnpm run lint
 pnpm exec tsc --noEmit
 pnpm run test:coverage
@@ -48,6 +49,8 @@ pnpm run build
 node scripts/check-bundle-size.mjs
 pnpm run test:e2e
 pnpm audit --prod --audit-level=high
+npm audit --prefix mcp-server --omit=dev --audit-level=high
+npm run build --prefix mcp-server
 ```
 
 Coverage floors are ratchets, not targets. New utilities and API routes must meet

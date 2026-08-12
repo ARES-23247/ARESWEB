@@ -87,6 +87,14 @@ describe("Google Drive Utilities & Express Router", () => {
       expect(extractDriveFileId("invalid-url")).toBeNull();
       expect(extractDriveFileId("")).toBeNull();
     });
+
+    it("rejects spoofed hosts, credentials, insecure URLs, ports, and injected IDs", () => {
+      expect(extractDriveFileId("https://drive.google.com.evil.example/file/d/1SAFE_FILE_ID_123/view")).toBeNull();
+      expect(extractDriveFileId("https://drive.google.com@evil.example/file/d/1SAFE_FILE_ID_123/view")).toBeNull();
+      expect(extractDriveFileId("http://drive.google.com/file/d/1SAFE_FILE_ID_123/view")).toBeNull();
+      expect(extractDriveFileId("https://drive.google.com:444/file/d/1SAFE_FILE_ID_123/view")).toBeNull();
+      expect(extractDriveFileId("https://drive.google.com/file/d/../../metadata/view")).toBeNull();
+    });
   });
 
   describe("inferDocCategory", () => {
@@ -145,6 +153,12 @@ describe("Google Drive Utilities & Express Router", () => {
 
       await handler(req, res);
 
+      const requestedUrl = mockFetch.mock.calls[0][0] as URL;
+      expect(requestedUrl).toBeInstanceOf(URL);
+      expect(requestedUrl.origin).toBe("https://www.googleapis.com");
+      expect(requestedUrl.pathname).toBe("/drive/v3/files/1TEST_FILE_ID");
+      expect(mockFetch.mock.calls[0][1]).toMatchObject({ redirect: "error" });
+
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         file: {
@@ -161,7 +175,7 @@ describe("Google Drive Utilities & Express Router", () => {
 
   describe("POST /api/drive/sync", () => {
     it("should scan Drive folder and batch upsert files into Firestore documents collection", async () => {
-      req.body = { folderId: "1DRIVE_FOLDER_123" };
+      req.body = { folderId: "1DRIVE_FOLDER_123456789" };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -185,12 +199,19 @@ describe("Google Drive Utilities & Express Router", () => {
 
       await handler(req, res);
 
+      const requestedUrl = mockFetch.mock.calls[0][0] as URL;
+      expect(requestedUrl).toBeInstanceOf(URL);
+      expect(requestedUrl.origin).toBe("https://www.googleapis.com");
+      expect(requestedUrl.pathname).toBe("/drive/v3/files");
+      expect(requestedUrl.searchParams.get("q")).toBe("'1DRIVE_FOLDER_123456789' in parents and trashed = false");
+      expect(mockFetch.mock.calls[0][1]).toMatchObject({ redirect: "error" });
+
       expect(mockBatchSet).toHaveBeenCalled();
       expect(mockBatchCommit).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         syncedCount: 1,
-        folderId: "1DRIVE_FOLDER_123",
+        folderId: "1DRIVE_FOLDER_123456789",
         syncedFiles: [{ id: "FILE_001", name: "Chassis Technical Spec" }]
       });
     });

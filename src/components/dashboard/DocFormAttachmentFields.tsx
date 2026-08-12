@@ -13,6 +13,21 @@ interface DocFormAttachmentFieldsProps {
   onDriveImportSuccess?: (data: { title: string; category: string; description: string; fileUrl: string }) => void;
 }
 
+export function isTrustedGoogleDriveUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "drive.google.com" &&
+      url.port === "" &&
+      url.username === "" &&
+      url.password === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default function DocFormAttachmentFields({
   variant,
   formFileUrl,
@@ -23,9 +38,10 @@ export default function DocFormAttachmentFields({
   onDriveImportSuccess
 }: DocFormAttachmentFieldsProps) {
   const [isImporting, setIsImporting] = useState(false);
+  const canImportFromDrive = isTrustedGoogleDriveUrl(formFileUrl);
 
   const handleDriveImport = async () => {
-    if (!formFileUrl || !formFileUrl.includes("drive.google.com")) {
+    if (!canImportFromDrive) {
       toast.error("Please enter a valid Google Drive URL first.");
       return;
     }
@@ -83,7 +99,7 @@ export default function DocFormAttachmentFields({
               className="flex-grow bg-black/60 border border-white/10 rounded px-4 py-2.5 text-xs text-white focus:outline-none focus:border-ares-red transition-colors focus:ring-2 focus:ring-ares-cyan"
               required
             />
-            {formFileUrl.includes("drive.google.com") && (
+            {canImportFromDrive && (
               <button
                 type="button"
                 onClick={handleDriveImport}
