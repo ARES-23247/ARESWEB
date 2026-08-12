@@ -1,117 +1,580 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import calendarRouter from "../calendar";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import calendarRouter, { ensureCalendarPublisher } from "../calendar";
 import { adminDb } from "../../lib/firebase-admin";
 
 vi.mock("../../lib/firebase-admin", () => {
-  const mockQuery = {
+  const query = {
     where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    startAfter: vi.fn().mockReturnThis(),
+    get: vi.fn(),
+  };
+  const revisionRef = { id: "revision-1" };
+  const nestedQuery = {
+    orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     get: vi.fn(),
   };
+  const documentRef = {
+    id: "generated-1",
+    get: vi.fn(),
+    set: vi.fn(),
+    update: vi.fn(),
+    collection: vi.fn((name: string) => name === "photos"
+      ? nestedQuery
+      : { doc: vi.fn(() => revisionRef) }),
+  };
+  const collectionRef = {
+    ...query,
+    doc: vi.fn(() => documentRef),
+  };
+  const batch = {
+    set: vi.fn(),
+    update: vi.fn(),
+    commit: vi.fn(),
+  };
   return {
     adminDb: {
-      collection: vi.fn().mockReturnValue(mockQuery),
+      collection: vi.fn(() => collectionRef),
+      batch: vi.fn(() => batch),
     },
   };
 });
 
-describe("GET /feed Calendar Feed Route", () => {
-  let req: any;
-  let res: any;
-  let next: any;
+type Method = "get" | "post" | "put" | "patch" | "delete";
+
+function handler(path: string, method: Method) {
+  const layer = calendarRouter.stack.find((candidate) => (
+    candidate.route?.path === path && candidate.route.methods[method]
+  ));
+  if (!layer?.route) throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  return layer.route.stack.at(-1)!.handle;
+}
+
+function eventDocument(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id,
+    data: () => ({
+      title: "Team Practice",
+      dateStart: "2026-08-20T18:00:00.000Z",
+      dateEnd: "2026-08-20T20:00:00.000Z",
+      location: "Team Lab",
+      category: "internal",
+      status: "published",
+      isDeleted: 0,
+      createdBy: "private-user-id",
+      internalNotes: "do not expose",
+      ...overrides,
+    }),
+  };
+}
+
+describe("calendar API", () => {
+  let req: Record<string, unknown>;
+  let res: {
+    json: ReturnType<typeof vi.fn>;
+    send: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+    status: ReturnType<typeof vi.fn>;
+  };
+  let next: ReturnType<typeof vi.fn>;
+  let collectionRef: any;
+  let documentRef: any;
+  let batch: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    req = {};
+    req = { query: {}, params: {}, body: {}, user: { uid: "member-1" }, authorizationRole: "member" };
     res = {
-      setHeader: vi.fn(),
+      json: vi.fn(),
       send: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
     };
     next = vi.fn();
+    collectionRef = adminDb.collection("events") as any;
+    documentRef = collectionRef.doc("event-1");
+    batch = adminDb.batch();
+    collectionRef.get.mockResolvedValue({ docs: [] });
+    documentRef.get.mockResolvedValue({ exists: true, id: "event-1", data: () => eventDocument("event-1").data() });
+    documentRef.set.mockResolvedValue(undefined);
+    documentRef.update.mockResolvedValue(undefined);
+    batch.commit.mockResolvedValue(undefined);
+    documentRef.collection("photos").get.mockResolvedValue({ docs: [] });
   });
 
-  it("should return a correctly formatted iCal ICS file with events", async () => {
-    const mockEvents = [
-      {
-        id: "evt_1",
-        data: () => ({
-          title: "Practice Meeting",
-          dateStart: "2026-05-24T09:30:00",
-          dateEnd: "2026-05-24T11:30:00",
-          location: "Lab Room A",
-          description: "Working on sliding intakes.",
-          category: "internal",
-        }),
-      },
-      {
-        id: "evt_2",
-        data: () => ({
-          title: "Outreach Fair",
-          dateStart: "2026-06-18T10:00:00",
-          location: "Museum Entrance",
-          description: "Science demonstration.",
-          category: "outreach",
-        }),
-      },
-    ];
+  async function expectApiError(
+    path: string,
+    method: Method,
+    status: number,
+    code?: string,
+  ) {
+    await handler(path, method)(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status, ...(code ? { code } : {}) }));
+    expect(res.json).not.toHaveBeenCalled();
+  }
 
-    const mockGet = vi.fn().mockResolvedValue({
-      forEach: (callback: (doc: any) => void) => mockEvents.forEach(callback),
+  it("returns only bounded public DTO fields and a cursor", async () => {
+    req.query = { limit: "2" };
+    collectionRef.get.mockResolvedValue({
+      docs: [eventDocument("event-1"), eventDocument("event-2"), eventDocument("event-3")],
     });
 
-    const mockQuery = adminDb.collection("events");
-    vi.mocked(mockQuery.get).mockImplementation(mockGet);
+    await handler("/events", "get")(req, res, next);
 
-    // Retrieve the handler function from the express router stack
-    const routeLayer = calendarRouter.stack.find(
-      (layer) => layer.route && layer.route.path === "/feed"
-    );
-    expect(routeLayer).toBeDefined();
-    const route = routeLayer?.route;
-    expect(route).toBeDefined();
-    const handler = route!.stack[0].handle;
+    expect(collectionRef.where).toHaveBeenCalledWith("isDeleted", "==", 0);
+    expect(collectionRef.where).toHaveBeenCalledWith("status", "==", "published");
+    expect(collectionRef.limit).toHaveBeenCalledWith(3);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      nextCursor: "event-2",
+      events: expect.arrayContaining([
+        expect.objectContaining({ id: "event-1", title: "Team Practice", location: "Team Lab" }),
+      ]),
+    }));
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.events[0]).not.toHaveProperty("createdBy");
+    expect(payload.events[0]).not.toHaveProperty("internalNotes");
+    expect(payload.events[0]).not.toHaveProperty("status");
+    expect(payload.events[0]).not.toHaveProperty("isDeleted");
+  });
 
-    await handler(req, res, next);
+  it("returns one published event and hides archived or draft records", async () => {
+    req.params = { id: "event-1" };
+    await handler("/events/:id", "get")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      event: expect.objectContaining({ id: "event-1", title: "Team Practice" }),
+    }));
 
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "draft" }).data(),
+    });
+    await handler("/events/:id", "get")(req, res, next);
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404, code: "EVENT_NOT_FOUND" }));
+  });
+
+  it("rejects missing, archived, and malformed public event IDs", async () => {
+    req.params = { id: "missing" };
+    documentRef.get.mockResolvedValueOnce({ exists: false, data: () => undefined });
+    await expectApiError("/events/:id", "get", 404, "EVENT_NOT_FOUND");
+
+    next.mockClear();
+    req.params = { id: "archived" };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("archived", { isDeleted: 1 }).data(),
+    });
+    await expectApiError("/events/:id", "get", 404, "EVENT_NOT_FOUND");
+
+    next.mockClear();
+    req.params = { id: "bad id" };
+    await expectApiError("/events/:id", "get", 400, "INVALID_ID");
+  });
+
+  it("returns bounded event-photo DTOs without uploader or operational metadata", async () => {
+    req.params = { id: "event-1" };
+    req.query = { limit: "2" };
+    const photoCollection = documentRef.collection("photos");
+    photoCollection.get.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "photo-safe",
+          data: () => ({
+            url: "https://images.example.test/practice.jpg",
+            filename: "Drive practice.jpg",
+            uploadedBy: "student-private-id",
+            uploadedAt: "2026-08-10T12:00:00.000Z",
+            storagePath: "private/path",
+            isDeleted: 0,
+          }),
+        },
+        {
+          id: "photo-deleted",
+          data: () => ({ url: "https://images.example.test/deleted.jpg", isDeleted: 1 }),
+        },
+        {
+          id: "photo-unsafe",
+          data: () => ({ url: "http://images.example.test/unsafe.jpg", isDeleted: 0 }),
+        },
+      ],
+    });
+
+    await handler("/events/:id/photos", "get")(req, res, next);
+
+    expect(photoCollection.orderBy).toHaveBeenCalledWith("uploadedAt", "desc");
+    expect(photoCollection.limit).toHaveBeenCalledWith(4);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      photos: [{
+        id: "photo-safe",
+        url: "https://images.example.test/practice.jpg",
+        filename: "Drive practice.jpg",
+      }],
+    });
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.photos[0]).not.toHaveProperty("uploadedBy");
+    expect(payload.photos[0]).not.toHaveProperty("uploadedAt");
+    expect(payload.photos[0]).not.toHaveProperty("storagePath");
+  });
+
+  it("does not query photos for a non-public event and forwards photo query failures", async () => {
+    req.params = { id: "event-1" };
+    const photoCollection = documentRef.collection("photos");
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "draft" }).data(),
+    });
+    await expectApiError("/events/:id/photos", "get", 404, "EVENT_NOT_FOUND");
+    expect(photoCollection.get).not.toHaveBeenCalled();
+
+    next.mockClear();
+    res.json.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1").data(),
+    });
+    photoCollection.get.mockRejectedValueOnce(new Error("photo query unavailable"));
+    await handler("/events/:id/photos", "get")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "photo query unavailable" }));
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it("applies a valid cursor and rejects stale or malformed cursors", async () => {
+    const cursorSnapshot = { exists: true, id: "event-2", data: () => eventDocument("event-2").data() };
+    req.query = { cursor: "event-2" };
+    documentRef.get.mockResolvedValueOnce(cursorSnapshot);
+    collectionRef.get.mockResolvedValueOnce({ docs: [] });
+    await handler("/events", "get")(req, res, next);
+    expect(collectionRef.startAfter).toHaveBeenCalledWith(cursorSnapshot);
+
+    vi.clearAllMocks();
+    documentRef.get.mockResolvedValueOnce({ exists: false });
+    collectionRef.get.mockResolvedValue({ docs: [] });
+    req.query = { cursor: "stale" };
+    await expectApiError("/events", "get", 400, "INVALID_CURSOR");
+
+    next.mockClear();
+    req.query = { cursor: "bad cursor" };
+    await expectApiError("/events", "get", 400, "INVALID_ID");
+  });
+
+  it("returns a bounded manager DTO page including lifecycle metadata", async () => {
+    req.query = { limit: "1" };
+    collectionRef.get.mockResolvedValueOnce({
+      docs: [
+        eventDocument("event-1", { status: "draft", isDeleted: 1 }),
+        eventDocument("event-2", { status: "pending" }),
+      ],
+    });
+    await handler("/manage", "get")(req, res, next);
+    expect(collectionRef.orderBy).toHaveBeenCalledWith("dateStart", "asc");
+    expect(collectionRef.limit).toHaveBeenCalledWith(2);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      events: [expect.objectContaining({ id: "event-1", status: "draft", isDeleted: 1 })],
+      nextCursor: "event-1",
+    });
+  });
+
+  it("applies cursors to manager pages and forwards query failures", async () => {
+    const cursorSnapshot = { exists: true, id: "event-1" };
+    req.query = { cursor: "event-1", limit: "999" };
+    documentRef.get.mockResolvedValueOnce(cursorSnapshot);
+    collectionRef.get.mockResolvedValueOnce({ docs: [] });
+    await handler("/manage", "get")(req, res, next);
+    expect(collectionRef.startAfter).toHaveBeenCalledWith(cursorSnapshot);
+    expect(collectionRef.limit).toHaveBeenCalledWith(151);
+
+    vi.clearAllMocks();
+    req.query = {};
+    collectionRef.get.mockRejectedValueOnce(new Error("manager query unavailable"));
+    await handler("/manage", "get")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "manager query unavailable" }));
+  });
+
+  it("forces member-created events to pending and writes revision and audit records atomically", async () => {
+    req.body = {
+      title: "Student practice idea",
+      dateStart: "2026-09-10T18:00:00.000Z",
+      category: "internal",
+      status: "published",
+    };
+
+    await handler("/manage", "post")(req, res, next);
+
+    expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({
+      status: "pending",
+      isDeleted: 0,
+      createdBy: "member-1",
+    }));
+    expect(batch.set).toHaveBeenCalledTimes(3);
+    expect(batch.commit).toHaveBeenCalledOnce();
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("allows publishers to create published or explicitly drafted events", async () => {
+    req.authorizationRole = "coach";
+    req.body = {
+      title: "Publisher practice",
+      dateStart: "2026-09-10T18:00:00.000Z",
+      category: "internal",
+    };
+    await handler("/manage", "post")(req, res, next);
+    expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "published" }));
+
+    vi.clearAllMocks();
+    batch.commit.mockResolvedValue(undefined);
+    req.body = { ...req.body as object, status: "draft" };
+    await handler("/manage", "post")(req, res, next);
+    expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "draft" }));
+  });
+
+  it("rejects invalid event bodies without writing fake success", async () => {
+    req.body = { title: "", dateStart: "not-a-date", category: "internal" };
+    await handler("/manage", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "VALIDATION_ERROR" }));
+    expect(batch.commit).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it("allows only calendar publishers through the lifecycle middleware", () => {
+    const unauthenticated = { authorizationRole: "admin" } as any;
+    ensureCalendarPublisher(unauthenticated, res as any, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 401 }));
+
+    next.mockClear();
+    const middlewareReq = { user: { uid: "member-1" }, authorizationRole: "member" } as any;
+    ensureCalendarPublisher(middlewareReq, res as any, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
+
+    next.mockClear();
+    middlewareReq.authorizationRole = "mentor";
+    ensureCalendarPublisher(middlewareReq, res as any, next);
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it("updates a draft event as pending for a member and audits the revision", async () => {
+    req.params = { id: "event-1" };
+    req.body = {
+      title: "Revised practice",
+      dateStart: "2026-09-10T18:00:00.000Z",
+      category: "internal",
+      status: "published",
+    };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "draft" }).data(),
+    });
+    await handler("/manage/:id", "put")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "pending", updatedBy: "member-1" }));
+    expect(batch.set).toHaveBeenCalledTimes(2);
+    expect(batch.commit).toHaveBeenCalledOnce();
+    expect(res.json).toHaveBeenCalledWith({ success: true, event: expect.objectContaining({ id: "event-1", status: "pending" }) });
+  });
+
+  it("lets a publisher update an event with a safe default draft status", async () => {
+    req.authorizationRole = "mentor";
+    req.params = { id: "event-1" };
+    req.body = {
+      title: "Revised practice",
+      dateStart: "2026-09-10T18:00:00.000Z",
+      category: "internal",
+    };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "published" }).data(),
+    });
+    await handler("/manage/:id", "put")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "draft" }));
+  });
+
+  it("rejects edits to archived events and member edits to published events", async () => {
+    req.params = { id: "event-1" };
+    req.body = { title: "Edit", dateStart: "2026-09-10T18:00:00.000Z", category: "internal" };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
+    });
+    await expectApiError("/manage/:id", "put", 409, "EVENT_ARCHIVED");
+
+    next.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "published" }).data(),
+    });
+    await expectApiError("/manage/:id", "put", 403);
+  });
+
+  it("archives and restores events without hard deletion", async () => {
+    req.authorizationRole = "coach";
+    req.params = { id: "event-1" };
+    await handler("/manage/:id", "delete")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({ isDeleted: 1 }));
+    expect(batch.commit).toHaveBeenCalledOnce();
+
+    vi.clearAllMocks();
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
+    });
+    batch.commit.mockResolvedValue(undefined);
+    await handler("/manage/:id/restore", "patch")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({
+      isDeleted: 0,
+      status: "draft",
+      archivedAt: null,
+    }));
+  });
+
+  it("keeps repeated event lifecycle operations idempotent", async () => {
+    req.authorizationRole = "admin";
+    req.params = { id: "event-1" };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
+    });
+    await handler("/manage/:id", "delete")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith({ success: true, archived: true, message: "Event is already archived." });
+    expect(batch.commit).not.toHaveBeenCalled();
+
+    vi.clearAllMocks();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { isDeleted: 0 }).data(),
+    });
+    await handler("/manage/:id/restore", "patch")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith({ success: true, restored: true, message: "Event is already active." });
+    expect(batch.commit).not.toHaveBeenCalled();
+  });
+
+  it("publishes active events and refuses archived ones", async () => {
+    req.authorizationRole = "coach";
+    req.params = { id: "event-1" };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "draft" }).data(),
+    });
+    await handler("/manage/:id/publish", "patch")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ status: "published", publishedBy: "member-1" }));
+    expect(res.json).toHaveBeenCalledWith({ success: true, published: true, message: "Event published successfully." });
+
+    vi.clearAllMocks();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
+    });
+    await expectApiError("/manage/:id/publish", "patch", 409, "EVENT_ARCHIVED");
+  });
+
+  it("creates and archives venues through protected lifecycle endpoints", async () => {
+    req.authorizationRole = "admin";
+    req.body = { name: "Community Center", address: "Morgantown, WV" };
+    await handler("/locations", "post")(req, res, next);
+    expect(documentRef.set).toHaveBeenCalledWith(expect.objectContaining({
+      name: "Community Center",
+      isDeleted: 0,
+    }));
+    expect(res.status).toHaveBeenCalledWith(201);
+
+    req.params = { id: "venue-1" };
+    documentRef.get.mockResolvedValue({ exists: true, data: () => ({ name: "Community Center" }) });
+    await handler("/locations/:id", "delete")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 1 }));
+  });
+
+  it("lists explicit venue DTOs in name order", async () => {
+    collectionRef.get.mockResolvedValueOnce({ docs: [
+      { id: "venue-1", data: () => ({ name: "Team Lab", address: "Morgantown, WV", isDeleted: 0, ownerUid: "private" }) },
+      { id: "venue-2", data: () => ({ name: "Old Lab", isDeleted: 1 }) },
+    ] });
+    await handler("/locations", "get")(req, res, next);
+    expect(collectionRef.orderBy).toHaveBeenCalledWith("name", "asc");
+    expect(collectionRef.limit).toHaveBeenCalledWith(150);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.locations).toEqual([
+      expect.objectContaining({ id: "venue-1", name: "Team Lab" }),
+      expect.objectContaining({ id: "venue-2", isDeleted: 1 }),
+    ]);
+    expect(JSON.stringify(payload)).not.toContain("ownerUid");
+  });
+
+  it("updates an active venue and rejects missing or archived venues", async () => {
+    req.authorizationRole = "admin";
+    req.params = { id: "venue-1" };
+    req.body = { name: "Updated Lab", address: "Morgantown, WV", gmapsUrl: "https://maps.google.com/example" };
+    documentRef.get.mockResolvedValueOnce({ exists: true, data: () => ({ name: "Old Lab", isDeleted: 0 }) });
+    await handler("/locations/:id", "put")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ name: "Updated Lab", updatedBy: "member-1" }));
+    expect(res.json).toHaveBeenCalledWith({ success: true, location: expect.objectContaining({ id: "venue-1", name: "Updated Lab" }) });
+
+    vi.clearAllMocks();
+    documentRef.get.mockResolvedValueOnce({ exists: false, data: () => undefined });
+    await expectApiError("/locations/:id", "put", 404, "LOCATION_NOT_FOUND");
+
+    next.mockClear();
+    documentRef.get.mockResolvedValueOnce({ exists: true, data: () => ({ name: "Old", isDeleted: 1 }) });
+    await expectApiError("/locations/:id", "put", 409, "LOCATION_ARCHIVED");
+  });
+
+  it("rejects missing venue archive targets and restores existing venues", async () => {
+    req.authorizationRole = "admin";
+    req.params = { id: "venue-1" };
+    documentRef.get.mockResolvedValueOnce({ exists: false });
+    await expectApiError("/locations/:id", "delete", 404, "LOCATION_NOT_FOUND");
+
+    next.mockClear();
+    documentRef.get.mockResolvedValueOnce({ exists: true, data: () => ({ name: "Team Lab", isDeleted: 1 }) });
+    await handler("/locations/:id/restore", "patch")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 0, archivedAt: null, restoredBy: "member-1" }));
+    expect(res.json).toHaveBeenCalledWith({ success: true, restored: true, message: "Venue restored successfully." });
+
+    vi.clearAllMocks();
+    documentRef.get.mockResolvedValueOnce({ exists: false });
+    await expectApiError("/locations/:id/restore", "patch", 404, "LOCATION_NOT_FOUND");
+  });
+
+  it("builds a truthful feed, escapes text, and skips malformed dates", async () => {
+    collectionRef.get.mockResolvedValue({
+      docs: [
+        eventDocument("event-1", { title: "Practice, Build; Test", description: "Line one\nLine two" }),
+        eventDocument("bad-date", { dateStart: "not-a-date" }),
+      ],
+    });
+
+    await handler("/feed", "get")(req, res, next);
+
+    const feed = res.send.mock.calls[0][0] as string;
+    expect(feed).toContain("UID:event-1@aresfirst.org");
+    expect(feed).toContain("SUMMARY:Practice\\, Build\\; Test");
+    expect(feed).toContain("DESCRIPTION:Line one\\nLine two");
+    expect(feed).not.toContain("bad-date@aresfirst.org");
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/calendar; charset=utf-8");
-    expect(res.setHeader).toHaveBeenCalledWith("Content-Disposition", 'attachment; filename="ares_calendar.ics"');
-    
-    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
-    expect(res.setHeader).toHaveBeenCalledWith("Pragma", "no-cache");
-    expect(res.setHeader).toHaveBeenCalledWith("Expires", "0");
-    
-    expect(res.send).toHaveBeenCalled();
-    const icsContent: string = res.send.mock.calls[0][0];
+  });
 
-    // Assert standard calendar boundaries
-    expect(icsContent).toContain("BEGIN:VCALENDAR");
-    expect(icsContent).toContain("VERSION:2.0");
-    expect(icsContent).toContain("PRODID:-//ARES 23247//Team Calendar//EN");
-    expect(icsContent).toContain("X-WR-CALNAME:ARES 23247 Team Calendar");
-    expect(icsContent).toContain("REFRESH-INTERVAL;VALUE=DURATION:PT1H");
-    expect(icsContent).toContain("X-PUBLISHED-TTL:PT1H");
+  it("uses truthful feed fallbacks for missing end, update, title, and optional fields", async () => {
+    collectionRef.get.mockResolvedValueOnce({ docs: [eventDocument("fallback", {
+      title: undefined,
+      dateEnd: undefined,
+      updatedAt: undefined,
+      description: undefined,
+      location: undefined,
+    })] });
+    await handler("/feed", "get")(req, res, next);
+    const feed = res.send.mock.calls[0][0] as string;
+    expect(feed).toContain("UID:fallback@aresfirst.org");
+    expect(feed).toContain("SUMMARY:Untitled event");
+    expect(feed).toContain("DTEND:20260820T200000Z");
+    expect(feed).not.toContain("DESCRIPTION:");
+    expect(feed).not.toContain("LOCATION:");
+    expect(res.setHeader).toHaveBeenCalledTimes(5);
+  });
 
-    // Assert event 1 (with dateEnd)
-    expect(icsContent).toContain("BEGIN:VEVENT");
-    expect(icsContent).toContain("UID:evt_1@ares23247.org");
-    expect(icsContent).toContain("DTSTAMP:20260524T093000");
-    expect(icsContent).toContain("LAST-MODIFIED:20260524T093000");
-    expect(icsContent).toContain("DTSTART:20260524T093000");
-    expect(icsContent).toContain("DTEND:20260524T113000");
-    expect(icsContent).toContain("SUMMARY:Practice Meeting");
-    expect(icsContent).toContain("DESCRIPTION:Working on sliding intakes.");
-    expect(icsContent).toContain("LOCATION:Lab Room A");
-
-    // Assert event 2 (without dateEnd, should default to +2 hours)
-    expect(icsContent).toContain("UID:evt_2@ares23247.org");
-    expect(icsContent).toContain("DTSTAMP:20260618T100000");
-    expect(icsContent).toContain("LAST-MODIFIED:20260618T100000");
-    expect(icsContent).toContain("DTSTART:20260618T100000");
-    expect(icsContent).toContain("DTEND:20260618T120000");
-    expect(icsContent).toContain("SUMMARY:Outreach Fair");
-    expect(icsContent).toContain("DESCRIPTION:Science demonstration.");
-    expect(icsContent).toContain("LOCATION:Museum Entrance");
-    
-    expect(icsContent).toContain("END:VCALENDAR");
+  it("forwards Firestore failures instead of returning an empty success", async () => {
+    collectionRef.get.mockRejectedValueOnce(new Error("Firestore unavailable"));
+    await handler("/events", "get")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(res.json).not.toHaveBeenCalled();
   });
 });

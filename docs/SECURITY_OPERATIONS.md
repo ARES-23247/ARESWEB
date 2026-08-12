@@ -26,6 +26,15 @@ Set a dedicated App Check reCAPTCHA Enterprise site key in the frontend build:
 NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY=your_site_key
 ```
 
+Store both browser security keys as GitHub repository variables:
+
+- `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY`
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+
+These keys are public site identifiers. They are not secret credentials. The CI
+build stops when either variable is empty. Never use this rule for server keys,
+OAuth client secrets, refresh tokens, or bot tokens.
+
 The web client must initialize this key with `ReCaptchaEnterpriseProvider`, and
 the same site key must be registered on the Firebase web app's reCAPTCHA
 Enterprise App Check configuration.
@@ -49,6 +58,17 @@ Two server integrations do not use Firebase App Check:
 - `POST /api/profiles/sync` uses `PROFILE_SYNC_SECRET`.
 - `POST /api/webhooks/zulip` uses `ZULIP_WEBHOOK_TOKEN`.
 
+The Zulip bot credential must come from `ZULIP_BOT_EMAIL` and `ZULIP_API_KEY`
+in Google Secret Manager. No source fallback is permitted. Rotate any key that
+has ever appeared in repository history before the next deployment, then verify
+the bot can only access the streams and actions it needs.
+
+The team media integrations use `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_PHOTOS_REFRESH_TOKEN`, and `YOUTUBE_API_KEY` from Google Secret Manager.
+The OAuth client may live in the Google Cloud project used by the website. The
+refresh token may belong to a different, dedicated storage account. Sign in to
+that storage account when you grant consent. Do not connect a student's account.
+
 Use this Cloud Logging filter to review custom API results:
 
 ```text
@@ -64,6 +84,11 @@ Do not enable enforcement until all of these checks pass:
 3. Confirm at least 99% verified traffic in Firebase App Check metrics.
 4. Find the cause of every `missing` or `invalid` API mutation.
 5. Confirm each protected route group has a recent `valid` result.
+
+After those checks pass, set the non-secret Functions environment variable
+`ENFORCE_APP_CHECK=true` and deploy Functions. Until that flag is present, the
+API continues to record App Check results without rejecting requests. Remove or
+set the flag to `false` to return to observation-only mode during an incident.
 
 Enable Storage first. Watch errors for 24 hours. Enable Firestore next, then
 watch for another 24 hours. Return a service to `UNENFORCED` at once if valid

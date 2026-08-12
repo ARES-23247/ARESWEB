@@ -46,6 +46,26 @@ function validateUrl(url?: string): string | undefined {
   }
 }
 
+const EMBED_HOSTS = new Set([
+  "www.youtube.com",
+  "youtube.com",
+  "www.youtube-nocookie.com",
+  "player.vimeo.com",
+]);
+
+export function validateEmbedUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || !EMBED_HOSTS.has(parsed.hostname)) return undefined;
+    const isYouTubeEmbed = parsed.hostname.includes("youtube") && parsed.pathname.startsWith("/embed/");
+    const isVimeoEmbed = parsed.hostname === "player.vimeo.com" && parsed.pathname.startsWith("/video/");
+    return isYouTubeEmbed || isVimeoEmbed ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
   return (
     <ReactMarkdown
@@ -65,16 +85,16 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           ],
           attributes: {
             ...(defaultSchema.attributes || {}),
-            "*": ["className", "style"],
+            "*": ["className"],
             iframe: [
               "src",
+              "title",
               "width",
               "height",
               "frameborder",
               "allow",
               "allowfullscreen",
-              "className",
-              "style"
+              "className"
             ]
           },
           protocols: {
@@ -184,12 +204,28 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
             loading="lazy"
           />
         ),
-        iframe: (props) => (
-          <iframe
-            {...props}
-            className={`w-full aspect-video rounded-lg my-6 border-none shadow-xl ${props.className || ""}`}
-          />
-        ),
+        iframe: ({ src, title }) => {
+          const safeEmbedUrl = validateEmbedUrl(src);
+          if (!safeEmbedUrl) {
+            return (
+              <p role="alert" className="my-4 border border-ares-red/45 bg-ares-red/15 p-3 text-sm text-white">
+                This embedded frame was blocked. Only approved YouTube and Vimeo embed URLs are supported.
+              </p>
+            );
+          }
+          return (
+            <iframe
+              src={safeEmbedUrl}
+              title={title || "Embedded media"}
+              className="w-full aspect-video rounded-lg my-6 border-none shadow-xl"
+              sandbox="allow-scripts allow-presentation"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+            />
+          );
+        },
       }}
     >
       {content}

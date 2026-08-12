@@ -1,4 +1,5 @@
-import { auth, getAppCheckHeader } from "./firebase";
+import { auth } from "./firebaseAuth";
+import { getAppCheckHeader } from "./firebaseAppCheck";
 
 export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const token = await auth.currentUser?.getIdToken();

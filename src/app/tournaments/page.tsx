@@ -3,9 +3,8 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { collection, getDocs, query, where, limit, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { fetchTournaments } from "@/lib/tournamentApi";
 import SEO from "@/components/SEO";
 import { GreekMeander } from "@/components/GreekMeander";
 import { 
@@ -19,92 +18,7 @@ import {
   ChevronRight,
   ShieldAlert
 } from "lucide-react";
-import { Tournament } from "@/types/tournament";
 import { PublicDataState } from "@/components/PublicDataState";
-
-// High-fidelity fallback/mock tournaments list matching ARES brand and history
-export const MOCK_TOURNAMENTS: Tournament[] = [
-  {
-    id: "world-championship-2026",
-    name: "FIRST® World Championship 2026",
-    date: "2026-04-29",
-    location: "Houston, TX",
-    description: "The global gathering of top-tier *FIRST*® Tech Challenge teams. ARES competed in the Edison division, showcasing our autonomous EKF calibration and high-speed climbing subsystems.",
-    status: "past",
-    opr: 210.5,
-    oprList: [
-      { teamNumber: "23247", teamName: "ARES", opr: 210.5 },
-      { teamNumber: "11111", teamName: "Texas Titans", opr: 205.2 },
-      { teamNumber: "22222", teamName: "Silicon Solvers", opr: 198.7 }
-    ],
-    scoutingDetails: {
-      autoPathNotes: "Synchronized paths with alliance partner. Added adaptive path readjustment via LiDAR scanner.",
-      driverFeedback: "Hanging hook engaged in under 1.8 seconds. Drivetrain kS feedforward deadband compensation worked flawlessly.",
-      robotSpecs: "Mecanums, carbon-fiber climbing arm, Pinpoint odometry, dual-camera vision."
-    },
-    photoAlbumId: "houston-2026",
-    isDeleted: 0
-  },
-  {
-    id: "wv-state-championship-2026",
-    name: "WV State Championship 2026",
-    date: "2026-03-14",
-    location: "Fairmont, WV",
-    description: "The premier FTC state championship tournament in West Virginia. Team ARES competed with our 2025-2026 robot, engineering pathing trajectories with kS feedforward calibration and advanced vision pipelines.",
-    status: "past",
-    opr: 185.4,
-    oprList: [
-      { teamNumber: "23247", teamName: "ARES", opr: 185.4 },
-      { teamNumber: "12345", teamName: "Morgantown Gears", opr: 142.1 },
-      { teamNumber: "99999", teamName: "WV Techs", opr: 120.3 }
-    ],
-    scoutingDetails: {
-      autoPathNotes: "Near-perfect 5-sample auto pathing. Calibrated Pinpoint Odometry error to under 0.2 inches.",
-      driverFeedback: "Smooth climbing, slight drag on the hanging hook. Fixed in post-match hardware check.",
-      robotSpecs: "Mecanums, 4-stage viper slide, custom active intake, high-accuracy shooter."
-    },
-    photoAlbumId: "wv-state-2026",
-    isDeleted: 0
-  },
-  {
-    id: "morgantown-regional-2026",
-    name: "Morgantown Regional Qualifier",
-    date: "2026-01-24",
-    location: "Morgantown, WV",
-    description: "Local regional qualifying event hosting 24 regional teams. ARES served as alliance captains, demonstrating robust autonomous reliability and defensive blockades.",
-    status: "past",
-    opr: 168.2,
-    oprList: [
-      { teamNumber: "23247", teamName: "ARES", opr: 168.2 },
-      { teamNumber: "54321", teamName: "RoboRunners", opr: 130.5 },
-      { teamNumber: "88888", teamName: "Steel City Tech", opr: 110.4 }
-    ],
-    scoutingDetails: {
-      autoPathNotes: "Consistent 4-sample auto. Avoided partner collisions by implementing a selectable delay path.",
-      driverFeedback: "Excellent drivetrain response. Intake speed increased by 15% after motor gear adjustments.",
-      robotSpecs: "Mecanums, 3-stage slide, active intake."
-    },
-    photoAlbumId: "morgantown-regional-2026",
-    isDeleted: 0
-  },
-  {
-    id: "wv-warmup-scrimmage-2026",
-    name: "WV Offseason Warmup Scrimmage",
-    date: "2026-10-17",
-    location: "Charleston, WV",
-    description: "An offseason friendly match to test experimental path planners, telemetry suites, and train rookie drivers for the new FTC season tasks.",
-    status: "upcoming",
-    opr: 0,
-    oprList: [],
-    scoutingDetails: {
-      autoPathNotes: "Testing new path planning models.",
-      driverFeedback: "Training rookie drivers on field orientation controls.",
-      robotSpecs: "Experimental chassis."
-    },
-    photoAlbumId: "scrimmage-2026",
-    isDeleted: 0
-  }
-];
 
 export default function TournamentsFeedPage() {
   const { user, authorizedUser, loading: authLoading, loginWithGoogle } = useAuth();
@@ -115,36 +29,17 @@ export default function TournamentsFeedPage() {
     return !!(user && authorizedUser && authorizedUser.role !== "unverified");
   }, [user, authorizedUser]);
 
-  // TanStack Query to fetch tournaments from Firestore
   const {
     data: tournaments = [],
     isLoading: dataLoading,
     isError: dataError,
     error,
     refetch,
-  } = useQuery<Tournament[]>({
+  } = useQuery({
     queryKey: ["tournaments"],
-    queryFn: async () => {
-      try {
-        const q = query(
-          collection(db, "tournaments"),
-          where("isDeleted", "==", 0),
-          orderBy("date", "desc"),
-          limit(50)
-        );
-        const snapshot = await getDocs(q);
-        const list = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data()
-        })) as Tournament[];
-        
-        return list;
-      } catch (err) {
-        console.error("Unable to load tournament records:", err);
-        throw err;
-      }
-    },
-    enabled: isAuthorized // Only fetch if authorized
+    queryFn: () => fetchTournaments(50),
+    enabled: isAuthorized,
+    staleTime: 60_000,
   });
 
   // Filtered tournaments based on tab and search query
@@ -208,7 +103,7 @@ export default function TournamentsFeedPage() {
         <div className="w-full max-w-md mx-auto px-6 z-10">
           <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
             <div className="relative w-20 h-20 bg-ares-red/15 border border-ares-red/45 ares-cut flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(192,0,0,0.2)]">
-              <Lock className="text-ares-red w-8 h-8 animate-pulse" />
+              <Lock className="text-ares-gold w-8 h-8 animate-pulse" aria-hidden="true" />
             </div>
             
             <span className="text-ares-gold font-bold uppercase tracking-[0.4em] text-[10px] font-heading mb-3">
@@ -232,7 +127,7 @@ export default function TournamentsFeedPage() {
 
             {user && authorizedUser?.role === "unverified" && (
               <div className="mt-6 p-4 bg-ares-red/10 border border-ares-red/30 rounded-lg flex items-start gap-2.5 text-left">
-                <ShieldAlert size={16} className="text-ares-red shrink-0 mt-0.5" />
+                <ShieldAlert size={16} className="text-ares-gold shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
                   <p className="text-xs font-bold text-white uppercase">Verification Required</p>
                   <p className="text-[11px] text-marble/60 mt-0.5">Your email ({user.email}) is authenticated, but a coach or administrator must approve your role before you can view team scouting vaults.</p>
@@ -250,13 +145,14 @@ export default function TournamentsFeedPage() {
       <SEO 
         title="Tournaments & Scouting Analytics" 
         description="Scouting logs, robot stats, match schedule checklists, and team OPR trackers from regional to world championship levels." 
+        noindex={true}
       />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         
         {/* Breadcrumb Header */}
         <header className="mb-12">
           <div className="inline-flex items-center gap-2 bg-ares-red/10 text-ares-gold border border-ares-bronze/30 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
-            <Trophy size={12} className="text-ares-red" />
+            <Trophy size={12} className="text-ares-gold" aria-hidden="true" />
             <span>ARES 23247 Competition Logs</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading mb-4 text-white">
@@ -286,8 +182,8 @@ export default function TournamentsFeedPage() {
           </div>
 
           <div className="bg-white/5 border border-white/10 ares-cut p-5 relative overflow-hidden backdrop-blur-sm flex flex-col justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-ares-red">Past Tournaments</span>
-            <span className="text-3xl md:text-4xl font-extrabold text-ares-red mt-2 font-heading">{stats.past}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white">Past Tournaments</span>
+            <span className="text-3xl md:text-4xl font-extrabold text-white mt-2 font-heading">{stats.past}</span>
             <div className="absolute right-3 bottom-3 text-ares-red/10">
               <Activity size={48} />
             </div>
@@ -307,11 +203,12 @@ export default function TournamentsFeedPage() {
         {/* Filter and Search Bar */}
         <section className="flex flex-col md:flex-row gap-4 items-center justify-between border-b border-white/5 pb-6 mb-10">
           {/* Tabs */}
-          <div className="flex gap-2 w-full md:w-auto bg-black/40 p-1 ares-cut-sm border border-white/5">
+          <div className="flex gap-2 w-full md:w-auto bg-black/40 p-1 ares-cut-sm border border-white/5" aria-label="Filter tournaments by status">
             {(["all", "upcoming", "past"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
+                aria-pressed={activeTab === tab}
                 className={`flex-1 md:flex-none px-5 py-2 text-xs font-black uppercase tracking-wider ares-cut-sm transition-all cursor-pointer ${
                   activeTab === tab
                     ? "bg-ares-red text-white shadow-lg"
@@ -339,23 +236,32 @@ export default function TournamentsFeedPage() {
         </section>
 
         {/* Tournaments Grid */}
+        {dataError && (
+          <PublicDataState
+            title="Unable to load tournament records"
+            message={tournaments.length > 0
+              ? "The last confirmed tournament list is still shown below, but its refresh failed."
+              : "The scouting vault could not be reached. Check your connection or sign in again, then retry."}
+            diagnostic={error instanceof Error ? error.message : String(error)}
+            onRetry={() => void refetch()}
+          />
+        )}
         {dataLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-marble/55">
             <div className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
             <span className="text-xs uppercase tracking-widest font-black">Loading Tournament Data...</span>
           </div>
-        ) : dataError ? (
-          <PublicDataState
-            title="Unable to load tournament records"
-            message="The scouting vault could not be reached. Check your connection or sign in again, then retry."
-            diagnostic={error instanceof Error ? error.message : String(error)}
-            onRetry={() => void refetch()}
-          />
+        ) : dataError && tournaments.length === 0 ? null : tournaments.length === 0 ? (
+          <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-2xl">
+            <Trophy className="mx-auto text-marble/25 mb-4" size={48} aria-hidden="true" />
+            <h3 className="text-lg font-bold text-white uppercase">No Tournament Records Yet</h3>
+            <p className="text-xs text-marble/55 mt-1">A coach or administrator can publish the first tournament from the dashboard.</p>
+          </div>
         ) : filteredTournaments.length === 0 ? (
           <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-2xl">
-            <Trophy className="mx-auto text-marble/25 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-white uppercase">No Tournaments Found</h3>
-            <p className="text-xs text-marble/55 mt-1">Refine your search parameters or query filters.</p>
+            <Search className="mx-auto text-marble/25 mb-4" size={48} aria-hidden="true" />
+            <h3 className="text-lg font-bold text-white uppercase">No Matches for These Filters</h3>
+            <p className="text-xs text-marble/55 mt-1">Try a different status or clear the search field.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -369,14 +275,14 @@ export default function TournamentsFeedPage() {
                   <div className="flex justify-between items-start mb-4">
                     {/* Location Badge */}
                     <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-marble/80">
-                      <MapPin size={10} className="text-ares-red" />
+                      <MapPin size={10} className="text-ares-gold" aria-hidden="true" />
                       <span>{t.location}</span>
                     </div>
                     {/* Status Badge */}
                     <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
                       t.status === "upcoming" 
                         ? "bg-ares-gold/20 text-ares-gold border border-ares-gold/30" 
-                        : "bg-ares-red/20 text-ares-red border border-ares-red/30"
+                        : "bg-ares-red text-white border border-ares-red"
                     }`}>
                       {t.status}
                     </span>
@@ -409,7 +315,7 @@ export default function TournamentsFeedPage() {
                     )}
                   </div>
                   
-                  <span className="text-[10px] uppercase font-black tracking-widest text-ares-red group-hover:text-white transition-colors flex items-center gap-1">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-ares-gold group-hover:text-white transition-colors flex items-center gap-1">
                     Scouting Board <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>

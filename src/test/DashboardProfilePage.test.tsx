@@ -1,9 +1,9 @@
 import React from "react";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import DashboardProfilePage from "../app/dashboard/profile/page";
 import { useAuth } from "../context/AuthContext";
-import { getDoc, setDoc } from "firebase/firestore";
+import { authenticatedFetch } from "../lib/api";
 import * as LucideIcons from "lucide-react";
 
 // Mock AuthContext
@@ -14,18 +14,37 @@ vi.mock("../context/AuthContext", () => {
   };
 });
 
-// Mock Firebase firestore methods
-vi.mock("firebase/firestore", () => {
-  return {
-    doc: vi.fn(),
-    getDoc: vi.fn(),
-    setDoc: vi.fn(),
-  };
-});
+vi.mock("../lib/api", () => ({
+  authenticatedFetch: vi.fn(),
+}));
+
+const emptyProfile = {
+  nickname: "", firstName: "", lastName: "", pronouns: "", avatar: "", bio: "",
+  funFact: "", favoriteFirstThing: "", favoriteRobotMechanism: "",
+  preMatchSuperstition: "", rookieYear: "", leadershipRole: "", subteams: [],
+  tshirtSize: "", dietaryRestrictions: [], emergencyContactName: "",
+  emergencyContactPhone: "", phone: "", contactEmail: "", showEmail: false,
+  showPhone: false, showOnAbout: false, colleges: [], employers: [], memberType: "student",
+};
+
+function apiResponse(body: unknown, ok = true, status = 200, statusText = "OK") {
+  return { ok, status, statusText, json: async () => body } as Response;
+}
+
+function mockProfileApi(profile: Record<string, unknown> = {}, exists = true) {
+  vi.mocked(authenticatedFetch).mockImplementation(async (_input, init) => {
+    const dto = { ...emptyProfile, ...profile };
+    return init?.method === "PATCH"
+      ? apiResponse({ success: true, exists: true, profile: dto })
+      : apiResponse({ exists, profile: dto });
+  });
+}
 
 describe("DashboardProfilePage imports", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     window.scrollTo = vi.fn();
+    mockProfileApi();
   });
 
   it("verifies all lucide-react icons used are defined", () => {
@@ -69,10 +88,7 @@ describe("DashboardProfilePage imports", () => {
       employers: [{ name: "NASA", domain: "nasa.gov", title: "Intern", current: true, years: "2024" }]
     };
 
-    (getDoc as any).mockResolvedValue({
-      exists: () => true,
-      data: () => mockDocData
-    });
+    mockProfileApi(mockDocData);
 
     await act(async () => {
       render(<DashboardProfilePage />);
@@ -103,6 +119,81 @@ describe("DashboardProfilePage imports", () => {
     expect(screen.queryByText(/Character Creator/i)).not.toBeInTheDocument();
   });
 
+  it("keeps a new profile private and does not copy the Google legal name into nickname", async () => {
+    (useAuth as any).mockReturnValue({
+      user: { uid: "new-uid", displayName: "Student Legal Name", email: "student@example.com" },
+      authorizedUser: { email: "student@example.com", role: "member" },
+      loading: false,
+    });
+    mockProfileApi({}, false);
+
+    render(<DashboardProfilePage />);
+
+    await waitFor(() => expect(screen.queryByText(/Loading Settings Panel/i)).not.toBeInTheDocument());
+    expect(screen.getByLabelText(/Nickname \*/i)).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: /Contact & Privacy/i }));
+    expect(screen.getByLabelText(/Display on Public Roster/i)).not.toBeChecked();
+  });
+
+  it("forces legacy student contact visibility flags off when saving", async () => {
+    (useAuth as any).mockReturnValue({
+      user: { uid: "student-uid", displayName: "Protected Student", email: "student@example.com" },
+      authorizedUser: { email: "student@example.com", role: "member" },
+      loading: false,
+    });
+    mockProfileApi({
+        nickname: "Student Nickname",
+        memberType: "student",
+        contactEmail: "student@example.com",
+        phone: "304-555-0100",
+        showEmail: true,
+        showPhone: true,
+    });
+
+    render(<DashboardProfilePage />);
+    await waitFor(() => expect(screen.queryByText(/Loading Settings Panel/i)).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Save Profile/i }));
+
+    await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/api/profiles/me",
+      expect.objectContaining({
+        method: "PATCH",
+        body: expect.any(String),
+      }),
+    ));
+    const saveInit = vi.mocked(authenticatedFetch).mock.calls.find(([, init]) => init?.method === "PATCH")?.[1];
+    const saved = JSON.parse(String(saveInit?.body));
+    expect(saved).toEqual(expect.objectContaining({
+        nickname: "Student Nickname",
+        contactEmail: "student@example.com",
+        phone: "304-555-0100",
+        showEmail: false,
+        showPhone: false,
+    }));
+    expect(saved).not.toHaveProperty("memberType");
+  });
+
+  it("keeps profile edits visible and reports the write error when saving fails", async () => {
+    (useAuth as any).mockReturnValue({
+      user: { uid: "member-uid", displayName: "Member", email: "member@example.com" },
+      authorizedUser: { email: "member@example.com", role: "member" },
+      loading: false,
+    });
+    mockProfileApi({ nickname: "Original", memberType: "student" });
+    vi.mocked(authenticatedFetch).mockImplementation(async (_input, init) => init?.method === "PATCH"
+      ? apiResponse({ error: "Profile save rejected" }, false, 403, "Forbidden")
+      : apiResponse({ exists: true, profile: { ...emptyProfile, nickname: "Original" } }));
+
+    render(<DashboardProfilePage />);
+    const nickname = await screen.findByLabelText(/Nickname \*/i);
+    fireEvent.change(nickname, { target: { value: "Unsaved Nickname" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save Profile/i }));
+
+    expect(await screen.findByText(/HTTP 403: Forbidden.*Profile save rejected/i)).toBeInTheDocument();
+    expect(nickname).toHaveValue("Unsaved Nickname");
+  });
+
   it("exercises all profile tabs, input fields, and submits successfully", async () => {
     (useAuth as any).mockReturnValue({
       user: { uid: "test-uid", displayName: "Test User", email: "test@example.com" },
@@ -121,11 +212,7 @@ describe("DashboardProfilePage imports", () => {
       employers: []
     };
 
-    (getDoc as any).mockResolvedValue({
-      exists: () => true,
-      data: () => mockDocData
-    });
-    vi.mocked(setDoc).mockResolvedValue(undefined as any);
+    mockProfileApi(mockDocData);
 
     await act(async () => {
       render(<DashboardProfilePage />);
@@ -250,12 +337,20 @@ describe("DashboardProfilePage imports", () => {
     fireEvent.change(contactNameInput, { target: { value: "John Doe" } });
 
     // --- Submit Profile ---
-    const submitBtn = screen.getByRole("button", { name: /Synchronize Profile/i });
+    const submitBtn = screen.getByRole("button", { name: /Save Profile/i });
     await act(async () => {
       fireEvent.click(submitBtn);
     });
 
-    expect(setDoc).toHaveBeenCalled();
-    expect(screen.getByText(/Profile settings successfully synchronized and updated!/i)).toBeInTheDocument();
+    const finalSave = vi.mocked(authenticatedFetch).mock.calls.find(([, init]) => init?.method === "PATCH")?.[1];
+    expect(JSON.parse(String(finalSave?.body))).toEqual(
+      expect.objectContaining({
+        nickname: "NewNickname",
+        showOnAbout: true,
+        showEmail: false,
+        showPhone: false,
+      }),
+    );
+    expect(screen.getByText(/Profile settings saved securely/i)).toBeInTheDocument();
   });
 });

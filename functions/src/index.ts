@@ -28,7 +28,7 @@ import driveRouter from "./routes/drive";
 import financeRouter from "./routes/finance";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ensureTeamMember } from "./middleware/auth";
-import { observeAppCheck } from "./middleware/appCheck";
+import { enforceAppCheck, observeAppCheck } from "./middleware/appCheck";
 
 let secret = process.env.ENCRYPTION_SECRET;
 if (!secret && process.argv.some(arg => arg.includes("firebase-functions")) && process.env.FUNCTIONS_EMULATOR !== "true") {
@@ -90,6 +90,7 @@ app.use("/api", rateLimit({
   legacyHeaders: false,
 }));
 app.use(observeAppCheck);
+app.use(enforceAppCheck);
 app.use("/api/upload", ensureTeamMember);
 app.use("/api/photos/upload-unified", ensureTeamMember);
 
@@ -164,11 +165,16 @@ export const api = onRequest({
     "ENCRYPTION_SECRET",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_PHOTOS_REFRESH_TOKEN",
     "GCP_PROJECT_ID",
     "GEMINI_API_KEY",
+    "YOUTUBE_API_KEY",
     "RECAPTCHA_SECRET_KEY",
     "PROFILE_SYNC_SECRET",
     "GITHUB_PAT",
+    "ZULIP_BOT_EMAIL",
+    "ZULIP_API_KEY",
+    "ZULIP_WEBHOOK_TOKEN",
   ] 
 }, app);
 

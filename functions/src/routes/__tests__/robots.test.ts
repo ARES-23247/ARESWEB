@@ -1,578 +1,241 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { adminDb } from "../../lib/firebase-admin";
 import robotsRouter, {
   createRobotSchema,
+  ensureRobotEditor,
+  isTrustedOnshapeUrl,
+  robotDto,
   updateRobotSchema,
-  ensureAdminOrCoach
 } from "../robots";
-import { adminDb } from "../../lib/firebase-admin";
-import { ApiError } from "../../middleware/errorHandler";
 
-// Mock Firebase Admin
-vi.mock("../../lib/firebase-admin", () => {
-  const mockGet = vi.fn();
-  const mockSet = vi.fn();
-  const mockUpdate = vi.fn();
-  const mockDelete = vi.fn();
+vi.mock("../../lib/firebase-admin", () => ({ adminDb: { collection: vi.fn() } }));
 
-  const mockDoc = vi.fn().mockImplementation((id) => {
-    return {
-      get: mockGet,
-      set: mockSet,
-      update: mockUpdate,
-      delete: mockDelete,
-    };
-  });
-
-  const queryMock: any = {
-    get: mockGet,
-    where: vi.fn().mockImplementation(() => queryMock),
-    limit: vi.fn().mockImplementation(() => queryMock),
-    orderBy: vi.fn().mockImplementation(() => queryMock),
-    startAfter: vi.fn().mockImplementation(() => queryMock),
-  };
-
-  const mockCollection = vi.fn().mockImplementation(() => {
-    return {
-      doc: mockDoc,
-      where: vi.fn().mockImplementation(() => queryMock),
-      get: mockGet,
-      limit: vi.fn().mockImplementation(() => queryMock),
-      orderBy: vi.fn().mockImplementation(() => queryMock),
-    };
-  });
-
-  return {
-    adminDb: {
-      collection: mockCollection,
-    },
-  };
-});
-
-describe("Robots Router Backend Endpoints", () => {
+describe("robots routes", () => {
   let req: any;
   let res: any;
-  let next: any;
+  let next: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    req = {
-      params: {},
-      query: {},
-      body: {},
-      user: {
-        uid: "user_123",
-        email: "test@example.com",
-      },
-    };
-    res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn().mockReturnThis(),
-    };
+    req = { params: {}, query: {}, body: {}, user: { uid: "editor-1" } };
+    res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
     next = vi.fn();
   });
 
-  const getHandler = (path: string, method: string) => {
-    const routeLayer = robotsRouter.stack.find(
-      (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
-    );
-    expect(routeLayer).toBeDefined();
-    const stack = routeLayer!.route!.stack;
-    return stack[stack.length - 1].handle;
-  };
+  function handler(path: string, method: string) {
+    const layer = robotsRouter.stack.find((entry) => entry.route?.path === path && entry.route.methods[method]);
+    expect(layer).toBeDefined();
+    return layer!.route!.stack.at(-1)!.handle;
+  }
 
-  describe("ensureAdminOrCoach Middleware", () => {
-    it("should call next() if user has role 'admin'", async () => {
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "authorized_users") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                data: () => ({ role: "admin" }),
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
+  function editor(role: string, exists = true) {
+    vi.mocked(adminDb.collection).mockReturnValue({
+      doc: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue({ exists, data: () => ({ role }) }) }),
+    } as any);
+  }
+
+  describe("role matrix", () => {
+    for (const role of ["admin", "coach", "mentor"]) {
+      it(`allows ${role}`, async () => {
+        editor(role);
+        await ensureRobotEditor(req, res, next);
+        expect(req.authorizationRole).toBe(role);
+        expect(next).toHaveBeenCalledWith();
       });
+    }
 
-      await ensureAdminOrCoach(req, res, next);
-      expect(next).toHaveBeenCalledWith();
-    });
-
-    it("should call next() if user has role 'coach'", async () => {
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "authorized_users") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                data: () => ({ role: "coach" }),
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
+    for (const role of ["student", "member", "parent", "unverified"]) {
+      it(`denies ${role}`, async () => {
+        editor(role);
+        await ensureRobotEditor(req, res, next);
+        expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
       });
+    }
 
-      await ensureAdminOrCoach(req, res, next);
-      expect(next).toHaveBeenCalledWith();
-    });
-
-    it("should call next(ApiError 401) if user is not authenticated (req.user missing)", async () => {
+    it("denies a missing authenticated identity", async () => {
       req.user = undefined;
-      await ensureAdminOrCoach(req, res, next);
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(401);
+      await ensureRobotEditor(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 401 }));
     });
 
-    it("should call next(ApiError 403) if user is not found in authorized_users", async () => {
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "authorized_users") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: false,
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await ensureAdminOrCoach(req, res, next);
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(403);
+    it("denies users absent from the authorization collection", async () => {
+      editor("admin", false);
+      await ensureRobotEditor(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
     });
 
-    it("should call next(ApiError 403) if user has insufficient role (e.g. member)", async () => {
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "authorized_users") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                data: () => ({ role: "member" }),
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      await ensureAdminOrCoach(req, res, next);
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(403);
+    it("forwards database failures", async () => {
+      vi.mocked(adminDb.collection).mockImplementation(() => { throw new Error("database offline"); });
+      await ensureRobotEditor(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "database offline" }));
     });
   });
 
-  describe("GET /api/robots - Fetch active robots", () => {
-    it("should fetch all active robots with isDeleted == 0 successfully", async () => {
-      const mockDocs = [
-        {
-          id: "bot1",
-          data: () => ({
-            name: "Ares Prime",
-            seasonName: "Centerstage",
-            challengeName: "FIRST Tech Challenge",
-            drivetrainType: "Mecanum",
-            cadViewerUrl: "https://cad.com/bot1",
-            versions: [{ versionNumber: "v1.0", notes: "Initial build", cadViewerUrl: "https://cad.com/bot1-v1" }],
-            isDeleted: 0,
-            createdAt: "2024-01-01T00:00:00.000Z",
-            updatedAt: "2024-01-01T00:00:00.000Z",
-          }),
-        },
-      ];
+  describe("validation and DTOs", () => {
+    const validRobot = {
+      id: "ares-prime",
+      name: "ARES Prime",
+      seasonName: "2026–2027",
+      challengeName: "Test challenge",
+      weightLbs: 42,
+      drivetrainType: "Mecanum",
+      programmingLanguage: "Kotlin / ARESLib",
+      revealVideoId: "abcdefghijk",
+      onshapeUrl: "https://cad.onshape.com/documents/abc",
+      cadViewerUrl: "https://cad.onshape.com/documents/abc/e/embed",
+      primaryMechanism: "Arm",
+      content: "Published description",
+      versions: [{ name: "V1", content: "Prototype", weightLbs: 40, drivetrainType: "Tank", primaryMechanism: "Lift", cadViewerUrl: "https://cad.onshape.com/documents/v1" }],
+    };
 
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          const queryMock: any = {
-            get: vi.fn().mockResolvedValue({ docs: mockDocs }),
-            where: vi.fn().mockImplementation(() => queryMock),
-            limit: vi.fn().mockImplementation(() => queryMock),
-            orderBy: vi.fn().mockImplementation(() => queryMock),
-          };
-          return queryMock;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/", "get");
-      await handler(req, res, next);
-
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          robots: [
-            expect.objectContaining({ id: "bot1", name: "Ares Prime", drivetrainType: "Mecanum" }),
-          ],
-        })
-      );
+    it("accepts every field produced by the editor", () => {
+      expect(createRobotSchema.safeParse(validRobot).success).toBe(true);
+      expect(updateRobotSchema.safeParse({ primaryMechanism: "New arm", weightLbs: 41 }).success).toBe(true);
     });
 
-    it("should handle startAfter cursor correctly if provided", async () => {
-      const mockDocs = [
-        {
-          id: "bot2",
-          data: () => ({
-            name: "Ares Beta",
-            seasonName: "Centerstage",
-            challengeName: "FIRST Tech Challenge",
-            drivetrainType: "Tank",
-            isDeleted: 0,
-            createdAt: "2024-01-01T00:00:00.000Z",
-            updatedAt: "2024-01-01T00:00:00.000Z",
-          }),
-        },
-      ];
+    it("requires at least one update field", () => {
+      expect(updateRobotSchema.safeParse({}).success).toBe(false);
+    });
 
-      req.query.startAfter = "bot1";
+    it.each([
+      "http://cad.onshape.com/documents/abc",
+      "https://evil.example/onshape",
+      "https://cad.onshape.com:444/documents/abc",
+      "https://user:password@cad.onshape.com/documents/abc",
+      "javascript:alert(1)",
+      "not-a-url",
+    ])("rejects an untrusted CAD URL: %s", (url) => {
+      expect(isTrustedOnshapeUrl(url)).toBe(false);
+      expect(createRobotSchema.safeParse({ ...validRobot, cadViewerUrl: url }).success).toBe(false);
+    });
 
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          const queryMock: any = {
-            get: vi.fn().mockResolvedValue({ docs: mockDocs }),
-            where: vi.fn().mockImplementation(() => queryMock),
-            limit: vi.fn().mockImplementation(() => queryMock),
-            orderBy: vi.fn().mockImplementation(() => queryMock),
-            startAfter: vi.fn().mockImplementation(() => queryMock),
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ exists: true }),
-            }),
-          };
-          return queryMock;
-        }
-        return {} as any;
-      });
+    it("accepts the exact trusted HTTPS Onshape host", () => {
+      expect(isTrustedOnshapeUrl("https://cad.onshape.com/documents/abc")).toBe(true);
+    });
 
-      const handler = getHandler("/", "get");
-      await handler(req, res, next);
+    it("rejects malformed IDs, video IDs, weights, and excessive versions", () => {
+      expect(createRobotSchema.safeParse({ ...validRobot, id: "Bad ID" }).success).toBe(false);
+      expect(createRobotSchema.safeParse({ ...validRobot, revealVideoId: "short" }).success).toBe(false);
+      expect(createRobotSchema.safeParse({ ...validRobot, weightLbs: -1 }).success).toBe(false);
+      expect(createRobotSchema.safeParse({ ...validRobot, versions: Array.from({ length: 31 }, () => validRobot.versions[0]) }).success).toBe(false);
+    });
 
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          robots: [
-            expect.objectContaining({ id: "bot2", name: "Ares Beta" }),
-          ],
-        })
-      );
+    it("returns only the explicit public DTO and sanitizes legacy URLs", () => {
+      const dto = robotDto("r1", {
+        ...validRobot,
+        secret: "not part of the interface",
+        onshapeUrl: "javascript:alert(1)",
+        cadViewerUrl: "http://unsafe.example",
+        versions: [{ name: "V1", content: "", cadViewerUrl: "javascript:alert(1)", internal: "secret" }],
+        isDeleted: 1,
+      } as any);
+      expect(dto).not.toHaveProperty("secret");
+      expect(dto).not.toHaveProperty("isDeleted");
+      expect(dto.onshapeUrl).toBe("");
+      expect(dto.cadViewerUrl).toBe("");
+      expect(dto.versions[0]).not.toHaveProperty("internal");
+      expect(dto.versions[0].cadViewerUrl).toBe("");
+      expect(robotDto("r1", { isDeleted: 1 }, true)).toHaveProperty("isDeleted", 1);
     });
   });
 
-  describe("GET /api/robots/:id - Fetch robot details", () => {
-    it("should return robot data if it exists and isDeleted is 0", async () => {
-      req.params.id = "bot1";
-
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                id: "bot1",
-                data: () => ({
-                  name: "Ares Prime",
-                  seasonName: "Centerstage",
-                  challengeName: "FIRST Tech Challenge",
-                  drivetrainType: "Mecanum",
-                  isDeleted: 0,
-                }),
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/:id", "get");
-      await handler(req, res, next);
-
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        robot: expect.objectContaining({ id: "bot1", name: "Ares Prime" }),
-      });
+  describe("read endpoints", () => {
+    it("returns a bounded active fleet page", async () => {
+      const documents = [{ id: "r1", data: () => ({ name: "Prime", isDeleted: 0 }) }];
+      const query: any = { where: vi.fn(), orderBy: vi.fn(), limit: vi.fn(), get: vi.fn().mockResolvedValue({ docs: documents }) };
+      query.where.mockReturnValue(query); query.orderBy.mockReturnValue(query); query.limit.mockReturnValue(query);
+      vi.mocked(adminDb.collection).mockReturnValue(query);
+      req.query.limit = "1000";
+      await handler("/", "get")(req, res, next);
+      expect(query.limit).toHaveBeenCalledWith(100);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, robots: [expect.objectContaining({ id: "r1", name: "Prime" })] }));
     });
 
-    it("should throw a 404 ApiError if robot does not exist", async () => {
-      req.params.id = "missing";
+    it("uses a valid cursor and rejects an invalid one", async () => {
+      const query: any = { where: vi.fn(), orderBy: vi.fn(), limit: vi.fn(), startAfter: vi.fn(), get: vi.fn().mockResolvedValue({ docs: [] }), doc: vi.fn() };
+      query.where.mockReturnValue(query); query.orderBy.mockReturnValue(query); query.limit.mockReturnValue(query); query.startAfter.mockReturnValue(query);
+      const cursor = { exists: true, data: () => ({ isDeleted: 0 }) };
+      query.doc.mockReturnValue({ get: vi.fn().mockResolvedValue(cursor) });
+      vi.mocked(adminDb.collection).mockReturnValue(query);
+      req.query.startAfter = "r1";
+      await handler("/", "get")(req, res, next);
+      expect(query.startAfter).toHaveBeenCalledWith(cursor);
 
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: false,
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/:id", "get");
-      await handler(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(404);
-      expect(err.message).toBe("Robot not found");
+      query.doc.mockReturnValue({ get: vi.fn().mockResolvedValue({ exists: false }) });
+      await handler("/", "get")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
     });
 
-    it("should throw a 404 ApiError if robot is soft-deleted (isDeleted === 1)", async () => {
-      req.params.id = "bot_del";
+    it("returns a detail DTO and hides missing or decommissioned robots", async () => {
+      req.params.id = "r1";
+      const get = vi.fn().mockResolvedValue({ exists: true, id: "r1", data: () => ({ name: "Prime", isDeleted: 0 }) });
+      vi.mocked(adminDb.collection).mockReturnValue({ doc: vi.fn().mockReturnValue({ get }) } as any);
+      await handler("/:id", "get")(req, res, next);
+      expect(res.json).toHaveBeenCalledWith({ success: true, robot: expect.objectContaining({ id: "r1", name: "Prime" }) });
 
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                data: () => ({
-                  name: "Deleted Robot",
-                  isDeleted: 1,
-                }),
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
+      get.mockResolvedValue({ exists: true, id: "r1", data: () => ({ isDeleted: 1 }) });
+      await handler("/:id", "get")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
+    });
 
-      const handler = getHandler("/:id", "get");
-      await handler(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(404);
-      expect(err.message).toBe("Robot not found");
+    it("returns archived state only from the privileged list handler", async () => {
+      const query: any = { orderBy: vi.fn(), limit: vi.fn(), get: vi.fn().mockResolvedValue({ docs: [{ id: "r1", data: () => ({ name: "Old", isDeleted: 1 }) }] }) };
+      query.orderBy.mockReturnValue(query); query.limit.mockReturnValue(query);
+      vi.mocked(adminDb.collection).mockReturnValue(query);
+      await handler("/admin", "get")(req, res, next);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ robots: [expect.objectContaining({ isDeleted: 1 })] }));
     });
   });
 
-  describe("POST /api/robots - Create robot", () => {
-    it("should successfully create robot document", async () => {
-      req.body = {
-        name: "Ares Alpha",
-        seasonName: "Into The Deep",
-        challengeName: "FIRST Tech Challenge",
-        drivetrainType: "Swerve",
-        cadViewerUrl: "https://cad.com/alpha",
-        versions: [
-          { versionNumber: "1.0", notes: "First CAD prototype", cadViewerUrl: "https://cad.com/alpha-v1" }
-        ],
-      };
-
-      const mockSet = vi.fn().mockResolvedValue(undefined);
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              id: "new_bot_id",
-              set: mockSet,
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/", "post");
-      await handler(req, res, next);
-
-      expect(mockSet).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: "new_bot_id",
-          name: "Ares Alpha",
-          drivetrainType: "Swerve",
-          isDeleted: 0,
-        })
-      );
+  describe("write endpoints", () => {
+    it("creates with a validated slug and rejects a duplicate", async () => {
+      req.body = { id: "prime", name: "Prime", seasonName: "2026", challengeName: "Challenge", drivetrainType: "Mecanum", versions: [] };
+      const set = vi.fn();
+      const get = vi.fn().mockResolvedValue({ exists: false });
+      vi.mocked(adminDb.collection).mockReturnValue({ doc: vi.fn().mockReturnValue({ id: "prime", get, set }) } as any);
+      await handler("/", "post")(req, res, next);
+      expect(set).toHaveBeenCalledWith(expect.objectContaining({ name: "Prime", isDeleted: 0 }));
       expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        robot: expect.objectContaining({
-          id: "new_bot_id",
-          name: "Ares Alpha",
-        }),
-      });
-    });
-  });
 
-  describe("PUT /api/robots/:id - Update robot", () => {
-    it("should successfully update robot document if active", async () => {
-      req.params.id = "bot_exist";
-      req.body = {
-        name: "Updated Robot Name",
-        versions: [
-          { versionNumber: "2.0", notes: "Updated intake system" }
-        ]
-      };
-
-      const mockUpdate = vi.fn().mockResolvedValue(undefined);
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                data: () => ({
-                  id: "bot_exist",
-                  name: "Original Bot",
-                  isDeleted: 0,
-                }),
-              }),
-              update: mockUpdate,
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/:id", "put");
-      await handler(req, res, next);
-
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: "Updated Robot Name",
-          versions: expect.arrayContaining([
-            expect.objectContaining({ versionNumber: "2.0" })
-          ]),
-        })
-      );
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: "Robot updated successfully",
-        })
-      );
+      get.mockResolvedValue({ exists: true });
+      await handler("/", "post")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 409 }));
     });
 
-    it("should throw 404 if robot to update does not exist or isDeleted is 1", async () => {
-      req.params.id = "bot_missing";
-      req.body = {
-        name: "Some Name",
-      };
-
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: false,
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/:id", "put");
-      await handler(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(404);
-    });
-  });
-
-  describe("DELETE /api/robots/:id - Delete robot (soft-delete)", () => {
-    it("should soft delete robot by setting isDeleted to 1", async () => {
-      req.params.id = "bot_del";
-
-      const mockUpdate = vi.fn().mockResolvedValue(undefined);
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: true,
-                data: () => ({
-                  id: "bot_del",
-                  name: "To Delete",
-                  isDeleted: 0,
-                }),
-              }),
-              update: mockUpdate,
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/:id", "delete");
-      await handler(req, res, next);
-
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isDeleted: 1,
-        })
-      );
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        message: "Robot deleted successfully",
-      });
+    it("updates an active robot", async () => {
+      req.params.id = "r1"; req.body = { name: "New name" };
+      const update = vi.fn();
+      vi.mocked(adminDb.collection).mockReturnValue({ doc: vi.fn().mockReturnValue({ id: "r1", get: vi.fn().mockResolvedValue({ exists: true, data: () => ({ name: "Old", isDeleted: 0 }) }), update }) } as any);
+      await handler("/:id", "put")(req, res, next);
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({ name: "New name" }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: "Robot updated successfully" }));
     });
 
-    it("should throw 404 if robot to delete is not found", async () => {
-      req.params.id = "bot_missing";
+    it("soft-decommissions and restores a robot", async () => {
+      req.params.id = "r1";
+      const update = vi.fn();
+      const get = vi.fn().mockResolvedValue({ exists: true, data: () => ({ isDeleted: 0 }) });
+      vi.mocked(adminDb.collection).mockReturnValue({ doc: vi.fn().mockReturnValue({ get, update }) } as any);
+      await handler("/:id", "delete")(req, res, next);
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 1 }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: "Robot decommissioned successfully" }));
 
-      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
-        if (name === "robots") {
-          return {
-            doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({
-                exists: false,
-              }),
-            }),
-          } as any;
-        }
-        return {} as any;
-      });
-
-      const handler = getHandler("/:id", "delete");
-      await handler(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
-      const err = next.mock.calls[0][0];
-      expect(err.status).toBe(404);
-    });
-  });
-
-  describe("Schema Validation", () => {
-    it("should validate valid robot body", () => {
-      const validBody = {
-        name: "Ares Swerve",
-        seasonName: "Into The Deep",
-        challengeName: "FTC",
-        drivetrainType: "Swerve",
-        cadViewerUrl: "https://cad.com/swerve",
-        versions: [
-          { versionNumber: "v1.0", notes: "Base chassis", cadViewerUrl: "https://cad.com/swerve-v1" }
-        ],
-      };
-      const result = createRobotSchema.safeParse(validBody);
-      expect(result.success).toBe(true);
+      get.mockResolvedValue({ exists: true, data: () => ({ isDeleted: 1 }) });
+      await handler("/:id/restore", "patch")(req, res, next);
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 0 }));
     });
 
-    it("should fail validation if drivetrainType is missing", () => {
-      const invalidBody = {
-        name: "Robot",
-        seasonName: "Into The Deep",
-        challengeName: "FTC",
-      };
-      const result = createRobotSchema.safeParse(invalidBody);
-      expect(result.success).toBe(false);
-    });
+    it("rejects missing, archived, and already-active write targets", async () => {
+      req.params.id = "r1"; req.body = { name: "New" };
+      const get = vi.fn().mockResolvedValue({ exists: false });
+      vi.mocked(adminDb.collection).mockReturnValue({ doc: vi.fn().mockReturnValue({ get, update: vi.fn() }) } as any);
+      await handler("/:id", "put")(req, res, next);
+      await handler("/:id", "delete")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
 
-    it("should allow partial updates in updateRobotSchema", () => {
-      const partialBody = {
-        name: "New Swerve Name",
-      };
-      const result = updateRobotSchema.safeParse(partialBody);
-      expect(result.success).toBe(true);
+      get.mockResolvedValue({ exists: true, data: () => ({ isDeleted: 0 }) });
+      await handler("/:id/restore", "patch")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 409 }));
     });
   });
 });

@@ -40,7 +40,7 @@ export default function DocFormAttachmentFields({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || "Failed to fetch Drive metadata.");
+        throw new Error(`HTTP ${res.status} ${res.statusText}: ${errorData.error || errorData.message || "Failed to fetch Drive metadata."}`);
       }
 
       const data = await res.json();
@@ -54,8 +54,9 @@ export default function DocFormAttachmentFields({
         });
         toast.success(`Imported metadata for "${data.file.title}"`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Error importing from Google Drive.");
+    } catch (error: unknown) {
+      console.error("Google Drive metadata import failed", error);
+      toast.error(error instanceof Error ? error.message : "Error importing from Google Drive.");
     } finally {
       setIsImporting(false);
     }

@@ -99,6 +99,7 @@ export default function CareerTab({
                 </div>
                 <button
                   type="button"
+                  aria-label={`Remove ${col.name} from education history`}
                   onClick={() => removeCollege(idx)}
                   className="p-1.5 bg-ares-red/10 border border-ares-red/20 text-ares-red hover:bg-ares-red hover:text-white rounded transition-colors cursor-pointer"
                 >
@@ -186,6 +187,7 @@ export default function CareerTab({
                 </div>
                 <button
                   type="button"
+                  aria-label={`Remove ${emp.name} from employment history`}
                   onClick={() => removeEmployer(idx)}
                   className="p-1.5 bg-ares-red/10 border border-ares-red/20 text-ares-red hover:bg-ares-red hover:text-white rounded transition-colors cursor-pointer"
                 >

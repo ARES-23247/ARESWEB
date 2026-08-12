@@ -1,18 +1,8 @@
 import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Search, Play } from "lucide-react";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { cleanThumbnailUrl } from "@/lib/utils";
-
-interface Video {
-  id: string;
-  videoId: string;
-  title: string;
-  description?: string;
-  thumbnailUrl?: string;
-  createdAt: string;
-}
+import { authenticatedFetch } from "@/lib/api";
+import { apiFailure, ManagedVideo } from "@/lib/media";
 
 interface VideoPickerModalProps {
   isOpen: boolean;
@@ -21,32 +11,28 @@ interface VideoPickerModalProps {
 }
 
 export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPickerModalProps) {
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [videos, setVideos] = useState<ManagedVideo[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const fetchVideos = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const q = query(collection(db, "videos"), orderBy("createdAt", "desc"), limit(50));
-        const snap = await getDocs(q);
-        const list = snap.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            videoId: data.videoId || "",
-            title: data.title || "Untitled Video",
-            description: data.description || "",
-            thumbnailUrl: data.thumbnailUrl || "",
-            createdAt: data.createdAt || "",
-          } as Video;
-        });
-        setVideos(list);
-      } catch (err) {
-        console.warn("Failed to load videos from Firestore:", err);
+        const response = await authenticatedFetch("/api/videos?limit=50");
+        if (!response.ok) throw await apiFailure(response, "Videos could not load.");
+        const page = await response.json() as { videos: ManagedVideo[]; nextCursor: string | null; hasMore: boolean };
+        setVideos(page.videos.filter((video) => !video.isArchived));
+        setCursor(page.nextCursor);
+        setHasMore(page.hasMore);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause));
       } finally {
         setLoading(false);
       }
@@ -54,6 +40,24 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
 
     fetchVideos();
   }, [isOpen]);
+
+  const loadMore = async () => {
+    if (!cursor || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authenticatedFetch(`/api/videos?limit=50&cursor=${encodeURIComponent(cursor)}`);
+      if (!response.ok) throw await apiFailure(response, "More videos could not load.");
+      const page = await response.json() as { videos: ManagedVideo[]; nextCursor: string | null; hasMore: boolean };
+      setVideos((current) => [...new Map([...current, ...page.videos].map((video) => [video.id, video])).values()]);
+      setCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -93,6 +97,8 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
           <div className="relative mb-4">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
             <input
+              id="video-picker-search"
+              aria-label="Search videos"
               type="text"
               placeholder="Search videos by title or description..."
               value={searchQuery}
@@ -103,10 +109,15 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
 
           {/* Video List */}
           <div className="flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent min-h-[300px]">
-            {loading ? (
+            {loading && videos.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-2">
                 <span className="w-6 h-6 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
                 <span className="text-[10px] text-marble/55">Querying video database...</span>
+              </div>
+            ) : error ? (
+              <div role="alert" className="border border-ares-red bg-ares-red/15 p-4 text-white">
+                <p className="text-xs font-bold">The video list could not load.</p>
+                <p className="mt-1 font-mono text-[10px] text-white/80">{error}</p>
               </div>
             ) : filteredVideos.length === 0 ? (
               <div className="py-20 text-center text-xs font-mono text-marble/35 border border-dashed border-white/10 rounded">
@@ -124,7 +135,7 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
                     <div className="relative w-28 h-18 bg-black/55 rounded border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
                       {video.thumbnailUrl ? (
                         <img
-                          src={cleanThumbnailUrl(video.thumbnailUrl)}
+                          src={video.thumbnailUrl}
                           alt=""
                           className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
                           loading="lazy"
@@ -151,6 +162,11 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
                   </button>
                 ))}
               </div>
+            )}
+            {hasMore && !searchQuery && (
+              <button type="button" onClick={() => void loadMore()} disabled={loading} className="mt-4 w-full border border-white/15 px-4 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
+                {loading ? "Loading" : "Load more videos"}
+              </button>
             )}
           </div>
         </Dialog.Content>

@@ -29,6 +29,7 @@ export interface TaskItem {
   assignees: string[];
   subtasks: SubTask[];
   archived?: boolean;
+  isDeleted?: 0 | 1;
   createdAt: string;
   comments?: TaskComment[];
   commentsCount?: number;

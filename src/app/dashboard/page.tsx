@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, onSnapshot, getCountFromServer, query, where, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { maskEmail } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import {

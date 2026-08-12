@@ -1,5 +1,3 @@
-import { adminDb } from "./firebase-admin";
-import { decrypt, getEncryptionSecret } from "./crypto";
 import { logger } from "./logger";
 
 let cachedAccessToken: string | null = null;
@@ -11,29 +9,13 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
     return cachedAccessToken;
   }
 
-  const authRef = adminDb.collection("system_settings").doc("google_auth");
-  const authDoc = await authRef.get();
-
-  if (!authDoc.exists) {
-    throw new Error("Google account integration not configured. Please link the team account first in `/api/photos/auth`.");
-  }
-
-  const authData = authDoc.data();
-  const encryptedClientId = authData?.clientId;
-  const encryptedClientSecret = authData?.clientSecret;
-  const encryptedRefreshToken = authData?.refreshToken;
-
-  if (!encryptedClientId || !encryptedClientSecret || !encryptedRefreshToken) {
-    throw new Error("Google Auth document is missing required configuration keys.");
-  }
-
-  const secret = getEncryptionSecret();
-  const clientId = await decrypt(encryptedClientId, secret);
-  const clientSecret = await decrypt(encryptedClientSecret, secret);
-  const refreshToken = await decrypt(encryptedRefreshToken, secret);
-
-  if (clientId.includes("[Decryption Failed]") || clientSecret.includes("[Decryption Failed]") || refreshToken.includes("[Decryption Failed]")) {
-    throw new Error("Failed to decrypt Google Auth credentials. Verify your ENCRYPTION_SECRET configuration.");
+  // Cloud Functions injects these values from Secret Manager. Never place
+  // credentials in Firestore, URLs, logs, or client-visible responses.
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_PHOTOS_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Google Photos integration is not configured in Secret Manager.");
   }
 
   logger.info("googleAuth", "Refreshing team access token");
@@ -49,17 +31,25 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    logger.error("googleAuth", "Token refresh request failed", errorText);
-    throw new Error(`Google token refresh failed: ${errorText}`);
+    logger.error("googleAuth", "Token refresh request failed", {
+      httpStatus: response.status,
+      statusText: response.statusText,
+    });
+    throw new Error(`Google token refresh failed with HTTP ${response.status}: ${response.statusText}`);
   }
 
   const data = await response.json() as {
-    access_token: string;
-    expires_in: number;
-    scope: string;
-    token_type: string;
+    access_token?: unknown;
+    expires_in?: unknown;
+    scope?: unknown;
+    token_type?: unknown;
   };
+
+  if (typeof data.access_token !== "string" || !data.access_token
+    || typeof data.expires_in !== "number" || !Number.isFinite(data.expires_in) || data.expires_in <= 0) {
+    logger.error("googleAuth", "Token refresh returned an invalid response shape");
+    throw new Error("Google token refresh returned an invalid response.");
+  }
 
   cachedAccessToken = data.access_token;
   tokenExpiresAt = Date.now() + (data.expires_in * 1000);

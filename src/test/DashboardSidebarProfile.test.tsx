@@ -1,0 +1,59 @@
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
+import { useAuth } from "../context/AuthContext";
+import { authenticatedFetch } from "../lib/api";
+
+vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../lib/api", () => ({ authenticatedFetch: vi.fn() }));
+vi.mock("../lib/firebaseFirestore", () => ({ db: {} }));
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(), query: vi.fn(), where: vi.fn(), onSnapshot: vi.fn(),
+}));
+
+describe("DashboardSidebar profile DTO", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "private_uid", displayName: "OAuth Legal Name", photoURL: null },
+      authorizedUser: { role: "member" },
+      logout: vi.fn(),
+    } as any);
+  });
+
+  it("loads nickname and avatar through the authenticated API without a UID-seeded fallback", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        profile: {
+          nickname: "CircuitFox",
+          avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=random-safe-seed",
+        },
+      }),
+    } as Response);
+
+    render(<MemoryRouter initialEntries={["/dashboard"]}><DashboardSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText("CircuitFox")).toBeInTheDocument();
+    expect(authenticatedFetch).toHaveBeenCalledWith("/api/profiles/me", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(document.body.innerHTML).not.toContain("private_uid");
+  });
+
+  it("keeps the sidebar usable and exposes an HTTP diagnostic when profile loading fails", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+    } as Response);
+
+    render(<MemoryRouter initialEntries={["/dashboard"]}><DashboardSidebar /></MemoryRouter>);
+
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Profile unavailable");
+    expect(status).toHaveAttribute("title", "HTTP 503: Service Unavailable");
+    expect(screen.getByText("OAuth Legal Name")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("link", { name: /My Profile/i })).toBeInTheDocument());
+  });
+});

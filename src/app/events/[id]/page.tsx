@@ -1,19 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Link, useParams } from "react-router-dom";
 import {
   doc,
-  getDoc,
   collection,
   onSnapshot,
   setDoc,
-  deleteDoc,
-  query,
-  orderBy
+  deleteDoc
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
 import ShareButtons from "@/components/ShareButtons";
@@ -32,6 +29,9 @@ import PhotoLightbox from "@/components/events/PhotoLightbox";
 import { EventItem, EventSignup, EventPhoto } from "@/components/events/types";
 
 import { TeamLocation } from "@/types/location";
+import { fetchLocations, fetchPublicEvent } from "@/app/calendar/api";
+import { authenticatedFetch } from "@/lib/api";
+import { resizeAndCompressImage } from "@/lib/image";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -43,6 +43,8 @@ export default function EventDetailPage() {
   const [eventLoadError, setEventLoadError] = useState<string | null>(null);
   const [signups, setSignups] = useState<EventSignup[]>([]);
   const [photos, setPhotos] = useState<EventPhoto[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [photoLoadError, setPhotoLoadError] = useState<string | null>(null);
   const [locations, setLocations] = useState<TeamLocation[]>([]);
 
   // RSVP Form state
@@ -51,6 +53,8 @@ export default function EventDetailPage() {
   const [prepHours, setPrepHours] = useState(0);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [submittingRsvp, setSubmittingRsvp] = useState(false);
+  const [profileNickname, setProfileNickname] = useState("ARES Member");
+  const [confirmRsvpCancel, setConfirmRsvpCancel] = useState(false);
 
   // Upload state
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -73,69 +77,53 @@ export default function EventDetailPage() {
   const isVerified = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
 
-  // 1. Fetch Event Detail
-  useEffect(() => {
+  const loadEvent = useCallback(async () => {
     if (!id) return;
-    const docRef = doc(db, "events", id);
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.isDeleted === 1) {
-            setEvent(null);
-          } else {
-            setEvent({ id: docSnap.id, ...data } as EventItem);
-          }
-        } else {
-          setEvent(null);
-        }
-        setEventLoadError(null);
-        setLoadingEvent(false);
-      },
-      (err) => {
-        console.error("Error fetching event details:", err);
-        setEventLoadError(err.message);
-        setLoadingEvent(false);
-      }
-    );
-    return () => unsubscribe();
+    setLoadingEvent(true);
+    try {
+      const result = await fetchPublicEvent(id);
+      setEvent(result as EventItem);
+      setEventLoadError(null);
+    } catch (error) {
+      console.error("Error fetching event details:", error);
+      setEventLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoadingEvent(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    void loadEvent();
+  }, [loadEvent]);
 
   // Fetch Locations list
   useEffect(() => {
-    try {
-      const locationsRef = collection(db, "locations");
-      const unsubscribe = onSnapshot(
-        locationsRef,
-        (snapshot) => {
-          if (snapshot.empty) {
-            setLocations([]);
-            return;
-          }
-          const list = snapshot.docs.map((docSnap) => {
-            const data = docSnap.data();
-            return {
-              id: docSnap.id,
-              name: data.name || "",
-              address: data.address || "",
-              description: data.description || "",
-              gmapsUrl: data.gmapsUrl || ""
-            } as TeamLocation;
-          });
-          setLocations(list);
-        },
-        (err) => {
-          console.error("Unable to fetch event locations:", err);
-          setLocations([]);
+    if (!isVerified) return;
+    void fetchLocations().then(setLocations).catch((error: unknown) => {
+      console.error("Unable to fetch event locations:", error);
+    });
+  }, [isVerified]);
+
+  useEffect(() => {
+    if (!isVerified) return;
+    void authenticatedFetch("/api/profiles/me")
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({})) as {
+          profile?: { nickname?: unknown };
+          nickname?: unknown;
+          error?: unknown;
+        };
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
         }
-      );
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Unable to initialize event locations:", e);
-      setLocations([]);
-    }
-  }, []);
+        const nickname = payload.profile?.nickname ?? payload.nickname;
+        setProfileNickname(typeof nickname === "string" && nickname.trim() ? nickname : "ARES Member");
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to load the RSVP nickname:", error);
+        setSignupError(`Profile details unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      });
+  }, [isVerified]);
 
   // 2. Fetch Signups in Real-time
   useEffect(() => {
@@ -157,26 +145,46 @@ export default function EventDetailPage() {
     return () => unsubscribe();
   }, [id, isVerified]);
 
-  // 3. Fetch Event Photos in Real-time
+  const loadPhotos = useCallback(async (signal?: AbortSignal) => {
+    if (!id) return;
+    setLoadingPhotos(true);
+    try {
+      const response = await fetch(`/api/calendar/events/${encodeURIComponent(id)}/photos?limit=50`, { signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
+      }
+      const payload = await response.json() as { photos?: unknown };
+      if (!Array.isArray(payload.photos)) {
+        throw new Error("Event photo response does not contain a photo list.");
+      }
+      const safePhotos = payload.photos.map((value): EventPhoto => {
+        if (!value || typeof value !== "object") throw new Error("Event photo response contains an invalid photo.");
+        const record = value as Record<string, unknown>;
+        if (typeof record.id !== "string" || typeof record.url !== "string" || typeof record.filename !== "string") {
+          throw new Error("Event photo response contains invalid fields.");
+        }
+        return { id: record.id, url: record.url, filename: record.filename };
+      });
+      setPhotos(safePhotos);
+      setPhotoLoadError(null);
+    } catch (error) {
+      if (signal?.aborted) return;
+      console.error("Unable to fetch public event photos:", error);
+      setPhotoLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (!signal?.aborted) setLoadingPhotos(false);
+    }
+  }, [id]);
+
+  // 3. Fetch bounded public event-photo DTOs without exposing uploader metadata.
   useEffect(() => {
     if (!id) return;
-    const photosRef = collection(db, "events", id, "photos");
-    const q = query(photosRef, orderBy("uploadedAt", "desc"));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const list = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data()
-        })) as EventPhoto[];
-        setPhotos(list);
-      },
-      (err) => {
-        console.warn("Unable to fetch event photos:", err);
-      }
-    );
-    return () => unsubscribe();
-  }, [id]);
+    const controller = new AbortController();
+    setPhotos([]);
+    setPhotoLoadError(null);
+    void loadPhotos(controller.signal);
+    return () => controller.abort();
+  }, [id, loadPhotos]);
 
   // Check if current user is signed up
   const mySignup = useMemo(() => {
@@ -204,20 +212,9 @@ export default function EventDetailPage() {
     setSignupError(null);
     setSubmittingRsvp(true);
 
-    let nickname = "ARES Member";
-    try {
-      const profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
-      if (profileSnap.exists()) {
-        const data = profileSnap.data();
-        nickname = data.nickname || "ARES Member";
-      }
-    } catch (err) {
-      console.warn("Could not retrieve user profile for nickname:", err);
-    }
-
-    const rsvpDoc: Record<string, any> = {
+    const rsvpDoc: EventSignup = {
       userId: user.uid,
-      nickname,
+      nickname: profileNickname,
       attended: mySignup?.attended ?? false
     };
 
@@ -233,24 +230,32 @@ export default function EventDetailPage() {
 
     try {
       await setDoc(doc(db, "events", id, "signups", user.uid), rsvpDoc);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error submitting RSVP:", err);
-      setSignupError(`RSVP failed: ${err.message || "Permission Denied or database offline."}`);
+      setSignupError(`RSVP failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSubmittingRsvp(false);
     }
   };
 
   // Cancel RSVP handler
-  const handleRsvpCancel = async () => {
+  const handleRsvpCancel = () => {
     if (!id || !user || !isVerified) return;
-    if (!confirm("Are you sure you want to cancel your RSVP?")) return;
+    setConfirmRsvpCancel(true);
+  };
+
+  const executeRsvpCancel = async () => {
+    if (!id || !user || !isVerified) return;
     setSignupError(null);
+    setSubmittingRsvp(true);
     try {
       await deleteDoc(doc(db, "events", id, "signups", user.uid));
-    } catch (err) {
+      setConfirmRsvpCancel(false);
+    } catch (err: unknown) {
       console.error("Error deleting RSVP:", err);
-      setSignupError("Failed to cancel RSVP.");
+      setSignupError(`RSVP removal failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSubmittingRsvp(false);
     }
   };
 
@@ -261,13 +266,10 @@ export default function EventDetailPage() {
     if (!isSelf && !isAdmin) return;
 
     try {
-      const rsvpRef = doc(db, "events", id, "signups", userId);
-      const rsvpSnap = await getDoc(rsvpRef);
-      if (rsvpSnap.exists()) {
-        await setDoc(rsvpRef, { attended: !currentStatus }, { merge: true });
-      }
-    } catch (err) {
+      await setDoc(doc(db, "events", id, "signups", userId), { attended: !currentStatus }, { merge: true });
+    } catch (err: unknown) {
       console.error("Error updating attendance:", err);
+      setSignupError(`Attendance update failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -289,33 +291,37 @@ export default function EventDetailPage() {
     setUploadingImage(true);
 
     try {
-      const storagePath = `events/${id}/photos/${Date.now()}_${file.name}`;
-      const imageRef = ref(storage, storagePath);
-      
-      const snapshot = await uploadBytes(imageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
-
-      let uploaderNickname = "ARES Member";
-      try {
-        const profileSnap = await getDoc(doc(db, "user_profiles", user.uid));
-        if (profileSnap.exists()) {
-          const data = profileSnap.data();
-          uploaderNickname = data.nickname || "ARES Member";
-        }
-      } catch (err) {
-        console.warn("Could not retrieve user profile for nickname:", err);
-      }
-
-      const photoId = `photo_${Date.now()}`;
-      await setDoc(doc(db, "events", id, "photos", photoId), {
-        url,
-        uploadedBy: uploaderNickname,
-        uploadedAt: new Date().toISOString(),
-        filename: file.name
+      const compressed = await resizeAndCompressImage(file);
+      const response = await authenticatedFetch("/api/photos/upload-unified", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileBase64: compressed.base64,
+          filename: file.name,
+          mimeType: compressed.mimeType || file.type,
+          uploadToGoogle: true,
+          runAiLabeling: false,
+        }),
       });
-    } catch (err: any) {
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}${detail ? ` — ${detail}` : ""}`);
+      }
+      const payload = await response.json() as { photo?: { id?: string; publicUrl?: string } };
+      if (!payload.photo?.id || !payload.photo.publicUrl) throw new Error("Upload response did not contain a photo.");
+
+      const photoId = payload.photo.id;
+      await setDoc(doc(db, "events", id, "photos", photoId), {
+        url: payload.photo.publicUrl,
+        uploadedBy: profileNickname,
+        uploadedAt: new Date().toISOString(),
+        filename: file.name,
+        isDeleted: 0,
+      });
+      await loadPhotos();
+    } catch (err: unknown) {
       console.error("Image upload failed:", err);
-      setUploadError("Image upload failed. Storage permissions or emulator connectivity fault.");
+      setUploadError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploadingImage(false);
     }
@@ -341,7 +347,7 @@ export default function EventDetailPage() {
       `DTSTART:${startStr}`,
       `DTEND:${endStr}`,
       `SUMMARY:${event.title}`,
-      `LOCATION:${event.location || "TBD"}`,
+      ...(event.location ? [`LOCATION:${event.location}`] : []),
       "END:VEVENT",
       "END:VCALENDAR"
     ].join("\r\n");
@@ -419,7 +425,7 @@ export default function EventDetailPage() {
               title="Unable to load this event"
               message="The event record could not be reached. Check your connection and try again."
               diagnostic={eventLoadError}
-              onRetry={() => window.location.reload()}
+              onRetry={() => void loadEvent()}
             />
           </div>
         </div>
@@ -443,13 +449,13 @@ export default function EventDetailPage() {
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
       <SEO 
         title={event.title} 
-        description={event.description || `Join team ARES 23247 at "${event.title}". Scheduled for ${new Date(event.dateStart).toLocaleDateString()} at ${event.location || 'Location TBA'}.`}
+        description={event.description || `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`}
         image={event.coverImage}
         type="event"
         schemaData={{
           startDate: event.dateStart,
-          endDate: event.dateEnd || event.dateStart,
-          locationName: event.location || "Location TBA",
+          endDate: event.dateEnd,
+          locationName: event.location,
           locationAddress: (() => {
             const selected = event.locationId ? locations.find((l) => l.id === event.locationId) : null;
             return selected?.address || event.location || "";
@@ -475,7 +481,7 @@ export default function EventDetailPage() {
 
           {/* Social Media Sharing */}
           <div className="pt-4">
-            <ShareButtons title={event.title} theme="cyan" />
+            <ShareButtons title={event.title} theme="gold" />
           </div>
 
           <EventZulipLink event={event} isVerified={isVerified} />
@@ -484,8 +490,11 @@ export default function EventDetailPage() {
             isVerified={isVerified}
             uploadingImage={uploadingImage}
             uploadError={uploadError}
+            loadingPhotos={loadingPhotos}
+            photoLoadError={photoLoadError}
             photos={photos}
             handleImageUpload={handleImageUpload}
+            onRetryPhotos={() => void loadPhotos()}
             setSelectedPhoto={setSelectedPhoto}
           />
         </article>
@@ -518,6 +527,20 @@ export default function EventDetailPage() {
 
       <PhotoLightbox selectedPhoto={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
 
+      <Dialog.Root open={confirmRsvpCancel} onOpenChange={(open) => !open && !submittingRsvp && setConfirmRsvpCancel(false)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[140] bg-black/80" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[141] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
+            <Dialog.Title className="text-lg font-black uppercase text-white">Cancel your RSVP?</Dialog.Title>
+            <Dialog.Description className="mt-2 text-sm text-marble/75">Your attendance record will be removed. You can RSVP again later.</Dialog.Description>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Dialog.Close asChild><button type="button" disabled={submittingRsvp} className="rounded border border-white/15 px-4 py-2 text-xs font-bold text-marble/75 focus-visible:ring-2 focus-visible:ring-ares-cyan">Keep RSVP</button></Dialog.Close>
+              <button type="button" onClick={() => void executeRsvpCancel()} disabled={submittingRsvp} className="rounded bg-ares-red px-4 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{submittingRsvp ? "Removing…" : "Remove RSVP"}</button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       {/* ─── UPGRADED FULL EVENT EDITOR DRAWER ─── */}
       {isEditorOpen && (
         <EventsManagementPage
@@ -528,6 +551,7 @@ export default function EventDetailPage() {
             setIsEditorOpen(false);
             setEditorAction(null);
             setEditorEventId(null);
+            void loadEvent();
           }}
         />
       )}

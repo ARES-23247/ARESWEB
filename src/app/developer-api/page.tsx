@@ -113,7 +113,7 @@ export default function DeveloperApiPage() {
               src="/api/reference" 
               title="ARES API Reference"
               className="w-full flex-1 bg-white"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              sandbox=""
             />
           </div>
         </div>

@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import { adminDb, adminAuth } from "../lib/firebase-admin";
 import { encrypt, decrypt, getEncryptionSecret } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
-import { ensureAdmin } from "../middleware/auth";
+import { ensureAdmin, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler, maskEmail, maskName } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
@@ -73,24 +73,6 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
     throw new ApiError(400, "App integrity check failed. Please refresh and try again.");
   }
 
-  // Intercept and ignore automated E2E test inquiries to prevent database pollution
-  const emailLower = email.trim().toLowerCase();
-  const nameTrim = name.trim();
-  const isTestData = 
-    emailLower.includes("playwright.test@aresfirst.org") || 
-    emailLower.includes("sponsorship.test@aresfirst.org") ||
-    nameTrim.includes("Playwright E2E Test");
-
-  if (isTestData) {
-    logger.info("inquiries", `Intercepted E2E test inquiry (Type: ${type}, Name: ${nameTrim}, Email: ${emailLower}). Bypassing Firestore database write.`);
-    res.json({
-      success: true,
-      message: "Application submitted successfully.",
-      id: `inq_test_${Date.now()}`
-    });
-    return;
-  }
-
   // Disable reCAPTCHA bypass token in production environment
   const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
 
@@ -133,6 +115,7 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
     email: encryptedEmail,
     status: "pending",
     metadata: encryptedMetadata,
+    isDeleted: 0,
     createdAt: new Date().toISOString(),
   };
 
@@ -160,6 +143,18 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
     message: "Application submitted successfully.",
     id: inquiryId,
   });
+}));
+
+// GET /api/inquiries/pending-exists
+// A boolean-only existence check keeps shared navigation free of applicant PII.
+router.get("/pending-exists", ensureAdmin, asyncHandler(async (_req, res) => {
+  const snapshot = await adminDb.collection("inquiries")
+    .where("status", "==", "pending")
+    .where("isDeleted", "==", 0)
+    .limit(1)
+    .get();
+
+  res.json({ success: true, hasPending: !snapshot.empty });
 }));
 
 // GET /api/inquiries
@@ -212,6 +207,8 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
       status: data.status,
       metadata: await decryptMetadata(data.metadata, secret),
       createdAt: data.createdAt,
+      isDeleted: data.isDeleted === 1,
+      archivedAt: data.archivedAt || null,
     };
   }));
 
@@ -237,13 +234,16 @@ router.patch("/:id/status", ensureAdmin, asyncHandler(async (req, res) => {
   if (!docSnap.exists) {
     throw new ApiError(404, "Inquiry not found.");
   }
+  if (docSnap.data()?.isDeleted === 1) {
+    throw new ApiError(409, "Restore the inquiry before changing its status.");
+  }
 
   await docRef.update({ status });
   res.json({ success: true, message: "Status updated successfully." });
 }));
 
 // DELETE /api/inquiries/:id
-router.delete("/:id", ensureAdmin, asyncHandler(async (req, res) => {
+router.delete("/:id", ensureAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
 
   const docRef = adminDb.collection("inquiries").doc(id);
@@ -252,8 +252,36 @@ router.delete("/:id", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(404, "Inquiry not found.");
   }
 
-  await docRef.delete();
-  res.json({ success: true, message: "Inquiry deleted successfully." });
+  if (docSnap.data()?.isDeleted === 1) {
+    throw new ApiError(409, "Inquiry is already archived.");
+  }
+
+  const archivedAt = new Date().toISOString();
+  await docRef.update({
+    isDeleted: 1,
+    archivedAt,
+    archivedBy: req.user!.uid,
+  });
+  res.json({ success: true, archived: true, message: "Inquiry archived successfully." });
+}));
+
+router.patch("/:id/restore", ensureAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const { id } = req.params;
+  const docRef = adminDb.collection("inquiries").doc(id);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
+    throw new ApiError(404, "Inquiry not found.");
+  }
+  if (docSnap.data()?.isDeleted !== 1) {
+    throw new ApiError(409, "Inquiry is already active.");
+  }
+
+  await docRef.update({
+    isDeleted: 0,
+    restoredAt: new Date().toISOString(),
+    restoredBy: req.user!.uid,
+  });
+  res.json({ success: true, restored: true, message: "Inquiry restored successfully." });
 }));
 
 // POST /api/inquiries/:id/approve-account
@@ -267,6 +295,9 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   }
 
   const data = docSnap.data() || {};
+  if (data.isDeleted === 1) {
+    throw new ApiError(409, "Restore the inquiry before creating an account.");
+  }
   const secret = getEncryptionSecret();
   let name = data.name;
   let email = data.email;
@@ -303,9 +334,13 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   try {
     const authUser = await adminAuth.getUserByEmail(cleanEmail);
     targetId = authUser.uid;
-  } catch (err: any) {
-    if (err.code !== "auth/user-not-found") {
+  } catch (err: unknown) {
+    const errorCode = typeof err === "object" && err !== null && "code" in err
+      ? String(err.code)
+      : "";
+    if (errorCode !== "auth/user-not-found") {
       logger.error("inquiries", "Firebase Auth lookup error during account approval", err);
+      throw new ApiError(502, "Could not verify the applicant's account status. Please try again.");
     }
   }
 
@@ -329,13 +364,14 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   const lastName = nameParts.slice(1).join(" ") || "";
 
   const profileRef = adminDb.collection("user_profiles").doc(targetId);
+  const avatarSeed = crypto.randomBytes(24).toString("hex");
   batch.set(profileRef, {
-    nickname: cleanName,
+    nickname: "ARES Member",
     firstName,
     lastName,
     contactEmail: cleanEmail,
     memberType,
-    avatar: `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(cleanEmail)}`,
+    avatar: `https://api.dicebear.com/9.x/bottts/svg?seed=${avatarSeed}`,
     showEmail: false,
     showPhone: false,
     showOnAbout: false,

@@ -46,4 +46,19 @@ test.describe('Navigation & Accessibility E2E tests', () => {
     const rosterHeading = page.getByRole('heading', { name: 'Our Championship Roster' });
     await expect(rosterHeading).toBeVisible();
   });
+
+  test('mobile navigation traps focus and returns it after Escape', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    const trigger = page.locator('button[aria-controls="mobile-navigation-drawer"]');
+    await expect(trigger).toHaveAccessibleName('Open navigation menu');
+    await trigger.click();
+    await expect(page.getByRole('dialog', { name: 'Mobile navigation menu' })).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Mobile navigation menu' })).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
 });

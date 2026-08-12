@@ -12,6 +12,49 @@ interface State {
   statusCode?: number;
 }
 
+const STALE_CHUNK_RELOAD_KEY = "ares-stale-chunk-reload";
+const STALE_CHUNK_RELOAD_COOLDOWN_MS = 60_000;
+
+export function isStaleChunkError(errorMessage: string): boolean {
+  const normalizedMessage = errorMessage.toLowerCase();
+  return normalizedMessage.includes("failed to fetch dynamically imported module") ||
+    normalizedMessage.includes("importing a module script failed") ||
+    normalizedMessage.includes("error loading dynamically imported module");
+}
+
+async function clearStalePwaState(): Promise<void> {
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  }
+
+  if ("caches" in window) {
+    const cacheNames = await window.caches.keys();
+    const staleShellCaches = cacheNames.filter((name) =>
+      name.startsWith("workbox-precache") || name.startsWith("ares-")
+    );
+    await Promise.all(staleShellCaches.map((name) => window.caches.delete(name)));
+  }
+}
+
+function scheduleStaleChunkRecovery(): void {
+  try {
+    const now = Date.now();
+    const storedReload = sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY);
+    const lastReload = storedReload === null ? Number.NaN : Number(storedReload);
+    if (Number.isFinite(lastReload) && now - lastReload <= STALE_CHUNK_RELOAD_COOLDOWN_MS) return;
+
+    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, String(now));
+    void clearStalePwaState()
+      .catch((cleanupError: unknown) => {
+        console.error("Stale PWA cleanup failed before recovery reload:", cleanupError);
+      })
+      .finally(() => window.location.reload());
+  } catch (recoveryError) {
+    console.error("Stale chunk recovery could not be scheduled:", recoveryError);
+  }
+}
+
 export default class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -32,28 +75,10 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     const errorMessage = getErrorMessage(error);
 
-    // Detect stale chunk errors from PWA/service worker cache after deployment
-    const isStaleChunk =
-      errorMessage.includes("Failed to fetch dynamically imported module") ||
-      errorMessage.includes("Importing a module script failed") ||
-      errorMessage.includes("error loading dynamically imported module");
-
-    if (isStaleChunk) {
-      const reloadKey = "ares-stale-chunk-reload";
-      const lastReload = sessionStorage.getItem(reloadKey);
-      const now = Date.now();
-      // Only auto-reload once per 60s to prevent infinite loop
-      if (!lastReload || now - Number(lastReload) > 60_000) {
-        sessionStorage.setItem(reloadKey, String(now));
-        // Unregister stale service worker and force reload
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.getRegistrations().then(registrations => {
-            registrations.forEach(r => r.unregister());
-          });
-        }
-        window.location.reload();
-      }
-    }
+    // Clear an obsolete application shell only for the known dynamic-import
+    // deployment failure. A session throttle prevents a broken release from
+    // causing a reload loop.
+    if (isStaleChunkError(errorMessage)) scheduleStaleChunkRecovery();
 
     const isThirdPartyFault =
       errorMessage.includes("SecurityError") ||

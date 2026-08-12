@@ -29,7 +29,7 @@ export default function TaskFilters({
         <button
           type="button"
           onClick={onOpenCreate}
-          className="clipped-button-sm bg-ares-red text-white hover:bg-ares-red-dark transition-all cursor-pointer text-xs font-bold px-4 py-2 flex items-center gap-1.5 shrink-0"
+          className="clipped-button-sm bg-ares-red text-white hover:bg-ares-bronze transition-all cursor-pointer text-xs font-bold px-4 py-2 flex items-center gap-1.5 shrink-0"
         >
           <Plus size={14} /> Create Task
         </button>
@@ -43,7 +43,7 @@ export default function TaskFilters({
           <select
             id="board-sort"
             value={sortBy}
-            onChange={(e) => onSortByChange(e.target.value as any)}
+            onChange={(e) => onSortByChange(e.target.value as "newest" | "priority")}
             className="bg-black/60 border border-white/10 rounded px-2.5 py-1 text-[10px] font-bold uppercase text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer font-sans"
           >
             <option value="newest">Newest First</option>

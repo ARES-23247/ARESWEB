@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 
 interface Season {
   startYear: number;
@@ -17,6 +17,7 @@ interface SeasonPickerProps {
 
 export default function SeasonPicker({ value, onChange, label = "Linked Season" }: SeasonPickerProps) {
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const selectId = useId();
 
   useEffect(() => {
     const fetchSeasons = async () => {
@@ -39,14 +40,15 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
 
   return (
     <div className="w-full">
-      <label className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">
+      <label htmlFor={selectId} className="block text-xs font-bold text-marble/60 uppercase tracking-wider mb-2">
         {label}
       </label>
       <select
+        id={selectId}
         title={label}
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus:outline-none focus:ring-1 focus:ring-ares-red focus:border-ares-red transition-all shadow-inner"
+        className="w-full bg-black border border-white/10 ares-cut-sm px-4 py-3 text-marble placeholder-marble/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan transition-all shadow-inner"
       >
         <option value="">-- No Season Link --</option>
         {seasons.map((s) => (

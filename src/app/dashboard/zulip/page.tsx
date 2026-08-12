@@ -1,386 +1,322 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { 
-  MessageSquare, 
-  ExternalLink, 
-  CheckCircle2, 
-  XCircle, 
-  Copy, 
-  Check, 
-  Smartphone, 
-  Monitor, 
-  ShieldCheck, 
-  Settings, 
-  RefreshCw,
+import { useCallback, useEffect, useState } from "react";
+import {
+  Check,
+  CheckCircle2,
+  Copy,
+  ExternalLink,
   HelpCircle,
-  Sparkles,
-  Link as LinkIcon
+  MessageSquare,
+  Monitor,
+  RefreshCw,
+  Settings,
+  ShieldCheck,
+  Smartphone,
+  XCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
-const getSafeZulipUrl = (url: string): string => {
-  if (!url || typeof url !== "string") return "https://aresfirst.zulipchat.com";
-  const trimmed = url.trim();
+interface ZulipStatusDto {
+  linked: boolean;
+  integration: {
+    available: boolean;
+    diagnostic: string | null;
+  };
+  workspace: {
+    url: string;
+    inviteUrl: string | null;
+  };
+}
+
+interface ApiErrorDto {
+  error?: string;
+}
+
+type Notice = { type: "success" | "error"; text: string };
+
+async function responseError(response: Response, fallback: string): Promise<Error> {
+  let detail = fallback;
   try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-      return parsed.href;
-    }
-  } catch (_) {}
-  return "https://aresfirst.zulipchat.com";
-};
+    const payload = await response.json() as ApiErrorDto;
+    if (payload.error) detail = payload.error;
+  } catch {
+    // The HTTP status remains useful when the upstream body is not JSON.
+  }
+  return new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}. ${detail}`);
+}
 
 export default function DashboardZulipPage() {
-  const { user, authorizedUser } = useAuth();
-  const [zulipLink, setZulipLink] = useState<string>("https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
-  const [zulipAccount, setZulipAccount] = useState<any | null>(null);
-  const [checkingSync, setCheckingSync] = useState<boolean>(true);
-  const [editingLink, setEditingLink] = useState<boolean>(false);
-  const [newLinkInput, setNewLinkInput] = useState<string>("");
-  const [savingLink, setSavingLink] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const { authorizedUser } = useAuth();
+  const [status, setStatus] = useState<ZulipStatusDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [draftInviteUrl, setDraftInviteUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
-  const isAdmin = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
+  const canManage = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
+
+  const loadStatus = useCallback(async () => {
+    setLoading(true);
+    setNotice(null);
+    try {
+      const response = await authenticatedFetch("/api/zulip/status");
+      if (!response.ok) throw await responseError(response, "Could not load Zulip status.");
+      const payload = await response.json() as ZulipStatusDto;
+      setStatus(payload);
+      setDraftInviteUrl(current => current || payload.workspace.inviteUrl || "");
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text: error instanceof Error ? error.message : "Could not load Zulip status.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchZulipConfigAndStatus();
-  }, [user]);
+    void loadStatus();
+  }, [loadStatus]);
 
-  const fetchZulipConfigAndStatus = async () => {
-    setCheckingSync(true);
+  const saveInviteUrl = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!draftInviteUrl.trim()) return;
+
+    setSaving(true);
+    setNotice(null);
     try {
-      // 1. Fetch configured invite link from Firestore
-      const configDoc = await getDoc(doc(db, "settings", "zulip"));
-      if (configDoc.exists() && configDoc.data().inviteUrl) {
-        setZulipLink(configDoc.data().inviteUrl);
-        setNewLinkInput(configDoc.data().inviteUrl);
-      } else {
-        setNewLinkInput("https://aresfirst.zulipchat.com/join/ba4zj4e6ykjazruzn3is6lvr/");
-      }
-
-      // 2. Check if logged-in user is synced in Zulip roster
-      if (user?.email && authenticatedFetch) {
-        const res = await authenticatedFetch("/api/profiles/zulip/users");
-        if (res.ok) {
-          const data = await res.json();
-          const normEmail = user.email.toLowerCase().trim();
-          const match = (data.users || []).find((u: any) => 
-            (u.email && u.email.toLowerCase().trim() === normEmail) ||
-            (u.delivery_email && u.delivery_email.toLowerCase().trim() === normEmail)
-          );
-          setZulipAccount(match || null);
-        }
-      }
-    } catch (err) {
-      console.warn("Could not check Zulip sync status:", err);
+      const response = await authenticatedFetch("/api/zulip/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteUrl: draftInviteUrl.trim() }),
+      });
+      if (!response.ok) throw await responseError(response, "Could not save the invitation link.");
+      const payload = await response.json() as {
+        workspace: ZulipStatusDto["workspace"];
+      };
+      setStatus(current => current ? { ...current, workspace: payload.workspace } : current);
+      setDraftInviteUrl(payload.workspace.inviteUrl || "");
+      setEditing(false);
+      setNotice({ type: "success", text: "The approved Zulip invitation link is ready." });
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text: error instanceof Error ? error.message : "Could not save the invitation link.",
+      });
     } finally {
-      setCheckingSync(false);
+      setSaving(false);
     }
   };
 
-  const handleSaveInviteLink = async () => {
-    if (!newLinkInput.trim()) return;
-    setSavingLink(true);
-    setStatusMessage(null);
-
+  const copyInviteUrl = async () => {
+    if (!status?.workspace.inviteUrl) return;
     try {
-      let cleanUrl = newLinkInput.trim();
-      if (!cleanUrl.startsWith("http")) cleanUrl = `https://${cleanUrl}`;
-
-      await setDoc(doc(db, "settings", "zulip"), {
-        inviteUrl: cleanUrl,
-        updatedAt: new Date().toISOString(),
-        updatedBy: user?.email || "admin"
-      }, { merge: true });
-
-      setZulipLink(cleanUrl);
-      setEditingLink(false);
-      setStatusMessage({ text: "Zulip invitation link updated successfully!", type: "success" });
-    } catch (err: any) {
-      console.error("Failed to save Zulip link:", err);
-      setStatusMessage({ text: err.message || "Failed to update link.", type: "error" });
-    } finally {
-      setSavingLink(false);
+      await navigator.clipboard.writeText(status.workspace.inviteUrl);
+      setCopied(true);
+      setNotice({ type: "success", text: "The approved invitation link was copied." });
+      window.setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text: `Clipboard error: ${error instanceof Error ? error.message : "Copy the link manually."}`,
+      });
     }
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(zulipLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Top Banner Header */}
-      <div className="relative overflow-hidden bg-obsidian-dark border border-ares-gold/25 p-6 md:p-8 ares-cut-lg shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-ares-red/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <main className="mx-auto max-w-6xl space-y-8 pb-12" aria-busy={loading}>
+      <header className="hero-card border border-ares-gold/25 bg-obsidian p-6 md:p-8">
+        <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-ares-gold/10 border border-ares-gold/30 rounded text-ares-gold text-[10px] font-black uppercase tracking-widest font-heading">
-              <MessageSquare size={12} /> Team Communication Hub
-            </div>
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white font-heading">
-              Zulip Workspace Self-Join
+            <p className="inline-flex items-center gap-2 rounded border border-ares-gold/30 bg-ares-gold/10 px-3 py-1 font-heading text-xs font-black uppercase tracking-widest text-ares-gold">
+              <MessageSquare aria-hidden="true" size={14} /> Team Communication Hub
+            </p>
+            <h1 className="font-heading text-3xl font-black uppercase tracking-wider text-white md:text-4xl">
+              Zulip Workspace
             </h1>
-            <p className="text-sm text-marble/70 max-w-2xl">
-              Connect to ARES 23247's official chat workspace for team announcements, subteam channels, hardware updates, and competition logistics.
+            <p className="max-w-2xl text-sm text-marble/80">
+              Join team announcements and subteam chats with your approved team account.
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <a
-              href={getSafeZulipUrl(zulipLink)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-3 bg-ares-red hover:bg-ares-red/90 text-white font-black text-xs uppercase tracking-widest ares-cut-sm shadow-lg shadow-ares-red/20 transition-all flex items-center gap-2 hover:scale-[1.02]"
-            >
-              <ExternalLink size={16} /> Join Zulip Workspace
-            </a>
-            <button
-              onClick={handleCopyLink}
-              className="text-[10px] font-bold text-marble/60 hover:text-ares-gold transition-colors flex items-center gap-1"
-            >
-              {copied ? <Check size={12} className="text-ares-gold" /> : <Copy size={12} />}
-              {copied ? "Copied to Clipboard!" : "Copy Join Link"}
-            </button>
-          </div>
+          {status?.workspace.inviteUrl ? (
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={status.workspace.inviteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded bg-ares-red px-5 py-3 text-xs font-black uppercase tracking-widest text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <ExternalLink aria-hidden="true" size={16} /> Join Zulip
+              </a>
+              <button
+                type="button"
+                onClick={copyInviteUrl}
+                className="inline-flex items-center gap-2 rounded border border-white/20 px-4 py-3 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                {copied ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}
+                {copied ? "Copied" : "Copy link"}
+              </button>
+            </div>
+          ) : (
+            <p className="rounded border border-ares-gold/30 bg-ares-gold/10 px-4 py-3 text-sm text-marble">
+              A coach has not added an approved join link yet.
+            </p>
+          )}
         </div>
-      </div>
+      </header>
 
-      {statusMessage && (
-        <div className={`p-4 rounded border text-xs font-bold flex items-center justify-between ${
-          statusMessage.type === "success" 
-            ? "bg-ares-gold/10 border-ares-gold/30 text-ares-gold"
-            : "bg-ares-red/10 border-ares-red/30 text-ares-red"
-        }`}>
-          <span>{statusMessage.text}</span>
-          <button onClick={() => setStatusMessage(null)} className="opacity-70 hover:opacity-100">✕</button>
+      {notice && (
+        <div
+          role={notice.type === "error" ? "alert" : "status"}
+          className={notice.type === "error"
+            ? "rounded border border-ares-red bg-ares-red px-4 py-3 text-sm font-bold text-white"
+            : "rounded border border-ares-gold/40 bg-ares-gold/10 px-4 py-3 text-sm font-bold text-marble"}
+        >
+          <span className={notice.type === "error" ? "font-mono" : ""}>{notice.text}</span>
         </div>
       )}
 
-      {/* Grid Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left 2 Columns: Account Status & Join Instructions */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* User Status Card */}
-          <div className="bg-obsidian-dark border border-white/10 p-6 ares-cut-md space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-wider text-white font-heading flex items-center gap-2">
-                <ShieldCheck size={16} className="text-ares-gold" /> Your Zulip Link Status
-              </h3>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <section className="space-y-6 lg:col-span-2" aria-labelledby="zulip-status-heading">
+          <div className="hero-card space-y-4 border border-white/10 bg-obsidian p-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 id="zulip-status-heading" className="flex items-center gap-2 font-heading text-sm font-black uppercase tracking-wider text-white">
+                <ShieldCheck aria-hidden="true" size={18} className="text-ares-gold" /> Your link status
+              </h2>
               <button
-                onClick={fetchZulipConfigAndStatus}
-                disabled={checkingSync}
-                className="p-1.5 bg-white/5 hover:bg-white/10 text-marble/70 hover:text-white rounded transition-colors disabled:opacity-50"
-                title="Refresh Status"
+                type="button"
+                onClick={() => void loadStatus()}
+                disabled={loading}
+                aria-label="Refresh Zulip status"
+                className="rounded p-2 text-marble/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
               >
-                <RefreshCw size={14} className={checkingSync ? "animate-spin text-ares-gold" : ""} />
+                <RefreshCw aria-hidden="true" size={16} className={loading ? "animate-spin" : ""} />
               </button>
             </div>
 
-            {checkingSync ? (
-              <div className="py-6 flex items-center gap-3 text-xs text-marble/60">
-                <div className="w-4 h-4 border-2 border-ares-gold/20 border-t-ares-gold rounded-full animate-spin" />
-                Checking Zulip workspace status for {user?.email}...
-              </div>
-            ) : zulipAccount ? (
-              <div className="p-4 bg-ares-gold/10 border border-ares-gold/30 rounded flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 size={24} className="text-ares-gold shrink-0" />
-                  <div>
-                    <div className="text-xs font-bold text-white">Account Active & Linked</div>
-                    <div className="text-[11px] text-ares-gold/90 font-mono">
-                      {zulipAccount.full_name || zulipAccount.email} ({zulipAccount.email})
-                    </div>
-                  </div>
-                </div>
+            {loading && !status ? (
+              <p role="status" className="text-sm text-marble/80">Checking your Zulip account…</p>
+            ) : status?.linked ? (
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded border border-ares-gold/30 bg-ares-gold/10 p-4">
+                <p className="flex items-center gap-3 text-sm font-bold text-white">
+                  <CheckCircle2 aria-hidden="true" size={22} className="text-ares-gold" /> Your account is linked.
+                </p>
                 <a
-                  href="https://aresfirst.zulipchat.com"
+                  href={status.workspace.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 bg-ares-gold/20 hover:bg-ares-gold/30 text-ares-gold text-[10px] font-black uppercase tracking-wider rounded transition-colors"
+                  className="rounded border border-ares-gold/40 px-3 py-2 text-xs font-black uppercase tracking-wider text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
-                  Open Chat
+                  Open chat
                 </a>
               </div>
             ) : (
-              <div className="p-4 bg-ares-red/10 border border-ares-red/30 rounded space-y-3">
-                <div className="flex items-start gap-3">
-                  <XCircle size={20} className="text-white shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <div className="text-xs font-bold text-white">Zulip Account Not Linked Yet</div>
-                    <p className="text-[11px] text-marble/70">
-                      We didn't detect an active account for <span className="font-mono text-white">{user?.email}</span> in our Zulip roster.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-2 border-t border-ares-red/20 flex items-center justify-between">
-                  <span className="text-[10px] text-marble/85 font-medium">Click below to create or join using your Google Account</span>
-                  <a
-                    href={getSafeZulipUrl(zulipLink)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-1.5 bg-ares-gold text-obsidian font-black text-[10px] uppercase tracking-wider rounded hover:bg-white transition-colors"
-                  >
-                    Self-Join Now
-                  </a>
-                </div>
+              <div className="space-y-2 rounded border border-ares-red bg-ares-red p-4 text-white">
+                <p className="flex items-center gap-3 text-sm font-bold">
+                  <XCircle aria-hidden="true" size={22} /> Your account is not linked yet.
+                </p>
+                <p className="text-xs">
+                  Use the approved link above. Sign in with your authorized team Google account.
+                </p>
               </div>
+            )}
+
+            {status?.integration.diagnostic && (
+              <p className="rounded border border-ares-red bg-ares-red px-3 py-2 font-mono text-xs text-white" role="alert">
+                {status.integration.diagnostic}
+              </p>
             )}
           </div>
 
-          {/* Quick Onboarding Steps */}
-          <div className="bg-obsidian-dark border border-white/10 p-6 ares-cut-md space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-wider text-white font-heading flex items-center gap-2">
-              <Sparkles size={16} className="text-ares-gold" /> How To Join in 3 Quick Steps
-            </h3>
-
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-3 bg-white/5 rounded border border-white/5">
-                <div className="w-7 h-7 rounded bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-xs font-black flex items-center justify-center shrink-0">
-                  1
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold text-white">Click "Join Zulip Workspace"</div>
-                  <p className="text-[11px] text-marble/70">
-                    Open our team invite portal by clicking the red button above or using <span className="text-ares-gold font-mono">{zulipLink}</span>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-3 bg-white/5 rounded border border-white/5">
-                <div className="w-7 h-7 rounded bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-xs font-black flex items-center justify-center shrink-0">
-                  2
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold text-white">Authenticate with Google</div>
-                  <p className="text-[11px] text-marble/70">
-                    Sign in with your team email (<span className="text-white font-mono">{user?.email || "your-email@gmail.com"}</span>) so your portal permissions sync automatically.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-3 bg-white/5 rounded border border-white/5">
-                <div className="w-7 h-7 rounded bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-xs font-black flex items-center justify-center shrink-0">
-                  3
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold text-white">Download the Apps & Join Streams</div>
-                  <p className="text-[11px] text-marble/70">
-                    Install Zulip on your phone or computer to get instant push notifications for robotics announcements and subteam task updates.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="hero-card space-y-4 border border-white/10 bg-obsidian p-6">
+            <h2 className="font-heading text-sm font-black uppercase tracking-wider text-white">How to join</h2>
+            <ol className="list-decimal space-y-3 pl-5 text-sm text-marble/80">
+              <li>Open the approved invitation link.</li>
+              <li>Sign in with the Google account your team approved.</li>
+              <li>Install the Zulip app and choose your team streams.</li>
+            </ol>
           </div>
-        </div>
+        </section>
 
-        {/* Right Column: App Downloads & Admin Config */}
-        <div className="space-y-6">
-          
-          {/* Native App Downloads */}
-          <div className="bg-obsidian-dark border border-white/10 p-6 ares-cut-md space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-wider text-white font-heading flex items-center gap-2">
-              <Smartphone size={16} className="text-ares-gold" /> Download Zulip Apps
-            </h3>
-            <p className="text-xs text-marble/70">
-              Stay connected during build season and competitions with real-time push alerts.
-            </p>
+        <aside className="space-y-6">
+          <section className="hero-card space-y-4 border border-white/10 bg-obsidian p-6" aria-labelledby="zulip-apps-heading">
+            <h2 id="zulip-apps-heading" className="flex items-center gap-2 font-heading text-sm font-black uppercase tracking-wider text-white">
+              <Smartphone aria-hidden="true" size={18} className="text-ares-gold" /> Zulip apps
+            </h2>
+            <a
+              href="https://zulip.com/apps/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between rounded border border-white/10 p-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <span className="flex items-center gap-2"><Monitor aria-hidden="true" size={18} className="text-ares-gold" /> Download apps</span>
+              <ExternalLink aria-hidden="true" size={14} />
+            </a>
+          </section>
 
-            <div className="space-y-2 pt-2">
-              <a
-                href="https://zulip.com/apps/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded flex items-center justify-between text-xs font-bold text-white transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <Smartphone size={18} className="text-ares-gold" />
-                  <span>iOS & Android Apps</span>
-                </div>
-                <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
-              </a>
-
-              <a
-                href="https://zulip.com/apps/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded flex items-center justify-between text-xs font-bold text-white transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <Monitor size={18} className="text-ares-cyan" />
-                  <span>Mac, Windows & Linux</span>
-                </div>
-                <ExternalLink size={14} className="text-marble/40 group-hover:text-white transition-colors" />
-              </a>
-            </div>
-          </div>
-
-          {/* Admin Configuration Card */}
-          {isAdmin && (
-            <div className="bg-obsidian-dark border border-ares-gold/30 p-6 ares-cut-md space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black uppercase tracking-wider text-ares-gold font-heading flex items-center gap-2">
-                  <Settings size={16} /> Admin Link Config
-                </h3>
+          {canManage && (
+            <section className="hero-card space-y-4 border border-ares-gold/30 bg-obsidian p-6" aria-labelledby="zulip-config-heading">
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="zulip-config-heading" className="flex items-center gap-2 font-heading text-sm font-black uppercase tracking-wider text-ares-gold">
+                  <Settings aria-hidden="true" size={18} /> Join link
+                </h2>
                 <button
-                  onClick={() => setEditingLink(!editingLink)}
-                  className="text-[10px] font-bold text-marble/70 hover:text-white uppercase underline"
+                  type="button"
+                  onClick={() => setEditing(current => !current)}
+                  className="rounded text-xs font-bold text-marble underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
-                  {editingLink ? "Cancel" : "Change Link"}
+                  {editing ? "Keep current link" : "Change link"}
                 </button>
               </div>
-
-              <p className="text-xs text-marble/70">
-                To update the team's reusable invite link, copy a new invitation URL from <span className="text-white font-mono">Zulip Settings → Invite Users</span> and paste it below.
+              <p className="text-xs text-marble/80">
+                Paste a reusable invitation link from the ARES Zulip workspace.
               </p>
-
-              {editingLink ? (
-                <div className="space-y-3 pt-2">
+              {editing ? (
+                <form className="space-y-3" onSubmit={saveInviteUrl}>
+                  <label htmlFor="zulip-invite-url" className="block text-xs font-bold text-white">
+                    Invitation URL
+                  </label>
                   <input
+                    id="zulip-invite-url"
                     type="url"
-                    value={newLinkInput}
-                    onChange={(e) => setNewLinkInput(e.target.value)}
+                    required
+                    value={draftInviteUrl}
+                    onChange={event => setDraftInviteUrl(event.target.value)}
                     placeholder="https://aresfirst.zulipchat.com/join/..."
-                    className="w-full px-3 py-2 bg-obsidian border border-white/20 rounded text-xs text-white placeholder-marble/40 focus:outline-none focus:border-ares-gold font-mono"
+                    autoComplete="off"
+                    className="w-full rounded border border-white/20 bg-obsidian px-3 py-2 font-mono text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                   />
                   <button
-                    onClick={handleSaveInviteLink}
-                    disabled={savingLink}
-                    className="w-full py-2 bg-ares-gold hover:bg-white text-obsidian font-black text-xs uppercase tracking-wider rounded transition-colors disabled:opacity-50"
+                    type="submit"
+                    disabled={saving || !draftInviteUrl.trim()}
+                    className="w-full rounded bg-ares-gold px-3 py-2 text-xs font-black uppercase tracking-wider text-obsidian focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
                   >
-                    {savingLink ? "Saving..." : "Save Invite Link"}
+                    {saving ? "Saving…" : "Save approved link"}
                   </button>
-                </div>
+                </form>
               ) : (
-                <div className="p-3 bg-white/5 rounded border border-white/5 space-y-1">
-                  <div className="text-[10px] text-marble/50 uppercase font-black">Active Team Invite URL:</div>
-                  <div className="text-xs text-ares-gold font-mono truncate">{zulipLink}</div>
-                </div>
+                <p className="break-all rounded border border-white/10 p-3 font-mono text-xs text-marble/80">
+                  {status?.workspace.inviteUrl || "No approved join link is set."}
+                </p>
               )}
-            </div>
+            </section>
           )}
 
-          {/* FAQ Card */}
-          <div className="bg-obsidian-dark border border-white/10 p-6 ares-cut-md space-y-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-white font-heading flex items-center gap-2">
-              <HelpCircle size={14} className="text-ares-gold" /> Need Help?
-            </h3>
-            <p className="text-[11px] text-marble/70 leading-relaxed">
-              If your email does not recognize your account or you need administrator access, contact a team coach or mentor in person or email <span className="text-white font-mono">contact@aresfirst.org</span>.
+          <section className="hero-card space-y-2 border border-white/10 bg-obsidian p-6" aria-labelledby="zulip-help-heading">
+            <h2 id="zulip-help-heading" className="flex items-center gap-2 font-heading text-sm font-black uppercase tracking-wider text-white">
+              <HelpCircle aria-hidden="true" size={16} className="text-ares-gold" /> Need help?
+            </h2>
+            <p className="text-xs text-marble/80">
+              Ask a coach in person if the approved link or your team account does not work.
             </p>
-          </div>
-
-        </div>
+          </section>
+        </aside>
       </div>
-    </div>
+    </main>
   );
 }

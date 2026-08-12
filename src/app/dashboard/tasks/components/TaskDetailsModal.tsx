@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { doc, updateDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -8,20 +8,24 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import TaskCommentsSection from "./TaskCommentsSection";
 import { MemberProfile, TaskItem, SubTask } from "@/types/task";
 import TaskEditorAiCopilot from "./TaskEditorAiCopilot";
+import TaskOperationErrorAlert from "./TaskOperationErrorAlert";
+import { describeTaskError, TaskOperationError } from "../taskErrors";
+import type { User } from "firebase/auth";
 
 interface TaskDetailsModalProps {
   taskId: string | null;
   tasks: TaskItem[];
   teamProfiles: MemberProfile[];
   canEdit: boolean;
-  user: any;
+  user: User | null;
   onClose: () => void;
-  onToggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
-  onDeleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
-  onAddSubtask: (taskId: string, title: string) => Promise<void>;
-  onDeleteTask: (taskId: string) => Promise<void>;
-  onArchiveTask: (taskId: string, isArchived: boolean) => Promise<void>;
-  onCreateTask?: (task: TaskItem) => Promise<void>;
+  onToggleSubtask: (taskId: string, subtaskId: string) => Promise<TaskOperationError | null>;
+  onDeleteSubtask: (taskId: string, subtaskId: string) => Promise<TaskOperationError | null>;
+  onAddSubtask: (taskId: string, title: string) => Promise<TaskOperationError | null>;
+  onDeleteTask: (taskId: string) => Promise<TaskOperationError | null>;
+  onArchiveTask: (taskId: string, isArchived: boolean) => Promise<TaskOperationError | null>;
+  onCreateTask?: (task: TaskItem) => Promise<TaskOperationError | null>;
+  onNotificationError?: (error: TaskOperationError) => void;
   setSyncState?: (state: "idle" | "syncing" | "success" | "error") => void;
 }
 
@@ -38,6 +42,7 @@ export default function TaskDetailsModal({
   onDeleteTask,
   onArchiveTask,
   onCreateTask,
+  onNotificationError,
   setSyncState,
 }: TaskDetailsModalProps) {
   const task = taskId ? tasks.find((t) => t.id === taskId) : null;
@@ -56,7 +61,32 @@ export default function TaskDetailsModal({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showAiSidebar, setShowAiSidebar] = useState(false);
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
-  const modalRef = useFocusTrap(true, onClose);
+  const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
+
+  const cancelDeleteConfirmation = () => {
+    setDeleteConfirmationOpen(false);
+    queueMicrotask(() => deleteTriggerRef.current?.focus());
+  };
+
+  const modalRef = useFocusTrap(true, () => {
+    if (deleteConfirmationOpen) {
+      cancelDeleteConfirmation();
+      return;
+    }
+    onClose();
+  });
+  const titleError = modalTitle.trim() ? null : "Enter a task title before saving.";
+
+  useEffect(() => {
+    if (deleteConfirmationOpen) deleteCancelRef.current?.focus();
+  }, [deleteConfirmationOpen]);
 
   useEffect(() => {
     if (task) {
@@ -78,7 +108,10 @@ export default function TaskDetailsModal({
 
   const handleSave = async () => {
     if (!canEdit || submitting) return;
+    setTitleTouched(true);
+    if (titleError) return;
     setSubmitting(true);
+    setOperationError(null);
     try {
       if (isCreateMode) {
         const newTaskId = `task_${Date.now()}`;
@@ -89,14 +122,18 @@ export default function TaskDetailsModal({
           status: modalStatus,
           priority: modalPriority,
           subteam: modalSubteam,
-          assignees: modalAssignees.length > 0 ? modalAssignees : [user?.uid || "anonymous"],
+          assignees: modalAssignees.length > 0 ? modalAssignees : user ? [user.uid] : [],
           subtasks: [],
           archived: false,
           createdAt: new Date().toISOString()
         };
 
         if (onCreateTask) {
-          await onCreateTask(newTaskData);
+          const createError = await onCreateTask(newTaskData);
+          if (createError) {
+            setOperationError(createError);
+            return;
+          }
         } else {
           await setDoc(doc(db, "tasks", newTaskId), newTaskData);
         }
@@ -114,16 +151,18 @@ export default function TaskDetailsModal({
             subteam: newTaskData.subteam,
           }),
         }).then((res) => {
-          if (res.ok) {
-            if (setSyncState) setSyncState("success");
-          } else {
-            if (setSyncState) setSyncState("error");
-          }
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          if (setSyncState) setSyncState("success");
           setTimeout(() => {
             if (setSyncState) setSyncState("idle");
           }, 3000);
         }).catch((err) => {
           console.error("Zulip notification failed:", err);
+          const notificationError = describeTaskError("notify Zulip", err);
+          onNotificationError?.({
+            ...notificationError,
+            message: "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
+          });
           if (setSyncState) setSyncState("error");
           setTimeout(() => {
             if (setSyncState) setSyncState("idle");
@@ -154,16 +193,18 @@ export default function TaskDetailsModal({
             status: modalStatus,
           }),
         }).then((res) => {
-          if (res.ok) {
-            if (setSyncState) setSyncState("success");
-          } else {
-            if (setSyncState) setSyncState("error");
-          }
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          if (setSyncState) setSyncState("success");
           setTimeout(() => {
             if (setSyncState) setSyncState("idle");
           }, 3000);
         }).catch((err) => {
           console.error("Zulip notification failed:", err);
+          const notificationError = describeTaskError("notify Zulip", err);
+          onNotificationError?.({
+            ...notificationError,
+            message: "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
+          });
           if (setSyncState) setSyncState("error");
           setTimeout(() => {
             if (setSyncState) setSyncState("idle");
@@ -174,6 +215,7 @@ export default function TaskDetailsModal({
       onClose();
     } catch (e) {
       console.error("Failed to save task", e);
+      setOperationError(describeTaskError(isCreateMode ? "create task" : "save task", e));
     } finally {
       setSubmitting(false);
     }
@@ -184,8 +226,32 @@ export default function TaskDetailsModal({
   const handleAddSub = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSubTitle.trim() || !canEdit || !task) return;
-    await onAddSubtask(task.id, newSubTitle.trim());
+    const error = await onAddSubtask(task.id, newSubTitle.trim());
+    if (error) {
+      setOperationError(error);
+      return;
+    }
+    setOperationError(null);
     setNewSubTitle("");
+  };
+
+  const handleDeleteTask = async () => {
+    if (!task || deleteSubmitting) return;
+    setDeleteSubmitting(true);
+    setOperationError(null);
+    try {
+      const error = await onDeleteTask(task.id);
+      setOperationError(error);
+      if (!error) {
+        setDeleteConfirmationOpen(false);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to delete task", error);
+      setOperationError(describeTaskError("delete task", error));
+    } finally {
+      setDeleteSubmitting(false);
+    }
   };
 
   const renderInnerContent = () => (
@@ -239,6 +305,12 @@ export default function TaskDetailsModal({
       </header>
 
       <div className="flex-1 overflow-hidden bg-black/10 p-6 flex flex-col">
+        {operationError && (
+          <div className="mb-4 shrink-0">
+            <TaskOperationErrorAlert error={operationError} onDismiss={() => setOperationError(null)} />
+          </div>
+        )}
+
         {/* Revert Alert banner */}
         {revertAlert && (
           <div className="mb-4 px-4 py-2 bg-ares-gold/10 border border-ares-gold/20 text-ares-gold text-xs font-semibold flex items-center justify-between shrink-0 rounded-lg animate-fade-in">
@@ -263,11 +335,23 @@ export default function TaskDetailsModal({
             type="text"
             required
             value={modalTitle}
-            onChange={(e) => setModalTitle(e.target.value)}
+            onChange={(e) => {
+              setModalTitle(e.target.value);
+              if (operationError) setOperationError(null);
+            }}
+            onBlur={() => setTitleTouched(true)}
             placeholder="Task Title"
             disabled={!canEdit}
-            className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red"
+            aria-invalid={titleTouched && !!titleError}
+            aria-describedby={titleTouched && titleError ? "modal-title-error" : undefined}
+            className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
           />
+          {titleTouched && titleError && (
+            <p id="modal-title-error" className="mt-1.5 text-xs font-semibold text-white" role="alert">
+              <span className="mr-1 rounded bg-ares-red px-1.5 py-0.5 text-white">Required</span>
+              {titleError}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -276,7 +360,7 @@ export default function TaskDetailsModal({
             <select
               id="modal-status"
               value={modalStatus}
-              onChange={(e) => setModalStatus(e.target.value as any)}
+              onChange={(e) => setModalStatus(e.target.value as TaskItem["status"])}
               className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
               disabled={!canEdit}
             >
@@ -292,7 +376,7 @@ export default function TaskDetailsModal({
             <select
               id="modal-subteam"
               value={modalSubteam}
-              onChange={(e) => setModalSubteam(e.target.value as any)}
+              onChange={(e) => setModalSubteam(e.target.value as TaskItem["subteam"])}
               className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
               disabled={!canEdit}
             >
@@ -308,7 +392,7 @@ export default function TaskDetailsModal({
             <select
               id="modal-priority"
               value={modalPriority}
-              onChange={(e) => setModalPriority(e.target.value as any)}
+              onChange={(e) => setModalPriority(e.target.value as TaskItem["priority"])}
               className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
               disabled={!canEdit}
             >
@@ -380,7 +464,10 @@ export default function TaskDetailsModal({
                           type="checkbox"
                           checked={sub.done}
                           disabled={!canEdit}
-                          onChange={() => onToggleSubtask(task.id, sub.id)}
+                          onChange={async () => {
+                            const error = await onToggleSubtask(task.id, sub.id);
+                            setOperationError(error);
+                          }}
                           className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
                         />
                         <span className={sub.done ? "line-through text-marble/40" : ""}>
@@ -389,8 +476,12 @@ export default function TaskDetailsModal({
                       </label>
                       {canEdit && (
                         <button
-                          onClick={() => onDeleteSubtask(task.id, sub.id)}
-                          className="opacity-0 group-hover/sub:opacity-100 text-marble/40 hover:text-ares-red transition-all cursor-pointer p-0.5"
+                          onClick={async () => {
+                            const error = await onDeleteSubtask(task.id, sub.id);
+                            setOperationError(error);
+                          }}
+                          aria-label={`Delete subtask: ${sub.title}`}
+                          className="opacity-0 group-hover/sub:opacity-100 focus-visible:opacity-100 text-marble/40 hover:text-white transition-all cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                           title="Delete subtask"
                         >
                           <Trash2 size={12} />
@@ -405,7 +496,11 @@ export default function TaskDetailsModal({
 
               {canEdit && (
                 <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
+                  <label htmlFor={`new-subtask-${task.id}`} className="sr-only">
+                    Add a subtask to {task.title}
+                  </label>
                   <input
+                    id={`new-subtask-${task.id}`}
                     type="text"
                     value={newSubTitle}
                     onChange={(e) => setNewSubTitle(e.target.value)}
@@ -441,19 +536,53 @@ export default function TaskDetailsModal({
         </div>
       </div>
 
+      {deleteConfirmationOpen && task && (
+        <section
+          role="alertdialog"
+          aria-labelledby={deleteTitleId}
+          aria-describedby={deleteDescriptionId}
+          className="mx-6 mb-3 border border-ares-red bg-ares-red/10 p-4 text-sm text-white"
+        >
+          <h4 id={deleteTitleId} className="font-bold">Delete this task card?</h4>
+          <p id={deleteDescriptionId} className="mt-1 text-marble/80">
+            This removes <span className="font-semibold text-white">{task.title}</span> from the active board. A coach or administrator can recover archived task data.
+          </p>
+          <p className="mt-2 font-mono text-xs text-marble/80">Task ID: {task.id}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleDeleteTask}
+              disabled={deleteSubmitting}
+              className="rounded bg-ares-red px-3 py-2 text-xs font-bold text-white hover:bg-ares-bronze disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              {deleteSubmitting ? "Deleting…" : "Confirm delete"}
+            </button>
+            <button
+              ref={deleteCancelRef}
+              type="button"
+              onClick={cancelDeleteConfirmation}
+              disabled={deleteSubmitting}
+              className="rounded border border-marble/40 px-3 py-2 text-xs font-semibold text-marble hover:border-white hover:text-white disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Keep task
+            </button>
+          </div>
+        </section>
+      )}
+
       <footer className="px-6 py-4 border-t border-white/10 flex justify-between items-center bg-black/20 shrink-0">
         {canEdit && !isCreateMode && task ? (
           <button
+            ref={deleteTriggerRef}
             type="button"
             onClick={() => {
-              if (confirm("Are you sure you want to delete this task card?")) {
-                onDeleteTask(task.id);
-                onClose();
-              }
+              setOperationError(null);
+              setDeleteConfirmationOpen(true);
             }}
-            className="px-3 py-2 border border-white/10 hover:border-ares-red/30 hover:bg-ares-red/10 text-marble/60 hover:text-ares-red rounded font-black text-[10px] uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all duration-200"
+            aria-expanded={deleteConfirmationOpen}
+            className="px-3 py-2 border border-white/10 hover:border-ares-red hover:bg-ares-red text-marble/60 hover:text-white rounded font-black text-[10px] uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
-            <Trash2 size={12} /> Delete Card
+            <Trash2 aria-hidden="true" size={12} /> Delete Card
           </button>
         ) : (
           <div />
@@ -472,8 +601,9 @@ export default function TaskDetailsModal({
             <button
               type="button"
               onClick={async () => {
-                await onArchiveTask(task.id, !task.archived);
-                onClose();
+                const error = await onArchiveTask(task.id, !task.archived);
+                setOperationError(error);
+                if (!error) onClose();
               }}
               className="px-4 py-2 border border-ares-gold/30 hover:bg-ares-gold/10 text-ares-gold rounded font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1.5"
             >
@@ -485,9 +615,10 @@ export default function TaskDetailsModal({
             <button
               type="button"
               onClick={handleSave}
+              disabled={submitting || !!titleError}
               className="clipped-button-sm bg-ares-red text-white font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg disabled:opacity-50"
             >
-              {isCreateMode ? "Add Task Card" : "Save Changes"}
+              {submitting ? "Saving..." : isCreateMode ? "Add Task Card" : "Save Changes"}
             </button>
           )}
         </div>
@@ -498,7 +629,10 @@ export default function TaskDetailsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
+        onClick={deleteConfirmationOpen ? cancelDeleteConfirmation : onClose}
+      />
       
       {/* Editor Drawer container */}
       <div 

@@ -22,15 +22,11 @@ const uploadUnifiedLimiter = rateLimit({
 
 async function updateAlbumMediaCount(albumId: string, delta: number) {
   if (!albumId) return;
-  try {
-    const albumRef = adminDb.collection("albums").doc(albumId);
-    await albumRef.update({
-      mediaCount: admin.firestore.FieldValue.increment(delta),
-      updatedAt: new Date().toISOString()
-    });
-  } catch (err) {
-    logger.warn("photos", `Failed to update media count for album ${albumId}`, err);
-  }
+  const albumRef = adminDb.collection("albums").doc(albumId);
+  await albumRef.update({
+    mediaCount: admin.firestore.FieldValue.increment(delta),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 // POST /api/photos/upload-unified
@@ -49,7 +45,19 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     throw new ApiError(400, "Missing required fields: fileBase64, filename, mimeType");
   }
 
+  if (filename.length > 180 || !["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+    throw new ApiError(400, "Upload a JPEG, PNG, or WebP image with a filename under 180 characters.");
+  }
+  if (albumId && !/^[A-Za-z0-9_-]{1,200}$/.test(albumId)) throw new ApiError(400, "Invalid album ID.");
+  if (albumId) {
+    const album = await adminDb.collection("albums").doc(albumId).get();
+    if (!album.exists || album.data()?.isDeleted === 1) throw new ApiError(400, "Choose an active album.");
+  }
+
   const buffer = Buffer.from(fileBase64, "base64");
+  if (buffer.byteLength === 0 || buffer.byteLength > 8 * 1024 * 1024) {
+    throw new ApiError(413, "Each image must be 8 MB or smaller after compression.");
+  }
 
   // Validate image magic bytes
   const validation = validateImageMagicBytes(
@@ -73,6 +81,10 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     const existingPhotoDoc = existingPhotoSnap.docs[0];
     const existingPhotoData = existingPhotoDoc.data();
     
+    if (existingPhotoData.isDeleted === 1) {
+      throw new ApiError(409, "This image is already in the archive. Restore it before uploading it again.");
+    }
+
     // If an albumId is provided and the existing photo isn't already in it, assign it
     if (albumId && existingPhotoData.albumId !== albumId) {
       const batch = adminDb.batch();
@@ -100,8 +112,16 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
       success: true,
       photo: {
         id: existingPhotoDoc.id,
-        ...existingPhotoData,
-        albumId: albumId || existingPhotoData.albumId
+        publicUrl: existingPhotoData.publicUrl,
+        caption: existingPhotoData.caption || "",
+        altText: existingPhotoData.altText || "",
+        labels: Array.isArray(existingPhotoData.labels) ? existingPhotoData.labels : [],
+        albumId: albumId || existingPhotoData.albumId || null,
+        mimeType: existingPhotoData.mimeType || "image/jpeg",
+        fileSize: existingPhotoData.fileSize || 0,
+        importedAt: existingPhotoData.importedAt || "",
+        isSynced: Boolean(existingPhotoData.googleMediaItemId),
+        isArchived: false,
       },
       cached: true
     });
@@ -143,6 +163,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
 
   // Optional Google Photos upload
   let googleMediaItemId: string | null = null;
+  let googleSyncWarning: string | null = null;
   if (uploadToGoogle) {
     try {
       const googleToken = await getGooglePhotosAccessToken();
@@ -160,8 +181,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
       });
 
       if (!uploadRes.ok) {
-        const errorText = await uploadRes.text();
-        throw new Error(`Google upload failed: ${uploadRes.status} ${errorText}`);
+        throw new Error(`Google upload failed with HTTP ${uploadRes.status}: ${uploadRes.statusText}`);
       }
 
       const uploadToken = await uploadRes.text();
@@ -199,8 +219,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
       });
 
       if (!batchRes.ok) {
-        const errorText = await batchRes.text();
-        throw new Error(`Google batch create failed: ${batchRes.status} ${errorText}`);
+        throw new Error(`Google batch create failed with HTTP ${batchRes.status}: ${batchRes.statusText}`);
       }
 
       const batchData = await batchRes.json();
@@ -211,6 +230,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
       googleMediaItemId = creationResult?.mediaItem?.id || null;
     } catch (gErr: any) {
       logger.warn("photos", "Google Photos sync upload error", gErr.message || gErr);
+      googleSyncWarning = "The image was saved to the team site, but Google Photos sync failed.";
     }
   }
 
@@ -227,7 +247,9 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     caption,
     labels,
     googleMediaItemId,
-    sha256: imageHash
+    sha256: imageHash,
+    isDeleted: 0,
+    updatedAt: new Date().toISOString(),
   };
 
   await adminDb.collection("imported_photos").doc(docId).set(photoMeta);
@@ -241,7 +263,27 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     await albumRef.collection("photos").doc(docId).set(photoMeta);
   }
 
-  res.json({ success: true, photo: photoMeta });
+  res.status(201).json({
+    success: true,
+    photo: {
+      id: docId,
+      publicUrl,
+      caption,
+      altText: "",
+      labels,
+      albumId: albumId || null,
+      mimeType,
+      fileSize: buffer.byteLength,
+      importedAt: photoMeta.importedAt,
+      isSynced: Boolean(googleMediaItemId),
+      isArchived: false,
+    },
+    googleSync: {
+      requested: uploadToGoogle === true,
+      succeeded: Boolean(googleMediaItemId),
+      warning: googleSyncWarning,
+    },
+  });
 }));
 
 export default router;

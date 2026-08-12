@@ -2,15 +2,17 @@
 
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { db } from "@/lib/firebase";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
-import { MapPin, X, Pencil, Trash2 } from "lucide-react";
-import { cleanUndefined } from "@/lib/utils";
+import { MapPin, X, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import {
+  archiveLocation,
+  createLocation,
+  restoreLocation,
+  updateLocation,
+} from "@/app/calendar/api";
 
 import { TeamLocation } from "@/types/location";
-import { MOCK_LOCATIONS } from "@/utils/constants";
 export type { TeamLocation };
-export { MOCK_LOCATIONS };
 
 interface LocationManagerModalProps {
   isOpen: boolean;
@@ -29,27 +31,32 @@ export default function LocationManagerModal({
   formLocationId,
   setFormLocationId
 }: LocationManagerModalProps) {
+  const { authorizedUser } = useAuth();
+  const canManage = !!authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role);
   const [editingLocation, setEditingLocation] = useState<TeamLocation | null>(null);
   const [locFormName, setLocFormName] = useState("");
   const [locFormAddress, setLocFormAddress] = useState("");
   const [locFormDescription, setLocFormDescription] = useState("");
   const [locFormGmapsUrl, setLocFormGmapsUrl] = useState("");
+  const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
+  const [operationStatus, setOperationStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-
-  const slugify = (str: string) =>
-    str
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+  const resetForm = () => {
+    setEditingLocation(null);
+    setLocFormName("");
+    setLocFormAddress("");
+    setLocFormDescription("");
+    setLocFormGmapsUrl("");
+  };
 
   // Action: Save Location (Create or Update)
   const handleSaveLocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!locFormName.trim() || !locFormAddress.trim()) return;
-
-    const targetLocId = editingLocation?.id || slugify(locFormName.trim()) || `loc_${Date.now()}`;
-    const newLoc: TeamLocation = {
-      id: targetLocId,
+    if (!canManage || !locFormName.trim() || !locFormAddress.trim()) return;
+    setIsSaving(true);
+    setOperationStatus(null);
+    const input = {
       name: locFormName.trim(),
       address: locFormAddress.trim(),
       description: locFormDescription.trim() || undefined,
@@ -57,54 +64,52 @@ export default function LocationManagerModal({
     };
 
     try {
-      await setDoc(doc(db, "locations", targetLocId), cleanUndefined(newLoc));
-
-      // Clear form
-      setEditingLocation(null);
-      setLocFormName("");
-      setLocFormAddress("");
-      setLocFormDescription("");
-      setLocFormGmapsUrl("");
-
-      // Auto-select in editor
-      setFormLocationId(targetLocId);
-    } catch (err) {
-      console.warn("Unable to save location online.", err);
+      const savedLocation = editingLocation
+        ? await updateLocation(editingLocation.id, input)
+        : await createLocation(input);
       if (editingLocation) {
-        setLocations(locations.map((l) => (l.id === editingLocation.id ? newLoc : l)));
+        setLocations((current) => current.map((location) => location.id === savedLocation.id ? savedLocation : location));
       } else {
-        setLocations([...locations, newLoc]);
+        setLocations((current) => [...current, savedLocation].sort((a, b) => a.name.localeCompare(b.name)));
       }
-      setFormLocationId(targetLocId);
-
-      setEditingLocation(null);
-      setLocFormName("");
-      setLocFormAddress("");
-      setLocFormDescription("");
-      setLocFormGmapsUrl("");
+      setFormLocationId(savedLocation.id);
+      setOperationStatus({ kind: "success", message: editingLocation ? "Venue updated." : "Venue created." });
+      resetForm();
+    } catch (error) {
+      console.error("Unable to save location:", error);
+      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Action: Delete Location
-  const handleDeleteLocation = async (locId: string) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this venue? Any event referencing this venue will default back to the MARS Building."
-      )
-    )
-      return;
-
+  const handleArchiveLocation = async (locId: string) => {
+    if (!canManage) return;
+    setOperationStatus(null);
     try {
-      await deleteDoc(doc(db, "locations", locId));
+      await archiveLocation(locId);
+      setLocations((current) => current.map((location) => location.id === locId ? { ...location, isDeleted: 1 } : location));
       if (formLocationId === locId) {
-        setFormLocationId("mars-building");
+        setFormLocationId("");
       }
-    } catch (err) {
-      console.warn("Unable to delete location online.", err);
-      setLocations(locations.filter((l) => l.id !== locId));
-      if (formLocationId === locId) {
-        setFormLocationId("mars-building");
-      }
+      setPendingArchiveId(null);
+      setOperationStatus({ kind: "success", message: "Venue archived. Existing events keep their saved venue name." });
+    } catch (error) {
+      console.error("Unable to archive location:", error);
+      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
+    }
+  };
+
+  const handleRestoreLocation = async (locId: string) => {
+    if (!canManage) return;
+    setOperationStatus(null);
+    try {
+      await restoreLocation(locId);
+      setLocations((current) => current.map((location) => location.id === locId ? { ...location, isDeleted: 0 } : location));
+      setOperationStatus({ kind: "success", message: "Venue restored." });
+    } catch (error) {
+      console.error("Unable to restore location:", error);
+      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -128,6 +133,7 @@ export default function LocationManagerModal({
               <Dialog.Close asChild>
                 <button
                   type="button"
+                  aria-label="Close venue manager"
                   className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-full transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
                 >
                   <X size={16} />
@@ -140,7 +146,7 @@ export default function LocationManagerModal({
               {/* Left Column: Locations List */}
               <div className="w-full md:w-1/2 border-r border-white/10 p-5 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-white/5">
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60 mb-2">
-                  Saved Venues ({locations.length})
+                  Saved Venues ({locations.filter((location) => location.isDeleted !== 1).length} active)
                 </h4>
 
                 {locations.length === 0 ? (
@@ -150,8 +156,8 @@ export default function LocationManagerModal({
                 ) : (
                   <div className="space-y-2">
                     {locations.map((loc) => (
+                      <React.Fragment key={loc.id}>
                       <div
-                        key={loc.id}
                         className={`p-3 border rounded-lg transition-all text-left flex items-start justify-between gap-3 ${
                           editingLocation?.id === loc.id
                             ? "bg-ares-gold/15 border-ares-gold"
@@ -161,9 +167,9 @@ export default function LocationManagerModal({
                         <div className="min-w-0 space-y-1">
                           <p className="text-xs font-bold text-white uppercase tracking-tight truncate flex items-center gap-1.5">
                             {loc.name}
-                            {loc.id === "mars-building" && (
-                              <span className="bg-ares-gold/20 text-ares-gold text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-gold/30 uppercase shrink-0">
-                                Default
+                            {loc.isDeleted === 1 && (
+                              <span className="bg-ares-red text-white text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-bronze uppercase shrink-0">
+                                Archived
                               </span>
                             )}
                           </p>
@@ -174,7 +180,7 @@ export default function LocationManagerModal({
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
-                          <button
+                          {canManage && loc.isDeleted !== 1 && <button
                             type="button"
                             onClick={() => {
                               setEditingLocation(loc);
@@ -185,28 +191,44 @@ export default function LocationManagerModal({
                             }}
                             className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded border border-white/10 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
                             title="Edit Venue"
+                            aria-label={`Edit venue ${loc.name}`}
                           >
                             <Pencil size={11} />
-                          </button>
-                          {loc.id !== "mars-building" && (
+                          </button>}
+                          {canManage && loc.isDeleted !== 1 ? (
                             <button
                               type="button"
-                              onClick={() => handleDeleteLocation(loc.id)}
+                              onClick={() => setPendingArchiveId(loc.id)}
                               className="p-1.5 bg-white/5 hover:bg-ares-red/25 text-white/70 hover:text-white rounded border border-white/10 hover:border-ares-red/35 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
-                              title="Delete Venue"
+                              title="Archive Venue"
+                              aria-label={`Archive venue ${loc.name}`}
                             >
                               <Trash2 size={11} />
                             </button>
-                          )}
+                          ) : canManage ? (
+                            <button type="button" onClick={() => void handleRestoreLocation(loc.id)} className="p-1.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold rounded border border-ares-gold/30 focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none" aria-label={`Restore venue ${loc.name}`}>
+                              <RotateCcw aria-hidden="true" size={11} />
+                            </button>
+                          ) : null}
                         </div>
                       </div>
+                      {pendingArchiveId === loc.id && (
+                        <div role="alertdialog" aria-label={`Confirm archive of ${loc.name}`} className="mt-2 rounded border border-ares-red/35 bg-ares-red/10 p-3 text-[10px] text-white">
+                          <p>This venue will leave new event forms. Existing events keep their saved venue name.</p>
+                          <div className="mt-2 flex gap-2">
+                            <button type="button" onClick={() => setPendingArchiveId(null)} className="rounded border border-white/15 px-2 py-1 font-bold focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+                            <button type="button" autoFocus onClick={() => void handleArchiveLocation(loc.id)} className="rounded bg-ares-red px-2 py-1 font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Archive venue</button>
+                          </div>
+                        </div>
+                      )}
+                      </React.Fragment>
                     ))}
                   </div>
                 )}
               </div>
 
               {/* Right Column: Add/Edit Form */}
-              <form
+              {canManage ? <form
                 onSubmit={handleSaveLocation}
                 className="w-full md:w-1/2 p-5 overflow-y-auto space-y-4 flex flex-col justify-between scrollbar-thin scrollbar-thumb-white/5"
               >
@@ -290,11 +312,7 @@ export default function LocationManagerModal({
                     <button
                       type="button"
                       onClick={() => {
-                        setEditingLocation(null);
-                        setLocFormName("");
-                        setLocFormAddress("");
-                        setLocFormDescription("");
-                        setLocFormGmapsUrl("");
+                        resetForm();
                       }}
                       className="px-3 py-2 border border-white/10 hover:bg-white/5 text-marble/60 hover:text-white rounded text-[9px] uppercase font-black tracking-widest cursor-pointer transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
                     >
@@ -303,13 +321,23 @@ export default function LocationManagerModal({
                   )}
                   <button
                     type="submit"
+                    disabled={isSaving}
                     className="flex-grow py-2 bg-ares-gold text-black font-black uppercase tracking-widest text-[9px] rounded hover:brightness-105 transition-all shadow-md focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none cursor-pointer"
                   >
-                    {editingLocation ? "Save Updates" : "Create Venue"}
+                    {isSaving ? "Saving…" : editingLocation ? "Save Updates" : "Create Venue"}
                   </button>
                 </div>
-              </form>
+              </form> : (
+                <div className="w-full md:w-1/2 p-6 text-sm leading-relaxed text-marble/70">
+                  Only admins, coaches, and mentors can change team venues.
+                </div>
+              )}
             </div>
+            {operationStatus && (
+              <div role={operationStatus.kind === "error" ? "alert" : "status"} className={operationStatus.kind === "error" ? "border-t border-ares-red/35 bg-ares-red/10 p-3 text-white" : "border-t border-ares-gold/30 bg-ares-gold/10 p-3 text-ares-gold"}>
+                <p className={operationStatus.kind === "error" ? "font-mono text-[10px]" : "text-[10px] font-bold"}>{operationStatus.message}</p>
+              </div>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

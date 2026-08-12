@@ -22,6 +22,7 @@ vi.mock("../../lib/logger", () => ({
 
 import {
   AppCheckObservedRequest,
+  enforceAppCheck,
   getAppCheckRouteGroup,
   observeAppCheck,
   shouldObserveAppCheck,
@@ -44,6 +45,7 @@ describe("App Check monitoring middleware", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.ENFORCE_APP_CHECK = "true";
     next = vi.fn() as unknown as NextFunction;
   });
 
@@ -147,5 +149,54 @@ describe("App Check monitoring middleware", () => {
     });
     expect(JSON.stringify(mocks.warn.mock.calls)).not.toContain("sensitive verifier detail");
     expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("rejects observed mutations when the token is missing", () => {
+    const req = createRequest("POST", "/api/store/checkout");
+    req.appCheckObservation = { status: "missing" };
+
+    enforceAppCheck(req, {} as Response, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      status: 401,
+      code: "APP_CHECK_REQUIRED",
+    }));
+  });
+
+  it("rejects observed mutations when token verification failed", () => {
+    const req = createRequest("PATCH", "/api/robots/robot-id", "invalid-token");
+    req.appCheckObservation = { status: "invalid", reason: "verification_failed" };
+
+    enforceAppCheck(req, {} as Response, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      status: 401,
+      code: "APP_CHECK_REQUIRED",
+    }));
+  });
+
+  it("allows valid and explicitly exempt mutation requests", () => {
+    const valid = createRequest("DELETE", "/api/simulations/private-id", "valid-token");
+    valid.appCheckObservation = { status: "valid", appId: "expected-app" };
+    enforceAppCheck(valid, {} as Response, next);
+
+    const exempt = createRequest("POST", "/api/webhooks/zulip");
+    enforceAppCheck(exempt, {} as Response, next);
+
+    expect(next).toHaveBeenCalledTimes(2);
+    expect(next).toHaveBeenNthCalledWith(1);
+    expect(next).toHaveBeenNthCalledWith(2);
+  });
+
+  it("keeps enforcement disabled until the operational rollout flag is enabled", () => {
+    delete process.env.ENFORCE_APP_CHECK;
+    const req = createRequest("POST", "/api/store/checkout");
+    req.appCheckObservation = { status: "missing" };
+
+    enforceAppCheck(req, {} as Response, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(next).toHaveBeenCalledWith();
   });
 });

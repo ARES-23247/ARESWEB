@@ -2,27 +2,19 @@ import crypto from "crypto";
 import { logger } from "./logger";
 
 export function getZulipCredentials() {
-  if (process.env.NODE_ENV === "test" && (process.env.ZULIP_BOT_EMAIL === "none" || process.env.ZULIP_API_KEY === "none")) {
-    return { 
-      url: (process.env.ZULIP_URL || "https://aresfirst.zulipchat.com").trim(), 
-      email: "", 
-      apiKey: "" 
-    };
-  }
-
   let url = (process.env.ZULIP_URL || "").trim();
-  let email = (process.env.ZULIP_BOT_EMAIL || "").trim();
-  let apiKey = (process.env.ZULIP_API_KEY || "").trim();
+  const configuredEmail = (process.env.ZULIP_BOT_EMAIL || "").trim();
+  const configuredApiKey = (process.env.ZULIP_API_KEY || "").trim();
 
   if (!url || !url.startsWith("http")) {
     url = "https://aresfirst.zulipchat.com";
   }
-  if (!email || !email.includes("@") || email === "disabled" || email === "none") {
-    email = "Portal-bot@aresfirst.zulipchat.com";
-  }
-  if (!apiKey || apiKey.length < 10 || apiKey === "disabled" || apiKey === "none") {
-    apiKey = "PkK1mzAgrMkhHAewyuDQkTM7CysZljU5";
-  }
+  const email = configuredEmail.includes("@") && !["disabled", "none"].includes(configuredEmail.toLowerCase())
+    ? configuredEmail
+    : "";
+  const apiKey = configuredApiKey.length >= 10 && !["disabled", "none"].includes(configuredApiKey.toLowerCase())
+    ? configuredApiKey
+    : "";
 
   return { url, email, apiKey };
 }

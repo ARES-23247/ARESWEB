@@ -94,6 +94,16 @@ describe("Outreach Router Backend Endpoints", () => {
             eventId: null,
           }),
         },
+        {
+          id: "out3",
+          data: () => ({
+            title: "Archived Demo",
+            date: "2026-05-01",
+            hours: 2,
+            peopleReached: 5,
+            isDeleted: 1,
+          }),
+        },
       ];
 
       const mockCollection = adminDb.collection as any;
@@ -111,6 +121,9 @@ describe("Outreach Router Backend Endpoints", () => {
         hasMore: false,
         nextCursor: null,
       });
+      expect(res.json.mock.calls[0][0].logs).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ title: "Archived Demo" })]),
+      );
     });
   });
 
@@ -137,7 +150,7 @@ describe("Outreach Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         logs: [
-          expect.objectContaining({ id: "out1", title: "Demo 1" }),
+          expect.objectContaining({ id: "out1", title: "Demo 1", isDeleted: 0 }),
         ],
         hasMore: false,
         nextCursor: null,
@@ -196,6 +209,7 @@ describe("Outreach Router Backend Endpoints", () => {
           hours: 6,
           peopleReached: 45,
           eventId: "event789",
+          isDeleted: 0,
         })
       );
       expect(res.json).toHaveBeenCalledWith(
@@ -253,8 +267,8 @@ describe("Outreach Router Backend Endpoints", () => {
     });
   });
 
-  describe("DELETE /api/outreach/admin/:id - Delete outreach log", () => {
-    it("should delete the document", async () => {
+  describe("DELETE /api/outreach/admin/:id - Archive outreach log", () => {
+    it("should soft archive the document", async () => {
       req.params.id = "out_delete";
 
       const mockDocRef = adminDb.collection("").doc("");
@@ -263,8 +277,13 @@ describe("Outreach Router Backend Endpoints", () => {
       const handler = getHandler("/admin/:id", "delete");
       await handler(req, res, next);
 
-      expect(mockDocRef.delete).toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Outreach log deleted successfully." });
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        isDeleted: 1,
+        archivedAt: expect.any(String),
+        updatedAt: expect.any(String),
+      }));
+      expect(mockDocRef.delete).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Outreach log archived successfully." });
     });
 
     it("should throw error if log does not exist", async () => {
@@ -280,6 +299,36 @@ describe("Outreach Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Outreach log not found.");
       expect(err.status).toBe(404);
+    });
+  });
+
+  describe("PATCH /api/outreach/admin/:id/restore - Restore outreach log", () => {
+    it("should restore the archived document", async () => {
+      req.params.id = "out_restore";
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
+
+      const handler = getHandler("/admin/:id/restore", "patch");
+      await handler(req, res, next);
+
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        isDeleted: 0,
+        archivedAt: null,
+        updatedAt: expect.any(String),
+      }));
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Outreach log restored successfully." });
+    });
+
+    it("should throw if the outreach log does not exist", async () => {
+      req.params.id = "out_missing";
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
+
+      const handler = getHandler("/admin/:id/restore", "patch");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
+      expect(mockDocRef.update).not.toHaveBeenCalled();
     });
   });
 });

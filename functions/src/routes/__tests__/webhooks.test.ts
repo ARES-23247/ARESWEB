@@ -111,5 +111,46 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(mockUpdate).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ content: "" });
     });
+
+    it("accepts the current direct_message trigger", async () => {
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "direct_message",
+        message: {
+          subject: "Task-456",
+          content: "Direct update from Zulip.",
+          sender_full_name: "Coach Dave",
+        },
+      };
+      mockGet.mockResolvedValue({ exists: true });
+
+      await getHandler("/zulip", "post")(req, res, next);
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          content: "Direct update from Zulip.",
+          source: "zulip",
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith({ content: "" });
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("rejects malformed authenticated payloads", async () => {
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "direct_message",
+        message: { subject: "Task-456", content: 123 },
+      };
+
+      await getHandler("/zulip", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({
+        status: 400,
+        message: "Invalid Zulip webhook payload.",
+      }));
+      expect(mockSet).not.toHaveBeenCalled();
+    });
   });
 });

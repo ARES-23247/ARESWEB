@@ -1,415 +1,211 @@
-import React, { useState, useEffect } from "react";
-import { X, Plus } from "lucide-react";
-import { RobotItem, RobotVersion } from "./types";
-import { useFocusTrap } from "@/lib/useFocusTrap";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Plus, X } from "lucide-react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import type { RobotItem, RobotVersion } from "./types";
 
 interface RobotEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   editingRobot: RobotItem | null;
-  onSubmit: (id: string, data: Omit<RobotItem, "id">) => void;
+  onSubmit: (id: string, data: Omit<RobotItem, "id" | "isDeleted">) => void;
   isPending: boolean;
+  submissionError?: string | null;
 }
+
+const emptyRobot: Omit<RobotItem, "id" | "isDeleted"> = {
+  name: "",
+  seasonName: "",
+  challengeName: "",
+  weightLbs: undefined,
+  drivetrainType: "",
+  programmingLanguage: "",
+  revealVideoId: "",
+  onshapeUrl: "",
+  cadViewerUrl: "",
+  primaryMechanism: "",
+  content: "",
+  versions: [],
+};
 
 export default function RobotEditorModal({
   isOpen,
   onClose,
   editingRobot,
   onSubmit,
-  isPending
+  isPending,
+  submissionError,
 }: RobotEditorModalProps) {
-  const modalRef = useFocusTrap(isOpen, onClose);
-
-  const [formName, setFormName] = useState("");
   const [formId, setFormId] = useState("");
-  const [formSeasonName, setFormSeasonName] = useState("");
-  const [formChallengeName, setFormChallengeName] = useState("");
-  const [formWeightLbs, setFormWeightLbs] = useState<number | "">("");
-  const [formDrivetrainType, setFormDrivetrainType] = useState("");
-  const [formProgrammingLanguage, setFormProgrammingLanguage] = useState("");
-  const [formRevealVideoId, setFormRevealVideoId] = useState("");
-  const [formOnshapeUrl, setFormOnshapeUrl] = useState("");
-  const [formCadViewerUrl, setFormCadViewerUrl] = useState("");
-  const [formPrimaryMechanism, setFormPrimaryMechanism] = useState("");
-  const [formContent, setFormContent] = useState("");
-  const [formVersions, setFormVersions] = useState<RobotVersion[]>([]);
+  const [draft, setDraft] = useState(emptyRobot);
 
   useEffect(() => {
-    if (editingRobot) {
-      setFormId(editingRobot.id);
-      setFormName(editingRobot.name);
-      setFormSeasonName(editingRobot.seasonName);
-      setFormChallengeName(editingRobot.challengeName);
-      setFormWeightLbs(editingRobot.weightLbs ?? "");
-      setFormDrivetrainType(editingRobot.drivetrainType ?? "");
-      setFormProgrammingLanguage(editingRobot.programmingLanguage ?? "");
-      setFormRevealVideoId(editingRobot.revealVideoId ?? "");
-      setFormOnshapeUrl(editingRobot.onshapeUrl ?? "");
-      setFormCadViewerUrl(editingRobot.cadViewerUrl ?? "");
-      setFormPrimaryMechanism(editingRobot.primaryMechanism ?? "");
-      setFormContent(editingRobot.content ?? "");
-      setFormVersions(editingRobot.versions ?? []);
-    } else {
-      setFormId("");
-      setFormName("");
-      setFormSeasonName("");
-      setFormChallengeName("");
-      setFormWeightLbs("");
-      setFormDrivetrainType("");
-      setFormProgrammingLanguage("");
-      setFormRevealVideoId("");
-      setFormOnshapeUrl("");
-      setFormCadViewerUrl("");
-      setFormPrimaryMechanism("");
-      setFormContent("");
-      setFormVersions([]);
-    }
+    if (!isOpen) return;
+    setFormId(editingRobot?.id ?? "");
+    setDraft(editingRobot ? {
+      name: editingRobot.name,
+      seasonName: editingRobot.seasonName,
+      challengeName: editingRobot.challengeName,
+      weightLbs: editingRobot.weightLbs,
+      drivetrainType: editingRobot.drivetrainType ?? "",
+      programmingLanguage: editingRobot.programmingLanguage ?? "",
+      revealVideoId: editingRobot.revealVideoId ?? "",
+      onshapeUrl: editingRobot.onshapeUrl ?? "",
+      cadViewerUrl: editingRobot.cadViewerUrl ?? "",
+      primaryMechanism: editingRobot.primaryMechanism ?? "",
+      content: editingRobot.content ?? "",
+      versions: editingRobot.versions?.map((version) => ({ ...version })) ?? [],
+    } : { ...emptyRobot, versions: [] });
   }, [editingRobot, isOpen]);
 
-  const updateVersionField = (index: number, field: keyof RobotVersion, value: any) => {
-    const updated = [...formVersions];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormVersions(updated);
+  const setField = <K extends keyof typeof draft>(field: K, value: (typeof draft)[K]) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateVersion = <K extends keyof RobotVersion>(index: number, field: K, value: RobotVersion[K]) => {
+    setDraft((current) => ({
+      ...current,
+      versions: (current.versions ?? []).map((version, versionIndex) => (
+        versionIndex === index ? { ...version, [field]: value } : version
+      )),
+    }));
   };
 
   const addVersion = () => {
-    setFormVersions([
-      ...formVersions,
-      {
-        name: "V" + (formVersions.length + 1) + " - Version Name",
-        content: "",
-        weightLbs: undefined,
-        drivetrainType: "",
-        cadViewerUrl: "",
-        primaryMechanism: ""
-      }
-    ]);
+    setDraft((current) => ({
+      ...current,
+      versions: [...(current.versions ?? []), { name: `V${(current.versions?.length ?? 0) + 1}`, content: "" }],
+    }));
   };
 
   const removeVersion = (index: number) => {
-    setFormVersions(formVersions.filter((_, idx) => idx !== index));
+    setDraft((current) => ({
+      ...current,
+      versions: (current.versions ?? []).filter((_, versionIndex) => versionIndex !== index),
+    }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName) return;
-
-    onSubmit(formId, {
-      name: formName,
-      seasonName: formSeasonName,
-      challengeName: formChallengeName,
-      weightLbs: formWeightLbs === "" ? undefined : Number(formWeightLbs),
-      drivetrainType: formDrivetrainType,
-      programmingLanguage: formProgrammingLanguage,
-      revealVideoId: formRevealVideoId,
-      onshapeUrl: formOnshapeUrl,
-      cadViewerUrl: formCadViewerUrl,
-      primaryMechanism: formPrimaryMechanism,
-      content: formContent,
-      versions: formVersions
-    });
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    onSubmit(formId, draft);
   };
 
-  if (!isOpen) return null;
-
-  const inputClass =
-    "w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-2.5 text-white placeholder-white/30 focus:border-ares-cyan focus:outline-none focus:ring-1 focus:ring-ares-cyan transition-all text-sm";
-  const labelClass = "block text-[10px] font-black uppercase tracking-wider text-marble/55 mb-1.5";
+  const inputClass = "w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-2.5 text-white placeholder-white/30 focus:border-ares-cyan focus:outline-none focus:ring-2 focus:ring-ares-cyan text-sm";
+  const labelClass = "block text-xs font-black uppercase tracking-wider text-marble/75 mb-1.5";
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div ref={modalRef} className="bg-obsidian border border-white/10 ares-cut-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 relative shadow-2xl">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-marble/60 hover:text-white p-1 hover:bg-white/5 ares-cut-sm transition-all"
+    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open && !isPending) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto bg-obsidian border border-white/10 ares-cut-lg p-6 md:p-8 shadow-2xl focus:outline-none"
+          aria-describedby="robot-editor-description"
         >
-          <X size={20} />
-        </button>
-
-        <div className="text-left">
-          <h2 className="text-2xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold font-heading">
-            {editingRobot ? "Edit Fleet Record" : "Deploy New Robot"}
-          </h2>
-          <p className="text-xs text-marble/55 mt-1 font-semibold uppercase tracking-wider">
-            Specify telemetry calibrations, physical constants, and system schematics.
-          </p>
-        </div>
-
-        <form onSubmit={handleFormSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="text-left">
-              <label htmlFor="robot-name" className={labelClass}>Robot Name</label>
-              <input
-                id="robot-name"
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. Minotaur"
-                className={inputClass}
-                required
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-id" className={labelClass}>Robot ID / Slug</label>
-              <input
-                id="robot-id"
-                type="text"
-                value={formId}
-                onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                placeholder="e.g. minotaur"
-                className={inputClass}
-                disabled={!!editingRobot}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="text-left">
-              <label htmlFor="robot-season" className={labelClass}>Season Name</label>
-              <input
-                id="robot-season"
-                type="text"
-                value={formSeasonName}
-                onChange={(e) => setFormSeasonName(e.target.value)}
-                placeholder="e.g. 2025-2026"
-                className={inputClass}
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-challenge" className={labelClass}>Challenge Name</label>
-              <input
-                id="robot-challenge"
-                type="text"
-                value={formChallengeName}
-                onChange={(e) => setFormChallengeName(e.target.value)}
-                placeholder="e.g. INTO THE DEEP"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-left">
-              <label htmlFor="robot-weight" className={labelClass}>Weight (lbs)</label>
-              <input
-                id="robot-weight"
-                type="number"
-                step="0.1"
-                value={formWeightLbs}
-                onChange={(e) => setFormWeightLbs(e.target.value === "" ? "" : parseFloat(e.target.value))}
-                placeholder="e.g. 14.2"
-                className={inputClass}
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-drivetrain" className={labelClass}>Drivetrain Type</label>
-              <input
-                id="robot-drivetrain"
-                type="text"
-                value={formDrivetrainType}
-                onChange={(e) => setFormDrivetrainType(e.target.value)}
-                placeholder="e.g. Mecanum"
-                className={inputClass}
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-mechanism" className={labelClass}>Primary Mechanism</label>
-              <input
-                id="robot-mechanism"
-                type="text"
-                value={formPrimaryMechanism}
-                onChange={(e) => setFormPrimaryMechanism(e.target.value)}
-                placeholder="e.g. Dual-joint Arm"
-                className={inputClass}
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-language" className={labelClass}>Programming Language</label>
-              <input
-                id="robot-language"
-                type="text"
-                value={formProgrammingLanguage}
-                onChange={(e) => setFormProgrammingLanguage(e.target.value)}
-                placeholder="e.g. Kotlin / ARESLib"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-left">
-              <label htmlFor="robot-video" className={labelClass}>Reveal Video ID (YouTube)</label>
-              <input
-                id="robot-video"
-                type="text"
-                value={formRevealVideoId}
-                onChange={(e) => setFormRevealVideoId(e.target.value)}
-                placeholder="e.g. dQw4w9WgXcQ"
-                className={inputClass}
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-onshape" className={labelClass}>Onshape URL</label>
-              <input
-                id="robot-onshape"
-                type="text"
-                value={formOnshapeUrl}
-                onChange={(e) => setFormOnshapeUrl(e.target.value)}
-                placeholder="Onshape Workspace URL"
-                className={inputClass}
-              />
-            </div>
-            <div className="text-left">
-              <label htmlFor="robot-cad-viewer" className={labelClass}>CAD Embed URL</label>
-              <input
-                id="robot-cad-viewer"
-                type="text"
-                value={formCadViewerUrl}
-                onChange={(e) => setFormCadViewerUrl(e.target.value)}
-                placeholder="Embeddable CAD Viewer URL"
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div className="text-left">
-            <label htmlFor="robot-content" className={labelClass}>System Description (Markdown)</label>
-            <textarea
-              id="robot-content"
-              rows={5}
-              value={formContent}
-              onChange={(e) => setFormContent(e.target.value)}
-              placeholder="Describe the robot specs, cycle optimization, programming details..."
-              className="w-full bg-black/40 border border-white/10 ares-cut-sm px-4 py-2.5 text-white placeholder-white/30 focus:border-ares-cyan focus:outline-none focus:ring-1 focus:ring-ares-cyan transition-all text-sm resize-none"
-            />
-          </div>
-
-          {/* Versions Sub-Form */}
-          <div className="border-t border-white/5 pt-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-black uppercase tracking-wider text-white">
-                Build Versions / Prototype Logs
-              </h3>
-              <button
-                type="button"
-                onClick={addVersion}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan text-[10px] font-black uppercase tracking-wider ares-cut-sm transition-all"
-              >
-                <Plus size={12} /> Add Version
-              </button>
-            </div>
-
-            {formVersions.length === 0 ? (
-              <p className="text-xs text-marble/35 italic text-left">No prototype iterations or historical versions logged.</p>
-            ) : (
-              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                {formVersions.map((ver, idx) => (
-                  <div key={idx} className="bg-white/5 border border-white/5 p-4 ares-cut-sm relative space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => removeVersion(idx)}
-                      className="absolute top-2 right-2 text-marble/40 hover:text-ares-red transition-all p-1"
-                    >
-                      <X size={14} />
-                    </button>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="text-left">
-                        <label className={labelClass}>Version Name</label>
-                        <input
-                          type="text"
-                          value={ver.name}
-                          onChange={(e) => updateVersionField(idx, "name", e.target.value)}
-                          placeholder="e.g. V1 - Intake Prototype"
-                          className={inputClass}
-                        />
-                      </div>
-                      <div className="text-left">
-                        <label className={labelClass}>Weight (lbs)</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={ver.weightLbs ?? ""}
-                          onChange={(e) =>
-                            updateVersionField(
-                              idx,
-                              "weightLbs",
-                              e.target.value === "" ? undefined : parseFloat(e.target.value)
-                            )
-                          }
-                          placeholder="e.g. 13.5"
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="text-left">
-                        <label className={labelClass}>Drivetrain</label>
-                        <input
-                          type="text"
-                          value={ver.drivetrainType ?? ""}
-                          onChange={(e) => updateVersionField(idx, "drivetrainType", e.target.value)}
-                          placeholder="e.g. 4-Motor Mecanum"
-                          className={inputClass}
-                        />
-                      </div>
-                      <div className="text-left">
-                        <label className={labelClass}>Primary Mechanism</label>
-                        <input
-                          type="text"
-                          value={ver.primaryMechanism ?? ""}
-                          onChange={(e) => updateVersionField(idx, "primaryMechanism", e.target.value)}
-                          placeholder="e.g. Single-joint arm"
-                          className={inputClass}
-                        />
-                      </div>
-                      <div className="text-left">
-                        <label className={labelClass}>CAD Embed URL</label>
-                        <input
-                          type="text"
-                          value={ver.cadViewerUrl ?? ""}
-                          onChange={(e) => updateVersionField(idx, "cadViewerUrl", e.target.value)}
-                          placeholder="Viewer Embed URL"
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="text-left">
-                      <label className={labelClass}>Version Description</label>
-                      <textarea
-                        rows={2}
-                        value={ver.content}
-                        onChange={(e) => updateVersionField(idx, "content", e.target.value)}
-                        placeholder="Describe prototype performance constraints and dynamic test findings..."
-                        className="w-full bg-black/40 border border-white/10 ares-cut-sm px-3 py-2 text-white placeholder-white/30 focus:border-ares-cyan focus:outline-none focus:ring-1 focus:ring-ares-cyan transition-all text-xs resize-none"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+          <Dialog.Close asChild>
             <button
               type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 border border-white/10 hover:bg-white/5 text-xs font-black uppercase tracking-wider text-marble ares-cut-sm transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
               disabled={isPending}
-              className="px-5 py-2.5 bg-ares-cyan text-black hover:bg-ares-cyan/80 text-xs font-black uppercase tracking-wider ares-cut-sm transition-all shadow-xl disabled:opacity-50"
+              className="absolute top-4 right-4 text-marble/70 hover:text-white p-2 hover:bg-white/5 ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+              aria-label="Close robot editor"
             >
-              {isPending ? "Syncing..." : editingRobot ? "Save Changes" : "Deploy Robot"}
+              <X aria-hidden="true" size={20} />
             </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </Dialog.Close>
+
+          <Dialog.Title className="pr-12 text-2xl font-black uppercase text-white font-heading">
+            {editingRobot ? "Edit Fleet Record" : "Deploy New Robot"}
+          </Dialog.Title>
+          <Dialog.Description id="robot-editor-description" className="text-sm text-marble/70 mt-2">
+            Add the published engineering details for this robot. CAD links must use <span className="font-mono">https://cad.onshape.com</span>.
+          </Dialog.Description>
+
+          {submissionError && (
+            <div role="alert" className="mt-5 border border-ares-red bg-ares-red/10 p-4 text-sm text-white ares-cut-sm">
+              <p className="font-bold">The fleet record was not saved. Your draft is still here.</p>
+              <p className="mt-1 font-mono text-xs text-marble/80">{submissionError}</p>
+            </div>
+          )}
+
+          <form onSubmit={submit} className="mt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Robot name" id="robot-name" className={labelClass}>
+                <input id="robot-name" value={draft.name} onChange={(e) => setField("name", e.target.value)} className={inputClass} required maxLength={120} />
+              </Field>
+              <Field label="Robot ID / slug" id="robot-id" className={labelClass}>
+                <input id="robot-id" value={formId} onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} className={inputClass} disabled={Boolean(editingRobot)} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxLength={80} />
+              </Field>
+              <Field label="Season name" id="robot-season" className={labelClass}>
+                <input id="robot-season" value={draft.seasonName} onChange={(e) => setField("seasonName", e.target.value)} className={inputClass} required maxLength={80} />
+              </Field>
+              <Field label="Challenge name" id="robot-challenge" className={labelClass}>
+                <input id="robot-challenge" value={draft.challengeName} onChange={(e) => setField("challengeName", e.target.value)} className={inputClass} required maxLength={120} />
+              </Field>
+              <Field label="Weight (lbs)" id="robot-weight" className={labelClass}>
+                <input id="robot-weight" type="number" min="0.1" max="100" step="0.1" value={draft.weightLbs ?? ""} onChange={(e) => setField("weightLbs", e.target.value ? Number(e.target.value) : undefined)} className={inputClass} />
+              </Field>
+              <Field label="Drivetrain" id="robot-drivetrain" className={labelClass}>
+                <input id="robot-drivetrain" value={draft.drivetrainType ?? ""} onChange={(e) => setField("drivetrainType", e.target.value)} className={inputClass} required maxLength={160} />
+              </Field>
+              <Field label="Programming language" id="robot-language" className={labelClass}>
+                <input id="robot-language" value={draft.programmingLanguage ?? ""} onChange={(e) => setField("programmingLanguage", e.target.value)} className={inputClass} maxLength={120} />
+              </Field>
+              <Field label="Primary mechanism" id="robot-mechanism" className={labelClass}>
+                <input id="robot-mechanism" value={draft.primaryMechanism ?? ""} onChange={(e) => setField("primaryMechanism", e.target.value)} className={inputClass} maxLength={240} />
+              </Field>
+              <Field label="YouTube video ID" id="robot-video" className={labelClass}>
+                <input id="robot-video" value={draft.revealVideoId ?? ""} onChange={(e) => setField("revealVideoId", e.target.value)} className={inputClass} pattern="[A-Za-z0-9_-]{11}" aria-describedby="robot-video-help" />
+                <p id="robot-video-help" className="mt-1 text-xs text-marble/55">Use the 11-character ID, not the full URL.</p>
+              </Field>
+              <Field label="Onshape workspace URL" id="robot-onshape" className={labelClass}>
+                <input id="robot-onshape" type="url" value={draft.onshapeUrl ?? ""} onChange={(e) => setField("onshapeUrl", e.target.value)} className={inputClass} placeholder="https://cad.onshape.com/documents/..." />
+              </Field>
+              <Field label="Onshape CAD embed URL" id="robot-cad-viewer" className={labelClass}>
+                <input id="robot-cad-viewer" type="url" value={draft.cadViewerUrl ?? ""} onChange={(e) => setField("cadViewerUrl", e.target.value)} className={inputClass} placeholder="https://cad.onshape.com/documents/..." />
+              </Field>
+            </div>
+
+            <Field label="System description" id="robot-content" className={labelClass}>
+              <textarea id="robot-content" rows={5} value={draft.content ?? ""} onChange={(e) => setField("content", e.target.value)} className={`${inputClass} resize-y`} maxLength={20_000} />
+            </Field>
+
+            <fieldset className="border-t border-white/10 pt-6 space-y-4">
+              <legend className="text-sm font-black uppercase tracking-wider text-white">Build versions</legend>
+              <button type="button" onClick={addVersion} className="inline-flex items-center gap-2 px-3 py-2 bg-ares-red text-white text-xs font-black uppercase ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                <Plus aria-hidden="true" size={14} /> Add version
+              </button>
+              {(draft.versions ?? []).map((version, index) => {
+                const prefix = `robot-version-${index}`;
+                return (
+                  <fieldset key={prefix} className="relative bg-white/5 border border-white/10 p-4 ares-cut-sm space-y-3">
+                    <legend className="px-2 text-xs font-bold text-marble/75">Version {index + 1}</legend>
+                    <button type="button" onClick={() => removeVersion(index)} className="absolute top-2 right-2 p-2 text-marble/70 hover:text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label={`Remove version ${index + 1}`}>
+                      <X aria-hidden="true" size={16} />
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
+                      <Field label="Version name" id={`${prefix}-name`} className={labelClass}><input id={`${prefix}-name`} value={version.name} onChange={(e) => updateVersion(index, "name", e.target.value)} className={inputClass} required maxLength={120} /></Field>
+                      <Field label="Weight (lbs)" id={`${prefix}-weight`} className={labelClass}><input id={`${prefix}-weight`} type="number" min="0.1" max="100" step="0.1" value={version.weightLbs ?? ""} onChange={(e) => updateVersion(index, "weightLbs", e.target.value ? Number(e.target.value) : undefined)} className={inputClass} /></Field>
+                      <Field label="Drivetrain" id={`${prefix}-drivetrain`} className={labelClass}><input id={`${prefix}-drivetrain`} value={version.drivetrainType ?? ""} onChange={(e) => updateVersion(index, "drivetrainType", e.target.value)} className={inputClass} maxLength={160} /></Field>
+                      <Field label="Primary mechanism" id={`${prefix}-mechanism`} className={labelClass}><input id={`${prefix}-mechanism`} value={version.primaryMechanism ?? ""} onChange={(e) => updateVersion(index, "primaryMechanism", e.target.value)} className={inputClass} maxLength={240} /></Field>
+                      <Field label="Onshape CAD embed URL" id={`${prefix}-cad`} className={labelClass}><input id={`${prefix}-cad`} type="url" value={version.cadViewerUrl ?? ""} onChange={(e) => updateVersion(index, "cadViewerUrl", e.target.value)} className={inputClass} /></Field>
+                    </div>
+                    <Field label="Version description" id={`${prefix}-content`} className={labelClass}><textarea id={`${prefix}-content`} rows={3} value={version.content} onChange={(e) => updateVersion(index, "content", e.target.value)} className={`${inputClass} resize-y`} maxLength={20_000} /></Field>
+                  </fieldset>
+                );
+              })}
+            </fieldset>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+              <Dialog.Close asChild><button type="button" disabled={isPending} className="px-5 py-2.5 border border-white/20 text-xs font-black uppercase text-white ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">Cancel</button></Dialog.Close>
+              <button type="submit" disabled={isPending} className="px-5 py-2.5 bg-ares-red text-white text-xs font-black uppercase ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
+                {isPending ? "Saving…" : editingRobot ? "Save changes" : "Deploy robot"}
+              </button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
+}
+
+function Field({ label, id, className, children }: { label: string; id: string; className: string; children: ReactNode }) {
+  return <div><label htmlFor={id} className={className}>{label}</label>{children}</div>;
 }

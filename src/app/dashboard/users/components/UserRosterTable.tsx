@@ -6,7 +6,9 @@ import {
   Mail, 
   Sparkles, 
   Save, 
-  Trash2 
+  Trash2,
+  RotateCcw,
+  UserRound,
 } from "lucide-react";
 
 export interface UserAuth {
@@ -20,6 +22,7 @@ export interface UserAuth {
   memberType: string;
   profileExists: boolean;
   zulipAccount: any | null;
+  isDeleted?: boolean;
 }
 
 interface UserRosterTableProps {
@@ -34,6 +37,7 @@ interface UserRosterTableProps {
   onSaveRole: (userId: string) => void;
   onCreateZulip: (userId: string) => void;
   onRemoveUser: (userId: string) => void;
+  onRestoreUser?: (userId: string) => void;
 }
 
 export default function UserRosterTable({
@@ -48,6 +52,7 @@ export default function UserRosterTable({
   onSaveRole,
   onCreateZulip,
   onRemoveUser,
+  onRestoreUser,
 }: UserRosterTableProps) {
   if (isLoading) {
     return (
@@ -99,11 +104,11 @@ export default function UserRosterTable({
             {/* User Metadata */}
             <div className="flex items-center gap-4 min-w-0">
               <div className="w-12 h-12 ares-cut border border-white/10 bg-white/5 overflow-hidden shrink-0 flex items-center justify-center">
-                <img
-                  src={u.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${u.id}`}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                {u.avatar ? (
+                  <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <UserRound aria-hidden="true" className="text-marble/55" size={22} />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -124,6 +129,11 @@ export default function UserRosterTable({
                   {u.memberType && (
                     <span className="px-1.5 py-0.5 bg-ares-cyan/15 border border-ares-cyan/30 text-ares-cyan rounded text-[9px] font-black uppercase tracking-wider animate-none">
                       {u.memberType}
+                    </span>
+                  )}
+                  {u.isDeleted && (
+                    <span className="px-1.5 py-0.5 bg-ares-red/15 border border-ares-red/30 text-ares-red rounded text-[9px] font-black uppercase tracking-wider">
+                      Access revoked
                     </span>
                   )}
                 </div>
@@ -158,7 +168,7 @@ export default function UserRosterTable({
                 ) : (
                   <button
                     onClick={() => onCreateZulip(u.id)}
-                    disabled={isCreatingZ || !u.email}
+                    disabled={isCreatingZ || !u.email || u.isDeleted}
                     className="w-fit px-2.5 py-1 bg-ares-gold/10 hover:bg-ares-gold/25 border border-ares-gold/30 hover:border-ares-gold/60 text-ares-gold text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isCreatingZ ? (
@@ -177,6 +187,7 @@ export default function UserRosterTable({
                 <select
                   id={memberTypeId}
                   value={currentMemberType}
+                  disabled={u.isDeleted}
                   onChange={(e) => onMemberTypeChange(u.id, e.target.value)}
                   className="bg-obsidian border border-white/10 ares-cut-sm px-2 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan w-28"
                 >
@@ -196,6 +207,7 @@ export default function UserRosterTable({
                   <select
                     id={portalRoleId}
                     value={currentRole}
+                    disabled={u.isDeleted}
                     onChange={(e) => onRoleChange(u.id, e.target.value)}
                     className="bg-obsidian border border-white/10 ares-cut-sm px-2.5 py-1.5 text-xs text-white cursor-pointer font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan w-32"
                   >
@@ -224,15 +236,25 @@ export default function UserRosterTable({
                 </div>
               </div>
 
-              {/* Delete User */}
-              <button
-                onClick={() => onRemoveUser(u.id)}
-                aria-label={`Revoke roster access for ${u.name}`}
-                className="w-8 h-8 flex items-center justify-center bg-ares-red/10 hover:bg-ares-red/20 border border-ares-red/20 hover:border-ares-red/40 text-ares-red rounded cursor-pointer transition-all shrink-0 self-end md:self-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                title="Revoke Roster Access"
-              >
-                <Trash2 size={14} />
-              </button>
+              {u.isDeleted ? (
+                <button
+                  onClick={() => onRestoreUser?.(u.id)}
+                  aria-label={`Restore roster access for ${u.name}`}
+                  className="w-8 h-8 flex items-center justify-center bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/30 text-ares-cyan rounded cursor-pointer transition-all shrink-0 self-end md:self-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  title="Restore Roster Access"
+                >
+                  <RotateCcw aria-hidden="true" size={14} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => onRemoveUser(u.id)}
+                  aria-label={`Revoke roster access for ${u.name}`}
+                  className="w-8 h-8 flex items-center justify-center bg-ares-red/10 hover:bg-ares-red/20 border border-ares-red/20 hover:border-ares-red/40 text-ares-red rounded cursor-pointer transition-all shrink-0 self-end md:self-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  title="Revoke Roster Access"
+                >
+                  <Trash2 aria-hidden="true" size={14} />
+                </button>
+              )}
             </div>
 
           </motion.div>

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import admin from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
+import { ApiError } from "./errorHandler";
 
 const EXPECTED_WEB_APP_ID = "1:205869391101:web:ca1bb24da790e4904ff294";
 const OBSERVED_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -37,10 +38,7 @@ export function shouldObserveAppCheck(req: Request): boolean {
   return !OBSERVATION_EXEMPTIONS.has(`${req.method.toUpperCase()} ${req.path}`);
 }
 
-/**
- * Classify App Check coverage for API mutations without rejecting traffic.
- * This is the monitoring phase that precedes route-level enforcement.
- */
+/** Classify App Check coverage before the enforcement middleware runs. */
 export async function observeAppCheck(
   req: AppCheckObservedRequest,
   _res: Response,
@@ -102,4 +100,29 @@ export async function observeAppCheck(
   }
 
   next();
+}
+
+/** Reject browser mutation requests that do not carry a valid App Check token. */
+export function enforceAppCheck(
+  req: AppCheckObservedRequest,
+  _res: Response,
+  next: NextFunction
+): void {
+  // Production enablement is an explicit operational step after the monitoring
+  // checks in docs/SECURITY_OPERATIONS.md have passed.
+  if (process.env.ENFORCE_APP_CHECK !== "true" || !shouldObserveAppCheck(req)) {
+    next();
+    return;
+  }
+
+  if (req.appCheckObservation?.status === "valid") {
+    next();
+    return;
+  }
+
+  next(new ApiError(
+    401,
+    "App integrity verification is required. Refresh the page and try again.",
+    "APP_CHECK_REQUIRED"
+  ));
 }

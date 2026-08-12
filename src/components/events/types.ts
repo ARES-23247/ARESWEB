@@ -27,7 +27,7 @@ export interface EventSignup {
 export interface EventPhoto {
   id: string;
   url: string;
-  uploadedBy: string;
-  uploadedAt: string;
+  uploadedBy?: string;
+  uploadedAt?: string;
   filename: string;
 }

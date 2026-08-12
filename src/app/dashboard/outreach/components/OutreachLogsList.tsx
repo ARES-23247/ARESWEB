@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, RefreshCw, AlertCircle, Sparkles, MapPin, Clock, Edit2, Trash2 } from "lucide-react";
+import { Search, RefreshCw, AlertCircle, Sparkles, MapPin, Clock, Edit2, Archive, ArchiveRestore } from "lucide-react";
 
 export interface OutreachLog {
   id: string;
@@ -10,7 +10,9 @@ export interface OutreachLog {
   peopleReached: number;
   impactSummary?: string | null;
   eventId?: string | null;
+  isDeleted: 0 | 1;
   createdAt?: string | null;
+  archivedAt?: string | null;
 }
 
 interface OutreachLogsListProps {
@@ -20,7 +22,11 @@ interface OutreachLogsListProps {
   searchQuery: string;
   onSearchQueryChange: (q: string) => void;
   onEdit: (log: OutreachLog) => void;
-  onDelete: (id: string) => void;
+  archiveConfirmationId: string | null;
+  onRequestArchive: (id: string) => void;
+  onCancelArchive: () => void;
+  onArchive: (log: OutreachLog) => void;
+  onRestore: (log: OutreachLog) => void;
   onFetchLogs: () => void;
 }
 
@@ -31,7 +37,11 @@ export default function OutreachLogsList({
   searchQuery,
   onSearchQueryChange,
   onEdit,
-  onDelete,
+  archiveConfirmationId,
+  onRequestArchive,
+  onCancelArchive,
+  onArchive,
+  onRestore,
   onFetchLogs,
 }: OutreachLogsListProps) {
   // Filter logs based on search query
@@ -49,7 +59,9 @@ export default function OutreachLogsList({
       {/* Search bar */}
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
+        <label htmlFor="outreach-search" className="sr-only">Search outreach logs</label>
         <input
+          id="outreach-search"
           type="text"
           placeholder="Search outreach events by title, summary, or location..."
           value={searchQuery}
@@ -90,13 +102,13 @@ export default function OutreachLogsList({
           {filteredLogs.map((log) => (
             <div
               key={log.id}
-              className="bg-white/5 border border-white/10 p-6 ares-cut flex flex-col md:flex-row justify-between gap-6 hover:border-white/20 transition-all shadow-xl"
+              className="bg-white/5 border border-white/10 p-6 ares-cut flex flex-col md:flex-row md:flex-wrap justify-between gap-6 hover:border-white/20 transition-all shadow-xl"
             >
               <div className="space-y-3 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-marble/55 font-mono font-bold uppercase">
                   {log.location && (
                     <span className="flex items-center gap-1">
-                      <MapPin size={10} className="text-ares-red" /> {log.location}
+                      <MapPin size={10} className="text-ares-cyan" /> {log.location}
                     </span>
                   )}
                   <span className="flex items-center gap-1">
@@ -107,6 +119,12 @@ export default function OutreachLogsList({
                 <h3 className="font-extrabold text-white text-lg tracking-tight truncate leading-tight uppercase font-heading">
                   {log.title}
                 </h3>
+
+                {log.isDeleted === 1 && (
+                  <span className="inline-flex bg-ares-gold text-obsidian px-2 py-0.5 border border-ares-gold text-[9px] font-black uppercase tracking-widest ares-cut-sm">
+                    Archived
+                  </span>
+                )}
 
                 {log.impactSummary && <p className="text-xs text-marble/75 leading-relaxed">{log.impactSummary}</p>}
 
@@ -122,21 +140,37 @@ export default function OutreachLogsList({
 
               {/* Actions Drawer */}
               <div className="flex items-center gap-3 shrink-0 self-end md:self-auto border-t md:border-t-0 border-white/5 pt-3 md:pt-0 mt-3 md:mt-0 w-full md:w-auto justify-end">
-                <button
+                {log.isDeleted !== 1 && <button
                   onClick={() => onEdit(log)}
                   className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-marble/85 hover:text-white ares-cut-sm transition-all cursor-pointer"
-                  title="Edit Log Details"
+                  aria-label={`Edit ${log.title}`}
                 >
-                  <Edit2 size={12} />
-                </button>
-                <button
-                  onClick={() => onDelete(log.id)}
-                  className="p-2 bg-ares-red/10 border border-ares-red/30 hover:bg-ares-red/20 text-ares-red hover:text-white ares-cut-sm transition-all cursor-pointer"
-                  title="Delete Log"
+                  <Edit2 size={12} aria-hidden="true" />
+                </button>}
+                {log.isDeleted === 1 ? <button
+                  onClick={() => onRestore(log)}
+                  className="p-2 bg-ares-gold text-obsidian border border-ares-gold hover:bg-white ares-cut-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  aria-label={`Restore ${log.title}`}
                 >
-                  <Trash2 size={12} />
-                </button>
+                  <ArchiveRestore size={14} aria-hidden="true" />
+                </button> : <button
+                  onClick={() => onRequestArchive(log.id)}
+                  className="p-2 bg-ares-red text-white border border-ares-red hover:bg-white hover:text-obsidian ares-cut-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  aria-label={`Archive ${log.title}`}
+                >
+                  <Archive size={14} aria-hidden="true" />
+                </button>}
               </div>
+
+              {archiveConfirmationId === log.id && log.isDeleted !== 1 && (
+                <div role="group" aria-label={`Confirm archive for ${log.title}`} className="md:basis-full border border-ares-red/40 bg-ares-red/10 p-3 ares-cut-sm">
+                  <p className="text-xs text-white">Archive {log.title}? It will leave the public outreach record but can be restored.</p>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={() => onArchive(log)} className="bg-ares-red text-white px-3 py-1.5 text-xs font-bold ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan">Confirm archive</button>
+                    <button type="button" onClick={onCancelArchive} className="bg-white/10 text-white px-3 py-1.5 text-xs font-bold ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

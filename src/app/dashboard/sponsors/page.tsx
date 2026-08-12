@@ -3,41 +3,48 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
-import { storage } from "@/lib/firebase";
+import { storage } from "@/lib/firebaseStorage";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   Heart, 
-  Trash2, 
   X, 
-  Search, 
-  AlertCircle, 
   RefreshCw,
   Plus,
   Upload,
-  Globe,
-  ExternalLink,
-  Edit2,
-  ToggleLeft,
-  ToggleRight
+  Edit2
 } from "lucide-react";
+import {
+  SponsorFilters,
+  SponsorList,
+  SponsorStatusBanner,
+  type OperationStatus,
+  type Sponsor,
+} from "./components/SponsorManagerPanels";
 
-interface Sponsor {
-  id: string;
-  name: string;
-  tier: "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
-  logoUrl?: string | null;
-  websiteUrl?: string | null;
-  isActive: boolean;
-  createdAt?: string | null;
+interface ApiErrorPayload {
+  error?: string;
+  message?: string;
 }
 
-const TIER_BADGE_STYLE: Record<string, string> = {
-  Titanium: "bg-ares-cyan/15 text-ares-cyan border-ares-cyan/20",
-  Gold: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
-  Silver: "bg-white/10 text-marble border-white/20",
-  Bronze: "bg-ares-bronze/15 text-ares-bronze border-ares-bronze/20",
-  "In-Kind": "bg-ares-gold/10 text-ares-gold border-ares-gold/10",
-};
+async function getApiPayload(response: Response): Promise<ApiErrorPayload> {
+  try {
+    return await response.json() as ApiErrorPayload;
+  } catch {
+    return {};
+  }
+}
+
+function getApiFailure(response: Response, payload: ApiErrorPayload, fallback: string): OperationStatus {
+  return {
+    kind: "error",
+    message: payload.error || payload.message || fallback,
+    diagnostic: `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+  };
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown client error";
+}
 
 export default function SponsorsManagerPage() {
   const { user } = useAuth();
@@ -46,6 +53,8 @@ export default function SponsorsManagerPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
+  const [operationStatus, setOperationStatus] = useState<OperationStatus | null>(null);
+  const [archiveConfirmationId, setArchiveConfirmationId] = useState<string | null>(null);
   
   // Search and Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,14 +75,16 @@ export default function SponsorsManagerPage() {
     setError("");
     try {
       const res = await authenticatedFetch("/api/sponsors/admin");
-      const data = await res.json();
+      const data = await getApiPayload(res) as ApiErrorPayload & { sponsors?: Sponsor[] };
       if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch sponsors.");
+        const failure = getApiFailure(res, data, "Failed to fetch sponsors.");
+        setOperationStatus(failure);
+        throw new Error(`${failure.message} (${failure.diagnostic})`);
       }
       setSponsors(data.sponsors || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to load sponsors.");
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -88,11 +99,11 @@ export default function SponsorsManagerPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size exceeds the 5MB limit.");
+      setOperationStatus({ kind: "error", message: "Choose a logo smaller than 5 MB." });
       return;
     }
     if (!file.type.startsWith("image/")) {
-      alert("Uploaded file must be an image.");
+      setOperationStatus({ kind: "error", message: "Choose an image file for the sponsor logo." });
       return;
     }
 
@@ -102,9 +113,14 @@ export default function SponsorsManagerPage() {
       await uploadBytes(fileRef, file);
       const downloadUrl = await getDownloadURL(fileRef);
       setLogoUrl(downloadUrl);
-    } catch (err: any) {
+      setOperationStatus({ kind: "success", message: "Logo uploaded. Save the sponsor to keep this change." });
+    } catch (err: unknown) {
       console.error("Failed to upload image:", err);
-      alert("Failed to upload logo: " + err.message);
+      setOperationStatus({
+        kind: "error",
+        message: "The logo could not be uploaded. Your sponsor form is unchanged.",
+        diagnostic: getErrorMessage(err),
+      });
     } finally {
       setIsUploading(false);
     }
@@ -113,7 +129,7 @@ export default function SponsorsManagerPage() {
   const handleSaveSponsor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert("Sponsor name is required.");
+      setOperationStatus({ kind: "error", message: "Sponsor name is required." });
       return;
     }
 
@@ -137,17 +153,22 @@ export default function SponsorsManagerPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await getApiPayload(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to save sponsor.");
+        setOperationStatus(getApiFailure(res, data, "Failed to save sponsor."));
+        return;
       }
 
-      // Reset form
+      setOperationStatus({ kind: "success", message: editingId ? "Sponsor updated." : "Sponsor added." });
       resetForm();
-      // Reload list
       await fetchSponsors();
-    } catch (err: any) {
-      alert(err.message || "Failed to save sponsor.");
+    } catch (err: unknown) {
+      console.error("Failed to save sponsor:", err);
+      setOperationStatus({
+        kind: "error",
+        message: "The sponsor could not be saved. Your form is unchanged.",
+        diagnostic: getErrorMessage(err),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -186,35 +207,64 @@ export default function SponsorsManagerPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await getApiPayload(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to toggle status.");
+        setOperationStatus(getApiFailure(res, data, "Failed to update sponsor visibility."));
+        return;
       }
 
       setSponsors((prev) =>
         prev.map((s) => (s.id === sponsor.id ? { ...s, isActive: !s.isActive } : s))
       );
-    } catch (err: any) {
-      alert(err.message || "Failed to update sponsor status.");
+      setOperationStatus({
+        kind: "success",
+        message: `${sponsor.name} is now ${sponsor.isActive ? "hidden from" : "shown on"} the public site.`,
+      });
+    } catch (err: unknown) {
+      console.error("Failed to update sponsor visibility:", err);
+      setOperationStatus({ kind: "error", message: "Sponsor visibility was not changed.", diagnostic: getErrorMessage(err) });
     }
   };
 
-  const handleDeleteSponsor = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this sponsor? This action cannot be undone.")) return;
-
+  const handleArchiveSponsor = async (sponsor: Sponsor) => {
     try {
-      const res = await authenticatedFetch(`/api/sponsors/admin/${id}`, {
+      const res = await authenticatedFetch(`/api/sponsors/admin/${sponsor.id}`, {
         method: "DELETE",
       });
 
-      const data = await res.json();
+      const data = await getApiPayload(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to delete sponsor.");
+        setOperationStatus(getApiFailure(res, data, "Failed to archive sponsor."));
+        return;
       }
 
-      setSponsors((prev) => prev.filter((s) => s.id !== id));
-    } catch (err: any) {
-      alert(err.message || "Failed to delete sponsor.");
+      setSponsors((prev) => prev.map((item) => item.id === sponsor.id
+        ? { ...item, isDeleted: 1, isActive: false }
+        : item));
+      setArchiveConfirmationId(null);
+      if (editingId === sponsor.id) resetForm();
+      setOperationStatus({ kind: "success", message: `${sponsor.name} was archived and removed from the public site.` });
+    } catch (err: unknown) {
+      console.error("Failed to archive sponsor:", err);
+      setOperationStatus({ kind: "error", message: "The sponsor was not archived.", diagnostic: getErrorMessage(err) });
+    }
+  };
+
+  const handleRestoreSponsor = async (sponsor: Sponsor) => {
+    try {
+      const res = await authenticatedFetch(`/api/sponsors/admin/${sponsor.id}/restore`, { method: "PATCH" });
+      const data = await getApiPayload(res);
+      if (!res.ok) {
+        setOperationStatus(getApiFailure(res, data, "Failed to restore sponsor."));
+        return;
+      }
+      setSponsors((prev) => prev.map((item) => item.id === sponsor.id
+        ? { ...item, isDeleted: 0, isActive: false, archivedAt: null }
+        : item));
+      setOperationStatus({ kind: "success", message: `${sponsor.name} was restored as inactive. Review it before publishing.` });
+    } catch (err: unknown) {
+      console.error("Failed to restore sponsor:", err);
+      setOperationStatus({ kind: "error", message: "The sponsor was not restored.", diagnostic: getErrorMessage(err) });
     }
   };
 
@@ -224,9 +274,10 @@ export default function SponsorsManagerPage() {
       (s.websiteUrl && s.websiteUrl.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesTier = tierFilter === "all" || s.tier === tierFilter;
-    const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "active" && s.isActive) ||
-      (statusFilter === "inactive" && !s.isActive);
+    const matchesStatus = statusFilter === "all" ||
+      (statusFilter === "active" && s.isDeleted !== 1 && s.isActive) ||
+      (statusFilter === "inactive" && s.isDeleted !== 1 && !s.isActive) ||
+      (statusFilter === "archived" && s.isDeleted === 1);
 
     return matchesSearch && matchesTier && matchesStatus;
   });
@@ -254,158 +305,35 @@ export default function SponsorsManagerPage() {
         </button>
       </header>
 
+      <SponsorStatusBanner status={operationStatus} />
+
       {/* ─── MAIN WORKSPACE GRID ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* LEFT COLUMN: LIST OF SPONSORS */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Filters Toolbar */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/5 p-4 ares-cut border border-white/5">
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
-              <input
-                type="text"
-                placeholder="Search sponsors..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
-              />
-            </div>
-
-            <div className="flex gap-4 w-full md:w-auto">
-              <select
-                value={tierFilter}
-                onChange={(e) => setTierFilter(e.target.value)}
-                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none font-bold"
-              >
-                <option value="all">All Tiers</option>
-                <option value="Titanium">Titanium</option>
-                <option value="Gold">Gold</option>
-                <option value="Silver">Silver</option>
-                <option value="Bronze">Bronze</option>
-                <option value="In-Kind">In-Kind</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer w-full md:w-40 focus:outline-none font-bold"
-              >
-                <option value="all">All Statuses</option>
-                <option value="active">Active Only</option>
-                <option value="inactive">Inactive Only</option>
-              </select>
-            </div>
-          </div>
-
-          {/* List display */}
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/5 ares-cut gap-4">
-              <RefreshCw size={36} className="text-ares-red animate-spin" />
-              <span className="text-xs font-bold uppercase tracking-widest text-marble/55">Loading sponsor ledger...</span>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-ares-red/10 border border-ares-red/20 ares-cut gap-4 text-center">
-              <AlertCircle size={36} className="text-ares-red" />
-              <span className="text-sm font-bold text-ares-red">{error}</span>
-              <button onClick={fetchSponsors} className="px-4 py-2 bg-ares-red text-white text-xs font-black uppercase tracking-wider ares-cut-sm shadow-md cursor-pointer font-bold">Retry</button>
-            </div>
-          ) : filteredSponsors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/5 ares-cut gap-3 text-center">
-              <Heart size={36} className="text-marble/30" />
-              <span className="text-sm font-bold text-white/80 font-heading">No Sponsors Listed</span>
-              <span className="text-xs text-marble/50 font-medium">Add a sponsor using the console panel on the right.</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredSponsors.map((sponsor) => (
-                <div 
-                  key={sponsor.id} 
-                  className={`bg-white/5 border p-5 ares-cut flex flex-col justify-between gap-4 transition-all shadow-xl ${
-                    sponsor.isActive ? "border-white/10 hover:border-white/20" : "border-ares-red/20 opacity-60"
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Logo Box */}
-                    <div className="w-16 h-16 bg-black/45 border border-white/5 rounded-xl flex items-center justify-center p-1.5 shrink-0 overflow-hidden relative">
-                      {sponsor.logoUrl ? (
-                        <img 
-                          src={sponsor.logoUrl} 
-                          alt={`${sponsor.name} logo`} 
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <Heart className="text-marble/25" size={24} />
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5 min-w-0">
-                      <h3 className="font-extrabold text-white text-base tracking-tight truncate leading-snug">
-                        {sponsor.name}
-                      </h3>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`px-2 py-0.5 border text-[9px] font-black uppercase tracking-widest ares-cut-sm ${TIER_BADGE_STYLE[sponsor.tier] || TIER_BADGE_STYLE.Silver}`}>
-                          {sponsor.tier}
-                        </span>
-                        {!sponsor.isActive && (
-                          <span className="px-2 py-0.5 bg-ares-red/10 border border-ares-red/30 text-ares-red text-[9px] font-black uppercase tracking-widest ares-cut-sm">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      {sponsor.websiteUrl && (
-                        <a 
-                          href={sponsor.websiteUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[10px] text-ares-cyan font-bold tracking-wider hover:underline flex items-center gap-1 w-fit select-all"
-                        >
-                          <Globe size={10} /> WEBSITE <ExternalLink size={8} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions Drawer */}
-                  <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-2">
-                    <button
-                      onClick={() => handleToggleActive(sponsor)}
-                      className="text-marble/55 hover:text-white font-black text-[10px] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer select-none transition-colors"
-                      title={sponsor.isActive ? "Deactivate Sponsor" : "Activate Sponsor"}
-                    >
-                      {sponsor.isActive ? (
-                        <>
-                          <ToggleRight size={16} className="text-ares-cyan" /> ACTIVE
-                        </>
-                      ) : (
-                        <>
-                          <ToggleLeft size={16} className="text-marble/40" /> INACTIVE
-                        </>
-                      )}
-                    </button>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleEditClick(sponsor)}
-                        className="p-1.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-marble/85 hover:text-white ares-cut-sm transition-all cursor-pointer"
-                        title="Edit Sponsor Details"
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSponsor(sponsor.id)}
-                        className="p-1.5 bg-ares-red/10 border border-ares-red/30 hover:bg-ares-red/20 text-ares-red hover:text-white ares-cut-sm transition-all cursor-pointer"
-                        title="Delete Sponsor"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-            </div>
-          )}
+          <SponsorFilters
+            searchQuery={searchQuery}
+            tierFilter={tierFilter}
+            statusFilter={statusFilter}
+            onSearchChange={setSearchQuery}
+            onTierChange={setTierFilter}
+            onStatusChange={setStatusFilter}
+          />
+          <SponsorList
+            sponsors={filteredSponsors}
+            isLoading={isLoading}
+            error={error}
+            archiveConfirmationId={archiveConfirmationId}
+            onRetry={() => void fetchSponsors()}
+            onToggleActive={(sponsor) => void handleToggleActive(sponsor)}
+            onEdit={handleEditClick}
+            onRestore={(sponsor) => void handleRestoreSponsor(sponsor)}
+            onRequestArchive={setArchiveConfirmationId}
+            onConfirmArchive={(sponsor) => void handleArchiveSponsor(sponsor)}
+            onCancelArchive={() => setArchiveConfirmationId(null)}
+          />
 
         </div>
 
@@ -429,7 +357,7 @@ export default function SponsorsManagerPage() {
                   placeholder="e.g. Lockheed Martin"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
                 />
               </div>
 
@@ -439,8 +367,8 @@ export default function SponsorsManagerPage() {
                 <select
                   id="sponsor-tier"
                   value={tier}
-                  onChange={(e) => setTier(e.target.value as any)}
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none font-bold"
+                  onChange={(e) => setTier(e.target.value as Sponsor["tier"])}
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3 py-2 text-xs text-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-bold"
                 >
                   <option value="Titanium">Titanium (Top Tier)</option>
                   <option value="Gold">Gold</option>
@@ -459,7 +387,7 @@ export default function SponsorsManagerPage() {
                   placeholder="https://example.com"
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold"
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
                 />
               </div>
 
@@ -472,7 +400,7 @@ export default function SponsorsManagerPage() {
                   placeholder="Logo URL (or upload below)"
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-red focus:ring-1 focus:ring-ares-red/10 transition-all font-semibold mb-2"
+                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold mb-2"
                 />
                 
                 {/* Logo File Selector */}
@@ -501,10 +429,11 @@ export default function SponsorsManagerPage() {
                 {logoUrl && (
                   <div className="mt-3 p-3 bg-black/45 border border-white/5 rounded-xl flex items-center justify-between gap-3">
                     <span className="text-[9px] uppercase font-bold text-marble/40 truncate select-all">{logoUrl}</span>
-                    <button 
+                    <button
                       type="button" 
                       onClick={() => setLogoUrl("")} 
-                      className="text-ares-red hover:text-white transition-colors p-0.5 cursor-pointer"
+                      className="bg-ares-red text-white hover:bg-white hover:text-obsidian transition-colors p-1 cursor-pointer ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      aria-label="Remove sponsor logo URL"
                     >
                       <X size={12} />
                     </button>
@@ -522,7 +451,7 @@ export default function SponsorsManagerPage() {
                   className="w-4 h-4 accent-ares-red bg-obsidian border border-white/10 ares-cut-sm focus:outline-none cursor-pointer"
                 />
                 <label htmlFor="isActive" className="text-[10px] uppercase font-bold text-marble/75 tracking-widest cursor-pointer select-none">
-                  Display publically (Active)
+                  Display publicly (Active)
                 </label>
               </div>
 

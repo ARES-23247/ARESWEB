@@ -5,11 +5,54 @@ import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { Sparkles, RefreshCw } from "lucide-react";
 import { collection, onSnapshot, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 
 import PendingVolunteerEvents, { TeamEvent } from "./components/PendingVolunteerEvents";
 import OutreachLogsList, { OutreachLog } from "./components/OutreachLogsList";
 import OutreachForm from "./components/OutreachForm";
+
+interface OperationStatus {
+  kind: "success" | "error" | "info";
+  message: string;
+  diagnostic?: string;
+}
+
+interface ApiPayload {
+  error?: string;
+  message?: string;
+  logs?: OutreachLog[];
+}
+
+interface LocationRecord {
+  id: string;
+  name?: string;
+  address?: string;
+}
+
+interface SignupRecord {
+  attended?: boolean;
+  prepHours?: number;
+}
+
+async function getApiPayload(response: Response): Promise<ApiPayload> {
+  try {
+    return await response.json() as ApiPayload;
+  } catch {
+    return {};
+  }
+}
+
+function getApiFailure(response: Response, payload: ApiPayload, fallback: string): OperationStatus {
+  return {
+    kind: "error",
+    message: payload.error || payload.message || fallback,
+    diagnostic: `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+  };
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown client error";
+}
 
 export default function OutreachManagerPage() {
   const { user } = useAuth();
@@ -17,6 +60,8 @@ export default function OutreachManagerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [operationStatus, setOperationStatus] = useState<OperationStatus | null>(null);
+  const [archiveConfirmationId, setArchiveConfirmationId] = useState<string | null>(null);
 
   // Search and Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,7 +78,7 @@ export default function OutreachManagerPage() {
 
   // Calendar Event states
   const [events, setEvents] = useState<TeamEvent[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
+  const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [isCalculatingHours, setIsCalculatingHours] = useState<string | null>(null);
   const [calcLogMessage, setCalcLogMessage] = useState<string | null>(null);
 
@@ -43,14 +88,16 @@ export default function OutreachManagerPage() {
     setError("");
     try {
       const res = await authenticatedFetch("/api/outreach/admin");
-      const data = await res.json();
+      const data = await getApiPayload(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch outreach logs.");
+        const failure = getApiFailure(res, data, "Failed to fetch outreach logs.");
+        setOperationStatus(failure);
+        throw new Error(`${failure.message} (${failure.diagnostic})`);
       }
       setLogs(data.logs || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Failed to load outreach logs.");
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -61,15 +108,23 @@ export default function OutreachManagerPage() {
     try {
       const locationsRef = collection(db, "locations");
       const unsubscribe = onSnapshot(locationsRef, (snapshot) => {
-        const list = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        }));
+        const list = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: typeof data.name === "string" ? data.name : undefined,
+            address: typeof data.address === "string" ? data.address : undefined,
+          };
+        });
         setLocations(list);
+      }, (listenerError) => {
+        console.error("Location listener failed:", listenerError);
+        setOperationStatus({ kind: "error", message: "Locations could not be loaded.", diagnostic: getErrorMessage(listenerError) });
       });
       return () => unsubscribe();
-    } catch (e) {
-      console.warn("Error listening to locations:", e);
+    } catch (error: unknown) {
+      console.error("Error listening to locations:", error);
+      setOperationStatus({ kind: "error", message: "Locations could not be loaded.", diagnostic: getErrorMessage(error) });
     }
   }, []);
 
@@ -95,10 +150,14 @@ export default function OutreachManagerPage() {
           } as TeamEvent;
         });
         setEvents(list);
+      }, (listenerError) => {
+        console.error("Calendar event listener failed:", listenerError);
+        setOperationStatus({ kind: "error", message: "Calendar events could not be loaded.", diagnostic: getErrorMessage(listenerError) });
       });
       return () => unsubscribe();
-    } catch (e) {
-      console.warn("Error listening to calendar events:", e);
+    } catch (error: unknown) {
+      console.error("Error listening to calendar events:", error);
+      setOperationStatus({ kind: "error", message: "Calendar events could not be loaded.", diagnostic: getErrorMessage(error) });
     }
   }, []);
 
@@ -108,7 +167,12 @@ export default function OutreachManagerPage() {
 
   // Derived memo states
   const loggedEventIds = useMemo(() => {
-    return new Set(logs.map((l) => l.eventId).filter(Boolean) as string[]);
+    return new Set(
+      logs
+        .filter((log) => log.isDeleted !== 1)
+        .map((log) => log.eventId)
+        .filter((eventId): eventId is string => typeof eventId === "string" && eventId.length > 0),
+    );
   }, [logs]);
 
   const pendingEvents = useMemo(() => {
@@ -124,11 +188,11 @@ export default function OutreachManagerPage() {
   const handleSaveLog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !date.trim()) {
-      alert("Title and Date are required.");
+      setOperationStatus({ kind: "error", message: "Title and date are required." });
       return;
     }
     if (hours < 0 || peopleReached < 0) {
-      alert("Hours and People Reached must be non-negative numbers.");
+      setOperationStatus({ kind: "error", message: "Hours and people reached must be zero or greater." });
       return;
     }
 
@@ -154,15 +218,18 @@ export default function OutreachManagerPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await getApiPayload(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to save outreach log.");
+        setOperationStatus(getApiFailure(res, data, "Failed to save outreach log."));
+        return;
       }
 
+      setOperationStatus({ kind: "success", message: editingId ? "Outreach log updated." : "Outreach log added." });
       resetForm();
       await fetchLogs();
-    } catch (err: any) {
-      alert(err.message || "Failed to save outreach log.");
+    } catch (err: unknown) {
+      console.error("Failed to save outreach log:", err);
+      setOperationStatus({ kind: "error", message: "The outreach log could not be saved. Your form is unchanged.", diagnostic: getErrorMessage(err) });
     } finally {
       setIsSaving(false);
     }
@@ -197,7 +264,9 @@ export default function OutreachManagerPage() {
     setCalcLogMessage(null);
     try {
       const loc = locations.find((l) => l.id === event.locationId);
-      const locationStr = loc ? `${loc.name}, ${loc.address}` : (event.location || "");
+      const locationStr = loc
+        ? [loc.name, loc.address].filter((part): part is string => typeof part === "string" && part.length > 0).join(", ")
+        : (event.location || "");
 
       setEditingId(null);
       setTitle(event.title);
@@ -212,7 +281,7 @@ export default function OutreachManagerPage() {
 
       const signupsRef = collection(db, "events", event.id, "signups");
       const signupsSnap = await getDocs(signupsRef);
-      const signupList = signupsSnap.docs.map((docSnap) => docSnap.data());
+      const signupList = signupsSnap.docs.map((docSnap) => docSnap.data() as SignupRecord);
 
       let durationHours = 0;
       if (event.dateStart && event.dateEnd) {
@@ -246,30 +315,53 @@ export default function OutreachManagerPage() {
 
       setHours(Math.max(0, Math.round(calculatedHours * 100) / 100));
       setCalcLogMessage(explanation);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error calculating hours:", err);
-      alert("Failed to load signups for calculating volunteer hours. Standard fields are pre-filled.");
+      setOperationStatus({
+        kind: "error",
+        message: "Signups could not be loaded. The event fields are still filled in for manual entry.",
+        diagnostic: getErrorMessage(err),
+      });
     } finally {
       setIsCalculatingHours(null);
     }
   };
 
-  const handleDeleteLog = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this outreach log?")) return;
-
+  const handleArchiveLog = async (log: OutreachLog) => {
     try {
-      const res = await authenticatedFetch(`/api/outreach/admin/${id}`, {
+      const res = await authenticatedFetch(`/api/outreach/admin/${log.id}`, {
         method: "DELETE",
       });
 
-      const data = await res.json();
+      const data = await getApiPayload(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to delete outreach log.");
+        setOperationStatus(getApiFailure(res, data, "Failed to archive outreach log."));
+        return;
       }
 
-      setLogs((prev) => prev.filter((s) => s.id !== id));
-    } catch (err: any) {
-      alert(err.message || "Failed to delete outreach log.");
+      setLogs((prev) => prev.map((item) => item.id === log.id ? { ...item, isDeleted: 1 } : item));
+      setArchiveConfirmationId(null);
+      if (editingId === log.id) resetForm();
+      setOperationStatus({ kind: "success", message: `${log.title} was archived and removed from the public outreach record.` });
+    } catch (err: unknown) {
+      console.error("Failed to archive outreach log:", err);
+      setOperationStatus({ kind: "error", message: "The outreach log was not archived.", diagnostic: getErrorMessage(err) });
+    }
+  };
+
+  const handleRestoreLog = async (log: OutreachLog) => {
+    try {
+      const res = await authenticatedFetch(`/api/outreach/admin/${log.id}/restore`, { method: "PATCH" });
+      const data = await getApiPayload(res);
+      if (!res.ok) {
+        setOperationStatus(getApiFailure(res, data, "Failed to restore outreach log."));
+        return;
+      }
+      setLogs((prev) => prev.map((item) => item.id === log.id ? { ...item, isDeleted: 0, archivedAt: null } : item));
+      setOperationStatus({ kind: "success", message: `${log.title} was restored to the public outreach record.` });
+    } catch (err: unknown) {
+      console.error("Failed to restore outreach log:", err);
+      setOperationStatus({ kind: "error", message: "The outreach log was not restored.", diagnostic: getErrorMessage(err) });
     }
   };
 
@@ -296,6 +388,17 @@ export default function OutreachManagerPage() {
         </button>
       </header>
 
+      {operationStatus && (
+        <div
+          role={operationStatus.kind === "error" ? "alert" : "status"}
+          aria-live="polite"
+          className={`border p-4 ares-cut-sm ${operationStatus.kind === "error" ? "bg-ares-red/10 border-ares-red/40" : "bg-white/5 border-white/15"}`}
+        >
+          <p className="text-sm font-bold text-white">{operationStatus.message}</p>
+          {operationStatus.diagnostic && <p className="mt-1 font-mono text-xs text-marble/70">{operationStatus.diagnostic}</p>}
+        </div>
+      )}
+
       {/* ─── MAIN WORKSPACE GRID ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -316,7 +419,11 @@ export default function OutreachManagerPage() {
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             onEdit={handleEditClick}
-            onDelete={handleDeleteLog}
+            archiveConfirmationId={archiveConfirmationId}
+            onRequestArchive={setArchiveConfirmationId}
+            onCancelArchive={() => setArchiveConfirmationId(null)}
+            onArchive={handleArchiveLog}
+            onRestore={handleRestoreLog}
             onFetchLogs={fetchLogs}
           />
 

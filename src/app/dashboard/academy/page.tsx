@@ -5,6 +5,7 @@ import { Plus, Shield, GraduationCap } from "lucide-react";
 import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
+import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
 const ACADEMY_CATEGORIES = [
   "AI 101",
@@ -21,10 +22,15 @@ const ACADEMY_CATEGORIES = [
 export default function AcademyManagementPage() {
   const {
     docs,
+    archivedDocs,
     loadingList,
-    isLive,
+    connectionState,
+    listError,
+    hasMore,
+    loadMore,
     revisions,
     loadingRevisions,
+    revisionError,
     fetchRevisions,
     selectedDoc,
     isEditorOpen,
@@ -33,8 +39,15 @@ export default function AcademyManagementPage() {
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
-    handleDelete
+    handleDelete,
+    handleRestore,
+    handleCancelArchive,
+    handleConfirmArchive,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
   } = useDashboardDocController("docs", (d) => d.isDeleted !== 1 && (d.displayInMathCorner === 1 || d.displayInScienceCorner === 1));
+  const [showArchived, setShowArchived] = React.useState(false);
 
   return (
     <div className="space-y-10 w-full text-left">
@@ -44,15 +57,7 @@ export default function AcademyManagementPage() {
           <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter font-heading flex items-center gap-3">
             <GraduationCap className="text-ares-gold" size={32} />
             Academy Manager
-            {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-ares-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-success ring-1 ring-inset ring-ares-success/30 ml-2">
-                ● Live Sync
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2">
-                ● Sandbox
-              </span>
-            )}
+            <DocumentConnectionBadge state={connectionState} />
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
             Configure educational math lessons, physics lectures, and machine learning slide decks.
@@ -62,7 +67,7 @@ export default function AcademyManagementPage() {
         {canEdit && (
           <button
             onClick={handleOpenCreate}
-            className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+            className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
           >
             <Plus size={16} /> New Lesson
           </button>
@@ -78,13 +83,33 @@ export default function AcademyManagementPage() {
       )}
 
       {/* List Grid View */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowArchived((current) => !current)}
+          className="rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-wider text-marble/80 hover:text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          aria-pressed={showArchived}
+        >
+          {showArchived ? "Show active records" : `Archived records (${archivedDocs.length})`}
+        </button>
+      </div>
       <DocListGrid
-        items={docs}
+        items={showArchived ? archivedDocs : docs}
         loadingList={loadingList}
         canEdit={canEdit}
         variant="docs"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
+        onRestore={handleRestore}
+        pendingArchiveSlug={pendingArchiveSlug}
+        isArchiving={isArchiving}
+        archiveError={archiveError}
+        onConfirmArchive={handleConfirmArchive}
+        onCancelArchive={handleCancelArchive}
+        connectionState={connectionState}
+        error={listError}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
         searchPlaceholder="Search academy lessons by title, category, or summary..."
         noItemsMessage="No academy lessons indexed. Click New Lesson to get started."
       />
@@ -101,6 +126,7 @@ export default function AcademyManagementPage() {
           onSave={handleSave}
           revisions={revisions}
           loadingRevisions={loadingRevisions}
+          revisionError={revisionError}
           fetchRevisions={fetchRevisions}
         />
       )}

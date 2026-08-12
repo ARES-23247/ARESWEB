@@ -1,455 +1,234 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Activity, Archive, ExternalLink, Filter, Loader2, Pencil, Play, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Trash2, Pencil, Shield, Activity, ExternalLink, Play, Filter, ArrowUpDown, RefreshCw } from "lucide-react";
-import { cleanThumbnailUrl, cleanUndefined } from "@/lib/utils";
-import VideoEditorDrawer from "./components/VideoEditorDrawer";
-import { PublicDataState } from "@/components/PublicDataState";
+import { authenticatedFetch } from "@/lib/api";
+import { apiFailure, ManagedVideo, parseYouTubeVideoId } from "@/lib/media";
 
-function Youtube({ size = 16, className = "" }: { size?: number; className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`lucide lucide-youtube ${className}`}
-    >
-      <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
-      <polygon points="10 15 15 12 10 9" />
-    </svg>
-  );
-}
-
-interface TeamVideo {
-  id: string;
+interface VideoPage { videos: ManagedVideo[]; hasMore: boolean; nextCursor: string | null }
+interface VideoDraft {
   title: string;
-  description?: string;
-  platform: string;
   videoId: string;
-  thumbnailUrl?: string;
-  embedUrl: string;
+  description: string;
   type: "video" | "short";
-  createdAt: string;
+  status: "draft" | "published";
+  thumbnailUrl: string;
 }
+
+const EMPTY_DRAFT: VideoDraft = {
+  title: "",
+  videoId: "",
+  description: "",
+  type: "video",
+  status: "draft",
+  thumbnailUrl: "",
+};
 
 export default function VideosManagementPage() {
-  const { user, authorizedUser } = useAuth();
-  const [videos, setVideos] = useState<TeamVideo[]>([]);
-  const [isLive, setIsLive] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const { authorizedUser } = useAuth();
+  const canManage = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
+  const [videos, setVideos] = useState<ManagedVideo[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"all" | "video" | "short">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<ManagedVideo | null>(null);
+  const [draft, setDraft] = useState<VideoDraft>(EMPTY_DRAFT);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<ManagedVideo | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
-  // Editor State
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [formTitle, setFormTitle] = useState("");
-  const [formVideoId, setFormVideoId] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formType, setFormType] = useState<"video" | "short">("video");
-  const [formThumbnail, setFormThumbnail] = useState("");
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
-
-  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-
-  // 1. Listen for real-time video updates
-  useEffect(() => {
+  const loadVideos = useCallback(async (append = false) => {
+    append ? setLoadingMore(true) : setLoading(true);
+    setError(null);
     try {
-      const videosRef = collection(db, "videos");
-      const unsubscribe = onSnapshot(
-        videosRef,
-        (snapshot) => {
-          if (snapshot.empty) {
-            setVideos([]);
-            setIsLive(true);
-            setLoadError(null);
-            return;
-          }
-          const list = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              title: data.title || "Untitled Video",
-              description: data.description || "",
-              platform: data.platform || "youtube",
-              videoId: data.videoId || "",
-              thumbnailUrl: data.thumbnailUrl || "",
-              embedUrl: data.embedUrl || "",
-              type: data.type || "video",
-              createdAt: data.createdAt || new Date().toISOString().split("T")[0]
-            } as TeamVideo;
-          });
-          
-          setVideos(list);
-          setIsLive(true);
-          setLoadError(null);
-        },
-        (err) => {
-          console.error("Unable to load managed videos:", err);
-          setVideos([]);
-          setIsLive(false);
-          setLoadError(err.message);
-        }
-      );
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Unable to initialize managed videos:", e);
-      setVideos([]);
-      setIsLive(false);
-      setLoadError(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
-  // Open editor for creating
-  const handleOpenCreate = () => {
-    setEditId(null);
-    setFormTitle("");
-    setFormVideoId("");
-    setFormDescription("");
-    setFormType("video");
-    setFormThumbnail("https://images.unsplash.com/photo-1516116211223-5c359a36298a?w=500&auto=format&fit=crop&q=60");
-    setIsEditorOpen(true);
-  };
-
-  // Open editor for editing
-  const handleOpenEdit = (vid: TeamVideo) => {
-    setEditId(vid.id);
-    setFormTitle(vid.title);
-    setFormVideoId(vid.videoId);
-    setFormDescription(vid.description || "");
-    setFormType(vid.type);
-    setFormThumbnail(vid.thumbnailUrl || "");
-    setIsEditorOpen(true);
-  };
-
-  // Action: Sync with YouTube Channel
-  const handleSyncYoutube = async () => {
-    if (!canEdit) return;
-    setIsSyncing(true);
-    setSyncStatus(null);
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) {
-        throw new Error("Unable to retrieve authentication token.");
-      }
-
-      const response = await fetch("/api/videos/sync", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || `Sync failed with status ${response.status}`);
-      }
-
-      setSyncStatus(data.message || "Successfully synced YouTube channel!");
-      setTimeout(() => setSyncStatus(null), 8000);
-    } catch (err: any) {
-      console.error("Error syncing YouTube channel:", err);
-      setSyncStatus(`Sync failed: ${err.message || err}`);
+      const params = new URLSearchParams({ limit: "30", includeArchived: String(showArchived) });
+      if (append && cursor) params.set("cursor", cursor);
+      const response = await authenticatedFetch(`/api/videos?${params.toString()}`);
+      if (!response.ok) throw await apiFailure(response, "Video library could not load.");
+      const page = await response.json() as VideoPage;
+      setVideos((current) => append
+        ? [...new Map([...current, ...page.videos].map((video) => [video.id, video])).values()]
+        : page.videos);
+      setCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
-      setIsSyncing(false);
+      setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [cursor, showArchived]);
 
-  // 2. Action: Save Video
-  const handleSaveVideo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formTitle.trim() || !formVideoId.trim()) return;
-    if (!canEdit) return;
+  useEffect(() => { void loadVideos(false); }, [showArchived]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const targetId = editId || `video_${Date.now()}`;
-    const cleanVideoId = formVideoId.trim();
-    const newVideo: TeamVideo = {
-      id: targetId,
-      title: formTitle.trim(),
-      description: formDescription.trim() || undefined,
-      platform: "youtube",
-      videoId: cleanVideoId,
-      thumbnailUrl: formThumbnail.trim() || `https://img.youtube.com/vi/${cleanVideoId}/0.jpg`,
-      embedUrl: `https://www.youtube.com/embed/${cleanVideoId}`,
-      type: formType,
-      createdAt: new Date().toISOString().split("T")[0]
-    };
-
-    try {
-      await setDoc(doc(db, "videos", targetId), cleanUndefined(newVideo));
-      setIsEditorOpen(false);
-    } catch (err) {
-      console.warn("Unable to save video online, updating local array.", err);
-      if (editId) {
-        setVideos(videos.map(v => v.id === editId ? newVideo : v));
-      } else {
-        setVideos([newVideo, ...videos]);
-      }
-      setIsEditorOpen(false);
-    }
-  };
-
-  // 3. Action: Delete Video
-  const handleDeleteVideo = async (id: string) => {
-    if (!canEdit) return;
-    if (!confirm("Are you sure you want to remove this video from the team hub?")) return;
-
-    try {
-      await deleteDoc(doc(db, "videos", id));
-    } catch (err) {
-      console.warn("Firestore offline, deleting video locally.", err);
-      setVideos(videos.filter(v => v.id !== id));
-    }
-  };
-
-  // Filter and sort videos
-  const filteredAndSortedVideos = useMemo(() => {
-    let result = [...videos];
-
-    if (typeFilter !== "all") {
-      result = result.filter(v => v.type === typeFilter);
-    }
-
-    result.sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+  const visibleVideos = useMemo(() => {
+    const filtered = typeFilter === "all" ? [...videos] : videos.filter((video) => video.type === typeFilter);
+    return filtered.sort((a, b) => {
+      const first = Date.parse(a.createdAt) || 0;
+      const second = Date.parse(b.createdAt) || 0;
+      return sortOrder === "newest" ? second - first : first - second;
     });
+  }, [sortOrder, typeFilter, videos]);
 
-    return result;
-  }, [videos, typeFilter, sortOrder]);
+  const openCreate = () => {
+    setEditing(null);
+    setDraft({ ...EMPTY_DRAFT, status: "published" });
+    setSaveError(null);
+    setEditorOpen(true);
+  };
+
+  const openEdit = (video: ManagedVideo) => {
+    setEditing(video);
+    setDraft({
+      title: video.title,
+      videoId: video.videoId,
+      description: video.description,
+      type: video.type,
+      status: video.status,
+      thumbnailUrl: video.thumbnailUrl,
+    });
+    setSaveError(null);
+    setEditorOpen(true);
+  };
+
+  const saveVideo = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canManage || saving) return;
+    if (!parseYouTubeVideoId(draft.videoId)) {
+      setSaveError("Enter a valid YouTube URL or 11-character video ID.");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const response = await authenticatedFetch(editing ? `/api/videos/${editing.id}` : "/api/videos", {
+        method: editing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (!response.ok) throw await apiFailure(response, "Video could not be saved.");
+      const payload = await response.json() as { video: ManagedVideo };
+      setVideos((current) => editing
+        ? current.map((video) => video.id === editing.id ? payload.video : video)
+        : [payload.video, ...current]);
+      setEditorOpen(false);
+      setNotice(editing ? "Video changes saved." : "Video added to the library.");
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const archiveVideo = async () => {
+    if (!pendingArchive || !canManage) return;
+    const target = pendingArchive;
+    setActionId(target.id);
+    setError(null);
+    try {
+      const response = await authenticatedFetch(`/api/videos/${target.id}`, { method: "DELETE" });
+      if (!response.ok) throw await apiFailure(response, "Video could not be archived.");
+      setVideos((current) => current.filter((video) => video.id !== target.id));
+      setPendingArchive(null);
+      setNotice("Video moved to the archive. You can restore it later.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const restoreVideo = async (video: ManagedVideo) => {
+    setActionId(video.id);
+    setError(null);
+    try {
+      const response = await authenticatedFetch(`/api/videos/${video.id}/restore`, { method: "POST" });
+      if (!response.ok) throw await apiFailure(response, "Video could not be restored.");
+      setVideos((current) => current.filter((item) => item.id !== video.id));
+      setNotice("Video restored. It is back in the active library.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const syncYoutube = async () => {
+    setSyncing(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await authenticatedFetch("/api/videos/sync", { method: "POST" });
+      if (!response.ok) throw await apiFailure(response, "YouTube sync failed.");
+      const payload = await response.json() as { message?: string };
+      setNotice(payload.message || "YouTube sync finished.");
+      await loadVideos(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
-    <div className="space-y-10 w-full">
-      
-      {/* Header */}
-      <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+    <div className="space-y-8 pb-20">
+      <header className="flex flex-col gap-5 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-            <Activity size={12} className="animate-pulse" /> Multimedia Indexing
-          </p>
-          <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
-            Manage Videos
-            {isLive ? (
-              <span className="inline-flex items-center rounded-full bg-ares-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-black ring-1 ring-inset ring-ares-bronze ml-2">
-                Live sync
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-ares-red px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-inset ring-ares-bronze ml-2">
-                Data unavailable
-              </span>
-            )}
-          </h1>
-          <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-            Link dynamic robot kinematics video guides, world championships recaps, and regional FLL outreach highlights.
-          </p>
+          <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ares-gold"><Activity size={14} aria-hidden="true" /> Team media</p>
+          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white md:text-5xl">Manage Videos</h1>
+          <p className="mt-2 max-w-2xl text-sm text-marble/70">Add team YouTube links, review drafts, and sync the official team channel.</p>
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="https://www.youtube.com/@ares23247WV"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-5 py-3 border border-white/10 hover:border-ares-red bg-white/5 hover:bg-ares-red/10 text-marble hover:text-white font-black text-xs uppercase tracking-widest ares-cut inline-flex items-center gap-2 cursor-pointer transition-all duration-200"
-          >
-            <Youtube size={16} className="text-ares-red" /> YouTube Channel
-          </a>
-          {canEdit && (
-            <>
-              <button
-                onClick={handleSyncYoutube}
-                disabled={isSyncing}
-                className="px-5 py-3 border border-white/10 hover:border-ares-gold bg-white/5 hover:bg-white/10 text-marble hover:text-white font-black text-xs uppercase tracking-widest ares-cut inline-flex items-center gap-2 cursor-pointer transition-all duration-200 disabled:opacity-50"
-                title="Pull all videos from the team YouTube channel"
-              >
-                <RefreshCw size={16} className={`text-ares-gold ${isSyncing ? "animate-spin" : ""}`} />
-                {isSyncing ? "Syncing..." : "Sync YouTube"}
-              </button>
-              <button
-                onClick={handleOpenCreate}
-                className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                <Plus size={16} /> Add Video Link
-              </button>
-            </>
-          )}
-        </div>
+        {canManage && <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => void syncYoutube()} disabled={syncing} className="inline-flex items-center gap-2 border border-ares-gold/40 px-4 py-3 text-xs font-black uppercase tracking-wider text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
+            <RefreshCw size={15} className={syncing ? "motion-safe:animate-spin" : ""} aria-hidden="true" /> {syncing ? "Syncing" : "Sync YouTube"}
+          </button>
+          <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 bg-ares-red px-4 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><Plus size={15} aria-hidden="true" /> Add video</button>
+        </div>}
       </header>
 
-      {loadError && (
-        <PublicDataState
-          title="Unable to load video management data"
-          message="The video library could not be reached. Check your session and connection, then retry."
-          diagnostic={loadError}
-          onRetry={() => window.location.reload()}
-        />
-      )}
+      {!canManage && <p className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">You can view the team library. An admin or coach manages video links.</p>}
+      {notice && <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">{notice}</p>}
+      {error && <div role="alert" className="border border-ares-red bg-ares-red/15 p-4 text-white"><p className="text-sm font-bold">The video library was not changed.</p><p className="mt-1 break-words font-mono text-xs text-white/80">{error}</p><button type="button" onClick={() => void loadVideos(false)} className="mt-3 text-xs font-bold uppercase text-white underline focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button></div>}
 
-      {/* Sync Status Banner */}
-      {syncStatus && (
-        <div role={syncStatus.toLowerCase().includes("failed") ? "alert" : "status"} className={`p-4 border flex items-center gap-3 text-xs font-semibold max-w-2xl mx-auto ares-cut ${
-          syncStatus.includes("failed") || syncStatus.includes("Failed")
-            ? "bg-ares-red border-ares-bronze text-white"
-            : "bg-ares-gold/10 border-ares-gold/30 text-ares-gold"
-        }`}>
-          <Activity size={16} className={syncStatus.includes("failed") || syncStatus.includes("Failed") ? "" : "animate-pulse"} />
-          <span>{syncStatus}</span>
+      <section aria-label="Video filters" className="flex flex-col gap-4 border border-white/10 bg-black/30 p-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-wrap gap-4">
+          <div><label htmlFor="video-type" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-marble/60">Media type</label><select id="video-type" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)} className="border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="all">All media</option><option value="video">Videos</option><option value="short">Shorts</option></select></div>
+          <div><label htmlFor="video-sort" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-marble/60">Sort order</label><select id="video-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)} className="border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></div>
         </div>
-      )}
+        {canManage && <label className="flex items-center gap-2 text-xs font-bold text-marble"><input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} className="h-4 w-4 accent-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan" /> Show archived videos</label>}
+      </section>
 
-      {/* Guest Lockscreen Warning */}
-      {!canEdit && (
-        <div className="glass-card ares-cut border border-ares-bronze/20 text-marble/80 px-6 py-5 rounded-xl text-center text-xs font-semibold max-w-lg mx-auto flex items-center gap-3 justify-center">
-          <Shield size={16} className="text-ares-gold shrink-0" />
-          <span>🔒 Read-only Guest Mode: Request authorization clearance to add or remove videos.</span>
-        </div>
-      )}
-
-      {/* Controls & Filter Panel */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-black/40 border border-white/10 p-4 rounded-xl">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-white/40" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="bg-black border border-white/10 text-white text-xs px-2.5 py-1.5 uppercase font-bold tracking-wider outline-none focus:border-ares-red transition-colors cursor-pointer appearance-none rounded"
-            >
-              <option value="all">All Media</option>
-              <option value="video">Videos</option>
-              <option value="short">Shorts</option>
-            </select>
+      {loading && videos.length === 0 ? <div role="status" className="flex justify-center py-20 text-ares-gold"><Loader2 className="motion-safe:animate-spin" aria-hidden="true" /><span className="sr-only">Loading videos</span></div> : visibleVideos.length === 0 ? <p className="border border-white/10 bg-black/20 p-10 text-center text-sm text-marble/60">No videos match this view.</p> : <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {visibleVideos.map((video) => <article key={video.id} className="overflow-hidden border border-white/10 bg-black/25">
+          <a href={video.watchUrl} target="_blank" rel="noopener noreferrer" className="group relative block aspect-video overflow-hidden bg-black focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label={`Watch ${video.title} on YouTube`}>
+            {video.thumbnailUrl && <img src={video.thumbnailUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-[1.02]" />}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/30"><span className="rounded-full bg-ares-red p-4 text-white"><Play size={22} fill="currentColor" aria-hidden="true" /></span></span>
+          </a>
+          <div className="space-y-4 p-5">
+            <div><div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider"><span className="bg-ares-red px-2 py-1 text-white">{video.type}</span><span className="border border-white/15 px-2 py-1 text-marble/70">{video.status}</span>{video.isArchived && <span className="border border-ares-gold/40 px-2 py-1 text-ares-gold">Archived</span>}</div><h2 className="mt-3 font-heading text-xl font-black uppercase text-white">{video.title}</h2>{video.description && <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-marble/70">{video.description}</p>}</div>
+            <div className="flex items-center justify-between border-t border-white/10 pt-4"><a href={video.watchUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-ares-cyan focus-visible:ring-2 focus-visible:ring-ares-cyan">Watch <ExternalLink size={12} aria-hidden="true" /></a>{canManage && <div className="flex gap-2">{!video.isArchived && <button type="button" onClick={() => openEdit(video)} aria-label={`Edit ${video.title}`} className="border border-white/15 p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><Pencil size={14} aria-hidden="true" /></button>}{video.isArchived ? <button type="button" disabled={actionId === video.id} onClick={() => void restoreVideo(video)} aria-label={`Restore ${video.title}`} className="border border-ares-gold/40 p-2 text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"><RotateCcw size={14} aria-hidden="true" /></button> : <button type="button" onClick={() => setPendingArchive(video)} aria-label={`Archive ${video.title}`} className="border border-ares-red/50 p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><Archive size={14} aria-hidden="true" /></button>}</div>}</div>
           </div>
-          <div className="flex items-center gap-2">
-            <ArrowUpDown size={16} className="text-white/40" />
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as any)}
-              className="bg-black border border-white/10 text-white text-xs px-2.5 py-1.5 uppercase font-bold tracking-wider outline-none focus:border-ares-red transition-colors cursor-pointer appearance-none rounded"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-            </select>
-          </div>
-        </div>
-        <div className="text-xs text-marble/60 font-mono">
-          {filteredAndSortedVideos.length} Result{filteredAndSortedVideos.length !== 1 ? "s" : ""}
-        </div>
-      </div>
+        </article>)}
+      </div>}
 
-      {/* Videos Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredAndSortedVideos.map((video) => (
-          <div
-            key={video.id}
-            className="glass-card flex flex-col justify-between overflow-hidden border border-white/10 group hover:border-ares-red/30 transition-colors"
-          >
-            {video.thumbnailUrl && (
-              <a
-                href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full h-48 bg-black/20 relative group/thumb overflow-hidden border-b border-white/5 cursor-pointer"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={cleanThumbnailUrl(video.thumbnailUrl)}
-                  alt={video.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-102"
-                  loading="lazy"
-                />
-                
-                {/* Visual playback hover overlay */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
-                  <div className="w-12 h-12 bg-ares-red rounded-full flex items-center justify-center shadow-lg">
-                    <Play size={20} className="text-white ml-0.5" fill="white" />
-                  </div>
-                </div>
+      {hasMore && <div className="text-center"><button type="button" onClick={() => void loadVideos(true)} disabled={loadingMore} className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{loadingMore ? "Loading" : "Load more videos"}</button></div>}
 
-                <span className="absolute top-3 right-3 text-[8px] font-black uppercase px-2 py-1 bg-black/80 border border-white/15 text-ares-cyan tracking-wider">
-                  {video.type}
-                </span>
-              </a>
-            )}
+      <Dialog.Root open={editorOpen} onOpenChange={(open) => !saving && setEditorOpen(open)}><Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[100] bg-black/80" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[101] max-h-[90vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none"><div className="flex items-start justify-between gap-4"><div><Dialog.Title className="font-heading text-2xl font-black uppercase text-white">{editing ? "Edit video" : "Add video"}</Dialog.Title><Dialog.Description className="mt-1 text-sm text-marble/60">Use a link from the official team YouTube channel.</Dialog.Description></div><Dialog.Close asChild><button type="button" disabled={saving} aria-label="Close video editor" className="p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><X aria-hidden="true" /></button></Dialog.Close></div>
+        <form onSubmit={(event) => void saveVideo(event)} className="mt-6 space-y-4"><div><label htmlFor="video-title-input" className="mb-1 block text-xs font-bold text-marble">Title</label><input id="video-title-input" required maxLength={180} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div><label htmlFor="video-link-input" className="mb-1 block text-xs font-bold text-marble">YouTube URL or video ID</label><input id="video-link-input" required value={draft.videoId} onChange={(event) => setDraft({ ...draft, videoId: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 font-mono text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div><label htmlFor="video-description-input" className="mb-1 block text-xs font-bold text-marble">Summary</label><textarea id="video-description-input" maxLength={2000} rows={4} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="w-full resize-y border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="video-kind-input" className="mb-1 block text-xs font-bold text-marble">Media type</label><select id="video-kind-input" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as VideoDraft["type"] })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="video">Video</option><option value="short">Short</option></select></div><div><label htmlFor="video-status-input" className="mb-1 block text-xs font-bold text-marble">Status</label><select id="video-status-input" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as VideoDraft["status"] })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="draft">Draft</option><option value="published">Published</option></select></div></div><div><label htmlFor="video-thumbnail-input" className="mb-1 block text-xs font-bold text-marble">Thumbnail URL (optional)</label><input id="video-thumbnail-input" type="url" value={draft.thumbnailUrl} onChange={(event) => setDraft({ ...draft, thumbnailUrl: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div>{saveError && <div role="alert" className="border border-ares-red bg-ares-red/15 p-3 text-white"><p className="text-xs font-bold">Your draft is still here. The video was not saved.</p><p className="mt-1 font-mono text-[10px] text-white/80">{saveError}</p></div>}<div className="flex justify-end gap-3 border-t border-white/10 pt-4"><Dialog.Close asChild><button type="button" disabled={saving} className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close><button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{saving && <Loader2 size={14} className="motion-safe:animate-spin" aria-hidden="true" />}{saving ? "Saving" : "Save video"}</button></div></form>
+      </Dialog.Content></Dialog.Portal></Dialog.Root>
 
-            <div className="p-5 flex-grow flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] text-marble/50 font-bold uppercase tracking-wider block mb-1">
-                  YouTube Resource • {video.createdAt}
-                </span>
-                <h3 className="text-lg font-bold text-white mb-2 leading-tight group-hover:text-ares-gold transition-colors font-heading uppercase tracking-tight">
-                  {video.title}
-                </h3>
-                {video.description && (
-                  <p className="text-xs text-marble/70 leading-relaxed line-clamp-2 mb-4">{video.description}</p>
-                )}
-              </div>
-
-              <div className="border-t border-white/5 pt-4 mt-4 flex items-center justify-between">
-                <a
-                  href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-ares-cyan hover:text-white uppercase font-bold tracking-widest inline-flex items-center gap-1"
-                >
-                  Watch Live <ExternalLink size={10} />
-                </a>
-
-                <div className="flex gap-1.5">
-                  {canEdit ? (
-                    <>
-                      <button
-                        onClick={() => handleOpenEdit(video)}
-                        className="p-2 bg-white/5 hover:bg-ares-gold/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer text-xs"
-                        title="Edit Details"
-                      >
-                        <Pencil size={12} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteVideo(video.id)}
-                        className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-danger-soft border border-white/10 rounded transition-all cursor-pointer text-xs"
-                        title="Delete Video"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-[9px] text-marble/40 uppercase font-black tracking-widest">🔒 Locked</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <VideoEditorDrawer
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        editId={editId}
-        formTitle={formTitle}
-        setFormTitle={setFormTitle}
-        formVideoId={formVideoId}
-        setFormVideoId={setFormVideoId}
-        formDescription={formDescription}
-        setFormDescription={setFormDescription}
-        formType={formType}
-        setFormType={setFormType}
-        formThumbnail={formThumbnail}
-        setFormThumbnail={setFormThumbnail}
-        onSave={handleSaveVideo}
-      />
+      <Dialog.Root open={Boolean(pendingArchive)} onOpenChange={(open) => !open && !actionId && setPendingArchive(null)}><Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[110] bg-black/80" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[111] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-white/15 bg-obsidian p-6 focus:outline-none"><Dialog.Title className="font-heading text-xl font-black uppercase text-white">Archive this video?</Dialog.Title><Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/70">The video leaves active and public views. You can restore it later.</Dialog.Description><div className="mt-6 flex justify-end gap-3"><Dialog.Close asChild><button type="button" disabled={Boolean(actionId)} className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close><button type="button" onClick={() => void archiveVideo()} disabled={Boolean(actionId)} className="bg-ares-red px-4 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{actionId ? "Archiving" : "Archive video"}</button></div></Dialog.Content></Dialog.Portal></Dialog.Root>
     </div>
   );
 }

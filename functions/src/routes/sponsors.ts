@@ -16,8 +16,50 @@ const limiter = rateLimit({
 });
 router.use(limiter);
 
-// Define valid tiers
-const VALID_TIERS = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
+const VALID_TIERS = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"] as const;
+type SponsorTier = (typeof VALID_TIERS)[number];
+
+interface SponsorDocument {
+  name?: unknown;
+  tier?: unknown;
+  logoUrl?: unknown;
+  websiteUrl?: unknown;
+  isActive?: unknown;
+  isDeleted?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  archivedAt?: unknown;
+}
+
+interface SponsorWriteRequest {
+  id?: string;
+  name: string;
+  tier: SponsorTier;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  isActive?: boolean;
+}
+
+function toSponsorDto(id: string, data: SponsorDocument, includeLifecycle: boolean) {
+  const dto = {
+    id,
+    name: typeof data.name === "string" ? data.name : "",
+    tier: typeof data.tier === "string" ? data.tier : "In-Kind",
+    logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : null,
+    websiteUrl: typeof data.websiteUrl === "string" ? data.websiteUrl : null,
+    isActive: data.isActive !== false,
+    createdAt: typeof data.createdAt === "string" ? data.createdAt : null,
+  };
+
+  if (!includeLifecycle) return dto;
+
+  return {
+    ...dto,
+    isDeleted: data.isDeleted === 1 ? 1 : 0,
+    updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : null,
+    archivedAt: typeof data.archivedAt === "string" ? data.archivedAt : null,
+  };
+}
 
 // Helper: Tier Sorting Index
 function getTierPriority(tier: string): number {
@@ -35,18 +77,10 @@ function getTierPriority(tier: string): number {
 router.get("/", asyncHandler(async (req, res) => {
   const snapshot = await adminDb.collection("sponsors").where("isActive", "==", true).limit(100).get();
   
-  const sponsors = snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      name: data.name,
-      tier: data.tier,
-      logoUrl: data.logoUrl || null,
-      websiteUrl: data.websiteUrl || null,
-      isActive: true,
-      createdAt: data.createdAt || null,
-    };
-  });
+  const sponsors = snapshot.docs
+    .map((doc) => ({ id: doc.id, data: doc.data() as SponsorDocument }))
+    .filter(({ data }) => data.isDeleted !== 1)
+    .map(({ id, data }) => toSponsorDto(id, data, false));
 
   // Sort by tier priority, then by name
   sponsors.sort((a, b) => {
@@ -65,18 +99,9 @@ router.get("/", asyncHandler(async (req, res) => {
 router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   const snapshot = await adminDb.collection("sponsors").limit(200).get();
   
-  const sponsors = snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      name: data.name,
-      tier: data.tier,
-      logoUrl: data.logoUrl || null,
-      websiteUrl: data.websiteUrl || null,
-      isActive: data.isActive !== false,
-      createdAt: data.createdAt || null,
-    };
-  });
+  const sponsors = snapshot.docs.map((doc) =>
+    toSponsorDto(doc.id, doc.data() as SponsorDocument, true),
+  );
 
   // Sort by tier priority, then by name
   sponsors.sort((a, b) => {
@@ -93,14 +118,7 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 
 // POST /api/sponsors/admin - Create or update sponsor (admin only)
 router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id, name, tier, logoUrl, websiteUrl, isActive } = req.body as {
-    id?: string;
-    name: string;
-    tier: string;
-    logoUrl?: string | null;
-    websiteUrl?: string | null;
-    isActive?: boolean;
-  };
+  const { id, name, tier, logoUrl, websiteUrl, isActive } = req.body as SponsorWriteRequest;
 
   if (!name || !name.trim()) {
     throw new ApiError(400, "Sponsor name is required.");
@@ -145,6 +163,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       logoUrl: logoUrl || null,
       websiteUrl: websiteUrl || null,
       isActive: activeVal,
+      isDeleted: 0,
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -153,7 +172,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   res.json({ success: true, id: sponsorId });
 }));
 
-// DELETE /api/sponsors/admin/:id - Hard delete sponsor (admin only)
+// DELETE /api/sponsors/admin/:id - Archive sponsor (admin only)
 router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -164,9 +183,38 @@ router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(404, "Sponsor not found.");
   }
 
-  await docRef.delete();
+  const timestamp = new Date().toISOString();
+  await docRef.update({
+    isDeleted: 1,
+    isActive: false,
+    archivedAt: timestamp,
+    updatedAt: timestamp,
+  });
 
-  res.json({ success: true, message: "Sponsor deleted successfully." });
+  res.json({ success: true, message: "Sponsor archived successfully." });
+}));
+
+// PATCH /api/sponsors/admin/:id/restore - Restore an archived sponsor (admin only)
+router.patch("/admin/:id/restore", ensureAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const docRef = adminDb.collection("sponsors").doc(id);
+  const docSnap = await docRef.get();
+
+  if (!docSnap.exists) {
+    throw new ApiError(404, "Sponsor not found.");
+  }
+
+  await docRef.update({
+    isDeleted: 0,
+    isActive: false,
+    archivedAt: null,
+    updatedAt: new Date().toISOString(),
+  });
+
+  res.json({
+    success: true,
+    message: "Sponsor restored as inactive. Review it before publishing.",
+  });
 }));
 
 export default router;

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";

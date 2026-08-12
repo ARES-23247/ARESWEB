@@ -1,202 +1,76 @@
 "use client";
 
-import { Trophy, Award, Medal, Crown, Star } from "lucide-react";
+import { Award, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 
-interface LeaderboardUser {
-  userId: string;
-  nickname: string;
-  memberType: "student" | "mentor" | "coach";
-  avatar: string;
-  badgeCount: number;
-}
-
-const MOCK_LEADERS: LeaderboardUser[] = [
+const RECOGNITION_PRINCIPLES = [
   {
-    userId: "mem_sina",
-    nickname: "Sina",
-    memberType: "student",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=sina",
-    badgeCount: 14
+    title: "Teamwork",
+    description: "We celebrate members who help the whole team learn and improve.",
+    icon: ShieldCheck,
   },
   {
-    userId: "mem_gavin",
-    nickname: "Gavin",
-    memberType: "student",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=gavin",
-    badgeCount: 11
+    title: "Impact",
+    description: "Outreach, mentoring, and service matter as much as robot results.",
+    icon: Sparkles,
   },
   {
-    userId: "mem_elena",
-    nickname: "Elena",
-    memberType: "student",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=elena",
-    badgeCount: 9
+    title: "Growth",
+    description: "Recognition should show effort, new skills, and steady progress.",
+    icon: Award,
   },
-  {
-    userId: "mem_dave",
-    nickname: "Coach Dave",
-    memberType: "coach",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=dave",
-    badgeCount: 8
-  },
-  {
-    userId: "mem_kelley",
-    nickname: "Coach Kelley",
-    memberType: "coach",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=kelley",
-    badgeCount: 7
-  },
-  {
-    userId: "mem_andrew",
-    nickname: "Mentor Andrew",
-    memberType: "mentor",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=andrew",
-    badgeCount: 5
-  }
-];
+] as const;
 
 export default function LeaderboardPage() {
-  const top3 = MOCK_LEADERS.slice(0, 3);
-  const rest = MOCK_LEADERS.slice(3);
-
-  // Podium arrangement: [2nd, 1st, 3rd]
-  const podium = [top3[1], top3[0], top3[2]];
-
   return (
-    <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
-      <SEO title="Leaderboard" description="Recognising the student innovators, mentors, and coaches who go above and beyond in engineering excellence and technical leadership." />
-      {/* Hero Header */}
-      <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
-        <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          
-          <div className="w-16 h-16 mx-auto bg-ares-gold/10 border border-ares-gold/20 rounded-2xl flex items-center justify-center ares-cut mb-6 backdrop-blur-sm">
-            <Trophy size={32} className="text-ares-gold drop-shadow-[0_0_15px_rgba(255,191,0,0.5)] animate-bounce" />
-          </div>
+    <div className="flex min-h-screen w-full flex-col bg-obsidian text-marble">
+      <SEO
+        title="Team Recognition"
+        description="Learn how ARES 23247 plans to recognize teamwork, community impact, and growth without publishing unverified rankings."
+      />
 
-          <p className="text-ares-bronze uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4 animate-pulse">
-            Championship standings
+      <section className="relative flex min-h-[50vh] items-center overflow-hidden bg-obsidian py-28">
+        <GreekMeander variant="thin" opacity="opacity-25" className="absolute left-0 top-0" />
+        <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-ares-gold/30 bg-ares-gold/10">
+            <Trophy aria-hidden="true" size={32} className="text-ares-gold" />
+          </div>
+          <p className="mb-4 font-heading text-[10px] font-black uppercase tracking-[0.4em] text-ares-gold">
+            Recognition program
           </p>
-          <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading">
-            Team <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-xl text-white">Leaderboard</span>
+          <h1 className="mb-6 font-heading text-4xl font-black uppercase tracking-tight text-white md:text-7xl">
+            Team <span className="ares-cut-sm inline-block bg-ares-red px-4 py-1 pb-3 text-white shadow-xl sm:px-6">Recognition</span>
           </h1>
-          <p className="text-marble/85 text-base md:text-lg max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-6 mt-6">
-            Recognising the student innovators, mentors, and coaches who go above and beyond in engineering excellence, community outreach impact, and technical leadership.
+          <p className="mx-auto mt-6 max-w-2xl border-t border-white/10 pt-6 text-base leading-relaxed text-marble/85 md:text-lg">
+            ARES has not published an official member ranking. We will only show results after the team approves clear rules and verifies the data.
           </p>
         </div>
       </section>
 
-      {/* Podium & Standings Section */}
-      <section className="py-20 bg-black/10 border-y border-white/5 min-h-[60vh]">
-        <div className="max-w-6xl mx-auto px-6">
-          
-          {/* Top 3 Podiums */}
-          <div className="flex flex-col md:flex-row items-end justify-center gap-6 md:gap-8 mb-24">
-            
-            {/* 2nd Place */}
-            <div className="flex flex-col items-center w-full md:w-56 order-2 md:order-1">
-              <div className="text-center mb-4 space-y-1">
-                <div className="w-16 h-16 rounded-full border-4 border-white/20 bg-black/45 overflow-hidden mx-auto shadow-md">
-                  <img src={podium[0].avatar} alt="" className="w-full h-full object-cover" />
-                </div>
-                <h4 className="font-bold text-white uppercase text-sm leading-none">{podium[0].nickname}</h4>
-                <span className="text-[8px] text-marble/40 uppercase tracking-widest">{podium[0].memberType}</span>
-              </div>
-              <div className="w-full h-44 bg-white/5 border border-white/5 rounded-t-2xl flex flex-col items-center justify-center p-4 relative overflow-hidden backdrop-blur-sm shadow-inner group hover:border-white/10 transition-colors">
-                <Medal size={24} className="text-white/60 mb-2" />
-                <span className="text-3xl font-black text-white/70 font-heading">2</span>
-                <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-marble/60">
-                  <Star size={12} className="text-white/60" /> {podium[0].badgeCount} badges
-                </div>
-              </div>
-            </div>
-
-            {/* 1st Place */}
-            <div className="flex flex-col items-center w-full md:w-60 order-1 md:order-2">
-              <div className="text-center mb-4 space-y-1">
-                <div className="w-20 h-20 rounded-full border-4 border-ares-gold bg-black/45 overflow-hidden mx-auto shadow-lg shadow-ares-gold/10">
-                  <img src={podium[1].avatar} alt="" className="w-full h-full object-cover" />
-                </div>
-                <h4 className="font-bold text-white uppercase text-base leading-none">{podium[1].nickname}</h4>
-                <span className="text-[8px] text-ares-gold uppercase tracking-widest">{podium[1].memberType}</span>
-              </div>
-              <div className="w-full h-56 bg-ares-gold/5 border border-ares-gold/20 rounded-t-2xl flex flex-col items-center justify-center p-4 relative overflow-hidden backdrop-blur-sm shadow-inner group hover:border-ares-gold/40 transition-colors">
-                <Crown size={28} className="text-ares-gold mb-2" />
-                <span className="text-4xl font-black text-ares-gold font-heading">1</span>
-                <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-ares-gold">
-                  <Star size={12} className="text-ares-gold" /> {podium[1].badgeCount} badges
-                </div>
-              </div>
-            </div>
-
-            {/* 3rd Place */}
-            <div className="flex flex-col items-center w-full md:w-52 order-3">
-              <div className="text-center mb-4 space-y-1">
-                <div className="w-14 h-14 rounded-full border-4 border-ares-bronze bg-black/45 overflow-hidden mx-auto shadow-md">
-                  <img src={podium[2].avatar} alt="" className="w-full h-full object-cover" />
-                </div>
-                <h4 className="font-bold text-white uppercase text-xs leading-none">{podium[2].nickname}</h4>
-                <span className="text-[8px] text-marble/40 uppercase tracking-widest">{podium[2].memberType}</span>
-              </div>
-              <div className="w-full h-36 bg-ares-bronze/5 border border-ares-bronze/10 rounded-t-2xl flex flex-col items-center justify-center p-4 relative overflow-hidden backdrop-blur-sm shadow-inner group hover:border-ares-bronze/30 transition-colors">
-                <Award size={22} className="text-ares-bronze mb-2" />
-                <span className="text-2xl font-black text-ares-bronze/80 font-heading">3</span>
-                <div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-ares-bronze">
-                  <Star size={12} className="text-ares-bronze" /> {podium[2].badgeCount} badges
-                </div>
-              </div>
-            </div>
-
+      <section aria-labelledby="recognition-status" className="border-y border-white/5 bg-black/10 py-20">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="hero-card border border-ares-gold/30 bg-ares-gold/5 p-8 text-center md:p-12">
+            <h2 id="recognition-status" className="font-heading text-2xl font-black uppercase text-white md:text-3xl">
+              No standings are published
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-marble/80">
+              We removed placeholder names, avatars, badge totals, and ranks. This page will stay unranked until every result comes from an approved source.
+            </p>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-marble/80">
+              When the program launches, it will support <em>FIRST</em>® values and reward teamwork, inclusion, discovery, and service.
+            </p>
           </div>
 
-          {/* Roster scroll tables */}
-          <div className="max-w-3xl mx-auto bg-white/5 border border-white/5 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-2xl">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 uppercase tracking-widest text-[9px] text-marble/45 font-bold">
-                  <th className="py-4 font-black w-16 text-center">Rank</th>
-                  <th className="py-4 font-black">Member</th>
-                  <th className="py-4 font-black text-right">Badges</th>
-                </tr>
-              </thead>
-              <tbody className="text-xs">
-                {rest.map((user, idx) => (
-                  <tr 
-                    key={user.userId} 
-                    className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group"
-                  >
-                    <td className="py-4 text-center font-bold text-marble/35 font-mono">
-                      {(idx + 4).toString().padStart(2, "0")}
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-black/45 border border-white/10 overflow-hidden shrink-0 shadow-inner">
-                          <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-white uppercase group-hover:text-ares-gold transition-colors font-heading leading-none">
-                            {user.nickname}
-                          </p>
-                          <span className="text-[8px] uppercase tracking-wider text-marble/40 mt-1 font-semibold block">
-                            {user.memberType}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 text-right">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-white font-bold font-mono">
-                        <Star size={12} className="text-ares-cyan" />
-                        {user.badgeCount}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {RECOGNITION_PRINCIPLES.map(({ title, description, icon: Icon }) => (
+              <article key={title} className="hero-card border border-white/10 bg-white/5 p-7 text-center">
+                <Icon aria-hidden="true" className="mx-auto h-7 w-7 text-ares-gold" />
+                <h2 className="mt-4 font-heading text-lg font-black uppercase text-white">{title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-marble/75">{description}</p>
+              </article>
+            ))}
           </div>
-
         </div>
       </section>
     </div>

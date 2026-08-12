@@ -13,20 +13,28 @@ export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxP
 
   if (!selectedPhoto) return null;
 
-  const uploadedByText = selectedPhoto.uploadedBy?.includes("@")
-    ? "ARES Member"
-    : selectedPhoto.uploadedBy || "ARES Member";
+  const uploadedByText = selectedPhoto.uploadedBy && !selectedPhoto.uploadedBy.includes("@")
+    ? selectedPhoto.uploadedBy
+    : null;
+  const uploadedDate = selectedPhoto.uploadedAt ? new Date(selectedPhoto.uploadedAt) : null;
+  const uploadedDateText = uploadedDate && !Number.isNaN(uploadedDate.getTime())
+    ? uploadedDate.toLocaleDateString()
+    : null;
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label={selectedPhoto.filename} className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
       
       <div ref={lightboxRef} className="relative z-10 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between max-h-[90vh]">
         <header className="w-full flex items-center justify-between border-b border-white/5 pb-3.5">
-          <div>
+          <div aria-live="polite">
+            {(uploadedByText || uploadedDateText) && (
             <span className="text-[10px] text-marble/40 font-mono">
-              Uploaded by {uploadedByText} &middot; {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
+              {uploadedByText ? `Uploaded by ${uploadedByText}` : ""}
+              {uploadedByText && uploadedDateText ? " · " : ""}
+              {uploadedDateText ?? ""}
             </span>
+            )}
           </div>
           <button
             type="button"

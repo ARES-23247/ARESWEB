@@ -11,15 +11,11 @@ const router = express.Router();
 
 async function updateAlbumMediaCount(albumId: string, delta: number) {
   if (!albumId) return;
-  try {
-    const albumRef = adminDb.collection("albums").doc(albumId);
-    await albumRef.update({
-      mediaCount: admin.firestore.FieldValue.increment(delta),
-      updatedAt: new Date().toISOString()
-    });
-  } catch (err) {
-    logger.warn("photos", `Failed to update media count for album ${albumId}`, err);
-  }
+  const albumRef = adminDb.collection("albums").doc(albumId);
+  await albumRef.update({
+    mediaCount: admin.firestore.FieldValue.increment(delta),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 // POST /api/photos/import
@@ -40,8 +36,13 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
     albumName?: string;
   };
 
-  if (!items || items.length === 0) {
-    throw new ApiError(400, "No items provided for import");
+  if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
+    throw new ApiError(400, "Choose between 1 and 100 photos per import.");
+  }
+  if (albumId && !/^[A-Za-z0-9_-]{1,200}$/.test(albumId)) throw new ApiError(400, "Invalid album ID.");
+  if (albumId) {
+    const album = await adminDb.collection("albums").doc(albumId).get();
+    if (!album.exists || album.data()?.isDeleted === 1) throw new ApiError(400, "Choose an active album.");
   }
 
   logger.info("photos", `Starting ingestion of ${items.length} items on Firebase`);
@@ -50,8 +51,6 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
     mediaItemId: string;
     status: "success" | "failed";
     filename: string;
-    storagePath?: string;
-    publicUrl?: string;
     error?: string;
   }
 
@@ -67,7 +66,10 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
   let failedCount = 0;
 
   // EFF-F01 Batch Optimization: Read all existing photos in a single batch read
-  const itemIds = items.map(item => item.id);
+  const itemIds = items.map((item) => {
+    if (!/^[A-Za-z0-9_-]{1,300}$/.test(item.id)) throw new ApiError(400, "A selected photo has an invalid ID.");
+    return item.id;
+  });
   const docRefs = itemIds.map(id => adminDb.collection("imported_photos").doc(id));
   const docSnaps = await adminDb.getAll(...docRefs);
   const docMap = new Map(docSnaps.map(snap => [snap.id, snap]));
@@ -103,13 +105,10 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
           const docSnap = docMap.get(item.id);
 
           if (docSnap && docSnap.exists) {
-            const existingData = docSnap.data();
             results.push({
               mediaItemId: item.id,
               status: "success",
               filename,
-              storagePath: existingData?.storagePath,
-              publicUrl: existingData?.publicUrl,
             });
             successCount++;
             return;
@@ -175,6 +174,8 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
             fileSize: buffer.byteLength,
             importedAt: new Date().toISOString(),
             albumId: albumId || null,
+            isDeleted: 0,
+            updatedAt: new Date().toISOString(),
           };
 
           const photoRef = adminDb.collection("imported_photos").doc(item.id);
@@ -193,8 +194,6 @@ router.post("/import", ensureAdmin, asyncHandler(async (req, res) => {
             mediaItemId: item.id,
             status: "success",
             filename,
-            storagePath: fileKey,
-            publicUrl,
           });
 
           successCount++;

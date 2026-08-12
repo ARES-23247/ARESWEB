@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FolderOpen, AlertCircle, Code, Zap, Check, Copy, Plus, Folder, RefreshCw, Play, X, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastApiError } from "../api/apiClient";
+import { authenticatedFetch } from "../lib/api";
 import { SIM_METADATA, SIM_COMPONENTS } from "./generated/sim-registry";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Suspense } from "react";
@@ -24,7 +25,7 @@ export default function SimManager() {
   const generateRegistry = async () => {
     setIsGenerating(true);
     try {
-      const res = await fetch("/api/simulations/admin/generate-registry", { method: "POST" });
+      const res = await authenticatedFetch("/api/simulations/admin/generate-registry", { method: "POST" });
       const data = await res.json() as { success?: boolean; error?: string; message?: string };
       if (data.success) {
         toast.success("Registry regenerated! Refresh to see changes.");

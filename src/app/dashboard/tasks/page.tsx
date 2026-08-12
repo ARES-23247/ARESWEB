@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, doc, onSnapshot, setDoc, updateDoc, query, limit, runTransaction, writeBatch } from "firebase/firestore";
+import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -11,6 +11,9 @@ import TaskFilters from "./components/TaskFilters";
 import TaskBoardColumn from "./components/TaskBoardColumn";
 import { TaskItem, MemberProfile, SubTask } from "@/types/task";
 import { PublicDataState } from "@/components/PublicDataState";
+import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
+import { describeTaskError, TaskOperationError } from "./taskErrors";
+import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask } from "./taskSubtasks";
 
 const MOCK_TASKS: TaskItem[] = [
   {
@@ -67,6 +70,7 @@ export default function KanbanPage() {
 
   const [draggedOverCol, setDraggedOverCol] = useState<TaskItem["status"] | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   // Operational state extensions
@@ -74,21 +78,45 @@ export default function KanbanPage() {
   const [sortBy, setSortBy] = useState<"newest" | "priority">("newest");
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
+  const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+
+  const executeTaskOperation = async (
+    action: string,
+    operation: () => Promise<void>,
+    retry: () => Promise<unknown>
+  ): Promise<TaskOperationError | null> => {
+    try {
+      await operation();
+      setOperationError(null);
+      setRetryOperation(null);
+      return null;
+    } catch (error) {
+      console.error(`Kanban ${action} failed:`, error);
+      const describedError = describeTaskError(action, error);
+      setOperationError(describedError);
+      setRetryOperation(() => retry);
+      return describedError;
+    }
+  };
 
   const runZulipSync = async (fetchPromise: Promise<Response>) => {
     setSyncState("syncing");
     try {
       const res = await fetchPromise;
-      if (res.ok) {
-        setSyncState("success");
-      } else {
-        setSyncState("error");
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      setSyncState("success");
       setTimeout(() => setSyncState("idle"), 3000);
     } catch (err) {
       console.error("Zulip sync error:", err);
+      const notificationError = describeTaskError("notify Zulip", err);
+      setOperationError({
+        ...notificationError,
+        message: "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
+      });
+      setRetryOperation(null);
       setSyncState("error");
       setTimeout(() => setSyncState("idle"), 3000);
     }
@@ -125,11 +153,12 @@ export default function KanbanPage() {
               assignees: data.assignees || [],
               subtasks: data.subtasks || [],
               archived: data.archived || false,
+              isDeleted: data.isDeleted === 1 ? 1 : 0,
               createdAt: data.createdAt || new Date().toISOString(),
               commentsCount: data.commentsCount || (data.comments?.length || 0)
             } as TaskItem;
           });
-          setTasks(list);
+          setTasks(list.filter((task) => task.isDeleted !== 1));
           setIsLive(true);
           setLoadError(null);
         },
@@ -163,14 +192,18 @@ export default function KanbanPage() {
     fetchTeamRoster();
   }, []);
 
-  const handleMoveStatus = async (taskId: string, newStatus: TaskItem["status"]) => {
-    if (!canEdit) return;
+  const handleMoveStatus = async (
+    taskId: string,
+    newStatus: TaskItem["status"]
+  ): Promise<TaskOperationError | null> => {
+    if (!canEdit) return null;
     const task = tasks.find((t) => t.id === taskId);
     if (import.meta.env.MODE === "e2e") {
       setTasks((current) => current.map((item) => (item.id === taskId ? { ...item, status: newStatus } : item)));
-      return;
+      setMoveAnnouncement(`${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`);
+      return null;
     }
-    try {
+    const performMove = async () => {
       const taskRef = doc(db, "tasks", taskId);
       await updateDoc(taskRef, { status: newStatus });
 
@@ -187,101 +220,127 @@ export default function KanbanPage() {
         });
         runZulipSync(syncPromise);
       }
-    } catch (err) {
-      console.warn("Firestore offline, moving card locally.", err);
-      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
-    }
+    };
+    const error = await executeTaskOperation("move task", performMove, () => handleMoveStatus(taskId, newStatus));
+    if (!error) setMoveAnnouncement(`${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`);
+    return error;
   };
 
-  const handleArchiveTask = async (taskId: string, isArchived: boolean) => {
-    if (!canEdit) return;
-    try {
+  const handleArchiveTask = async (
+    taskId: string,
+    isArchived: boolean
+  ): Promise<TaskOperationError | null> => {
+    if (!canEdit) return null;
+    const performArchive = async () => {
       const taskRef = doc(db, "tasks", taskId);
       await updateDoc(taskRef, { archived: isArchived });
-    } catch (err) {
-      console.warn("Firestore offline, archiving card locally.", err);
-      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, archived: isArchived } : t)));
-    }
-  };
-
-  const handleArchiveAllCompleted = async () => {
-    if (!canEdit) return;
-    const completedTasks = tasks.filter((t) => t.status === "completed" && !t.archived);
-    try {
-      const promises = completedTasks.map((t) => {
-        const taskRef = doc(db, "tasks", t.id);
-        return updateDoc(taskRef, { archived: true });
-      });
-      await Promise.all(promises);
-    } catch (err) {
-      console.warn("Firestore offline, archiving all completed locally.", err);
-      setTasks(tasks.map((t) => (t.status === "completed" ? { ...t, archived: true } : t)));
-    }
-  };
-
-  const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
-    if (!canEdit) return;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const updatedSubtasks = task.subtasks.map((sub) =>
-      sub.id === subtaskId ? { ...sub, done: !sub.done } : sub
+    };
+    return executeTaskOperation(
+      isArchived ? "archive task" : "restore task",
+      performArchive,
+      () => handleArchiveTask(taskId, isArchived)
     );
-
-    try {
-      const taskRef = doc(db, "tasks", taskId);
-      await updateDoc(taskRef, { subtasks: updatedSubtasks });
-    } catch (err) {
-      console.warn("Firestore offline, toggling subtask locally.", err);
-      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t)));
-    }
   };
 
-  const handleDeleteSubtask = async (taskId: string, subtaskId: string) => {
-    if (!canEdit) return;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const updatedSubtasks = task.subtasks.filter((sub) => sub.id !== subtaskId);
-
-    try {
-      const taskRef = doc(db, "tasks", taskId);
-      await updateDoc(taskRef, { subtasks: updatedSubtasks });
-    } catch (err) {
-      console.warn("Firestore offline, deleting subtask locally.", err);
-      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t)));
-    }
+  const handleArchiveAllCompleted = async (): Promise<TaskOperationError | null> => {
+    if (!canEdit) return null;
+    const completedTasks = tasks.filter((t) => t.status === "completed" && !t.archived);
+    const performArchiveAll = async () => {
+      const batch = writeBatch(db);
+      completedTasks.forEach((task) => batch.update(doc(db, "tasks", task.id), { archived: true }));
+      await batch.commit();
+    };
+    return executeTaskOperation(
+      "archive completed tasks",
+      performArchiveAll,
+      handleArchiveAllCompleted
+    );
   };
 
-  const handleAddSubtaskDirect = async (taskId: string, title: string) => {
-    if (!title.trim() || !canEdit) return;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
+  const handleToggleSubtask = async (
+    taskId: string,
+    subtaskId: string
+  ): Promise<TaskOperationError | null> => {
+    if (!canEdit) return null;
+    const performToggle = async () => {
+      const taskRef = doc(db, "tasks", taskId);
+      await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(taskRef);
+        if (!snapshot.exists()) throw new Error("not-found: Task no longer exists");
+        const currentSubtasks = readSubtasks(snapshot.data().subtasks);
+        transaction.update(taskRef, { subtasks: toggleSubtask(currentSubtasks, subtaskId) });
+      });
+    };
+    return executeTaskOperation(
+      "update subtask",
+      performToggle,
+      () => handleToggleSubtask(taskId, subtaskId)
+    );
+  };
 
+  const handleDeleteSubtask = async (
+    taskId: string,
+    subtaskId: string
+  ): Promise<TaskOperationError | null> => {
+    if (!canEdit) return null;
+    const performDeleteSubtask = async () => {
+      const taskRef = doc(db, "tasks", taskId);
+      await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(taskRef);
+        if (!snapshot.exists()) throw new Error("not-found: Task no longer exists");
+        const currentSubtasks = readSubtasks(snapshot.data().subtasks);
+        transaction.update(taskRef, { subtasks: removeSubtask(currentSubtasks, subtaskId) });
+      });
+    };
+    return executeTaskOperation(
+      "delete subtask",
+      performDeleteSubtask,
+      () => handleDeleteSubtask(taskId, subtaskId)
+    );
+  };
+
+  const handleAddSubtaskDirect = async (
+    taskId: string,
+    title: string
+  ): Promise<TaskOperationError | null> => {
+    if (!title.trim() || !canEdit) return null;
+    const randomId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const newSub: SubTask = {
-      id: `sub_${Date.now()}`,
+      id: `sub_${randomId}`,
       title: title.trim(),
       done: false
     };
-    const updatedSubtasks = [...(task.subtasks || []), newSub];
-
-    try {
+    const performAddSubtask = async () => {
       const taskRef = doc(db, "tasks", taskId);
-      await updateDoc(taskRef, { subtasks: updatedSubtasks });
-    } catch (err) {
-      console.warn("Firestore offline, adding subtask locally.", err);
-      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t)));
-    }
+      await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(taskRef);
+        if (!snapshot.exists()) throw new Error("not-found: Task no longer exists");
+        const currentSubtasks = readSubtasks(snapshot.data().subtasks);
+        transaction.update(taskRef, { subtasks: appendSubtask(currentSubtasks, newSub) });
+      });
+    };
+    return executeTaskOperation(
+      "add subtask",
+      performAddSubtask,
+      () => handleAddSubtaskDirect(taskId, title)
+    );
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!canEdit) return;
-    try {
-      await deleteDoc(doc(db, "tasks", taskId));
-    } catch (err) {
-      console.warn("Firestore offline, deleting card locally.", err);
-      setTasks(tasks.filter((t) => t.id !== taskId));
+  const handleDeleteTask = async (taskId: string): Promise<TaskOperationError | null> => {
+    if (!canEdit) return null;
+    const performDelete = async () => {
+      await updateDoc(doc(db, "tasks", taskId), { isDeleted: 1, archived: true });
+    };
+    return executeTaskOperation("delete task", performDelete, () => handleDeleteTask(taskId));
+  };
+
+  const handleCreateTask = async (newTask: TaskItem): Promise<TaskOperationError | null> => {
+    if (import.meta.env.MODE === "e2e") {
+      setTasks((current) => [newTask, ...current]);
+      return null;
     }
+    const performCreate = () => setDoc(doc(db, "tasks", newTask.id), newTask);
+    return executeTaskOperation("create task", performCreate, () => handleCreateTask(newTask));
   };
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -377,6 +436,19 @@ export default function KanbanPage() {
         />
       )}
 
+      {operationError && (
+        <TaskOperationErrorAlert
+          error={operationError}
+          onDismiss={() => {
+            setOperationError(null);
+            setRetryOperation(null);
+          }}
+          onRetry={retryOperation ? () => void retryOperation().catch(() => undefined) : undefined}
+        />
+      )}
+
+      <p role="status" aria-live="polite" className="sr-only">{moveAnnouncement}</p>
+
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         {columns.map((col) => {
@@ -409,6 +481,7 @@ export default function KanbanPage() {
               draggingTaskId={draggingTaskId}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
+              onMoveStatus={handleMoveStatus}
               onEditTask={setEditingTaskId}
               onArchiveTask={handleArchiveTask}
               teamProfiles={teamProfiles}
@@ -431,6 +504,10 @@ export default function KanbanPage() {
           onAddSubtask={handleAddSubtaskDirect}
           onDeleteTask={handleDeleteTask}
           onArchiveTask={handleArchiveTask}
+          onNotificationError={(error) => {
+            setOperationError(error);
+            setRetryOperation(null);
+          }}
           setSyncState={setSyncState}
         />
       )}
@@ -449,14 +526,11 @@ export default function KanbanPage() {
           onAddSubtask={handleAddSubtaskDirect}
           onDeleteTask={handleDeleteTask}
           onArchiveTask={handleArchiveTask}
-          onCreateTask={async (newTask) => {
-            try {
-              await setDoc(doc(db, "tasks", newTask.id), newTask);
-            } catch (err) {
-              console.warn("Unable to save task online, updating local UI array.", err);
-              setTasks([newTask, ...tasks]);
-            }
+          onNotificationError={(error) => {
+            setOperationError(error);
+            setRetryOperation(null);
           }}
+          onCreateTask={handleCreateTask}
           setSyncState={setSyncState}
         />
       )}

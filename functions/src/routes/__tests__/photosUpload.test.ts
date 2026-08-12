@@ -1,167 +1,231 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import router from "../photosUpload";
-import { adminDb } from "../../lib/firebase-admin";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../lib/firebase-admin", () => {
+const {
+  mockGet, mockSet, mockUpdate, mockSubSet, mockSubDelete,
+  mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockCollection,
+} = vi.hoisted(() => {
   const mockGet = vi.fn();
-  const mockLimit = vi.fn();
-  const mockWhere = vi.fn();
-
-  const queryMock: any = {
+  const mockSet = vi.fn();
+  const mockUpdate = vi.fn();
+  const mockSubSet = vi.fn();
+  const mockSubDelete = vi.fn();
+  const mockBatchUpdate = vi.fn();
+  const mockBatchSet = vi.fn();
+  const mockBatchCommit = vi.fn();
+  const mockSave = vi.fn();
+  const mockDoc = vi.fn((id: string) => ({
+    id,
     get: mockGet,
-    where: mockWhere,
-    limit: mockLimit,
-  };
-
-  mockLimit.mockImplementation(() => queryMock);
-  mockWhere.mockImplementation(() => queryMock);
-
-  const mockDoc = vi.fn().mockReturnValue({
-    get: mockGet,
-    set: vi.fn(),
-    update: vi.fn(),
-  });
-
-  const mockCollection = vi.fn().mockReturnValue({
-    doc: mockDoc,
-    where: mockWhere,
-    limit: mockLimit,
-    get: mockGet,
-  });
-
+    set: mockSet,
+    update: mockUpdate,
+    collection: vi.fn(() => ({
+      doc: vi.fn(() => ({ set: mockSubSet, delete: mockSubDelete })),
+    })),
+  }));
+  const mockQuery: Record<string, ReturnType<typeof vi.fn>> = {};
+  mockQuery.where = vi.fn(() => mockQuery);
+  mockQuery.limit = vi.fn(() => mockQuery);
+  mockQuery.get = mockGet;
+  const mockCollection = vi.fn(() => ({ ...mockQuery, doc: mockDoc }));
   return {
-    adminDb: {
-      collection: mockCollection,
-    },
-    adminStorage: {
-      bucket: vi.fn().mockReturnValue({
-        name: "test-bucket",
-        file: vi.fn().mockReturnValue({
-          save: vi.fn().mockResolvedValue(undefined),
-        }),
-      }),
-    },
+    mockGet, mockSet, mockUpdate, mockSubSet, mockSubDelete,
+    mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockCollection,
   };
 });
 
-vi.mock("../../lib/googleAuth", () => ({
-  getGooglePhotosAccessToken: vi.fn().mockResolvedValue("test-token"),
+vi.mock("../../lib/firebase-admin", () => ({
+  default: { firestore: { FieldValue: { increment: (value: number) => ({ increment: value }) } } },
+  adminDb: {
+    collection: mockCollection,
+    batch: vi.fn(() => ({ update: mockBatchUpdate, set: mockBatchSet, commit: mockBatchCommit })),
+  },
+  adminStorage: {
+    bucket: vi.fn(() => ({
+      name: "test-bucket",
+      file: vi.fn(() => ({ save: mockSave })),
+    })),
+  },
 }));
 
-vi.mock("../../lib/imageImport", () => ({
-  validateImageMagicBytes: vi.fn().mockReturnValue({ valid: true }),
+vi.mock("../../middleware/auth", () => ({
+  ensureTeamMember: (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
-vi.mock("../../lib/vertex", () => ({
-  generatePhotoCaptionAndLabels: vi.fn().mockResolvedValue({
-    caption: "AI generated caption",
-    labels: ["tag1", "tag2"],
-  }),
-}));
+vi.mock("../../lib/googleAuth", () => ({ getGooglePhotosAccessToken: vi.fn() }));
+vi.mock("../../lib/imageImport", () => ({ validateImageMagicBytes: vi.fn() }));
+vi.mock("../../lib/vertex", () => ({ generatePhotoCaptionAndLabels: vi.fn() }));
 
-describe("Photos Upload Router Backend Endpoints", () => {
-  let req: any;
-  let res: any;
-  let mockGet: any;
+import { getGooglePhotosAccessToken } from "../../lib/googleAuth";
+import { validateImageMagicBytes } from "../../lib/imageImport";
+import { generatePhotoCaptionAndLabels } from "../../lib/vertex";
+import router from "../photosUpload";
 
+function handler() {
+  const layer = router.stack.find((entry) => entry.route?.path === "/upload-unified" && entry.route.methods.post);
+  expect(layer).toBeDefined();
+  return layer!.route!.stack.at(-1)!.handle;
+}
+
+function imageBody(overrides: Record<string, unknown> = {}) {
+  return {
+    fileBase64: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]).toString("base64"),
+    filename: "robot.jpg",
+    mimeType: "image/jpeg",
+    ...overrides,
+  };
+}
+
+function response() {
+  return { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+}
+
+describe("Photos upload route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGet.mockResolvedValue({ empty: true });
+    mockSet.mockResolvedValue(undefined);
+    mockUpdate.mockResolvedValue(undefined);
+    mockSubSet.mockResolvedValue(undefined);
+    mockSubDelete.mockResolvedValue(undefined);
+    mockBatchCommit.mockResolvedValue(undefined);
+    mockSave.mockResolvedValue(undefined);
+    vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true });
+    vi.mocked(generatePhotoCaptionAndLabels).mockResolvedValue({ caption: "AI caption", labels: ["robot"] });
+    vi.mocked(getGooglePhotosAccessToken).mockResolvedValue("team-token");
     vi.stubGlobal("fetch", vi.fn());
-    mockGet = vi.mocked(adminDb.collection("").get);
   });
 
-  const getHandler = (path: string, method: string) => {
-    const routeLayer = router.stack.find(
-      (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
-    );
-    expect(routeLayer).toBeDefined();
-    return routeLayer!.route!.stack[routeLayer!.route!.stack.length - 1].handle;
-  };
+  afterEach(() => vi.unstubAllGlobals());
 
-  it("should have correct middleware validation stack", () => {
-    const routeLayer = router.stack.find(
-      (layer) => layer.route && layer.route.path === "/upload-unified" && (layer.route as any).methods.post
-    );
-    expect(routeLayer).toBeDefined();
-    const middlewareNames = routeLayer!.route!.stack.map((layer) => layer.name);
-    expect(middlewareNames).toContain("ensureTeamMember");
+  it("registers authentication and upload throttling", () => {
+    const layer = router.stack.find((entry) => entry.route?.path === "/upload-unified");
+    expect(layer?.route?.stack).toHaveLength(3);
+    expect(layer?.route?.stack.map((entry) => entry.name)).toContain("ensureTeamMember");
   });
 
-  it("should throw error if required body fields are missing", async () => {
-    const handler = getHandler("/upload-unified", "post");
-    req = { body: {} };
-    res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
-
-    await expect(handler(req, res)).rejects.toThrow("Missing required fields");
+  it.each([
+    [{}, 400, "Missing required fields"],
+    [imageBody({ filename: "x".repeat(181) }), 400, "filename under 180"],
+    [imageBody({ mimeType: "image/gif" }), 400, "JPEG, PNG, or WebP"],
+    [imageBody({ albumId: "bad/album" }), 400, "Invalid album ID"],
+    [imageBody({ fileBase64: "" }), 400, "Missing required fields"],
+  ])("rejects invalid upload %#", async (body, status, message) => {
+    await expect(handler()({ body }, response())).rejects.toMatchObject({ status, message: expect.stringContaining(message) });
   });
 
-  it("should successfully upload a new photo and run AI labeling", async () => {
-    const handler = getHandler("/upload-unified", "post");
-    
-    mockGet.mockResolvedValueOnce({ empty: true });
+  it("rejects missing or archived albums", async () => {
+    mockGet.mockResolvedValueOnce({ exists: false });
+    await expect(handler()({ body: imageBody({ albumId: "album-1" }) }, response())).rejects.toMatchObject({ status: 400 });
 
-    req = {
-      body: {
-        fileBase64: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]).toString("base64"),
-        filename: "robot.jpg",
-        mimeType: "image/jpeg",
-        runAiLabeling: true,
-      }
-    };
-    res = {
-      json: vi.fn(),
-    };
-
-    await handler(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      success: true,
-      photo: expect.objectContaining({
-        originalFilename: "robot.jpg",
-        caption: "AI generated caption",
-        labels: ["tag1", "tag2"],
-      })
-    }));
+    vi.clearAllMocks();
+    mockGet.mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 1 }) });
+    await expect(handler()({ body: imageBody({ albumId: "album-1" }) }, response())).rejects.toMatchObject({ status: 400 });
   });
 
-  it("should return cached photo if SHA-256 hash matches", async () => {
-    const handler = getHandler("/upload-unified", "post");
-    
+  it("rejects empty, oversized, and magic-byte-invalid images", async () => {
+    await expect(handler()({ body: imageBody({ fileBase64: "=" }) }, response())).rejects.toMatchObject({ status: 413 });
+
+    await expect(handler()({ body: imageBody({ fileBase64: Buffer.alloc(8 * 1024 * 1024 + 1).toString("base64") }) }, response())).rejects.toMatchObject({ status: 413 });
+
+    vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: false, error: "Signature mismatch" });
+    await expect(handler()({ body: imageBody() }, response())).rejects.toMatchObject({ status: 400, message: "Signature mismatch" });
+  });
+
+  it("returns an active cached photo without exposing storage metadata", async () => {
     mockGet.mockResolvedValueOnce({
       empty: false,
       docs: [{
-        id: "existing-photo-id",
-        data: () => ({
-          originalFilename: "cached-robot.jpg",
-          publicUrl: "https://cached-url",
-          sha256: "some-hash",
-        }),
-        ref: {
-          id: "existing-photo-id"
-        }
-      }]
+        id: "existing-photo",
+        ref: { id: "existing-photo" },
+        data: () => ({ publicUrl: "https://storage.test/photo.jpg", labels: "legacy", googleMediaItemId: "internal", fileSize: 25 }),
+      }],
     });
-
-    req = {
-      body: {
-        fileBase64: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]).toString("base64"),
-        filename: "robot.jpg",
-        mimeType: "image/jpeg",
-      }
-    };
-    res = {
-      json: vi.fn(),
-    };
-
-    await handler(req, res);
-
+    const res = response();
+    await handler()({ body: imageBody() }, res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      success: true,
       cached: true,
-      photo: expect.objectContaining({
-        id: "existing-photo-id",
-        originalFilename: "cached-robot.jpg",
-      })
+      photo: expect.objectContaining({ id: "existing-photo", labels: [], isSynced: true, isArchived: false }),
+    }));
+    expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("googleMediaItemId");
+  });
+
+  it("rejects a duplicate archived image", async () => {
+    mockGet.mockResolvedValueOnce({ empty: false, docs: [{ id: "archived", data: () => ({ isDeleted: 1 }) }] });
+    await expect(handler()({ body: imageBody() }, response())).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("moves a cached image between active albums with one atomic batch", async () => {
+    mockGet
+      .mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 0 }) })
+      .mockResolvedValueOnce({
+        empty: false,
+        docs: [{ id: "photo-1", ref: { path: "imported_photos/photo-1" }, data: () => ({ publicUrl: "https://storage.test/photo.jpg", albumId: "old-album" }) }],
+      });
+    const res = response();
+    await handler()({ body: imageBody({ albumId: "new-album" }) }, res);
+    expect(mockBatchUpdate).toHaveBeenCalled();
+    expect(mockBatchSet).toHaveBeenCalled();
+    expect(mockBatchCommit).toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalledTimes(2);
+    expect(mockSubDelete).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ cached: true, photo: expect.objectContaining({ albumId: "new-album" }) }));
+  });
+
+  it("uploads, labels, stores, and links a new image to an album", async () => {
+    mockGet
+      .mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 0 }) })
+      .mockResolvedValueOnce({ empty: true });
+    const res = response();
+    await handler()({ body: imageBody({ albumId: "album-1", runAiLabeling: true }) }, res);
+    expect(mockSave).toHaveBeenCalledWith(expect.any(Buffer), expect.objectContaining({ resumable: false }));
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0 }));
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockSubSet).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("keeps a successful site upload when optional AI labeling fails", async () => {
+    vi.mocked(generatePhotoCaptionAndLabels).mockRejectedValueOnce(new Error("AI unavailable"));
+    const res = response();
+    await handler()({ body: imageBody({ runAiLabeling: true }) }, res);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ photo: expect.objectContaining({ caption: "", labels: [] }) }));
+  });
+
+  it("syncs an uploaded image to the team Google library", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce({ ok: true, text: async () => "upload-token" })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ newMediaItemResults: [{ status: { message: "Success" }, mediaItem: { id: "google-photo" } }] }) }));
+    const res = response();
+    await handler()({ body: imageBody({ uploadToGoogle: true, runAiLabeling: true }) }, res);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      photo: expect.objectContaining({ isSynced: true }),
+      googleSync: { requested: true, succeeded: true, warning: null },
+    }));
+  });
+
+  it.each([
+    [
+      [{ ok: false, status: 503, statusText: "Unavailable" }],
+      "Google upload failed",
+    ],
+    [
+      [{ ok: true, text: async () => "token" }, { ok: false, status: 400, statusText: "Bad Request" }],
+      "Google batch create failed",
+    ],
+    [
+      [{ ok: true, text: async () => "token" }, { ok: true, json: async () => ({ newMediaItemResults: [{ status: { message: "Rejected" } }] }) }],
+      "Google creation status",
+    ],
+  ])("returns a non-secret warning when optional Google sync fails %#", async (responses, _expectedInternalError) => {
+    const fetchMock = vi.fn();
+    for (const item of responses) fetchMock.mockResolvedValueOnce(item);
+    vi.stubGlobal("fetch", fetchMock);
+    const res = response();
+    await handler()({ body: imageBody({ uploadToGoogle: true }) }, res);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      googleSync: { requested: true, succeeded: false, warning: "The image was saved to the team site, but Google Photos sync failed." },
     }));
   });
 });

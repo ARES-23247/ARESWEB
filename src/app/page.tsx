@@ -71,7 +71,7 @@ export default function Home() {
                 </div>
                 
                 <div className="flex gap-4">
-                  <Link to="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all text-white font-bold text-xs uppercase tracking-wider">
+                  <Link to="/dashboard" className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-xs uppercase tracking-wider">
                     Go to Portal
                   </Link>
                   <button
@@ -86,7 +86,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto">
                 <button
                   onClick={loginWithGoogle}
-                  className="clipped-button bg-ares-red hover:bg-ares-red-dark transition-all shadow-xl text-white font-bold inline-flex items-center gap-2"
+                  className="clipped-button bg-ares-red hover:bg-ares-bronze transition-all shadow-xl text-white font-bold inline-flex items-center gap-2"
                 >
                   <LogIn size={16} /> Team Member Sign In
                 </button>
@@ -125,7 +125,7 @@ export default function Home() {
                     Team Blog & Specs
                   </h3>
                   <p className="text-marble/70 text-base leading-relaxed mb-8">
-                    Explore tournament recaps, open-source software updates, and technical calibration logs. Built with <strong>Incremental Static Regeneration (ISR)</strong> for sub-50ms loads.
+                    Explore tournament recaps, open-source software updates, and technical calibration logs in the team&apos;s searchable knowledge library.
                   </p>
                 </div>
                 <div className="mt-auto">
@@ -147,7 +147,7 @@ export default function Home() {
                     Interactive Schedule
                   </h3>
                   <p className="text-marble/70 text-base leading-relaxed mb-8">
-                    Check division practices and outreach workshops. Subscribed to Firestore <strong>real-time collection listeners</strong> for instant synchronization across displays.
+                    Check division practices and outreach workshops through a bounded calendar feed with clear refresh and subscription options.
                   </p>
                 </div>
                 <div className="mt-auto">

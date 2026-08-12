@@ -1,16 +1,27 @@
-import React, { useState } from "react";
-import { FileText, Pencil, Trash2, ExternalLink, Search, CheckCircle2 } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw } from "lucide-react";
 import { cleanThumbnailUrl } from "@/lib/utils";
+import type { DocRecord, DocumentConnectionState } from "@/hooks/useDocumentSync";
 
 interface DocListGridProps {
-  items: any[];
+  items: DocRecord[];
   loadingList: boolean;
   canEdit: boolean;
   isApprover?: boolean;
-  onApprove?: (item: any) => void;
+  onApprove?: (item: DocRecord) => void;
   variant?: "docs" | "documents" | "blog";
-  onEdit: (item: any) => void;
+  onEdit: (item: DocRecord) => void;
   onDelete: (slug: string) => void;
+  onRestore?: (slug: string) => void;
+  pendingArchiveSlug?: string | null;
+  isArchiving?: boolean;
+  archiveError?: string | null;
+  onConfirmArchive?: () => void;
+  onCancelArchive?: () => void;
+  connectionState?: DocumentConnectionState;
+  error?: string | null;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   searchPlaceholder?: string;
   noItemsMessage?: string;
 }
@@ -24,22 +35,42 @@ export default function DocListGrid({
   variant = "docs",
   onEdit,
   onDelete,
+  onRestore,
+  pendingArchiveSlug = null,
+  isArchiving = false,
+  archiveError = null,
+  onConfirmArchive,
+  onCancelArchive,
+  connectionState = "connected",
+  error = null,
+  hasMore = false,
+  onLoadMore,
   searchPlaceholder = "Search records...",
   noItemsMessage = "No records found."
 }: DocListGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<"updated" | "title" | "category">("updated");
+  const archiveCancelRef = useRef<HTMLButtonElement>(null);
 
-  const filteredItems = items.filter((item) => {
+  const filteredItems = useMemo(() => {
     const queryStr = searchQuery.toLowerCase().trim();
-    if (!queryStr) return true;
-    const titleMatch = item.title?.toLowerCase().includes(queryStr);
-    const descMatch = (item.description || item.snippet || "")
-      .toLowerCase()
-      .includes(queryStr);
-    const categoryMatch = item.category?.toLowerCase().includes(queryStr);
-    const slugMatch = item.slug?.toLowerCase().includes(queryStr);
-    return titleMatch || descMatch || categoryMatch || slugMatch;
-  });
+    const filtered = items.filter((item) => !queryStr
+      || item.title.toLowerCase().includes(queryStr)
+      || item.description.toLowerCase().includes(queryStr)
+      || item.category.toLowerCase().includes(queryStr)
+      || item.slug.toLowerCase().includes(queryStr));
+    return filtered.sort((left, right) => {
+      if (sortMode === "title") return left.title.localeCompare(right.title);
+      if (sortMode === "category") return left.category.localeCompare(right.category) || left.title.localeCompare(right.title);
+      return (right.updatedAt || right.createdAt || "").localeCompare(left.updatedAt || left.createdAt || "");
+    });
+  }, [items, searchQuery, sortMode]);
+
+  const pendingArchiveItem = items.find((item) => item.slug === pendingArchiveSlug);
+
+  useEffect(() => {
+    if (pendingArchiveSlug) archiveCancelRef.current?.focus();
+  }, [pendingArchiveSlug]);
 
   return (
     <div className="glass-card border border-white/10 ares-cut-lg overflow-hidden shadow-xl">
@@ -53,17 +84,43 @@ export default function DocListGrid({
             {loadingList ? "Syncing..." : `(${filteredItems.length} records)`}
           </span>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 bg-black/40 border border-white/10 text-white placeholder-marble/40 text-xs rounded font-medium focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan transition-all"
-          />
+        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
+          <div>
+            <label htmlFor={`record-sort-${variant}`} className="sr-only">Sort records</label>
+            <select
+              id={`record-sort-${variant}`}
+              value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
+              className="w-full bg-black/40 border border-white/10 text-white text-xs rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-ares-cyan"
+            >
+              <option value="updated">Recently updated</option>
+              <option value="title">Title A–Z</option>
+              <option value="category">Category</option>
+            </select>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" aria-hidden="true" />
+            <label htmlFor={`record-search-${variant}`} className="sr-only">Search records</label>
+            <input
+              id={`record-search-${variant}`}
+              type="search"
+              placeholder={searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 bg-black/40 border border-white/10 text-white placeholder-marble/40 text-xs rounded font-medium focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan transition-all"
+            />
+          </div>
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="border-b border-ares-red/45 bg-ares-red/15 px-6 py-4 text-white">
+          <p className="text-xs font-bold">
+            {connectionState === "offline" ? "The library is offline. Previously loaded records may be shown." : "The record library could not be loaded."}
+          </p>
+          <p className="mt-1 break-words font-mono text-[10px] text-white/80">{error}</p>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
@@ -127,7 +184,7 @@ export default function DocListGrid({
                           <div className="w-12 h-12 ares-cut border border-white/10 overflow-hidden shrink-0 mt-0.5 shadow-md">
                             <img
                               src={cleanThumbnailUrl(item.thumbnail)}
-                              alt=""
+                              alt={`Thumbnail for ${item.title}`}
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -139,7 +196,7 @@ export default function DocListGrid({
                             {item.title}
                           </p>
                           <p className="text-[11px] text-marble/60 mt-0.5 font-medium leading-relaxed truncate">
-                            {item.description || item.snippet || "No description provided."}
+                            {item.description || "No description provided."}
                           </p>
                           {variant === "blog" && (
                             <p className="text-[9px] text-marble/40 font-bold uppercase tracking-widest mt-1">
@@ -194,7 +251,7 @@ export default function DocListGrid({
                           <span
                             className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
                               isPublished
-                                ? "bg-ares-success/15 border-ares-success/30 text-ares-success"
+                                ? "bg-ares-cyan/15 border-ares-cyan/30 text-ares-cyan"
                                 : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                             }`}
                           >
@@ -242,7 +299,7 @@ export default function DocListGrid({
                             item.status === "pending_approval" || item.approvalStatus === "pending_approval"
                               ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold animate-pulse"
                               : isPublished
-                              ? "bg-ares-success/15 border-ares-success/30 text-ares-success"
+                              ? "bg-ares-cyan/15 border-ares-cyan/30 text-ares-cyan"
                               : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                           }`}
                         >
@@ -265,7 +322,15 @@ export default function DocListGrid({
                             <CheckCircle2 size={12} /> Approve
                           </button>
                         )}
-                        {canEdit ? (
+                        {item.isDeleted === 1 && canEdit && onRestore ? (
+                          <button
+                            onClick={() => onRestore(item.slug)}
+                            className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                            aria-label={`Restore ${item.title}`}
+                          >
+                            <RotateCcw size={12} aria-hidden="true" /> Restore
+                          </button>
+                        ) : canEdit ? (
                           <>
                             <button
                               onClick={() => onEdit(item)}
@@ -273,15 +338,15 @@ export default function DocListGrid({
                               title="Edit Record"
                               aria-label={`Edit ${item.title}`}
                             >
-                              <Pencil size={12} />
+                              <Pencil size={12} aria-hidden="true" />
                             </button>
                             <button
                               onClick={() => onDelete(item.slug)}
-                              className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-ares-red-light border border-white/10 rounded transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                              title="Delete Record"
-                              aria-label={`Delete ${item.title}`}
+                              className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                              title="Archive Record"
+                              aria-label={`Archive ${item.title}`}
                             >
-                              <Trash2 size={12} />
+                              <Archive size={12} aria-hidden="true" />
                             </button>
                           </>
                         ) : (
@@ -298,6 +363,57 @@ export default function DocListGrid({
           </tbody>
         </table>
       </div>
+      {pendingArchiveSlug && onConfirmArchive && onCancelArchive && (
+        <div
+          role="alertdialog"
+          aria-labelledby="document-archive-confirmation-title"
+          aria-describedby="document-archive-confirmation-description"
+          className="border-t border-ares-red/45 bg-ares-red/15 px-6 py-4 text-white"
+        >
+          <p id="document-archive-confirmation-title" className="text-sm font-bold">
+            Archive {pendingArchiveItem?.title || "this record"}?
+          </p>
+          <p id="document-archive-confirmation-description" className="mt-1 text-xs text-white/80">
+            It will leave active lists but remain available in Archived records for restoration.
+          </p>
+          {archiveError && (
+            <p role="alert" className="mt-2 break-words font-mono text-[10px] text-white/80">
+              Archive failed: {archiveError}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              ref={archiveCancelRef}
+              type="button"
+              onClick={onCancelArchive}
+              disabled={isArchiving}
+              className="rounded border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase text-white disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Keep Record
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmArchive}
+              disabled={isArchiving}
+              className="rounded bg-ares-red px-3 py-1.5 text-[10px] font-bold uppercase text-white disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              {isArchiving ? "Archiving…" : "Archive Record"}
+            </button>
+          </div>
+        </div>
+      )}
+      {hasMore && onLoadMore && (
+        <div className="border-t border-white/10 bg-black/20 p-4 text-center">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            className="rounded border border-ares-gold/35 bg-ares-gold/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-ares-gold hover:bg-ares-gold/20 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            Load more records
+          </button>
+          <p className="mt-2 text-[10px] text-marble/55">Results load in bounded groups to keep this workspace responsive.</p>
+        </div>
+      )}
     </div>
   );
 }

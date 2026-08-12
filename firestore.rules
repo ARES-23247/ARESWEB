@@ -29,8 +29,8 @@ service cloud.firestore {
     match /authorized_users/{userId} {
       // Users can read their own registration doc; admins/coaches can read everything
       allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
-      // Only admins/coaches can invite or edit roles, or allow first-time admin bootstrap (if Coach David is missing)
-      allow write: if hasRole('admin') || hasRole('coach') || (isAuthenticated() && getUserEmail() == 'coach.david@gmail.com' && request.auth.uid == userId && !exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)));
+      // Bootstrap, invitations, and role changes use audited server-side APIs.
+      allow write: if false;
     }
 
     // Public collections (blogs, calendar, knowledge base docs)
@@ -49,12 +49,11 @@ service cloud.firestore {
     }
 
     match /events/{eventId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
-      allow create, update: if isAuthorized() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      // Public pages use the explicit calendar DTO API. Members may read raw
+      // records for team-only workflows, while all parent-document writes go
+      // through the authenticated and audited Calendar API.
+      allow read: if isAuthorized();
+      allow create, update, delete: if false;
 
       match /signups/{userId} {
         allow read: if isAuthorized();
@@ -62,7 +61,8 @@ service cloud.firestore {
       }
 
       match /photos/{photoId} {
-        allow read: if true;
+        // Public consumers receive a bounded, metadata-stripped Calendar API DTO.
+        allow read: if isAuthorized();
         allow write: if isAuthorized();
       }
 
@@ -73,18 +73,16 @@ service cloud.firestore {
     }
 
     match /locations/{locationId} {
-      allow read: if true;
-      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow read: if isAuthorized();
+      allow write: if false;
     }
 
     match /imported_photos/{photoId} {
-      allow read: if true;
-      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow read, write: if false;
     }
 
     match /albums/{albumId} {
-      allow read: if true;
-      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow read, write: if false;
     }
 
     match /docs/{docSlug} {
@@ -133,13 +131,15 @@ service cloud.firestore {
 
     // Public partners / sponsors
     match /sponsors/{sponsorId} {
-      allow read: if true;
+      // Public consumers must use the filtered DTO API.
+      allow read: if hasRole('admin') || hasRole('coach');
       allow write: if hasRole('admin');
     }
 
     // Public outreach logs
     match /outreach_logs/{logId} {
-      allow read: if true;
+      // Public consumers must use the published, redacted DTO API.
+      allow read: if hasRole('admin') || hasRole('coach');
       allow write: if false; // Only backend admin SDK can write
     }
 
@@ -151,43 +151,40 @@ service cloud.firestore {
 
     // user_profiles
     match /user_profiles/{userId} {
-      // Only allow the user themselves, admins, or coaches to read the full profile doc directly (to protect YPP contact info)
-      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
-      
-      allow create: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
-                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == 'student' || hasRole('admin') || hasRole('coach')) &&
-                    // YPP: Prevent students from turning on public contact visibility flags
-                    (hasRole('admin') || hasRole('coach') || ((!request.resource.data.keys().hasAll(['showEmail']) || request.resource.data.showEmail == 0) && (!request.resource.data.keys().hasAll(['showPhone']) || request.resource.data.showPhone == 0)));
-                    
-      allow update: if isAuthenticated() && isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
-                    (!request.resource.data.keys().hasAny(['memberType']) || request.resource.data.memberType == resource.data.memberType || hasRole('admin') || hasRole('coach')) &&
-                    // YPP: Prevent students from turning on public contact visibility flags
-                    (hasRole('admin') || hasRole('coach') || ((!request.resource.data.keys().hasAll(['showEmail']) || request.resource.data.showEmail == 0) && (!request.resource.data.keys().hasAll(['showPhone']) || request.resource.data.showPhone == 0)));
-                    
-      allow delete: if hasRole('admin') || hasRole('coach');
+      // Profile documents contain encrypted youth contact and safety fields.
+      // Subjects and administrators use explicit Cloud Function DTO APIs.
+      allow read, create, update, delete: if false;
 
       match /layouts/{layoutId} {
         allow read, write: if isAuthenticated() && request.auth.uid == userId;
       }
     }
 
+    // Server-written administrative audit trail.
+    match /audit_logs/{auditId} {
+      allow read: if hasRole('admin') || hasRole('coach');
+      allow write: if false;
+    }
+
     // robots
     match /robots/{robotId} {
       allow read: if isAuthorized() || resource.data.isDeleted == 0;
-      allow create, update: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow create: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
+                    request.resource.data.isDeleted == 0;
+      allow update: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
+                    request.resource.data.isDeleted in [0, 1];
+      // Fleet history is retained. Decommission and restore use the isDeleted flag.
+      allow delete: if false;
     }
 
-    // settings (admin/coach writes)
+    // Runtime configuration is read and changed only through audited DTO APIs.
     match /settings/{settingId} {
-      allow read: if isAuthorized();
-      allow write: if hasRole('admin') || hasRole('coach');
+      allow read, write: if false;
     }
 
-    // system_settings (secure credentials read-only for admin/coach)
+    // Runtime settings and credentials are server-only.
     match /system_settings/{settingId} {
-      allow read: if hasRole('admin') || hasRole('coach');
-      allow write: if false;
+      allow read, write: if false;
     }
 
     // field_configs
@@ -213,12 +210,7 @@ service cloud.firestore {
 
     // videos
     match /videos/{videoId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
-      allow create, update: if isAuthorized() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow read, write: if false;
     }
 
     // seasons

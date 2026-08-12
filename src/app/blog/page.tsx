@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebaseFirestore";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
@@ -104,7 +104,7 @@ export default function BlogFeedPage() {
           {canEdit && (
             <button
               onClick={handleOpenInlineCreate}
-              className="clipped-button bg-ares-red text-white hover:bg-ares-red-dark font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl shrink-0"
+              className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl shrink-0"
             >
               <Plus size={16} /> New Blog Post
             </button>

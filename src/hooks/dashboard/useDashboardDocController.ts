@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useDocumentSync, DocRecord } from "@/hooks/useDocumentSync";
+import { useDocumentSync, type DocRecord } from "@/hooks/useDocumentSync";
 
 export function useDashboardDocController(
   collectionName: string,
@@ -20,19 +20,30 @@ export function useDashboardDocController(
 
   const [selectedDoc, setSelectedDoc] = useState<DocRecord | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [pendingArchiveSlug, setPendingArchiveSlug] = useState<string | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const isApprover = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "mentor" || authorizedUser.role === "coach"));
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
   const {
     docs,
+    archivedDocs,
     loadingList,
     isLive,
+    connectionState,
+    listError,
+    loadedCount,
+    hasMore,
+    loadMore,
     revisions,
     loadingRevisions,
+    revisionError,
     fetchRevisions,
     saveDoc,
-    deleteDoc
+    deleteDoc,
+    restoreDoc,
   } = useDocumentSync(collectionName, filterFn);
 
   const pendingDocs = docs.filter(
@@ -95,7 +106,7 @@ export function useDashboardDocController(
     }
   };
 
-  const handleSave = async (slug: string, payload: any) => {
+  const handleSave = async (slug: string, payload: Omit<DocRecord, "slug">) => {
     const isMemberRole = !isApprover;
     const finalPayload = {
       ...payload,
@@ -105,38 +116,74 @@ export function useDashboardDocController(
       status: isMemberRole ? "pending_approval" : (payload.status || "published"),
       approvalStatus: isMemberRole ? "pending_approval" : (payload.approvalStatus || "approved")
     };
-    await saveDoc(slug, finalPayload, userNickname, userAvatar);
+    await saveDoc(slug, finalPayload, userNickname, userAvatar, { isCreate: !selectedDoc });
   };
 
   const handleApproveAndPublish = async (docItem: DocRecord) => {
     if (!isApprover) return;
-    const finalPayload = {
-      ...docItem,
+    const { slug, ...existingPayload } = docItem;
+    const finalPayload: Omit<DocRecord, "slug"> = {
+      ...existingPayload,
       status: "published",
       approvalStatus: "approved",
       approvedBy: userNickname,
       approvedAt: new Date().toISOString()
     };
-    await saveDoc(docItem.slug, finalPayload, userNickname, userAvatar);
+    await saveDoc(slug, finalPayload, userNickname, userAvatar);
   };
 
   const handleDelete = async (slug: string) => {
     if (!canEdit) return;
-    if (!confirm("Are you sure you want to delete this document?")) return;
-    await deleteDoc(slug);
+    setArchiveError(null);
+    setPendingArchiveSlug(slug);
+  };
+
+  const handleCancelArchive = () => {
+    if (isArchiving) return;
+    setPendingArchiveSlug(null);
+    setArchiveError(null);
+  };
+
+  const handleConfirmArchive = async () => {
+    if (!canEdit || !pendingArchiveSlug || isArchiving) return;
+    setIsArchiving(true);
+    setArchiveError(null);
+    try {
+      await deleteDoc(pendingArchiveSlug);
+      setPendingArchiveSlug(null);
+    } catch (error) {
+      const diagnostic = error instanceof Error ? error.message : String(error);
+      console.error("Document archive failed", error);
+      setArchiveError(diagnostic);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleRestore = async (slug: string) => {
+    if (!canEdit) return;
+    await restoreDoc(slug);
   };
 
   return {
     docs,
+    archivedDocs,
     pendingDocs,
     publishedDocs,
     loadingList,
     isLive,
+    connectionState,
+    listError,
+    loadedCount,
+    hasMore,
+    loadMore,
     revisions,
     loadingRevisions,
+    revisionError,
     fetchRevisions,
     saveDoc,
     deleteDoc,
+    restoreDoc,
     selectedDoc,
     isEditorOpen,
     canEdit,
@@ -147,6 +194,12 @@ export function useDashboardDocController(
     handleSave,
     handleApproveAndPublish,
     handleDelete,
+    handleCancelArchive,
+    handleConfirmArchive,
+    handleRestore,
+    pendingArchiveSlug,
+    isArchiving,
+    archiveError,
     userNickname,
     userAvatar
   };

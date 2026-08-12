@@ -270,7 +270,7 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-ares-red-dark hover:from-ares-red-dark hover:to-ares-red text-white rounded-lg shadow-[0_0_30px_rgba(192,0,0,0.3)] transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 md:py-4 font-bold text-sm md:text-base bg-gradient-to-r from-ares-red to-ares-bronze hover:from-ares-bronze hover:to-ares-red text-white rounded-lg shadow-[0_0_30px_rgba(192,0,0,0.3)] transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none cursor-pointer"
                 >
                   <Save size={18} />
                   Confirm Avatar

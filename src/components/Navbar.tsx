@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { authenticatedFetch } from "@/lib/api";
 
 // Shared data configs and subcomponents
 import { TEAM_LINKS, RESOURCE_LINKS } from "./navigation/navItems";
@@ -21,8 +20,10 @@ import { MobileNavDrawer } from "./navigation/MobileNavDrawer";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean>(false);
+  const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean | null>(null);
+  const [pendingInquiriesError, setPendingInquiriesError] = useState<string | null>(null);
   const navbarRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
 
   const isSignedIn = !!user;
@@ -30,23 +31,40 @@ export default function Navbar() {
   const userRole = authorizedUser?.role || "Pending Verification";
 
   useEffect(() => {
-    if (!user?.uid || (userRole !== "admin" && userRole !== "coach" && userRole !== "mentor")) {
+    if (!user?.uid || (userRole !== "admin" && userRole !== "coach")) {
       setHasPendingInquiries(false);
+      setPendingInquiriesError(null);
       return;
     }
 
-    const q = query(
-      collection(db, "inquiries"),
-      where("status", "==", "pending")
-    );
+    const controller = new AbortController();
+    setHasPendingInquiries(null);
+    setPendingInquiriesError(null);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setHasPendingInquiries(!snapshot.empty);
-    }, (error) => {
-      console.error("Error subscribing to pending inquiries in navbar:", error);
-    });
+    async function loadPendingInquiryState() {
+      try {
+        const response = await authenticatedFetch("/api/inquiries/pending-exists", {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
+        }
+        const result = await response.json() as { hasPending?: unknown };
+        if (typeof result.hasPending !== "boolean") {
+          throw new Error("Invalid pending inquiry response");
+        }
+        setHasPendingInquiries(result.hasPending);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const diagnostic = error instanceof Error ? error.message : "Pending inquiry request failed";
+        console.error("Error loading pending inquiry status for navigation:", error);
+        setHasPendingInquiries(null);
+        setPendingInquiriesError(diagnostic);
+      }
+    }
 
-    return () => unsubscribe();
+    void loadPendingInquiryState();
+    return () => controller.abort();
   }, [user?.uid, userRole]);
 
   // Close dropdowns when clicking outside navbar
@@ -136,17 +154,21 @@ export default function Navbar() {
           user={user}
           userRole={userRole}
           userImage={userImage}
-          hasPendingInquiries={hasPendingInquiries}
+          hasPendingInquiries={hasPendingInquiries === true}
+          pendingInquiriesError={pendingInquiriesError}
           logout={logout}
           loginWithGoogle={loginWithGoogle}
         />
 
         {/* Mobile menu trigger */}
         <button
+          ref={mobileMenuButtonRef}
+          type="button"
           onClick={() => setOpen(!open)}
           className="md:hidden text-ares-gold w-10 h-10 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded transition-colors group"
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={open}
+          aria-controls="mobile-navigation-drawer"
         >
           <span className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "rotate-45 translate-y-2.5" : "group-hover:w-8"}`}></span>
           <span className={`w-7 h-1 bg-current block rounded-full transition-opacity duration-300 ${open ? "opacity-0" : "group-hover:w-5"}`}></span>
@@ -163,9 +185,11 @@ export default function Navbar() {
         user={user}
         userRole={userRole}
         userImage={userImage}
-        hasPendingInquiries={hasPendingInquiries}
+        hasPendingInquiries={hasPendingInquiries === true}
+        pendingInquiriesError={pendingInquiriesError}
         logout={logout}
         loginWithGoogle={loginWithGoogle}
+        returnFocusRef={mobileMenuButtonRef}
       />
     </nav>
   );

@@ -1,36 +1,52 @@
 import express from "express";
 import { adminDb } from "../lib/firebase-admin";
-import { asyncHandler } from "../lib/utils";
 import { logger } from "../lib/logger";
+import { ApiError } from "../middleware/errorHandler";
+import { asyncHandler } from "../lib/utils";
 
 const router = express.Router();
+const BASE_URL = "https://aresfirst.org";
+const MAX_DOCUMENTS_PER_COLLECTION = 500;
+const CACHE_CONTROL = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
 
 const STATIC_URLS = [
-  { loc: "https://aresfirst.org/", changefreq: "daily", priority: "1.00" },
-  { loc: "https://aresfirst.org/about", changefreq: "monthly", priority: "0.80" },
-  { loc: "https://aresfirst.org/academy", changefreq: "weekly", priority: "0.80" },
-  { loc: "https://aresfirst.org/accessibility", changefreq: "monthly", priority: "0.50" },
-  { loc: "https://aresfirst.org/blog", changefreq: "daily", priority: "0.80" },
-  { loc: "https://aresfirst.org/calendar", changefreq: "weekly", priority: "0.70" },
-  { loc: "https://aresfirst.org/developer-api", changefreq: "monthly", priority: "0.60" },
-  { loc: "https://aresfirst.org/finance", changefreq: "monthly", priority: "0.60" },
-  { loc: "https://aresfirst.org/gallery", changefreq: "weekly", priority: "0.70" },
-  { loc: "https://aresfirst.org/videos", changefreq: "weekly", priority: "0.70" },
-  { loc: "https://aresfirst.org/join", changefreq: "monthly", priority: "0.90" },
-  { loc: "https://aresfirst.org/leaderboard", changefreq: "weekly", priority: "0.70" },
-  { loc: "https://aresfirst.org/location-morgantown", changefreq: "monthly", priority: "0.60" },
-  { loc: "https://aresfirst.org/outreach", changefreq: "weekly", priority: "0.80" },
-  { loc: "https://aresfirst.org/privacy", changefreq: "monthly", priority: "0.50" },
-  { loc: "https://aresfirst.org/robots", changefreq: "weekly", priority: "0.80" },
-  { loc: "https://aresfirst.org/seasons", changefreq: "monthly", priority: "0.80" },
-  { loc: "https://aresfirst.org/sponsors", changefreq: "monthly", priority: "0.80" },
-  { loc: "https://aresfirst.org/store", changefreq: "weekly", priority: "0.70" },
-  { loc: "https://aresfirst.org/tech-stack", changefreq: "monthly", priority: "0.50" },
-  { loc: "https://aresfirst.org/terms", changefreq: "monthly", priority: "0.50" }
-];
+  { loc: `${BASE_URL}/`, changefreq: "daily", priority: "1.00" },
+  { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.80" },
+  { loc: `${BASE_URL}/academy`, changefreq: "weekly", priority: "0.80" },
+  { loc: `${BASE_URL}/accessibility`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/blog`, changefreq: "daily", priority: "0.80" },
+  { loc: `${BASE_URL}/calendar`, changefreq: "weekly", priority: "0.70" },
+  { loc: `${BASE_URL}/developer-api`, changefreq: "monthly", priority: "0.60" },
+  { loc: `${BASE_URL}/finance`, changefreq: "monthly", priority: "0.60" },
+  { loc: `${BASE_URL}/gallery`, changefreq: "weekly", priority: "0.70" },
+  { loc: `${BASE_URL}/videos`, changefreq: "weekly", priority: "0.70" },
+  { loc: `${BASE_URL}/join`, changefreq: "monthly", priority: "0.90" },
+  { loc: `${BASE_URL}/leaderboard`, changefreq: "weekly", priority: "0.70" },
+  { loc: `${BASE_URL}/location-morgantown`, changefreq: "monthly", priority: "0.60" },
+  { loc: `${BASE_URL}/outreach`, changefreq: "weekly", priority: "0.80" },
+  { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/robots`, changefreq: "weekly", priority: "0.80" },
+  { loc: `${BASE_URL}/seasons`, changefreq: "monthly", priority: "0.80" },
+  { loc: `${BASE_URL}/sponsors`, changefreq: "monthly", priority: "0.80" },
+  { loc: `${BASE_URL}/store`, changefreq: "weekly", priority: "0.70" },
+  { loc: `${BASE_URL}/tech-stack`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/tournaments`, changefreq: "weekly", priority: "0.70" }
+] as const;
 
-function escapeXml(str: string): string {
-  return str
+interface SitemapEntry {
+  loc: string;
+  changefreq: "daily" | "weekly" | "monthly";
+  priority: string;
+  lastmod?: string;
+}
+
+interface FirestoreTimestampLike {
+  toDate: () => Date;
+}
+
+function escapeXml(value: string): string {
+  return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -38,132 +54,145 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-const handleSitemapRequest = asyncHandler(async (req, res) => {
-  const urls: string[] = [];
+export function normalizeLastModified(value: unknown): string | undefined {
+  let candidate: unknown = value;
 
-  // 1. Add static URLs
-  for (const item of STATIC_URLS) {
-    urls.push(`  <url>
-    <loc>${item.loc}</loc>
-    <changefreq>${item.changefreq}</changefreq>
-    <priority>${item.priority}</priority>
-  </url>`);
+  if (
+    typeof candidate === "object" &&
+    candidate !== null &&
+    "toDate" in candidate &&
+    typeof (candidate as FirestoreTimestampLike).toDate === "function"
+  ) {
+    try {
+      candidate = (candidate as FirestoreTimestampLike).toDate();
+    } catch {
+      return undefined;
+    }
   }
 
-  // 2. Fetch blogs (posts collection)
+  if (!(typeof candidate === "string" || candidate instanceof Date)) {
+    return undefined;
+  }
+
+  const parsed = candidate instanceof Date ? candidate : new Date(candidate);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
+function getLastModified(data: Record<string, unknown>): string | undefined {
+  return normalizeLastModified(
+    data.updatedAt ?? data.publishedAt ?? data.datePublished ?? data.date
+  );
+}
+
+function renderEntry(entry: SitemapEntry): string {
+  const lastmod = entry.lastmod ? `\n    <lastmod>${escapeXml(entry.lastmod)}</lastmod>` : "";
+  return `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>${lastmod}\n    <changefreq>${entry.changefreq}</changefreq>\n    <priority>${entry.priority}</priority>\n  </url>`;
+}
+
+const handleSitemapRequest = asyncHandler(async (_req, res) => {
+  let snapshots;
+
   try {
-    const postsSnap = await adminDb
-      .collection("posts")
-      .where("status", "==", "published")
-      .where("isDeleted", "==", 0)
-      .get();
-    
-    postsSnap.forEach((doc) => {
-      const slug = escapeXml(doc.id);
-      urls.push(`  <url>
-    <loc>https://aresfirst.org/blog/${slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.60</priority>
-  </url>`);
-    });
+    snapshots = await Promise.all([
+      adminDb.collection("posts")
+        .where("status", "==", "published")
+        .where("isDeleted", "==", 0)
+        .limit(MAX_DOCUMENTS_PER_COLLECTION)
+        .get(),
+      adminDb.collection("robots")
+        .where("isDeleted", "==", 0)
+        .limit(MAX_DOCUMENTS_PER_COLLECTION)
+        .get(),
+      adminDb.collection("academy")
+        .where("status", "==", "published")
+        .where("isDeleted", "==", 0)
+        .limit(MAX_DOCUMENTS_PER_COLLECTION)
+        .get(),
+      adminDb.collection("docs")
+        .where("status", "==", "published")
+        .where("isDeleted", "==", 0)
+        .limit(MAX_DOCUMENTS_PER_COLLECTION)
+        .get(),
+      adminDb.collection("events")
+        .where("status", "==", "published")
+        .where("isDeleted", "==", 0)
+        .limit(MAX_DOCUMENTS_PER_COLLECTION)
+        .get()
+    ]);
   } catch (error) {
-    logger.error("sitemap", "Error querying posts collection for sitemap", error);
+    logger.error("sitemap", "Unable to build the sitemap from published content", error);
+    throw new ApiError(503, "Sitemap is temporarily unavailable.", "SITEMAP_QUERY_FAILED");
   }
 
-  // 3. Fetch robots (robots collection)
-  try {
-    const robotsSnap = await adminDb
-      .collection("robots")
-      .where("isDeleted", "==", 0)
-      .get();
-    
-    robotsSnap.forEach((doc) => {
-      const id = escapeXml(doc.id);
-      urls.push(`  <url>
-    <loc>https://aresfirst.org/robots/${id}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.60</priority>
-  </url>`);
+  const entries = new Map<string, SitemapEntry>();
+  const addEntry = (entry: SitemapEntry) => entries.set(entry.loc, entry);
+
+  STATIC_URLS.forEach(addEntry);
+
+  const [postsSnap, robotsSnap, academySnap, docsSnap, eventsSnap] = snapshots;
+
+  postsSnap.forEach((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    addEntry({
+      loc: `${BASE_URL}/blog/${encodeURIComponent(doc.id)}`,
+      changefreq: "weekly",
+      priority: "0.60",
+      lastmod: getLastModified(data)
     });
-  } catch (error) {
-    logger.error("sitemap", "Error querying robots collection for sitemap", error);
-  }
+  });
 
-  // 4. Fetch academy (academy collection)
-  try {
-    const academySnap = await adminDb
-      .collection("academy")
-      .where("status", "==", "published")
-      .where("isDeleted", "==", 0)
-      .get();
-    
-    academySnap.forEach((doc) => {
-      const slug = escapeXml(doc.id);
-      urls.push(`  <url>
-    <loc>https://aresfirst.org/academy/${slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>`);
+  robotsSnap.forEach((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    addEntry({
+      loc: `${BASE_URL}/robots/${encodeURIComponent(doc.id)}`,
+      changefreq: "weekly",
+      priority: "0.60",
+      lastmod: getLastModified(data)
     });
-  } catch (error) {
-    // Ignore if academy collection is not present/empty in some environments
-  }
+  });
 
-  // 5. Fetch docs (as fallback/additional tutorials)
-  try {
-    const docsSnap = await adminDb
-      .collection("docs")
-      .where("status", "==", "published")
-      .where("isDeleted", "==", 0)
-      .get();
-    
-    docsSnap.forEach((doc) => {
-      const data = doc.data();
-      const slug = escapeXml(doc.id);
-      if (data.displayInMathCorner === 1 || data.displayInScienceCorner === 1) {
-        urls.push(`  <url>
-    <loc>https://aresfirst.org/academy/${slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>`);
-      } else if (data.displayInAreslib === 1) {
-        urls.push(`  <url>
-    <loc>https://aresfirst.org/docs/${slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.70</priority>
-  </url>`);
-      }
+  academySnap.forEach((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    addEntry({
+      loc: `${BASE_URL}/academy/${encodeURIComponent(doc.id)}`,
+      changefreq: "weekly",
+      priority: "0.70",
+      lastmod: getLastModified(data)
     });
-  } catch (error) {
-    logger.error("sitemap", "Error querying docs collection for sitemap", error);
-  }
+  });
 
-  // 6. Fetch events (events collection)
-  try {
-    const eventsSnap = await adminDb
-      .collection("events")
-      .where("status", "==", "published")
-      .where("isDeleted", "==", 0)
-      .get();
-    
-    eventsSnap.forEach((doc) => {
-      const id = escapeXml(doc.id);
-      urls.push(`  <url>
-    <loc>https://aresfirst.org/events/${id}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.60</priority>
-  </url>`);
+  docsSnap.forEach((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    const path = data.displayInMathCorner === 1 || data.displayInScienceCorner === 1
+      ? "academy"
+      : data.displayInAreslib === 1
+        ? "docs"
+        : null;
+
+    if (path) {
+      addEntry({
+        loc: `${BASE_URL}/${path}/${encodeURIComponent(doc.id)}`,
+        changefreq: "weekly",
+        priority: "0.70",
+        lastmod: getLastModified(data)
+      });
+    }
+  });
+
+  eventsSnap.forEach((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    addEntry({
+      loc: `${BASE_URL}/events/${encodeURIComponent(doc.id)}`,
+      changefreq: "weekly",
+      priority: "0.60",
+      lastmod: getLastModified(data)
     });
-  } catch (error) {
-    logger.error("sitemap", "Error querying events collection for sitemap", error);
-  }
+  });
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join("\n")}
-</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${Array.from(entries.values(), renderEntry).join("\n")}\n</urlset>`;
 
-  res.setHeader("Content-Type", "application/xml");
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  res.setHeader("Cache-Control", CACHE_CONTROL);
   res.send(xml);
 });
 

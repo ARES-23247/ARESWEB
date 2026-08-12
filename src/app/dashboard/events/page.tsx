@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { collection, doc, onSnapshot, deleteDoc, setDoc, query, where, limit, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { 
   Plus, 
   Shield, 
   Activity, 
-  MapPin
+  MapPin,
+  X,
+  Loader2,
 } from "lucide-react";
-import { cleanUndefined } from "@/lib/utils";
 import { authenticatedFetch } from "@/lib/api";
+import {
+  archiveEvent,
+  fetchLocations,
+  fetchManagedEvents,
+  publishEvent,
+  restoreEvent,
+} from "@/app/calendar/api";
 
 import LocationManagerModal, { TeamLocation } from "./components/LocationManagerModal";
 import EventEditorDrawer, { TeamEvent } from "./components/EventEditorDrawer";
@@ -39,12 +46,17 @@ export default function EventsManagementPage({
   const [locations, setLocations] = useState<TeamLocation[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [operationStatus, setOperationStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [pendingLifecycle, setPendingLifecycle] = useState<{ action: "archive" | "restore"; event: TeamEvent } | null>(null);
+  const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
 
   // Modal control states
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<TeamEvent | null>(null);
   const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
-  const [formLocationId, setFormLocationId] = useState("mars-building");
+  const [formLocationId, setFormLocationId] = useState("");
 
   // Filter States
   const [filterSearch, setFilterSearch] = useState("");
@@ -66,106 +78,53 @@ export default function EventsManagementPage({
     const fetchRoster = async () => {
       try {
         const res = await authenticatedFetch("/api/profiles/team-roster");
-        if (res.ok) {
-          const data = await res.json();
-          setTeamMembers(data.members || []);
+        const data = await res.json().catch(() => ({})) as { members?: typeof teamMembers; error?: string };
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText || "Request failed"}${data.error ? ` — ${data.error}` : ""}`);
         }
-      } catch (err) {
+        setTeamMembers(Array.isArray(data.members) ? data.members : []);
+      } catch (err: unknown) {
         console.error("Failed to load team roster:", err);
+        setOperationStatus({
+          kind: "error",
+          message: `Roster unavailable: ${err instanceof Error ? err.message : String(err)}`,
+        });
       }
     };
     fetchRoster();
   }, []);
 
-  // Listen for real-time calendar event updates
-  useEffect(() => {
+  const loadManagementData = useCallback(async (cursor: string | null = null, append = false) => {
+    if (append) setIsLoadingMore(true);
     try {
-      const eventsRef = collection(db, "events");
-      const q = query(eventsRef, where("isDeleted", "==", 0), orderBy("dateStart", "asc"), limit(100));
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          if (snapshot.empty) {
-            setEvents([]);
-            setIsLive(true);
-            setLoadError(null);
-            return;
-          }
-          const list = snapshot.docs.map((docSnap) => {
-            const data = docSnap.data();
-            return {
-              id: docSnap.id,
-              title: data.title || "Untitled Event",
-              dateStart: data.dateStart || "",
-              dateEnd: data.dateEnd || "",
-              locationId: data.locationId || "mars-building",
-              description: data.description || "",
-              category: data.category || "internal",
-              coverImage: data.coverImage || "",
-              isPotluck: data.isPotluck || 0,
-              isVolunteer: data.isVolunteer || 0,
-              isDeleted: data.isDeleted || 0,
-              status: data.status || "published"
-            } as TeamEvent;
-          });
-          
-          list.sort((a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime());
-          setEvents(list);
-          setIsLive(true);
-          setLoadError(null);
-        },
-        (err) => {
-          console.error("Unable to load event management records:", err);
-          setEvents([]);
-          setIsLive(false);
-          setLoadError(err.message);
-        }
-      );
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Unable to initialize event management records:", e);
-      setEvents([]);
+      const result = await fetchManagedEvents(100, cursor);
+      setEvents((current) => {
+        if (!append) return result.events;
+        const merged = new Map(current.map((event) => [event.id, event]));
+        result.events.forEach((event) => merged.set(event.id, event));
+        return Array.from(merged.values());
+      });
+      setNextCursor(result.nextCursor);
+      setIsLive(true);
+      setLoadError(null);
+    } catch (error) {
+      console.error("Unable to load event management records:", error);
       setIsLive(false);
-      setLoadError(e instanceof Error ? e.message : String(e));
+      setLoadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsLoadingMore(false);
     }
   }, []);
 
-  // Listen for real-time location profile updates
   useEffect(() => {
-    try {
-      const locationsRef = collection(db, "locations");
-      const unsubscribe = onSnapshot(
-        locationsRef,
-        async (snapshot) => {
-          if (snapshot.empty) {
-            setLocations([]);
-            return;
-          }
-          const list = snapshot.docs.map((docSnap) => {
-            const data = docSnap.data();
-            return {
-              id: docSnap.id,
-              name: data.name || "",
-              address: data.address || "",
-              description: data.description || undefined,
-              gmapsUrl: data.gmapsUrl || undefined
-            } as TeamLocation;
-          });
-          setLocations(list);
-        },
-        (err) => {
-          console.error("Unable to load managed locations:", err);
-          setLocations([]);
-          setLoadError((current) => current || err.message);
-        }
-      );
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Unable to initialize managed locations:", e);
-      setLocations([]);
-      setLoadError((current) => current || (e instanceof Error ? e.message : String(e)));
-    }
-  }, []);
+    void loadManagementData();
+    void fetchLocations()
+      .then(setLocations)
+      .catch((error: unknown) => {
+        console.error("Unable to load managed locations:", error);
+        setLoadError((current) => current || (error instanceof Error ? error.message : String(error)));
+      });
+  }, [loadManagementData]);
 
   // Prefilled actions for calendar redirect links
   useEffect(() => {
@@ -198,66 +157,59 @@ export default function EventsManagementPage({
 
   const handleOpenCreate = () => {
     setSelectedEvent(null);
-    setFormLocationId("mars-building");
+    setFormLocationId("");
     setIsEditorOpen(true);
   };
 
   const handleOpenEdit = (evt: TeamEvent) => {
     setSelectedEvent(evt);
-    setFormLocationId(evt.locationId || "mars-building");
+    setFormLocationId(evt.locationId || "");
     setIsEditorOpen(true);
   };
 
-  const handleDeleteEvent = async (evt: TeamEvent) => {
-    if (!canEdit) return;
-    if (!confirm(`Are you sure you want to move "${evt.title}" to the Trash? (It will be hidden from the calendar, but visible to managers)`)) return;
-
-    try {
-      await setDoc(doc(db, "events", evt.id), cleanUndefined({
-        ...evt,
-        isDeleted: 1
-      }));
-    } catch (err) {
-      console.warn("Firestore offline, soft-deleting event locally.", err);
-      setEvents(events.map(ev => ev.id === evt.id ? { ...ev, isDeleted: 1 } : ev));
-    }
-  };
-
-  const handleRestoreEvent = async (evt: TeamEvent) => {
-    if (!canEdit) return;
-    if (!confirm(`Are you sure you want to restore "${evt.title}"?`)) return;
-
-    try {
-      await setDoc(doc(db, "events", evt.id), cleanUndefined({
-        ...evt,
-        isDeleted: 0
-      }));
-    } catch (err) {
-      console.warn("Firestore offline, restoring event locally.", err);
-      setEvents(events.map(ev => ev.id === evt.id ? { ...ev, isDeleted: 0 } : ev));
-    }
-  };
-
-  const handlePermanentDeleteEvent = async (id: string) => {
+  const handleDeleteEvent = (evt: TeamEvent) => {
     if (!canPublishDirectly) return;
-    if (!confirm("WARNING: Are you sure you want to PERMANENTLY delete this event? This action cannot be undone and will delete all RSVPs and photos!")) return;
+    setPendingLifecycle({ action: "archive", event: evt });
+  };
 
+  const handleRestoreEvent = (evt: TeamEvent) => {
+    if (!canPublishDirectly) return;
+    setPendingLifecycle({ action: "restore", event: evt });
+  };
+
+  const applyLifecycleAction = async () => {
+    if (!pendingLifecycle || !canPublishDirectly) return;
+    setIsApplyingLifecycle(true);
+    setOperationStatus(null);
     try {
-      await deleteDoc(doc(db, "events", id));
-    } catch (err) {
-      console.warn("Firestore offline, deleting event locally.", err);
-      setEvents(events.filter(ev => ev.id !== id));
+      if (pendingLifecycle.action === "archive") await archiveEvent(pendingLifecycle.event.id);
+      else await restoreEvent(pendingLifecycle.event.id);
+      setOperationStatus({
+        kind: "success",
+        message: pendingLifecycle.action === "archive"
+          ? `“${pendingLifecycle.event.title}” was archived.`
+          : `“${pendingLifecycle.event.title}” was restored as a draft.`,
+      });
+      setPendingLifecycle(null);
+      await loadManagementData();
+    } catch (error) {
+      console.error("Unable to update event lifecycle:", error);
+      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setIsApplyingLifecycle(false);
     }
   };
 
   const handleApproveEvent = async (evt: TeamEvent) => {
     if (!canPublishDirectly) return;
+    setOperationStatus(null);
     try {
-      const docRef = doc(db, "events", evt.id);
-      await setDoc(docRef, cleanUndefined({ ...evt, status: "published" }));
-    } catch (err: any) {
-      console.error("Error approving event:", err);
-      alert("Failed to approve event: " + err.message);
+      await publishEvent(evt.id);
+      setOperationStatus({ kind: "success", message: `“${evt.title}” is now published.` });
+      await loadManagementData();
+    } catch (error) {
+      console.error("Error approving event:", error);
+      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -385,12 +337,12 @@ export default function EventsManagementPage({
 
             {canEdit && (
               <div className="flex gap-3">
-                <button
+                {canPublishDirectly && <button
                   onClick={() => setIsLocationManagerOpen(true)}
                   className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                 >
                   <MapPin size={16} className="text-ares-gold" /> Locations
-                </button>
+                </button>}
                 <button
                   onClick={handleOpenCreate}
                   className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
@@ -406,8 +358,22 @@ export default function EventsManagementPage({
               title="Unable to load event management data"
               message="Events or locations could not be reached. Check your session and connection, then retry."
               diagnostic={loadError}
-              onRetry={() => window.location.reload()}
+              onRetry={() => void loadManagementData()}
             />
+          )}
+
+          {operationStatus && (
+            <div
+              role={operationStatus.kind === "error" ? "alert" : "status"}
+              className={operationStatus.kind === "error"
+                ? "rounded border border-ares-red/40 bg-ares-red/15 p-4 text-white"
+                : "rounded border border-ares-gold/35 bg-ares-gold/10 p-4 text-ares-gold"}
+            >
+              <p className="text-xs font-bold">{operationStatus.kind === "error" ? "The calendar change was not completed." : operationStatus.message}</p>
+              {operationStatus.kind === "error" && (
+                <p className="mt-1 break-words font-mono text-[10px] text-white/80">{operationStatus.message}</p>
+              )}
+            </div>
           )}
 
           {/* Guest Lockscreen Warning */}
@@ -443,7 +409,6 @@ export default function EventsManagementPage({
             canEdit={canEdit}
             canPublishDirectly={canPublishDirectly}
             onRestore={handleRestoreEvent}
-            onPermanentDelete={handlePermanentDeleteEvent}
             onApprove={handleApproveEvent}
             onEdit={handleOpenEdit}
             onDelete={handleDeleteEvent}
@@ -452,6 +417,19 @@ export default function EventsManagementPage({
               !!(filterSearch || filterStatus !== "all" || filterCategory !== "all" || filterMonth !== "all" || filterYear !== "all")
             }
           />
+
+          {nextCursor && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => void loadManagementData(nextCursor, true)}
+                disabled={isLoadingMore}
+                className="rounded border border-ares-gold/40 bg-ares-gold/10 px-5 py-3 text-xs font-black uppercase tracking-widest text-ares-gold hover:bg-ares-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLoadingMore ? "Loading events…" : "Load more events"}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -474,6 +452,40 @@ export default function EventsManagementPage({
         formLocationId={formLocationId}
         setFormLocationId={setFormLocationId}
       />
+
+      <Dialog.Root open={pendingLifecycle !== null} onOpenChange={(open) => !open && !isApplyingLifecycle && setPendingLifecycle(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[130] bg-black/80 backdrop-blur-sm" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[131] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 text-left shadow-2xl focus:outline-none">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Dialog.Title className="text-lg font-black uppercase text-white">
+                  {pendingLifecycle?.action === "archive" ? "Archive event?" : "Restore event?"}
+                </Dialog.Title>
+                <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/75">
+                  {pendingLifecycle?.action === "archive"
+                    ? `“${pendingLifecycle.event.title}” will leave the public calendar. Managers can restore it later.`
+                    : `“${pendingLifecycle?.event.title}” will return as a draft. Review it before publishing.`}
+                </Dialog.Description>
+              </div>
+              <Dialog.Close asChild>
+                <button type="button" disabled={isApplyingLifecycle} aria-label="Close confirmation" className="rounded p-2 text-marble/60 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                  <X aria-hidden="true" size={16} />
+                </button>
+              </Dialog.Close>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Dialog.Close asChild>
+                <button type="button" disabled={isApplyingLifecycle} className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase tracking-wider text-marble/75 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+              </Dialog.Close>
+              <button type="button" onClick={() => void applyLifecycleAction()} disabled={isApplyingLifecycle} className="inline-flex items-center justify-center gap-2 rounded bg-ares-red px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
+                {isApplyingLifecycle && <Loader2 aria-hidden="true" size={14} className="motion-safe:animate-spin" />}
+                {pendingLifecycle?.action === "archive" ? "Archive event" : "Restore as draft"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

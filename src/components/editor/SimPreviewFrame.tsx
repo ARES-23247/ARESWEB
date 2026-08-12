@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
+import simulationPreviewRuntimeUrl from "./simulationPreviewRuntime?worker&url";
 
 interface SimPreviewFrameProps {
   /** Transpiled JavaScript code modules to execute in the sandbox */
@@ -284,9 +285,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
       return module.exports;
     }
   </script>
-  <script src="${window.location.origin}/vendor/react.production.min.js"></script>
-  <script src="${window.location.origin}/vendor/react-dom.production.min.js"></script>
-  <script src="${window.location.origin}/vendor/ares-physics.min.js"></script>
+  <script src="${simulationPreviewRuntimeUrl}"></script>
   <!-- DOMPurify for XSS protection -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.2/dist/purify.min.js"
           integrity="sha384-pg0npeAS8wMoOhkAn3+6V/pdCY24eN7SUoLvHh6x5Z9JgAjMMfgP8u8vUxKY+fN9"
@@ -347,7 +346,7 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
 
     try {
       if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-        throw new Error('React failed to load. Please refresh the page.');
+        throw new Error('The local React preview runtime failed to load. HTTP assets may be stale; refresh the page and try again.');
       }
       
       ${moduleDefs}
@@ -435,13 +434,13 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
   return (
     <div className="relative h-full flex flex-col">
       {displayError && (
-        <div className="absolute top-0 left-0 right-0 z-10 bg-ares-red-dark/90 border-b border-ares-danger/30 px-4 py-3 flex items-start gap-2 text-ares-danger text-xs font-mono">
+        <div className="absolute top-0 left-0 right-0 z-10 bg-ares-red/90 border-b border-white/30 px-4 py-3 flex items-start gap-2 text-white text-xs font-mono">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <pre className="whitespace-pre-wrap flex-1">{displayError}</pre>
           {onFixWithAI && (
             <button
               onClick={onFixWithAI}
-              className="shrink-0 ml-2 px-2.5 py-1 bg-ares-danger/10 hover:bg-ares-danger/20 text-ares-danger-soft border border-ares-danger/20 rounded transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+              className="shrink-0 ml-2 px-2.5 py-1 bg-ares-red hover:bg-ares-bronze text-white border border-white/30 rounded transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
             >
               ✨ Fix with AI
             </button>
