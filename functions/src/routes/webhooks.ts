@@ -1,11 +1,22 @@
 import express from "express";
 import crypto from "crypto";
+import { z } from "zod";
 import admin, { adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
+const zulipWebhookSchema = z.object({
+  token: z.string().min(1).max(512),
+  trigger: z.enum(["message", "private_message", "direct_message", "mention"]),
+  message: z.object({
+    topic: z.string().max(200).optional(),
+    subject: z.string().max(200).optional(),
+    content: z.string().max(20_000),
+    sender_full_name: z.string().max(120).optional(),
+  }),
+});
 
 function timingSafeEqual(a: string, b: string): boolean {
   if (typeof a !== "string" || typeof b !== "string") return false;
@@ -23,16 +34,17 @@ router.post("/zulip", asyncHandler(async (req, res) => {
     throw new ApiError(500, "Webhook token not configured.");
   }
 
-  const { message, trigger, token } = req.body;
+  const token = typeof req.body?.token === "string" ? req.body.token : "";
 
   if (!token || !timingSafeEqual(token, expectedToken)) {
     throw new ApiError(401, "Unauthorized: Invalid webhook token.");
   }
 
-  if (!message || (trigger !== "message" && trigger !== "private_message" && trigger !== "mention")) {
-    res.json({ content: "" });
-    return;
+  const payload = zulipWebhookSchema.safeParse(req.body);
+  if (!payload.success) {
+    throw new ApiError(400, "Invalid Zulip webhook payload.");
   }
+  const { message } = payload.data;
 
   const topic = message.topic || message.subject;
   if (!topic || !topic.startsWith("Task-")) {
@@ -50,7 +62,7 @@ router.post("/zulip", asyncHandler(async (req, res) => {
     return;
   }
 
-  const cleanContent = (message.content || "").replace(/@\*\*[^*]+\*\*/g, "").trim();
+  const cleanContent = message.content.replace(/@\*\*[^*]+\*\*/g, "").trim();
   if (!cleanContent) {
     res.json({ content: "" });
     return;

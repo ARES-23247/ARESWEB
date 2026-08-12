@@ -26,6 +26,15 @@ Set a dedicated App Check reCAPTCHA Enterprise site key in the frontend build:
 NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY=your_site_key
 ```
 
+Store both browser security keys as GitHub repository variables:
+
+- `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY`
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+
+These keys are public site identifiers. They are not secret credentials. The CI
+build stops when either variable is empty. Never use this rule for server keys,
+OAuth client secrets, refresh tokens, or bot tokens.
+
 The web client must initialize this key with `ReCaptchaEnterpriseProvider`, and
 the same site key must be registered on the Firebase web app's reCAPTCHA
 Enterprise App Check configuration.
@@ -56,8 +65,9 @@ the bot can only access the streams and actions it needs.
 
 The team media integrations use `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
 `GOOGLE_PHOTOS_REFRESH_TOKEN`, and `YOUTUBE_API_KEY` from Google Secret Manager.
-Authorize the Google Photos refresh token while signed in to the team-owned
-Google account. Do not connect a student's or volunteer's personal account.
+The OAuth client may live in the Google Cloud project used by the website. The
+refresh token may belong to a different, dedicated storage account. Sign in to
+that storage account when you grant consent. Do not connect a student's account.
 
 Use this Cloud Logging filter to review custom API results:
 

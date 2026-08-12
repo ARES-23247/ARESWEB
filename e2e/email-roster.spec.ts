@@ -52,9 +52,12 @@ test("an administrator can prepare and copy a private BCC roster", async ({ page
   await page.getByLabel("Audience").selectOption("students");
   await page.getByLabel("Subteam").selectOption("Programming");
   await page.getByRole("checkbox", { name: /I will use the team account/ }).check();
-  await page.getByRole("button", { name: "Prepare email list" }).click();
+  await Promise.all([
+    page.waitForResponse(response => response.url().includes("/api/profiles/admin/users/email-roster") && response.status() === 200),
+    page.getByRole("button", { name: "Prepare email list" }).click(),
+  ]);
 
-  await expect(page.getByRole("status")).toContainText("Prepared 2 active roster email addresses");
+  await expect(page.getByRole("status")).toContainText("Prepared 2 active roster email addresses", { timeout: 10_000 });
   await expect(page.locator("body")).not.toContainText("student@example.org");
   expect(exportBody).toEqual({ audience: "students", subteam: "Programming" });
 

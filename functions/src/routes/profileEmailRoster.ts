@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { FieldPath } from "firebase-admin/firestore";
+import { FieldPath, type DocumentSnapshot } from "firebase-admin/firestore";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
@@ -10,6 +10,7 @@ import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
 const MAX_EMAIL_RECIPIENTS = 500;
+const PROFILE_READ_CONCURRENCY = 25;
 const emailRosterLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -101,9 +102,14 @@ router.post("/admin/users/email-roster", emailRosterLimiter, ensureAdmin, asyncH
       const authorization = doc.data();
       return authorization.isDeleted !== 1 && normalizeRole(authorization.role) !== "unverified" && validEmail(authorization.email);
     });
-    const profileSnapshots = await Promise.all(
-      activeDocuments.map(doc => adminDb.collection("user_profiles").doc(doc.id).get()),
-    );
+    const profileSnapshots: DocumentSnapshot[] = [];
+    for (let start = 0; start < activeDocuments.length; start += PROFILE_READ_CONCURRENCY) {
+      const chunk = activeDocuments.slice(start, start + PROFILE_READ_CONCURRENCY);
+      const snapshots = await Promise.all(
+        chunk.map(doc => adminDb.collection("user_profiles").doc(doc.id).get()),
+      );
+      profileSnapshots.push(...snapshots);
+    }
 
     const recipientsByEmail = new Map<string, EmailRosterRecipientDto>();
     activeDocuments.forEach((doc, index) => {
@@ -147,6 +153,8 @@ router.post("/admin/users/email-roster", emailRosterLimiter, ensureAdmin, asyncH
       hasSubteamFilter: Boolean(subteam),
       recipientCount: recipients.length,
     });
+    res.setHeader("Cache-Control", "private, no-store, max-age=0");
+    res.setHeader("Pragma", "no-cache");
     res.json({ recipients, recipientCount: recipients.length, generatedAt: createdAt });
   } catch (error) {
     if (error instanceof ApiError) throw error;

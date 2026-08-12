@@ -53,7 +53,10 @@ describe("POST /api/profiles/admin/users/email-roster", () => {
     firestore.auditSet.mockResolvedValue(undefined);
     firestore.profileGet.mockResolvedValue(profile());
     req = { body: {}, user: { uid: "admin_uid", email: "admin@example.org" } };
-    res = { json: vi.fn().mockReturnThis() };
+    res = {
+      json: vi.fn().mockReturnThis(),
+      setHeader: vi.fn().mockReturnThis(),
+    };
     next = vi.fn();
   });
 
@@ -97,6 +100,8 @@ describe("POST /api/profiles/admin/users/email-roster", () => {
       filters: { audience: "all", subteam: "" },
     }));
     expect(JSON.stringify(firestore.auditSet.mock.calls[0][0])).not.toContain("@example.org");
+    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "private, no-store, max-age=0");
+    expect(res.setHeader).toHaveBeenCalledWith("Pragma", "no-cache");
     expect(next).not.toHaveBeenCalled();
   });
 

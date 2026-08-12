@@ -3,10 +3,11 @@
 Use this checklist before the next production release. Do not put secret values
 in this file, GitHub, Firestore, browser storage, logs, or URLs.
 
-## 1. Use team-owned accounts
+## 1. Use a dedicated storage account
 
-The Google Photos and YouTube integrations must use the team's Google account.
-Do not connect a student, mentor, coach, or volunteer's personal account.
+The website host and media storage accounts may be separate Google accounts.
+Use the dedicated storage account when the OAuth Playground asks you to sign in.
+Do not connect a student or volunteer account.
 
 Create or confirm these values in Google Secret Manager:
 
@@ -19,6 +20,14 @@ Grant only the Google scopes used by the photo picker, team photo uploads, and
 YouTube playlist sync. Keep the recovery email and multi-factor authentication
 under team leadership control. Record account ownership in the team's private
 operations handbook, not in this repository.
+
+Confirm these GitHub repository variables before the release:
+
+- `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY`
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+
+Both are public browser keys. Keep all four Google integration values in Secret
+Manager. Never copy those secret values into GitHub variables.
 
 ## 2. Rotate the Zulip bot key
 
