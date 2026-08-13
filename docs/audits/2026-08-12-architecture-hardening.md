@@ -84,7 +84,11 @@ from the prior audit baseline of about 16.75 MB raw / 3.98 MB gzip to 14.84 MB /
 | ARCH-01 | Medium | High | Dynamic metadata rendering fetches the current static shell from the Firebase Hosting origin on each request. This adds one internal CDN request and makes shell-origin availability part of the render path, but avoids stale hashed assets across releases. | Monitor `web` latency and 503 counts. Only introduce caching after proving old hashed assets remain available across releases or bundling the verified shell atomically with the function. |
 | ARCH-02 | Medium | High | The generated public shells contain final metadata but not server-rendered primary page content. No-script users and crawlers that require body content still see the React root until JavaScript runs. | Add full body SSR only if crawl/no-script evidence warrants the added server rendering and hydration boundary. Acceptance requires hydration parity, no user-agent branching, and public DTO-only data. |
 | ARCH-03 | Low | High | CSP still permits inline style elements and attributes because current React/editor surfaces generate them. Script directives are strict, but style injection remains possible after an independent HTML injection defect. | Continue migrating stable inline styling to classes; remove each style exception only with production-browser tests for Monaco, Radix, simulations, and image cropping. |
-| ARCH-04 | Release gate | High | Local verification ran on Node 24.13 and Java 11, outside the supported Node 22.13+ / Java 21 matrix. The rules emulator gate could not be repeated locally. | Require the protected CI jobs on Node 22.13.1 and Java 21 before merge or deployment. |
+
+The local runtime mismatch was resolved as a release concern by PR #38's
+protected CI run: the Node 22.13.1 build, Java 21 Firebase rules emulator,
+Playwright matrix, required test gate, and CodeQL analyses all passed. Production
+deployment was correctly skipped because the branch was not `master`.
 
 ## Verification evidence
 
@@ -104,6 +108,8 @@ from the prior audit baseline of about 16.75 MB raw / 3.98 MB gzip to 14.84 MB /
 - agent configuration validation: six canonical shared skills plus Gemini,
   Antigravity, and Copilot discovery passed;
 - `git diff --check`: passed apart from Windows line-ending notices.
+- protected PR CI on Node 22.13.1 / Java 21: passed, including the required test
+  gate and CodeQL.
 
 ## Skill review
 
