@@ -1,5 +1,5 @@
 import express from "express";
-import admin, { adminDb } from "../lib/firebase-admin";
+import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -199,9 +199,9 @@ router.post("/:albumId/add-photos", ensureAdmin, asyncHandler(async (req, res) =
     addedCount += 1;
   }
   const now = new Date().toISOString();
-  if (addedCount) batch.update(albumRef, { mediaCount: admin.firestore.FieldValue.increment(addedCount), updatedAt: now });
+  if (addedCount) batch.update(albumRef, { mediaCount: adminFieldValue.increment(addedCount), updatedAt: now });
   for (const [oldAlbumId, count] of oldAlbumCounts) {
-    batch.update(adminDb.collection("albums").doc(oldAlbumId), { mediaCount: admin.firestore.FieldValue.increment(-count), updatedAt: now });
+    batch.update(adminDb.collection("albums").doc(oldAlbumId), { mediaCount: adminFieldValue.increment(-count), updatedAt: now });
   }
   await batch.commit();
   res.json({ success: true, addedCount });

@@ -4,6 +4,7 @@ import { ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
+import { requireRouteParam } from "../middleware/validation";
 
 const router = express.Router();
 
@@ -71,7 +72,7 @@ router.get("/", asyncHandler(async (req, res) => {
 
 // GET /api/simulations/gist/:id - Fetch a GitHub Gist by ID
 router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "Gist ID");
   const safeId = id.match(/^[a-f0-9]{32}$/) ? id : (id.match(/^[0-9a-f]{20}$/) ? id : null);
   if (!safeId) {
     throw new ApiError(400, "Invalid Gist ID");
@@ -123,7 +124,7 @@ router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
 
 // GET /api/simulations/:id - Get a single simulation file by id from GitHub
 router.get("/:id", asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "simulation ID");
 
   if (!id || !id.startsWith("github:")) {
     throw new ApiError(404, "Simulation not found");

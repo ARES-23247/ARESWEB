@@ -9,7 +9,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
 import crypto from "crypto";
 import { z } from "zod";
-import { validate } from "../middleware/validation";
+import { requireRouteParam, validate } from "../middleware/validation";
 import type { AppCheckObservedRequest } from "../middleware/appCheck";
 import { encryptedPrivateUpdates } from "./profileSelf";
 
@@ -223,7 +223,7 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
 
 // PATCH /api/inquiries/:id/status
 router.patch("/:id/status", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "inquiry ID");
   const statusResult = z.enum(["pending", "approved", "resolved", "rejected"]).safeParse(req.body?.status);
   if (!statusResult.success) {
     throw new ApiError(400, "Status must be pending, approved, resolved, or rejected.");
@@ -245,7 +245,7 @@ router.patch("/:id/status", ensureAdmin, asyncHandler(async (req, res) => {
 
 // DELETE /api/inquiries/:id
 router.delete("/:id", ensureAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "inquiry ID");
 
   const docRef = adminDb.collection("inquiries").doc(id);
   const docSnap = await docRef.get();
@@ -267,7 +267,7 @@ router.delete("/:id", ensureAdmin, asyncHandler(async (req: AuthenticatedRequest
 }));
 
 router.patch("/:id/restore", ensureAdmin, asyncHandler(async (req: AuthenticatedRequest, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "inquiry ID");
   const docRef = adminDb.collection("inquiries").doc(id);
   const docSnap = await docRef.get();
   if (!docSnap.exists) {
@@ -287,7 +287,7 @@ router.patch("/:id/restore", ensureAdmin, asyncHandler(async (req: Authenticated
 
 // POST /api/inquiries/:id/approve-account
 router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "inquiry ID");
 
   const docRef = adminDb.collection("inquiries").doc(id);
   const docSnap = await docRef.get();

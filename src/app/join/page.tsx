@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useState } from "react";
 import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -57,7 +58,7 @@ export default function JoinPage() {
       const token = await getRecaptchaToken();
       await submitApplication(token);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Join form verification failed.");
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Verification check failed. Please refresh and try again.");
     }
@@ -104,7 +105,7 @@ export default function JoinPage() {
       setSelectedInterests([]);
       setAdditional("");
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Join application submission failed.");
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
     }

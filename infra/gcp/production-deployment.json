@@ -49,6 +49,22 @@
       "concurrency": 20
     },
     {
+      "id": "driveApi",
+      "trigger": "https",
+      "runServiceId": "driveapi",
+      "public": true,
+      "secrets": [
+        "ENCRYPTION_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_DRIVE_REFRESH_TOKEN"
+      ],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 512,
+      "maxInstances": 10,
+      "concurrency": 20
+    },
+    {
       "id": "mediaApi",
       "trigger": "https",
       "runServiceId": "mediaapi",
@@ -65,6 +81,21 @@
       "availableMemoryMb": 1024,
       "maxInstances": 10,
       "concurrency": 10
+    },
+    {
+      "id": "syncGoogleDriveChanges",
+      "trigger": "schedule",
+      "runServiceId": "syncgoogledrivechanges",
+      "public": false,
+      "secrets": [
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_DRIVE_REFRESH_TOKEN"
+      ],
+      "timeoutSeconds": 120,
+      "availableMemoryMb": 256,
+      "maxInstances": 1,
+      "concurrency": 1
     },
     {
       "id": "publicApi",

@@ -12,6 +12,7 @@ describe("Google Photos Auth library", () => {
     process.env.GOOGLE_CLIENT_ID = "team-client-id";
     process.env.GOOGLE_CLIENT_SECRET = "team-client-secret";
     process.env.GOOGLE_PHOTOS_REFRESH_TOKEN = "team-refresh-token";
+    process.env.GOOGLE_DRIVE_REFRESH_TOKEN = "drive-refresh-token";
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -85,5 +86,37 @@ describe("Google Photos Auth library", () => {
     const request = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
     expect(String(request.body)).toContain("client_id=team-client-id");
     expect(String(request.body)).toContain("refresh_token=team-refresh-token");
+  });
+
+  it("uses a separate refresh token and cache for Google Drive", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "photos-token", expires_in: 3600 }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: "drive-token", expires_in: 3600 }),
+      } as Response);
+    const { getGoogleDriveAccessToken, getGooglePhotosAccessToken } = await loadGoogleAuth();
+
+    await expect(getGooglePhotosAccessToken()).resolves.toBe("photos-token");
+    await expect(getGoogleDriveAccessToken()).resolves.toBe("drive-token");
+    await expect(getGoogleDriveAccessToken()).resolves.toBe("drive-token");
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    const driveRequest = vi.mocked(fetch).mock.calls[1][1] as RequestInit;
+    expect(String(driveRequest.body)).toContain("refresh_token=drive-refresh-token");
+    expect(String(driveRequest.body)).not.toContain("team-refresh-token");
+  });
+
+  it("fails closed when the dedicated Drive token is missing", async () => {
+    delete process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+    const { getGoogleDriveAccessToken } = await loadGoogleAuth();
+
+    await expect(getGoogleDriveAccessToken()).rejects.toThrow(
+      "Google Drive integration is not configured in Secret Manager.",
+    );
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

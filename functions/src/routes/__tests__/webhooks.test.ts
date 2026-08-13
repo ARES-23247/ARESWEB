@@ -25,13 +25,7 @@ vi.mock("../../lib/firebase-admin", () => {
         commit: vi.fn().mockResolvedValue(true)
       }))
     },
-    default: {
-      firestore: {
-        FieldValue: {
-          increment: vi.fn((val) => val)
-        }
-      }
-    }
+    adminFieldValue: { increment: vi.fn((val) => val) }
   };
 });
 

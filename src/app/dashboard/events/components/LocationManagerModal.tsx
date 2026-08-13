@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { MapPin, X, Pencil, Trash2, RotateCcw } from "lucide-react";
@@ -79,7 +80,7 @@ export default function LocationManagerModal({
       setOperationStatus({ kind: "success", message: editingLocation ? "Venue updated." : "Venue created." });
       resetForm();
     } catch (error) {
-      console.error("Unable to save location:", error);
+      logger.error("Unable to save location:", error);
       setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsSaving(false);
@@ -98,7 +99,7 @@ export default function LocationManagerModal({
       setPendingArchiveId(null);
       setOperationStatus({ kind: "success", message: "Venue archived. Existing events keep their saved venue name." });
     } catch (error) {
-      console.error("Unable to archive location:", error);
+      logger.error("Unable to archive location:", error);
       setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     }
   };
@@ -111,7 +112,7 @@ export default function LocationManagerModal({
       setLocations((current) => current.map((location) => location.id === locId ? { ...location, isDeleted: 0 } : location));
       setOperationStatus({ kind: "success", message: "Venue restored." });
     } catch (error) {
-      console.error("Unable to restore location:", error);
+      logger.error("Unable to restore location:", error);
       setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     }
   };

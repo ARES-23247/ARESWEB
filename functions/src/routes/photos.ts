@@ -1,5 +1,5 @@
 import express from "express";
-import admin, { adminDb } from "../lib/firebase-admin";
+import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -215,12 +215,12 @@ router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req, res) => {
   batch.set(photoRef, update, { merge: true });
   if (oldAlbumId && oldAlbumId !== albumId) {
     const oldAlbum = adminDb.collection("albums").doc(oldAlbumId);
-    batch.update(oldAlbum, { mediaCount: admin.firestore.FieldValue.increment(-1), updatedAt: now });
+    batch.update(oldAlbum, { mediaCount: adminFieldValue.increment(-1), updatedAt: now });
     batch.delete(oldAlbum.collection("photos").doc(photoId));
   }
   if (albumId) {
     const album = adminDb.collection("albums").doc(albumId);
-    if (oldAlbumId !== albumId) batch.update(album, { mediaCount: admin.firestore.FieldValue.increment(1), updatedAt: now });
+    if (oldAlbumId !== albumId) batch.update(album, { mediaCount: adminFieldValue.increment(1), updatedAt: now });
     batch.set(album.collection("photos").doc(photoId), { ...current, ...update }, { merge: true });
   }
   await batch.commit();
@@ -242,7 +242,7 @@ router.delete("/:photoId", ensureAdmin, asyncHandler(async (req, res) => {
   batch.set(photoRef, { isDeleted: 1, archivedAt, updatedAt: archivedAt }, { merge: true });
   if (typeof data.albumId === "string") {
     const album = adminDb.collection("albums").doc(data.albumId);
-    batch.update(album, { mediaCount: admin.firestore.FieldValue.increment(-1), updatedAt: archivedAt });
+    batch.update(album, { mediaCount: adminFieldValue.increment(-1), updatedAt: archivedAt });
     batch.set(album.collection("photos").doc(photoId), { isDeleted: 1, archivedAt }, { merge: true });
   }
   await batch.commit();
@@ -264,7 +264,7 @@ router.post("/:photoId/restore", ensureAdmin, asyncHandler(async (req, res) => {
   batch.set(photoRef, { isDeleted: 0, archivedAt: null, restoredAt, updatedAt: restoredAt }, { merge: true });
   if (typeof data.albumId === "string") {
     const album = adminDb.collection("albums").doc(data.albumId);
-    batch.update(album, { mediaCount: admin.firestore.FieldValue.increment(1), updatedAt: restoredAt });
+    batch.update(album, { mediaCount: adminFieldValue.increment(1), updatedAt: restoredAt });
     batch.set(album.collection("photos").doc(photoId), { ...data, isDeleted: 0, archivedAt: null, restoredAt }, { merge: true });
   }
   await batch.commit();

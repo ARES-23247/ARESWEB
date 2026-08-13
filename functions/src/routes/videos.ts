@@ -6,6 +6,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
 import { logger } from "../lib/logger";
+import { requireRouteParam } from "../middleware/validation";
 
 const router = express.Router();
 const TEAM_UPLOADS_PLAYLIST_ID = "UUre4FN7UThyVd-biFk0n-Ig";
@@ -232,7 +233,7 @@ router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 router.patch("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
-  const id = req.params.videoId;
+  const id = requireRouteParam(req.params.videoId, "video ID");
   if (!/^video_[A-Za-z0-9_-]{1,200}$/.test(id)) throw new ApiError(400, "Invalid video ID.");
   const ref = adminDb.collection("videos").doc(id);
   const snapshot = await ref.get();
@@ -250,7 +251,7 @@ router.patch("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 router.delete("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
-  const id = req.params.videoId;
+  const id = requireRouteParam(req.params.videoId, "video ID");
   if (!/^video_[A-Za-z0-9_-]{1,200}$/.test(id)) throw new ApiError(400, "Invalid video ID.");
   const ref = adminDb.collection("videos").doc(id);
   const snapshot = await ref.get();
@@ -261,7 +262,7 @@ router.delete("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 router.post("/:videoId/restore", ensureAdmin, asyncHandler(async (req, res) => {
-  const id = req.params.videoId;
+  const id = requireRouteParam(req.params.videoId, "video ID");
   if (!/^video_[A-Za-z0-9_-]{1,200}$/.test(id)) throw new ApiError(400, "Invalid video ID.");
   const ref = adminDb.collection("videos").doc(id);
   const snapshot = await ref.get();

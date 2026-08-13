@@ -164,8 +164,8 @@ export function parseLimit(value: unknown, fallback: number, maximum: number): n
   return Math.min(maximum, Math.max(1, Number.isFinite(requested) ? requested : fallback));
 }
 
-export function parseId(value: string, label = "record"): string {
-  if (!/^[A-Za-z0-9_-]{1,128}$/.test(value)) {
+export function parseId(value: string | string[], label = "record"): string {
+  if (Array.isArray(value) || !/^[A-Za-z0-9_-]{1,128}$/.test(value)) {
     throw new ApiError(400, `Invalid ${label} identifier.`, "INVALID_ID");
   }
   return value;

@@ -37,7 +37,10 @@ export default tseslint.config(
       "no-undef": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
       "security/detect-unsafe-regex": "warn",
@@ -46,5 +49,14 @@ export default tseslint.config(
   {
     files: ["e2e/**/*.{ts,tsx}"],
     rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/test/**", "src/utils/logger.ts"],
+    rules: { "no-console": "error" },
+  },
+  {
+    files: ["src/utils/logger.ts"],
+    rules: { "no-console": "off" },
   },
 );

@@ -18,6 +18,23 @@ The project is structured as a pnpm monorepo:
 Use **Node.js 22.13 or newer in the Node 22 line**, **pnpm 11.21.0**, and
 **Java 21 or newer** for Firebase emulators.
 
+Verify the active toolchain before installing dependencies:
+
+```bash
+pnpm run validate:runtime
+```
+
+On Windows, the repository can locate the pinned `fnm` Node installation and a
+locally installed Java 21+ runtime, then run a command in that environment:
+
+```powershell
+.\scripts\with-supported-runtime.ps1 pnpm run test:rules
+```
+
+Running the PowerShell helper without a command only prints the resolved
+versions. It changes environment variables for the child command only; it does
+not modify the user's profile or system configuration.
+
 ### 1. Installation
 Install all monorepo dependencies from the workspace root:
 ```bash
@@ -59,3 +76,7 @@ See `AGENTS.md` for the complete handoff gate. Repository skills live once under
 `.agents/skills/` and are discovered there by Codex, Gemini CLI, and Google
 Antigravity. Production deploys occur only through the protected GitHub Actions
 workflow after merge to `master`.
+
+Google Drive uses a dedicated read-only credential, restricted Google Picker,
+explicit draft imports, and a private incremental-change schedule. See
+`docs/GOOGLE_DRIVE_INTEGRATION.md` before configuring or rotating that account.

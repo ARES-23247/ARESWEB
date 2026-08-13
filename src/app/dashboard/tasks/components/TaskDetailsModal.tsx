@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { logger } from "@/utils/logger";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus } from "lucide-react";
@@ -73,6 +74,7 @@ export default function TaskDetailsModal({
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const deleteTriggerRef = useRef<HTMLButtonElement>(null);
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const initializedTaskIdRef = useRef<string | null | undefined>(undefined);
   const deleteTitleId = useId();
   const deleteDescriptionId = useId();
 
@@ -94,7 +96,13 @@ export default function TaskDetailsModal({
     if (deleteConfirmationOpen) deleteCancelRef.current?.focus();
   }, [deleteConfirmationOpen]);
 
-  useEffect(() => {
+  // Initialize a newly selected task before the browser can accept input. A
+  // passive effect could otherwise overwrite a title entered immediately
+  // after the drawer becomes visible on a busy browser thread.
+  useLayoutEffect(() => {
+    if (taskId && !task) return;
+    if (initializedTaskIdRef.current === taskId) return;
+    initializedTaskIdRef.current = taskId;
     if (taskId && taskTitle !== undefined && taskDescription !== undefined && taskPriority !== undefined && taskSubteam !== undefined && taskStatus !== undefined) {
       setModalTitle(taskTitle);
       setModalDesc(taskDescription);
@@ -110,7 +118,7 @@ export default function TaskDetailsModal({
       setModalStatus("todo");
       setModalAssignees([]);
     }
-  }, [taskAssignees, taskDescription, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
+  }, [task, taskAssignees, taskDescription, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
 
   if (taskId && !task) return null;
 
@@ -165,7 +173,7 @@ export default function TaskDetailsModal({
             if (setSyncState) setSyncState("idle");
           }, 3000);
         }).catch((err) => {
-          console.error("Zulip notification failed:", err);
+          logger.error("Zulip notification failed:", err);
           const notificationError = describeTaskError("notify Zulip", err);
           onNotificationError?.({
             ...notificationError,
@@ -207,7 +215,7 @@ export default function TaskDetailsModal({
             if (setSyncState) setSyncState("idle");
           }, 3000);
         }).catch((err) => {
-          console.error("Zulip notification failed:", err);
+          logger.error("Zulip notification failed:", err);
           const notificationError = describeTaskError("notify Zulip", err);
           onNotificationError?.({
             ...notificationError,
@@ -222,7 +230,7 @@ export default function TaskDetailsModal({
 
       onClose();
     } catch (e) {
-      console.error("Failed to save task", e);
+      logger.error("Failed to save task", e);
       setOperationError(describeTaskError(isCreateMode ? "create task" : "save task", e));
     } finally {
       setSubmitting(false);
@@ -255,7 +263,7 @@ export default function TaskDetailsModal({
         onClose();
       }
     } catch (error) {
-      console.error("Failed to delete task", error);
+      logger.error("Failed to delete task", error);
       setOperationError(describeTaskError("delete task", error));
     } finally {
       setDeleteSubmitting(false);

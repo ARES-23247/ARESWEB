@@ -1,5 +1,11 @@
 import express from "express";
-import admin, { adminDb, adminStorage } from "../lib/firebase-admin";
+import {
+  adminDb,
+  adminFieldValue,
+  adminStorage,
+  type AdminDocumentData,
+  type AdminDocumentReference,
+} from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes, sanitizeAlbumName } from "../lib/imageImport";
 import { ensureAdmin } from "../middleware/auth";
@@ -83,7 +89,7 @@ router.post(
   const docMap = new Map(docSnaps.map(snap => [snap.id, snap]));
 
   // We compile writes in an array of operations to commit in chunks
-  const batchOperations: { ref: admin.firestore.DocumentReference; data: admin.firestore.DocumentData }[] = [];
+  const batchOperations: { ref: AdminDocumentReference; data: AdminDocumentData }[] = [];
 
   // Process items in parallel chunks of 4 for downloads & GCS uploads
   const chunkArray = <T>(arr: T[], size: number): T[][] => {
@@ -238,7 +244,7 @@ router.post(
       }
       if (albumId && createdCount > 0) {
         batch.update(adminDb.collection("albums").doc(albumId), {
-          mediaCount: admin.firestore.FieldValue.increment(createdCount),
+          mediaCount: adminFieldValue.increment(createdCount),
           updatedAt: new Date().toISOString(),
         });
       }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -80,7 +81,7 @@ export default function BlogPostPage() {
         setIsLoading(false);
       },
       (error) => {
-        console.error("Unable to load published blog post:", { slug, error });
+        logger.error("Unable to load published blog post:", { slug, error });
         setPost(null);
         setLoadError(error.message);
         setIsLoading(false);

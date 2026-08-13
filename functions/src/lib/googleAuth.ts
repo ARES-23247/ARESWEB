@@ -1,24 +1,32 @@
 import { logger } from "./logger";
 
-let cachedAccessToken: string | null = null;
-let tokenExpiresAt: number | null = null; // timestamp in ms
+interface CachedGoogleAccessToken {
+  value: string;
+  expiresAt: number;
+}
 
-export async function getGooglePhotosAccessToken(): Promise<string> {
-  if (cachedAccessToken && tokenExpiresAt && Date.now() < tokenExpiresAt - 30000) {
-    logger.info("googleAuth", "Using cached team access token");
-    return cachedAccessToken;
+const accessTokenCache = new Map<string, CachedGoogleAccessToken>();
+
+interface GoogleTokenConfiguration {
+  integration: "Google Photos" | "Google Drive";
+  refreshTokenEnvironmentVariable: "GOOGLE_PHOTOS_REFRESH_TOKEN" | "GOOGLE_DRIVE_REFRESH_TOKEN";
+}
+
+async function getGoogleAccessToken(configuration: GoogleTokenConfiguration): Promise<string> {
+  const cached = accessTokenCache.get(configuration.refreshTokenEnvironmentVariable);
+  if (cached && Date.now() < cached.expiresAt - 30_000) {
+    logger.info("googleAuth", `Using cached ${configuration.integration} access token`);
+    return cached.value;
   }
 
-  // Cloud Functions injects these values from Secret Manager. Never place
-  // credentials in Firestore, URLs, logs, or client-visible responses.
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_PHOTOS_REFRESH_TOKEN;
+  const refreshToken = process.env[configuration.refreshTokenEnvironmentVariable];
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error("Google Photos integration is not configured in Secret Manager.");
+    throw new Error(`${configuration.integration} integration is not configured in Secret Manager.`);
   }
 
-  logger.info("googleAuth", "Refreshing team access token");
+  logger.info("googleAuth", `Refreshing ${configuration.integration} access token`);
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -51,9 +59,27 @@ export async function getGooglePhotosAccessToken(): Promise<string> {
     throw new Error("Google token refresh returned an invalid response.");
   }
 
-  cachedAccessToken = data.access_token;
-  tokenExpiresAt = Date.now() + (data.expires_in * 1000);
+  accessTokenCache.set(configuration.refreshTokenEnvironmentVariable, {
+    value: data.access_token,
+    expiresAt: Date.now() + (data.expires_in * 1000),
+  });
 
-  logger.info("googleAuth", "Access token refreshed successfully");
+  logger.info("googleAuth", `${configuration.integration} access token refreshed successfully`);
   return data.access_token;
+}
+
+/** Obtain the dedicated team Photos credential. */
+export function getGooglePhotosAccessToken(): Promise<string> {
+  return getGoogleAccessToken({
+    integration: "Google Photos",
+    refreshTokenEnvironmentVariable: "GOOGLE_PHOTOS_REFRESH_TOKEN",
+  });
+}
+
+/** Obtain the independently scoped Drive credential. */
+export function getGoogleDriveAccessToken(): Promise<string> {
+  return getGoogleAccessToken({
+    integration: "Google Drive",
+    refreshTokenEnvironmentVariable: "GOOGLE_DRIVE_REFRESH_TOKEN",
+  });
 }

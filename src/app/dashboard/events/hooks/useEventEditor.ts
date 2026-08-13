@@ -185,7 +185,7 @@ export function useEventEditor({
         setSignups(list);
       },
       (err) => {
-        console.warn("Unable to fetch event signups:", err);
+        logger.warn("Unable to fetch event signups:", err);
       }
     );
     return () => unsubscribe();
@@ -206,7 +206,7 @@ export function useEventEditor({
         setPhotos(list.filter((photo) => photo.isDeleted !== 1));
       },
       (err) => {
-        console.warn("Unable to fetch event photos:", err);
+        logger.warn("Unable to fetch event photos:", err);
         setOperationError(`Event gallery unavailable: ${err.message}`);
       }
     );
@@ -225,7 +225,7 @@ export function useEventEditor({
       })) as EventRevision[];
       setRevisions(list);
     } catch (err) {
-      console.warn("Could not load revision logs:", err);
+      logger.warn("Could not load revision logs:", err);
       setOperationError(`Revision history unavailable: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoadingRevisions(false);

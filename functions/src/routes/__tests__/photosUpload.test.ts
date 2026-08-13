@@ -34,7 +34,7 @@ const {
 });
 
 vi.mock("../../lib/firebase-admin", () => ({
-  default: { firestore: { FieldValue: { increment: (value: number) => ({ increment: value }) } } },
+  adminFieldValue: { increment: (value: number) => ({ increment: value }) },
   adminDb: {
     collection: mockCollection,
     batch: vi.fn(() => ({ update: mockBatchUpdate, set: mockBatchSet, commit: mockBatchCommit })),

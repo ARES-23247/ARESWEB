@@ -7,11 +7,6 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to get the user's email (normalized to lowercase)
-    function getUserEmail() {
-      return (request.auth != null && request.auth.token != null && request.auth.token.email != null) ? request.auth.token.email.lower() : null;
-    }
-    
     function authorizationData() {
       return get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data;
     }
@@ -36,6 +31,22 @@ service cloud.firestore {
     function hasRole(role) {
       return isAuthorized() && 
         authorizationData().role == role;
+    }
+
+    function hasNoServerDriveFields() {
+      return !request.resource.data.keys().hasAny([
+        'source', 'driveFileId', 'driveName', 'driveMimeType',
+        'driveModifiedTime', 'driveMd5Checksum', 'driveSyncState',
+        'driveCheckedAt', 'driveImportedAt'
+      ]);
+    }
+
+    function preservesServerDriveFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'source', 'driveFileId', 'driveName', 'driveMimeType',
+        'driveModifiedTime', 'driveMd5Checksum', 'driveSyncState',
+        'driveCheckedAt', 'driveImportedAt'
+      ]);
     }
 
     // Rules for the authorized_users collection
@@ -212,7 +223,11 @@ service cloud.firestore {
     // documents
     match /documents/{docId} {
       allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
-      allow create, update: if isAuthorized() && (
+      allow create: if isAuthorized() && hasNoServerDriveFields() && (
+        request.resource.data.status != "published" ||
+        hasRole('admin') || hasRole('coach') || hasRole('mentor')
+      );
+      allow update: if isAuthorized() && preservesServerDriveFields() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
       );

@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import { AuthenticatedRequest, ensureAuth, ensureTeamMember } from "../middleware/auth";
-import { validate } from "../middleware/validation";
+import { requireRouteParam, validate } from "../middleware/validation";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
@@ -212,7 +212,8 @@ function matchDto(id: string, data: TournamentMatchRecord) {
   };
 }
 
-async function getActiveTournament(id: string) {
+async function getActiveTournament(idValue: string | string[]) {
+  const id = requireRouteParam(idValue, "tournament ID");
   const ref = adminDb.collection("tournaments").doc(id);
   const snapshot = await ref.get();
   if (!snapshot.exists || snapshot.data()?.isDeleted === 1) {
@@ -221,7 +222,9 @@ async function getActiveTournament(id: string) {
   return { snapshot, ref };
 }
 
-async function getActiveMatch(tournamentId: string, matchId: string) {
+async function getActiveMatch(tournamentIdValue: string | string[], matchIdValue: string | string[]) {
+  const tournamentId = requireRouteParam(tournamentIdValue, "tournament ID");
+  const matchId = requireRouteParam(matchIdValue, "match ID");
   const ref = adminDb.collection("tournament_matches").doc(matchId);
   const snapshot = await ref.get();
   const data = snapshot.data() as TournamentMatchRecord | undefined;

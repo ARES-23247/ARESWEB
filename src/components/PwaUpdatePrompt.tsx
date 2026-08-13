@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useEffect, useRef, useState } from "react";
 import { RefreshCw, WifiOff, X } from "lucide-react";
 import { registerSW } from "virtual:pwa-register";
@@ -34,7 +35,7 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
     const checkForUpdate = () => {
       if (document.visibilityState !== "visible" || !navigator.onLine || !registration) return;
       void registration.update().catch((updateError: unknown) => {
-        console.error("PWA update check failed:", updateError);
+        logger.error("PWA update check failed:", updateError);
         setError(`Update check failed: ${diagnosticMessage(updateError)}`);
       });
     };
@@ -43,12 +44,12 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
       if (isDisposed) return;
       registrationAttempts += 1;
       if (registrationAttempts < MAX_REGISTRATION_ATTEMPTS && navigator.onLine) {
-        console.warn("PWA registration failed; retrying:", registrationError);
+        logger.warn("PWA registration failed; retrying:", registrationError);
         retryTimer = window.setTimeout(registerServiceWorker, REGISTRATION_RETRY_DELAY_MS);
         return;
       }
 
-      console.error("PWA registration failed:", registrationError);
+      logger.error("PWA registration failed:", registrationError);
       setError(`Offline access could not be enabled: ${diagnosticMessage(registrationError)}`);
     };
 
@@ -117,7 +118,7 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
     try {
       await updateServiceWorker.current(true);
     } catch (updateError) {
-      console.error("PWA activation failed:", updateError);
+      logger.error("PWA activation failed:", updateError);
       setError(`Update activation failed: ${diagnosticMessage(updateError)}`);
       setIsUpdating(false);
     }

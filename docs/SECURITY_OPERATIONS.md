@@ -64,16 +64,20 @@ has ever appeared in repository history before the next deployment, then verify
 the bot can only access the streams and actions it needs.
 
 The team media integrations use `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
-`GOOGLE_PHOTOS_REFRESH_TOKEN`, and `YOUTUBE_API_KEY` from Google Secret Manager.
+`GOOGLE_PHOTOS_REFRESH_TOKEN`, `GOOGLE_DRIVE_REFRESH_TOKEN`, and
+`YOUTUBE_API_KEY` from Google Secret Manager.
 The OAuth client may live in the Google Cloud project used by the website. The
 refresh token may belong to a different, dedicated storage account. Sign in to
 that storage account when you grant consent. Do not connect a student's account.
+Photos and Drive use separate refresh tokens and separate API processes. See
+`docs/GOOGLE_DRIVE_INTEGRATION.md` for Drive's read-only scope, restricted
+Picker key, and root-folder setup.
 
 Use this Cloud Logging filter to review custom API results:
 
 ```text
 resource.type="cloud_run_revision"
-resource.labels.service_name=("publicapi" OR "coreapi" OR "mediaapi" OR "communicationsapi")
+resource.labels.service_name=("publicapi" OR "coreapi" OR "driveapi" OR "mediaapi" OR "communicationsapi")
 textPayload:"[app-check] App Check observation"
 ```
 
@@ -96,13 +100,18 @@ users receive new 401, 403, or permission errors.
 
 ## Coordinated deployment
 
-The HTTP API is split into four processes so a compromised public endpoint does
+The HTTP API is split into five processes so a compromised public endpoint does
 not inherit unrelated credentials:
 
 - `publicApi`: public and administrative data routes, with no Secret Manager values.
 - `coreApi`: inquiry/profile routes, with encryption, reCAPTCHA, and profile-sync secrets.
-- `mediaApi`: photo, Drive, video, and AI routes, with only their six media secrets.
+- `mediaApi`: photo, video, and AI routes, with only their six media secrets.
+- `driveApi`: Drive preview and draft-import routes, with only the Drive credential and quota secret.
 - `communicationsApi`: task, Zulip, webhook, and simulation routes, with only their four integration secrets.
+
+The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
+dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
+GitHub, or Zulip secrets.
 
 Hosting routes are the boundary between these functions. Keep the rewrite tests
 and `FUNCTION_SECRET_BINDINGS` in sync whenever a route moves. Never add a

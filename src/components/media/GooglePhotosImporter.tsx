@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import React, { useCallback, useState, useEffect } from "react";
 import { authenticatedFetch } from "@/lib/api";
 
@@ -99,7 +100,7 @@ export default function GooglePhotosImporter({
           await fetchGooglePhotosItems(pickerSessionId);
         }
       } catch (err) {
-        console.error("Error polling session:", err);
+        logger.error("Error polling session:", err);
       }
     }, 3000);
 

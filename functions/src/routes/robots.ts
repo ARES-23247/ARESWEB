@@ -4,7 +4,7 @@ import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import { AuthenticatedRequest, ensureAuth } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
-import { validate } from "../middleware/validation";
+import { requireRouteParam, validate } from "../middleware/validation";
 import { asyncHandler } from "../lib/utils";
 
 const router = express.Router();
@@ -175,7 +175,8 @@ router.get("/admin", ensureAuth, ensureRobotEditor, asyncHandler(async (req, res
 }));
 
 router.get("/:id", asyncHandler(async (req, res) => {
-  const robotSnapshot = await adminDb.collection("robots").doc(req.params.id).get();
+  const robotId = requireRouteParam(req.params.id, "robot ID");
+  const robotSnapshot = await adminDb.collection("robots").doc(robotId).get();
   if (!robotSnapshot.exists || robotSnapshot.data()?.isDeleted === 1) throw new ApiError(404, "Robot not found");
   res.json({ success: true, robot: robotDto(robotSnapshot.id, robotSnapshot.data() || {}) });
 }));
@@ -194,7 +195,7 @@ router.post("/", ensureAuth, ensureRobotEditor, validate(createRobotSchema), asy
 }));
 
 router.put("/:id", ensureAuth, ensureRobotEditor, validate(updateRobotSchema), asyncHandler(async (req, res) => {
-  const docRef = adminDb.collection("robots").doc(req.params.id);
+  const docRef = adminDb.collection("robots").doc(requireRouteParam(req.params.id, "robot ID"));
   const robotSnapshot = await docRef.get();
   if (!robotSnapshot.exists || robotSnapshot.data()?.isDeleted === 1) throw new ApiError(404, "Robot not found");
   const updateData = { ...(req.body as z.infer<typeof updateRobotSchema>), updatedAt: new Date().toISOString() };
@@ -203,7 +204,7 @@ router.put("/:id", ensureAuth, ensureRobotEditor, validate(updateRobotSchema), a
 }));
 
 router.delete("/:id", ensureAuth, ensureRobotEditor, asyncHandler(async (req, res) => {
-  const docRef = adminDb.collection("robots").doc(req.params.id);
+  const docRef = adminDb.collection("robots").doc(requireRouteParam(req.params.id, "robot ID"));
   const robotSnapshot = await docRef.get();
   if (!robotSnapshot.exists || robotSnapshot.data()?.isDeleted === 1) throw new ApiError(404, "Robot not found");
   await docRef.update({ isDeleted: 1, updatedAt: new Date().toISOString() });
@@ -211,7 +212,7 @@ router.delete("/:id", ensureAuth, ensureRobotEditor, asyncHandler(async (req, re
 }));
 
 router.patch("/:id/restore", ensureAuth, ensureRobotEditor, asyncHandler(async (req, res) => {
-  const docRef = adminDb.collection("robots").doc(req.params.id);
+  const docRef = adminDb.collection("robots").doc(requireRouteParam(req.params.id, "robot ID"));
   const robotSnapshot = await docRef.get();
   if (!robotSnapshot.exists) throw new ApiError(404, "Robot not found");
   if (robotSnapshot.data()?.isDeleted !== 1) throw new ApiError(409, "Robot is already active");

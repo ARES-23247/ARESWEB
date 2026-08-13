@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import { app } from "./firebaseCore";
 import { getLocalFirebaseEmulatorHost } from "./firebaseEnvironment";
@@ -9,6 +10,6 @@ if (emulatorHost) {
   try {
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
   } catch (error) {
-    console.warn("Firebase Auth Emulator was already connected or could not connect:", error);
+    logger.warn("Firebase Auth Emulator was already connected or could not connect:", error);
   }
 }

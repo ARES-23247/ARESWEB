@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, Eye, MapPin, RefreshCw, X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -112,7 +113,7 @@ export default function GalleryPage() {
       setHasMore(payload.hasMore === true && responseCursor !== null);
       setLoadError(null);
     } catch (error) {
-      console.error("Failed to load published photos from the public API:", error);
+      logger.error("Failed to load published photos from the public API:", error);
       setLoadError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);

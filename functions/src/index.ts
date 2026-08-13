@@ -2,6 +2,8 @@ import { onRequest, type HttpsOptions } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
+import { syncImportedDriveChanges } from "./lib/googleDriveLibrary";
+import { ApiError } from "./middleware/errorHandler";
 import { createLazyAppHandler } from "./lazyApp";
 import { allowedOrigins, FUNCTION_SECRET_BINDINGS } from "./functionConfig";
 
@@ -18,6 +20,7 @@ const commonOptions: HttpsOptions = {
 const publicHandler = createLazyAppHandler(async () => (await import("./apps/public")).publicApp);
 const coreHandler = createLazyAppHandler(async () => (await import("./apps/core")).coreApp);
 const mediaHandler = createLazyAppHandler(async () => (await import("./apps/media")).mediaApp);
+const driveHandler = createLazyAppHandler(async () => (await import("./apps/drive")).driveApp);
 const communicationsHandler = createLazyAppHandler(
   async () => (await import("./apps/communications")).communicationsApp,
 );
@@ -36,6 +39,12 @@ export const mediaApi = onRequest({
   concurrency: 10,
   secrets: [...FUNCTION_SECRET_BINDINGS.mediaApi],
 }, mediaHandler);
+export const driveApi = onRequest({
+  ...commonOptions,
+  memory: "512MiB",
+  timeoutSeconds: 60,
+  secrets: [...FUNCTION_SECRET_BINDINGS.driveApi],
+}, driveHandler);
 export const communicationsApi = onRequest({
   ...commonOptions,
   memory: "512MiB",
@@ -74,5 +83,25 @@ export const cleanupOldInquiries = onSchedule({
     logger.info("cleanup", `Successfully cleaned up ${deletedCount} old inquiries.`);
   } catch (error) {
     logger.error("cleanup", "Error running inquiries cleanup task", error);
+  }
+});
+
+export const syncGoogleDriveChanges = onSchedule({
+  schedule: "every 6 hours",
+  memory: "256MiB",
+  timeoutSeconds: 120,
+  concurrency: 1,
+  maxInstances: 1,
+  secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN"],
+}, async (_event) => {
+  try {
+    await syncImportedDriveChanges();
+  } catch (error) {
+    // A missing folder configuration is expected before an operator completes setup.
+    if (error instanceof ApiError && error.status === 409) return;
+    logger.warn("drive", "Scheduled Google Drive change check did not complete", {
+      reason: error instanceof Error ? error.name : "unknown",
+    });
+    throw error;
   }
 });

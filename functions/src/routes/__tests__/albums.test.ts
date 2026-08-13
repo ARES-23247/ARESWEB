@@ -32,9 +32,7 @@ vi.mock("../../lib/firebase-admin", () => ({
       commit: batchCommit,
     })),
   },
-  default: {
-    firestore: { FieldValue: { increment: vi.fn((value) => value) } },
-  },
+  adminFieldValue: { increment: vi.fn((value) => value) },
 }));
 
 vi.mock("../../middleware/auth", () => ({

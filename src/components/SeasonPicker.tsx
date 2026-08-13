@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import React, { useState, useEffect, useId } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
@@ -32,7 +33,7 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
         list.sort((a, b) => b.startYear - a.startYear);
         setSeasons(list);
       } catch (err) {
-        console.error("Error fetching seasons in picker:", err);
+        logger.error("Error fetching seasons in picker:", err);
       }
     };
     fetchSeasons();

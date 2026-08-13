@@ -12,6 +12,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/prerender-static-routes.mjs",
     "preview": "vite preview",
+    "validate:runtime": "node scripts/verify-runtime.mjs",
     "validate:agents": "node scripts/validate-agent-config.mjs",
     "generate:sims": "node --experimental-strip-types scripts/generate-sim-registry.ts",
     "lint": "eslint . --max-warnings=0",

@@ -66,7 +66,7 @@ async function applyCursor(
   return query.startAfter(cursorSnapshot);
 }
 
-async function getEvent(idValue: string, includeArchived: boolean) {
+async function getEvent(idValue: string | string[], includeArchived: boolean) {
   const id = parseId(idValue, "event");
   const ref = adminDb.collection("events").doc(id);
   const snapshot = await ref.get();

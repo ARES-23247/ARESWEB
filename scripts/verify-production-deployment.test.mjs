@@ -75,7 +75,9 @@ describe("production deployment contract", () => {
       "cleanupOldInquiries",
       "communicationsApi",
       "coreApi",
+      "driveApi",
       "mediaApi",
+      "syncGoogleDriveChanges",
       "publicApi",
       "web",
     ]);

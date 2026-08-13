@@ -23,9 +23,9 @@ test.describe('Kanban Task Board status movement tests', () => {
     await expect(inProgressColumn.locator(`[aria-label="${taskLabel}"]`)).toBeVisible();
   });
 
-  test('blocks creating a task until a title is provided', async ({ page }) => {
+  test('blocks creating a task until a title is provided', async ({ page, loginAs }) => {
+    await loginAs('admin');
     await page.goto('/dashboard/tasks');
-    await page.getByRole('button', { name: 'Admin' }).click();
     await expect(page.getByRole('heading', { name: 'Kanban Tasks' })).toBeVisible({ timeout: 15000 });
 
     await page.getByRole('button', { name: 'Create Task' }).click();

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import simulationPreviewRuntimeUrl from "./simulationPreviewRuntime?worker&url";
@@ -94,14 +95,14 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
     // A sandbox without allow-same-origin has an opaque origin ("null").
     // Authenticate the sender by WindowProxy identity instead of trusting origin text.
     if (event.source !== iframeRef.current?.contentWindow) {
-      console.warn('SimPreviewFrame: rejected message from unexpected source');
+      logger.warn('SimPreviewFrame: rejected message from unexpected source');
       return;
     }
 
     // Sanitize and validate message structure
     const sanitizedData = sanitizeMessageData(event.data, ALLOWED_MESSAGE_TYPES);
     if (!sanitizedData) {
-      console.warn('SimPreviewFrame: rejected message with invalid structure');
+      logger.warn('SimPreviewFrame: rejected message with invalid structure');
       return;
     }
 

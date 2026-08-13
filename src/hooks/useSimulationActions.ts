@@ -10,8 +10,24 @@ interface ApiErrorBody {
   code?: string;
 }
 
-async function createResponseError(response: Response, fallbackMessage: string): Promise<ApiError> {
-  const body = await response.json().catch(() => ({})) as ApiErrorBody;
+export async function formatSimulationSource(code: string): Promise<string> {
+  const prettier = (await import("prettier/standalone")).default;
+  const prettierPluginEstree = await import("prettier/plugins/estree");
+  const prettierPluginTs = await import("prettier/plugins/typescript");
+  return prettier.format(code, {
+    parser: "typescript",
+    plugins: [prettierPluginEstree, prettierPluginTs],
+    tabWidth: 2,
+    printWidth: 100,
+    semi: true,
+  });
+}
+
+async function createResponseError(
+  response: Response,
+  fallbackMessage: string,
+): Promise<ApiError> {
+  const body = (await response.json().catch(() => ({}))) as ApiErrorBody;
   const serverMessage = body.message || body.error || fallbackMessage;
   return new ApiError(
     response.status,
@@ -35,7 +51,7 @@ export function useSimulationActions({
   simName,
   simId,
   setFiles,
-  setSimId
+  setSimId,
 }: UseSimulationActionsProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSharingGist, setIsSharingGist] = useState(false);
@@ -69,7 +85,7 @@ export function useSimulationActions({
         body: JSON.stringify({ name: simName, files }),
       });
       if (res.ok) {
-        const data = await res.json() as { gistId: string, url: string };
+        const data = (await res.json()) as { gistId: string; url: string };
         const shareUrl = `${window.location.origin}/academy/playground?gist=${encodeURIComponent(data.gistId)}`;
         await navigator.clipboard.writeText(shareUrl);
         setSimId(`gist:${data.gistId}`);
@@ -80,7 +96,10 @@ export function useSimulationActions({
         const { toast } = await import("sonner");
         toast.success("Shareable link generated and copied!");
       } else {
-        throw await createResponseError(res, "The shareable Gist could not be created.");
+        throw await createResponseError(
+          res,
+          "The shareable Gist could not be created.",
+        );
       }
     } catch (e) {
       logger.error("[SimPlayground] Gist Share failed:", e);
@@ -94,18 +113,8 @@ export function useSimulationActions({
     try {
       const code = files[activeFile];
       if (!code) return;
-      const prettier = (await import("prettier/standalone")).default;
-      const prettierPluginBabel = await import("prettier/plugins/babel");
-      const prettierPluginEstree = await import("prettier/plugins/estree");
-      const prettierPluginTs = await import("prettier/plugins/typescript");
-      const formatted = await prettier.format(code, {
-        parser: "typescript",
-        plugins: [prettierPluginBabel, prettierPluginEstree, prettierPluginTs],
-        tabWidth: 2,
-        printWidth: 100,
-        semi: true,
-      });
-      setFiles(prev => ({ ...prev, [activeFile]: formatted }));
+      const formatted = await formatSimulationSource(code);
+      setFiles((prev) => ({ ...prev, [activeFile]: formatted }));
       const { toast } = await import("sonner");
       toast.success("Code formatted");
     } catch (e) {
@@ -141,6 +150,6 @@ export function useSimulationActions({
     handleSave,
     handleShareGist,
     handleFormatCode,
-    handleDownloadZip
+    handleDownloadZip,
   };
 }
