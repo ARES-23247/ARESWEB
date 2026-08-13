@@ -80,9 +80,11 @@ and the fixed window; neither a raw UID nor an IP address is stored. Each accept
 attempt is counted atomically before upstream work begins, malformed counters
 fail closed, and a limit rejection returns HTTP 429
 with `Retry-After`. Correctness does not depend on prompt deletion because each
-window has a new document ID. After deployment, configure a Firestore TTL policy
-for `internal_api_quotas.expiresAt` so expired operational records are removed;
-TTL deletion delay does not grant extra requests.
+window has a new document ID. Firestore TTL is enabled on
+`internal_api_quotas.expiresAt` so expired operational records are removed; TTL
+deletion delay does not grant extra requests. The production policy reached
+`ACTIVE` on 2026-08-12 and was verified with `gcloud firestore fields ttls
+list`.
 
 The API remains one function and currently binds 12 secrets. The formerly bound
 `GCP_PROJECT_ID` was removed because no runtime code reads it and Firebase already
@@ -330,24 +332,31 @@ No release-blocking finding remains.
 
 ### After deployment
 
-1. Check the home page and public API health probes.
+1. Check the home page and public API health probes. Completed by the deployment
+   workflow for commit `847070fe75fc78113aa4b8ec1db2e01a94d07d15`.
 2. Test one Google photo flow and one YouTube sync.
 3. Test one Zulip task comment and bot action.
 4. Watch App Check results for at least 72 hours.
 5. Confirm App Check remains enforced; use the documented explicit false override only during a time-limited incident.
 
+The direct portal upload path was separately smoke-tested on 2026-08-12. A
+synthetic 1600 by 900 JPEG produced a metadata-stripped full image, 1280 by 720
+medium WebP, and 480 by 270 thumbnail WebP. The active card selected the
+thumbnail, the details dialog selected the medium image, and the synthetic
+record was archived afterward. This did not exercise the optional Google Photos
+copy path, so item 2 remains open.
+
 ### Backlog
 
 1. Tighten the Hosting CSP with hashes or nonces.
 2. Split the largest page and modal components.
-3. Enable Firestore TTL on `internal_api_quotas.expiresAt` after the quota code is deployed.
-4. Reduce large editor chunks when the budget starts to tighten.
-5. Run the separately approved, bounded legacy gallery derivative backfill in
+3. Reduce large editor chunks when the budget starts to tighten.
+4. Run the separately approved, bounded legacy gallery derivative backfill in
    `docs/MEDIA_DERIVATIVE_BACKFILL.md`; new uploads already create derivatives.
-6. Design and deliver the reviewed SSR/static-prerender migration described in
+5. Design and deliver the reviewed SSR/static-prerender migration described in
    the crawl-hardening decision above; client-side `noindex` is only an interim
    mitigation for the existing raw-HTML and HTTP-status limitation.
-7. Split the monolithic Functions API when the acceptance criteria in the
+6. Split the monolithic Functions API when the acceptance criteria in the
    secret-isolation section can be delivered and canaried as one reviewed change.
 
 ## Verification record

@@ -78,9 +78,12 @@ rewrites unknown paths to the shell with HTTP 200. Genuine raw-HTML metadata and
 
 ### Production operations after deployment
 
-1. Enable Firestore TTL on `internal_api_quotas.expiresAt`.
-2. Smoke-test one new image upload and verify sanitized full/thumbnail/medium
-   objects plus card/lightbox fallback behavior.
+1. **Completed 2026-08-12:** Firestore TTL on
+   `internal_api_quotas.expiresAt` is `ACTIVE` in production.
+2. **Completed 2026-08-12:** a synthetic portal upload produced a sanitized
+   full image plus 1280 by 720 medium and 480 by 270 thumbnail WebP objects. The
+   active card and details dialog selected the expected derivatives, and the
+   synthetic record was archived after verification.
 3. Run the legacy derivative backfill only after separate production-write
    approval, following `docs/MEDIA_DERIVATIVE_BACKFILL.md` one bounded page at a
    time.
