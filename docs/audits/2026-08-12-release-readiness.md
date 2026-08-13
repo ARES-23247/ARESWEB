@@ -42,22 +42,18 @@ place and detailed postal address:
 
 ### SSR, prerendering, and HTTP 404 decision
 
-No crawler rendering migration is included in this hardening branch. The active
-build has no server-render entry point or hydration boundary, and Firebase's
-catch-all rewrite serves `index.html` before a custom Hosting 404 can run. A
-static prerender also needs a reviewed build-time source for every published
-Firestore route; introducing production database reads into CI would create a
-new data-access boundary and could publish stale or non-approved records.
+The architecture-hardening follow-up now provides route-specific raw metadata
+and genuine status codes without granting CI production Firestore access.
+Known static routes receive build-time shells under `dist/prerender`; published
+dynamic blog, Academy/ARESLib, event, and robot records go through a no-secret
+Firestore-aware renderer. Missing, draft, deleted, or non-indexable records
+return HTTP 404, transient dependencies return 503, and the Hosting catch-all is
+gone. The shared route/rendering tests guard route-manifest drift. See
+`docs/architecture/WEB_RENDERING.md`.
 
-Consequently, adding a `404.html` alone would not fix unknown routes, and routing
-only a manually duplicated allowlist of React paths would be brittle. Missing
-dynamic records would still return the app shell with HTTP 200. The safe backlog
-item is a deliberate architecture change: either a Vite SSR entry behind a
-server runtime or a generated static-route manifest and prerender artifact.
-Acceptance requires raw, JavaScript-disabled GET responses with final metadata
-and primary content, HTTP 404/410 for unknown and missing records, hydration
-without mismatch, no user-agent-specific rendering, and CI coverage for route
-manifest drift.
+This is metadata prerendering, not full body SSR: primary application content
+still requires JavaScript. Full HTML body rendering remains optional future work
+if crawler or no-script evidence shows that it is needed.
 
 ## Distributed abuse controls and secret isolation
 
@@ -86,27 +82,14 @@ deletion delay does not grant extra requests. The production policy reached
 `ACTIVE` on 2026-08-12 and was verified with `gcloud firestore fields ttls
 list`.
 
-The API remains one function and currently binds 12 secrets. The formerly bound
-`GCP_PROJECT_ID` was removed because no runtime code reads it and Firebase already
-supplies the project identity through `GCLOUD_PROJECT`. A low-risk function split
-is not included: Hosting sends all `/api/**` traffic to `api`, Express owns route
-dispatch, and `index.ts` validates `ENCRYPTION_SECRET` at module initialization.
-Exporting a nominal no-secret sitemap function from the same module would still
-load that secret-dependent module, while splitting route prefixes without shared
-composition tests risks changing CORS, App Check, body limits, auth order, and
-error handling.
-
-The safe split acceptance criteria are:
-
-1. extract reusable app construction with identical middleware-order tests;
-2. define non-overlapping Hosting rewrites for public/core, media/AI, and external
-   integration groups, with direct and Hosting-emulator path tests;
-3. bind only the secrets proven by a source-derived route-to-secret inventory;
-4. replace the quota HMAC dependency on `ENCRYPTION_SECRET` with a dedicated,
-   least-privilege quota key before placing quotas in otherwise no-secret groups;
-5. verify App Check exemptions, upload-before-parser authentication, CORS,
-   generic 5xx handling, and scheduled exports for every resulting function;
-6. canary the split with independent health checks and rollback-ready rewrites.
+The architecture-hardening follow-up splits the API into four independently
+loaded route graphs. `publicApi` binds zero secrets; `coreApi` binds three;
+`mediaApi` binds six; and `communicationsApi` binds four. Shared app construction
+preserves CORS, App Check, rate limiting, upload-before-parser authentication,
+bounded parsing, JSON 404s, and the global error contract. Hosting routes are
+non-overlapping and test-protected. The protected workflow deploys the new
+functions before switching routes, verifies health, and only then deletes the
+retired 12-secret `api` process.
 
 ## Summary scorecard
 

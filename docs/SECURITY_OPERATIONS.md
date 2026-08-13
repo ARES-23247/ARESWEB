@@ -73,7 +73,7 @@ Use this Cloud Logging filter to review custom API results:
 
 ```text
 resource.type="cloud_run_revision"
-resource.labels.service_name="api"
+resource.labels.service_name=("publicapi" OR "coreapi" OR "mediaapi" OR "communicationsapi")
 textPayload:"[app-check] App Check observation"
 ```
 
@@ -95,6 +95,23 @@ watch for another 24 hours. Return a service to `UNENFORCED` at once if valid
 users receive new 401, 403, or permission errors.
 
 ## Coordinated deployment
+
+The HTTP API is split into four processes so a compromised public endpoint does
+not inherit unrelated credentials:
+
+- `publicApi`: public and administrative data routes, with no Secret Manager values.
+- `coreApi`: inquiry/profile routes, with encryption, reCAPTCHA, and profile-sync secrets.
+- `mediaApi`: photo, Drive, video, and AI routes, with only their six media secrets.
+- `communicationsApi`: task, Zulip, webhook, and simulation routes, with only their four integration secrets.
+
+Hosting routes are the boundary between these functions. Keep the rewrite tests
+and `FUNCTION_SECRET_BINDINGS` in sync whenever a route moves. Never add a
+catch-all secret list to any function.
+
+For the first split deployment, deploy the four new functions and `web` before
+switching Hosting. Verify the new routes, then delete the retired `api` function.
+The production workflow performs these phases in that order to avoid an API
+outage and to ensure the old all-secret process is not left reachable.
 
 Deploy Functions, indexes, and Firebase rules together. This keeps API queries
 and their access rules in sync:

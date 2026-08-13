@@ -40,7 +40,15 @@ export default defineConfig({
         clientsClaim: false,
         skipWaiting: false,
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/sitemap\.xml$/],
+        // Only true SPA-only areas may fall back to index.html. Public record
+        // routes must reach Hosting/the renderer so missing records preserve
+        // their real 404 status even for clients with a service worker.
+        navigateFallbackAllowlist: [
+          /^\/dashboard(?:\/|$)/,
+          /^\/tournaments(?:\/|$)/,
+          /^\/academy\/playground\/?$/,
+          /^\/tasks\/?$/,
+        ],
         globPatterns: [
           "index.html",
           "manifest.webmanifest",

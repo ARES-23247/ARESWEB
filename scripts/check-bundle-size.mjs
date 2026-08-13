@@ -37,9 +37,12 @@ try {
   const lazyJs = readdirSync(assetsDir).filter(
     (file) => file.endsWith(".js") && !initialAssets.has(file),
   );
-  const editorRuntimePattern = /^(?:ts|css|html|json)\.worker-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|babel|prettier)-/;
+  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|babel|prettier)-/;
   const routeLazyJs = lazyJs.filter((file) => !editorRuntimePattern.test(file));
   const editorRuntimeJs = lazyJs.filter((file) => editorRuntimePattern.test(file));
+  const largestEditor = editorRuntimeJs
+    .map((file) => ({ file, ...assetSize(file) }))
+    .sort((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0, gzip: 0 };
 
   const largestLazy = routeLazyJs
     .map((file) => ({ file, ...assetSize(file) }))
@@ -51,6 +54,7 @@ try {
     largestLazyJs: largestLazy,
     totalRouteJs: sumAssets([...initialJs, ...routeLazyJs]),
     editorRuntimeJs: sumAssets(editorRuntimeJs),
+    largestEditorJs: largestEditor,
   };
 
   let exceeded = false;
@@ -58,7 +62,11 @@ try {
     const budget = config.budgets[name];
     if (!budget) continue;
 
-    const label = name === "largestLazyJs" ? `${name} (${largestLazy.file})` : name;
+    const label = name === "largestLazyJs"
+      ? `${name} (${largestLazy.file})`
+      : name === "largestEditorJs"
+        ? `${name} (${largestEditor.file})`
+        : name;
     const overRaw = measurement.raw > budget.raw;
     const overGzip = measurement.gzip > budget.gzip;
     const marker = overRaw || overGzip ? "FAIL" : "PASS";
