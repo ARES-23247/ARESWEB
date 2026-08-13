@@ -53,6 +53,28 @@ export default function PrivacyPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
+                <Lock size={24} />
+              </div>
+              <h2 className="text-2xl font-bold font-heading">4. ARES Analytics and Google Drive</h2>
+            </div>
+            <p className="text-marble leading-relaxed mb-4">
+              ARES Analytics is a local-first desktop application. Robot connections, authoring,
+              simulation, imported logs, and analysis remain on the user&apos;s computer unless the user
+              explicitly enables Google Drive synchronization.
+            </p>
+            <ul className="list-disc pl-6 text-marble space-y-2">
+              <li>Google sign-in uses a public desktop OAuth client, Authorization Code with PKCE, and no client secret.</li>
+              <li>ARES requests basic Google identity and the narrow <code>drive.file</code> permission.</li>
+              <li>ARES may access files it creates or a folder the user explicitly selects through Google Picker. It does not scan unrelated Drive files.</li>
+              <li>Google remains authoritative for account identity, file ownership, folder sharing, Shared Drive membership, and revocation.</li>
+              <li>OAuth refresh tokens are stored locally for sign-in continuity. Windows releases protect them with the current user&apos;s DPAPI credential protection; signing out removes the local token record.</li>
+            </ul>
+          </section>
+
+          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 rounded-bl-full -z-10"></div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
                 <Shield size={24} />
               </div>
               <h2 className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
@@ -85,7 +107,7 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red">
                 <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">4. Secure Administration</h2>
+              <h2 className="text-2xl font-bold font-heading">5. Secure Administration</h2>
             </div>
             <p className="text-marble leading-relaxed">
               Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized <i>FIRST</i>® Robotics team identity providers.

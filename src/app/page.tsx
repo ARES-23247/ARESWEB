@@ -13,7 +13,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
-      <SEO title="Home" description="ARES 23247 - Appalachian Robotics & Engineering Society. A FIRST® Tech Challenge Team based in Morgantown, WV, offering youth robotics, STEM education, and engineering." />
+      <SEO title="Home" description="ARES 23247 and ARES Analytics: youth robotics, open-source robot software, simulation, telemetry analysis, and STEM education in Morgantown, West Virginia." />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
@@ -98,6 +98,54 @@ export default function Home() {
                 </Link>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── ARES ANALYTICS PUBLIC PRODUCT IDENTITY ─── */}
+      <section aria-labelledby="ares-analytics-heading" className="py-20 bg-white/5 border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
+          <div>
+            <p className="text-ares-gold font-bold uppercase tracking-[0.25em] text-xs font-heading mb-3">
+              Open-source robotics software
+            </p>
+            <h2 id="ares-analytics-heading" className="text-4xl md:text-5xl font-bold font-heading text-white mb-6">
+              ARES Analytics
+            </h2>
+            <p className="text-marble/90 text-lg leading-relaxed mb-5">
+              ARES Analytics is our local-first desktop mission-control application for robot
+              projects, simulation, telemetry, match-log analysis, and evidence-based tuning. FTC
+              and FRC teams can use its local tools without a Google account or internet access.
+            </p>
+            <p className="text-marble/75 leading-relaxed">
+              Optional Google Drive sync uses one-click Google sign-in. The public ARES OAuth client
+              identifies the application; each user keeps ownership of files in the personal, team,
+              or Shared Drive folder they choose. ARES does not receive access to unrelated Drive files.
+            </p>
+          </div>
+          <div className="bg-obsidian border border-white/10 hero-card p-8">
+            <h3 className="text-xl font-bold font-heading text-white mb-4">Product information</h3>
+            <ul className="space-y-3 text-marble/85">
+              <li><strong className="text-white">Local-first:</strong> authoring, simulation, imports, and analysis remain available offline.</li>
+              <li><strong className="text-white">Optional cloud:</strong> Google permissions and the selected workspace folder remain authoritative.</li>
+              <li><strong className="text-white">No desktop secret:</strong> sign-in uses Authorization Code with PKCE and a loopback callback.</li>
+            </ul>
+            <div className="flex flex-wrap gap-3 mt-7">
+              <a
+                href="https://github.com/ARES-23247/ARES-Analytics"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="clipped-button bg-ares-red text-white text-xs uppercase tracking-wider"
+              >
+                View source
+              </a>
+              <Link to="/privacy" className="clipped-button bg-transparent border-2 border-ares-bronze text-white text-xs uppercase tracking-wider">
+                Privacy
+              </Link>
+              <Link to="/terms" className="clipped-button bg-transparent border-2 border-white/40 text-white text-xs uppercase tracking-wider">
+                Terms
+              </Link>
+            </div>
           </div>
         </div>
       </section>
