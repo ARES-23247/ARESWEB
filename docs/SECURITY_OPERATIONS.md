@@ -197,8 +197,40 @@ Function have stopped referencing it.
 
 Do not enable Firebase App Check enforcement from configuration review alone.
 Keep it in monitoring mode until the 72-hour evidence and flow checks above are
-complete. Likewise, create alert notification channels only with an explicitly
-confirmed recipient and test the channel after creation.
+complete.
+
+## Monitoring and billing alerts
+
+The approved production operations recipient is `david.huss@gmail.com`. Cloud
+Monitoring channel
+`projects/aresfirst-portal/notificationChannels/17263166369941622249` is the
+canonical email channel for this address. Do not add another recipient or
+replace this channel without explicit confirmation from that person.
+
+Keep the `ARESWEB canonical production` HTTPS uptime check enabled for
+`https://aresfirst.org/`. Policy `ARESWEB production availability and TLS` must
+remain enabled and attached to the canonical channel. It opens an incident when
+at least two public checker regions fail for one minute or when the TLS
+certificate has fewer than 15 days remaining, and it sends both opened and
+closed notifications.
+
+The same channel is linked to both active billing-account budgets: `$50 Monthly
+budget alert` and `BigQuery`. Default Billing IAM recipients remain enabled, so
+the explicit operations recipient supplements rather than replaces billing
+administrators and users. When adding a budget, attach the canonical channel and
+keep at least one threshold rule; otherwise no email is generated.
+
+Cloud Monitoring does not provide a generic channel test. Verify the channel is
+enabled, every production policy and budget references it, the uptime check has
+recent `monitoring.googleapis.com/uptime_check/check_passed` data, and the live
+endpoint returns 2xx. If end-to-end email delivery must be proven, schedule a
+controlled incident test and warn the recipient first; do not weaken the real
+policy or take production down merely to produce a test message.
+
+The project-wide Editor assignment for `jules.huss@gmail.com` was explicitly
+confirmed as intentional on 2026-08-13. Reconfirm its need during access
+reviews, but do not remove or narrow it based only on automated least-privilege
+analysis.
 
 ## Photo derivative operations
 
