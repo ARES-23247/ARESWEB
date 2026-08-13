@@ -23,7 +23,15 @@ vi.mock("../lib/firebase-admin", () => {
 
 process.env.ENCRYPTION_SECRET = "temporary_deploy_secret_that_is_at_least_32_chars";
 
-import { api, cleanupOldInquiries } from "../index";
+import {
+  API_ROUTE_GROUPS,
+  FUNCTION_SECRET_BINDINGS,
+  cleanupOldInquiries,
+  communicationsApi,
+  mediaApi,
+} from "../index";
+import { mediaApp } from "../apps/media";
+import { publicApp } from "../apps/public";
 import { adminDb } from "../lib/firebase-admin";
 
 describe("cleanupOldInquiries scheduled function", () => {
@@ -73,11 +81,9 @@ describe("cleanupOldInquiries scheduled function", () => {
   });
 });
 
-import { app } from "../index";
-
 describe("Express App Endpoints", () => {
   it("exports explicit media-safe runtime resource bounds", () => {
-    const endpoint = (api as unknown as {
+    const endpoint = (mediaApi as unknown as {
       __endpoint: { availableMemoryMb: number; timeoutSeconds: number; concurrency: number; maxInstances: number };
     }).__endpoint;
 
@@ -90,7 +96,7 @@ describe("Express App Endpoints", () => {
   });
 
   it("authenticates and applies the distributed upload quota before the large JSON parser", () => {
-    const uploadLayers = app._router.stack.filter(
+    const uploadLayers = mediaApp._router.stack.filter(
       (layer: any) => String(layer.regexp).includes("photos\\/upload-unified"),
     );
 
@@ -102,20 +108,39 @@ describe("Express App Endpoints", () => {
   });
 
   it("should mount and respond on the /api/reference endpoint", () => {
-    const route = app._router.stack.find(
-      (layer: any) => layer.route && layer.route.path === "/api/reference"
+    const referenceMount = publicApp._router.stack.find(
+      (layer: any) => String(layer.regexp).includes("api\\/reference")
     );
-    expect(route).toBeDefined();
+    expect(referenceMount).toBeDefined();
+
+    const route = referenceMount.handle.stack.find(
+      (layer: any) => layer.route && layer.route.path === "/",
+    );
 
     const req = {} as any;
     const res = {
-      setHeader: vi.fn(),
+      type: vi.fn().mockReturnThis(),
       send: vi.fn(),
     } as any;
 
     route.route.stack[0].handle(req, res);
 
-    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/html");
+    expect(res.type).toHaveBeenCalledWith("html");
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining("ARES API Reference"));
+  });
+
+  it("binds no secrets to public routes and caps every other blast radius", () => {
+    expect(FUNCTION_SECRET_BINDINGS.publicApi).toEqual([]);
+    expect(Math.max(...Object.values(FUNCTION_SECRET_BINDINGS).map((secrets) => secrets.length))).toBe(6);
+    expect(new Set(Object.values(API_ROUTE_GROUPS).flat()).size).toBe(
+      Object.values(API_ROUTE_GROUPS).flat().length,
+    );
+
+    const communicationsEndpoint = (communicationsApi as unknown as {
+      __endpoint: { secretEnvironmentVariables: Array<{ key: string }> };
+    }).__endpoint;
+    expect(communicationsEndpoint.secretEnvironmentVariables.map((secret) => secret.key)).toEqual(
+      expect.arrayContaining([...FUNCTION_SECRET_BINDINGS.communicationsApi]),
+    );
   });
 });

@@ -60,10 +60,10 @@ the deployed commit confirmed that its release defects are already addressed:
 - the simulation filesystem test ignores directories without `index.tsx`, with
   the complete release gate already green on the deployed merge.
 
-The remaining accepted work is architectural or manual: the monolithic API
-secret split, SSR/prerendering for raw metadata and real HTTP 404/410 responses,
-the dated manual accessibility checklist, optional bounded legacy derivative
-backfill, and ongoing production monitoring.
+The monolithic API split and metadata/404 architecture moved from this accepted
+backlog into the subsequent architecture-hardening branch. Remaining work is
+manual or operational: the dated accessibility checklist, optional bounded
+legacy derivative backfill, and ongoing production monitoring.
 
 ### Initial production telemetry
 

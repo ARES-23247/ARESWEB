@@ -91,6 +91,9 @@ jobs:
       - name: Build Cloud Functions
         run: pnpm --filter functions build
 
+      - name: Verify Hosting route status behavior
+        run: pnpm exec firebase emulators:exec --only hosting,functions --project aresweb-ci "node scripts/check-hosting-emulator.mjs"
+
       - name: Upload immutable release artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -262,8 +265,14 @@ jobs:
           export_environment_variables: true
           cleanup_credentials: true
 
-      - name: Deploy verified release to Firebase
-        run: pnpm exec firebase deploy --only hosting,functions,firestore:rules,firestore:indexes,storage --project aresfirst-portal --non-interactive
+      - name: Deploy isolated Functions before switching routes
+        run: >-
+          pnpm exec firebase deploy
+          --only functions:publicApi,functions:coreApi,functions:mediaApi,functions:communicationsApi,functions:web,functions:cleanupOldInquiries
+          --project aresfirst-portal --non-interactive
+
+      - name: Switch Hosting routes and deploy verified rules
+        run: pnpm exec firebase deploy --only hosting,firestore:rules,firestore:indexes,storage --project aresfirst-portal --non-interactive
 
       - name: Verify production health
         run: |
@@ -281,6 +290,16 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Remove the retired monolithic API after route verification
+        shell: bash
+        run: |
+          pnpm exec firebase functions:list --project aresfirst-portal --json > deployed-functions.json
+          if jq -e '.result[] | select(.id == "api" and .region == "us-central1")' deployed-functions.json > /dev/null; then
+            pnpm exec firebase functions:delete api --region us-central1 --project aresfirst-portal --force
+          else
+            echo "Legacy api function is already absent."
+          fi
 
       - name: Record deployment summary
         run: |

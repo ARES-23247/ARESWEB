@@ -9,12 +9,10 @@
 
 import { lazy, Suspense, useState, useEffect, ReactNode } from "react";
 import { AlertCircle, RotateCw } from "lucide-react";
-import { loader } from "@monaco-editor/react";
-import * as monaco from "monaco-editor";
+import "./monacoRuntime";
+import type { Monaco } from "@monaco-editor/react";
 import { logger } from "../../utils/logger";
 import EditorSkeleton from "./EditorSkeleton";
-
-loader.config({ monaco });
 
 // Lazy import Monaco Editor
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
@@ -28,7 +26,7 @@ interface LazyMonacoEditorProps {
   path?: string;
   value?: string;
   onChange?: (value: string | undefined) => void;
-  onMount?: (editor: editor.IStandaloneCodeEditor, monaco: typeof import("monaco-editor")) => void;
+  onMount?: (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => void;
   options?: Record<string, unknown>;
 }
 

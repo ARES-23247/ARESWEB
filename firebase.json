@@ -36,11 +36,11 @@
             },
             {
               "key": "X-Frame-Options",
-              "value": "SAMEORIGIN"
+              "value": "DENY"
             },
             {
               "key": "Content-Security-Policy",
-              "value": "default-src 'self'; script-src 'self' https://apis.google.com https://www.gstatic.com https://www.google.com https://www.recaptcha.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://api.dicebear.com https://*.googleusercontent.com https://*.google.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.ytimg.com https://img.youtube.com https://images.unsplash.com; connect-src 'self' https://*.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com; frame-src 'self' https://aresfirst-portal.firebaseapp.com https://www.google.com https://recaptcha.net https://www.youtube.com https://youtube.com https://cad.onshape.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+              "value": "default-src 'self'; script-src 'self' https://apis.google.com https://www.gstatic.com https://www.google.com https://www.recaptcha.net; script-src-attr 'none'; style-src 'self'; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://api.dicebear.com https://*.googleusercontent.com https://*.google.com https://firebasestorage.googleapis.com https://*.googleapis.com https://*.ytimg.com https://img.youtube.com https://images.unsplash.com; connect-src 'self' https://*.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com; frame-src 'self' https://aresfirst-portal.firebaseapp.com https://www.google.com https://recaptcha.net https://www.youtube.com https://youtube.com https://cad.onshape.com; worker-src 'self' blob:; media-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;"
             }
           ]
         },
@@ -54,18 +54,215 @@
           ]
         }
       ],
+      "trailingSlash": false,
       "rewrites": [
         {
           "source": "/sitemap.xml",
-          "function": "api"
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/calendar{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/sponsors{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/outreach{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/tournaments{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/robots{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/store{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/finance{,/**}",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/reference",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/sitemap.xml",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/inquiries{,/**}",
+          "function": "coreApi"
+        },
+        {
+          "source": "/api/profiles{,/**}",
+          "function": "coreApi"
+        },
+        {
+          "source": "/api/photos{,/**}",
+          "function": "mediaApi"
+        },
+        {
+          "source": "/api/ai{,/**}",
+          "function": "mediaApi"
+        },
+        {
+          "source": "/api/videos{,/**}",
+          "function": "mediaApi"
+        },
+        {
+          "source": "/api/drive{,/**}",
+          "function": "mediaApi"
+        },
+        {
+          "source": "/api/tasks{,/**}",
+          "function": "communicationsApi"
+        },
+        {
+          "source": "/api/webhooks{,/**}",
+          "function": "communicationsApi"
+        },
+        {
+          "source": "/api/simulations{,/**}",
+          "function": "communicationsApi"
+        },
+        {
+          "source": "/api/zulip{,/**}",
+          "function": "communicationsApi"
         },
         {
           "source": "/api/**",
-          "function": "api"
+          "function": "publicApi"
         },
         {
-          "source": "**",
+          "source": "/academy/playground",
           "destination": "/index.html"
+        },
+        {
+          "source": "/blog/**",
+          "function": "web"
+        },
+        {
+          "source": "/academy/**",
+          "function": "web"
+        },
+        {
+          "source": "/docs/**",
+          "function": "web"
+        },
+        {
+          "source": "/events/**",
+          "function": "web"
+        },
+        {
+          "source": "/robots/**",
+          "function": "web"
+        },
+        {
+          "source": "/dashboard{,/**}",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/tournaments{,/**}",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/tasks",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/",
+          "destination": "/prerender/home.html"
+        },
+        {
+          "source": "/about",
+          "destination": "/prerender/about.html"
+        },
+        {
+          "source": "/accessibility",
+          "destination": "/prerender/accessibility.html"
+        },
+        {
+          "source": "/academy",
+          "destination": "/prerender/academy.html"
+        },
+        {
+          "source": "/blog",
+          "destination": "/prerender/blog.html"
+        },
+        {
+          "source": "/calendar",
+          "destination": "/prerender/calendar.html"
+        },
+        {
+          "source": "/developer-api",
+          "destination": "/prerender/developer-api.html"
+        },
+        {
+          "source": "/docs",
+          "destination": "/prerender/docs.html"
+        },
+        {
+          "source": "/finance",
+          "destination": "/prerender/finance.html"
+        },
+        {
+          "source": "/gallery",
+          "destination": "/prerender/gallery.html"
+        },
+        {
+          "source": "/join",
+          "destination": "/prerender/join.html"
+        },
+        {
+          "source": "/leaderboard",
+          "destination": "/prerender/leaderboard.html"
+        },
+        {
+          "source": "/location-morgantown",
+          "destination": "/prerender/location-morgantown.html"
+        },
+        {
+          "source": "/outreach",
+          "destination": "/prerender/outreach.html"
+        },
+        {
+          "source": "/privacy",
+          "destination": "/prerender/privacy.html"
+        },
+        {
+          "source": "/robots",
+          "destination": "/prerender/robots.html"
+        },
+        {
+          "source": "/seasons",
+          "destination": "/prerender/seasons.html"
+        },
+        {
+          "source": "/sponsors",
+          "destination": "/prerender/sponsors.html"
+        },
+        {
+          "source": "/store",
+          "destination": "/prerender/store.html"
+        },
+        {
+          "source": "/tech-stack",
+          "destination": "/prerender/tech-stack.html"
+        },
+        {
+          "source": "/terms",
+          "destination": "/prerender/terms.html"
+        },
+        {
+          "source": "/videos",
+          "destination": "/prerender/videos.html"
         }
       ]
     },

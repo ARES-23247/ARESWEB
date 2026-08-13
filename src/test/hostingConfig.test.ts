@@ -7,6 +7,12 @@ interface HostingHeaderRule {
   headers: Array<{ key: string; value: string }>;
 }
 
+interface HostingRewrite {
+  source: string;
+  destination?: string;
+  function?: string;
+}
+
 describe("Firebase Hosting crawl configuration", () => {
   it("does not allow inline executable scripts", () => {
     const config = JSON.parse(
@@ -18,6 +24,12 @@ describe("Firebase Hosting crawl configuration", () => {
 
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    expect(csp).toContain("script-src-attr 'none'");
+    expect(csp).toContain("style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com");
+    expect(csp).toContain("style-src-attr 'unsafe-inline'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("worker-src 'self' blob:");
+    expect(csp).toContain("upgrade-insecure-requests");
     expect(csp).toContain("object-src 'none'");
     expect(indexHtml).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
@@ -36,5 +48,55 @@ describe("Firebase Hosting crawl configuration", () => {
       key: "Cache-Control",
       value: "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
     });
+  });
+
+  it("routes each API family to a narrowly secret-bound function", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { rewrites: HostingRewrite[] } };
+    const rewriteMap = new Map(config.hosting.rewrites.map((rewrite) => [rewrite.source, rewrite.function]));
+
+    expect(rewriteMap.get("/api/photos{,/**}")).toBe("mediaApi");
+    expect(rewriteMap.get("/api/profiles{,/**}")).toBe("coreApi");
+    expect(rewriteMap.get("/api/tasks{,/**}")).toBe("communicationsApi");
+    expect(rewriteMap.get("/api/robots{,/**}")).toBe("publicApi");
+    expect(rewriteMap.get("/api/**")).toBe("publicApi");
+  });
+
+  it("has no SPA catch-all and sends dynamic public records through the 404-aware renderer", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { rewrites: HostingRewrite[] } };
+
+    expect(config.hosting.rewrites).not.toContainEqual(expect.objectContaining({ source: "**" }));
+    for (const source of ["/blog/**", "/academy/**", "/docs/**", "/events/**", "/robots/**"]) {
+      expect(config.hosting.rewrites).toContainEqual({ source, function: "web" });
+    }
+    expect(config.hosting.rewrites).toContainEqual({ source: "/dashboard{,/**}", destination: "/index.html" });
+
+    const viteConfig = readFileSync(resolve(process.cwd(), "vite.config.ts"), "utf8");
+    expect(viteConfig).toContain("navigateFallbackAllowlist");
+    expect(viteConfig).not.toContain("navigateFallbackDenylist");
+    expect(viteConfig).not.toMatch(/navigateFallbackAllowlist:[\s\S]{0,500}blog/);
+  });
+
+  it("keeps known static routes synchronized with the prerender build", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { rewrites: HostingRewrite[] } };
+    const prerenderSource = readFileSync(
+      resolve(process.cwd(), "scripts/prerender-static-routes.mjs"),
+      "utf8",
+    );
+    const routes = [...prerenderSource.matchAll(/^\s*\["(\/[^"]*)",/gm)].map((match) => match[1]);
+
+    expect(routes.length).toBeGreaterThan(20);
+    for (const route of routes) {
+      const filename = route === "/" ? "home" : route.slice(1).replaceAll("/", "-");
+      expect(config.hosting.rewrites).toContainEqual({
+        source: route,
+        destination: `/prerender/${filename}.html`,
+      });
+    }
   });
 });

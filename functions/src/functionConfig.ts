@@ -1,0 +1,31 @@
+export const allowedOrigins = [
+  "https://ares23247.web.app",
+  "https://ares23247.firebaseapp.com",
+  "https://aresfirst.org",
+  "https://aresfirst-portal.web.app",
+  "https://aresfirst-portal.firebaseapp.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+] as const;
+
+export const API_ROUTE_GROUPS = {
+  public: [
+    "/api/calendar", "/api/sponsors", "/api/outreach", "/api/tournaments",
+    "/api/robots", "/api/store", "/api/finance", "/api/reference",
+    "/sitemap.xml", "/api/sitemap.xml",
+  ],
+  core: ["/api/inquiries", "/api/profiles"],
+  media: ["/api/photos", "/api/ai", "/api/videos", "/api/drive"],
+  communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/zulip"],
+} as const;
+
+export const FUNCTION_SECRET_BINDINGS = {
+  publicApi: [],
+  coreApi: ["ENCRYPTION_SECRET", "RECAPTCHA_SECRET_KEY", "PROFILE_SYNC_SECRET"],
+  mediaApi: [
+    "ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_PHOTOS_REFRESH_TOKEN", "GEMINI_API_KEY", "YOUTUBE_API_KEY",
+  ],
+  communicationsApi: ["GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN"],
+} as const;
