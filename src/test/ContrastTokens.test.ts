@@ -18,17 +18,62 @@ function contrastRatio(first: string, second: string) {
 }
 
 describe("semantic contrast tokens", () => {
-  it("keeps text red readable on obsidian and brand red readable on white", () => {
-    const css = readFileSync(join(process.cwd(), "src", "app", "globals.css"), "utf8");
-    const token = (name: string) => {
+  const contract = JSON.parse(
+    readFileSync(join(process.cwd(), "design", "ares-design-tokens.json"), "utf8"),
+  ) as {
+    brand: Record<string, string>;
+    semanticDark: Record<string, string>;
+    accessibility: { normalTextMinimumContrast: number };
+  };
+
+  it("keeps CSS brand and semantic tokens synchronized with the shared contract", () => {
+    const css = readFileSync(join(process.cwd(), "src", "styles", "ares-design-tokens.css"), "utf8");
+    const globalCss = readFileSync(join(process.cwd(), "src", "app", "globals.css"), "utf8");
+    const cssToken = (name: string) => {
       const value = css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, "i"))?.[1];
       if (!value) throw new Error(`Missing concrete ${name} token`);
-      return value;
+      return value.toUpperCase();
     };
 
-    expect(contrastRatio(token("ares-red-light"), token("obsidian"))).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(token("ares-red"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    expect(cssToken("ares-red")).toBe(contract.brand.red);
+    expect(cssToken("ares-red-light")).toBe(contract.brand.redReadableOnDark);
+    expect(cssToken("ares-bronze")).toBe(contract.brand.bronze);
+    expect(cssToken("ares-gold")).toBe(contract.brand.gold);
+    expect(cssToken("ares-cyan")).toBe(contract.brand.technicalCyan);
+    expect(cssToken("obsidian")).toBe(contract.brand.obsidian);
+    expect(cssToken("marble")).toBe(contract.brand.marble);
+    expect(cssToken("ares-on-bright-accent")).toBe(contract.semanticDark.onBrightAccent);
+    expect(cssToken("ares-danger")).toBe(contract.semanticDark.error);
+    expect(cssToken("ares-success")).toBe(contract.semanticDark.success);
+    expect(globalCss).toContain('@import "../styles/ares-design-tokens.css";');
+  });
+
+  it("keeps text red readable on obsidian and brand red readable on marble", () => {
+    const css = readFileSync(join(process.cwd(), "src", "app", "globals.css"), "utf8");
+
+    expect(
+      contrastRatio(contract.brand.redReadableOnDark, contract.brand.obsidian),
+    ).toBeGreaterThanOrEqual(contract.accessibility.normalTextMinimumContrast);
+    expect(contrastRatio(contract.brand.red, contract.brand.marble)).toBeGreaterThanOrEqual(
+      contract.accessibility.normalTextMinimumContrast,
+    );
     expect(css).toContain(".bg-obsidian .text-ares-red");
     expect(css).toContain("outline: 2px solid var(--ares-cyan) !important");
+  });
+
+  it("uses dark text on every bright shared action and status fill", () => {
+    for (const [name, fill] of Object.entries({
+      technicalCyan: contract.brand.technicalCyan,
+      gold: contract.brand.gold,
+      bronze: contract.brand.bronze,
+      error: contract.semanticDark.error,
+      warning: contract.semanticDark.warning,
+      success: contract.semanticDark.success,
+    })) {
+      expect(
+        contrastRatio(contract.semanticDark.onBrightAccent, fill),
+        `${name} must remain readable with the shared bright-accent foreground`,
+      ).toBeGreaterThanOrEqual(contract.accessibility.normalTextMinimumContrast);
+    }
   });
 });
