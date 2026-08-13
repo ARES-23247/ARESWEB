@@ -118,22 +118,26 @@ service-account email is part of `infra/gcp/production-deployment.json` and the
 post-deployment drift check fails if a Function falls back to another identity.
 The production access baseline is:
 
-| Workload | Project or resource roles | Secret access |
-| --- | --- | --- |
-| `publicApi` | Firestore user, App Check token verifier | none |
-| `coreApi` | Firestore user, App Check token verifier, Firebase Auth viewer | encryption, inquiry reCAPTCHA, profile sync |
-| `mediaApi` | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube |
-| `driveApi` | Firestore user, App Check token verifier | encryption, Drive OAuth |
-| `communicationsApi` | Firestore user, App Check token verifier | GitHub and Zulip credentials |
-| `cleanupOldInquiries` | Firestore user | encryption |
-| `syncGoogleDriveChanges` | Firestore user | Drive OAuth |
-| `web` | Firestore user | none |
+| Workload                 | Project or resource roles                                                                             | Secret access                               |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `publicApi`              | Firestore user, App Check token verifier                                                              | none                                        |
+| `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync |
+| `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube   |
+| `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                     |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub and Zulip credentials                |
+| `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                  |
+| `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                 |
+| `web`                    | Firestore user                                                                                        | none                                        |
 
-The Compute Engine default service account must have no project-level role and
-no Secret Manager binding. Cloud Scheduler may retain `roles/run.invoker` only
-on the two private scheduled Cloud Run services because it uses that account as
-the OIDC subject. Do not replace these narrow service-level grants with a
-project-wide role.
+The Compute Engine default service account is a build-only identity, never a
+Function runtime identity. It may hold only `roles/logging.logWriter` at project
+scope, `roles/artifactregistry.writer` on the `gcf-artifacts` repository, and
+`roles/storage.objectViewer` on the two managed `gcf-v2-sources-*` and
+`gcf-v2-uploads-*` buckets. It must have no Secret Manager, Firestore,
+application Storage, Vertex AI, or Editor access. Cloud Scheduler may retain
+`roles/run.invoker` only on the two private scheduled Cloud Run services because
+it uses that account as the OIDC subject. Do not replace these narrow grants
+with a broad project role.
 
 The GitHub deployer may impersonate the eight runtime identities and may bind a
 reviewed secret to a Function, but it cannot read secret payloads. Keep the
@@ -233,7 +237,10 @@ apply command to CI, Hosting deployment, or Functions startup.
   `firebaseauth.configs.update`, `firebasestorage.defaultBucket.get`,
   `storage.buckets.get`, `cloudfunctions.functions.getIamPolicy`,
   `cloudfunctions.functions.setIamPolicy`, `run.services.getIamPolicy`, and
-  `run.services.setIamPolicy`. Firebase needs the Function and Cloud Run IAM
+  `run.services.setIamPolicy`. The role also includes read-only IAM-policy
+  inspection for the project, Artifact Registry, and Storage so the production
+  workflow can reject build-identity privilege drift before deployment.
+  Firebase needs the Function and Cloud Run IAM
   permissions to apply the source-declared public invoker policy to HTTPS
   entry points; application authentication and authorization still run inside
   the split API services.

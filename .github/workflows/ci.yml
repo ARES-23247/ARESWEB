@@ -280,6 +280,9 @@ jobs:
           version: "568.0.0"
           project_id: aresfirst-portal
 
+      - name: Verify least-privilege build identity
+        run: node scripts/verify-production-deployment.mjs --verify-build-iam
+
       - name: Deploy isolated Functions before switching routes
         shell: bash
         run: |
@@ -304,5 +307,5 @@ jobs:
           echo "- Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Drift contract: 8 Functions and 8 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Drift contract: build identity, 8 Functions, and 8 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
           echo "- Live health: 10 canonical/Hosting checks" >> "$GITHUB_STEP_SUMMARY"

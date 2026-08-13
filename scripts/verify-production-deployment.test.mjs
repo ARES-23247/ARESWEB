@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import {
   loadContract,
   parseArgs,
+  validateBuildIdentityPolicies,
   validateDeploymentContract,
   validateFunctionInventory,
   validateInvokerPolicy,
+  verifyLiveBuildIdentity,
   verifyLiveInvokerPolicies,
 } from "./verify-production-deployment.mjs";
 
@@ -37,6 +39,23 @@ function contractWith(functions = [functionSpec()]) {
     region: "us-central1",
     platform: "gcfv2",
     runtime: "nodejs22",
+    buildIdentity: {
+      serviceAccount: "205869391101-compute@developer.gserviceaccount.com",
+      projectRoles: ["roles/logging.logWriter"],
+      artifactRepositories: [
+        {
+          name: "gcf-artifacts",
+          location: "us-central1",
+          roles: ["roles/artifactregistry.writer"],
+        },
+      ],
+      storageBuckets: [
+        {
+          name: "gcf-v2-sources-205869391101-us-central1",
+          roles: ["roles/storage.objectViewer"],
+        },
+      ],
+    },
     functions,
     health: {
       primaryOrigin: "https://aresfirst.org",
@@ -84,6 +103,9 @@ describe("production deployment contract", () => {
       "publicApi",
       "web",
     ]);
+    expect(contract.buildIdentity.serviceAccount).toBe(
+      "205869391101-compute@developer.gserviceaccount.com",
+    );
   });
 
   it("rejects duplicate services, public schedules, wildcard roles, and malformed bounds", () => {
@@ -117,6 +139,17 @@ describe("production deployment contract", () => {
         roleSpec,
       ),
     ).toThrow("runtime service account");
+    expect(() =>
+      validateDeploymentContract(
+        contractWith([
+          functionSpec({
+            serviceAccount:
+              "205869391101-compute@developer.gserviceaccount.com",
+          }),
+        ]),
+        roleSpec,
+      ),
+    ).toThrow("cannot use the build identity at runtime");
   });
 
   it("rejects unsafe health origins and malformed checks", () => {
@@ -146,6 +179,129 @@ describe("production deployment contract", () => {
         roleSpec,
       ),
     ).toThrow("invalid health origin");
+  });
+
+  it("rejects any expansion of the build identity role contract", () => {
+    const contract = contractWith();
+    expect(() =>
+      validateDeploymentContract(
+        {
+          ...contract,
+          buildIdentity: {
+            ...contract.buildIdentity,
+            projectRoles: ["roles/logging.logWriter", "roles/editor"],
+          },
+        },
+        roleSpec,
+      ),
+    ).toThrow("buildIdentity.projectRoles must be exactly");
+  });
+});
+
+describe("Cloud Functions build identity drift", () => {
+  function exactPolicies(contract = contractWith()) {
+    const member = `serviceAccount:${contract.buildIdentity.serviceAccount}`;
+    return {
+      project: {
+        bindings: [
+          { role: "roles/logging.logWriter", members: [member] },
+          { role: "roles/viewer", members: ["user:operator@example.com"] },
+        ],
+      },
+      artifactRepositories: {
+        "us-central1/gcf-artifacts": {
+          bindings: [
+            { role: "roles/artifactregistry.writer", members: [member] },
+          ],
+        },
+      },
+      storageBuckets: {
+        "gcf-v2-sources-205869391101-us-central1": {
+          bindings: [{ role: "roles/storage.objectViewer", members: [member] }],
+        },
+      },
+    };
+  }
+
+  it("accepts only the exact roles on every contracted resource", () => {
+    expect(
+      validateBuildIdentityPolicies(contractWith(), exactPolicies()),
+    ).toEqual({ artifactRepositories: 1, storageBuckets: 1 });
+  });
+
+  it("rejects a missing role and an extra role", () => {
+    const contract = contractWith();
+    const missing = exactPolicies(contract);
+    missing.storageBuckets["gcf-v2-sources-205869391101-us-central1"].bindings =
+      [];
+    expect(() => validateBuildIdentityPolicies(contract, missing)).toThrow(
+      "Production build IAM drift detected",
+    );
+
+    const extra = exactPolicies(contract);
+    extra.project.bindings.push({
+      role: "roles/editor",
+      members: [`serviceAccount:${contract.buildIdentity.serviceAccount}`],
+    });
+    expect(() => validateBuildIdentityPolicies(contract, extra)).toThrow(
+      "roles/editor",
+    );
+  });
+
+  it("queries project, repository, and bucket IAM without shell interpolation", () => {
+    const contract = contractWith();
+    const policies = exactPolicies(contract);
+    const runCommand = vi
+      .fn()
+      .mockReturnValueOnce(JSON.stringify(policies.project))
+      .mockReturnValueOnce(
+        JSON.stringify(
+          policies.artifactRepositories["us-central1/gcf-artifacts"],
+        ),
+      )
+      .mockReturnValueOnce(
+        JSON.stringify(
+          policies.storageBuckets["gcf-v2-sources-205869391101-us-central1"],
+        ),
+      );
+    expect(verifyLiveBuildIdentity(contract, runCommand, "gcloud")).toEqual({
+      artifactRepositories: 1,
+      storageBuckets: 1,
+    });
+    expect(runCommand).toHaveBeenNthCalledWith(
+      1,
+      "gcloud",
+      ["projects", "get-iam-policy", "aresfirst-portal", "--format=json"],
+      { encoding: "utf8" },
+    );
+    expect(runCommand).toHaveBeenNthCalledWith(
+      2,
+      "gcloud",
+      [
+        "artifacts",
+        "repositories",
+        "get-iam-policy",
+        "gcf-artifacts",
+        "--location",
+        "us-central1",
+        "--project",
+        "aresfirst-portal",
+        "--format=json",
+      ],
+      { encoding: "utf8" },
+    );
+    expect(runCommand).toHaveBeenNthCalledWith(
+      3,
+      "gcloud",
+      [
+        "storage",
+        "buckets",
+        "get-iam-policy",
+        "gs://gcf-v2-sources-205869391101-us-central1",
+        "--format=json",
+      ],
+      { encoding: "utf8" },
+    );
   });
 });
 
@@ -187,7 +343,9 @@ describe("deployed Function drift", () => {
         status: "success",
         result: [actual],
       }),
-    ).toThrow(/serviceAccount[\s\S]*maxInstances[\s\S]*trigger[\s\S]*UNEXPECTED_SECRET/);
+    ).toThrow(
+      /serviceAccount[\s\S]*maxInstances[\s\S]*trigger[\s\S]*UNEXPECTED_SECRET/,
+    );
   });
 
   it("rejects malformed and duplicate inventory results", () => {
@@ -275,6 +433,9 @@ describe("deployment verifier arguments", () => {
     );
     expect(parseArgs(["--print-deploy-targets"])).toEqual(
       expect.objectContaining({ printDeployTargets: true }),
+    );
+    expect(parseArgs(["--verify-build-iam"])).toEqual(
+      expect.objectContaining({ verifyBuildIam: true }),
     );
     expect(
       parseArgs(["--functions-json", "inventory.json", "--verify-iam"]),

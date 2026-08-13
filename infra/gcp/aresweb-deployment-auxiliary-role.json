@@ -3,13 +3,16 @@
   "description": "Minimal Firebase CLI deployment permissions not included in product-specific deploy roles",
   "stage": "GA",
   "includedPermissions": [
+    "artifactregistry.repositories.getIamPolicy",
     "cloudfunctions.functions.getIamPolicy",
     "cloudfunctions.functions.setIamPolicy",
     "firebaseauth.configs.get",
     "firebaseauth.configs.update",
     "firebasestorage.defaultBucket.get",
+    "resourcemanager.projects.getIamPolicy",
     "run.services.getIamPolicy",
     "run.services.setIamPolicy",
-    "storage.buckets.get"
+    "storage.buckets.get",
+    "storage.buckets.getIamPolicy"
   ]
 }
