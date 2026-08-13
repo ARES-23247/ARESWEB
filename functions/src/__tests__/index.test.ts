@@ -4,7 +4,7 @@ vi.mock("../lib/firebase-admin", () => {
   const mockGet = vi.fn();
   const mockBatchDelete = vi.fn();
   const mockBatchCommit = vi.fn();
-  
+
   const mockCollection = vi.fn().mockReturnValue({
     where: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
@@ -48,6 +48,24 @@ describe("cleanupOldInquiries scheduled function", () => {
     const batch = adminDb.batch();
     mockBatchDelete = vi.mocked(batch.delete);
     mockBatchCommit = vi.mocked(batch.commit);
+  });
+
+  it("declares the resource bounds enforced by the production contract", () => {
+    const endpoint = (cleanupOldInquiries as unknown as {
+      __endpoint: {
+        availableMemoryMb: number;
+        timeoutSeconds: number;
+        concurrency: number;
+        maxInstances: number;
+      };
+    }).__endpoint;
+
+    expect(endpoint).toMatchObject({
+      availableMemoryMb: 256,
+      timeoutSeconds: 60,
+      concurrency: 80,
+      maxInstances: 1,
+    });
   });
 
   it("should clean up old inquiries successfully", async () => {

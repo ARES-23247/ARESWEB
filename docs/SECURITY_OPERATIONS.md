@@ -108,10 +108,12 @@ Hosting routes are the boundary between these functions. Keep the rewrite tests
 and `FUNCTION_SECRET_BINDINGS` in sync whenever a route moves. Never add a
 catch-all secret list to any function.
 
-For the first split deployment, deploy the four new functions and `web` before
-switching Hosting. Verify the new routes, then delete the retired `api` function.
-The production workflow performs these phases in that order to avoid an API
-outage and to ensure the old all-secret process is not left reachable.
+Deploy the contracted Functions before switching Hosting. The production
+workflow derives its Firebase target list from
+`infra/gcp/production-deployment.json`, then rejects any missing or unexpected
+Function after the release. It never deletes unexpected infrastructure
+automatically; investigate and remove it through an explicitly reviewed
+operation.
 
 Deploy Functions, indexes, and Firebase rules together. This keeps API queries
 and their access rules in sync:
@@ -144,9 +146,10 @@ apply command to CI, Hosting deployment, or Functions startup.
 - Pull-request jobs must not receive Firebase or Google Cloud credentials.
 - Production deploys must reference the protected GitHub `production`
   environment and run only from `master` after the required test gate.
-- Probe the Firebase Hosting origin after a deploy. Monitor the canonical domain
-  separately so CDN bot policy does not turn a healthy release into a false CI
-  failure.
+- Probe both the canonical domain and Firebase Hosting origin after a deploy.
+  The source-controlled production contract checks success routes, raw metadata,
+  genuine page/API 404s, sitemap caching, and critical security headers with
+  bounded retries.
 - Keep repository Actions permissions read-only by default. Grant write scopes
   only to the production deployment job.
 - Disable force pushes to `master`, apply protection to administrators, and
@@ -171,6 +174,13 @@ apply command to CI, Hosting deployment, or Functions startup.
   permissions to apply the source-declared public invoker policy to HTTPS
   entry points; application authentication and authorization still run inside
   the split API services.
+- Keep that role synchronized from
+  `infra/gcp/aresweb-deployment-auxiliary-role.json`. Applying role changes is an
+  explicit operator action; the deployment workflow verifies Cloud Run invoker
+  policy but does not grant itself broader IAM administration.
+- Pin the Google Cloud CLI version used by the deploy job and its immutable
+  setup action revision. Upgrade both through normal dependency review so a
+  mutable runner image cannot silently change drift-check behavior.
 - Keep `id-token: write` limited to the production deploy job. Do not create
   `FIREBASE_SERVICE_ACCOUNT_KEY`, `FIREBASE_TOKEN`, or equivalent long-lived
   repository secrets.
@@ -180,6 +190,10 @@ apply command to CI, Hosting deployment, or Functions startup.
 ## Incident and drift response
 
 - If a secret may have been readable, rotate it; a rules fix is not revocation.
+- Treat `infra/gcp/production-deployment.json` as the expected Function
+  inventory. The deployment job fails on unexpected functions, secret-binding
+  expansion, resource-bound changes, runtime/region changes, inactive services,
+  or public/private Cloud Run invoker drift.
 - Compare deployed Firestore/Storage rules with this repository after every rules
   incident. Treat mismatches as deployment drift and resolve them explicitly.
 - Review Cloud Logging for `INTERNAL_ERROR`, App Check failures, rate-limit spikes,
