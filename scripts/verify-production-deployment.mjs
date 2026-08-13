@@ -76,6 +76,14 @@ export function validateDeploymentContract(contract, roleSpec) {
     if (services.has(spec.runServiceId))
       throw new Error(`Duplicate Cloud Run service: ${spec.runServiceId}`);
     services.add(spec.runServiceId);
+    if (
+      typeof spec.serviceAccount !== "string" ||
+      !/^[a-z][a-z0-9-]{4,28}[a-z0-9]@[a-z][a-z0-9-]+\.iam\.gserviceaccount\.com$/u.test(
+        spec.serviceAccount,
+      )
+    ) {
+      throw new Error(`${spec.id} has an invalid runtime service account`);
+    }
     if (!ALLOWED_TRIGGERS.has(spec.trigger))
       throw new Error(`${spec.id} has an invalid trigger`);
     if (typeof spec.public !== "boolean")
@@ -231,6 +239,7 @@ export function validateFunctionInventory(contract, payload) {
       platform: contract.platform,
       runtime: contract.runtime,
       runServiceId: spec.runServiceId,
+      serviceAccount: spec.serviceAccount,
       state: "ACTIVE",
       timeoutSeconds: spec.timeoutSeconds,
       availableMemoryMb: spec.availableMemoryMb,

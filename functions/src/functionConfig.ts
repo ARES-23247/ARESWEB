@@ -31,3 +31,19 @@ export const FUNCTION_SECRET_BINDINGS = {
   driveApi: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN"],
   communicationsApi: ["GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN"],
 } as const;
+
+/**
+ * Dedicated production identities keep a compromised function from inheriting
+ * the permissions and secrets of an unrelated workload. These accounts are
+ * created and granted least-privilege access in Google Cloud before deploy.
+ */
+export const RUNTIME_SERVICE_ACCOUNTS = {
+  publicApi: "aresweb-public-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  coreApi: "aresweb-core-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  mediaApi: "aresweb-media-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  driveApi: "aresweb-drive-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  communicationsApi: "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  cleanupOldInquiries: "aresweb-inquiry-cleanup@aresfirst-portal.iam.gserviceaccount.com",
+  syncGoogleDriveChanges: "aresweb-drive-sync@aresfirst-portal.iam.gserviceaccount.com",
+  web: "aresweb-web-runtime@aresfirst-portal.iam.gserviceaccount.com",
+} as const;

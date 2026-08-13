@@ -18,6 +18,8 @@ function functionSpec(overrides = {}) {
     id: "publicApi",
     trigger: "https",
     runServiceId: "publicapi",
+    serviceAccount:
+      "aresweb-public-runtime@aresfirst-portal.iam.gserviceaccount.com",
     public: true,
     secrets: [],
     timeoutSeconds: 60,
@@ -55,6 +57,7 @@ function deployedFunction(spec = functionSpec(), overrides = {}) {
     platform: "gcfv2",
     runtime: "nodejs22",
     runServiceId: spec.runServiceId,
+    serviceAccount: spec.serviceAccount,
     state: "ACTIVE",
     timeoutSeconds: spec.timeoutSeconds,
     availableMemoryMb: spec.availableMemoryMb,
@@ -108,6 +111,12 @@ describe("production deployment contract", () => {
         roleSpec,
       ),
     ).toThrow("positive integer");
+    expect(() =>
+      validateDeploymentContract(
+        contractWith([functionSpec({ serviceAccount: "default" })]),
+        roleSpec,
+      ),
+    ).toThrow("runtime service account");
   });
 
   it("rejects unsafe health origins and malformed checks", () => {
@@ -169,6 +178,7 @@ describe("deployed Function drift", () => {
   it("reports resource, trigger, and secret expansion drift together", () => {
     const actual = deployedFunction(functionSpec(), {
       maxInstances: 99,
+      serviceAccount: "unexpected@aresfirst-portal.iam.gserviceaccount.com",
       httpsTrigger: undefined,
       secretEnvironmentVariables: [{ key: "UNEXPECTED_SECRET" }],
     });
@@ -177,7 +187,7 @@ describe("deployed Function drift", () => {
         status: "success",
         result: [actual],
       }),
-    ).toThrow(/maxInstances[\s\S]*trigger[\s\S]*UNEXPECTED_SECRET/);
+    ).toThrow(/serviceAccount[\s\S]*maxInstances[\s\S]*trigger[\s\S]*UNEXPECTED_SECRET/);
   });
 
   it("rejects malformed and duplicate inventory results", () => {

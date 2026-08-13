@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
 import { injectMetadata, metadataForDocument, parseDynamicRoute, renderNotFound } from "./webRendering";
+import { RUNTIME_SERVICE_ACCOUNTS } from "./functionConfig";
 
 const SHELL_URL = "https://aresfirst-portal.web.app/index.html";
 
@@ -61,4 +62,5 @@ export const web = onRequest({
   timeoutSeconds: 20,
   concurrency: 40,
   maxInstances: 5,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.web,
 }, handleWebRequest);

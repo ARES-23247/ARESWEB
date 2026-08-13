@@ -32,6 +32,7 @@ process.env.ENCRYPTION_SECRET = "temporary_deploy_secret_that_is_at_least_32_cha
 import {
   API_ROUTE_GROUPS,
   FUNCTION_SECRET_BINDINGS,
+  RUNTIME_SERVICE_ACCOUNTS,
   cleanupOldInquiries,
   communicationsApi,
   coreApi,
@@ -200,6 +201,30 @@ describe("Express App Endpoints", () => {
     }).__endpoint;
     expect(communicationsEndpoint.secretEnvironmentVariables.map((secret) => secret.key)).toEqual(
       expect.arrayContaining([...FUNCTION_SECRET_BINDINGS.communicationsApi]),
+    );
+  });
+
+  it("runs every workload under its dedicated production identity", () => {
+    const endpoints = {
+      publicApi,
+      coreApi,
+      mediaApi,
+      driveApi,
+      communicationsApi,
+      cleanupOldInquiries,
+      syncGoogleDriveChanges,
+      web,
+    };
+
+    for (const [name, endpoint] of Object.entries(endpoints)) {
+      expect((endpoint as unknown as {
+        __endpoint: { serviceAccountEmail: string };
+      }).__endpoint.serviceAccountEmail).toBe(
+        RUNTIME_SERVICE_ACCOUNTS[name as keyof typeof RUNTIME_SERVICE_ACCOUNTS],
+      );
+    }
+    expect(new Set(Object.values(RUNTIME_SERVICE_ACCOUNTS)).size).toBe(
+      Object.keys(RUNTIME_SERVICE_ACCOUNTS).length,
     );
   });
 
