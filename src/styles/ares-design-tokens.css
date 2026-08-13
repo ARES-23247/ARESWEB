@@ -1,0 +1,50 @@
+/*
+ * ARES 23247 product tokens.
+ * Source contract: /design/ares-design-tokens.json
+ * Keep concrete values synchronized; ContrastTokens.test.ts enforces the mapping.
+ */
+:root {
+  /* Team brand: stable across the website, Analytics, docs, and releases. */
+  --ares-red: #c00000;
+  --ares-red-light: #ff6b6b;
+  --ares-bronze: #cd7f32;
+  --ares-gold: #ffb81c;
+  --ares-cyan: #00e5ff;
+  --obsidian: #1a1a1a;
+  --marble: #f9f9f9;
+
+  /* Shared dark-product semantics. These describe purpose, not team identity. */
+  --ares-app-background: #0d0f14;
+  --ares-app-surface: #161a22;
+  --ares-app-surface-elevated: #1e2330;
+  --ares-text-primary: #e8ecf4;
+  --ares-text-secondary: #9ca3b4;
+  --ares-text-tertiary: #8992a6;
+  --ares-border: #6b7b98;
+  --ares-border-focused: #8b9bb8;
+  --ares-on-bright-accent: #05070a;
+  --ares-danger: #ff5252;
+  --ares-warning: #ffb81c;
+  --ares-success: #66bb6a;
+
+  /* Website product role: expressive red actions on the obsidian foundation. */
+  --background: var(--marble);
+  --foreground: var(--obsidian);
+  --ares-product-primary: var(--ares-red);
+  --ares-product-primary-foreground: var(--marble);
+  --ares-product-technical: var(--ares-cyan);
+  --ares-focus-ring: var(--ares-cyan);
+
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-spartan: "League Spartan", sans-serif;
+
+  /* Compatibility aliases. New UI should use a brand or semantic token above. */
+  --ares-bronze-light: var(--ares-bronze);
+  --ares-bronze-dark: var(--ares-bronze);
+  --ares-gray: var(--obsidian);
+  --ares-gray-dark: var(--obsidian);
+  --ares-gray-deep: var(--obsidian);
+  --ares-offwhite: var(--marble);
+  --ares-muted: var(--marble);
+  --ares-danger-soft: var(--marble);
+}
