@@ -42,7 +42,7 @@ function outputName(route) {
 }
 
 export function renderStaticShell(shell, [route, pageTitle, description, noindex = false]) {
-  const title = pageTitle === "Home" ? "ARES 23247 | Morgantown Robotics Team" : `${pageTitle} | ARES 23247`;
+  const title = pageTitle === "Home" ? "ARES Analytics | ARES 23247" : `${pageTitle} | ARES 23247`;
   const canonical = `${baseUrl}${route}`;
   let html = shell
     .replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`)

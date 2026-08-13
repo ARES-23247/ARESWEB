@@ -3,6 +3,7 @@ import { test, expect } from './fixtures';
 test.describe('Navigation & Accessibility E2E tests', () => {
   test('should navigate to homepage and verify branding', async ({ page }) => {
     await page.goto('/');
+    await expect(page).toHaveTitle('ARES Analytics | ARES 23247');
     // Check that the unique hero heading is visible
     const heroHeading = page.getByRole('heading', { name: 'Engineered To Inspire' });
     await expect(heroHeading).toBeVisible();
