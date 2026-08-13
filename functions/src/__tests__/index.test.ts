@@ -28,7 +28,10 @@ import {
   FUNCTION_SECRET_BINDINGS,
   cleanupOldInquiries,
   communicationsApi,
+  coreApi,
   mediaApi,
+  publicApi,
+  web,
 } from "../index";
 import { mediaApp } from "../apps/media";
 import { publicApp } from "../apps/public";
@@ -142,5 +145,14 @@ describe("Express App Endpoints", () => {
     expect(communicationsEndpoint.secretEnvironmentVariables.map((secret) => secret.key)).toEqual(
       expect.arrayContaining([...FUNCTION_SECRET_BINDINGS.communicationsApi]),
     );
+  });
+
+  it("declares every Hosting-routed HTTPS function publicly invokable", () => {
+    for (const endpoint of [publicApi, coreApi, mediaApi, communicationsApi, web]) {
+      expect((endpoint as unknown as {
+        __endpoint: { httpsTrigger: { invoker: string[] } };
+      }).__endpoint.httpsTrigger.invoker)
+        .toEqual(["public"]);
+    }
   });
 });
