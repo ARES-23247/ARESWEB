@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -68,7 +69,7 @@ export default function EventEditorAiCopilot({
       const data = await res.json() as AssistantResponse;
       setAiResponse(data.response || "");
     } catch (err: unknown) {
-      console.warn("Gemini assistant request failed", err);
+      logger.warn("Gemini assistant request failed", err);
       setAiError("Gemini is temporarily unavailable. Your event description was not changed.");
     } finally {
       setAiLoading(false);
@@ -94,7 +95,7 @@ export default function EventEditorAiCopilot({
       setSuggestedCorrection(data.correctedText || "");
       setGrammarEdits(data.edits || []);
     } catch (err: unknown) {
-      console.warn("Gemini grammar request failed", err);
+      logger.warn("Gemini grammar request failed", err);
       setAiError("Grammar checking is temporarily unavailable. Your event description was not changed.");
     } finally {
       setAiLoading(false);

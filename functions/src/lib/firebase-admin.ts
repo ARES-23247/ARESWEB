@@ -1,6 +1,16 @@
-import * as admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAppCheck } from "firebase-admin/app-check";
+import { getAuth } from "firebase-admin/auth";
+import {
+  FieldValue,
+  getFirestore,
+  type DocumentData,
+  type DocumentReference,
+} from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
-if (!admin.apps.length) {
+let app = getApps()[0];
+if (!app) {
   // Cloud Functions, GitHub Actions, and local emulators all use Application
   // Default Credentials. Never pass a service-account JSON document in an
   // environment variable.
@@ -23,16 +33,18 @@ if (!admin.apps.length) {
     }
   }
 
-  admin.initializeApp({
+  app = initializeApp({
     projectId,
     storageBucket
   });
 }
 
-const adminDb = admin.firestore();
+const adminDb = getFirestore(app);
 adminDb.settings({ ignoreUndefinedProperties: true });
-const adminAuth = admin.auth();
-const adminStorage = admin.storage();
+const adminAuth = getAuth(app);
+const adminStorage = getStorage(app);
+const adminAppCheck = getAppCheck(app);
+const adminFieldValue = FieldValue;
 
-export { adminDb, adminAuth, adminStorage };
-export default admin;
+export { adminAppCheck, adminAuth, adminDb, adminFieldValue, adminStorage };
+export type { DocumentData as AdminDocumentData, DocumentReference as AdminDocumentReference };

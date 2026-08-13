@@ -19,7 +19,7 @@ const query: any = {
 };
 
 vi.mock("../../lib/firebase-admin", () => ({
-  default: { firestore: { FieldValue: { increment: vi.fn((value) => value) } } },
+  adminFieldValue: { increment: vi.fn((value) => value) },
   adminDb: {
     collection: vi.fn(() => query),
     batch: vi.fn(() => ({

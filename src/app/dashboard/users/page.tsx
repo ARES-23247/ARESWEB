@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
@@ -154,7 +155,7 @@ export default function DashboardUsersPage() {
       setEditedMemberTypes(previous => cursor ? { ...previous, ...initialMemberTypes } : initialMemberTypes);
 
     } catch (err: unknown) {
-      console.error("Error fetching admin users:", err);
+      logger.error("Error fetching admin users:", err);
       setError(`Could not load the user directory. ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       if (isAdditionalPage) setIsLoadingMore(false);
@@ -218,7 +219,7 @@ export default function DashboardUsersPage() {
         setTimeout(() => setSuccess(null), 4000);
       }
     } catch (err: unknown) {
-      console.error("Error updating user role:", err);
+      logger.error("Error updating user role:", err);
       setError(`Failed to update permissions: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSavingRoles(prev => ({ ...prev, [userId]: false }));
@@ -251,7 +252,7 @@ export default function DashboardUsersPage() {
       
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: unknown) {
-      console.error("Error provisioning Zulip user:", err);
+      logger.error("Error provisioning Zulip user:", err);
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("bot requests") || message.includes("administrator") || message.includes("not accept")) {
         setError("Zulip did not accept the automated invitation. Ask a team administrator for the current approved join link.");
@@ -291,7 +292,7 @@ export default function DashboardUsersPage() {
       await fetchUsersData();
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: unknown) {
-      console.error("Error removing user:", err);
+      logger.error("Error removing user:", err);
       setError(`Failed to revoke user access: ${err instanceof Error ? err.message : String(err)}`);
       setIsLoading(false);
     }

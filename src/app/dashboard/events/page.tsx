@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useAuth } from "@/context/AuthContext";
@@ -84,7 +85,7 @@ export default function EventsManagementPage({
         }
         setTeamMembers(Array.isArray(data.members) ? data.members : []);
       } catch (err: unknown) {
-        console.error("Failed to load team roster:", err);
+        logger.error("Failed to load team roster:", err);
         setOperationStatus({
           kind: "error",
           message: `Roster unavailable: ${err instanceof Error ? err.message : String(err)}`,
@@ -108,7 +109,7 @@ export default function EventsManagementPage({
       setIsLive(true);
       setLoadError(null);
     } catch (error) {
-      console.error("Unable to load event management records:", error);
+      logger.error("Unable to load event management records:", error);
       setIsLive(false);
       setLoadError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -121,7 +122,7 @@ export default function EventsManagementPage({
     void fetchLocations()
       .then(setLocations)
       .catch((error: unknown) => {
-        console.error("Unable to load managed locations:", error);
+        logger.error("Unable to load managed locations:", error);
         setLoadError((current) => current || (error instanceof Error ? error.message : String(error)));
       });
   }, [loadManagementData]);
@@ -193,7 +194,7 @@ export default function EventsManagementPage({
       setPendingLifecycle(null);
       await loadManagementData();
     } catch (error) {
-      console.error("Unable to update event lifecycle:", error);
+      logger.error("Unable to update event lifecycle:", error);
       setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsApplyingLifecycle(false);
@@ -208,7 +209,7 @@ export default function EventsManagementPage({
       setOperationStatus({ kind: "success", message: `“${evt.title}” is now published.` });
       await loadManagementData();
     } catch (error) {
-      console.error("Error approving event:", error);
+      logger.error("Error approving event:", error);
       setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
     }
   };

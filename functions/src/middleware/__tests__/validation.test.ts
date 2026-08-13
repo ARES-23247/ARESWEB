@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { validate } from "../validation";
+import { requireRouteParam, validate } from "../validation";
 import { Response, NextFunction } from "express";
 import { ApiError } from "../errorHandler";
 import { z } from "zod";
@@ -57,5 +57,17 @@ describe("Validation Middleware", () => {
     expect(next).toHaveBeenCalledWith(expect.any(Error));
     const err = vi.mocked(next).mock.calls[0][0] as Error;
     expect(err.message).toBe("Generic error");
+  });
+});
+
+describe("requireRouteParam", () => {
+  it("returns a scalar route parameter", () => {
+    expect(requireRouteParam("event-123", "event ID")).toBe("event-123");
+  });
+
+  it.each([[""], [["one", "two"]]])("rejects an empty or repeated route parameter", (value) => {
+    expect(() => requireRouteParam(value as string | string[], "event ID")).toThrow(
+      new ApiError(400, "Invalid event ID."),
+    );
   });
 });

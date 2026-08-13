@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, increment, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
@@ -51,7 +52,7 @@ export default function TaskCommentsSection({
         setComments(list);
       },
       (error) => {
-        console.error(`Unable to load comments for task ${task.id}:`, error);
+        logger.error(`Unable to load comments for task ${task.id}:`, error);
         setOperationError(describeTaskError("load task comments", error));
       }
     );
@@ -102,7 +103,7 @@ export default function TaskCommentsSection({
           if (setSyncState) setSyncState("idle");
         }, 3000);
       }).catch((err) => {
-        console.error("Zulip notification failed:", err);
+        logger.error("Zulip notification failed:", err);
         const notificationError = describeTaskError("notify Zulip", err);
         setOperationError({
           ...notificationError,
@@ -114,7 +115,7 @@ export default function TaskCommentsSection({
         }, 3000);
       });
     } catch (err) {
-      console.error("Failed to add comment:", err);
+      logger.error("Failed to add comment:", err);
       setOperationError(describeTaskError("post comment", err));
     } finally {
       setSubmitting(false);

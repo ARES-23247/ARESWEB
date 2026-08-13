@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState } from "react";
 import { Image as ImageIcon, HardDriveDownload, Loader2 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -71,7 +72,7 @@ export default function DocFormAttachmentFields({
         toast.success(`Imported metadata for "${data.file.title}"`);
       }
     } catch (error: unknown) {
-      console.error("Google Drive metadata import failed", error);
+      logger.error("Google Drive metadata import failed", error);
       toast.error(error instanceof Error ? error.message : "Error importing from Google Drive.");
     } finally {
       setIsImporting(false);

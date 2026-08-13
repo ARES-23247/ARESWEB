@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import {
   collection,
@@ -177,7 +178,7 @@ export const useDocumentSync = (
       },
       (error) => {
         const diagnostic = describeFirestoreError(error, `Loading ${collectionName}`);
-        console.error(diagnostic, error);
+        logger.error(diagnostic, error);
         setListError(diagnostic);
         setConnectionState(navigator.onLine ? "error" : "offline");
         setLoadingList(false);
@@ -205,7 +206,7 @@ export const useDocumentSync = (
       setRevisions(list);
     } catch (error) {
       const diagnostic = describeFirestoreError(error, "Loading revision history");
-      console.error(diagnostic, error);
+      logger.error(diagnostic, error);
       setRevisionError(diagnostic);
       setRevisions([]);
     } finally {
@@ -252,7 +253,9 @@ export const useDocumentSync = (
         const existing = await transaction.get(documentRef);
         if (existing.exists()) throw new DocumentSlugConflictError(slug);
       }
-      transaction.set(documentRef, payload);
+      // Preserve server-owned integration metadata (for example Drive source
+      // identity and sync state) when a member edits the website fields.
+      transaction.set(documentRef, payload, { merge: true });
       if (revisionData) {
         transaction.set(doc(db, collectionName, slug, "revisions", revId), revisionData);
       }

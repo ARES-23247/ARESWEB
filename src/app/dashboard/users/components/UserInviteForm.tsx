@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import React, { useState } from "react";
 import { Plus, RefreshCw, UserCheck } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -91,7 +92,7 @@ export default function UserInviteForm({
             zulipMsg = " and their Zulip account has been provisioned";
           }
         } catch (zErr: unknown) {
-          console.error("Error inviting Zulip account:", zErr);
+          logger.error("Error inviting Zulip account:", zErr);
           zulipMsg = ` (However, Zulip account creation failed: ${zErr instanceof Error ? zErr.message : "network error"})`;
         }
       }
@@ -104,7 +105,7 @@ export default function UserInviteForm({
       await fetchUsersData();
       setTimeout(() => setSuccess(null), 5000);
     } catch (err: unknown) {
-      console.error("Error inviting user:", err);
+      logger.error("Error inviting user:", err);
       setError(err instanceof Error ? err.message : "Failed to authorize user.");
     } finally {
       setInviting(false);

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
@@ -91,7 +92,7 @@ export default function InquiriesPage() {
       setNextCursor(cursorValue);
       setHasMore(data.hasMore === true && cursorValue !== null);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Failed to load the inquiry queue.");
       setError(err instanceof Error ? err.message : "Failed to load inquiries.");
     } finally {
       setIsLoading(false);

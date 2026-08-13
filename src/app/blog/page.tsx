@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
@@ -75,7 +76,7 @@ export default function BlogFeedPage() {
         setIsLoading(false);
       },
       (error) => {
-        console.error("Unable to load published blog posts:", error);
+        logger.error("Unable to load published blog posts:", error);
         setPosts([]);
         setLoadError(error.message);
         setIsLoading(false);

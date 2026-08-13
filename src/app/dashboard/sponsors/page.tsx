@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
@@ -83,7 +84,7 @@ export default function SponsorsManagerPage() {
       }
       setSponsors(data.sponsors || []);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Failed to load sponsor records.");
       setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
@@ -115,7 +116,7 @@ export default function SponsorsManagerPage() {
       setLogoUrl(downloadUrl);
       setOperationStatus({ kind: "success", message: "Logo uploaded. Save the sponsor to keep this change." });
     } catch (err: unknown) {
-      console.error("Failed to upload image:", err);
+      logger.error("Failed to upload image:", err);
       setOperationStatus({
         kind: "error",
         message: "The logo could not be uploaded. Your sponsor form is unchanged.",
@@ -163,7 +164,7 @@ export default function SponsorsManagerPage() {
       resetForm();
       await fetchSponsors();
     } catch (err: unknown) {
-      console.error("Failed to save sponsor:", err);
+      logger.error("Failed to save sponsor:", err);
       setOperationStatus({
         kind: "error",
         message: "The sponsor could not be saved. Your form is unchanged.",
@@ -221,7 +222,7 @@ export default function SponsorsManagerPage() {
         message: `${sponsor.name} is now ${sponsor.isActive ? "hidden from" : "shown on"} the public site.`,
       });
     } catch (err: unknown) {
-      console.error("Failed to update sponsor visibility:", err);
+      logger.error("Failed to update sponsor visibility:", err);
       setOperationStatus({ kind: "error", message: "Sponsor visibility was not changed.", diagnostic: getErrorMessage(err) });
     }
   };
@@ -245,7 +246,7 @@ export default function SponsorsManagerPage() {
       if (editingId === sponsor.id) resetForm();
       setOperationStatus({ kind: "success", message: `${sponsor.name} was archived and removed from the public site.` });
     } catch (err: unknown) {
-      console.error("Failed to archive sponsor:", err);
+      logger.error("Failed to archive sponsor:", err);
       setOperationStatus({ kind: "error", message: "The sponsor was not archived.", diagnostic: getErrorMessage(err) });
     }
   };
@@ -263,7 +264,7 @@ export default function SponsorsManagerPage() {
         : item));
       setOperationStatus({ kind: "success", message: `${sponsor.name} was restored as inactive. Review it before publishing.` });
     } catch (err: unknown) {
-      console.error("Failed to restore sponsor:", err);
+      logger.error("Failed to restore sponsor:", err);
       setOperationStatus({ kind: "error", message: "The sponsor was not restored.", diagnostic: getErrorMessage(err) });
     }
   };

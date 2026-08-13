@@ -1,7 +1,7 @@
 import express from "express";
 import crypto from "crypto";
 import { z } from "zod";
-import admin, { adminDb } from "../lib/firebase-admin";
+import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -80,7 +80,7 @@ router.post("/zulip", asyncHandler(async (req, res) => {
   const commentRef = taskRef.collection("comments").doc(newComment.id);
   batch.set(commentRef, newComment);
   batch.update(taskRef, {
-    commentsCount: admin.firestore.FieldValue.increment(1)
+    commentsCount: adminFieldValue.increment(1)
   });
   await batch.commit();
 

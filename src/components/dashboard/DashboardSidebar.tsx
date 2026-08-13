@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, User, Globe, ClipboardList, LogOut, ShieldAlert, Cpu, Sparkles, BookOpen, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy } from "lucide-react";
@@ -83,7 +84,7 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setHasPendingInquiries(!snapshot.empty);
     }, (error) => {
-      console.error("Error subscribing to pending inquiries in sidebar:", error);
+      logger.error("Error subscribing to pending inquiries in sidebar:", error);
     });
 
     return () => unsubscribe();

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useState, useEffect, useMemo } from "react";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
@@ -131,7 +132,7 @@ export default function EventFormRoster({
       setSelectedMemberIdToCheckin("");
       setRevertAlert(`Successfully checked in ${member.nickname}`);
     } catch (err: unknown) {
-      console.error("Failed admin check-in:", err);
+      logger.error("Failed admin check-in:", err);
       setSignupError(`Check-in failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
@@ -146,7 +147,7 @@ export default function EventFormRoster({
         { merge: true }
       );
     } catch (err: unknown) {
-      console.error("Failed to toggle attendance:", err);
+      logger.error("Failed to toggle attendance:", err);
       setSignupError(`Attendance update failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };

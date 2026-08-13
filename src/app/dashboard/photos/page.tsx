@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
 import {
   Archive,
   CheckCircle,
@@ -15,13 +14,11 @@ import {
   Search,
   Shield,
   Upload,
-  X,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "@/lib/image";
 import {
-  AlbumCategory,
   apiFailure,
   GooglePhotosConnection,
   ManagedAlbum,
@@ -31,10 +28,13 @@ import AccessibleTabs, {
   tabElementId,
   tabPanelId,
 } from "@/components/AccessibleTabs";
+import PhotoManagementDialogs, {
+  type AlbumEditorDraft,
+  type PendingArchive,
+  type PhotoEditorDraft,
+} from "./PhotoManagementDialogs";
 
 type Tab = "library" | "albums" | "sync";
-type PendingArchive =
-  { kind: "photo"; item: ManagedPhoto } | { kind: "album"; item: ManagedAlbum };
 interface PhotoPage {
   photos: ManagedPhoto[];
   hasMore: boolean;
@@ -55,14 +55,6 @@ interface UploadState {
   state: "waiting" | "uploading" | "done" | "error";
   detail?: string;
 }
-
-const CATEGORIES: AlbumCategory[] = [
-  "Robot Specs",
-  "Outreach",
-  "Competition",
-  "CAD Design",
-  "Practice",
-];
 
 export default function DashboardPhotosPage() {
   const { user, authorizedUser } = useAuth();
@@ -93,21 +85,24 @@ export default function DashboardPhotosPage() {
   const [actionBusy, setActionBusy] = useState(false);
 
   const [photoEditor, setPhotoEditor] = useState<ManagedPhoto | null>(null);
-  const [photoCaption, setPhotoCaption] = useState("");
-  const [photoAlt, setPhotoAlt] = useState("");
-  const [photoLabels, setPhotoLabels] = useState("");
-  const [photoAlbum, setPhotoAlbum] = useState("");
+  const [photoDraft, setPhotoDraft] = useState<PhotoEditorDraft>({
+    caption: "",
+    altText: "",
+    labels: "",
+    albumId: "",
+  });
   const [savingPhoto, setSavingPhoto] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
 
   const [albumEditorOpen, setAlbumEditorOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<ManagedAlbum | null>(null);
-  const [albumTitle, setAlbumTitle] = useState("");
-  const [albumDescription, setAlbumDescription] = useState("");
-  const [albumCategory, setAlbumCategory] =
-    useState<AlbumCategory>("Competition");
-  const [albumCover, setAlbumCover] = useState("");
-  const [albumPublic, setAlbumPublic] = useState(false);
+  const [albumDraft, setAlbumDraft] = useState<AlbumEditorDraft>({
+    title: "",
+    description: "",
+    category: "Competition",
+    coverImageUrl: "",
+    isPublic: false,
+  });
   const [savingAlbum, setSavingAlbum] = useState(false);
 
   const [connection, setConnection] = useState<GooglePhotosConnection | null>(
@@ -127,7 +122,7 @@ export default function DashboardPhotosPage() {
   const [uploads, setUploads] = useState<UploadState[]>([]);
 
   const loadPhotos = useCallback(
-    async (append = false) => {
+    async (append = false, cursor: string | null = null) => {
       if (append) setLoadingMore(true);
       else setLoadingPhotos(true);
       setError(null);
@@ -137,7 +132,7 @@ export default function DashboardPhotosPage() {
           includeArchived: String(showArchivedPhotos),
         });
         if (albumFilter) params.set("albumId", albumFilter);
-        if (append && photoCursor) params.set("cursor", photoCursor);
+        if (append && cursor) params.set("cursor", cursor);
         const response = await authenticatedFetch(
           `/api/photos?${params.toString()}`,
         );
@@ -165,11 +160,11 @@ export default function DashboardPhotosPage() {
         setLoadingMore(false);
       }
     },
-    [albumFilter, photoCursor, showArchivedPhotos],
+    [albumFilter, showArchivedPhotos],
   );
 
   const loadAlbums = useCallback(
-    async (append = false) => {
+    async (append = false, cursor: string | null = null) => {
       if (append) setLoadingMore(true);
       else setLoadingAlbums(true);
       setError(null);
@@ -178,7 +173,7 @@ export default function DashboardPhotosPage() {
           limit: "30",
           includeArchived: String(showArchivedAlbums),
         });
-        if (append && albumCursor) params.set("cursor", albumCursor);
+        if (append && cursor) params.set("cursor", cursor);
         const response = await authenticatedFetch(
           `/api/photos/albums?${params.toString()}`,
         );
@@ -206,7 +201,7 @@ export default function DashboardPhotosPage() {
         setLoadingMore(false);
       }
     },
-    [albumCursor, showArchivedAlbums],
+    [showArchivedAlbums],
   );
 
   const loadConnection = useCallback(async () => {
@@ -231,10 +226,10 @@ export default function DashboardPhotosPage() {
 
   useEffect(() => {
     void loadPhotos(false);
-  }, [albumFilter, showArchivedPhotos]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadPhotos]);
   useEffect(() => {
     void loadAlbums(false);
-  }, [showArchivedAlbums]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadAlbums]);
   useEffect(() => {
     void loadConnection();
   }, [loadConnection]);
@@ -287,10 +282,12 @@ export default function DashboardPhotosPage() {
 
   const openPhoto = (photo: ManagedPhoto) => {
     setPhotoEditor(photo);
-    setPhotoCaption(photo.caption);
-    setPhotoAlt(photo.altText);
-    setPhotoLabels(photo.labels.join(", "));
-    setPhotoAlbum(photo.albumId || "");
+    setPhotoDraft({
+      caption: photo.caption,
+      altText: photo.altText,
+      labels: photo.labels.join(", "),
+      albumId: photo.albumId || "",
+    });
     setEditorError(null);
   };
 
@@ -306,13 +303,13 @@ export default function DashboardPhotosPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            caption: photoCaption,
-            altText: photoAlt,
-            labels: photoLabels
+            caption: photoDraft.caption,
+            altText: photoDraft.altText,
+            labels: photoDraft.labels
               .split(",")
               .map((label) => label.trim())
               .filter(Boolean),
-            albumId: photoAlbum || null,
+            albumId: photoDraft.albumId || null,
           }),
         },
       );
@@ -336,11 +333,13 @@ export default function DashboardPhotosPage() {
 
   const openAlbum = (album?: ManagedAlbum) => {
     setEditingAlbum(album || null);
-    setAlbumTitle(album?.title || "");
-    setAlbumDescription(album?.description || "");
-    setAlbumCategory(album?.category || "Competition");
-    setAlbumCover(album?.coverImageUrl || "");
-    setAlbumPublic(album?.isPublic || false);
+    setAlbumDraft({
+      title: album?.title || "",
+      description: album?.description || "",
+      category: album?.category || "Competition",
+      coverImageUrl: album?.coverImageUrl || "",
+      isPublic: album?.isPublic || false,
+    });
     setEditorError(null);
     setAlbumEditorOpen(true);
   };
@@ -359,11 +358,11 @@ export default function DashboardPhotosPage() {
           method: editingAlbum ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: albumTitle,
-            description: albumDescription,
-            category: albumCategory,
-            coverImageUrl: albumCover,
-            isPublic: albumPublic,
+            title: albumDraft.title,
+            description: albumDraft.description,
+            category: albumDraft.category,
+            coverImageUrl: albumDraft.coverImageUrl,
+            isPublic: albumDraft.isPublic,
           }),
         },
       );
@@ -908,7 +907,7 @@ export default function DashboardPhotosPage() {
           {morePhotos && (
             <LoadMore
               busy={loadingMore}
-              onClick={() => void loadPhotos(true)}
+              onClick={() => void loadPhotos(true, photoCursor)}
               label="photos"
             />
           )}
@@ -1059,7 +1058,7 @@ export default function DashboardPhotosPage() {
           {moreAlbums && (
             <LoadMore
               busy={loadingMore}
-              onClick={() => void loadAlbums(true)}
+              onClick={() => void loadAlbums(true, albumCursor)}
               label="albums"
             />
           )}
@@ -1187,336 +1186,31 @@ export default function DashboardPhotosPage() {
         </section>
       )}
 
-      <Dialog.Root
-        open={Boolean(photoEditor)}
-        onOpenChange={(open) => !savingPhoto && !open && setPhotoEditor(null)}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/80" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-[101] max-h-[92vh] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-white/15 bg-obsidian p-6 focus:outline-none">
-            <div className="flex items-start justify-between">
-              <div>
-                <Dialog.Title className="font-heading text-2xl font-black uppercase text-white">
-                  Photo details
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-marble/60">
-                  Write a clear caption and alt text. Do not name students in
-                  public captions.
-                </Dialog.Description>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Close photo details"
-                  className="p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  <X aria-hidden="true" />
-                </button>
-              </Dialog.Close>
-            </div>
-            {photoEditor && (
-              <form
-                onSubmit={(event) => void savePhoto(event)}
-                className="mt-6 space-y-4"
-              >
-                <img
-                  src={photoEditor.mediumUrl || photoEditor.publicUrl}
-                  alt=""
-                  className="max-h-64 w-full object-contain bg-black"
-                />
-                <div>
-                  <label
-                    htmlFor="photo-caption"
-                    className="mb-1 block text-xs font-bold text-marble"
-                  >
-                    Caption
-                  </label>
-                  <input
-                    id="photo-caption"
-                    maxLength={500}
-                    value={photoCaption}
-                    onChange={(event) => setPhotoCaption(event.target.value)}
-                    className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="photo-alt"
-                    className="mb-1 block text-xs font-bold text-marble"
-                  >
-                    Alt text
-                  </label>
-                  <textarea
-                    id="photo-alt"
-                    required
-                    maxLength={300}
-                    rows={3}
-                    value={photoAlt}
-                    onChange={(event) => setPhotoAlt(event.target.value)}
-                    className="w-full resize-y border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="photo-labels"
-                    className="mb-1 block text-xs font-bold text-marble"
-                  >
-                    Tags, separated by commas
-                  </label>
-                  <input
-                    id="photo-labels"
-                    value={photoLabels}
-                    onChange={(event) => setPhotoLabels(event.target.value)}
-                    className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="photo-album"
-                    className="mb-1 block text-xs font-bold text-marble"
-                  >
-                    Album
-                  </label>
-                  <select
-                    id="photo-album"
-                    value={photoAlbum}
-                    onChange={(event) => setPhotoAlbum(event.target.value)}
-                    className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  >
-                    <option value="">No album</option>
-                    {albums
-                      .filter((album) => !album.isArchived)
-                      .map((album) => (
-                        <option key={album.id} value={album.id}>
-                          {album.title}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                {editorError && (
-                  <div
-                    role="alert"
-                    className="border border-ares-red bg-ares-red/15 p-3 text-white"
-                  >
-                    <p className="font-bold">Your changes are still here.</p>
-                    <p className="mt-1 font-mono text-xs text-white/80">
-                      {editorError}
-                    </p>
-                  </div>
-                )}
-                <div className="flex flex-wrap justify-between gap-3 border-t border-white/10 pt-4">
-                  {canManage && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPendingArchive({ kind: "photo", item: photoEditor })
-                      }
-                      className="border border-ares-red/50 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                    >
-                      Archive
-                    </button>
-                  )}
-                  <div className="ml-auto flex gap-3">
-                    <Dialog.Close asChild>
-                      <button
-                        type="button"
-                        className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                      >
-                        Cancel
-                      </button>
-                    </Dialog.Close>
-                    <button
-                      type="submit"
-                      disabled={savingPhoto}
-                      className="bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-                    >
-                      {savingPhoto ? "Saving" : "Save details"}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      <Dialog.Root
-        open={albumEditorOpen}
-        onOpenChange={(open) => !savingAlbum && setAlbumEditorOpen(open)}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/80" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-[101] max-h-[92vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-white/15 bg-obsidian p-6 focus:outline-none">
-            <div className="flex justify-between">
-              <div>
-                <Dialog.Title className="font-heading text-2xl font-black uppercase text-white">
-                  {editingAlbum ? "Edit album" : "Create album"}
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-marble/60">
-                  Public albums appear in the team gallery.
-                </Dialog.Description>
-              </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Close album editor"
-                  className="p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  <X aria-hidden="true" />
-                </button>
-              </Dialog.Close>
-            </div>
-            <form
-              onSubmit={(event) => void saveAlbum(event)}
-              className="mt-6 space-y-4"
-            >
-              <div>
-                <label
-                  htmlFor="album-title"
-                  className="mb-1 block text-xs font-bold text-marble"
-                >
-                  Title
-                </label>
-                <input
-                  id="album-title"
-                  required
-                  maxLength={120}
-                  value={albumTitle}
-                  onChange={(event) => setAlbumTitle(event.target.value)}
-                  className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="album-description"
-                  className="mb-1 block text-xs font-bold text-marble"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="album-description"
-                  maxLength={1000}
-                  rows={3}
-                  value={albumDescription}
-                  onChange={(event) => setAlbumDescription(event.target.value)}
-                  className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="album-category"
-                  className="mb-1 block text-xs font-bold text-marble"
-                >
-                  Category
-                </label>
-                <select
-                  id="album-category"
-                  value={albumCategory}
-                  onChange={(event) =>
-                    setAlbumCategory(event.target.value as AlbumCategory)
-                  }
-                  className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  {CATEGORIES.map((category) => (
-                    <option key={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="album-cover"
-                  className="mb-1 block text-xs font-bold text-marble"
-                >
-                  Cover image URL
-                </label>
-                <input
-                  id="album-cover"
-                  type="url"
-                  value={albumCover}
-                  onChange={(event) => setAlbumCover(event.target.value)}
-                  className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                />
-              </div>
-              <label className="flex items-start gap-2 text-sm text-marble">
-                <input
-                  type="checkbox"
-                  checked={albumPublic}
-                  onChange={(event) => setAlbumPublic(event.target.checked)}
-                  className="mt-1 accent-ares-red"
-                />{" "}
-                Show this album in the public gallery
-              </label>
-              {editorError && (
-                <div
-                  role="alert"
-                  className="border border-ares-red bg-ares-red/15 p-3 text-white"
-                >
-                  <p className="font-bold">
-                    Your album changes are still here.
-                  </p>
-                  <p className="mt-1 font-mono text-xs text-white/80">
-                    {editorError}
-                  </p>
-                </div>
-              )}
-              <div className="flex justify-end gap-3 border-t border-white/10 pt-4">
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  >
-                    Cancel
-                  </button>
-                </Dialog.Close>
-                <button
-                  type="submit"
-                  disabled={savingAlbum}
-                  className="bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-                >
-                  {savingAlbum ? "Saving" : "Save album"}
-                </button>
-              </div>
-            </form>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      <Dialog.Root
-        open={Boolean(pendingArchive)}
-        onOpenChange={(open) => !open && !actionBusy && setPendingArchive(null)}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-[110] bg-black/80" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-[111] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-white/15 bg-obsidian p-6 focus:outline-none">
-            <Dialog.Title className="font-heading text-xl font-black uppercase text-white">
-              Archive this {pendingArchive?.kind}?
-            </Dialog.Title>
-            <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/70">
-              It leaves active and public views. The file and its details stay
-              safe so an admin can restore it.
-            </Dialog.Description>
-            <div className="mt-6 flex justify-end gap-3">
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  disabled={actionBusy}
-                  className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  Cancel
-                </button>
-              </Dialog.Close>
-              <button
-                type="button"
-                onClick={() => void archivePending()}
-                disabled={actionBusy}
-                className="bg-ares-red px-4 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-              >
-                {actionBusy ? "Archiving" : "Archive"}
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <PhotoManagementDialogs
+        albums={albums}
+        canManage={canManage}
+        photo={photoEditor}
+        photoDraft={photoDraft}
+        setPhotoDraft={setPhotoDraft}
+        savingPhoto={savingPhoto}
+        onClosePhoto={() => setPhotoEditor(null)}
+        onSavePhoto={(event) => void savePhoto(event)}
+        onRequestPhotoArchive={(photo) =>
+          setPendingArchive({ kind: "photo", item: photo })
+        }
+        albumOpen={albumEditorOpen}
+        editingAlbum={editingAlbum}
+        albumDraft={albumDraft}
+        setAlbumDraft={setAlbumDraft}
+        savingAlbum={savingAlbum}
+        onAlbumOpenChange={setAlbumEditorOpen}
+        onSaveAlbum={(event) => void saveAlbum(event)}
+        editorError={editorError}
+        pendingArchive={pendingArchive}
+        actionBusy={actionBusy}
+        onArchiveOpenChange={(open) => !open && setPendingArchive(null)}
+        onConfirmArchive={() => void archivePending()}
+      />
     </div>
   );
 }

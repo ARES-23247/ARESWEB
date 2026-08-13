@@ -47,13 +47,7 @@ vi.mock("../../lib/firebase-admin", () => {
         }),
       }),
     },
-    default: {
-      firestore: {
-        FieldValue: {
-          increment: vi.fn().mockReturnValue("increment"),
-        },
-      },
-    },
+    adminFieldValue: { increment: vi.fn().mockReturnValue("increment") },
   };
 });
 

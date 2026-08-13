@@ -78,14 +78,17 @@ jobs:
         env:
           NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
           NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+          NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
         run: |
           test -n "$NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY"
           test -n "$NEXT_PUBLIC_RECAPTCHA_SITE_KEY"
+          test -n "$NEXT_PUBLIC_GOOGLE_PICKER_API_KEY"
 
       - name: Build frontend
         env:
           NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
           NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+          NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
         run: pnpm run build
 
       - name: Enforce bundle budgets
@@ -140,6 +143,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate supported local runtime contract
+        run: pnpm run validate:runtime
 
       - name: Test Firestore and Storage rules
         run: pnpm run test:rules
@@ -298,5 +304,5 @@ jobs:
           echo "- Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Drift contract: 6 Functions and 6 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Drift contract: 8 Functions and 8 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
           echo "- Live health: 10 canonical/Hosting checks" >> "$GITHUB_STEP_SUMMARY"

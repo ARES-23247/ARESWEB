@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
@@ -61,7 +62,7 @@ export default function SeasonsPage() {
         setSeasons(list);
         setSeasonsError(null);
       } catch (err) {
-        console.error("Error fetching seasons:", err);
+        logger.error("Error fetching seasons:", err);
         setSeasonsError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLoadingSeasons(false);
@@ -93,7 +94,7 @@ export default function SeasonsPage() {
         setAwards(list);
         setAwardsError(null);
       } catch (err) {
-        console.error("Error fetching awards:", err);
+        logger.error("Error fetching awards:", err);
         setAwardsError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsLoadingAwards(false);

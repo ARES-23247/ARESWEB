@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
@@ -47,11 +48,11 @@ function scheduleStaleChunkRecovery(): void {
     sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, String(now));
     void clearStalePwaState()
       .catch((cleanupError: unknown) => {
-        console.error("Stale PWA cleanup failed before recovery reload:", cleanupError);
+        logger.error("Stale PWA cleanup failed before recovery reload:", cleanupError);
       })
       .finally(() => window.location.reload());
   } catch (recoveryError) {
-    console.error("Stale chunk recovery could not be scheduled:", recoveryError);
+    logger.error("Stale chunk recovery could not be scheduled:", recoveryError);
   }
 }
 
@@ -129,7 +130,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ARES React Error Boundary Intercepted Fault:", error, errorInfo);
+    logger.error("ARES React Error Boundary Intercepted Fault:", error, errorInfo);
   }
 
   public render() {

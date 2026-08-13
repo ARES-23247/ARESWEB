@@ -51,8 +51,8 @@ function hasGooglePhotosSecrets(): boolean {
   );
 }
 
-function requireSessionId(value: string, invalidStatus = 400): string {
-  if (!/^[A-Za-z0-9_-]{1,200}$/.test(value)) {
+function requireSessionId(value: string | string[], invalidStatus = 400): string {
+  if (Array.isArray(value) || !/^[A-Za-z0-9_-]{1,200}$/.test(value)) {
     throw new ApiError(invalidStatus, "Invalid picker session ID.");
   }
   return value;

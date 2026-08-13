@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -34,7 +35,7 @@ export default function ScreenshotGallery() {
           }
         }
       } catch (err) {
-        console.warn("Failed to load screenshots from API:", err);
+        logger.warn("Failed to load screenshots from API:", err);
       } finally {
         setIsLoading(false);
       }

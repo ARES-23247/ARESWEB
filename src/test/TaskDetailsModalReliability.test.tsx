@@ -76,8 +76,7 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof TaskDetailsM
     onArchiveTask: vi.fn(async () => null),
     ...overrides,
   };
-  render(<TaskDetailsModal {...props} />);
-  return props;
+  return { props, ...render(<TaskDetailsModal {...props} />) };
 }
 
 describe("TaskDetailsModal reliability", () => {
@@ -101,6 +100,24 @@ describe("TaskDetailsModal reliability", () => {
 
     fireEvent.change(title, { target: { value: "  Valid task  " } });
     expect(saveButton).toBeEnabled();
+  });
+
+  it("preserves an unsaved title when a parent listener refreshes the same task", () => {
+    const { props, rerender } = renderModal();
+    fireEvent.change(screen.getByLabelText("Task Title"), {
+      target: { value: "Unsaved operator note" },
+    });
+
+    rerender(
+      <TaskDetailsModal
+        {...props}
+        tasks={[{ ...existingTask, description: "A refreshed remote description" }]}
+      />,
+    );
+
+    expect(screen.getByLabelText("Task Title")).toHaveValue(
+      "Unsaved operator note",
+    );
   });
 
   it("keeps the editor open and exposes diagnostic guidance when saving fails", async () => {

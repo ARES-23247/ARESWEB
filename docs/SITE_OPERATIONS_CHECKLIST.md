@@ -13,11 +13,12 @@ Create or confirm these values in Google Secret Manager:
 
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_DRIVE_REFRESH_TOKEN`
 - `GOOGLE_PHOTOS_REFRESH_TOKEN`
 - `YOUTUBE_API_KEY`
 
-Grant only the Google scopes used by the photo picker, team photo uploads, and
-YouTube playlist sync. Keep the recovery email and multi-factor authentication
+Grant only the Google scopes used by the photo picker, Drive read-only library,
+team photo uploads, and YouTube playlist sync. Keep the recovery email and multi-factor authentication
 under team leadership control. Record account ownership in the team's private
 operations handbook, not in this repository.
 
@@ -25,9 +26,13 @@ Confirm these GitHub repository variables before the release:
 
 - `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY`
 - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+- `NEXT_PUBLIC_GOOGLE_PICKER_API_KEY`
 
-Both are public browser keys. Keep all four Google integration values in Secret
+All three are public browser keys. Keep the Google integration secrets in Secret
 Manager. Never copy those secret values into GitHub variables.
+
+Follow `docs/GOOGLE_DRIVE_INTEGRATION.md` for the separate Drive token, Picker
+key restrictions, OAuth redirect, and root-folder validation steps.
 
 ## 2. Rotate the Zulip bot key
 

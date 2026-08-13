@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState } from "react";
 import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 import { siteConfig } from "@/lib/site-config";
@@ -111,7 +112,7 @@ export default function SponsorsPage() {
       setSponsors(payload.sponsors.map(parseSponsor).filter((sponsor): sponsor is Sponsor => sponsor !== null));
       setSponsorLoadError(null);
     } catch (error) {
-      console.error("Failed to load sponsors from the public API:", error);
+      logger.error("Failed to load sponsors from the public API:", error);
       setSponsorLoadError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoadingSponsors(false);
@@ -146,7 +147,7 @@ export default function SponsorsPage() {
       const token = await getRecaptchaToken();
       await submitInquiry(token);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Sponsor inquiry verification failed.");
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Verification check failed. Please refresh and try again.");
     }
@@ -190,7 +191,7 @@ export default function SponsorsPage() {
       setLevel("Interested in Details");
       setMessage("");
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Sponsor inquiry submission failed.");
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred. Please try again or email us directly.");
     }

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState, useMemo, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { X, Save, Image as ImageIcon, Shuffle } from "lucide-react";
@@ -47,16 +48,16 @@ export default function AvatarEditor({ currentImage, onClose, onSave }: AvatarEd
       if (!currentImage) return new URLSearchParams();
       const url = new URL(currentImage);
       if (!(url.hostname === 'dicebear.com' || url.hostname.endsWith('.dicebear.com') || url.hostname === 'api.dicebear.com' || url.hostname.endsWith('.api.dicebear.com'))) {
-        console.warn('Avatar URL must be from dicebear.com domain');
+        logger.warn('Avatar URL must be from dicebear.com domain');
         return new URLSearchParams();
       }
       if (url.protocol !== 'https:') {
-        console.warn('Avatar URL must use HTTPS');
+        logger.warn('Avatar URL must use HTTPS');
         return new URLSearchParams();
       }
       return new URLSearchParams(url.search);
     } catch {
-      console.warn('Invalid avatar URL format');
+      logger.warn('Invalid avatar URL format');
       return new URLSearchParams();
     }
   };

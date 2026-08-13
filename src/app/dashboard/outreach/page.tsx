@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
@@ -96,7 +97,7 @@ export default function OutreachManagerPage() {
       }
       setLogs(data.logs || []);
     } catch (err: unknown) {
-      console.error(err);
+      logger.error("Failed to load outreach logs.");
       setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
@@ -118,12 +119,12 @@ export default function OutreachManagerPage() {
         });
         setLocations(list);
       }, (listenerError) => {
-        console.error("Location listener failed:", listenerError);
+        logger.error("Location listener failed:", listenerError);
         setOperationStatus({ kind: "error", message: "Locations could not be loaded.", diagnostic: getErrorMessage(listenerError) });
       });
       return () => unsubscribe();
     } catch (error: unknown) {
-      console.error("Error listening to locations:", error);
+      logger.error("Error listening to locations:", error);
       setOperationStatus({ kind: "error", message: "Locations could not be loaded.", diagnostic: getErrorMessage(error) });
     }
   }, []);
@@ -151,12 +152,12 @@ export default function OutreachManagerPage() {
         });
         setEvents(list);
       }, (listenerError) => {
-        console.error("Calendar event listener failed:", listenerError);
+        logger.error("Calendar event listener failed:", listenerError);
         setOperationStatus({ kind: "error", message: "Calendar events could not be loaded.", diagnostic: getErrorMessage(listenerError) });
       });
       return () => unsubscribe();
     } catch (error: unknown) {
-      console.error("Error listening to calendar events:", error);
+      logger.error("Error listening to calendar events:", error);
       setOperationStatus({ kind: "error", message: "Calendar events could not be loaded.", diagnostic: getErrorMessage(error) });
     }
   }, []);
@@ -228,7 +229,7 @@ export default function OutreachManagerPage() {
       resetForm();
       await fetchLogs();
     } catch (err: unknown) {
-      console.error("Failed to save outreach log:", err);
+      logger.error("Failed to save outreach log:", err);
       setOperationStatus({ kind: "error", message: "The outreach log could not be saved. Your form is unchanged.", diagnostic: getErrorMessage(err) });
     } finally {
       setIsSaving(false);
@@ -316,7 +317,7 @@ export default function OutreachManagerPage() {
       setHours(Math.max(0, Math.round(calculatedHours * 100) / 100));
       setCalcLogMessage(explanation);
     } catch (err: unknown) {
-      console.error("Error calculating hours:", err);
+      logger.error("Error calculating hours:", err);
       setOperationStatus({
         kind: "error",
         message: "Signups could not be loaded. The event fields are still filled in for manual entry.",
@@ -344,7 +345,7 @@ export default function OutreachManagerPage() {
       if (editingId === log.id) resetForm();
       setOperationStatus({ kind: "success", message: `${log.title} was archived and removed from the public outreach record.` });
     } catch (err: unknown) {
-      console.error("Failed to archive outreach log:", err);
+      logger.error("Failed to archive outreach log:", err);
       setOperationStatus({ kind: "error", message: "The outreach log was not archived.", diagnostic: getErrorMessage(err) });
     }
   };
@@ -360,7 +361,7 @@ export default function OutreachManagerPage() {
       setLogs((prev) => prev.map((item) => item.id === log.id ? { ...item, isDeleted: 0, archivedAt: null } : item));
       setOperationStatus({ kind: "success", message: `${log.title} was restored to the public outreach record.` });
     } catch (err: unknown) {
-      console.error("Failed to restore outreach log:", err);
+      logger.error("Failed to restore outreach log:", err);
       setOperationStatus({ kind: "error", message: "The outreach log was not restored.", diagnostic: getErrorMessage(err) });
     }
   };

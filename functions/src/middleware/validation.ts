@@ -25,3 +25,11 @@ export function validate(schema: ZodSchema) {
     }
   };
 }
+
+/** Reject repeated Express 5 route parameters before they reach data APIs. */
+export function requireRouteParam(value: string | string[], label = "route parameter"): string {
+  if (Array.isArray(value) || value.length === 0) {
+    throw new ApiError(400, `Invalid ${label}.`);
+  }
+  return value;
+}

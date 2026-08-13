@@ -4,6 +4,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { ensureAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { requireRouteParam } from "../middleware/validation";
 
 const router = express.Router();
 
@@ -171,7 +172,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 
 // DELETE /api/outreach/admin/:id - Archive outreach log (admin only)
 router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "outreach ID");
 
   const docRef = adminDb.collection("outreach_logs").doc(id);
   const docSnap = await docRef.get();
@@ -192,7 +193,7 @@ router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
 
 // PATCH /api/outreach/admin/:id/restore - Restore an archived outreach log (admin only)
 router.patch("/admin/:id/restore", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const id = requireRouteParam(req.params.id, "outreach ID");
   const docRef = adminDb.collection("outreach_logs").doc(id);
   const docSnap = await docRef.get();
 

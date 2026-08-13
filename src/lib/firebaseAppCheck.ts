@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { app } from "./firebaseCore";
 
 type AppCheckModule = typeof import("firebase/app-check");
@@ -33,7 +34,7 @@ async function getOrInitializeAppCheck(): Promise<AppCheckInstance | undefined> 
       return appCheck;
     })
     .catch((error: unknown) => {
-      console.error("Firebase App Check failed to initialize:", error);
+      logger.error("Firebase App Check failed to initialize:", error);
       appCheckInitialization = undefined;
       return undefined;
     });
@@ -50,7 +51,7 @@ export async function getAppCheckHeader(forceRefresh = false): Promise<Record<st
     const tokenResult = await getToken(currentAppCheck, forceRefresh);
     return tokenResult?.token ? { "X-Firebase-AppCheck": tokenResult.token } : {};
   } catch (error) {
-    console.error("Failed to retrieve App Check token:", error);
+    logger.error("Failed to retrieve App Check token:", error);
     return {};
   }
 }

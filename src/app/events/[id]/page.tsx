@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Link, useParams } from "react-router-dom";
@@ -86,7 +87,7 @@ export default function EventDetailPage() {
       setEvent(result as EventItem);
       setEventLoadError(null);
     } catch (error) {
-      console.error("Error fetching event details:", error);
+      logger.error("Error fetching event details:", error);
       setEventLoadError(
         error instanceof CalendarApiError && error.status === 404
           ? null
@@ -107,7 +108,7 @@ export default function EventDetailPage() {
   useEffect(() => {
     if (!isVerified) return;
     void fetchLocations().then(setLocations).catch((error: unknown) => {
-      console.error("Unable to fetch event locations:", error);
+      logger.error("Unable to fetch event locations:", error);
     });
   }, [isVerified]);
 
@@ -127,7 +128,7 @@ export default function EventDetailPage() {
         setProfileNickname(typeof nickname === "string" && nickname.trim() ? nickname : "ARES Member");
       })
       .catch((error: unknown) => {
-        console.error("Unable to load the RSVP nickname:", error);
+        logger.error("Unable to load the RSVP nickname:", error);
         setSignupError(`Profile details unavailable: ${error instanceof Error ? error.message : String(error)}`);
       });
   }, [isVerified]);
@@ -146,7 +147,7 @@ export default function EventDetailPage() {
         setSignups(list);
       },
       (err) => {
-        console.warn("Unable to fetch event signups:", err);
+        logger.warn("Unable to fetch event signups:", err);
       }
     );
     return () => unsubscribe();
@@ -182,7 +183,7 @@ export default function EventDetailPage() {
       setPhotoLoadError(null);
     } catch (error) {
       if (signal?.aborted) return;
-      console.error("Unable to fetch public event photos:", error);
+      logger.error("Unable to fetch public event photos:", error);
       setPhotoLoadError(error instanceof Error ? error.message : String(error));
     } finally {
       if (!signal?.aborted) setLoadingPhotos(false);
@@ -244,7 +245,7 @@ export default function EventDetailPage() {
     try {
       await setDoc(doc(db, "events", id, "signups", user.uid), rsvpDoc);
     } catch (err: unknown) {
-      console.error("Error submitting RSVP:", err);
+      logger.error("Error submitting RSVP:", err);
       setSignupError(`RSVP failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSubmittingRsvp(false);
@@ -265,7 +266,7 @@ export default function EventDetailPage() {
       await deleteDoc(doc(db, "events", id, "signups", user.uid));
       setConfirmRsvpCancel(false);
     } catch (err: unknown) {
-      console.error("Error deleting RSVP:", err);
+      logger.error("Error deleting RSVP:", err);
       setSignupError(`RSVP removal failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSubmittingRsvp(false);
@@ -281,7 +282,7 @@ export default function EventDetailPage() {
     try {
       await setDoc(doc(db, "events", id, "signups", userId), { attended: !currentStatus }, { merge: true });
     } catch (err: unknown) {
-      console.error("Error updating attendance:", err);
+      logger.error("Error updating attendance:", err);
       setSignupError(`Attendance update failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
@@ -337,7 +338,7 @@ export default function EventDetailPage() {
       });
       await loadPhotos();
     } catch (err: unknown) {
-      console.error("Image upload failed:", err);
+      logger.error("Image upload failed:", err);
       setUploadError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploadingImage(false);

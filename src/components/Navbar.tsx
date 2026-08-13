@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -57,7 +58,7 @@ export default function Navbar() {
       } catch (error) {
         if (controller.signal.aborted) return;
         const diagnostic = error instanceof Error ? error.message : "Pending inquiry request failed";
-        console.error("Error loading pending inquiry status for navigation:", error);
+        logger.error("Error loading pending inquiry status for navigation:", error);
         setHasPendingInquiries(null);
         setPendingInquiriesError(diagnostic);
       }

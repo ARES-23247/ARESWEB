@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
@@ -62,7 +63,7 @@ export default function DashboardProfilePage() {
       setSuccess("Zulip account provisioned successfully! Log into aresfirst.zulipchat.com with your Google account.");
       setTimeout(() => setSuccess(null), 6000);
     } catch (err: unknown) {
-      console.error("Zulip self-provision error:", err);
+      logger.error("Zulip self-provision error:", err);
       setError(err instanceof Error ? err.message : "Failed to provision Zulip account.");
     } finally {
       setProvisioningZulip(false);
@@ -127,7 +128,7 @@ export default function DashboardProfilePage() {
     const currentUser = user;
     if (!currentUser) return;
     if (profileQuery.error) {
-      console.error("Failed to load user profile details:", profileQuery.error);
+      logger.error("Failed to load user profile details:", profileQuery.error);
       setError(profileQuery.error instanceof Error ? profileQuery.error.message : "Could not retrieve profile details.");
       return;
     }
@@ -296,7 +297,7 @@ export default function DashboardProfilePage() {
       setSuccess("Profile settings saved securely.");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: unknown) {
-      console.error("Failed to write user profile:", err);
+      logger.error("Failed to write user profile:", err);
       setError(err instanceof Error ? err.message : "Failed to update profile settings.");
     } finally {
       setSaving(false);

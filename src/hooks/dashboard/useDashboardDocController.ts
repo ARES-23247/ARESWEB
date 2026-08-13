@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -153,7 +154,7 @@ export function useDashboardDocController(
       setPendingArchiveSlug(null);
     } catch (error) {
       const diagnostic = error instanceof Error ? error.message : String(error);
-      console.error("Document archive failed", error);
+      logger.error("Document archive failed", error);
       setArchiveError(diagnostic);
     } finally {
       setIsArchiving(false);

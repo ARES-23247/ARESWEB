@@ -326,6 +326,31 @@ describe("Media API boundary rules", () => {
       await assertFails(deleteDoc(doc(adminDb, collectionName, id)));
     }
   });
+
+  it("keeps Google Drive identity and sync fields server-owned", async () => {
+    await seedAuthorizedUser("admin-user", "admin");
+    await seedDocument("documents", "drive_record", {
+      title: "Robot Guide",
+      status: "draft",
+      isDeleted: 0,
+      source: "google_drive",
+      driveFileId: "1DRIVE_FILE_123456789",
+      driveSyncState: "current",
+    });
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const existing = doc(adminDb, "documents", "drive_record");
+
+    await assertSucceeds(updateDoc(existing, { title: "Reviewed Robot Guide" }));
+    await assertFails(updateDoc(existing, { driveFileId: "1FORGED_FILE_123456789" }));
+    await assertFails(updateDoc(existing, { driveSyncState: "changed" }));
+    await assertFails(setDoc(doc(adminDb, "documents", "forged_drive_record"), {
+      title: "Forged",
+      status: "draft",
+      isDeleted: 0,
+      source: "google_drive",
+      driveFileId: "1FORGED_FILE_123456789",
+    }));
+  });
 });
 
 describe("Storage zero-trust rules", () => {

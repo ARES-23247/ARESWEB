@@ -15,7 +15,10 @@ export default tseslint.config(
       "no-undef": "off",
       "no-console": "off",
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
   {
@@ -24,5 +27,10 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["src/lib/logger.ts", "src/**/__tests__/**", "src/**/*.test.ts"],
+    rules: { "no-console": "error" },
   },
 );

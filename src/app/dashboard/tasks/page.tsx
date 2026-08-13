@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, query, limit, runTransaction, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
@@ -95,7 +96,7 @@ export default function KanbanPage() {
       setRetryOperation(null);
       return null;
     } catch (error) {
-      console.error(`Kanban ${action} failed:`, error);
+      logger.error(`Kanban ${action} failed:`, error);
       const describedError = describeTaskError(action, error);
       setOperationError(describedError);
       setRetryOperation(() => retry);
@@ -111,7 +112,7 @@ export default function KanbanPage() {
       setSyncState("success");
       setTimeout(() => setSyncState("idle"), 3000);
     } catch (err) {
-      console.error("Zulip sync error:", err);
+      logger.error("Zulip sync error:", err);
       const notificationError = describeTaskError("notify Zulip", err);
       setOperationError({
         ...notificationError,
@@ -164,7 +165,7 @@ export default function KanbanPage() {
           setLoadError(null);
         },
         (err) => {
-          console.error("Unable to load task board:", err);
+          logger.error("Unable to load task board:", err);
           setTasks([]);
           setIsLive(false);
           setLoadError(err.message);
@@ -172,7 +173,7 @@ export default function KanbanPage() {
       );
       return () => unsubscribe();
     } catch (e) {
-      console.error("Unable to initialize task board:", e);
+      logger.error("Unable to initialize task board:", e);
       setTasks([]);
       setIsLive(false);
       setLoadError(e instanceof Error ? e.message : String(e));
@@ -187,7 +188,7 @@ export default function KanbanPage() {
         const data = await response.json();
         setTeamProfiles(data.members || []);
       } catch (e) {
-        console.warn("Failed to fetch team roster from backend:", e);
+        logger.warn("Failed to fetch team roster from backend:", e);
       }
     };
     fetchTeamRoster();

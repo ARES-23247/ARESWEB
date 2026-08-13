@@ -135,6 +135,19 @@ describe("useDocumentSync", () => {
     expect(transactionSet).not.toHaveBeenCalled();
   });
 
+  it("merges website edits so server-owned Drive metadata is preserved", async () => {
+    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false } });
+    const transactionSet = vi.fn();
+    firestoreMocks.runTransaction.mockImplementation(async (
+      _db: unknown,
+      callback: (transaction: { get: () => Promise<{ exists: () => boolean }>; set: typeof transactionSet }) => Promise<void>,
+    ) => callback({ get: async () => ({ exists: () => false }), set: transactionSet }));
+    const { result } = renderHook(() => useDocumentSync("documents", () => true));
+
+    await act(() => result.current.saveDoc("drive-file", payload, "Member", ""));
+    expect(transactionSet).toHaveBeenNthCalledWith(1, expect.anything(), payload, { merge: true });
+  });
+
   it("archives and restores content without deleting it", async () => {
     subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false } });
     const { result } = renderHook(() => useDocumentSync("documents", () => true));

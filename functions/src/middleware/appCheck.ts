@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import admin from "../lib/firebase-admin";
+import { adminAppCheck } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { ApiError } from "./errorHandler";
 
@@ -65,7 +65,7 @@ export async function observeAppCheck(
   }
 
   try {
-    const decoded = await admin.appCheck().verifyToken(token);
+    const decoded = await adminAppCheck.verifyToken(token);
     if (decoded.appId !== EXPECTED_WEB_APP_ID) {
       req.appCheckObservation = {
         status: "invalid",

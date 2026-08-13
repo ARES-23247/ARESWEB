@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -116,7 +117,7 @@ export default function FinanceLedgerPage() {
       setNextCursor(responseCursor);
       setLoadError(null);
     } catch (error) {
-      console.error("Error fetching public finance transactions:", error);
+      logger.error("Error fetching public finance transactions:", error);
       const status = typeof error === "object" && error !== null && "status" in error
         ? Number(error.status)
         : undefined;

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AlertCircle, Check, X } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -72,7 +73,7 @@ export default function OutreachPage() {
       setLogs(payload.logs.map(parseOutreachLog).filter((log): log is OutreachLog => log !== null));
       setLogLoadError(null);
     } catch (error) {
-      console.error("Failed to load outreach records from the public API:", error);
+      logger.error("Failed to load outreach records from the public API:", error);
       setLogLoadError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoadingLogs(false);
@@ -134,7 +135,7 @@ export default function OutreachPage() {
       setOrganization("");
       setDescription("");
     } catch (error) {
-      console.error(error);
+      logger.error("Outreach inquiry submission failed.");
       setSubmitStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "An unexpected error occurred. Please try again or email us directly.");
     }
@@ -148,7 +149,7 @@ export default function OutreachPage() {
     try {
       await submitInquiry(await getRecaptchaToken());
     } catch (error) {
-      console.error(error);
+      logger.error("Outreach inquiry verification failed.");
       setSubmitStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Verification check failed. Please refresh and try again.");
     }

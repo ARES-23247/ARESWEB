@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const driveSyncMock = vi.hoisted(() => vi.fn());
+vi.mock("../lib/googleDriveLibrary", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../lib/googleDriveLibrary")>(),
+  syncImportedDriveChanges: driveSyncMock,
+}));
+
 vi.mock("../lib/firebase-admin", () => {
   const mockGet = vi.fn();
   const mockBatchDelete = vi.fn();
@@ -29,10 +35,13 @@ import {
   cleanupOldInquiries,
   communicationsApi,
   coreApi,
+  driveApi,
   mediaApi,
   publicApi,
   web,
+  syncGoogleDriveChanges,
 } from "../index";
+import { driveApp } from "../apps/drive";
 import { mediaApp } from "../apps/media";
 import { publicApp } from "../apps/public";
 import { adminDb } from "../lib/firebase-admin";
@@ -103,6 +112,11 @@ describe("cleanupOldInquiries scheduled function", () => {
 });
 
 describe("Express App Endpoints", () => {
+  const stackFor = (app: any) => (app.router ?? app._router).stack;
+  const matchesPath = (layer: any, path: string) =>
+    layer.matchers?.some((matcher: (candidate: string) => unknown) => Boolean(matcher(path)))
+    ?? String(layer.regexp).includes(path.replaceAll("/", "\\/"));
+
   it("exports explicit media-safe runtime resource bounds", () => {
     const endpoint = (mediaApi as unknown as {
       __endpoint: { availableMemoryMb: number; timeoutSeconds: number; concurrency: number; maxInstances: number };
@@ -116,21 +130,45 @@ describe("Express App Endpoints", () => {
     });
   });
 
+  it("isolates Drive routes and secrets in a bounded function", () => {
+    const endpoint = (driveApi as unknown as {
+      __endpoint: { availableMemoryMb: number; timeoutSeconds: number; secretEnvironmentVariables: Array<{ key: string }> };
+    }).__endpoint;
+    expect(endpoint).toMatchObject({ availableMemoryMb: 512, timeoutSeconds: 60 });
+    expect(endpoint.secretEnvironmentVariables.map((secret) => secret.key).sort()).toEqual(
+      [...FUNCTION_SECRET_BINDINGS.driveApi].sort(),
+    );
+    const driveMount = stackFor(driveApp).find(
+      (layer: any) => layer.name === "router" && matchesPath(layer, "/api/drive"),
+    );
+    expect(driveMount).toBeDefined();
+  });
+
+  it("runs Drive change detection on a bounded private schedule", async () => {
+    driveSyncMock.mockResolvedValueOnce({ checkedChanges: 0, updatedDocuments: 0, hasMore: false });
+    const endpoint = (syncGoogleDriveChanges as unknown as {
+      __endpoint: { availableMemoryMb: number; timeoutSeconds: number; concurrency: number; maxInstances: number; secretEnvironmentVariables: Array<{ key: string }> };
+    }).__endpoint;
+    expect(endpoint).toMatchObject({ availableMemoryMb: 256, timeoutSeconds: 120, concurrency: 1, maxInstances: 1 });
+    expect(endpoint.secretEnvironmentVariables.map((secret) => secret.key).sort()).toEqual([
+      "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN",
+    ]);
+    await (syncGoogleDriveChanges as any).run({});
+    expect(driveSyncMock).toHaveBeenCalledTimes(1);
+  });
+
   it("authenticates and applies the distributed upload quota before the large JSON parser", () => {
-    const uploadLayers = mediaApp._router.stack.filter(
-      (layer: any) => String(layer.regexp).includes("photos\\/upload-unified"),
+    const expectedNames = ["ensureTeamMember", "enforceDistributedQuota", "jsonParser"];
+    const uploadLayers = stackFor(mediaApp).filter(
+      (layer: any) => expectedNames.includes(layer.name) && matchesPath(layer, "/api/photos/upload-unified"),
     );
 
-    expect(uploadLayers.map((layer: any) => layer.name)).toEqual([
-      "ensureTeamMember",
-      "enforceDistributedQuota",
-      "jsonParser",
-    ]);
+    expect(uploadLayers.map((layer: any) => layer.name)).toEqual(expectedNames);
   });
 
   it("should mount and respond on the /api/reference endpoint", () => {
-    const referenceMount = publicApp._router.stack.find(
-      (layer: any) => String(layer.regexp).includes("api\\/reference")
+    const referenceMount = stackFor(publicApp).find(
+      (layer: any) => layer.name === "router" && matchesPath(layer, "/api/reference"),
     );
     expect(referenceMount).toBeDefined();
 
@@ -166,7 +204,7 @@ describe("Express App Endpoints", () => {
   });
 
   it("declares every Hosting-routed HTTPS function publicly invokable", () => {
-    for (const endpoint of [publicApi, coreApi, mediaApi, communicationsApi, web]) {
+    for (const endpoint of [publicApi, coreApi, driveApi, mediaApi, communicationsApi, web]) {
       expect((endpoint as unknown as {
         __endpoint: { httpsTrigger: { invoker: string[] } };
       }).__endpoint.httpsTrigger.invoker)

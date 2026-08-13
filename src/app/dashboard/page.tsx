@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, onSnapshot, getCountFromServer, query, where, limit } from "firebase/firestore";
@@ -60,7 +61,7 @@ export default function DashboardHome() {
         setDocCount(docsSnap.data().count);
         setIsDbConnected(true);
       } catch (err) {
-        console.error("Error fetching dashboard counts:", err);
+        logger.error("Error fetching dashboard counts:", err);
       }
     };
 
@@ -90,14 +91,14 @@ export default function DashboardHome() {
           setRecentTasks([]);
         }
       }, (err) => {
-        console.error("Tasks listener error:", err);
+        logger.error("Tasks listener error:", err);
       });
 
       return () => {
         unsubTasks();
       };
     } catch (e) {
-      console.error("Error setting up tasks list listener:", e);
+      logger.error("Error setting up tasks list listener:", e);
     }
   }, []);
 

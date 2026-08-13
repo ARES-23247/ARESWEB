@@ -1,5 +1,5 @@
 import express from "express";
-import admin, { adminDb, adminStorage } from "../lib/firebase-admin";
+import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
 import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes } from "../lib/imageImport";
 import { ensureTeamMember } from "../middleware/auth";
@@ -30,7 +30,7 @@ async function updateAlbumMediaCount(albumId: string, delta: number) {
   if (!albumId) return;
   const albumRef = adminDb.collection("albums").doc(albumId);
   await albumRef.update({
-    mediaCount: admin.firestore.FieldValue.increment(delta),
+    mediaCount: adminFieldValue.increment(delta),
     updatedAt: new Date().toISOString()
   });
 }
@@ -282,7 +282,7 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     if (albumId) {
       const albumRef = adminDb.collection("albums").doc(albumId);
       batch.update(albumRef, {
-        mediaCount: admin.firestore.FieldValue.increment(1),
+        mediaCount: adminFieldValue.increment(1),
         updatedAt: new Date().toISOString(),
       });
       batch.set(albumRef.collection("photos").doc(docId), photoMeta);

@@ -8,9 +8,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/firebase-admin", () => ({
-  default: {
-    appCheck: () => ({ verifyToken: mocks.verifyToken }),
-  },
+  adminAppCheck: { verifyToken: mocks.verifyToken },
 }));
 
 vi.mock("../../lib/logger", () => ({

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -48,7 +49,7 @@ export default function CalendarPage() {
       setCopyStatus("copied");
       window.setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (error) {
-      console.error("Unable to copy the calendar feed URL:", error);
+      logger.error("Unable to copy the calendar feed URL:", error);
       setCopyStatus("error");
     }
   };
@@ -87,7 +88,7 @@ export default function CalendarPage() {
       setIsLive(true);
       setLoadError(null);
     } catch (error) {
-      console.error("Unable to load published calendar events:", error);
+      logger.error("Unable to load published calendar events:", error);
       setIsLive(false);
       setLoadError(error instanceof Error ? error.message : String(error));
     } finally {
