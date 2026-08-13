@@ -10,6 +10,13 @@ test.describe('Navigation & Accessibility E2E tests', () => {
     // Verify key button "View Schedule" is visible
     const viewScheduleButton = page.getByRole('link', { name: 'View Schedule' });
     await expect(viewScheduleButton).toBeVisible();
+
+    // Google OAuth verification and prospective users must be able to identify the
+    // desktop product and reach its public policy pages without signing in.
+    await expect(page.getByRole('heading', { name: 'ARES Analytics' })).toBeVisible();
+    const analyticsSection = page.getByLabel('ARES Analytics');
+    await expect(analyticsSection.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
+    await expect(analyticsSection.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
   });
 
   test('should have a working skip link for accessibility', async ({ page, browserName }) => {
