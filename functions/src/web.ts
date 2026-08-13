@@ -56,6 +56,7 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
 
 export const web = onRequest({
   cors: false,
+  invoker: "public",
   memory: "256MiB",
   timeoutSeconds: 20,
   concurrency: 40,

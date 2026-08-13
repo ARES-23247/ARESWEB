@@ -10,6 +10,7 @@ export { API_ROUTE_GROUPS, FUNCTION_SECRET_BINDINGS } from "./functionConfig";
 
 const commonOptions: HttpsOptions = {
   cors: [...allowedOrigins, /^https:\/\/aresfirst-portal--[a-z0-9-]+\.web\.app$/],
+  invoker: "public",
   maxInstances: 10,
   concurrency: 20,
 };

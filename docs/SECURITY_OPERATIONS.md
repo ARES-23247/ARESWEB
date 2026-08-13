@@ -162,6 +162,15 @@ apply command to CI, Hosting deployment, or Functions startup.
 - Grant that service account `roles/datastore.indexAdmin` so CI can deploy the
   source-controlled Firestore indexes. This role manages index definitions. It
   does not grant access to read or change Firestore documents.
+- Keep the project custom role `areswebDeploymentAuxiliary` bound to that
+  service account with only `firebaseauth.configs.get`,
+  `firebaseauth.configs.update`, `firebasestorage.defaultBucket.get`,
+  `storage.buckets.get`, `cloudfunctions.functions.getIamPolicy`,
+  `cloudfunctions.functions.setIamPolicy`, `run.services.getIamPolicy`, and
+  `run.services.setIamPolicy`. Firebase needs the Function and Cloud Run IAM
+  permissions to apply the source-declared public invoker policy to HTTPS
+  entry points; application authentication and authorization still run inside
+  the split API services.
 - Keep `id-token: write` limited to the production deploy job. Do not create
   `FIREBASE_SERVICE_ACCOUNT_KEY`, `FIREBASE_TOKEN`, or equivalent long-lived
   repository secrets.
