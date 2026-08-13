@@ -78,6 +78,18 @@ describe("SEO", () => {
     );
   });
 
+  it("preserves a verified application name when an exact title is required", async () => {
+    renderWithHelmet(<SEO exactTitle title="ARES Analytics" />);
+
+    await waitFor(() => {
+      expect(document.title).toBe("ARES Analytics");
+    });
+    expect(document.head.querySelector('meta[property="og:title"]')).toHaveAttribute(
+      "content",
+      "ARES Analytics"
+    );
+  });
+
   it("normalizes trailing slashes and uses a large social card for supplied media", async () => {
     renderWithHelmet(<SEO title="Event" url="/events/demo///" image="https://aresfirst.org/event-card.webp" />);
 
