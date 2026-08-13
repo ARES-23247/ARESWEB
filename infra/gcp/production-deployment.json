@@ -5,6 +5,27 @@
   "platform": "gcfv2",
   "runtime": "nodejs22",
   "deploymentRoleFile": "infra/gcp/aresweb-deployment-auxiliary-role.json",
+  "buildIdentity": {
+    "serviceAccount": "205869391101-compute@developer.gserviceaccount.com",
+    "projectRoles": ["roles/logging.logWriter"],
+    "artifactRepositories": [
+      {
+        "name": "gcf-artifacts",
+        "location": "us-central1",
+        "roles": ["roles/artifactregistry.writer"]
+      }
+    ],
+    "storageBuckets": [
+      {
+        "name": "gcf-v2-sources-205869391101-us-central1",
+        "roles": ["roles/storage.objectViewer"]
+      },
+      {
+        "name": "gcf-v2-uploads-205869391101.us-central1.cloudfunctions.appspot.com",
+        "roles": ["roles/storage.objectViewer"]
+      }
+    ]
+  },
   "functions": [
     {
       "id": "cleanupOldInquiries",

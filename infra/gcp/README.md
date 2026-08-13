@@ -1,8 +1,8 @@
 # Production deployment contract
 
 `production-deployment.json` is the reviewed source of truth for the production
-Cloud Functions inventory, runtime service accounts, resource bounds, secret
-bindings, Cloud Run invoker policy, and post-deployment health checks. The
+Cloud Build identity, Cloud Functions inventory, runtime service accounts,
+resource bounds, secret bindings, Cloud Run invoker policy, and post-deployment health checks. The
 production workflow rejects any missing or unexpected Function instead of
 deleting unknown infrastructure.
 
@@ -31,11 +31,13 @@ gcloud iam roles describe areswebDeploymentAuxiliary \
 The deploy job authenticates with Workload Identity Federation, installs the
 Google Cloud CLI, deploys the reviewed release, and then:
 
-1. compares `firebase functions:list` with the exact contract;
-2. verifies every Function runs as the dedicated account in its contract;
-3. verifies `allUsers` has `roles/run.invoker` only where `public` is true;
-4. verifies private scheduled services do not grant `allUsers` any role; and
-5. probes the canonical domain and Firebase Hosting origin for success routes,
+1. verifies the build account has exactly its contracted project, repository,
+   and managed source-bucket roles before starting a build;
+2. compares `firebase functions:list` with the exact contract;
+3. verifies every Function runs as the dedicated account in its contract;
+4. verifies `allUsers` has `roles/run.invoker` only where `public` is true;
+5. verifies private scheduled services do not grant `allUsers` any role; and
+6. probes the canonical domain and Firebase Hosting origin for success routes,
    raw metadata, true page/API 404s, sitemap behavior, and security headers.
 
 Unexpected infrastructure fails the deployment job for operator review. It is

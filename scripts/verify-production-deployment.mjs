@@ -4,6 +4,9 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ALLOWED_TRIGGERS = new Set(["https", "schedule"]);
+const ALLOWED_BUILD_PROJECT_ROLES = ["roles/logging.logWriter"];
+const ALLOWED_BUILD_ARTIFACT_ROLES = ["roles/artifactregistry.writer"];
+const ALLOWED_BUILD_STORAGE_ROLES = ["roles/storage.objectViewer"];
 
 function runGcloud(command, args, options) {
   if (process.platform !== "win32") return execFileSync(command, args, options);
@@ -44,6 +47,89 @@ function requirePositiveInteger(value, label) {
   }
 }
 
+function requireExactRoles(actual, expected, label) {
+  if (!Array.isArray(actual) || !sameStrings(actual, expected)) {
+    throw new Error(`${label} must be exactly [${expected.join(", ")}]`);
+  }
+  if (new Set(actual).size !== actual.length) {
+    throw new Error(`${label} must not contain duplicate roles`);
+  }
+}
+
+function validateBuildIdentity(buildIdentity) {
+  if (
+    !buildIdentity ||
+    typeof buildIdentity.serviceAccount !== "string" ||
+    !/^(?:[a-z0-9][a-z0-9-]*@[a-z][a-z0-9-]+\.iam|[0-9]+-compute@developer)\.gserviceaccount\.com$/u.test(
+      buildIdentity.serviceAccount,
+    )
+  ) {
+    throw new Error(
+      "Deployment contract buildIdentity.serviceAccount is invalid",
+    );
+  }
+  requireExactRoles(
+    buildIdentity.projectRoles,
+    ALLOWED_BUILD_PROJECT_ROLES,
+    "buildIdentity.projectRoles",
+  );
+  if (
+    !Array.isArray(buildIdentity.artifactRepositories) ||
+    buildIdentity.artifactRepositories.length === 0
+  ) {
+    throw new Error("buildIdentity.artifactRepositories must be non-empty");
+  }
+  if (
+    !Array.isArray(buildIdentity.storageBuckets) ||
+    buildIdentity.storageBuckets.length === 0
+  ) {
+    throw new Error("buildIdentity.storageBuckets must be non-empty");
+  }
+
+  const artifactKeys = new Set();
+  for (const repository of buildIdentity.artifactRepositories) {
+    if (
+      !repository ||
+      typeof repository.name !== "string" ||
+      repository.name.length === 0 ||
+      typeof repository.location !== "string" ||
+      repository.location.length === 0
+    ) {
+      throw new Error("Every build Artifact Registry repository is invalid");
+    }
+    const key = `${repository.location}/${repository.name}`;
+    if (artifactKeys.has(key)) {
+      throw new Error(`Duplicate build Artifact Registry repository: ${key}`);
+    }
+    artifactKeys.add(key);
+    requireExactRoles(
+      repository.roles,
+      ALLOWED_BUILD_ARTIFACT_ROLES,
+      `buildIdentity.artifactRepositories.${key}.roles`,
+    );
+  }
+
+  const bucketNames = new Set();
+  for (const bucket of buildIdentity.storageBuckets) {
+    if (
+      !bucket ||
+      typeof bucket.name !== "string" ||
+      !/^[a-z0-9][a-z0-9._-]+$/u.test(bucket.name)
+    ) {
+      throw new Error("Every build source bucket is invalid");
+    }
+    if (bucketNames.has(bucket.name)) {
+      throw new Error(`Duplicate build source bucket: ${bucket.name}`);
+    }
+    bucketNames.add(bucket.name);
+    requireExactRoles(
+      bucket.roles,
+      ALLOWED_BUILD_STORAGE_ROLES,
+      `buildIdentity.storageBuckets.${bucket.name}.roles`,
+    );
+  }
+}
+
 export function validateDeploymentContract(contract, roleSpec) {
   if (!contract || contract.schemaVersion !== 1)
     throw new Error("Unsupported deployment contract schema");
@@ -55,6 +141,7 @@ export function validateDeploymentContract(contract, roleSpec) {
   if (!Array.isArray(contract.functions) || contract.functions.length === 0) {
     throw new Error("Deployment contract must list at least one Function");
   }
+  validateBuildIdentity(contract.buildIdentity);
 
   const ids = new Set();
   const services = new Set();
@@ -76,6 +163,9 @@ export function validateDeploymentContract(contract, roleSpec) {
     if (services.has(spec.runServiceId))
       throw new Error(`Duplicate Cloud Run service: ${spec.runServiceId}`);
     services.add(spec.runServiceId);
+    if (spec.serviceAccount === contract.buildIdentity.serviceAccount) {
+      throw new Error(`${spec.id} cannot use the build identity at runtime`);
+    }
     if (
       typeof spec.serviceAccount !== "string" ||
       !/^[a-z][a-z0-9-]{4,28}[a-z0-9]@[a-z][a-z0-9-]+\.iam\.gserviceaccount\.com$/u.test(
@@ -292,6 +382,115 @@ export function validateInvokerPolicy(spec, policy) {
   return true;
 }
 
+function rolesForMember(policy, member, label) {
+  if (!policy || !Array.isArray(policy.bindings)) {
+    throw new Error(`${label} returned an invalid IAM policy`);
+  }
+  const roles = policy.bindings
+    .filter(
+      (binding) =>
+        typeof binding.role === "string" &&
+        Array.isArray(binding.members) &&
+        binding.members.includes(member),
+    )
+    .map(({ role }) => role);
+  return [...new Set(roles)];
+}
+
+export function validateBuildIdentityPolicies(contract, policies) {
+  const buildIdentity = contract.buildIdentity;
+  const member = `serviceAccount:${buildIdentity.serviceAccount}`;
+  const errors = [];
+  const compare = (actual, expected, label) => {
+    if (!sameStrings(actual, expected)) {
+      errors.push(
+        `${label}: expected [${sortedStrings(expected)}], received [${sortedStrings(actual)}]`,
+      );
+    }
+  };
+
+  compare(
+    rolesForMember(policies.project, member, "Project IAM"),
+    buildIdentity.projectRoles,
+    "project roles",
+  );
+  for (const repository of buildIdentity.artifactRepositories) {
+    const key = `${repository.location}/${repository.name}`;
+    compare(
+      rolesForMember(
+        policies.artifactRepositories?.[key],
+        member,
+        `Artifact Registry IAM for ${key}`,
+      ),
+      repository.roles,
+      `Artifact Registry ${key} roles`,
+    );
+  }
+  for (const bucket of buildIdentity.storageBuckets) {
+    compare(
+      rolesForMember(
+        policies.storageBuckets?.[bucket.name],
+        member,
+        `Storage IAM for ${bucket.name}`,
+      ),
+      bucket.roles,
+      `Storage ${bucket.name} roles`,
+    );
+  }
+  if (errors.length > 0) {
+    throw new Error(
+      `Production build IAM drift detected:\n- ${errors.join("\n- ")}`,
+    );
+  }
+  return {
+    artifactRepositories: buildIdentity.artifactRepositories.length,
+    storageBuckets: buildIdentity.storageBuckets.length,
+  };
+}
+
+export function verifyLiveBuildIdentity(
+  contract,
+  runCommand = runGcloud,
+  gcloudCommand = "gcloud",
+) {
+  const readPolicy = (args) =>
+    JSON.parse(runCommand(gcloudCommand, args, { encoding: "utf8" }));
+  const policies = {
+    project: readPolicy([
+      "projects",
+      "get-iam-policy",
+      contract.project,
+      "--format=json",
+    ]),
+    artifactRepositories: {},
+    storageBuckets: {},
+  };
+  for (const repository of contract.buildIdentity.artifactRepositories) {
+    const key = `${repository.location}/${repository.name}`;
+    policies.artifactRepositories[key] = readPolicy([
+      "artifacts",
+      "repositories",
+      "get-iam-policy",
+      repository.name,
+      "--location",
+      repository.location,
+      "--project",
+      contract.project,
+      "--format=json",
+    ]);
+  }
+  for (const bucket of contract.buildIdentity.storageBuckets) {
+    policies.storageBuckets[bucket.name] = readPolicy([
+      "storage",
+      "buckets",
+      "get-iam-policy",
+      `gs://${bucket.name}`,
+      "--format=json",
+    ]);
+  }
+  return validateBuildIdentityPolicies(contract, policies);
+}
+
 export function verifyLiveInvokerPolicies(
   contract,
   runCommand = runGcloud,
@@ -323,6 +522,7 @@ export function parseArgs(argv) {
     contractPath: "infra/gcp/production-deployment.json",
     functionsJsonPath: null,
     verifyIam: false,
+    verifyBuildIam: false,
     validateContractOnly: false,
     printDeployTargets: false,
   };
@@ -332,6 +532,7 @@ export function parseArgs(argv) {
     else if (arg === "--functions-json")
       options.functionsJsonPath = argv[++index];
     else if (arg === "--verify-iam") options.verifyIam = true;
+    else if (arg === "--verify-build-iam") options.verifyBuildIam = true;
     else if (arg === "--validate-contract") options.validateContractOnly = true;
     else if (arg === "--print-deploy-targets")
       options.printDeployTargets = true;
@@ -341,6 +542,7 @@ export function parseArgs(argv) {
   if (
     !options.validateContractOnly &&
     !options.printDeployTargets &&
+    !options.verifyBuildIam &&
     !options.functionsJsonPath
   ) {
     throw new Error("--functions-json is required");
@@ -371,7 +573,14 @@ export function main(argv = process.argv.slice(2)) {
     console.log(
       `Deployment contract valid: ${contract.functions.length} Functions, ${contract.health.checks.length} health checks`,
     );
-    return;
+    if (!options.verifyBuildIam) return;
+  }
+  if (options.verifyBuildIam) {
+    const buildIamResult = verifyLiveBuildIdentity(contract);
+    console.log(
+      `Build identity IAM valid: 1 project, ${buildIamResult.artifactRepositories} Artifact Registry repository, ${buildIamResult.storageBuckets} source buckets`,
+    );
+    if (!options.functionsJsonPath) return;
   }
   const inventorySource =
     options.functionsJsonPath === "-" ? 0 : resolve(options.functionsJsonPath);

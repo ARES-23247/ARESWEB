@@ -76,9 +76,12 @@ export default function DocFormDrawer({
     variant,
     currentUserNickname,
   };
+  const editorKey = `${variant}:${editDoc?.slug ?? "new"}`;
   const initializationContextRef = useRef(draftContext);
   initializationContextRef.current = draftContext;
-  const initializedEditorKeyRef = useRef<string | null>(null);
+  const initializedEditorKeyRef = useRef<string | null>(
+    isOpen ? editorKey : null,
+  );
   const [draft, setDraft] = useState<DocumentEditorDraft>(() =>
     createDocumentEditorDraft(draftContext),
   );
@@ -148,7 +151,6 @@ export default function DocFormDrawer({
       initializedEditorKeyRef.current = null;
       return;
     }
-    const editorKey = `${variant}:${editDoc?.slug ?? "new"}`;
     if (initializedEditorKeyRef.current === editorKey) return;
     initializedEditorKeyRef.current = editorKey;
     setDraft(createDocumentEditorDraft(initializationContextRef.current));
@@ -157,7 +159,7 @@ export default function DocFormDrawer({
     setActiveTab("edit");
     setIsDirty(false);
     setPendingClose(false);
-  }, [editDoc?.slug, isOpen, variant]);
+  }, [editorKey, isOpen]);
 
   useEffect(() => {
     if (pendingClose) keepEditingButtonRef.current?.focus();

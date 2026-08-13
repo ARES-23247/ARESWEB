@@ -11,9 +11,11 @@ This record captures the live security changes approved and applied on
   every HTTPS and scheduled workload with its contracted identity.
 - Granted only the Firestore, App Check, Firebase Auth, Vertex AI, Storage, and
   per-secret access required by each workload.
-- Removed every project-level role and all fourteen direct secret-access grants
-  from the Compute Engine default service account. Its narrow Cloud Run invoker
-  grants for scheduled OIDC calls remain.
+- Removed Editor, application-data roles, and all fourteen direct secret-access
+  grants from the Compute Engine default service account. It retains only build
+  log writing at project scope, repository-scoped Artifact Registry write,
+  object viewing on the two managed Functions source/upload buckets, and narrow
+  Cloud Run invoker grants for scheduled OIDC calls.
 - Removed anonymous invocation from the retired
   `ares-analytics-gateway-staging` Cloud Run service.
 - Enabled Firestore database deletion protection; point-in-time recovery was
@@ -38,6 +40,11 @@ This record captures the live security changes approved and applied on
 - Post-deployment Cloud Run logs contain no runtime permission denial. Two web
   503 responses occurred only during revision rollout and did not persist.
 - No user-managed service-account key exists.
+- A protected-workflow deployment demonstrated that Cloud Functions uses the
+  default Compute account as its build identity. Removing all build permissions
+  caused source download to fail before rollout. The corrected minimal scopes
+  are now source-controlled and checked before deployment; no broad runtime or
+  secret permission was restored.
 
 ## Deliberately deferred
 
