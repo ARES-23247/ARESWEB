@@ -10,6 +10,7 @@
       "id": "cleanupOldInquiries",
       "trigger": "schedule",
       "runServiceId": "cleanupoldinquiries",
+      "serviceAccount": "aresweb-inquiry-cleanup@aresfirst-portal.iam.gserviceaccount.com",
       "public": false,
       "secrets": ["ENCRYPTION_SECRET"],
       "timeoutSeconds": 60,
@@ -21,6 +22,7 @@
       "id": "communicationsApi",
       "trigger": "https",
       "runServiceId": "communicationsapi",
+      "serviceAccount": "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
         "GITHUB_PAT",
@@ -37,6 +39,7 @@
       "id": "coreApi",
       "trigger": "https",
       "runServiceId": "coreapi",
+      "serviceAccount": "aresweb-core-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
         "ENCRYPTION_SECRET",
@@ -52,6 +55,7 @@
       "id": "driveApi",
       "trigger": "https",
       "runServiceId": "driveapi",
+      "serviceAccount": "aresweb-drive-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
         "ENCRYPTION_SECRET",
@@ -68,6 +72,7 @@
       "id": "mediaApi",
       "trigger": "https",
       "runServiceId": "mediaapi",
+      "serviceAccount": "aresweb-media-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
         "ENCRYPTION_SECRET",
@@ -86,6 +91,7 @@
       "id": "syncGoogleDriveChanges",
       "trigger": "schedule",
       "runServiceId": "syncgoogledrivechanges",
+      "serviceAccount": "aresweb-drive-sync@aresfirst-portal.iam.gserviceaccount.com",
       "public": false,
       "secrets": [
         "GOOGLE_CLIENT_ID",
@@ -101,6 +107,7 @@
       "id": "publicApi",
       "trigger": "https",
       "runServiceId": "publicapi",
+      "serviceAccount": "aresweb-public-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [],
       "timeoutSeconds": 60,
@@ -112,6 +119,7 @@
       "id": "web",
       "trigger": "https",
       "runServiceId": "web",
+      "serviceAccount": "aresweb-web-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [],
       "timeoutSeconds": 20,

@@ -5,10 +5,18 @@ import { logger } from "./lib/logger";
 import { syncImportedDriveChanges } from "./lib/googleDriveLibrary";
 import { ApiError } from "./middleware/errorHandler";
 import { createLazyAppHandler } from "./lazyApp";
-import { allowedOrigins, FUNCTION_SECRET_BINDINGS } from "./functionConfig";
+import {
+  allowedOrigins,
+  FUNCTION_SECRET_BINDINGS,
+  RUNTIME_SERVICE_ACCOUNTS,
+} from "./functionConfig";
 
 export { web } from "./web";
-export { API_ROUTE_GROUPS, FUNCTION_SECRET_BINDINGS } from "./functionConfig";
+export {
+  API_ROUTE_GROUPS,
+  FUNCTION_SECRET_BINDINGS,
+  RUNTIME_SERVICE_ACCOUNTS,
+} from "./functionConfig";
 
 const commonOptions: HttpsOptions = {
   cors: [...allowedOrigins, /^https:\/\/aresfirst-portal--[a-z0-9-]+\.web\.app$/],
@@ -25,11 +33,17 @@ const communicationsHandler = createLazyAppHandler(
   async () => (await import("./apps/communications")).communicationsApp,
 );
 
-export const publicApi = onRequest({ ...commonOptions, memory: "512MiB", timeoutSeconds: 60 }, publicHandler);
+export const publicApi = onRequest({
+  ...commonOptions,
+  memory: "512MiB",
+  timeoutSeconds: 60,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.publicApi,
+}, publicHandler);
 export const coreApi = onRequest({
   ...commonOptions,
   memory: "512MiB",
   timeoutSeconds: 60,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.coreApi,
   secrets: [...FUNCTION_SECRET_BINDINGS.coreApi],
 }, coreHandler);
 export const mediaApi = onRequest({
@@ -37,18 +51,21 @@ export const mediaApi = onRequest({
   memory: "1GiB",
   timeoutSeconds: 300,
   concurrency: 10,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.mediaApi,
   secrets: [...FUNCTION_SECRET_BINDINGS.mediaApi],
 }, mediaHandler);
 export const driveApi = onRequest({
   ...commonOptions,
   memory: "512MiB",
   timeoutSeconds: 60,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.driveApi,
   secrets: [...FUNCTION_SECRET_BINDINGS.driveApi],
 }, driveHandler);
 export const communicationsApi = onRequest({
   ...commonOptions,
   memory: "512MiB",
   timeoutSeconds: 60,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
   secrets: [...FUNCTION_SECRET_BINDINGS.communicationsApi],
 }, communicationsHandler);
 
@@ -58,6 +75,7 @@ export const cleanupOldInquiries = onSchedule({
   timeoutSeconds: 60,
   concurrency: 80,
   maxInstances: 1,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.cleanupOldInquiries,
   secrets: ["ENCRYPTION_SECRET"],
 }, async (_event) => {
   const cutoffDate = new Date();
@@ -92,6 +110,7 @@ export const syncGoogleDriveChanges = onSchedule({
   timeoutSeconds: 120,
   concurrency: 1,
   maxInstances: 1,
+  serviceAccount: RUNTIME_SERVICE_ACCOUNTS.syncGoogleDriveChanges,
   secrets: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN"],
 }, async (_event) => {
   try {

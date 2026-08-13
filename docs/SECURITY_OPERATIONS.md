@@ -113,6 +113,33 @@ The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
 GitHub, or Zulip secrets.
 
+Every deployed workload also uses a dedicated runtime service account. The
+service-account email is part of `infra/gcp/production-deployment.json` and the
+post-deployment drift check fails if a Function falls back to another identity.
+The production access baseline is:
+
+| Workload | Project or resource roles | Secret access |
+| --- | --- | --- |
+| `publicApi` | Firestore user, App Check token verifier | none |
+| `coreApi` | Firestore user, App Check token verifier, Firebase Auth viewer | encryption, inquiry reCAPTCHA, profile sync |
+| `mediaApi` | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube |
+| `driveApi` | Firestore user, App Check token verifier | encryption, Drive OAuth |
+| `communicationsApi` | Firestore user, App Check token verifier | GitHub and Zulip credentials |
+| `cleanupOldInquiries` | Firestore user | encryption |
+| `syncGoogleDriveChanges` | Firestore user | Drive OAuth |
+| `web` | Firestore user | none |
+
+The Compute Engine default service account must have no project-level role and
+no Secret Manager binding. Cloud Scheduler may retain `roles/run.invoker` only
+on the two private scheduled Cloud Run services because it uses that account as
+the OIDC subject. Do not replace these narrow service-level grants with a
+project-wide role.
+
+The GitHub deployer may impersonate the eight runtime identities and may bind a
+reviewed secret to a Function, but it cannot read secret payloads. Keep the
+deployer's custom secret-binding permission separate from
+`roles/secretmanager.secretAccessor`.
+
 Hosting routes are the boundary between these functions. Keep the rewrite tests
 and `FUNCTION_SECRET_BINDINGS` in sync whenever a route moves. Never add a
 catch-all secret list to any function.
@@ -141,6 +168,33 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 6. App Check succeeds from production without repeated 403/throttle warnings.
 7. The Robots page loads through `/api/robots` without an index error.
 8. The Video Hub loads through `/api/videos/public` without an index error.
+
+## Google Cloud preventive controls
+
+Keep this production baseline enabled:
+
+- Firestore point-in-time recovery and database deletion protection.
+- Cloud Storage uniform bucket-level access and seven-day soft delete.
+- `constraints/iam.disableServiceAccountKeyCreation` and
+  `constraints/iam.disableServiceAccountKeyUpload` enforced on the project.
+- Secret Manager `ADMIN_READ`, `DATA_READ`, and `DATA_WRITE` Data Access audit
+  logs. Review log volume and retention because Data Access logs can incur cost.
+- No user-managed service-account keys. Production deploys use Workload
+  Identity Federation.
+- Firebase Authentication authorized domains limited to `aresfirst.org`, the
+  two Firebase Hosting domains, and `localhost`. Preview channels must be added
+  only for an active, reviewed test and removed when that test ends.
+
+When a secret rotates, deploy the new version, confirm the consuming workload,
+then disable older versions. Leave disabled versions recoverable during the
+rollback window; destroy them only in a separately reviewed cleanup. Delete an
+obsolete secret only after source, deployment contracts, and every live
+Function have stopped referencing it.
+
+Do not enable Firebase App Check enforcement from configuration review alone.
+Keep it in monitoring mode until the 72-hour evidence and flow checks above are
+complete. Likewise, create alert notification channels only with an explicitly
+confirmed recipient and test the channel after creation.
 
 ## Photo derivative operations
 
