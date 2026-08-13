@@ -336,11 +336,14 @@ copy path, so item 2 remains open.
 3. Reduce large editor chunks when the budget starts to tighten.
 4. Run the separately approved, bounded legacy gallery derivative backfill in
    `docs/MEDIA_DERIVATIVE_BACKFILL.md`; new uploads already create derivatives.
-5. Design and deliver the reviewed SSR/static-prerender migration described in
-   the crawl-hardening decision above; client-side `noindex` is only an interim
-   mitigation for the existing raw-HTML and HTTP-status limitation.
-6. Split the monolithic Functions API when the acceptance criteria in the
-   secret-isolation section can be delivered and canaried as one reviewed change.
+5. Completed: the reviewed SSR/static-prerender migration now serves raw route
+   metadata and genuine HTTP 404 responses through the `web` renderer.
+6. Completed: the monolithic Functions API is split into public, core, media,
+   and communications processes with isolated secret bindings.
+7. Completed on 2026-08-13: the production deployment contract now rejects
+   unexpected Functions, resource or secret-binding drift, public/private Cloud
+   Run invoker drift, and failed canonical-domain health checks before a release
+   is reported healthy.
 
 ## Verification record
 

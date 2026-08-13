@@ -52,6 +52,9 @@ jobs:
       - name: Validate shared agent skills
         run: pnpm run validate:agents
 
+      - name: Validate production deployment contract
+        run: node scripts/verify-production-deployment.mjs --validate-contract
+
       - name: Run Cloud Functions ESLint
         run: pnpm --filter functions lint
 
@@ -265,41 +268,28 @@ jobs:
           export_environment_variables: true
           cleanup_credentials: true
 
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          version: "568.0.0"
+          project_id: aresfirst-portal
+
       - name: Deploy isolated Functions before switching routes
+        shell: bash
+        run: |
+          function_targets="$(node scripts/verify-production-deployment.mjs --print-deploy-targets)"
+          pnpm exec firebase deploy --only "$function_targets" --project aresfirst-portal --non-interactive
+
+      - name: Reject production Function, secret, resource, and IAM drift
         run: >-
-          pnpm exec firebase deploy
-          --only functions:publicApi,functions:coreApi,functions:mediaApi,functions:communicationsApi,functions:web,functions:cleanupOldInquiries
-          --project aresfirst-portal --non-interactive
+          pnpm exec firebase functions:list --project aresfirst-portal --json |
+          node scripts/verify-production-deployment.mjs --functions-json - --verify-iam
 
       - name: Switch Hosting routes and deploy verified rules
         run: pnpm exec firebase deploy --only hosting,firestore:rules,firestore:indexes,storage --project aresfirst-portal --non-interactive
 
-      - name: Verify production health
-        run: |
-          for url in https://aresfirst-portal.web.app/ https://aresfirst-portal.web.app/api/simulations https://aresfirst-portal.web.app/api/finance?limit=1 https://aresfirst-portal.web.app/api/robots?limit=1 https://aresfirst-portal.web.app/api/videos/public?limit=1; do
-            healthy=false
-            for attempt in 1 2 3 4 5; do
-              if curl --fail --silent --show-error --max-time 20 "$url" > /dev/null; then
-                healthy=true
-                break
-              fi
-              sleep 10
-            done
-            if [ "$healthy" != "true" ]; then
-              echo "Production health check failed: $url"
-              exit 1
-            fi
-          done
-
-      - name: Remove the retired monolithic API after route verification
-        shell: bash
-        run: |
-          pnpm exec firebase functions:list --project aresfirst-portal --json > deployed-functions.json
-          if jq -e '.result[] | select(.id == "api" and .region == "us-central1")' deployed-functions.json > /dev/null; then
-            pnpm exec firebase functions:delete api --region us-central1 --project aresfirst-portal --force
-          else
-            echo "Legacy api function is already absent."
-          fi
+      - name: Verify canonical production health
+        run: node scripts/check-production-health.mjs --deployment-id "${{ github.sha }}"
 
       - name: Record deployment summary
         run: |
@@ -308,3 +298,5 @@ jobs:
           echo "- Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Drift contract: 6 Functions and 6 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Live health: 10 canonical/Hosting checks" >> "$GITHUB_STEP_SUMMARY"

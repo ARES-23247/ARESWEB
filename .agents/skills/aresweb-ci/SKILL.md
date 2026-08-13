@@ -24,6 +24,10 @@ Use focused tests while iterating, then run the full gate before handoff.
 - Pin third-party actions to immutable commit SHAs.
 - Authenticate production deploys only through the repository-restricted Google
   Workload Identity Federation provider.
+- Keep `infra/gcp/production-deployment.json`, Function exports, Hosting
+  rewrites, and secret bindings synchronized. Production verification must fail
+  on unexpected Functions or public/private invoker drift; never auto-delete
+  unknown cloud resources.
 - Never add service-account JSON, refresh tokens, or long-lived deploy secrets.
 
 Do not deploy, rotate secrets, change environments, or mutate production data

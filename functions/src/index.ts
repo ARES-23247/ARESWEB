@@ -45,6 +45,9 @@ export const communicationsApi = onRequest({
 
 export const cleanupOldInquiries = onSchedule({
   schedule: "0 0 * * *",
+  memory: "256MiB",
+  timeoutSeconds: 60,
+  concurrency: 80,
   maxInstances: 1,
   secrets: ["ENCRYPTION_SECRET"],
 }, async (_event) => {

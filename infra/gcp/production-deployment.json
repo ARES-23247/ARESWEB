@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "project": "aresfirst-portal",
+  "region": "us-central1",
+  "platform": "gcfv2",
+  "runtime": "nodejs22",
+  "deploymentRoleFile": "infra/gcp/aresweb-deployment-auxiliary-role.json",
+  "functions": [
+    {
+      "id": "cleanupOldInquiries",
+      "trigger": "schedule",
+      "runServiceId": "cleanupoldinquiries",
+      "public": false,
+      "secrets": ["ENCRYPTION_SECRET"],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 256,
+      "maxInstances": 1,
+      "concurrency": 80
+    },
+    {
+      "id": "communicationsApi",
+      "trigger": "https",
+      "runServiceId": "communicationsapi",
+      "public": true,
+      "secrets": [
+        "GITHUB_PAT",
+        "ZULIP_API_KEY",
+        "ZULIP_BOT_EMAIL",
+        "ZULIP_WEBHOOK_TOKEN"
+      ],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 512,
+      "maxInstances": 10,
+      "concurrency": 20
+    },
+    {
+      "id": "coreApi",
+      "trigger": "https",
+      "runServiceId": "coreapi",
+      "public": true,
+      "secrets": [
+        "ENCRYPTION_SECRET",
+        "PROFILE_SYNC_SECRET",
+        "RECAPTCHA_SECRET_KEY"
+      ],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 512,
+      "maxInstances": 10,
+      "concurrency": 20
+    },
+    {
+      "id": "mediaApi",
+      "trigger": "https",
+      "runServiceId": "mediaapi",
+      "public": true,
+      "secrets": [
+        "ENCRYPTION_SECRET",
+        "GEMINI_API_KEY",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_PHOTOS_REFRESH_TOKEN",
+        "YOUTUBE_API_KEY"
+      ],
+      "timeoutSeconds": 300,
+      "availableMemoryMb": 1024,
+      "maxInstances": 10,
+      "concurrency": 10
+    },
+    {
+      "id": "publicApi",
+      "trigger": "https",
+      "runServiceId": "publicapi",
+      "public": true,
+      "secrets": [],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 512,
+      "maxInstances": 10,
+      "concurrency": 20
+    },
+    {
+      "id": "web",
+      "trigger": "https",
+      "runServiceId": "web",
+      "public": true,
+      "secrets": [],
+      "timeoutSeconds": 20,
+      "availableMemoryMb": 256,
+      "maxInstances": 5,
+      "concurrency": 40
+    }
+  ],
+  "health": {
+    "primaryOrigin": "https://aresfirst.org",
+    "hostingOrigin": "https://aresfirst-portal.web.app",
+    "attempts": 5,
+    "retryDelayMs": 10000,
+    "timeoutMs": 20000,
+    "checks": [
+      {
+        "name": "canonical home and security headers",
+        "origin": "primary",
+        "path": "/",
+        "status": 200,
+        "contentType": "text/html",
+        "headerIncludes": {
+          "cache-control": ["no-cache", "no-store", "must-revalidate"],
+          "content-security-policy": [
+            "default-src 'self'",
+            "script-src-attr 'none'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "frame-ancestors 'none'",
+            "upgrade-insecure-requests"
+          ],
+          "strict-transport-security": ["max-age="],
+          "x-content-type-options": ["nosniff"],
+          "x-frame-options": ["DENY"]
+        }
+      },
+      {
+        "name": "raw prerendered metadata",
+        "origin": "primary",
+        "path": "/about",
+        "status": 200,
+        "contentType": "text/html",
+        "bodyIncludes": ["<title>About Us | ARES 23247</title>"]
+      },
+      {
+        "name": "public simulations API",
+        "origin": "primary",
+        "path": "/api/simulations",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true
+      },
+      {
+        "name": "public finance API",
+        "origin": "primary",
+        "path": "/api/finance?limit=1",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true
+      },
+      {
+        "name": "public robots API",
+        "origin": "primary",
+        "path": "/api/robots?limit=1",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true
+      },
+      {
+        "name": "public videos API",
+        "origin": "primary",
+        "path": "/api/videos/public?limit=1",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true
+      },
+      {
+        "name": "genuine page 404",
+        "origin": "primary",
+        "path": "/__deployment-health/missing-{{DEPLOYMENT_ID}}",
+        "status": 404,
+        "contentType": "text/html"
+      },
+      {
+        "name": "genuine API 404",
+        "origin": "primary",
+        "path": "/api/__deployment-health/missing-{{DEPLOYMENT_ID}}",
+        "status": 404,
+        "contentType": "application/json",
+        "validJson": true
+      },
+      {
+        "name": "sitemap",
+        "origin": "primary",
+        "path": "/sitemap.xml",
+        "status": 200,
+        "contentType": "application/xml",
+        "bodyIncludes": ["<loc>https://aresfirst.org/</loc>"],
+        "headerIncludes": {
+          "cache-control": [
+            "max-age=300",
+            "s-maxage=3600",
+            "stale-while-revalidate=86400"
+          ]
+        }
+      },
+      {
+        "name": "Firebase Hosting origin",
+        "origin": "hosting",
+        "path": "/",
+        "status": 200,
+        "contentType": "text/html",
+        "headerIncludes": {
+          "content-security-policy": ["frame-ancestors 'none'"],
+          "x-content-type-options": ["nosniff"]
+        }
+      }
+    ]
+  }
+}
