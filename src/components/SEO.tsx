@@ -32,6 +32,8 @@ export interface SchemaData {
 
 interface SEOProps {
   title: string;
+  /** Keep the document title identical to a verified product or application name. */
+  exactTitle?: boolean;
   description?: string;
   keywords?: string;
   image?: string;
@@ -185,6 +187,7 @@ export function createAdditionalSchema({
 
 export default function SEO({
   title,
+  exactTitle = false,
   description = "ARES 23247 is a FIRST® Tech Challenge team in Morgantown, West Virginia.",
   keywords = DEFAULT_KEYWORDS,
   image,
@@ -194,7 +197,7 @@ export default function SEO({
   noindex = false,
   schemaData
 }: SEOProps) {
-  const siteTitle = title.endsWith("ARES 23247") ? title : `${title} | ARES 23247`;
+  const siteTitle = exactTitle || title.endsWith("ARES 23247") ? title : `${title} | ARES 23247`;
   const currentUrl = getCanonicalUrl(url);
   const socialImage = image || DEFAULT_IMAGE;
   const socialImageAlt = imageAlt || `${title} — ARES 23247`;

@@ -13,7 +13,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
-      <SEO title="ARES Analytics" description="ARES Analytics is the local-first desktop application from ARES 23247 for FTC and FRC robot project authoring, simulation, telemetry, match-log analysis, and evidence-based tuning." />
+      <SEO exactTitle title="ARES Analytics" description="ARES Analytics is the local-first desktop application from ARES 23247 for FTC and FRC robot project authoring, simulation, telemetry, match-log analysis, and evidence-based tuning." />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
@@ -36,10 +36,13 @@ export default function Home() {
               <p className="text-ares-gold font-bold uppercase tracking-[0.4em] text-xs md:text-sm font-heading mb-4">
                 Appalachian Robotics & Engineering Society
               </p>
-              <h1 className="text-[3.5rem] md:text-[6rem] lg:text-[7.5rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full xl:w-2/3">
-                <span className="block mb-2 text-white">Engineered</span>
-                <span className="bg-ares-red px-4 sm:px-6 py-2 pb-3 mt-2 inline-block ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white font-bold">To Inspire</span>
+              <h1 className="text-[3.5rem] md:text-[6rem] lg:text-[7.5rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full">
+                ARES Analytics
               </h1>
+              <p className="mt-6 max-w-3xl text-xl md:text-2xl font-semibold leading-relaxed text-marble/90">
+                Local-first robot mission control for FTC and FRC project authoring, simulation,
+                telemetry, match-log analysis, and evidence-based tuning.
+              </p>
             </div>
           </div>
 

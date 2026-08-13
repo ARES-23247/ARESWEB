@@ -3,9 +3,9 @@ import { test, expect } from './fixtures';
 test.describe('Navigation & Accessibility E2E tests', () => {
   test('should navigate to homepage and verify branding', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle('ARES Analytics | ARES 23247');
-    // Check that the unique hero heading is visible
-    const heroHeading = page.getByRole('heading', { name: 'Engineered To Inspire' });
+    await expect(page).toHaveTitle('ARES Analytics');
+    // The OAuth application name and product purpose are the primary homepage identity.
+    const heroHeading = page.getByRole('heading', { name: 'ARES Analytics' }).first();
     await expect(heroHeading).toBeVisible();
 
     // Verify key button "View Schedule" is visible
@@ -14,7 +14,7 @@ test.describe('Navigation & Accessibility E2E tests', () => {
 
     // Google OAuth verification and prospective users must be able to identify the
     // desktop product and reach its public policy pages without signing in.
-    await expect(page.getByRole('heading', { name: 'ARES Analytics' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'ARES Analytics' }).first()).toBeVisible();
     const analyticsSection = page.getByLabel('ARES Analytics');
     await expect(analyticsSection.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
     await expect(analyticsSection.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
