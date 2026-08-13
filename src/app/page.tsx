@@ -13,7 +13,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
-      <SEO title="Home" description="ARES 23247 and ARES Analytics: youth robotics, open-source robot software, simulation, telemetry analysis, and STEM education in Morgantown, West Virginia." />
+      <SEO title="ARES Analytics" description="ARES Analytics is the local-first desktop application from ARES 23247 for FTC and FRC robot project authoring, simulation, telemetry, match-log analysis, and evidence-based tuning." />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
