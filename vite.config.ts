@@ -136,6 +136,11 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    server: {
+      deps: {
+        inline: [/@tanstack\/react-query/],
+      },
+    },
     mockReset: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",

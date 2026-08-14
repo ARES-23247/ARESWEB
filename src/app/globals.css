@@ -283,6 +283,20 @@ select option {
     inset: 0;
   }
 
+  body:has(.sponsor-packet-print) * {
+    visibility: hidden;
+  }
+
+  body:has(.sponsor-packet-print) .sponsor-packet-print,
+  body:has(.sponsor-packet-print) .sponsor-packet-print * {
+    visibility: visible;
+  }
+
+  body:has(.sponsor-packet-print) .sponsor-packet-print {
+    position: absolute;
+    inset: 0;
+  }
+
   body:has(.tournament-match-print) * {
     visibility: hidden;
   }

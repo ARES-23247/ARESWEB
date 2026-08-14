@@ -42,6 +42,8 @@ const RobotsFeedPage = lazy(() => import("@/app/robots/page"));
 const RobotDetailPage = lazy(() => import("@/app/robots/[id]/page"));
 const SeasonsPage = lazy(() => import("@/app/seasons/page"));
 const SponsorsPage = lazy(() => import("@/app/sponsors/page"));
+const SponsorPacketPage = lazy(() => import("@/app/sponsors/packet/page"));
+const OutreachReportPage = lazy(() => import("@/app/outreach/report/page"));
 const StorePage = lazy(() => import("@/app/store/page"));
 const TasksRedirect = lazy(() => import("@/app/tasks/page"));
 const TermsPage = lazy(() => import("@/app/terms/page"));
@@ -124,11 +126,13 @@ export default function App() {
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
                   <Route path="/outreach" element={<OutreachPage />} />
+                  <Route path="/outreach/report" element={<OutreachReportPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/robots" element={<RobotsFeedPage />} />
                   <Route path="/robots/:id" element={<RobotDetailPage />} />
                   <Route path="/seasons" element={<SeasonsPage />} />
                   <Route path="/sponsors" element={<SponsorsPage />} />
+                  <Route path="/sponsors/packet" element={<SponsorPacketPage />} />
                   <Route path="/store" element={<StorePage />} />
                   <Route path="/tasks" element={<TasksRedirect />} />
                   <Route path="/tech-stack" element={<TechStackPage />} />
