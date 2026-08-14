@@ -277,6 +277,116 @@ describe("media management pages", () => {
     );
   });
 
+  it("passes the explicit page cursor when loading more albums", async () => {
+    let albumRequestCount = 0;
+    vi.mocked(authenticatedFetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        return response({ photos: [], hasMore: false, nextCursor: null });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        albumRequestCount += 1;
+        return albumRequestCount === 1
+          ? response({
+              albums: [album],
+              hasMore: true,
+              nextCursor: "album-cursor-2",
+            })
+          : response({ albums: [], hasMore: false, nextCursor: null });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    fireEvent.click(screen.getByRole("tab", { name: "Albums" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Load more albums" }),
+    );
+
+    await waitFor(() =>
+      expect(authenticatedFetch).toHaveBeenCalledWith(
+        expect.stringContaining("cursor=album-cursor-2"),
+      ),
+    );
+  });
+
+  it("keeps photo and album request failures distinct from empty libraries and supports retry", async () => {
+    let photoAttempts = 0;
+    let albumAttempts = 0;
+    vi.mocked(authenticatedFetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        photoAttempts += 1;
+        return photoAttempts === 1
+          ? response(
+              { error: "Photo service unavailable" },
+              503,
+              "Service Unavailable",
+            )
+          : response({ photos: [photo], hasMore: false, nextCursor: null });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        albumAttempts += 1;
+        return albumAttempts === 1
+          ? response(
+              { error: "Album service unavailable" },
+              503,
+              "Service Unavailable",
+            )
+          : response({ albums: [album], hasMore: false, nextCursor: null });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    expect(
+      await screen.findByText("Photos could not load."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("No photos match this view."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry photos" }));
+    expect(
+      await screen.findByRole("heading", { name: photo.caption }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Photos could not load."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Albums" }));
+    expect(
+      await screen.findByText("Albums could not load."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("No albums are ready yet."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry albums" }));
+    expect(
+      await screen.findByRole("heading", { name: album.title }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Albums could not load."),
+    ).not.toBeInTheDocument();
+  });
+
   it("ignores an older photo response after the album filter changes", async () => {
     const initialPhotos = deferredResponse();
     const filteredPhoto = {

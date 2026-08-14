@@ -3,6 +3,7 @@ import { tabElementId, tabPanelId } from "@/components/AccessibleTabs";
 import type { ManagedAlbum } from "@/lib/media";
 import {
   PhotoManagementEmpty,
+  PhotoManagementFailure,
   PhotoManagementLoading,
   PhotoManagementLoadMore,
 } from "./PhotoManagementPrimitives";
@@ -12,6 +13,8 @@ interface PhotoAlbumsPanelProps {
   showArchived: boolean;
   onShowArchivedChange: (enabled: boolean) => void;
   loading: boolean;
+  loadError: string | null;
+  onRetry: () => void;
   albums: ManagedAlbum[];
   actionBusy: boolean;
   onCreateAlbum: () => void;
@@ -29,6 +32,8 @@ export default function PhotoAlbumsPanel({
   showArchived,
   onShowArchivedChange,
   loading,
+  loadError,
+  onRetry,
   albums,
   actionBusy,
   onCreateAlbum,
@@ -74,14 +79,23 @@ export default function PhotoAlbumsPanel({
         )}
       </div>
 
+      {loadError && (
+        <PhotoManagementFailure
+          title="Albums could not load."
+          detail={loadError}
+          retryLabel="Retry albums"
+          onRetry={onRetry}
+        />
+      )}
+
       {loading && albums.length === 0 ? (
         <PhotoManagementLoading label="Loading albums" />
-      ) : albums.length === 0 ? (
+      ) : albums.length === 0 && !loadError ? (
         <PhotoManagementEmpty
           icon={<FolderOpen aria-hidden="true" />}
           text="No albums are ready yet."
         />
-      ) : (
+      ) : albums.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {albums.map((album) => (
             <article
@@ -175,7 +189,7 @@ export default function PhotoAlbumsPanel({
             </article>
           ))}
         </div>
-      )}
+      ) : null}
 
       {hasMore && (
         <PhotoManagementLoadMore
