@@ -146,6 +146,10 @@ describe("public truth and reliability pages", () => {
   });
 
   it("uses the youth-safe nickname fallback and ignores student PII", async () => {
+    let resolveRefresh!: (response: Response) => void;
+    const refreshResponse = new Promise<Response>((resolve) => {
+      resolveRefresh = resolve;
+    });
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse({
         members: [{
@@ -158,7 +162,7 @@ describe("public truth and reliability pages", () => {
           subteams: ["Programming"],
         }],
       }))
-      .mockResolvedValueOnce(jsonResponse({}, 503, "Service Unavailable"));
+      .mockReturnValueOnce(refreshResponse);
     vi.stubGlobal("fetch", fetchMock);
     renderPage(<AboutPage />);
 
@@ -169,6 +173,10 @@ describe("public truth and reliability pages", () => {
     expect(screen.queryByText("internal-user-id")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Refresh roster" }));
+    expect(screen.getByRole("heading", { name: "ARES Member" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Refreshing the public roster");
+
+    resolveRefresh(jsonResponse({}, 503, "Service Unavailable"));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("HTTP 503"));
     expect(screen.getByRole("heading", { name: "ARES Member" })).toBeInTheDocument();
   });

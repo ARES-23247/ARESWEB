@@ -69,9 +69,9 @@ This audit reviewed the live architecture, security boundaries, client/server da
 - **Severity**: Low
 - **Confidence**: High
 - **Evidence**: `playwright.config.ts:8-12` and `e2e/email-roster.spec.ts:50-58`
-- **Finding**: Under high parallel worker load across 4 browser engines (52 test instances), cold browser and webserver startup in Firefox occasionally reached the default 30,000ms Playwright timeout on heavy dashboard pages.
-- **Remediation**: Configured `timeout: 45000` in `playwright.config.ts` to provide adequate headroom for full multi-engine parallel test runs.
-- **Acceptance Test**: Ran complete Playwright matrix with 52/52 tests passing across Chromium, Mobile Chromium, Firefox, and WebKit in 1.3m.
+- **Finding**: Under high parallel worker load across 4 browser engines (52 test instances), Firefox occasionally exceeded Playwright's default 5,000ms assertion timeout while waiting for a code-split dashboard route. Extending only the overall test timeout did not change that assertion deadline.
+- **Remediation**: Configured a 45,000ms overall test timeout and a separate 10,000ms assertion timeout in `playwright.config.ts`. Assertions still fail on missing behavior while allowing bounded headroom for parallel browser startup and route loading.
+- **Acceptance Test**: The complete parallel Playwright matrix passed 52/52 test instances across Chromium, Mobile Chromium, Firefox, and WebKit in 47.2s after the separate assertion timeout was added.
 
 ### AUD-04 — JSDOM Comprehensive Profile Page Test Execution Timeout
 - **Severity**: Low
@@ -89,12 +89,13 @@ This audit reviewed the live architecture, security boundaries, client/server da
 - **Client Document Read Isolation**: Firestore rules require `isDeleted != 1` and `isPublished == true` on public reads.
 - **PII Protection**: Inquiry submissions and member identities (email, phone, student contact) are encrypted or restricted to admin/coach roles. Email roster tools only export BCC lists via authorized API endpoints and do not render raw emails in the DOM.
 - **Simulation Sandbox**: `src/sims/` components run within iframe containers with sandboxing policies avoiding `allow-same-origin` alongside `allow-scripts`.
-- **Zero Credentials in Code**: Zero secrets in source files, logs, or repository history. Cloud Functions and CI use Workload Identity Federation with Application Default Credentials.
+- **Credential Controls Inspected**: No plaintext credentials were found in the active source and configuration inspected during this audit. Cloud Functions and CI use Workload Identity Federation with Application Default Credentials. This bounded inspection is not a certification of the complete repository history.
 
-### 2. Web Accessibility (WCAG 2.2 AA)
+### 2. Web Accessibility (Automated WCAG 2.2 AA Evidence)
 - **Keyboard Navigation**: Skip links (`#main-content`), focus traps in mobile navigation dialogs and modals, and roving tabIndex across complex widgets (e.g. interactive meander components, task boards).
 - **ARIA Semantics & Status Announcements**: Live regions (`role="status"`, `aria-live="polite"`) used for asynchronous operations (saving drafts, copy confirmations, clipboard actions).
 - **Color Contrast**: Passed contrast token tests ensuring text on dark obsidian backgrounds adheres to AA ratio standards.
+- **Manual Validation Status**: The dated NVDA, VoiceOver, forced-colors, zoom/reflow, touch, and nested-dialog checks in `docs/audits/2026-08-12-manual-accessibility-checklist.md` remain pending. Automated results alone do not establish WCAG conformance.
 
 ### 3. Performance & Asset Delivery
 - **Route Splitting & Bundle Budgets**:
@@ -123,4 +124,4 @@ This audit reviewed the live architecture, security boundaries, client/server da
 
 ## Conclusion & Health Verdict
 
-The website codebase is clean, robust, and operating in full compliance with repository security, accessibility, performance, and testing boundaries. All static analysis, unit, integration, emulator, build, budget, and end-to-end browser tests pass with zero warnings and zero known production vulnerabilities.
+At the audited commit, the recorded static-analysis, unit, integration, emulator, build, bundle-budget, browser, and production dependency-audit gates passed. These results provide bounded evidence for the reviewed code and commands; they do not establish total security or WCAG conformance. The manual accessibility checklist remains outstanding, and future changes require the same verification gate before release.

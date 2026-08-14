@@ -230,7 +230,7 @@ export default function AboutPage() {
                 ))}
                 <button
                   type="button"
-                  onClick={() => void fetchRoster()}
+                  onClick={() => void fetchRoster(true)}
                   disabled={isLoading || isRefreshing}
                   className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
@@ -248,7 +248,7 @@ export default function AboutPage() {
                 title={roster.length > 0 ? "The roster could not refresh" : "Unable to load the public roster"}
                 message={roster.length > 0 ? "The last published roster remains visible below." : "The public roster service could not be reached."}
                 diagnostic={loadError}
-                onRetry={() => void fetchRoster()}
+                onRetry={() => void fetchRoster(roster.length > 0)}
               />
             </div>
           )}
