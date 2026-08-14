@@ -104,7 +104,8 @@ The HTTP API is split into five processes so a compromised public endpoint does
 not inherit unrelated credentials:
 
 - `publicApi`: public and administrative data routes, with no Secret Manager values.
-- `coreApi`: inquiry/profile routes, with encryption, reCAPTCHA, and profile-sync secrets.
+- `coreApi`: inquiry/profile routes, with encryption, reCAPTCHA, profile-sync,
+  and Zulip bot secrets used for inquiry alerts and member provisioning.
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with only the Drive credential and quota secret.
 - `communicationsApi`: task, Zulip, webhook, and simulation routes, with only their four integration secrets.
@@ -123,16 +124,16 @@ service-account email is part of `infra/gcp/production-deployment.json` and the
 post-deployment drift check fails if a Function falls back to another identity.
 The production access baseline is:
 
-| Workload                 | Project or resource roles                                                                             | Secret access                               |
-| ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `publicApi`              | Firestore user, App Check token verifier                                                              | none                                        |
-| `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync |
-| `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube   |
-| `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                     |
-| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub and Zulip credentials                |
-| `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                  |
-| `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                 |
-| `web`                    | Firestore user                                                                                        | none                                        |
+| Workload                 | Project or resource roles                                                                             | Secret access                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `publicApi`              | Firestore user, App Check token verifier                                                              | none                                                               |
+| `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync, Zulip bot credentials |
+| `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
+| `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub and Zulip credentials                                       |
+| `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                                         |
+| `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                                        |
+| `web`                    | Firestore user                                                                                        | none                                                               |
 
 The Compute Engine default service account is a build-only identity, never a
 Function runtime identity. It may hold only `roles/logging.logWriter` at project
