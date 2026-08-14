@@ -36,3 +36,7 @@
 
 - `pnpm vitest run src/test/VideosPageNav.test.tsx`: 2/2 tests passed.
 - Scoped ESLint & TypeScript: 0 warnings, 0 errors.
+
+## Follow-up correction
+
+The page's “Team YouTube” link used the nonexistent `@ares23247WV` handle. It now targets the team's verified existing `@ARESFTC` channel, and the focused test protects the canonical link.

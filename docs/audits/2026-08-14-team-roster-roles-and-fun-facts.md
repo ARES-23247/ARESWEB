@@ -1,30 +1,28 @@
-# Team Roster Role Visibility & Fun Fact DTO Audit
+# Public Team Roster Follow-up Review
 
 - Date: August 14, 2026
-- Audited baseline: `8ae3afb7a99415d5fee9aebde08829b860de03b3` (`origin/master`)
-- Branch: `codex/continuous-audit-cycle-8`
-- Scope: Public team roster (`src/app/about/page.tsx`), Cloud Functions profile DTO API (`functions/src/routes/profileRoster.ts`), role badges, fun facts, and automated tests
-- Production mutation: none
+- Original baseline: `8ae3afb7a99415d5fee9aebde08829b860de03b3`
+- Follow-up scope: public roster DTO, consent copy, role badges, and focused tests
+- Production mutation: none during review
 
----
+## Corrected findings
 
-## Confirmed Findings and Remediation
+### RST-01 — Fun facts were made public without matching consent disclosure
 
-### RST-01 — Missing Role Badges and Fun Facts on Public Member Cards
-
-- **Severity**: low
+- **Severity**: high
 - **Confidence**: high
-- **Evidence**: In `src/app/about/page.tsx`, when viewing the "All Members" tab, team member cards displayed only their approved nickname, pronouns, bio, and subteams, omitting an explicit role badge pill (e.g. `coach`, `mentor`, `student`, `alumni`). Additionally, while members could record robotics fun facts in their profile settings, the `about-roster` Cloud Function route in `functions/src/routes/profileRoster.ts` and the frontend card did not expose or render this field.
-- **Impact**: Visitors could not easily distinguish between coaches, mentors, students, and alumni without clicking individual category filter buttons.
-- **Remediation**:
-  1. Updated `functions/src/routes/profileRoster.ts` to include safe string trimming on `funFact` in the public `about-roster` DTO.
-  2. Updated `src/app/about/page.tsx` to render an accessible role badge pill and fun fact quote on each member card.
-- **Acceptance test**: `src/test/AboutPageRoster.test.tsx` (2 tests) passes.
-- **Status**: fixed.
+- **Evidence**: The public `about-roster` DTO began returning `funFact`, while the profile privacy control described only biography, nickname, and subteams as public. The field may belong to a student profile and was not required for the public roster.
+- **Impact**: A profile detail could be disclosed without clear, field-specific notice to the member.
+- **Remediation**: Removed `funFact` from the public DTO and About page. The field remains available to its owner in the private profile. Student DTOs are additionally limited to approved nickname, avatar, and the non-identifying student role label; the client enforces the same boundary against stale responses. Updated the privacy control to state the student/adult distinction and that fun facts remain private.
+- **Acceptance test**: Backend and frontend roster tests supply a fun fact and verify that it is absent from the public response and rendered page.
 
----
+### RST-02 — Role badges improve roster clarity without expanding identity data
 
-## Verification Evidence
+- **Severity**: informational
+- **Confidence**: high
+- **Evidence**: Member type was already part of the approved public DTO and used for filtering.
+- **Remediation**: Retained the role badge because it presents an existing public field and does not expand the DTO.
 
-- `pnpm vitest run src/test/AboutPageRoster.test.tsx`: 2/2 tests passed.
-- Scoped ESLint & TypeScript: 0 warnings, 0 errors.
+## Verification evidence
+
+Only commands actually run during the follow-up should be recorded in the delivery summary.

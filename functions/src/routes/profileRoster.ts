@@ -89,7 +89,6 @@ export function registerProfileRosterRoutes(router: Router): void {
               data.email,
             ]),
             bio: data.bio || "",
-            funFact: typeof data.funFact === "string" && data.funFact.trim() ? data.funFact.trim() : "",
             colleges: isStudent ? [] : data.colleges || [],
             contactEmail: data.contactEmail || "",
           };
@@ -100,13 +99,14 @@ export function registerProfileRosterRoutes(router: Router): void {
 
       const members = deduplicateRoster(membersRaw).map((member) => ({
         nickname: member.nickname,
-        pronouns: member.pronouns,
-        subteams: member.subteams,
         memberType: member.memberType,
         avatar: member.avatar,
-        bio: member.bio,
-        funFact: member.funFact,
-        colleges: member.colleges,
+        ...(member.memberType === "student" ? {} : {
+          pronouns: member.pronouns,
+          subteams: member.subteams,
+          bio: member.bio,
+          colleges: member.colleges,
+        }),
       }));
       res.json({ members });
     }),

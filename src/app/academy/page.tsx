@@ -74,6 +74,18 @@ export default function AcademyPage() {
     }
   }, [location.pathname, location.search, navigate]);
 
+  const navigateToSearchResult = useCallback((resultSlug: string) => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    const params = new URLSearchParams(location.search);
+    params.delete("q");
+    const newSearch = params.toString();
+    navigate({
+      pathname: `${basePath}/${resultSlug}`,
+      search: newSearch ? `?${newSearch}` : "",
+    });
+  }, [basePath, location.search, navigate]);
+
   const searchRef = useFocusTrap(searchOpen, closeSearch);
   const feedbackDialogRef = useFocusTrap(negativeFeedbackOpen, () => setNegativeFeedbackOpen(false));
 
@@ -302,10 +314,7 @@ export default function AcademyPage() {
                     <button
                       key={r.slug}
                       className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 transition-colors cursor-pointer"
-                      onClick={() => {
-                        navigate(`${basePath}/${r.slug}`);
-                        closeSearch();
-                      }}
+                      onClick={() => navigateToSearchResult(r.slug)}
                     >
                       <div className="text-sm font-bold text-white">{r.title}</div>
                       <div className="text-xs text-ares-gold/80 mb-1">{r.category}</div>

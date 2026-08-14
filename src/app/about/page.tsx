@@ -16,7 +16,6 @@ interface TeamMember {
   memberType: "student" | "alumni" | "mentor" | "coach";
   avatar?: string;
   bio?: string;
-  funFact?: string;
   colleges?: string[];
 }
 
@@ -69,16 +68,16 @@ function parseTeamMember(value: unknown, index: number): TeamMember | null {
   if (!PUBLIC_MEMBER_TYPES.includes(value.memberType as PublicMemberType)) return null;
 
   const memberType = value.memberType as PublicMemberType;
-  const colleges = memberType === "student" ? [] : readTextArray(value, "colleges");
+  const isStudent = memberType === "student";
+  const colleges = isStudent ? [] : readTextArray(value, "colleges");
   return {
     key: `${memberType}-${readText(value, "nickname") ?? "ARES Member"}-${index}`,
     nickname: readText(value, "nickname") ?? "ARES Member",
-    pronouns: readText(value, "pronouns"),
-    subteams: readTextArray(value, "subteams"),
+    pronouns: isStudent ? undefined : readText(value, "pronouns"),
+    subteams: isStudent ? [] : readTextArray(value, "subteams"),
     memberType,
     avatar: safeAvatarUrl(value.avatar),
-    bio: readText(value, "bio"),
-    funFact: readText(value, "funFact"),
+    bio: isStudent ? undefined : readText(value, "bio"),
     colleges,
   };
 }
@@ -293,11 +292,6 @@ export default function AboutPage() {
                     <p className="text-xs text-marble/70 mt-3 leading-relaxed font-medium">
                       {member.bio ?? "Bio not provided"}
                     </p>
-                    {member.funFact && (
-                      <p className="mt-2 text-[11px] text-ares-bronze italic leading-snug">
-                        &ldquo;{member.funFact}&rdquo;
-                      </p>
-                    )}
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-white/5">

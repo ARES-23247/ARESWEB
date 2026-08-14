@@ -28,28 +28,30 @@ function renderPage() {
   );
 }
 
-describe("SponsorsPage partnership matrix and truthfulness", () => {
+describe("SponsorsPage partner directory and inquiry form", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("displays the partnership tiers and benefits matrix", async () => {
+  it("offers interest categories without publishing unapproved prices or benefits", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response({ sponsors: [] })));
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Sponsorship Opportunities" })).toBeInTheDocument();
-    expect(screen.getByText("$5,000+")).toBeInTheDocument();
-    expect(screen.getByText("$2,500+")).toBeInTheDocument();
-    expect(screen.getByText("$1,000+")).toBeInTheDocument();
-    expect(screen.getByText("$500+")).toBeInTheDocument();
-    expect(screen.getByText("Premier Title Partnership")).toBeInTheDocument();
-    expect(screen.getByText("Major Engineering Partner")).toBeInTheDocument();
-
-    const selectTitaniumButton = screen.getByRole("button", { name: "Select Titanium" });
-    fireEvent.click(selectTitaniumButton);
+    expect(await screen.findByText("No partners are published yet")).toBeInTheDocument();
+    expect(screen.queryByText("$5,000+")).not.toBeInTheDocument();
+    expect(screen.queryByText("Premier Title Partnership")).not.toBeInTheDocument();
+    expect(screen.queryByText(/VIP pit passes/i)).not.toBeInTheDocument();
 
     const levelSelect = screen.getByLabelText("Sponsorship Level") as HTMLSelectElement;
-    expect(levelSelect.value).toBe("Titanium Tier Sponsor");
+    expect(Array.from(levelSelect.options, (option) => option.text)).toEqual([
+      "Interested in Details",
+      "Titanium Tier Sponsor",
+      "Gold Tier Sponsor",
+      "Silver Tier Sponsor",
+      "Bronze Tier Sponsor",
+      "In-Kind Donation / Material",
+      "Mentorship / Engineering Support",
+    ]);
   });
 
   it("renders published partner cards grouped by tier", async () => {
@@ -109,6 +111,7 @@ describe("SponsorsPage partnership matrix and truthfulness", () => {
         body: expect.stringContaining("Apex Dynamics"),
       }));
     });
+    expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("/api/inquiries"))).toHaveLength(1);
 
     expect(await screen.findByText(/Request sent successfully/i)).toBeInTheDocument();
   });

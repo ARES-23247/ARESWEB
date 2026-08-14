@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AcademyPage from "../app/academy/page";
 import { addDoc, getDoc, getDocs } from "firebase/firestore";
@@ -75,6 +75,11 @@ const mockDocsList = [
   },
 ];
 
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location-probe">{location.pathname}{location.search}</output>;
+}
+
 describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -133,31 +138,34 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
       } as unknown as Awaited<ReturnType<typeof getDocs>>;
     });
 
-    vi.mocked(getDoc).mockImplementation(async () => {
+    vi.mocked(getDoc).mockImplementation(async (reference) => {
+      const requested = mockDocsList.find((item) => item.slug === (reference as { id?: string }).id) ?? mockDocsList[0];
       return {
         exists: () => true,
-        id: mockDocsList[0].slug,
-        data: () => mockDocsList[0],
+        id: requested.slug,
+        data: () => requested,
       } as unknown as Awaited<ReturnType<typeof getDoc>>;
     });
 
     render(
-      <MemoryRouter initialEntries={["/academy/ai-101-intro"]}>
+      <MemoryRouter initialEntries={["/academy/ai-101-intro?q=Neural&view=full"]}>
         <Routes>
-          <Route path="/academy/:slug" element={<AcademyPage />} />
+          <Route path="/academy/:slug" element={<><AcademyPage /><LocationProbe /></>} />
         </Routes>
       </MemoryRouter>
     );
 
-    // Open search overlay via Ctrl+K keyboard shortcut
-    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-
     const searchDialog = await screen.findByRole("dialog", { name: "Search documentation" });
-    const searchInput = screen.getByPlaceholderText("Search documentation...");
-    fireEvent.change(searchInput, { target: { value: "Neural" } });
-
     expect(await screen.findByText("Understanding perceptrons and convolutional layers.")).toBeInTheDocument();
     expect(searchDialog).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Neural Networks for Computer Vision/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("location-probe")).toHaveTextContent("/academy/neural-networks-basics?view=full");
+    });
+    await waitForElementToBeRemoved(() => screen.queryByRole("dialog", { name: "Search documentation" }));
+    expect(await screen.findByRole("heading", { name: "Neural Networks for Computer Vision" })).toBeInTheDocument();
   });
 
   it("submits helpful reader feedback to Firestore docs_feedback collection", async () => {
