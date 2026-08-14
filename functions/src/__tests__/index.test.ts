@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const driveSyncMock = vi.hoisted(() => vi.fn());
 vi.mock("../lib/googleDriveLibrary", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../lib/googleDriveLibrary")>(),
+  ...(await importOriginal<typeof import("../lib/googleDriveLibrary")>()),
   syncImportedDriveChanges: driveSyncMock,
 }));
 
@@ -27,7 +27,8 @@ vi.mock("../lib/firebase-admin", () => {
   };
 });
 
-process.env.ENCRYPTION_SECRET = "temporary_deploy_secret_that_is_at_least_32_chars";
+process.env.ENCRYPTION_SECRET =
+  "temporary_deploy_secret_that_is_at_least_32_chars";
 
 import {
   API_ROUTE_GROUPS,
@@ -61,20 +62,38 @@ describe("cleanupOldInquiries scheduled function", () => {
   });
 
   it("declares the resource bounds enforced by the production contract", () => {
-    const endpoint = (cleanupOldInquiries as unknown as {
-      __endpoint: {
-        availableMemoryMb: number;
-        timeoutSeconds: number;
-        concurrency: number;
-        maxInstances: number;
-      };
-    }).__endpoint;
+    const endpoint = (
+      cleanupOldInquiries as unknown as {
+        __endpoint: {
+          availableMemoryMb: number;
+          timeoutSeconds: number;
+          concurrency: number;
+          maxInstances: number;
+          scheduleTrigger: {
+            retryConfig: {
+              retryCount: number;
+              minBackoffSeconds: number;
+              maxBackoffSeconds: number;
+              maxRetrySeconds: number;
+            };
+          };
+        };
+      }
+    ).__endpoint;
 
     expect(endpoint).toMatchObject({
       availableMemoryMb: 256,
       timeoutSeconds: 60,
       concurrency: 80,
       maxInstances: 1,
+      scheduleTrigger: {
+        retryConfig: {
+          retryCount: 3,
+          minBackoffSeconds: 60,
+          maxBackoffSeconds: 300,
+          maxRetrySeconds: 1800,
+        },
+      },
     });
   });
 
@@ -82,10 +101,7 @@ describe("cleanupOldInquiries scheduled function", () => {
     mockGet.mockResolvedValueOnce({
       empty: false,
       size: 2,
-      docs: [
-        { ref: "ref1" },
-        { ref: "ref2" },
-      ],
+      docs: [{ ref: "ref1" }, { ref: "ref2" }],
     });
     mockBatchCommit.mockResolvedValueOnce(undefined);
 
@@ -105,23 +121,33 @@ describe("cleanupOldInquiries scheduled function", () => {
     expect(mockBatchCommit).not.toHaveBeenCalled();
   });
 
-  it("should handle errors during inquiries cleanup task gracefully", async () => {
+  it("surfaces cleanup failures so retries and alerts can detect missed retention work", async () => {
     mockGet.mockRejectedValueOnce(new Error("Firestore database error"));
 
-    await expect((cleanupOldInquiries as any).run({})).resolves.not.toThrow();
+    await expect((cleanupOldInquiries as any).run({})).rejects.toThrow(
+      "Firestore database error",
+    );
   });
 });
 
 describe("Express App Endpoints", () => {
   const stackFor = (app: any) => (app.router ?? app._router).stack;
   const matchesPath = (layer: any, path: string) =>
-    layer.matchers?.some((matcher: (candidate: string) => unknown) => Boolean(matcher(path)))
-    ?? String(layer.regexp).includes(path.replaceAll("/", "\\/"));
+    layer.matchers?.some((matcher: (candidate: string) => unknown) =>
+      Boolean(matcher(path)),
+    ) ?? String(layer.regexp).includes(path.replaceAll("/", "\\/"));
 
   it("exports explicit media-safe runtime resource bounds", () => {
-    const endpoint = (mediaApi as unknown as {
-      __endpoint: { availableMemoryMb: number; timeoutSeconds: number; concurrency: number; maxInstances: number };
-    }).__endpoint;
+    const endpoint = (
+      mediaApi as unknown as {
+        __endpoint: {
+          availableMemoryMb: number;
+          timeoutSeconds: number;
+          concurrency: number;
+          maxInstances: number;
+        };
+      }
+    ).__endpoint;
 
     expect(endpoint).toMatchObject({
       availableMemoryMb: 1024,
@@ -132,36 +158,73 @@ describe("Express App Endpoints", () => {
   });
 
   it("isolates Drive routes and secrets in a bounded function", () => {
-    const endpoint = (driveApi as unknown as {
-      __endpoint: { availableMemoryMb: number; timeoutSeconds: number; secretEnvironmentVariables: Array<{ key: string }> };
-    }).__endpoint;
-    expect(endpoint).toMatchObject({ availableMemoryMb: 512, timeoutSeconds: 60 });
-    expect(endpoint.secretEnvironmentVariables.map((secret) => secret.key).sort()).toEqual(
-      [...FUNCTION_SECRET_BINDINGS.driveApi].sort(),
-    );
+    const endpoint = (
+      driveApi as unknown as {
+        __endpoint: {
+          availableMemoryMb: number;
+          timeoutSeconds: number;
+          secretEnvironmentVariables: Array<{ key: string }>;
+        };
+      }
+    ).__endpoint;
+    expect(endpoint).toMatchObject({
+      availableMemoryMb: 512,
+      timeoutSeconds: 60,
+    });
+    expect(
+      endpoint.secretEnvironmentVariables.map((secret) => secret.key).sort(),
+    ).toEqual([...FUNCTION_SECRET_BINDINGS.driveApi].sort());
     const driveMount = stackFor(driveApp).find(
-      (layer: any) => layer.name === "router" && matchesPath(layer, "/api/drive"),
+      (layer: any) =>
+        layer.name === "router" && matchesPath(layer, "/api/drive"),
     );
     expect(driveMount).toBeDefined();
   });
 
   it("runs Drive change detection on a bounded private schedule", async () => {
-    driveSyncMock.mockResolvedValueOnce({ checkedChanges: 0, updatedDocuments: 0, hasMore: false });
-    const endpoint = (syncGoogleDriveChanges as unknown as {
-      __endpoint: { availableMemoryMb: number; timeoutSeconds: number; concurrency: number; maxInstances: number; secretEnvironmentVariables: Array<{ key: string }> };
-    }).__endpoint;
-    expect(endpoint).toMatchObject({ availableMemoryMb: 256, timeoutSeconds: 120, concurrency: 1, maxInstances: 1 });
-    expect(endpoint.secretEnvironmentVariables.map((secret) => secret.key).sort()).toEqual([
-      "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN",
+    driveSyncMock.mockResolvedValueOnce({
+      checkedChanges: 0,
+      updatedDocuments: 0,
+      hasMore: false,
+    });
+    const endpoint = (
+      syncGoogleDriveChanges as unknown as {
+        __endpoint: {
+          availableMemoryMb: number;
+          timeoutSeconds: number;
+          concurrency: number;
+          maxInstances: number;
+          secretEnvironmentVariables: Array<{ key: string }>;
+        };
+      }
+    ).__endpoint;
+    expect(endpoint).toMatchObject({
+      availableMemoryMb: 256,
+      timeoutSeconds: 120,
+      concurrency: 1,
+      maxInstances: 1,
+    });
+    expect(
+      endpoint.secretEnvironmentVariables.map((secret) => secret.key).sort(),
+    ).toEqual([
+      "GOOGLE_CLIENT_ID",
+      "GOOGLE_CLIENT_SECRET",
+      "GOOGLE_DRIVE_REFRESH_TOKEN",
     ]);
     await (syncGoogleDriveChanges as any).run({});
     expect(driveSyncMock).toHaveBeenCalledTimes(1);
   });
 
   it("authenticates and applies the distributed upload quota before the large JSON parser", () => {
-    const expectedNames = ["ensureTeamMember", "enforceDistributedQuota", "jsonParser"];
+    const expectedNames = [
+      "ensureTeamMember",
+      "enforceDistributedQuota",
+      "jsonParser",
+    ];
     const uploadLayers = stackFor(mediaApp).filter(
-      (layer: any) => expectedNames.includes(layer.name) && matchesPath(layer, "/api/photos/upload-unified"),
+      (layer: any) =>
+        expectedNames.includes(layer.name) &&
+        matchesPath(layer, "/api/photos/upload-unified"),
     );
 
     expect(uploadLayers.map((layer: any) => layer.name)).toEqual(expectedNames);
@@ -169,7 +232,8 @@ describe("Express App Endpoints", () => {
 
   it("should mount and respond on the /api/reference endpoint", () => {
     const referenceMount = stackFor(publicApp).find(
-      (layer: any) => layer.name === "router" && matchesPath(layer, "/api/reference"),
+      (layer: any) =>
+        layer.name === "router" && matchesPath(layer, "/api/reference"),
     );
     expect(referenceMount).toBeDefined();
 
@@ -186,20 +250,34 @@ describe("Express App Endpoints", () => {
     route.route.stack[0].handle(req, res);
 
     expect(res.type).toHaveBeenCalledWith("html");
-    expect(res.send).toHaveBeenCalledWith(expect.stringContaining("ARES API Reference"));
+    expect(res.send).toHaveBeenCalledWith(
+      expect.stringContaining("ARES API Reference"),
+    );
   });
 
   it("binds no secrets to public routes and caps every other blast radius", () => {
     expect(FUNCTION_SECRET_BINDINGS.publicApi).toEqual([]);
-    expect(Math.max(...Object.values(FUNCTION_SECRET_BINDINGS).map((secrets) => secrets.length))).toBe(6);
+    expect(
+      Math.max(
+        ...Object.values(FUNCTION_SECRET_BINDINGS).map(
+          (secrets) => secrets.length,
+        ),
+      ),
+    ).toBe(6);
     expect(new Set(Object.values(API_ROUTE_GROUPS).flat()).size).toBe(
       Object.values(API_ROUTE_GROUPS).flat().length,
     );
 
-    const communicationsEndpoint = (communicationsApi as unknown as {
-      __endpoint: { secretEnvironmentVariables: Array<{ key: string }> };
-    }).__endpoint;
-    expect(communicationsEndpoint.secretEnvironmentVariables.map((secret) => secret.key)).toEqual(
+    const communicationsEndpoint = (
+      communicationsApi as unknown as {
+        __endpoint: { secretEnvironmentVariables: Array<{ key: string }> };
+      }
+    ).__endpoint;
+    expect(
+      communicationsEndpoint.secretEnvironmentVariables.map(
+        (secret) => secret.key,
+      ),
+    ).toEqual(
       expect.arrayContaining([...FUNCTION_SECRET_BINDINGS.communicationsApi]),
     );
   });
@@ -217,9 +295,13 @@ describe("Express App Endpoints", () => {
     };
 
     for (const [name, endpoint] of Object.entries(endpoints)) {
-      expect((endpoint as unknown as {
-        __endpoint: { serviceAccountEmail: string };
-      }).__endpoint.serviceAccountEmail).toBe(
+      expect(
+        (
+          endpoint as unknown as {
+            __endpoint: { serviceAccountEmail: string };
+          }
+        ).__endpoint.serviceAccountEmail,
+      ).toBe(
         RUNTIME_SERVICE_ACCOUNTS[name as keyof typeof RUNTIME_SERVICE_ACCOUNTS],
       );
     }
@@ -229,11 +311,21 @@ describe("Express App Endpoints", () => {
   });
 
   it("declares every Hosting-routed HTTPS function publicly invokable", () => {
-    for (const endpoint of [publicApi, coreApi, driveApi, mediaApi, communicationsApi, web]) {
-      expect((endpoint as unknown as {
-        __endpoint: { httpsTrigger: { invoker: string[] } };
-      }).__endpoint.httpsTrigger.invoker)
-        .toEqual(["public"]);
+    for (const endpoint of [
+      publicApi,
+      coreApi,
+      driveApi,
+      mediaApi,
+      communicationsApi,
+      web,
+    ]) {
+      expect(
+        (
+          endpoint as unknown as {
+            __endpoint: { httpsTrigger: { invoker: string[] } };
+          }
+        ).__endpoint.httpsTrigger.invoker,
+      ).toEqual(["public"]);
     }
   });
 });
