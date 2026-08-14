@@ -37,6 +37,10 @@
 
 ## Verification Evidence
 
-- `pnpm vitest run src/test/HomeBranding.test.tsx src/test/hostingConfig.test.ts`: 2/2 test files passed.
-- `pnpm run test:e2e`: 56/56 cross-browser tests passed.
-- Scoped ESLint & TypeScript: 0 warnings, 0 errors.
+- `pnpm exec vitest run src/test/HomeBranding.test.tsx src/test/hostingConfig.test.ts`: 2 files and 9 tests passed.
+- Full frontend coverage: 93 files and 529 tests passed.
+- Full Functions coverage: 45 files and 573 tests passed.
+- Firestore and Storage rules: 20 tests passed.
+- `pnpm run test:e2e`: 56/56 tests passed across Chromium, mobile Chromium, Firefox, and WebKit.
+- Frozen install, shared-agent validation, root and Functions lint, TypeScript, production build, all bundle budgets, deployment contract, and production dependency audit passed on Node 22.13.1 and Java 21.
+- Desktop 1808×848 and mobile 390×844 visual reviews confirmed the restored identity, responsive headline, and blended watermark.
