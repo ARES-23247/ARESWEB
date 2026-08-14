@@ -113,6 +113,10 @@ describe("Firebase Hosting crawl configuration", () => {
     for (const source of ["/blog/**", "/academy/**", "/docs/**", "/events/**", "/robots/**"]) {
       expect(config.hosting.rewrites).toContainEqual({ source, function: "web" });
     }
+    expect(config.hosting.rewrites).toContainEqual({
+      source: "/__deployment-health/web",
+      function: "web",
+    });
     expect(config.hosting.rewrites).toContainEqual({ source: "/dashboard{,/**}", destination: "/index.html" });
 
     const viteConfig = readFileSync(resolve(process.cwd(), "vite.config.ts"), "utf8");

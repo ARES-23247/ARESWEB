@@ -186,6 +186,18 @@
         "bodyIncludes": ["<title>About Us | ARES 23247</title>"]
       },
       {
+        "name": "dynamic web shell",
+        "origin": "primary",
+        "path": "/__deployment-health/web",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true,
+        "bodyIncludes": ["healthy"],
+        "headerIncludes": {
+          "cache-control": ["no-store"]
+        }
+      },
+      {
         "name": "public simulations API",
         "origin": "primary",
         "path": "/api/simulations",

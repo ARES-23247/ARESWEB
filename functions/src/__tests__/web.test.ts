@@ -51,6 +51,44 @@ describe("dynamic web function", () => {
 
     expect(response.status).toHaveBeenCalledWith(200);
     expect(response.send).toHaveBeenCalledWith(expect.stringContaining("Build Update | ARES 23247"));
+    expect(fetch).toHaveBeenCalledWith(
+      "https://aresfirst-portal.web.app/dashboard",
+      expect.objectContaining({ cache: "no-store" }),
+    );
+  });
+
+  it("exercises the active app shell through a data-independent health route", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '<html><head></head><body><div id="root"></div></body></html>',
+    }));
+    const response = responseDouble();
+
+    await runWeb(
+      { method: "GET", path: "/__deployment-health/web" },
+      response,
+    );
+
+    expect(getDocument).not.toHaveBeenCalled();
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(response.type).toHaveBeenCalledWith("json");
+    expect(response.send).toHaveBeenCalledWith('{"status":"healthy"}');
+  });
+
+  it("fails the shell health route closed when Hosting returns a prerendered page", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '<html><head></head><body><main>Home page</main></body></html>',
+    }));
+    const response = responseDouble();
+
+    await runWeb(
+      { method: "GET", path: "/__deployment-health/web" },
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(503);
+    expect(response.send).toHaveBeenCalledWith('{"status":"unavailable"}');
   });
 
   it("returns a genuine 404 for an invalid or missing public record", async () => {
