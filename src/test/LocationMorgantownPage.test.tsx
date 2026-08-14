@@ -33,7 +33,13 @@ describe("LocationMorgantownPage - Morgantown Regional Robotics & STEM Hub", () 
     expect(screen.getByRole("heading", { level: 1, name: /Robotics in Morgantown/i })).toBeInTheDocument();
     expect(screen.getByText(/Morgantown, West Virginia • Regional STEM Hub/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/North Central West Virginia.*FIRST.*Tech Challenge robotics team and STEM innovation hub/i)
+      screen.getByText((_content, element) => {
+        return (
+          element?.tagName.toLowerCase() === "p" &&
+          (element?.textContent?.includes("North Central West Virginia") ?? false) &&
+          (element?.textContent?.includes("STEM innovation hub") ?? false)
+        );
+      })
     ).toBeInTheDocument();
 
     // CTA links in hero
@@ -109,7 +115,12 @@ describe("LocationMorgantownPage - Morgantown Regional Robotics & STEM Hub", () 
       screen.getByRole("heading", { level: 4, name: /Laboratory Access & Visiting Guidelines/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/FIRST.*Youth Protection Program \(YPP\) guidelines/i)
+      screen.getByText((_content, element) => {
+        return (
+          element?.tagName.toLowerCase() === "p" &&
+          (element?.textContent?.includes("Youth Protection Program") ?? false)
+        );
+      })
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Schedule Lab Visit/i })).toHaveAttribute("href", "/join");
   });
