@@ -13,6 +13,7 @@ export const staticPageMetadata = [
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission."],
   ["/accessibility", "Accessibility & Web Standards", "Read the ARES 23247 accessibility commitment and supported ways to report a barrier."],
   ["/academy", "ARES Academy", "Explore ARES Academy robotics, mathematics, physics, and engineering lessons."],
+  ["/academy/tools", "STEM Tools & Calculators", "Interactive robotics calculators for gear ratios, torque multiplication, 2D center of mass tipping points, and PID step-response telemetry."],
   ["/blog", "Blog", "Read technical updates, design notes, code breakdowns, and outreach reflections from ARES 23247."],
   ["/calendar", "Team Calendar", "See published ARES 23247 practices, competitions, outreach programs, and team events."],
   ["/developer-api", "API Reference", "A limited reference for supported ARESWEB public endpoints.", true],

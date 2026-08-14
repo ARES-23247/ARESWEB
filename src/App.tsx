@@ -24,6 +24,7 @@ const Home = lazy(() => import("@/app/page"));
 const AboutPage = lazy(() => import("@/app/about/page"));
 const AcademyPage = lazy(() => import("@/app/academy/page"));
 const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page"));
+const AcademyToolsPage = lazy(() => import("@/app/academy/tools/page"));
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
 const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
@@ -108,6 +109,7 @@ export default function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
                   <Route path="/academy/playground" element={<AcademyPlaygroundPage />} />
+                  <Route path="/academy/tools" element={<AcademyToolsPage />} />
                   <Route path="/academy/:slug" element={<AcademyPage />} />
                   <Route path="/docs" element={<AcademyPage />} />
                   <Route path="/docs/:slug" element={<AcademyPage />} />
