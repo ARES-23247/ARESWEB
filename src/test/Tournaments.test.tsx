@@ -400,6 +400,81 @@ describe("TournamentDetailPage", () => {
     printSpy.mockRestore();
   });
 
+  it("renders OPR metrics, leaderboard search, scouting CSV download, and alliance planner on upcoming tournaments", async () => {
+    mockAuth({
+      user: { uid: "test-uid", email: "test@example.com" },
+      authorizedUser: { email: "test@example.com", role: "student" },
+      loading: false,
+    });
+
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(["tournament", "active-tournament-2026"], {
+      id: "active-tournament-2026",
+      name: "WV State Championship 2026",
+      seasonName: "2025-2026",
+      challengeName: "DECODE",
+      date: "2026-03-20",
+      location: "Fairmont, WV",
+      description: "Active FTC state championship tournament.",
+      status: "upcoming",
+      opr: 195.2,
+      oprList: [
+        { teamNumber: "23247", teamName: "ARES", opr: 195.2 },
+        { teamNumber: "14210", teamName: "Quantum Leap", opr: 188.0 },
+        { teamNumber: "18214", teamName: "CyberKnights", opr: 172.5 },
+        { teamNumber: "11111", teamName: "RoboTitans", opr: 160.0 },
+        { teamNumber: "99999", teamName: "OmegaTech", opr: 155.0 },
+      ],
+      scoutingDetails: {
+        autoPathNotes: "Double sample auto",
+        driverFeedback: "Fast cycle time",
+        robotSpecs: "Linear slide intake",
+      },
+      photoAlbumId: null,
+      isDeleted: 0,
+    });
+    queryClient.setQueryData(["tournament_matches", "active-tournament-2026"], []);
+    queryClient.setQueryData(["tournament_photos", "active-tournament-2026"], []);
+
+    await act(async () => {
+      renderWithProviders(<TournamentDetailPage />, queryClient, [
+        "/tournaments/active-tournament-2026",
+      ]);
+    });
+
+    // Verify OPR badge is displayed on upcoming event
+    expect(screen.getByText("Team OPR")).toBeInTheDocument();
+    expect(screen.getAllByText("195.2")).toHaveLength(2);
+
+    // Verify OPR Leaderboard and Stats
+    expect(screen.getByText("OPR Leaderboard")).toBeInTheDocument();
+    expect(screen.getByText("Teams Scouted")).toBeInTheDocument();
+    expect(screen.getAllByText("5")).toHaveLength(2);
+    expect(screen.getByText("Average OPR")).toBeInTheDocument();
+
+    // Verify CSV download link is present and properly formed
+    const csvDownload = screen.getByRole("link", {
+      name: "Download scouting OPR records as CSV",
+    });
+    expect(csvDownload).toHaveAttribute(
+      "download",
+      "wv-state-championship-2026-scouting.csv"
+    );
+    expect(csvDownload).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^data:text\/csv;charset=utf-8,%EF%BB%BF/)
+    );
+
+    // Verify team search filter
+    const searchInput = screen.getByLabelText("Filter teams by number or name");
+    fireEvent.change(searchInput, { target: { value: "Quantum" } });
+    expect(screen.getByText("Quantum Leap")).toBeInTheDocument();
+    expect(screen.queryByText("CyberKnights")).not.toBeInTheDocument();
+
+    // Verify Alliance Strategy Planner is present
+    expect(screen.getByText("Alliance Strategy & Selection Planner")).toBeInTheDocument();
+  });
+
   it("surfaces a revision conflict and refreshes without overwriting newer data", async () => {
     mockAuth({
       user: { uid: "admin-uid", email: "admin@example.com" },
