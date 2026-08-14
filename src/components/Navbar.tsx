@@ -96,7 +96,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav ref={navbarRef} role="navigation" aria-label="Main Navigation" className="fixed top-0 left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze">
+    <nav ref={navbarRef} role="navigation" aria-label="Main Navigation" style={{ top: "var(--site-announcement-height, 0px)" }} className="fixed left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze">
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
       </div>

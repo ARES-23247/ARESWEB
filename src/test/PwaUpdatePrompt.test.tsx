@@ -135,16 +135,31 @@ describe("PwaUpdatePrompt", () => {
     expect(registerSWMock).toHaveBeenCalledTimes(2);
   });
 
-  it("announces offline readiness and permits dismissal", () => {
+  it("keeps non-actionable offline readiness silent", () => {
     render(<PwaUpdatePrompt enabled />);
     const callbacks = registerSWMock.mock.calls[0][0];
 
     act(() => callbacks.onOfflineReady());
-    expect(screen.getByText("Ready for offline use")).toBeVisible();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Dismiss notification" }),
-    );
     expect(screen.queryByText("Ready for offline use")).not.toBeInTheDocument();
+  });
+
+  it("ignores service-worker callbacks after effect cleanup", () => {
+    const reloadPage = vi.fn();
+    const { unmount } = render(
+      <PwaUpdatePrompt enabled reloadPage={reloadPage} />,
+    );
+    const callbacks = registerSWMock.mock.calls[0][0];
+
+    unmount();
+    act(() => {
+      callbacks.onOfflineReady();
+      callbacks.onNeedRefresh();
+      callbacks.onRegisteredSW("/sw.js", { update: vi.fn() });
+      callbacks.onNeedReload();
+    });
+
+    expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
+    expect(reloadPage).not.toHaveBeenCalled();
   });
 
   it("recovers from a transient registration failure without showing an alert", () => {

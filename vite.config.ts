@@ -163,6 +163,7 @@ export default defineConfig({
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/PwaUpdatePrompt.tsx",
+        "src/components/SiteAnnouncementBanner.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/photos/*.{ts,tsx}",
         "src/app/dashboard/profile/page.tsx",
@@ -205,6 +206,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/components/BlogThumbnailImage.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/SiteAnnouncementBanner.tsx": {
           lines: 85,
           functions: 100,
         },

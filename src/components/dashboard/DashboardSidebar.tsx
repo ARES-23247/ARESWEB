@@ -3,7 +3,7 @@
 import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User, Globe, ClipboardList, LogOut, ShieldAlert, Cpu, Sparkles, BookOpen, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy } from "lucide-react";
+import { LayoutDashboard, User, Globe, ClipboardList, LogOut, ShieldAlert, Cpu, Sparkles, BookOpen, PenTool, Calendar, Video, MessageSquare, Image as ImageIcon, Heart, GraduationCap, FileText, TerminalSquare, Trophy, Megaphone } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebaseFirestore";
 import { onSnapshot, collection, query, where } from "firebase/firestore";
@@ -191,6 +191,9 @@ export default function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: ()
               )}
               {(userRole === "admin" || userRole === "coach") && (
                 <NavButton tab="users" icon={ShieldAlert} label="Manage Users" currentPath={pathname} />
+              )}
+              {(userRole === "admin" || userRole === "coach") && (
+                <NavButton tab="announcements" icon={Megaphone} label="Site Announcements" currentPath={pathname} />
               )}
             </div>
           </div>

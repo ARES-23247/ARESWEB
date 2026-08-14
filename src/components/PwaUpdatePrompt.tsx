@@ -32,7 +32,6 @@ export default function PwaUpdatePrompt({
   const controllerChangeHandler = useRef<(() => void) | null>(null);
   const reloadStarted = useRef(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [offlineReady, setOfflineReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -110,21 +109,25 @@ export default function PwaUpdatePrompt({
 
     const registrationOptions = () => ({
       immediate: true,
-      onNeedReload: reloadWithActivatedWorker,
+      onNeedReload: () => {
+        if (!isDisposed) reloadWithActivatedWorker();
+      },
       onNeedRefresh: () => {
+        if (isDisposed) return;
         setError(null);
         setIsUpdating(false);
         setUpdateAvailable(true);
       },
       onOfflineReady: () => {
+        if (isDisposed) return;
         registrationAttempts = 0;
         setError(null);
-        setOfflineReady(true);
       },
       onRegisteredSW: (
         _serviceWorkerUrl: string,
         currentRegistration?: ServiceWorkerRegistration,
       ) => {
+        if (isDisposed) return;
         if (!currentRegistration) return;
         registration = currentRegistration;
         registrationAttempts = 0;
@@ -209,7 +212,7 @@ export default function PwaUpdatePrompt({
     }
   };
 
-  if (!updateAvailable && !offlineReady && !error) return null;
+  if (!updateAvailable && !error) return null;
 
   return (
     <aside
@@ -226,18 +229,12 @@ export default function PwaUpdatePrompt({
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-sm font-black uppercase tracking-wide">
-            {updateAvailable
-              ? "Portal update ready"
-              : error
-                ? "Offline support unavailable"
-                : "Ready for offline use"}
+            {updateAvailable ? "Portal update ready" : "Offline support unavailable"}
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-marble/80">
             {updateAvailable
               ? "Reload when you are ready to use the latest version. Unsaved form entries may be lost."
-              : error
-                ? "Online browsing still works. Try again after reconnecting or reloading the page."
-                : "The current portal shell is available if your connection drops."}
+              : "Online browsing still works. Try again after reconnecting or reloading the page."}
           </p>
           {error && (
             <p className="mt-2 break-words font-mono text-[11px] text-marble/70">
@@ -277,7 +274,6 @@ export default function PwaUpdatePrompt({
           onClick={() => {
             clearActivationWait();
             setUpdateAvailable(false);
-            setOfflineReady(false);
             setError(null);
             setIsUpdating(false);
           }}
