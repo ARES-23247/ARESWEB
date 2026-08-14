@@ -68,7 +68,7 @@ export default function Footer() {
             <BookOpen size={12} className="text-ares-gold" /> Resources
           </h4>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
-            <li><Link to="/tech-stack" className="hover:text-ares-gold transition-colors flex items-center gap-2">Tech Stack</Link></li>
+            <li><Link to="/hardware" className="hover:text-ares-gold transition-colors flex items-center gap-2">Hardware & Wiring</Link></li>\n            <li><Link to="/tech-stack" className="hover:text-ares-gold transition-colors flex items-center gap-2">Tech Stack</Link></li>
             <li><Link to="/robots" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robots Fleet</Link></li>
             <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">3D Models Archive</a></li>
             <li><a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">CAD Workspace</a></li>

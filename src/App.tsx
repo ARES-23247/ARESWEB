@@ -30,7 +30,7 @@ const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
 const CalendarPage = lazy(() => import("@/app/calendar/page"));
 const DeveloperApiPage = lazy(() => import("@/app/developer-api/page"));
 const EventDetailPage = lazy(() => import("@/app/events/[id]/page"));
-const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));
+const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));\nconst HardwareElectronicsPage = lazy(() => import("@/app/hardware/page"));
 const GalleryPage = lazy(() => import("@/app/gallery/page"));
 const VideosPage = lazy(() => import("@/app/videos/page"));
 const JoinPage = lazy(() => import("@/app/join/page"));
@@ -117,7 +117,7 @@ export default function App() {
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/developer-api" element={<DeveloperApiPage />} />
                   <Route path="/events/:id" element={<EventDetailPage />} />
-                  <Route path="/finance" element={<FinanceLedgerPage />} />
+                  <Route path="/finance" element={<FinanceLedgerPage />} />\n                  <Route path="/hardware" element={<HardwareElectronicsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/videos" element={<VideosPage />} />
                   <Route path="/join" element={<JoinPage />} />

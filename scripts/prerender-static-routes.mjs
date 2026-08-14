@@ -17,7 +17,7 @@ export const staticPageMetadata = [
   ["/calendar", "Team Calendar", "See published ARES 23247 practices, competitions, outreach programs, and team events."],
   ["/developer-api", "API Reference", "A limited reference for supported ARESWEB public endpoints.", true],
   ["/docs", "ARESLib Documentation", "Read ARESLib documentation, control-loop guides, and robotics API references."],
-  ["/finance", "Financial Transparency Ledger", "Review public financial accountability information for ARES 23247."],
+  ["/finance", "Financial Transparency Ledger", "Review public financial accountability information for ARES 23247."],\n  ["/hardware", "Robot Hardware & Electrical Architecture", "Inspect the REV Robotics Control Hub wiring, sensor pinouts, power distribution, and electrical architecture of ARES 23247."],
   ["/gallery", "Photo Gallery", "Browse published ARES 23247 build, competition, and outreach photos."],
   ["/join", "Join the Team", "Apply to join ARES 23247 as a student member, mentor, or volunteer."],
   ["/leaderboard", "Team Recognition", "Learn how ARES 23247 recognizes teamwork, community impact, and growth."],
