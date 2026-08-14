@@ -16,6 +16,7 @@ interface TaskBoardColumnProps {
   onEditTask: (taskId: string) => void;
   onArchiveTask: (taskId: string, archive: boolean) => void;
   teamProfiles: MemberProfile[];
+  duplicateCounts: ReadonlyMap<string, number>;
 }
 
 export default function TaskBoardColumn({
@@ -33,6 +34,7 @@ export default function TaskBoardColumn({
   onEditTask,
   onArchiveTask,
   teamProfiles,
+  duplicateCounts,
 }: TaskBoardColumnProps) {
   return (
     <div className="glass-card p-5 border border-white/10 min-h-[550px] flex flex-col ares-cut-lg bg-black/10 text-left">
@@ -81,6 +83,7 @@ export default function TaskBoardColumn({
             onEditTask={onEditTask}
             onArchiveTask={onArchiveTask}
             teamProfiles={teamProfiles}
+            duplicateCount={duplicateCounts.get(task.id)}
           />
         ))}
       </div>

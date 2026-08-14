@@ -109,4 +109,27 @@ describe("TaskCard status movement", () => {
     expect(screen.getByText("Overdue · Jan 1")).toBeInTheDocument();
     expect(screen.queryByText(/midnight/i)).not.toBeInTheDocument();
   });
+
+  it("shows a readable summary for a legacy rich task description", () => {
+    renderCard({
+      duplicateCount: 3,
+      task: {
+        ...task,
+        description: JSON.stringify({
+          type: "doc",
+          content: [
+            {
+              type: "googleDriveEmbed",
+              attrs: { title: "Ball Script", src: "https://docs.google.com/document/d/private-id/edit" },
+            },
+          ],
+        }),
+      },
+    });
+
+    expect(screen.getByText("Google Drive attachment: Ball Script")).toBeInTheDocument();
+    expect(screen.getByText("Potential duplicate ×3")).toBeInTheDocument();
+    expect(screen.queryByText(/private-id/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\"type\":\"doc\"/)).not.toBeInTheDocument();
+  });
 });
