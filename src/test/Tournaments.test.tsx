@@ -355,7 +355,7 @@ describe("TournamentDetailPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("fails closed on a stale match and refreshes without recreating it", async () => {
+  it("surfaces a revision conflict and refreshes without overwriting newer data", async () => {
     mockAuth({
       user: { uid: "admin-uid", email: "admin@example.com" },
       authorizedUser: { email: "admin@example.com", role: "admin" },
@@ -363,10 +363,10 @@ describe("TournamentDetailPage", () => {
     });
     vi.mocked(setTournamentMatchCompletion).mockRejectedValue(
       new TournamentApiError(
-        404,
-        "Not Found",
-        "MATCH_NOT_FOUND",
-        "HTTP 404: Not Found — Match record no longer exists",
+        409,
+        "Conflict",
+        "MATCH_REVISION_CONFLICT",
+        "HTTP 409: Conflict — This match changed elsewhere",
       ),
     );
     vi.mocked(fetchTournamentMatches).mockResolvedValue([]);
@@ -393,6 +393,7 @@ describe("TournamentDetailPage", () => {
           result: "upcoming",
           completed: false,
           isDeleted: 0,
+          updatedAt: "2026-08-14T09:00:00.000Z",
         },
       ],
     );
@@ -404,13 +405,14 @@ describe("TournamentDetailPage", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/changed or archived elsewhere/i),
+        screen.getByText(/changed on another device/i),
       ).toBeInTheDocument(),
     );
     expect(setTournamentMatchCompletion).toHaveBeenCalledWith(
       "world-championship-2026",
       "qm-1",
       true,
+      "2026-08-14T09:00:00.000Z",
     );
     expect(fetchTournamentMatches).toHaveBeenCalledWith(
       "world-championship-2026",

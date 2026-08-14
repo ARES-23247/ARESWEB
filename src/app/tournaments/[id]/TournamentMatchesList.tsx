@@ -1,5 +1,13 @@
 import { useState, useMemo } from "react";
-import { Bookmark, Plus, Check, Edit2, Trash2, Info, Download } from "lucide-react";
+import {
+  Bookmark,
+  Plus,
+  Check,
+  Edit2,
+  Trash2,
+  Info,
+  Download,
+} from "lucide-react";
 import { TournamentMatch } from "@/types/tournament";
 import { summarizeTournamentMatches } from "@/lib/tournamentStats";
 import { tournamentMatchCsvDataUrl } from "@/lib/tournamentMatchCsv";
@@ -11,12 +19,12 @@ interface TournamentMatchesListProps {
   canEdit: boolean;
   isMatchesLoading: boolean;
   isSavingMatch: boolean;
-  onToggleMatch: (matchId: string, completed: boolean) => void;
+  onToggleMatch: (match: TournamentMatch, completed: boolean) => void;
   onAddMatch: (match: Partial<TournamentMatch>) => Promise<void>;
   onUpdateMatch: (
     updated: Partial<TournamentMatch> & { id: string },
   ) => Promise<void>;
-  onDeleteMatch: (matchId: string) => Promise<void>;
+  onDeleteMatch: (match: TournamentMatch) => Promise<void>;
 }
 
 export default function TournamentMatchesList({
@@ -100,7 +108,10 @@ export default function TournamentMatchesList({
     });
   }, [matches, matchSearchQuery]);
   const summary = useMemo(() => summarizeTournamentMatches(matches), [matches]);
-  const csvDataUrl = useMemo(() => tournamentMatchCsvDataUrl(matches), [matches]);
+  const csvDataUrl = useMemo(
+    () => tournamentMatchCsvDataUrl(matches),
+    [matches],
+  );
 
   return (
     <section className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden backdrop-blur-sm shadow-xl text-left">
@@ -435,7 +446,7 @@ export default function TournamentMatchesList({
                       {canEdit ? (
                         <button
                           type="button"
-                          onClick={() => onToggleMatch(m.id, !m.completed)}
+                          onClick={() => onToggleMatch(m, !m.completed)}
                           className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan ${
                             m.completed
                               ? "bg-ares-red border-ares-red text-white"
@@ -576,7 +587,7 @@ export default function TournamentMatchesList({
                         type="button"
                         onClick={async () => {
                           try {
-                            await onDeleteMatch(m.id);
+                            await onDeleteMatch(m);
                             setPendingArchiveId(null);
                           } catch {
                             // Keep the confirmation open while the parent shows the error.

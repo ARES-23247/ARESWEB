@@ -73,10 +73,14 @@ export interface TournamentMatchWriteInput {
   notes?: string;
 }
 
-export interface TournamentMatchUpdateInput extends Omit<
-  Partial<TournamentMatchWriteInput>,
-  "scoreSelf" | "scoreOpponent"
-> {
+export interface TournamentMatchRevisionInput {
+  expectedUpdatedAt: string | null;
+}
+
+export interface TournamentMatchUpdateInput
+  extends
+    Omit<Partial<TournamentMatchWriteInput>, "scoreSelf" | "scoreOpponent">,
+    TournamentMatchRevisionInput {
   scoreSelf?: number | null;
   scoreOpponent?: number | null;
 }

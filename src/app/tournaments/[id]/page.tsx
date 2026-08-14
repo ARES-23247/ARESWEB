@@ -121,14 +121,19 @@ export default function TournamentDetailPage() {
 
   const toggleMatchMutation = useMutation({
     mutationFn: async ({
-      matchId,
+      match,
       completed,
     }: {
-      matchId: string;
+      match: TournamentMatch;
       completed: boolean;
     }) => {
       if (!id) throw new Error("Tournament route is missing an ID");
-      return setTournamentMatchCompletion(id, matchId, completed);
+      return setTournamentMatchCompletion(
+        id,
+        match.id,
+        completed,
+        match.updatedAt ?? null,
+      );
     },
     onSuccess: handleMutationSuccess,
     onError: handleMutationError,
@@ -166,6 +171,7 @@ export default function TournamentDetailPage() {
         result: updated.result,
         completed: updated.completed,
         notes: updated.notes ?? undefined,
+        expectedUpdatedAt: updated.updatedAt ?? null,
       });
     },
     onSuccess: handleMutationSuccess,
@@ -173,9 +179,9 @@ export default function TournamentDetailPage() {
   });
 
   const deleteMatchMutation = useMutation({
-    mutationFn: async (matchId: string) => {
+    mutationFn: async (match: TournamentMatch) => {
       if (!id) throw new Error("Tournament route is missing an ID");
-      return archiveTournamentMatch(id, matchId);
+      return archiveTournamentMatch(id, match.id, match.updatedAt ?? null);
     },
     onSuccess: handleMutationSuccess,
     onError: handleMutationError,
@@ -337,9 +343,12 @@ export default function TournamentDetailPage() {
               >
                 <p className="font-bold">
                   {mutationError instanceof TournamentApiError &&
-                  mutationError.status === 404
-                    ? "That match was changed or archived elsewhere. The list has been refreshed."
-                    : "The match change was not saved. Your confirmed data is unchanged."}
+                  mutationError.status === 409
+                    ? "That match changed on another device. The latest record has been loaded; compare it with your preserved draft before saving again."
+                    : mutationError instanceof TournamentApiError &&
+                        mutationError.status === 404
+                      ? "That match was changed or archived elsewhere. The list has been refreshed."
+                      : "The match change was not saved. Your confirmed data is unchanged."}
                 </p>
                 <p className="mt-1 font-mono text-xs text-marble/80">
                   {mutationError.message}
@@ -365,8 +374,8 @@ export default function TournamentDetailPage() {
                   updateMatchMutation.isPending ||
                   deleteMatchMutation.isPending
                 }
-                onToggleMatch={(matchId, completed) =>
-                  toggleMatchMutation.mutate({ matchId, completed })
+                onToggleMatch={(match, completed) =>
+                  toggleMatchMutation.mutate({ match, completed })
                 }
                 onAddMatch={async (newMatch) => {
                   await addMatchMutation.mutateAsync(newMatch);
@@ -374,8 +383,8 @@ export default function TournamentDetailPage() {
                 onUpdateMatch={async (updated) => {
                   await updateMatchMutation.mutateAsync(updated);
                 }}
-                onDeleteMatch={async (matchId) => {
-                  await deleteMatchMutation.mutateAsync(matchId);
+                onDeleteMatch={async (match) => {
+                  await deleteMatchMutation.mutateAsync(match);
                 }}
               />
             )}
