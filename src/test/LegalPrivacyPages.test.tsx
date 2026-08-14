@@ -21,7 +21,7 @@ describe("Privacy Policy Page (PrivacyPage)", () => {
 
     const heading = screen.getByRole("heading", { level: 1, name: /privacy policy/i });
     expect(heading).toBeInTheDocument();
-    expect(screen.getByText(/committed to engineering privacy/i)).toBeInTheDocument();
+    expect(main).toHaveTextContent(/committed to engineering privacy/i);
   });
 
   it("renders all five privacy policy sections in proper sequential order", () => {
@@ -39,22 +39,24 @@ describe("Privacy Policy Page (PrivacyPage)", () => {
   it("verifies cookie-free analytics disclosure and no tracking cookies clause", () => {
     renderInRouter(<PrivacyPage />);
 
-    expect(screen.getByRole("heading", { name: "1. Cookie-Free Web Analytics" })).toBeInTheDocument();
-    expect(screen.getByText(/explicitly disabled HTTP cookie storage/i)).toBeInTheDocument();
-    expect(screen.getByText(/strictly in the browser's local storage, preventing HTTP tracking cookies/i)).toBeInTheDocument();
-    expect(screen.getByText(/no unique user IP addresses are stored or permanently tracked/i)).toBeInTheDocument();
-    expect(screen.getByText(/measure basic website traffic/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "1. Cookie-Free Web Analytics" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/explicitly disabled HTTP cookie storage/i);
+    expect(section).toHaveTextContent(/strictly in the browser's local storage, preventing HTTP tracking cookies/i);
+    expect(section).toHaveTextContent(/no unique user IP addresses are stored or permanently tracked/i);
+    expect(section).toHaveTextContent(/measure basic website traffic/i);
   });
 
   it("verifies COPPA compliance and youth data protection disclosures", () => {
     renderInRouter(<PrivacyPage />);
 
-    expect(screen.getByRole("heading", { name: "2. COPPA & Student Privacy" })).toBeInTheDocument();
-    expect(screen.getByText(/Children's Online Privacy Protection Act \(COPPA\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/operate in an environment inclusive of minors/i)).toBeInTheDocument();
-    expect(screen.getByText(/never collect personal information from general web portal visitors/i)).toBeInTheDocument();
-    expect(screen.getByText(/explicit written consent and release forms signed by legal guardians/i)).toBeInTheDocument();
-    expect(screen.getByText(/recruitment inquiries and contact submissions are encrypted/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "2. COPPA & Student Privacy" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/Children's Online Privacy Protection Act \(COPPA\)/i);
+    expect(section).toHaveTextContent(/operate in an environment inclusive of minors/i);
+    expect(section).toHaveTextContent(/never collect personal information from general web portal visitors/i);
+    expect(section).toHaveTextContent(/explicit written consent and release forms signed by legal guardians/i);
+    expect(section).toHaveTextContent(/recruitment inquiries and contact submissions are encrypted/i);
 
     const ftcLink = screen.getByRole("link", { name: /FIRST Robotics FTC program/i });
     expect(ftcLink).toBeInTheDocument();
@@ -66,28 +68,31 @@ describe("Privacy Policy Page (PrivacyPage)", () => {
   it("verifies secure AI processing disclosures", () => {
     renderInRouter(<PrivacyPage />);
 
-    expect(screen.getByRole("heading", { name: "3. Secure AI Processing" })).toBeInTheDocument();
-    expect(screen.getByText(/Gemini models on Google Vertex AI to add Accessibility tags/i)).toBeInTheDocument();
-    expect(screen.getByText(/raw data is never sold, shared, or used to train other AI/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "3. Secure AI Processing" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/Gemini models on Google Vertex AI to add Accessibility tags/i);
+    expect(section).toHaveTextContent(/raw data is never sold, shared, or used to train other AI/i);
   });
 
   it("verifies ARES Analytics desktop OAuth and Google Drive security disclosures", () => {
     renderInRouter(<PrivacyPage />);
 
-    expect(screen.getByRole("heading", { name: "4. ARES Analytics and Google Drive" })).toBeInTheDocument();
-    expect(screen.getByText(/local-first desktop application/i)).toBeInTheDocument();
-    expect(screen.getByText(/Authorization Code with PKCE, and no client secret/i)).toBeInTheDocument();
-    expect(screen.getByText(/narrow drive\.file permission/i)).toBeInTheDocument();
-    expect(screen.getByText(/does not scan unrelated Drive files/i)).toBeInTheDocument();
-    expect(screen.getByText(/DPAPI credential protection/i)).toBeInTheDocument();
-    expect(screen.getByText(/signing out removes the local token record/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "4. ARES Analytics and Google Drive" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/local-first desktop application/i);
+    expect(section).toHaveTextContent(/Authorization Code with PKCE, and no client secret/i);
+    expect(section).toHaveTextContent(/narrow drive\.file permission/i);
+    expect(section).toHaveTextContent(/does not scan unrelated Drive files/i);
+    expect(section).toHaveTextContent(/DPAPI credential protection/i);
+    expect(section).toHaveTextContent(/signing out removes the local token record/i);
   });
 
   it("verifies secure role-based administration clause and contact accessibility", () => {
     renderInRouter(<PrivacyPage />);
 
-    expect(screen.getByRole("heading", { name: "5. Secure Administration" })).toBeInTheDocument();
-    expect(screen.getByText(/strictly locked behind role-based authentication/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "5. Secure Administration" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/strictly locked behind role-based authentication/i);
 
     const contactLink = screen.getByRole("link", { name: `Send an email to ${siteConfig.team.name} robotics team` });
     expect(contactLink).toBeInTheDocument();
@@ -106,7 +111,7 @@ describe("Terms of Service Page (TermsPage)", () => {
 
     const heading = screen.getByRole("heading", { level: 1, name: /terms of service/i });
     expect(heading).toBeInTheDocument();
-    expect(screen.getByText(/govern your use of the ARES 23247 Web Portal/i)).toBeInTheDocument();
+    expect(main).toHaveTextContent(/govern your use of the ARES 23247 Web Portal/i);
   });
 
   it("renders all four terms sections in proper sequential order", () => {
@@ -123,37 +128,41 @@ describe("Terms of Service Page (TermsPage)", () => {
   it("verifies general provisions and desktop application terms", () => {
     renderInRouter(<TermsPage />);
 
-    expect(screen.getByRole("heading", { name: "1. General Provisions & Acceptance" })).toBeInTheDocument();
-    expect(screen.getByText(/registered FIRST® Tech Challenge robotics team located in the United States/i)).toBeInTheDocument();
-    expect(screen.getByText(/optional online features of the ARES Analytics desktop application/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "1. General Provisions & Acceptance" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/registered FIRST® Tech Challenge robotics team located in the United States/i);
+    expect(section).toHaveTextContent(/optional online features of the ARES Analytics desktop application/i);
   });
 
   it("verifies acceptable use, Gracious Professionalism, and security conduct rules", () => {
     renderInRouter(<TermsPage />);
 
-    expect(screen.getByRole("heading", { name: "2. Acceptable Use & Conduct" })).toBeInTheDocument();
-    expect(screen.getByText(/Gracious Professionalism®, the core ethos of FIRST® Robotics/i)).toBeInTheDocument();
-    expect(screen.getByText(/damage, impairment, or disruption to its availability/i)).toBeInTheDocument();
-    expect(screen.getByText(/data mining, unauthorized data extraction, or brute-force access attempts/i)).toBeInTheDocument();
-    expect(screen.getByText(/maintain the confidentiality of their authentication credentials/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "2. Acceptable Use & Conduct" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/Gracious Professionalism®, the core ethos of FIRST® Robotics/i);
+    expect(section).toHaveTextContent(/damage, impairment, or disruption to its availability/i);
+    expect(section).toHaveTextContent(/data mining, unauthorized data extraction, or brute-force access attempts/i);
+    expect(section).toHaveTextContent(/maintain the confidentiality of their authentication credentials/i);
   });
 
   it("verifies sponsorship, payments, and refund policies", () => {
     renderInRouter(<TermsPage />);
 
-    expect(screen.getByRole("heading", { name: "3. Sponsorships, Payments & Refunds" })).toBeInTheDocument();
-    expect(screen.getByText(/secure payment processor \(Stripe\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/do not directly store your credit card information/i)).toBeInTheDocument();
-    expect(screen.getByText(/non-refundable contributions to support our educational mission/i)).toBeInTheDocument();
-    expect(screen.getByText(/within 7 days of the transaction to request a refund/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "3. Sponsorships, Payments & Refunds" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/secure payment processor \(Stripe\)/i);
+    expect(section).toHaveTextContent(/do not directly store your credit card information/i);
+    expect(section).toHaveTextContent(/non-refundable contributions to support our educational mission/i);
+    expect(section).toHaveTextContent(/within 7 days of the transaction to request a refund/i);
   });
 
   it("verifies liability disclaimers, jurisdiction, and legal contact link", () => {
     renderInRouter(<TermsPage />);
 
-    expect(screen.getByRole("heading", { name: "4. Liability & Jurisdiction" })).toBeInTheDocument();
-    expect(screen.getByText(/provided on an 'as is' basis/i)).toBeInTheDocument();
-    expect(screen.getByText(/exclusive jurisdiction of the courts/i)).toBeInTheDocument();
+    const section = screen.getByRole("heading", { name: "4. Liability & Jurisdiction" }).closest("section");
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent(/provided on an 'as is' basis/i);
+    expect(section).toHaveTextContent(/exclusive jurisdiction of the courts/i);
 
     const legalContactLink = screen.getByRole("link", { name: `Send an email to ${siteConfig.team.name} legal inquiries` });
     expect(legalContactLink).toBeInTheDocument();
