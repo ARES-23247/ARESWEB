@@ -3,8 +3,12 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import GalleryPage from "../app/gallery/page";
 import {
+  ALBUM_CATEGORIES,
   GALLERY_ALBUMS,
   GALLERY_PHOTOS,
+  GALLERY_SEASONS,
+  getCuratedAlbums,
+  getCuratedPhotos,
   isSafePublicTag,
   sanitizePhotoTags,
   sanitizeExif,
@@ -12,7 +16,13 @@ import {
   filterPhotos,
   groupPhotosByAlbum,
   groupPhotosBySeason,
+  getAvailableSeasons,
+  getAvailableCategories,
+  resolveGalleryMedia,
   mergeApiPhotosWithCurated,
+  ZERO_PII_DISCLAIMER,
+  type GalleryPhoto,
+  type GalleryAlbum,
 } from "@/lib/galleryData";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
@@ -213,11 +223,20 @@ describe("GalleryAlbumCollections & Interactive Lightbox Suite", () => {
   });
 
   it("enforces strict Zero-PII youth photo tagging protections", () => {
-    // Test helper functions directly
+    // Valid tags
     expect(isSafePublicTag("Autonomous")).toBe(true);
     expect(isSafePublicTag("Drive Team")).toBe(true);
     expect(isSafePublicTag("Odometry")).toBe(true);
     expect(isSafePublicTag("Control Award")).toBe(true);
+
+    // Invalid / Edge cases
+    expect(isSafePublicTag("")).toBe(false);
+    expect(isSafePublicTag("   ")).toBe(false);
+    expect(isSafePublicTag("a".repeat(51))).toBe(false);
+    // @ts-expect-error test non-string
+    expect(isSafePublicTag(null)).toBe(false);
+    // @ts-expect-error test non-string
+    expect(isSafePublicTag(123)).toBe(false);
 
     // Reject PII
     expect(isSafePublicTag("john.doe@example.com")).toBe(false);
@@ -226,8 +245,12 @@ describe("GalleryAlbumCollections & Interactive Lightbox Suite", () => {
     expect(isSafePublicTag("student: Alex Smith")).toBe(false);
     expect(isSafePublicTag("name: Sarah")).toBe(false);
     expect(isSafePublicTag("minor: Timmy")).toBe(false);
+    expect(isSafePublicTag("person: Bob")).toBe(false);
+    expect(isSafePublicTag("id: 9982")).toBe(false);
 
     // Test sanitizePhotoTags
+    expect(sanitizePhotoTags(undefined)).toEqual([]);
+    expect(sanitizePhotoTags(null as unknown as unknown[])).toEqual([]);
     const dirtyTags = [
       "Autonomous",
       "john.smith@gmail.com",
@@ -236,55 +259,135 @@ describe("GalleryAlbumCollections & Interactive Lightbox Suite", () => {
       "555-432-1098",
       "student: John",
       "Drive Team",
+      123,
+      null,
+      "   ",
     ];
     const cleanTags = sanitizePhotoTags(dirtyTags);
     expect(cleanTags).toEqual(["Autonomous", "Chassis Rigging", "Drive Team"]);
 
     // Test sanitizeExif
-    const cleanExif = sanitizeExif({
+    expect(sanitizeExif(undefined)).toBeUndefined();
+    expect(sanitizeExif(null as unknown as undefined)).toBeUndefined();
+    expect(sanitizeExif({})).toBeUndefined();
+
+    const fullExif = {
       camera: "Sony Alpha 7 IV",
       lens: "FE 24-70mm f/2.8",
+      focalLength: "35mm",
+      aperture: "f/2.8",
+      shutterSpeed: "1/500s",
       iso: "ISO 800",
-    });
-    expect(cleanExif).toEqual({
-      camera: "Sony Alpha 7 IV",
-      lens: "FE 24-70mm f/2.8",
-      iso: "ISO 800",
-    });
+      dimensions: "6000 x 4000",
+    };
+    expect(sanitizeExif(fullExif)).toEqual(fullExif);
+
+    expect(ZERO_PII_DISCLAIMER).toContain("Strict Zero-PII Protection");
   });
 
-  it("verifies galleryData helper functions for grouping and filtering", () => {
-    const albums = GALLERY_ALBUMS;
-    const photos = GALLERY_PHOTOS;
+  it("verifies all galleryData helper functions, filters, and groups", () => {
+    const albums = getCuratedAlbums();
+    const photos = getCuratedPhotos();
 
-    // Filter albums by category
+    expect(albums.length).toBeGreaterThan(0);
+    expect(photos.length).toBeGreaterThan(0);
+
+    // Test getAvailableSeasons
+    const seasons = getAvailableSeasons(albums, photos);
+    expect(seasons).toContain("2025-2026");
+    expect(seasons).toContain("2024-2025");
+    expect(seasons).toContain("2023-2024");
+    expect(getAvailableSeasons()).toBeDefined();
+
+    // Test getAvailableCategories
+    const categories = getAvailableCategories(albums, photos);
+    expect(categories).toContain("Competitions");
+    expect(categories).toContain("Outreach");
+    expect(categories).toContain("Robot Build");
+    expect(categories).toContain("Team Culture");
+    expect(getAvailableCategories()).toBeDefined();
+
+    // Test filterAlbums
+    const allAlbums = filterAlbums(albums, {});
+    expect(allAlbums.length).toBe(albums.length);
+
     const compAlbums = filterAlbums(albums, { category: "Competitions" });
-    expect(compAlbums.length).toBeGreaterThan(0);
     expect(compAlbums.every((a) => a.category === "Competitions")).toBe(true);
 
-    // Filter photos by season
-    const s2025Photos = filterPhotos(photos, { season: "2025-2026" });
-    expect(s2025Photos.length).toBeGreaterThan(0);
-    expect(s2025Photos.every((p) => p.season === "2025-2026")).toBe(true);
+    const s2025Albums = filterAlbums(albums, { season: "2025-2026" });
+    expect(s2025Albums.every((a) => a.season === "2025-2026")).toBe(true);
+
+    const searchAlbums1 = filterAlbums(albums, { query: "Fairmont" });
+    expect(searchAlbums1.length).toBeGreaterThan(0);
+
+    const searchAlbums2 = filterAlbums(albums, { query: "STEM" });
+    expect(searchAlbums2.length).toBeGreaterThan(0);
+
+    const searchAlbums3 = filterAlbums(albums, { query: "nonexistent-query-xyz" });
+    expect(searchAlbums3.length).toBe(0);
+
+    // Test filterPhotos
+    const allFilteredPhotos = filterPhotos(photos, {});
+    expect(allFilteredPhotos.length).toBe(photos.length);
+
+    const albumPhotos = filterPhotos(photos, { albumId: "wv-state-championship-2026" });
+    expect(albumPhotos.length).toBe(4);
+
+    const searchPhotos1 = filterPhotos(photos, { query: "Autonomous" });
+    expect(searchPhotos1.length).toBeGreaterThan(0);
+
+    const searchPhotos2 = filterPhotos(photos, { query: "Fairmont" });
+    expect(searchPhotos2.length).toBeGreaterThan(0);
+
+    const searchPhotos3 = filterPhotos(photos, { query: "WV State Championship" });
+    expect(searchPhotos3.length).toBeGreaterThan(0);
+
+    const searchPhotos4 = filterPhotos(photos, { query: "Odometry" });
+    expect(searchPhotos4.length).toBeGreaterThan(0);
+
+    const searchPhotos5 = filterPhotos(photos, { query: "nonexistent-keyword-999" });
+    expect(searchPhotos5.length).toBe(0);
 
     // Group photos by album
     const albumGroupMap = groupPhotosByAlbum(photos);
     expect(albumGroupMap.has("wv-state-championship-2026")).toBe(true);
+    const orphanPhoto: GalleryPhoto = { key: "orph-1", category: "Competitions" };
+    const orphanGroupMap = groupPhotosByAlbum([orphanPhoto]);
+    expect(orphanGroupMap.has("uncategorized-album")).toBe(true);
 
     // Group photos by season
     const seasonGroupMap = groupPhotosBySeason(photos);
     expect(seasonGroupMap["2025-2026"]).toBeDefined();
+    const orphanSeasonMap = groupPhotosBySeason([orphanPhoto]);
+    expect(orphanSeasonMap["2025-2026"]).toBeDefined();
 
-    // Merge API photos
-    const merged = mergeApiPhotosWithCurated([
-      {
-        key: "custom-api-1",
-        title: "Custom Field Photo",
-        category: "Competitions",
-        season: "2025-2026",
-      },
-    ]);
-    expect(merged.photos.some((p) => p.key === "custom-api-1")).toBe(true);
+    // Test resolveGalleryMedia & mergeApiPhotosWithCurated
+    const emptyResolved = resolveGalleryMedia([]);
+    expect(emptyResolved.albums.length).toBe(4);
+    expect(emptyResolved.photos.length).toBe(12);
+
+    const sampleApiPhoto: GalleryPhoto = {
+      key: "api-1",
+      title: "Api Test Photo",
+      category: "Robot Build",
+      season: "2025-2026",
+      tags: ["CAD", "Testing"],
+      location: "Lab",
+      date: "2026-03-01",
+    };
+    const apiResolved = mergeApiPhotosWithCurated([sampleApiPhoto]);
+    expect(apiResolved.photos.length).toBe(1);
+    expect(apiResolved.photos[0].title).toBe("Api Test Photo");
+
+    const customCategoryPhoto: GalleryPhoto = {
+      key: "api-custom",
+      title: "Custom Category Photo",
+      category: "CustomCategory",
+      tags: ["Custom"],
+    };
+    const customResolved = resolveGalleryMedia([customCategoryPhoto]);
+    expect(customResolved.photos.length).toBe(1);
+    expect(customResolved.albums.length).toBeGreaterThan(0);
   });
 
   it("renders the Zero-PII Youth Privacy Notice banner on page", async () => {

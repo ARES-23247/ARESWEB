@@ -27,6 +27,7 @@ import {
   ALBUM_CATEGORIES,
   GALLERY_SEASONS,
   type AlbumCategory,
+  type GalleryAlbum,
   type GalleryPhoto,
   getCuratedAlbums,
   mergeApiPhotosWithCurated,
@@ -337,7 +338,7 @@ export default function GalleryPage() {
                   className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-[10px] font-black uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold"
                 >
                   <RefreshCw aria-hidden="true" size={12} className={isRefreshing ? "animate-spin" : ""} />
-                  Refresh
+                  Refresh photos
                 </button>
               </div>
             </div>
@@ -459,8 +460,8 @@ export default function GalleryPage() {
               {loadError && (
                 <div className="mb-8">
                   <PublicDataState
-                    title={apiPhotos.length > 0 ? "The gallery could not refresh live photos" : "Unable to load the live photo feed"}
-                    message={apiPhotos.length > 0 ? "Curated event archives remain visible below." : "The published photo archive could not be reached."}
+                    title={apiPhotos.length > 0 ? "The gallery could not refresh" : "Unable to load the photo gallery"}
+                    message={apiPhotos.length > 0 ? "The last published photos remain visible below." : "The published photo archive could not be reached."}
                     diagnostic={loadError}
                     onRetry={() => void loadPhotos()}
                   />

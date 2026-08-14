@@ -160,6 +160,7 @@ export default defineConfig({
         "src/lib/contentUrls.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
+        "src/lib/galleryData.ts",
         "src/lib/outreachExport.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
@@ -217,6 +218,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/galleryData.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/dateOnly.ts": {
           lines: 85,
           functions: 100,
@@ -269,3 +274,4 @@ export default defineConfig({
     },
   },
 });
+
