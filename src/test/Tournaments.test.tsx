@@ -4,6 +4,7 @@ import {
   screen,
   act,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
@@ -291,6 +292,8 @@ describe("TournamentDetailPage", () => {
     queryClient.setQueryData(["tournament", "world-championship-2026"], {
       id: "world-championship-2026",
       name: "FIRST® World Championship 2026",
+      seasonName: "2025-2026",
+      challengeName: "DECODE",
       date: "2026-04-29",
       location: "Houston, TX",
       description:
@@ -353,6 +356,48 @@ describe("TournamentDetailPage", () => {
     expect(
       screen.queryByRole("button", { name: /Mark complete: QM4/i }),
     ).not.toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByLabelText("Filter matches by number or team"),
+      {
+        target: { value: "no visible matches" },
+      },
+    );
+    expect(screen.getByText(/No matches fit this filter/i)).toBeInTheDocument();
+
+    const printTrigger = screen.getByRole("button", { name: "Print plan" });
+    printTrigger.focus();
+    fireEvent.click(printTrigger);
+
+    const printDialog = screen.getByRole("dialog", {
+      name: "Event-day match plan",
+    });
+    expect(
+      within(printDialog).getByText("2025-2026 · DECODE"),
+    ).toBeInTheDocument();
+    expect(
+      within(printDialog).getByText("April 29, 2026 · Houston, TX"),
+    ).toBeInTheDocument();
+    expect(within(printDialog).getByText("QM4")).toBeInTheDocument();
+    expect(within(printDialog).getByText("220–195")).toBeInTheDocument();
+    expect(within(printDialog).getByText("Notes here")).toBeInTheDocument();
+
+    const printSpy = vi
+      .spyOn(window, "print")
+      .mockImplementation(() => undefined);
+    fireEvent.click(
+      within(printDialog).getByRole("button", { name: "Print / Save PDF" }),
+    );
+    expect(printSpy).toHaveBeenCalledOnce();
+
+    fireEvent.click(
+      within(printDialog).getByRole("button", { name: "Close match plan" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(printTrigger).toHaveFocus();
+    printSpy.mockRestore();
   });
 
   it("surfaces a revision conflict and refreshes without overwriting newer data", async () => {
@@ -480,6 +525,9 @@ describe("TournamentMatchesList reliability", () => {
     render(
       <TournamentMatchesList
         isPast={false}
+        tournamentName="Test Event"
+        tournamentDate="2026-08-14"
+        tournamentLocation="Morgantown, WV"
         matches={[]}
         canEdit={true}
         isMatchesLoading={false}
