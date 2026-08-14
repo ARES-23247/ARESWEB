@@ -2,6 +2,7 @@ import React from "react";
 import { Calendar, Clock, MapPin, RotateCcw, Check, Pencil, Trash2 } from "lucide-react";
 import { TeamEvent } from "./EventEditorDrawer";
 import { TeamLocation } from "./LocationManagerModal";
+import { toPlainText } from "@/lib/contentFormatters";
 
 interface EventsCalendarViewProps {
   filteredEvents: TeamEvent[];
@@ -111,8 +112,8 @@ export default function EventsCalendarView({
                     <h3 className="text-lg font-bold text-white font-heading uppercase tracking-tight">
                       {evt.title}
                     </h3>
-                    {evt.description && (
-                      <p className="text-marble/70 text-xs leading-relaxed">{evt.description}</p>
+                    {toPlainText(evt.description) && (
+                      <p className="text-marble/70 text-xs leading-relaxed">{toPlainText(evt.description)}</p>
                     )}
 
                     <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 text-[10px] font-bold text-marble/55 uppercase tracking-wide">

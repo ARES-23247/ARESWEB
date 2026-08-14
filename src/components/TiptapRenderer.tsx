@@ -183,7 +183,8 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
         </div>
       );
     }
-    case "image": {
+    case "image":
+    case "imageResize": {
       const src = safeContentImageUrl(node.attrs?.src ?? node.src);
       const alt = boundedText(node.attrs?.alt ?? node.alt);
       const title = boundedText(node.attrs?.title);

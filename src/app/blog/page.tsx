@@ -18,6 +18,7 @@ import { Pencil, Plus } from "lucide-react";
 import SEO from "@/components/SEO";
 import BlogThumbnailImage from "@/components/BlogThumbnailImage";
 import { PublicDataState } from "@/components/PublicDataState";
+import { toPlainText } from "@/lib/contentFormatters";
 
 interface BlogPost {
   slug: string;
@@ -74,11 +75,12 @@ export default function BlogFeedPage() {
       (snapshot) => {
         const postsList = snapshot.docs.map((doc) => {
           const data = doc.data();
+          const rawSnippet = data.snippet || data.content || "";
           return {
             slug: doc.id,
             title: data.title || "Untitled Post",
             date: data.date || "",
-            snippet: data.snippet || "",
+            snippet: toPlainText(rawSnippet, 200),
             thumbnail: data.thumbnail || "",
             author: data.author || "ARES Member",
             authorAvatar: data.authorAvatar || "",

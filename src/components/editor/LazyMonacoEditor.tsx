@@ -63,7 +63,7 @@ function LoadingWrapper({ children, timedOut }: { children: ReactNode; timedOut:
       {timedOut && (
         <div className="absolute bottom-4 left-0 right-0 text-center">
           <p className="text-sm text-ares-gold bg-black/60 px-4 py-2 rounded inline-block">
-            Taking longer than expected... (Monaco is ~2.5MB)
+            Loading the code editor and language tools…
           </p>
         </div>
       )}

@@ -10,6 +10,7 @@ import { TeamEvent } from "@/types/event";
 import { TeamLocation } from "../components/LocationManagerModal";
 import { archiveEvent, createEvent, restoreEvent, updateEvent, type EventWriteInput } from "@/app/calendar/api";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { normalizeForMarkdownEditor } from "@/lib/contentFormatters";
 
 export interface EventRevision {
   id: string;
@@ -139,7 +140,7 @@ export function useEventEditor({
         setFormDateStart(eventToEdit.dateStart ? eventToEdit.dateStart.slice(0, 16) : "");
         setFormDateEnd(eventToEdit.dateEnd ? eventToEdit.dateEnd.slice(0, 16) : "");
         setFormLocationId(eventToEdit.locationId || "");
-        setFormDescription(eventToEdit.description || "");
+        setFormDescription(normalizeForMarkdownEditor(eventToEdit.description));
         setFormCategory(eventToEdit.category);
         setFormCoverImage(eventToEdit.coverImage || "");
         setFormIsPotluck(eventToEdit.isPotluck || 0);
@@ -318,7 +319,7 @@ export function useEventEditor({
     setFormDateStart(rev.dateStart ? rev.dateStart.slice(0, 16) : "");
     setFormDateEnd(rev.dateEnd ? rev.dateEnd.slice(0, 16) : "");
     setFormLocationId(rev.locationId || "");
-    setFormDescription(rev.description || "");
+    setFormDescription(normalizeForMarkdownEditor(rev.description));
     setFormCategory(rev.category);
     setFormCoverImage(rev.coverImage || "");
     setFormIsPotluck(rev.isPotluck || 0);

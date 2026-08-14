@@ -37,7 +37,10 @@ try {
   const lazyJs = readdirSync(assetsDir).filter(
     (file) => file.endsWith(".js") && !initialAssets.has(file),
   );
-  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|babel|prettier)-/;
+  // Rolldown appends a numeric suffix when the Monaco entry name collides in
+  // some modes (for example `editor.api2-*` in the E2E build). Keep every
+  // disambiguated editor API chunk in the optional-editor budget.
+  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|babel|prettier)-/;
   const routeLazyJs = lazyJs.filter((file) => !editorRuntimePattern.test(file));
   const editorRuntimeJs = lazyJs.filter((file) => editorRuntimePattern.test(file));
   const largestEditor = editorRuntimeJs

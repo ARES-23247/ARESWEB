@@ -12,6 +12,7 @@ import PendingVolunteerEvents, { TeamEvent } from "./components/PendingVolunteer
 import OutreachLogsList, { OutreachLog } from "./components/OutreachLogsList";
 import OutreachForm from "./components/OutreachForm";
 import OutreachPortfolioExportModal from "./components/OutreachPortfolioExportModal";
+import { toPlainText } from "@/lib/contentFormatters";
 
 interface OperationStatus {
   kind: "success" | "error" | "info";
@@ -278,8 +279,9 @@ export default function OutreachManagerPage() {
       setLocation(locationStr);
       setFormEventId(event.id);
 
-      if (event.description) {
-        setImpactSummary(`Volunteer team conducted community STEM demo: ${event.description}`);
+      const cleanDescription = toPlainText(event.description);
+      if (cleanDescription) {
+        setImpactSummary(`Volunteer team conducted community STEM demo: ${cleanDescription}`);
       }
 
       const signupsRef = collection(db, "events", event.id, "signups");

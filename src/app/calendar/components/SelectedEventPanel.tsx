@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Calendar as CalendarIcon, Info, Pencil, Clock, MapPin, Plus } from "lucide-react";
 import type { TeamEvent } from "@/types/event";
+import { toPlainText } from "@/lib/contentFormatters";
 
 interface SelectedEventPanelProps {
   selectedDate: Date;
@@ -87,7 +88,9 @@ export function SelectedEventPanel({
                 className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 <h4 className="text-sm font-black text-white leading-tight uppercase font-heading">{event.title}</h4>
-                <p className="text-[10px] text-marble/85 leading-relaxed mt-2">{event.description}</p>
+                {toPlainText(event.description) && (
+                  <p className="text-[10px] text-marble/85 leading-relaxed mt-2">{toPlainText(event.description)}</p>
+                )}
 
                 {event.location && (
                   <p className="text-[8px] font-bold text-ares-bronze flex items-center gap-1 mt-1.5">
