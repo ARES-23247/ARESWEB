@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Link as LinkIcon } from "lucide-react";
+import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
 import { SIM_COMPONENTS, SIM_TAG_NAMES } from "../generated/sim-registry";
 
 // ── Lazy-loaded Non-Sim Components ─────────────────────────────────────
@@ -27,23 +28,6 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 interface DocsMarkdownRendererProps {
   content: string;
-}
-
-const protocolWhitelist = ["http", "https", "mailto", "tel"];
-
-function validateUrl(url?: string): string | undefined {
-  if (!url) return undefined;
-  try {
-    const parsed = new URL(url, window.location.origin);
-    if (protocolWhitelist.includes(parsed.protocol.replace(":", ""))) {
-      return url;
-    }
-    return undefined;
-  } catch {
-    // Relative paths are safe
-    if (url.startsWith("/") || url.startsWith("#")) return url;
-    return undefined;
-  }
 }
 
 const EMBED_HOSTS = new Set([
@@ -70,6 +54,9 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      urlTransform={(url, key) =>
+        (key === "src" ? safeContentImageUrl(url) : safeContentLinkUrl(url)) ?? ""
+      }
       rehypePlugins={[
         rehypeRaw,
         [rehypeSanitize, {
@@ -99,6 +86,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           },
           protocols: {
             ...(defaultSchema.protocols || {}),
+            href: ["http", "https", "mailto", "tel"],
             src: ["http", "https"]
           }
         }]
@@ -145,14 +133,15 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
         h4: ({ children }) => <h4 className="text-lg font-bold font-heading mt-4 mb-2 text-marble">{children}</h4>,
         p: ({ children }) => <p className="my-4 leading-relaxed text-marble/90">{children}</p>,
         a: ({ href, children }) => {
-          const safeUrl = validateUrl(href);
+          const safeUrl = safeContentLinkUrl(href);
           if (!safeUrl) return <span>{children}</span>;
+          const opensNewTab = /^https?:/i.test(safeUrl);
           return (
             <a
               href={safeUrl}
               className="text-ares-cyan hover:text-ares-cyan/80 underline underline-offset-2"
-              target={href?.startsWith("http") ? "_blank" : undefined}
-              rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
+              target={opensNewTab ? "_blank" : undefined}
+              rel={opensNewTab ? "noopener noreferrer" : undefined}
             >
               {children}
             </a>
@@ -196,14 +185,25 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
         hr: () => <hr className="my-8 border-t border-white/10" />,
         strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
         em: ({ children }) => <em className="italic text-marble/80">{children}</em>,
-        img: ({ src, alt }) => (
-          <img
-            src={src}
-            alt={alt || ""}
-            className="my-6 rounded-lg border border-white/10 max-w-full h-auto"
-            loading="lazy"
-          />
-        ),
+        img: ({ src, alt }) => {
+          const safeUrl = safeContentImageUrl(src);
+          if (!safeUrl) {
+            return (
+              <span role="note" className="my-4 block rounded border border-white/10 bg-black/20 p-3 text-sm text-marble/70">
+                Image unavailable{alt ? `: ${alt}` : ""}
+              </span>
+            );
+          }
+          return (
+            <img
+              src={safeUrl}
+              alt={alt || ""}
+              className="my-6 rounded-lg border border-white/10 max-w-full h-auto"
+              loading="lazy"
+              decoding="async"
+            />
+          );
+        },
         iframe: ({ src, title }) => {
           const safeEmbedUrl = validateEmbedUrl(src);
           if (!safeEmbedUrl) {
