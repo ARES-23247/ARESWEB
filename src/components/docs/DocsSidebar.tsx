@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { siteConfig } from "@/lib/site-config";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
+import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink, GraduationCap } from "lucide-react";
 import { useSidebarStore } from "@/store/sidebarStore";
 
 export interface DocRecord {
@@ -193,6 +193,13 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
         </nav>
 
         <div className="mt-8 px-2 border-t border-white/8 pt-4 space-y-3">
+          <Link
+            to="/academy/workshops"
+            className="flex items-center gap-2 text-sm text-ares-gold hover:text-white transition-colors"
+          >
+            <GraduationCap size={14} />
+            STEM Workshops
+          </Link>
           <a
             href={`https://${siteConfig.urls.githubOrg}.github.io/ARESLib/javadoc/index.html`}
             target="_blank"

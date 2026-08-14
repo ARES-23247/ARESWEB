@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
+import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap, Sparkles } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, or, and, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
@@ -474,6 +474,26 @@ export default function AcademyPage() {
                     </Link>
                   )}
                 </div>
+
+                {!isAresLib && (
+                  <div className="mb-6 p-4 border border-ares-red/30 bg-ares-red/10 ares-cut-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-ares-red/20 text-ares-gold ares-cut-sm shrink-0">
+                        <Sparkles size={18} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-white">Interactive STEM Workshops & Coaching</p>
+                        <p className="text-xs text-marble/70">Hands-on CAD, FTC Programming, Motion Control & Electrical labs.</p>
+                      </div>
+                    </div>
+                    <Link
+                      to="/academy/workshops"
+                      className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-3 py-1.5 bg-ares-red text-white hover:bg-ares-red-light transition-colors ares-cut-sm shrink-0 self-start sm:self-auto"
+                    >
+                      View Workshops <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                )}
 
                 <h1 className="text-3xl lg:text-4xl font-bold font-heading mb-4 text-white">
                   {currentDoc.title}

@@ -139,6 +139,11 @@ export default defineConfig({
     mockReset: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
+    server: {
+      deps: {
+        inline: [/@tanstack\/react-query/],
+      },
+    },
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
@@ -186,6 +191,8 @@ export default defineConfig({
         "src/app/sponsors/page.tsx",
         "src/app/robots/api.ts",
         "src/app/robots/RobotEditorModal.tsx",
+        "src/lib/workshopCurriculumData.ts",
+        "src/app/academy/workshops/page.tsx",
       ],
       thresholds: {
         // Ratchet the measured legacy baseline while enforcing the project

@@ -175,6 +175,10 @@
           "function": "web"
         },
         {
+          "source": "/academy/workshops",
+          "destination": "/prerender/academy-workshops.html"
+        },
+        {
           "source": "/academy/playground",
           "destination": "/index.html"
         },
