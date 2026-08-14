@@ -4,6 +4,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
+import { toPlainText } from "../lib/contentFormatters";
 import {
   addHours,
   canPublish,
@@ -406,8 +407,9 @@ router.get("/feed", asyncHandler(async (_req, res) => {
     lines.push(`DTSTART:${start}`);
     lines.push(`DTEND:${end}`);
     lines.push(`SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`);
-    const description = readString(data.description);
-    if (description) lines.push(`DESCRIPTION:${escapeIcalText(description)}`);
+    const rawDescription = readString(data.description);
+    const cleanDescription = toPlainText(rawDescription);
+    if (cleanDescription) lines.push(`DESCRIPTION:${escapeIcalText(cleanDescription)}`);
     const location = readString(data.location);
     if (location) lines.push(`LOCATION:${escapeIcalText(location)}`);
     lines.push("END:VEVENT");

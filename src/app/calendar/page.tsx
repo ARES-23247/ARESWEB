@@ -23,6 +23,7 @@ import { PublicDataState } from "@/components/PublicDataState";
 import { fetchPublicEvents } from "./api";
 import { CalendarHeader, type CalendarFilter } from "./components/CalendarHeader";
 import { buildCalendarDays, formatEventTime, formatFullDate, isSameDay } from "./calendarView";
+import { toPlainText } from "@/lib/contentFormatters";
 
 export default function CalendarPage() {
   const { user, authorizedUser } = useAuth();
@@ -378,7 +379,9 @@ export default function CalendarPage() {
                     </div>
 
                     <h3 className="text-lg font-black text-white leading-tight uppercase font-heading relative z-10 group-hover:text-ares-gold transition-colors">{event.title}</h3>
-                    <p className="text-xs text-marble/85 leading-relaxed mt-2 max-w-3xl relative z-10">{event.description}</p>
+                    {toPlainText(event.description) && (
+                      <p className="text-xs text-marble/85 leading-relaxed mt-2 max-w-3xl relative z-10">{toPlainText(event.description)}</p>
+                    )}
                     
                     {event.location && (
                       <div className="flex items-center gap-1.5 mt-4 text-[10px] font-bold text-ares-bronze bg-white/5 w-fit px-3 py-1 rounded border border-white/5 relative z-10">
@@ -408,40 +411,45 @@ export default function CalendarPage() {
                 </div>
               ) : (
                 <div className="relative border-l border-white/10 pl-4 ml-1 space-y-6">
-                  {pastEvents.map((event) => (
-                    <div key={event.id} className="relative group animate-fadeIn">
-                      {/* Timeline Dot */}
-                      <div className={`absolute -left-[21px] top-1 w-2 h-2 rounded-full border bg-obsidian transition-colors group-hover:bg-white ${
-                        event.category === "outreach" ? "border-ares-gold/50" : "border-ares-red/50"
-                      }`} />
-                      
-                      <Link to={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-mono text-marble/40">
-                            {new Date(event.dateStart).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric"
-                            })}
-                          </span>
-                          <span className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
-                            event.category === "outreach" ? "bg-ares-gold/20 text-ares-gold" : "bg-ares-red/20 text-white"
-                          }`}>
-                            {event.category}
-                          </span>
-                        </div>
+                  {pastEvents.map((event) => {
+                    const cleanDesc = toPlainText(event.description);
+                    return (
+                      <div key={event.id} className="relative group animate-fadeIn">
+                        {/* Timeline Dot */}
+                        <div className={`absolute -left-[21px] top-1 w-2 h-2 rounded-full border bg-obsidian transition-colors group-hover:bg-white ${
+                          event.category === "outreach" ? "border-ares-gold/50" : "border-ares-red/50"
+                        }`} />
                         
-                        <h4 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">{event.title}</h4>
-                        <p className="text-[10px] text-marble/55 leading-relaxed">{event.description}</p>
-                        
-                        {event.location && (
-                          <p className="text-[8px] text-ares-bronze flex items-center gap-1 mt-1">
-                            <MapPin size={8} className="text-ares-red" /> {event.location}
-                          </p>
-                        )}
-                      </Link>
-                    </div>
-                  ))}
+                        <Link to={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono text-marble/40">
+                              {new Date(event.dateStart).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric"
+                              })}
+                            </span>
+                            <span className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
+                              event.category === "outreach" ? "bg-ares-gold/20 text-ares-gold" : "bg-ares-red/20 text-white"
+                            }`}>
+                              {event.category}
+                            </span>
+                          </div>
+                          
+                          <h4 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">{event.title}</h4>
+                          {cleanDesc && (
+                            <p className="text-[10px] text-marble/55 leading-relaxed">{cleanDesc}</p>
+                          )}
+                          
+                          {event.location && (
+                            <p className="text-[8px] text-ares-bronze flex items-center gap-1 mt-1">
+                              <MapPin size={8} className="text-ares-red" /> {event.location}
+                            </p>
+                          )}
+                        </Link>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

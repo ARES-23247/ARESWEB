@@ -18,6 +18,7 @@ import ShareButtons from "@/components/ShareButtons";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import { ASTNode } from "@/components/TiptapRenderer";
 import { PublicDataState } from "@/components/PublicDataState";
+import { toTiptapAst, toPlainText } from "@/lib/contentFormatters";
 
 // Sub-components
 import EventHero from "@/components/events/EventHero";
@@ -385,16 +386,7 @@ export default function EventDetailPage() {
 
   // Try to parse description as Tiptap AST
   const parsedAst = useMemo<ASTNode | null>(() => {
-    if (!event?.description) return null;
-    try {
-      const parsed = JSON.parse(event.description);
-      if (parsed && typeof parsed === "object" && parsed.type === "doc") {
-        return parsed as ASTNode;
-      }
-    } catch {
-      // Ignored
-    }
-    return null;
+    return toTiptapAst(event?.description);
   }, [event?.description]);
 
   const gcalSingleUrl = useMemo(() => {
@@ -410,18 +402,7 @@ export default function EventDetailPage() {
         endStr = end.toISOString().replace(/-|:|\.\d+/g, "");
       }
       
-      let plainTextDescription = event.description || "";
-      if (parsedAst) {
-        const getPlainText = (node: ASTNode): string => {
-          if (node.text) return node.text;
-          if (node.content) {
-            return node.content.map(getPlainText).join(" ");
-          }
-          return "";
-        };
-        plainTextDescription = getPlainText(parsedAst);
-      }
-
+      const plainTextDescription = toPlainText(event.description);
       const publicLocation = event.publicVenue
         ? `${event.publicVenue.name}, ${event.publicVenue.address}`
         : "";
@@ -429,7 +410,7 @@ export default function EventDetailPage() {
     } catch {
       return "";
     }
-  }, [event, parsedAst]);
+  }, [event]);
 
   if (loadingEvent) {
     return (

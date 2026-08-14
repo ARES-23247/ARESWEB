@@ -6,12 +6,14 @@ import { Link, useParams } from "react-router-dom";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
+import TiptapRenderer from "@/components/TiptapRenderer";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
 import { Pencil } from "lucide-react";
 import SEO from "@/components/SEO";
 import ShareButtons from "@/components/ShareButtons";
 import { PublicDataState } from "@/components/PublicDataState";
+import { toTiptapAst, toPlainText } from "@/lib/contentFormatters";
 import BlogThumbnailImage, {
   getBlogThumbnailSource,
 } from "@/components/BlogThumbnailImage";
@@ -75,11 +77,12 @@ export default function BlogPostPage() {
           return;
         }
 
+        const rawSnippet = data.snippet || data.content || "";
         setPost({
           slug,
           title: data.title || "Untitled Post",
           date: data.date || "",
-          snippet: data.snippet || "",
+          snippet: toPlainText(rawSnippet, 200),
           thumbnail: data.thumbnail || "",
           author: data.author || "ARES Member",
           authorAvatar: data.authorAvatar || "",
@@ -229,7 +232,13 @@ export default function BlogPostPage() {
       {/* ─── BLOG BODY ─── */}
       <div className="w-full max-w-4xl mx-auto px-6 py-12">
         <article className="prose prose-invert prose-ares max-w-none">
-          <DocsMarkdownRenderer content={post.content} />
+          {(() => {
+            const ast = toTiptapAst(post.content);
+            if (ast) {
+              return <TiptapRenderer node={ast} />;
+            }
+            return <DocsMarkdownRenderer content={post.content} />;
+          })()}
         </article>
       </div>
 
