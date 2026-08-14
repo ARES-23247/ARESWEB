@@ -73,6 +73,14 @@ export interface TournamentMatchWriteInput {
   notes?: string;
 }
 
+export interface TournamentMatchUpdateInput extends Omit<
+  Partial<TournamentMatchWriteInput>,
+  "scoreSelf" | "scoreOpponent"
+> {
+  scoreSelf?: number | null;
+  scoreOpponent?: number | null;
+}
+
 export interface TournamentsResponse {
   success: true;
   tournaments: Tournament[];

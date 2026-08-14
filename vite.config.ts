@@ -14,7 +14,8 @@ export default defineConfig({
         id: "/",
         name: "ARES 23247 Team Portal",
         short_name: "ARES Portal",
-        description: "Team portal for ARES 23247, a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
+        description:
+          "Team portal for ARES 23247, a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
         theme_color: "#1A1A1A",
         background_color: "#1A1A1A",
         display: "standalone",
@@ -84,7 +85,11 @@ export default defineConfig({
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, "/");
           if (normalizedId.includes("node_modules")) {
-            if (normalizedId.includes("react-markdown") || normalizedId.includes("remark") || normalizedId.includes("rehype")) {
+            if (
+              normalizedId.includes("react-markdown") ||
+              normalizedId.includes("remark") ||
+              normalizedId.includes("rehype")
+            ) {
               return "vendor-markdown";
             }
             if (normalizedId.includes("jszip")) {
@@ -93,7 +98,10 @@ export default defineConfig({
             if (normalizedId.includes("dompurify")) {
               return "vendor-dompurify";
             }
-            if (normalizedId.includes("@xyflow") || normalizedId.includes("reactflow")) {
+            if (
+              normalizedId.includes("@xyflow") ||
+              normalizedId.includes("reactflow")
+            ) {
               return "vendor-xyflow";
             }
             if (normalizedId.includes("@babel")) {
@@ -114,7 +122,10 @@ export default defineConfig({
             if (normalizedId.includes("prettier")) {
               return "vendor-prettier";
             }
-            if (normalizedId.includes("recharts") || normalizedId.includes("d3")) {
+            if (
+              normalizedId.includes("recharts") ||
+              normalizedId.includes("d3")
+            ) {
               return "vendor-recharts";
             }
             return undefined;
@@ -128,7 +139,13 @@ export default defineConfig({
     mockReset: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
-    exclude: ["**/node_modules/**", "**/dist/**", "functions/**", "e2e/**", "tests/rules/**"],
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "functions/**",
+      "e2e/**",
+      "tests/rules/**",
+    ],
     coverage: {
       // Explicitly instrument the current security, privacy, public-data, and
       // administrative reliability surface. A listed module therefore reports
@@ -136,14 +153,17 @@ export default defineConfig({
       include: [
         "src/lib/api.ts",
         "src/lib/diff.ts",
+        "src/lib/dateOnly.ts",
         "src/lib/outreachExport.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",
+        "src/lib/tournamentStats.ts",
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/profile/page.tsx",
+        "src/app/tournaments/[id]/TournamentMatchEditForm.tsx",
         "src/app/dashboard/profile/components/*.tsx",
         "src/app/dashboard/inquiries/page.tsx",
         "src/app/dashboard/outreach/page.tsx",
@@ -182,11 +202,23 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/dateOnly.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/outreachExport.ts": {
           lines: 85,
           functions: 100,
         },
         "src/lib/tournamentApi.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/tournamentStats.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/tournaments/[id]/TournamentMatchEditForm.tsx": {
           lines: 85,
           functions: 100,
         },

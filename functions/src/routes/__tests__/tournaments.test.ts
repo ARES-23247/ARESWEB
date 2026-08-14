@@ -4,7 +4,7 @@ import tournamentsRouter, {
   createTournamentMatchSchema,
   updateTournamentSchema,
   updateTournamentMatchSchema,
-  ensureAdminOrCoach
+  ensureAdminOrCoach,
 } from "../tournaments";
 import { adminDb } from "../../lib/firebase-admin";
 import { ApiError } from "../../middleware/errorHandler";
@@ -76,7 +76,10 @@ describe("Tournaments Router Backend Endpoints", () => {
 
   const getHandler = (path: string, method: string) => {
     const routeLayer = tournamentsRouter.stack.find(
-      (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
+      (layer) =>
+        layer.route &&
+        layer.route.path === path &&
+        (layer.route as any).methods[method],
     );
     expect(routeLayer).toBeDefined();
     const stack = routeLayer!.route!.stack;
@@ -207,7 +210,12 @@ describe("Tournaments Router Backend Endpoints", () => {
             date: "2024-03-10",
             location: "Detroit",
             oprList: [
-              { teamNumber: "23247", teamName: "ARES", opr: 123.4, internalNote: "do not expose" },
+              {
+                teamNumber: "23247",
+                teamName: "ARES",
+                opr: 123.4,
+                internalNote: "do not expose",
+              },
               { teamNumber: null, teamName: "Invalid", opr: 10 },
             ],
             scoutingDetails: {
@@ -255,11 +263,15 @@ describe("Tournaments Router Backend Endpoints", () => {
             expect.objectContaining({ id: "tour2", name: "Worlds" }),
             expect.objectContaining({ id: "tour1", name: "States" }),
           ],
-        })
+        }),
       );
       const payload = res.json.mock.calls[0][0];
-      const states = payload.tournaments.find((item: { id: string }) => item.id === "tour1");
-      expect(states.oprList).toEqual([{ teamNumber: "23247", teamName: "ARES", opr: 123.4 }]);
+      const states = payload.tournaments.find(
+        (item: { id: string }) => item.id === "tour1",
+      );
+      expect(states.oprList).toEqual([
+        { teamNumber: "23247", teamName: "ARES", opr: 123.4 },
+      ]);
       expect(states.scoutingDetails).toEqual({
         autoPathNotes: "Reliable path",
         driverFeedback: "Responsive",
@@ -310,7 +322,7 @@ describe("Tournaments Router Backend Endpoints", () => {
           tournaments: [
             expect.objectContaining({ id: "tour2", name: "Quals 1" }),
           ],
-        })
+        }),
       );
     });
   });
@@ -433,7 +445,7 @@ describe("Tournaments Router Backend Endpoints", () => {
         expect.objectContaining({
           name: "World Championship",
           isDeleted: 0,
-        })
+        }),
       );
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
@@ -479,13 +491,13 @@ describe("Tournaments Router Backend Endpoints", () => {
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Updated Championship Name",
-        })
+        }),
       );
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
           message: "Tournament updated successfully",
-        })
+        }),
       );
     });
 
@@ -547,7 +559,7 @@ describe("Tournaments Router Backend Endpoints", () => {
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           isDeleted: 1,
-        })
+        }),
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -622,7 +634,9 @@ describe("Tournaments Router Backend Endpoints", () => {
         if (name === "tournament_matches") {
           return {
             doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ exists: false, data: () => undefined }),
+              get: vi
+                .fn()
+                .mockResolvedValue({ exists: false, data: () => undefined }),
               set,
               update,
             }),
@@ -634,10 +648,12 @@ describe("Tournaments Router Backend Endpoints", () => {
       const handler = getHandler("/:id/matches/:matchId/completion", "put");
       await handler(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        status: 404,
-        code: "MATCH_NOT_FOUND",
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 404,
+          code: "MATCH_NOT_FOUND",
+        }),
+      );
       expect(set).not.toHaveBeenCalled();
       expect(update).not.toHaveBeenCalled();
       expect(res.json).not.toHaveBeenCalled();
@@ -677,14 +693,21 @@ describe("Tournaments Router Backend Endpoints", () => {
             isDeleted: 0,
           }),
         },
-        { id: "archived", data: () => ({ tournamentId: "tour1", isDeleted: 1 }) },
+        {
+          id: "archived",
+          data: () => ({ tournamentId: "tour1", isDeleted: 1 }),
+        },
       ];
 
       vi.mocked(adminDb.collection).mockImplementation((name: string) => {
         if (name === "tournaments") {
           return {
             doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ exists: true, id: "tour1", data: () => ({ isDeleted: 0 }) }),
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                id: "tour1",
+                data: () => ({ isDeleted: 0 }),
+              }),
             }),
           } as any;
         }
@@ -726,28 +749,46 @@ describe("Tournaments Router Backend Endpoints", () => {
         if (name === "tournaments") {
           return {
             doc: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ exists: true, id: "tour1", data: () => ({ isDeleted: 0 }) }),
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                id: "tour1",
+                data: () => ({ isDeleted: 0 }),
+              }),
             }),
           } as any;
         }
         if (name === "tournament_matches") {
-          return { doc: vi.fn().mockReturnValue({ id: "new-match", set }) } as any;
+          return {
+            doc: vi.fn().mockReturnValue({ id: "new-match", set }),
+          } as any;
         }
         return {} as any;
       });
 
       await getHandler("/:id/matches", "post")(req, res, next);
 
-      expect(set).toHaveBeenCalledWith(expect.objectContaining({ tournamentId: "tour1", isDeleted: 0 }));
+      expect(set).toHaveBeenCalledWith(
+        expect.objectContaining({ tournamentId: "tour1", isDeleted: 0 }),
+      );
       expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        match: expect.objectContaining({ id: "new-match", matchNumber: "QM1" }),
-      }));
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          match: expect.objectContaining({
+            id: "new-match",
+            matchNumber: "QM1",
+          }),
+        }),
+      );
     });
 
     it("updates an active match without replacing its identity", async () => {
       req.params = { id: "tour1", matchId: "qm1" };
-      req.body = { result: "won", completed: true, scoreSelf: 42 };
+      req.body = {
+        result: "won",
+        completed: true,
+        scoreSelf: 42,
+        scoreOpponent: null,
+      };
       const update = vi.fn().mockResolvedValue(undefined);
       vi.mocked(adminDb.collection).mockImplementation((name: string) => {
         if (name === "tournament_matches") {
@@ -776,10 +817,23 @@ describe("Tournaments Router Backend Endpoints", () => {
 
       await getHandler("/:id/matches/:matchId", "put")(req, res, next);
 
-      expect(update).toHaveBeenCalledWith(expect.objectContaining({ result: "won", completed: true }));
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        match: expect.objectContaining({ id: "qm1", result: "won", completed: true }),
-      }));
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result: "won",
+          completed: true,
+          scoreSelf: 42,
+          scoreOpponent: null,
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          match: expect.objectContaining({
+            id: "qm1",
+            result: "won",
+            completed: true,
+          }),
+        }),
+      );
     });
 
     it("soft-archives an active match", async () => {
@@ -803,20 +857,35 @@ describe("Tournaments Router Backend Endpoints", () => {
 
       await getHandler("/:id/matches/:matchId", "delete")(req, res, next);
 
-      expect(update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 1 }));
-      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Match archived successfully" });
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({ isDeleted: 1 }),
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        message: "Match archived successfully",
+      });
     });
 
     it("validates match create and update payloads", () => {
-      expect(createTournamentMatchSchema.safeParse({
-        matchNumber: "QM1",
-        alliance: "blue",
-        partner: "12345",
-        opponents: ["54321"],
-        result: "upcoming",
-        completed: false,
-      }).success).toBe(true);
-      expect(updateTournamentMatchSchema.safeParse({ result: "won" }).success).toBe(true);
+      expect(
+        createTournamentMatchSchema.safeParse({
+          matchNumber: "QM1",
+          alliance: "blue",
+          partner: "12345",
+          opponents: ["54321"],
+          result: "upcoming",
+          completed: false,
+        }).success,
+      ).toBe(true);
+      expect(
+        updateTournamentMatchSchema.safeParse({ result: "won" }).success,
+      ).toBe(true);
+      expect(
+        updateTournamentMatchSchema.safeParse({
+          scoreSelf: null,
+          scoreOpponent: null,
+        }).success,
+      ).toBe(true);
       expect(updateTournamentMatchSchema.safeParse({}).success).toBe(false);
     });
   });

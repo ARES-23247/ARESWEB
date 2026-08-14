@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, act, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  act,
+  waitFor,
+} from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -6,6 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import TournamentsFeedPage from "../app/tournaments/page";
 import TournamentDetailPage from "../app/tournaments/[id]/page";
+import TournamentMatchesList from "../app/tournaments/[id]/TournamentMatchesList";
 import TournamentsManager from "../components/dashboard/TournamentsManager";
 import { useAuth } from "../context/AuthContext";
 import * as LucideIcons from "lucide-react";
@@ -23,7 +30,9 @@ import type { User } from "firebase/auth";
 vi.mock("../context/AuthContext", () => {
   return {
     useAuth: vi.fn(),
-    AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    AuthProvider: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
   };
 });
 
@@ -58,15 +67,16 @@ vi.mock("firebase/firestore", () => {
   };
 });
 
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      gcTime: Infinity,
-      staleTime: Infinity,
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: Infinity,
+        staleTime: Infinity,
+      },
     },
-  },
-});
+  });
 
 interface AuthTestValue {
   user: { uid: string; email?: string | null } | null;
@@ -87,7 +97,7 @@ function mockAuth(value: AuthTestValue) {
 const renderWithProviders = (
   ui: React.ReactElement,
   queryClient = createTestQueryClient(),
-  initialEntries = ["/tournaments/world-championship-2026"]
+  initialEntries = ["/tournaments/world-championship-2026"],
 ) => {
   return render(
     <QueryClientProvider client={queryClient}>
@@ -97,19 +107,19 @@ const renderWithProviders = (
           <Route path="*" element={ui} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 };
 
 describe("Tournaments Module Lucide Check", () => {
   it("verifies all lucide-react icons used are defined", () => {
     const requiredIcons = [
-      "Trophy", 
-      "Calendar", 
-      "MapPin", 
-      "Activity", 
-      "TrendingUp", 
-      "Search", 
+      "Trophy",
+      "Calendar",
+      "MapPin",
+      "Activity",
+      "TrendingUp",
+      "Search",
       "Lock",
       "ChevronRight",
       "ShieldAlert",
@@ -122,10 +132,10 @@ describe("Tournaments Module Lucide Check", () => {
       "Camera",
       "Info",
       "FileText",
-      "Bookmark"
+      "Bookmark",
     ];
-    
-    requiredIcons.forEach(iconName => {
+
+    requiredIcons.forEach((iconName) => {
       const Icon = LucideIcons[iconName as keyof typeof LucideIcons];
       expect(Icon).toBeDefined();
       expect(typeof Icon).not.toBe("undefined");
@@ -149,8 +159,12 @@ describe("TournamentsFeedPage", () => {
       renderWithProviders(<TournamentsFeedPage />);
     });
 
-    expect(screen.getByText(/Scouting & Tournaments Vault/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sign In with Google/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Scouting & Tournaments Vault/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Sign In with Google/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders tournaments dashboard list if user is authorized", async () => {
@@ -161,18 +175,21 @@ describe("TournamentsFeedPage", () => {
     });
 
     const queryClient = createTestQueryClient();
-    queryClient.setQueryData(["tournaments"], [
-      {
-        id: "wv-state-2026",
-        name: "WV State Championship 2026",
-        date: "2026-03-14",
-        location: "Fairmont, WV",
-        description: "WV State Championship info",
-        status: "past",
-        opr: 185.4,
-        isDeleted: 0
-      }
-    ]);
+    queryClient.setQueryData(
+      ["tournaments"],
+      [
+        {
+          id: "wv-state-2026",
+          name: "WV State Championship 2026",
+          date: "2026-03-14",
+          location: "Fairmont, WV",
+          description: "WV State Championship info",
+          status: "past",
+          opr: 185.4,
+          isDeleted: 0,
+        },
+      ],
+    );
 
     await act(async () => {
       renderWithProviders(<TournamentsFeedPage />, queryClient);
@@ -195,17 +212,24 @@ describe("TournamentsFeedPage", () => {
     emptyView.unmount();
 
     const populatedClient = createTestQueryClient();
-    populatedClient.setQueryData(["tournaments"], [{
-      id: "past-event",
-      name: "Past Event",
-      date: "2026-01-01",
-      location: "Morgantown, WV",
-      status: "past",
-      isDeleted: 0,
-    }]);
+    populatedClient.setQueryData(
+      ["tournaments"],
+      [
+        {
+          id: "past-event",
+          name: "Past Event",
+          date: "2026-01-01",
+          location: "Morgantown, WV",
+          status: "past",
+          isDeleted: 0,
+        },
+      ],
+    );
     renderWithProviders(<TournamentsFeedPage />, populatedClient);
     fireEvent.click(screen.getByRole("button", { name: "upcoming" }));
-    expect(screen.getByText(/No Matches for These Filters/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/No Matches for These Filters/i),
+    ).toBeInTheDocument();
   });
 
   it("keeps the last confirmed tournament list visible when refresh fails", async () => {
@@ -215,24 +239,39 @@ describe("TournamentsFeedPage", () => {
       loading: false,
     });
     vi.mocked(fetchTournaments).mockRejectedValue(
-      new TournamentApiError(503, "Service Unavailable", "UPSTREAM_UNAVAILABLE"),
+      new TournamentApiError(
+        503,
+        "Service Unavailable",
+        "UPSTREAM_UNAVAILABLE",
+      ),
     );
     const queryClient = createTestQueryClient();
-    queryClient.setQueryData(["tournaments"], [{
-      id: "confirmed-event",
-      name: "Confirmed Event",
-      date: "2026-02-01",
-      location: "Morgantown, WV",
-      status: "past",
-      isDeleted: 0,
-    }]);
+    queryClient.setQueryData(
+      ["tournaments"],
+      [
+        {
+          id: "confirmed-event",
+          name: "Confirmed Event",
+          date: "2026-02-01",
+          location: "Morgantown, WV",
+          status: "past",
+          isDeleted: 0,
+        },
+      ],
+    );
     await queryClient.invalidateQueries({ queryKey: ["tournaments"] });
 
     renderWithProviders(<TournamentsFeedPage />, queryClient);
 
-    await waitFor(() => expect(screen.getByText(/Unable to load tournament records/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Unable to load tournament records/i),
+      ).toBeInTheDocument(),
+    );
     expect(screen.getByText("Confirmed Event")).toBeInTheDocument();
-    expect(screen.queryByText(/No Tournament Records Yet/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/No Tournament Records Yet/i),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -254,45 +293,58 @@ describe("TournamentDetailPage", () => {
       name: "FIRST® World Championship 2026",
       date: "2026-04-29",
       location: "Houston, TX",
-      description: "The global gathering of top-tier *FIRST*® Tech Challenge teams.",
+      description:
+        "The global gathering of top-tier *FIRST*® Tech Challenge teams.",
       status: "past",
       opr: 210.5,
-      oprList: [
-        { teamNumber: "23247", teamName: "ARES", opr: 210.5 }
-      ],
+      oprList: [{ teamNumber: "23247", teamName: "ARES", opr: 210.5 }],
       scoutingDetails: {
         autoPathNotes: "Path notes",
         driverFeedback: "Feedback notes",
-        robotSpecs: "Specs notes"
+        robotSpecs: "Specs notes",
       },
       photoAlbumId: "houston-2026",
-      isDeleted: 0
+      isDeleted: 0,
     });
-    queryClient.setQueryData(["tournament_matches", "world-championship-2026"], [
-      {
-        id: "wc-q1",
-        tournamentId: "world-championship-2026",
-        matchNumber: "QM4",
-        alliance: "red",
-        partner: "14210",
-        opponents: ["11111", "18214"],
-        scoreSelf: 220,
-        scoreOpponent: 195,
-        result: "won",
-        completed: true,
-        isDeleted: 0,
-        notes: "Notes here"
-      }
-    ]);
+    queryClient.setQueryData(
+      ["tournament_matches", "world-championship-2026"],
+      [
+        {
+          id: "wc-q1",
+          tournamentId: "world-championship-2026",
+          matchNumber: "QM4",
+          alliance: "red",
+          partner: "14210",
+          opponents: ["11111", "18214"],
+          scoreSelf: 220,
+          scoreOpponent: 195,
+          result: "won",
+          completed: true,
+          isDeleted: 0,
+          notes: "Notes here",
+        },
+      ],
+    );
     queryClient.setQueryData(["tournament_photos", "houston-2026"], []);
 
     await act(async () => {
       renderWithProviders(<TournamentDetailPage />, queryClient);
     });
 
-    expect(screen.getByText(/FIRST® World Championship 2026/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/FIRST® World Championship 2026/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Match Checklist/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Mark complete: QM4/i })).not.toBeInTheDocument();
+    expect(screen.getByText("April 29, 2026")).toBeInTheDocument();
+    expect(screen.getByText("1/1")).toBeInTheDocument();
+    expect(screen.getByText("1-0-0")).toBeInTheDocument();
+    expect(screen.getAllByText("220")).toHaveLength(2);
+    expect(
+      screen.queryByText(/automatically computed/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Mark complete: QM4/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("fails closed on a stale match and refreshes without recreating it", async () => {
@@ -302,7 +354,12 @@ describe("TournamentDetailPage", () => {
       loading: false,
     });
     vi.mocked(setTournamentMatchCompletion).mockRejectedValue(
-      new TournamentApiError(404, "Not Found", "MATCH_NOT_FOUND", "HTTP 404: Not Found — Match record no longer exists"),
+      new TournamentApiError(
+        404,
+        "Not Found",
+        "MATCH_NOT_FOUND",
+        "HTTP 404: Not Found — Match record no longer exists",
+      ),
     );
     vi.mocked(fetchTournamentMatches).mockResolvedValue([]);
 
@@ -315,24 +372,42 @@ describe("TournamentDetailPage", () => {
       status: "past",
       isDeleted: 0,
     });
-    queryClient.setQueryData(["tournament_matches", "world-championship-2026"], [{
-      id: "qm-1",
-      tournamentId: "world-championship-2026",
-      matchNumber: "QM1",
-      alliance: "red",
-      partner: "12345",
-      opponents: ["54321"],
-      result: "upcoming",
-      completed: false,
-      isDeleted: 0,
-    }]);
+    queryClient.setQueryData(
+      ["tournament_matches", "world-championship-2026"],
+      [
+        {
+          id: "qm-1",
+          tournamentId: "world-championship-2026",
+          matchNumber: "QM1",
+          alliance: "red",
+          partner: "12345",
+          opponents: ["54321"],
+          result: "upcoming",
+          completed: false,
+          isDeleted: 0,
+        },
+      ],
+    );
 
     renderWithProviders(<TournamentDetailPage />, queryClient);
-    fireEvent.click(screen.getByRole("button", { name: /Mark complete: QM1/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Mark complete: QM1/i }),
+    );
 
-    await waitFor(() => expect(screen.getByText(/changed or archived elsewhere/i)).toBeInTheDocument());
-    expect(setTournamentMatchCompletion).toHaveBeenCalledWith("world-championship-2026", "qm-1", true);
-    expect(fetchTournamentMatches).toHaveBeenCalledWith("world-championship-2026", 250);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/changed or archived elsewhere/i),
+      ).toBeInTheDocument(),
+    );
+    expect(setTournamentMatchCompletion).toHaveBeenCalledWith(
+      "world-championship-2026",
+      "qm-1",
+      true,
+    );
+    expect(fetchTournamentMatches).toHaveBeenCalledWith(
+      "world-championship-2026",
+      250,
+    );
   });
 
   it("opens and closes a tournament photo in the accessible lightbox", async () => {
@@ -351,23 +426,91 @@ describe("TournamentDetailPage", () => {
       photoAlbumId: "photo-event",
       isDeleted: 0,
     });
-    queryClient.setQueryData(["tournament_matches", "world-championship-2026"], []);
-    queryClient.setQueryData(["tournament_photos", "photo-event"], [{
-      src: "https://images.example.org/photo-event.jpg",
-      caption: "Robot on the field",
-    }]);
+    queryClient.setQueryData(
+      ["tournament_matches", "world-championship-2026"],
+      [],
+    );
+    queryClient.setQueryData(
+      ["tournament_photos", "photo-event"],
+      [
+        {
+          src: "https://images.example.org/photo-event.jpg",
+          caption: "Robot on the field",
+        },
+      ],
+    );
 
     renderWithProviders(<TournamentDetailPage />, queryClient);
-    const galleryImage = screen.getByRole("img", { name: "Robot on the field" });
+    const galleryImage = screen.getByRole("img", {
+      name: "Robot on the field",
+    });
     expect(galleryImage).toHaveAttribute("loading", "lazy");
     expect(galleryImage).toHaveAttribute("decoding", "async");
     expect(galleryImage).toHaveAttribute("width", "16");
     expect(galleryImage).toHaveAttribute("height", "9");
-    fireEvent.click(await screen.findByRole("button", { name: "Open photo: Robot on the field" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Open photo: Robot on the field",
+      }),
+    );
 
-    expect(screen.getByRole("dialog", { name: "Robot on the field" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Close tournament photo" }));
+    expect(
+      screen.getByRole("dialog", { name: "Robot on the field" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close tournament photo" }),
+    );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("TournamentMatchesList reliability", () => {
+  it("preserves a failed new-match draft and does not invent blank 0-0 scores", async () => {
+    const onAddMatch = vi.fn().mockRejectedValue(new Error("offline"));
+    render(
+      <TournamentMatchesList
+        isPast={false}
+        matches={[]}
+        canEdit={true}
+        isMatchesLoading={false}
+        isSavingMatch={false}
+        onToggleMatch={vi.fn()}
+        onAddMatch={onAddMatch}
+        onUpdateMatch={vi.fn()}
+        onDeleteMatch={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Match" }));
+    fireEvent.change(screen.getByLabelText("Match Number"), {
+      target: { value: "QM7" },
+    });
+    fireEvent.change(screen.getByLabelText("Partner Team"), {
+      target: { value: "12345" },
+    });
+    fireEvent.change(screen.getByLabelText("Opponents (comma-sep)"), {
+      target: { value: "44444, 55555" },
+    });
+    fireEvent.change(screen.getByLabelText("Match Scouting Notes"), {
+      target: { value: "Check intake" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Match" }));
+
+    await waitFor(() =>
+      expect(onAddMatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          matchNumber: "QM7",
+          partner: "12345",
+          opponents: ["44444", "55555"],
+          scoreSelf: undefined,
+          scoreOpponent: undefined,
+        }),
+      ),
+    );
+    expect(screen.getByLabelText("Match Number")).toHaveValue("QM7");
+    expect(screen.getByLabelText("Match Scouting Notes")).toHaveValue(
+      "Check intake",
+    );
   });
 });
 
@@ -387,7 +530,9 @@ describe("TournamentsManager", () => {
       renderWithProviders(<TournamentsManager />);
     });
 
-    expect(screen.getByText(/Unauthorized Terminal Access/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Unauthorized Terminal Access/i),
+    ).toBeInTheDocument();
   });
 
   it("does not give mentors tournament write controls", async () => {
@@ -399,8 +544,12 @@ describe("TournamentsManager", () => {
 
     renderWithProviders(<TournamentsManager />);
 
-    expect(screen.getByText(/Unauthorized Terminal Access/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Add Tournament/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Unauthorized Terminal Access/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Add Tournament/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders manager control panel and lists tournaments for admins", async () => {
@@ -411,27 +560,38 @@ describe("TournamentsManager", () => {
     });
 
     const queryClient = createTestQueryClient();
-    queryClient.setQueryData(["tournaments"], [
-      {
-        id: "wv-state-2026",
-        name: "WV State Championship 2026",
-        date: "2026-03-14",
-        location: "Fairmont, WV",
-        description: "WV State Championship info",
-        status: "past",
-        opr: 185.4,
-        isDeleted: 0
-      }
-    ]);
+    queryClient.setQueryData(
+      ["tournaments"],
+      [
+        {
+          id: "wv-state-2026",
+          name: "WV State Championship 2026",
+          date: "2026-03-14",
+          location: "Fairmont, WV",
+          description: "WV State Championship info",
+          status: "past",
+          opr: 185.4,
+          isDeleted: 0,
+        },
+      ],
+    );
 
     await act(async () => {
       renderWithProviders(<TournamentsManager />, queryClient);
     });
 
     expect(screen.getByText(/Tournaments Log Manager/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Add Tournament/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Archive WV State Championship 2026/i }));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent(/Archive WV State Championship 2026/i);
+    expect(
+      screen.getByRole("button", { name: /Add Tournament/i }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Archive WV State Championship 2026/i,
+      }),
+    );
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      /Archive WV State Championship 2026/i,
+    );
     expect(archiveTournament).not.toHaveBeenCalled();
   });
 
@@ -452,20 +612,46 @@ describe("TournamentsManager", () => {
 
     renderWithProviders(<TournamentsManager />);
     fireEvent.click(screen.getByRole("button", { name: /Add Tournament/i }));
-    fireEvent.change(screen.getByLabelText("Tournament Name *"), { target: { value: "New Event" } });
-    fireEvent.change(screen.getByLabelText("Tournament Date *"), { target: { value: "2026-10-01" } });
-    fireEvent.change(screen.getByLabelText("Location *"), { target: { value: "Morgantown, WV" } });
-    fireEvent.change(screen.getByLabelText("Team #"), { target: { value: "23247" } });
-    fireEvent.change(screen.getByLabelText("OPR Score"), { target: { value: "200.5" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add Leaderboard Entry" }));
+    fireEvent.change(screen.getByLabelText("Tournament Name *"), {
+      target: { value: "New Event" },
+    });
+    fireEvent.change(screen.getByLabelText("Season"), {
+      target: { value: "2026-2027" },
+    });
+    fireEvent.change(screen.getByLabelText("Game / Challenge"), {
+      target: { value: "DECODE" },
+    });
+    fireEvent.change(screen.getByLabelText("Tournament Date *"), {
+      target: { value: "2026-10-01" },
+    });
+    fireEvent.change(screen.getByLabelText("Location *"), {
+      target: { value: "Morgantown, WV" },
+    });
+    fireEvent.change(screen.getByLabelText("Team #"), {
+      target: { value: "23247" },
+    });
+    fireEvent.change(screen.getByLabelText("OPR Score"), {
+      target: { value: "200.5" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Add Leaderboard Entry" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Publish Record" }));
 
-    await waitFor(() => expect(createTournament).toHaveBeenCalledWith(expect.objectContaining({
-      name: "New Event",
-      date: "2026-10-01",
-      location: "Morgantown, WV",
-      oprList: [{ teamNumber: "23247", teamName: "Team 23247", opr: 200.5 }],
-    })));
+    await waitFor(() =>
+      expect(createTournament).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "New Event",
+          seasonName: "2026-2027",
+          challengeName: "DECODE",
+          date: "2026-10-01",
+          location: "Morgantown, WV",
+          oprList: [
+            { teamNumber: "23247", teamName: "Team 23247", opr: 200.5 },
+          ],
+        }),
+      ),
+    );
   });
 });
 
@@ -473,9 +659,14 @@ describe("production tournament data integrity", () => {
   it("contains no production mock tournament or match histories", () => {
     const root = resolve(process.cwd(), "src", "app", "tournaments");
     const feedSource = readFileSync(resolve(root, "page.tsx"), "utf8");
-    const detailSource = readFileSync(resolve(root, "[id]", "page.tsx"), "utf8");
+    const detailSource = readFileSync(
+      resolve(root, "[id]", "page.tsx"),
+      "utf8",
+    );
 
-    expect(feedSource).not.toMatch(/MOCK_TOURNAMENTS|world-championship-2026|Texas Titans/);
+    expect(feedSource).not.toMatch(
+      /MOCK_TOURNAMENTS|world-championship-2026|Texas Titans/,
+    );
     expect(detailSource).not.toMatch(/getMockMatches|setDoc\(|mockItem/);
     expect(existsSync(resolve(root, "[id]", "mockData.ts"))).toBe(false);
   });
