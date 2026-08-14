@@ -29,8 +29,13 @@ router.get("/", asyncHandler(async (req, res) => {
   }
 
   const snapshot = await query.get();
+  const validDocs = snapshot.docs.filter((doc) => {
+    const data = doc.data();
+    return data.isDeleted !== 1 && data.status !== "void";
+  });
+
   const hasMore = snapshot.docs.length > limitValue;
-  const documents = hasMore ? snapshot.docs.slice(0, limitValue) : snapshot.docs;
+  const documents = validDocs.slice(0, limitValue);
   const transactions = documents.map((document) => {
     const data = document.data();
     return {
@@ -48,7 +53,7 @@ router.get("/", asyncHandler(async (req, res) => {
     success: true,
     transactions,
     hasMore,
-    nextCursor: hasMore ? transactions.at(-1)?.id ?? null : null,
+    nextCursor: hasMore ? snapshot.docs[limitValue - 1]?.id ?? null : null,
   });
 }));
 

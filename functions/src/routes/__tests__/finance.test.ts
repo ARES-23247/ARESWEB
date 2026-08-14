@@ -29,21 +29,45 @@ import financeRouter from "../finance";
 describe("public finance route", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns only explicitly public transaction fields", async () => {
+  it("returns only explicitly public transaction fields and filters deleted/void records", async () => {
     mocks.get.mockResolvedValue({
-      docs: [{
-        id: "tx-1",
-        data: () => ({
-          amount: 125,
-          type: "income",
-          category: "Sponsor",
-          date: "2026-08-01",
-          description: "Public description",
-          seasonId: 2026,
-          receiptUrl: "https://private.example/receipt",
-          loggedBy: "student-uid",
-        }),
-      }],
+      docs: [
+        {
+          id: "tx-1",
+          data: () => ({
+            amount: 125,
+            type: "income",
+            category: "Sponsor",
+            date: "2026-08-01",
+            description: "Public description",
+            seasonId: 2026,
+            receiptUrl: "https://private.example/receipt",
+            loggedBy: "student-uid",
+            isDeleted: 0,
+            status: "cleared",
+          }),
+        },
+        {
+          id: "tx-deleted",
+          data: () => ({
+            amount: 500,
+            type: "expense",
+            category: "Equipment",
+            date: "2026-08-02",
+            isDeleted: 1,
+          }),
+        },
+        {
+          id: "tx-void",
+          data: () => ({
+            amount: 300,
+            type: "income",
+            category: "Grant",
+            date: "2026-08-03",
+            status: "void",
+          }),
+        },
+      ],
     });
 
     const layer = financeRouter.stack.find((item) => item.route?.path === "/");
