@@ -267,6 +267,10 @@
           "destination": "/prerender/outreach.html"
         },
         {
+          "source": "/pit-display",
+          "destination": "/prerender/pit-display.html"
+        },
+        {
           "source": "/privacy",
           "destination": "/prerender/privacy.html"
         },

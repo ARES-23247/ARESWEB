@@ -11,6 +11,7 @@ import {
   Layers,
   GraduationCap,
   ShoppingBag,
+  Monitor,
   LucideIcon
 } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
@@ -37,6 +38,7 @@ export const TEAM_LINKS: NavItemConfig[] = [
 ];
 
 export const RESOURCE_LINKS: NavItemConfig[] = [
+  { label: "Pit Kiosk Display", to: "/pit-display", icon: Monitor, iconColor: "text-ares-cyan" },
   { label: "Tech Stack", to: "/tech-stack", icon: Cpu, iconColor: "text-ares-cyan" },
   { label: "Robots Fleet", to: "/robots", icon: Cpu, iconColor: "text-ares-bronze" },
   { label: "3D Models Archive", href: "https://www.printables.com/@ARESFTC_3784306", icon: Layers, iconColor: "text-ares-red" },

@@ -23,6 +23,7 @@ export const staticPageMetadata = [
   ["/leaderboard", "Team Recognition", "Learn how ARES 23247 recognizes teamwork, community impact, and growth."],
   ["/location-morgantown", "Robotics in Morgantown, West Virginia", "Meet ARES 23247, a FIRST® Tech Challenge team based in Morgantown, West Virginia."],
   ["/outreach", "Community Outreach", "Discover ARES 23247 community STEM programs, impact reports, and robot demonstrations."],
+  ["/pit-display", "Tournament Pit Kiosk & Match Display", "Live competition queue countdown, alliance match previews, robot checklist, and team announcements for ARES 23247."],
   ["/privacy", "Privacy Policy", "Read how ARES 23247 protects visitor, applicant, and team-member information."],
   ["/robots", "Our Robots", "Explore competition robots engineered by ARES 23247 for the FIRST® Tech Challenge."],
   ["/seasons", "Team Legacy", "Explore the competition seasons, achievements, awards, and growth of ARES 23247."],
