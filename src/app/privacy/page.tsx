@@ -9,7 +9,8 @@ import SEO from "@/components/SEO";
 
 export default function PrivacyPage() {
   return (
-    <motion.div 
+    <motion.main 
+      id="main-content"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -21,23 +22,24 @@ export default function PrivacyPage() {
         description="ARES 23247 Privacy Policy. Read our commitment to COPPA, GDPR, and cookie-free analytics." 
       />
       <div className="max-w-4xl mx-auto px-6 lg:px-8">
-        <div className="mb-16">
+        <header className="mb-16">
           <h1 className="text-4xl lg:text-5xl font-bold font-heading mb-6 tracking-tight uppercase">
             Privacy <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Policy</span>
           </h1>
           <p className="text-xl text-marble border-l-2 border-ares-cyan/30 pl-6">
             ARES 23247 is committed to engineering privacy. We employ <strong>Cookie-Free Analytics</strong> to protect our students and global visitors.
           </p>
-        </div>
+        </header>
 
         <div className="space-y-12">
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          {/* Section 1: Cookie-Free Web Analytics */}
+          <section aria-labelledby="heading-cookie-free" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
+              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan" aria-hidden="true">
                 <EyeOff size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
+              <h2 id="heading-cookie-free" className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
               We utilize Google Analytics in <strong>Cookie-Free Mode</strong>. To prioritize your privacy, we have explicitly disabled HTTP cookie storage.
@@ -49,13 +51,47 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          {/* Section 2: COPPA & Student Privacy */}
+          <section aria-labelledby="heading-coppa" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
+              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold" aria-hidden="true">
+                <Shield size={24} />
+              </div>
+              <h2 id="heading-coppa" className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
+            </div>
+            <p className="text-marble leading-relaxed mb-4">
+              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" aria-label="FIRST Robotics FTC program (opens in a new tab)" className="hover:text-ares-red-light transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><i>FIRST</i>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
+            </p>
+            <ul className="list-disc pl-6 text-marble space-y-2">
+              <li>We <strong>never</strong> collect personal information from general web portal visitors.</li>
+              <li>Robotics team member names, photographs, and media are only published with explicit written consent and release forms signed by legal guardians.</li>
+              <li>Youth recruitment inquiries and contact submissions are encrypted and restricted to authorized mentors and administrators.</li>
+            </ul>
+          </section>
+
+          {/* Section 3: Secure AI Processing */}
+          <section aria-labelledby="heading-ai" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/5 rounded-bl-full -z-10"></div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan" aria-hidden="true">
+                <Server size={24} />
+              </div>
+              <h2 id="heading-ai" className="text-2xl font-bold font-heading">3. Secure AI Processing</h2>
+            </div>
+            <p className="text-marble leading-relaxed">
+              When ARES leadership uploads media via our Publisher Dashboard, we use Gemini models on Google Vertex AI to add Accessibility tags. This processing happens on Google&apos;s secure cloud servers. The raw data is never sold, shared, or used to train other AI.
+            </p>
+          </section>
+
+          {/* Section 4: ARES Analytics and Google Drive */}
+          <section aria-labelledby="heading-drive" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 rounded-bl-full -z-10"></div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold" aria-hidden="true">
                 <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">4. ARES Analytics and Google Drive</h2>
+              <h2 id="heading-drive" className="text-2xl font-bold font-heading">4. ARES Analytics and Google Drive</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
               ARES Analytics is a local-first desktop application. Robot connections, authoring,
@@ -71,43 +107,14 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 rounded-bl-full -z-10"></div>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
-                <Shield size={24} />
-              </div>
-              <h2 className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
-            </div>
-            <p className="text-marble leading-relaxed mb-4">
-              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red-light transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><i>FIRST</i>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
-            </p>
-            <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>We <strong>never</strong> collect personal information from general web portal visitors.</li>
-              <li>Robotics team member names, photographs, and media are only published with explicit written consent and release forms signed by legal guardians.</li>
-            </ul>
-          </section>
-
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/5 rounded-bl-full -z-10"></div>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
-                <Server size={24} />
-              </div>
-              <h2 className="text-2xl font-bold font-heading">3. Secure AI Processing</h2>
-            </div>
-            <p className="text-marble leading-relaxed">
-              When ARES leadership uploads media via our Publisher Dashboard, we use Gemini models on Google Vertex AI to add Accessibility tags. This processing happens on Google&apos;s secure cloud servers. The raw data is never sold, shared, or used to train other AI.
-            </p>
-          </section>
-
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          {/* Section 5: Secure Administration */}
+          <section aria-labelledby="heading-admin" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-red/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red">
+              <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red" aria-hidden="true">
                 <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">5. Secure Administration</h2>
+              <h2 id="heading-admin" className="text-2xl font-bold font-heading">5. Secure Administration</h2>
             </div>
             <p className="text-marble leading-relaxed">
               Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized <i>FIRST</i>® Robotics team identity providers.
@@ -115,11 +122,12 @@ export default function PrivacyPage() {
           </section>
         </div>
 
-        <div className="mt-16 text-center text-marble text-sm">
+        <footer className="mt-16 text-center text-marble text-sm">
+          <p>Last updated: August 14, 2026</p>
           <p>This privacy policy is actively maintained by ARES 23247.</p>
           <p>For inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} robotics team`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
-        </div>
+        </footer>
       </div>
-    </motion.div>
+    </motion.main>
   );
 }

@@ -9,7 +9,8 @@ import SEO from "@/components/SEO";
 
 export default function TermsPage() {
   return (
-    <motion.div 
+    <motion.main 
+      id="main-content"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -21,23 +22,23 @@ export default function TermsPage() {
         description="ARES 23247 Terms of Service. Acceptable use, payments, and liability policies." 
       />
       <div className="max-w-4xl mx-auto px-6 lg:px-8">
-        <div className="mb-16">
+        <header className="mb-16">
           <h1 className="text-4xl lg:text-5xl font-bold font-heading mb-6 tracking-tight uppercase">
             Terms of <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Service</span>
           </h1>
           <p className="text-xl text-marble border-l-2 border-ares-gold/30 pl-6">
             These Terms of Service govern your use of the ARES 23247 Web Portal and its associated services.
           </p>
-        </div>
+        </header>
 
         <div className="space-y-12">
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          <section aria-labelledby="heading-general-provisions" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
+              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan" aria-hidden="true">
                 <BookOpen size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">1. General Provisions & Acceptance</h2>
+              <h2 id="heading-general-provisions" className="text-2xl font-bold font-heading">1. General Provisions & Acceptance</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
               By accessing our website, you agree to these Terms of Service. This portal is provided by <strong>{siteConfig.team.name}</strong>, a registered <em>FIRST</em>® Tech Challenge robotics team located in the United States. 
@@ -54,13 +55,13 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          <section aria-labelledby="heading-acceptable-use" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
+              <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold" aria-hidden="true">
                 <Scale size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">2. Acceptable Use & Conduct</h2>
+              <h2 id="heading-acceptable-use" className="text-2xl font-bold font-heading">2. Acceptable Use & Conduct</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
               Users of this platform must adhere to Gracious Professionalism®, the core ethos of <em>FIRST</em>® Robotics.
@@ -72,13 +73,13 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          <section aria-labelledby="heading-payments" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-cyan/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
+              <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan" aria-hidden="true">
                 <CreditCard size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">3. Sponsorships, Payments & Refunds</h2>
+              <h2 id="heading-payments" className="text-2xl font-bold font-heading">3. Sponsorships, Payments & Refunds</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
               Our website facilitates sponsorships and donations via our secure payment processor (Stripe).
@@ -90,13 +91,13 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
+          <section aria-labelledby="heading-liability" className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-ares-red/5 rounded-bl-full -z-10"></div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red">
+              <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red" aria-hidden="true">
                 <ShieldAlert size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">4. Liability & Jurisdiction</h2>
+              <h2 id="heading-liability" className="text-2xl font-bold font-heading">4. Liability & Jurisdiction</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
               The materials on {siteConfig.team.name}&apos;s website are provided on an &apos;as is&apos; basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
@@ -107,11 +108,11 @@ export default function TermsPage() {
           </section>
         </div>
 
-        <div className="mt-16 text-center text-marble text-sm">
-          <p>Last updated: {new Date().toLocaleDateString()}</p>
-          <p>For legal inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
-        </div>
+        <footer className="mt-16 text-center text-marble text-sm">
+          <p>Last updated: August 14, 2026</p>
+          <p>For legal inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} legal inquiries`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
+        </footer>
       </div>
-    </motion.div>
+    </motion.main>
   );
 }
