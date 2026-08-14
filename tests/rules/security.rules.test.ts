@@ -89,6 +89,63 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(getDoc(doc(unknownDb, "tasks", "team-task")));
   });
 
+  it("accepts canonical task creates and bounds untrusted task fields", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const canonicalTask = {
+      id: "canonical-task",
+      title: "Build robot",
+      description: "Assemble the drivetrain",
+      status: "todo",
+      priority: "medium",
+      subteam: "hardware",
+      assignees: ["member-user"],
+      subtasks: [],
+      archived: false,
+      createdAt: "2026-08-14T00:00:00.000Z",
+    };
+
+    await assertSucceeds(setDoc(doc(memberDb, "tasks", "canonical-task"), canonicalTask));
+    await assertFails(setDoc(doc(memberDb, "tasks", "invalid-priority"), {
+      ...canonicalTask,
+      id: "invalid-priority",
+      priority: "normal",
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "oversized-title"), {
+      ...canonicalTask,
+      id: "oversized-title",
+      title: "T".repeat(241),
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "unknown-field"), {
+      ...canonicalTask,
+      id: "unknown-field",
+      internalOverride: true,
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "oversized-list"), {
+      ...canonicalTask,
+      id: "oversized-list",
+      subtasks: Array.from({ length: 101 }, (_, index) => ({ id: `${index}`, title: "Task", done: false })),
+    }));
+  });
+
+  it("validates only changed fields on legacy tasks and blocks hard deletes", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedDocument("tasks", "legacy-task", {
+      title: "Legacy task",
+      priority: "normal",
+      subteam: "Mechanical",
+      legacyMetadata: "preserve without trusting",
+    });
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const legacyTask = doc(memberDb, "tasks", "legacy-task");
+
+    await assertSucceeds(updateDoc(legacyTask, { title: "Canonical title" }));
+    await assertSucceeds(updateDoc(legacyTask, { priority: "medium", subteam: "hardware" }));
+    await assertFails(updateDoc(legacyTask, { priority: "normal" }));
+    await assertFails(updateDoc(legacyTask, { forgedRole: "admin" }));
+    await assertFails(deleteDoc(legacyTask));
+  });
+
   it("binds web task comments to the authenticated author", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("other-user", "member");
@@ -109,6 +166,20 @@ describe("Firestore zero-trust rules", () => {
       content: "Forged",
       source: "web",
       createdAt: "2026-08-12T12:00:00.000Z",
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-3"), {
+      id: "different-id",
+      authorUid: "member-user",
+      content: "Forged metadata",
+      source: "web",
+      createdAt: "2026-08-12T12:00:00.000Z",
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-4"), {
+      authorUid: "member-user",
+      content: "Ready",
+      source: "web",
+      createdAt: "2026-08-12T12:00:00.000Z",
+      unexpected: "payload",
     }));
   });
 

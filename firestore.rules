@@ -49,6 +49,75 @@ service cloud.firestore {
       ]);
     }
 
+    function isCanonicalTaskCreate(taskId) {
+      let data = request.resource.data;
+      return taskId.size() > 0 && taskId.size() <= 160 &&
+        data.keys().hasOnly([
+          'id', 'title', 'description', 'status', 'priority', 'subteam',
+          'assignees', 'subtasks', 'archived', 'isDeleted', 'createdAt',
+          'commentsCount'
+        ]) &&
+        data.keys().hasAll([
+          'id', 'title', 'description', 'status', 'priority', 'subteam',
+          'assignees', 'subtasks', 'createdAt'
+        ]) &&
+        data.id == taskId &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 240 &&
+        data.description is string && data.description.size() <= 20000 &&
+        data.status in ['todo', 'in_progress', 'review', 'completed'] &&
+        data.priority in ['low', 'medium', 'high'] &&
+        data.subteam in ['software', 'hardware', 'business', 'outreach'] &&
+        data.assignees is list && data.assignees.size() <= 50 &&
+        data.subtasks is list && data.subtasks.size() <= 100 &&
+        data.createdAt is string && data.createdAt.size() <= 40 &&
+        data.get('archived', false) is bool &&
+        data.get('isDeleted', 0) in [0, 1] &&
+        data.get('commentsCount', 0) is int &&
+        data.get('commentsCount', 0) >= 0 &&
+        data.get('commentsCount', 0) <= 1000000;
+    }
+
+    function isValidTaskUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let data = request.resource.data;
+      return changed.hasOnly([
+          'title', 'description', 'status', 'priority', 'subteam',
+          'assignees', 'subtasks', 'archived', 'isDeleted', 'commentsCount'
+        ]) &&
+        (!changed.hasAny(['title']) ||
+          (data.title is string && data.title.size() > 0 && data.title.size() <= 240)) &&
+        (!changed.hasAny(['description']) ||
+          (data.description is string && data.description.size() <= 20000)) &&
+        (!changed.hasAny(['status']) ||
+          data.status in ['todo', 'in_progress', 'review', 'completed']) &&
+        (!changed.hasAny(['priority']) ||
+          data.priority in ['low', 'medium', 'high']) &&
+        (!changed.hasAny(['subteam']) ||
+          data.subteam in ['software', 'hardware', 'business', 'outreach']) &&
+        (!changed.hasAny(['assignees']) ||
+          (data.assignees is list && data.assignees.size() <= 50)) &&
+        (!changed.hasAny(['subtasks']) ||
+          (data.subtasks is list && data.subtasks.size() <= 100)) &&
+        (!changed.hasAny(['archived']) || data.archived is bool) &&
+        (!changed.hasAny(['isDeleted']) || data.isDeleted in [0, 1]) &&
+        (!changed.hasAny(['commentsCount']) ||
+          (data.commentsCount is int && data.commentsCount >= 0 && data.commentsCount <= 1000000));
+    }
+
+    function isValidWebTaskComment(commentId) {
+      let data = request.resource.data;
+      return commentId.size() > 0 && commentId.size() <= 160 &&
+        data.keys().hasOnly(['id', 'authorUid', 'author', 'content', 'source', 'createdAt']) &&
+        data.keys().hasAll(['authorUid', 'content', 'source', 'createdAt']) &&
+        (!data.keys().hasAny(['id']) || data.id == commentId) &&
+        (!data.keys().hasAny(['author']) ||
+          (data.author is string && data.author.size() <= 80)) &&
+        data.authorUid == request.auth.uid &&
+        data.source == 'web' &&
+        data.content is string && data.content.size() > 0 && data.content.size() <= 4000 &&
+        data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
     // Rules for the authorized_users collection
     match /authorized_users/{userId} {
       // Users can read their own registration doc; admins/coaches can read everything
@@ -125,17 +194,23 @@ service cloud.firestore {
 
     // Secure team collections (Kanban tasks and AI chat sessions)
     match /tasks/{taskId} {
-      allow read, write: if isAuthorized();
+      allow read: if isAuthorized();
+      allow create: if isAuthorized() && isCanonicalTaskCreate(taskId);
+      // Validate only changed fields so malformed legacy fields can be preserved
+      // while every new edit is canonical and bounded.
+      allow update: if isAuthorized() && isValidTaskUpdate();
+      allow delete: if false;
 
       match /comments/{commentId} {
         allow read: if isAuthorized();
-        allow create: if isAuthorized() &&
-          request.resource.data.authorUid == request.auth.uid &&
-          request.resource.data.source == "web" &&
+        allow create: if isAuthorized() && isValidWebTaskComment(commentId);
+        allow update: if isAuthorized() &&
+          resource.data.authorUid == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content']) &&
           request.resource.data.content is string &&
           request.resource.data.content.size() > 0 &&
           request.resource.data.content.size() <= 4000;
-        allow update, delete: if isAuthorized() && resource.data.authorUid == request.auth.uid;
+        allow delete: if isAuthorized() && resource.data.authorUid == request.auth.uid;
       }
     }
 

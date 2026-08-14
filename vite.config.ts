@@ -164,6 +164,8 @@ export default defineConfig({
         "src/components/PwaUpdatePrompt.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/profile/page.tsx",
+        "src/app/dashboard/tasks/taskRecord.ts",
+        "src/app/dashboard/tasks/taskSubtasks.ts",
         "src/app/tournaments/[id]/TournamentMatchEditForm.tsx",
         "src/app/dashboard/profile/components/*.tsx",
         "src/app/dashboard/inquiries/page.tsx",
@@ -240,6 +242,14 @@ export default defineConfig({
           functions: 100,
         },
         "src/app/dashboard/users/components/UserEmailRosterPanel.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/tasks/taskRecord.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/tasks/taskSubtasks.ts": {
           lines: 85,
           functions: 100,
         },
