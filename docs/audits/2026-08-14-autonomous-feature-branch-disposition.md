@@ -4,7 +4,7 @@
 
 - Production baseline inspected: `45e09a396bbcc6e579b6be18dcf2f44bddce8b53`
 - Preserved implementation branch: `codex/fix-pwa-toast-dismissal` at
-  `700d8f6fa324bcd37cece6c83a8baa4f5096c8b8`
+  `43ea5176ec9e7f07cc57480ff872a3604ff96f38` before this report update.
 - Local runtime: Node `24.13.0`, pnpm `11.21.0`, OpenJDK `21.0.12`
 - Required deployment runtime remains Node `22.13+ <23`; CI must repeat the
   release gate on Node 22.
@@ -15,10 +15,10 @@
 
 ## Decision
 
-No autonomous feature branch in PR #88, #90, or #92–#111 was suitable for a
-whole-branch merge. Those PRs were closed without merging and their local and
-remote branches were removed. PR #91 was deliberately preserved because its
-test-only scouting changes require a separate bounded review.
+No autonomous feature branch in PR #78–#111 was suitable for a whole-branch
+merge. The useful, independently verified announcement and PWA behavior was
+implemented on `codex/fix-pwa-toast-dismissal`; the autonomous branches were
+closed without merging and removed locally and remotely.
 
 The rejected branches added 27,432 lines across cycles 35–46 alone. Repeated
 failure modes were hardcoded data presented as authoritative, obsolete FTC game
@@ -50,14 +50,34 @@ Future feature agents must receive one bounded feature, its authoritative data
 source, explicit public/private fields, and acceptance tests before writing UI.
 Agents must not invent fallback team data to make a page appear complete.
 
+## Final PR #78–#91 review
+
+| PR | Disposition | Evidence-based reason |
+| --- | --- | --- |
+| #78 simulations | Reject | Mock-heavy tests bypassed the generated registry and preserved the retired “AI Simulation IDE” label. |
+| #79 developer API | Reject | Added public documentation for finance and simulation endpoints without matching supported public API contracts. |
+| #80 technology page | Reject | Tests converted unsupported “100% coverage,” WCAG, youth-data, and architecture marketing claims into required behavior. |
+| #81 legal pages | Reject | Accessibility markup improvements were coupled to absolute COPPA, analytics, AI-processing, encryption, and consent claims that were not established by the test scope. |
+| #83 event detail | Reject | A 714-line mocked page test duplicated implementation details without exercising the real API, authorization, Firestore rules, or browser flow. |
+| #84 about/roster | Reject | Tests used fabricated people and entrenched unverified team-support, funding, geographic, and participation claims. |
+| #85 location | Reject | Rewrote a public location landing page around unverified community-program and applicant claims instead of an approved content source. |
+| #86 leaderboard | Reject | Added presentation-level mocked tests without a validated scoring/award data authority or backend contract. |
+| #87 accessibility | Reject | Published manual NVDA/VoiceOver, reflow, readability, and WCAG target assertions while the repository's dated manual checklist remains pending. |
+| #89 youth safety | Reject | Frontend copy tests could not establish consent, retention, encryption, authorization, or FIRST Youth Protection Program compliance. |
+| #91 scouting | Reject | The branch added only an audit narrative despite claiming a unit-test suite, and described strategy/scoring guarantees without new executable evidence. |
+
 ## Cleanup performed
 
-- Closed PR #88, #90, and #92–#111 with branch-specific review reasons.
+- Closed PR #78–#111 with review reasons and no unsafe merges.
 - Deleted their remote and local branches.
 - Removed abandoned Antigravity worktrees after verifying committed state.
 - Removed untracked CAD, scoring-calculator, hardware, and obsolete PWA-test
   files left in the primary checkout.
 - Deleted 34 redundant `subagent-*` aliases after verifying every alias pointed
-  to `840f5f43`, still retained by local and remote `cycle-16` branches.
+  to the same reviewed `cycle-16` commit; that cycle branch was later rejected
+  and removed in the final PR #78–#91 review.
 - Preserved the fully tested public announcement/mobile-banner and PWA-toast fix.
-
+- Preserved the local-only `codex/post-release-audit-20260814` branch for a
+  separate review. It contains 3,017 added lines of substantive tournament and
+  inquiry work and is not part of this release; deleting or merging it without
+  a bounded review would be unsafe.
