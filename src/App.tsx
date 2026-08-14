@@ -28,6 +28,7 @@ const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
 const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
 const CalendarPage = lazy(() => import("@/app/calendar/page"));
+const Cad3DViewerPage = lazy(() => import("@/app/cad/page"));
 const DeveloperApiPage = lazy(() => import("@/app/developer-api/page"));
 const EventDetailPage = lazy(() => import("@/app/events/[id]/page"));
 const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));
@@ -115,6 +116,7 @@ export default function App() {
                   <Route path="/blog" element={<BlogFeedPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/cad" element={<Cad3DViewerPage />} />
                   <Route path="/developer-api" element={<DeveloperApiPage />} />
                   <Route path="/events/:id" element={<EventDetailPage />} />
                   <Route path="/finance" element={<FinanceLedgerPage />} />

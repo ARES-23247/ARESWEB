@@ -40,6 +40,7 @@ export const RESOURCE_LINKS: NavItemConfig[] = [
   { label: "Tech Stack", to: "/tech-stack", icon: Cpu, iconColor: "text-ares-cyan" },
   { label: "Robots Fleet", to: "/robots", icon: Cpu, iconColor: "text-ares-bronze" },
   { label: "3D Models Archive", href: "https://www.printables.com/@ARESFTC_3784306", icon: Layers, iconColor: "text-ares-red" },
+  { label: "3D CAD Viewer", to: "/cad", icon: Layers, iconColor: "text-ares-cyan" },
   { label: "CAD Workspace", href: siteConfig.urls.onshape, icon: Layers, iconColor: "text-ares-gold" },
   { label: "ARES Academy", to: "/academy", icon: GraduationCap, iconColor: "text-ares-gold", dividerBefore: true },
   { label: "ARESLib", to: "/docs", icon: BookOpen, iconColor: "text-ares-red", isAresLib: true },
