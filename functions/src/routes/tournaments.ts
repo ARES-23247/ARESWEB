@@ -116,6 +116,7 @@ export const createTournamentMatchSchema = z
 
 export const updateTournamentMatchSchema = z
   .object({
+    expectedUpdatedAt: z.string().datetime({ offset: true }).nullable(),
     matchNumber: boundedText(40).min(1, "Match number is required").optional(),
     alliance: z.enum(["red", "blue"]).optional(),
     partner: boundedText(20).min(1).optional(),
@@ -128,12 +129,21 @@ export const updateTournamentMatchSchema = z
   })
   .strict()
   .refine(
-    (value) => Object.keys(value).length > 0,
+    (value) => Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
     "At least one field is required",
   );
 
 export const matchCompletionSchema = z
-  .object({ completed: z.boolean() })
+  .object({
+    completed: z.boolean(),
+    expectedUpdatedAt: z.string().datetime({ offset: true }).nullable(),
+  })
+  .strict();
+
+export const archiveTournamentMatchSchema = z
+  .object({
+    expectedUpdatedAt: z.string().datetime({ offset: true }).nullable(),
+  })
   .strict();
 
 export async function ensureAdminOrCoach(
@@ -292,6 +302,53 @@ async function getActiveMatch(
     throw new ApiError(404, "Match record no longer exists", "MATCH_NOT_FOUND");
   }
   return { snapshot, ref };
+}
+
+function matchRevisionConflict() {
+  return new ApiError(
+    409,
+    "This match changed elsewhere. Refresh and compare before saving again.",
+    "MATCH_REVISION_CONFLICT",
+  );
+}
+
+function isFailedPrecondition(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = (error as { code?: unknown }).code;
+  return (
+    code === 9 ||
+    code === "failed-precondition" ||
+    code === "FAILED_PRECONDITION"
+  );
+}
+
+async function updateMatchAtRevision(
+  tournamentIdValue: string | string[],
+  matchIdValue: string | string[],
+  expectedUpdatedAt: string | null,
+  updateData: Record<string, unknown>,
+) {
+  const { snapshot, ref } = await getActiveMatch(
+    tournamentIdValue,
+    matchIdValue,
+  );
+  const currentUpdatedAt = readString(snapshot.data()?.updatedAt);
+  if (currentUpdatedAt !== expectedUpdatedAt) throw matchRevisionConflict();
+
+  try {
+    if (snapshot.updateTime) {
+      await ref.update(updateData, { lastUpdateTime: snapshot.updateTime });
+    } else {
+      // Test doubles and legacy Admin SDK adapters may omit updateTime. The
+      // client revision check still fails closed for stale records.
+      await ref.update(updateData);
+    }
+  } catch (error: unknown) {
+    if (isFailedPrecondition(error)) throw matchRevisionConflict();
+    throw error;
+  }
+
+  return { snapshot, updateData };
 }
 
 // Member-only reads keep private scouting details behind a verified team role.
@@ -454,15 +511,17 @@ router.put(
   ensureAdminOrCoach,
   validate(matchCompletionSchema),
   asyncHandler(async (req, res) => {
-    const { snapshot, ref } = await getActiveMatch(
-      req.params.id,
-      req.params.matchId,
-    );
+    const input = req.body as z.infer<typeof matchCompletionSchema>;
     const updateData = {
-      completed: (req.body as z.infer<typeof matchCompletionSchema>).completed,
+      completed: input.completed,
       updatedAt: new Date().toISOString(),
     };
-    await ref.update(updateData);
+    const { snapshot } = await updateMatchAtRevision(
+      req.params.id,
+      req.params.matchId,
+      input.expectedUpdatedAt,
+      updateData,
+    );
     res.json({
       success: true,
       match: matchDto(snapshot.id, { ...snapshot.data(), ...updateData }),
@@ -476,15 +535,18 @@ router.put(
   ensureAdminOrCoach,
   validate(updateTournamentMatchSchema),
   asyncHandler(async (req, res) => {
-    const { snapshot, ref } = await getActiveMatch(
-      req.params.id,
-      req.params.matchId,
-    );
+    const input = req.body as z.infer<typeof updateTournamentMatchSchema>;
+    const { expectedUpdatedAt, ...changes } = input;
     const updateData = {
-      ...(req.body as z.infer<typeof updateTournamentMatchSchema>),
+      ...changes,
       updatedAt: new Date().toISOString(),
     };
-    await ref.update(updateData);
+    const { snapshot } = await updateMatchAtRevision(
+      req.params.id,
+      req.params.matchId,
+      expectedUpdatedAt,
+      updateData,
+    );
     res.json({
       success: true,
       match: matchDto(snapshot.id, { ...snapshot.data(), ...updateData }),
@@ -496,9 +558,15 @@ router.delete(
   "/:id/matches/:matchId",
   ensureAuth,
   ensureAdminOrCoach,
+  validate(archiveTournamentMatchSchema),
   asyncHandler(async (req, res) => {
-    const { ref } = await getActiveMatch(req.params.id, req.params.matchId);
-    await ref.update({ isDeleted: 1, updatedAt: new Date().toISOString() });
+    const input = req.body as z.infer<typeof archiveTournamentMatchSchema>;
+    await updateMatchAtRevision(
+      req.params.id,
+      req.params.matchId,
+      input.expectedUpdatedAt,
+      { isDeleted: 1, updatedAt: new Date().toISOString() },
+    );
     res.json({ success: true, message: "Match archived successfully" });
   }),
 );

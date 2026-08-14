@@ -61,9 +61,9 @@ are described as released.
 
 ## Residual risks and follow-up
 
-- Match updates are last-write-wins. If simultaneous pit and stands editing
-  becomes common, add an explicit record version/precondition instead of
-  silently merging competing edits.
+- Resolved in the follow-up `2026-08-14-match-concurrency.md` cycle: match edits,
+  completion toggles, and archives now require the viewed record revision and a
+  Firestore write precondition instead of silently merging competing edits.
 - OPR remains an administrator-maintained value. Importing official event data
   or calculating a reproducible metric requires a separate product decision,
   source contract, and tests.

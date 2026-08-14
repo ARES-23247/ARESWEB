@@ -16,6 +16,7 @@ const tournamentMatch: TournamentMatch = {
   completed: true,
   notes: "Original notes",
   isDeleted: 0,
+  updatedAt: "2026-08-14T09:00:00.000Z",
 };
 
 describe("TournamentMatchEditForm", () => {
@@ -60,6 +61,7 @@ describe("TournamentMatchEditForm", () => {
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith({
         id: "qm-4",
+        updatedAt: "2026-08-14T09:00:00.000Z",
         matchNumber: "SF1",
         alliance: "blue",
         partner: "33333",

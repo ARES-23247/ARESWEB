@@ -45,6 +45,7 @@ export function TournamentMatchEditForm({
     try {
       await onSave({
         id: match.id,
+        updatedAt: match.updatedAt ?? null,
         matchNumber: matchNumber.trim(),
         alliance,
         partner: partner.trim(),

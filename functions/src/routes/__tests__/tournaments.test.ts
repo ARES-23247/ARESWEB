@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import tournamentsRouter, {
   createTournamentSchema,
   createTournamentMatchSchema,
+  archiveTournamentMatchSchema,
+  matchCompletionSchema,
   updateTournamentSchema,
   updateTournamentMatchSchema,
   ensureAdminOrCoach,
@@ -626,7 +628,10 @@ describe("Tournaments Router Backend Endpoints", () => {
   describe("stale match protection", () => {
     it("returns 404 for a missing match completion update and never recreates it", async () => {
       req.params = { id: "tour1", matchId: "stale-match" };
-      req.body = { completed: true };
+      req.body = {
+        completed: true,
+        expectedUpdatedAt: "2026-08-14T09:00:00.000Z",
+      };
       const set = vi.fn();
       const update = vi.fn();
 
@@ -784,6 +789,7 @@ describe("Tournaments Router Backend Endpoints", () => {
     it("updates an active match without replacing its identity", async () => {
       req.params = { id: "tour1", matchId: "qm1" };
       req.body = {
+        expectedUpdatedAt: "2026-08-14T09:00:00.000Z",
         result: "won",
         completed: true,
         scoreSelf: 42,
@@ -806,6 +812,7 @@ describe("Tournaments Router Backend Endpoints", () => {
                   result: "upcoming",
                   completed: false,
                   isDeleted: 0,
+                  updatedAt: "2026-08-14T09:00:00.000Z",
                 }),
               }),
               update,
@@ -836,8 +843,94 @@ describe("Tournaments Router Backend Endpoints", () => {
       );
     });
 
+    it("rejects a stale client revision before writing", async () => {
+      req.params = { id: "tour1", matchId: "qm1" };
+      req.body = {
+        expectedUpdatedAt: "2026-08-14T08:00:00.000Z",
+        notes: "Stale pit note",
+      };
+      const update = vi.fn();
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournament_matches") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                id: "qm1",
+                data: () => ({
+                  tournamentId: "tour1",
+                  matchNumber: "QM1",
+                  isDeleted: 0,
+                  updatedAt: "2026-08-14T09:00:00.000Z",
+                }),
+              }),
+              update,
+            }),
+          } as any;
+        }
+        return {} as any;
+      });
+
+      await getHandler("/:id/matches/:matchId", "put")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 409,
+          code: "MATCH_REVISION_CONFLICT",
+        }),
+      );
+      expect(update).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+    });
+
+    it("maps a Firestore write precondition race to a revision conflict", async () => {
+      req.params = { id: "tour1", matchId: "qm1" };
+      req.body = {
+        expectedUpdatedAt: "2026-08-14T09:00:00.000Z",
+        notes: "Current pit note",
+      };
+      const updateTime = { seconds: 123, nanoseconds: 0 };
+      const update = vi.fn().mockRejectedValue({ code: 9 });
+      vi.mocked(adminDb.collection).mockImplementation((name: string) => {
+        if (name === "tournament_matches") {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                id: "qm1",
+                updateTime,
+                data: () => ({
+                  tournamentId: "tour1",
+                  matchNumber: "QM1",
+                  isDeleted: 0,
+                  updatedAt: "2026-08-14T09:00:00.000Z",
+                }),
+              }),
+              update,
+            }),
+          } as any;
+        }
+        return {} as any;
+      });
+
+      await getHandler("/:id/matches/:matchId", "put")(req, res, next);
+
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({ notes: "Current pit note" }),
+        { lastUpdateTime: updateTime },
+      );
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 409,
+          code: "MATCH_REVISION_CONFLICT",
+        }),
+      );
+      expect(res.json).not.toHaveBeenCalled();
+    });
+
     it("soft-archives an active match", async () => {
       req.params = { id: "tour1", matchId: "qm1" };
+      req.body = { expectedUpdatedAt: "2026-08-14T09:00:00.000Z" };
       const update = vi.fn().mockResolvedValue(undefined);
       vi.mocked(adminDb.collection).mockImplementation((name: string) => {
         if (name === "tournament_matches") {
@@ -846,7 +939,11 @@ describe("Tournaments Router Backend Endpoints", () => {
               get: vi.fn().mockResolvedValue({
                 exists: true,
                 id: "qm1",
-                data: () => ({ tournamentId: "tour1", isDeleted: 0 }),
+                data: () => ({
+                  tournamentId: "tour1",
+                  isDeleted: 0,
+                  updatedAt: "2026-08-14T09:00:00.000Z",
+                }),
               }),
               update,
             }),
@@ -878,13 +975,27 @@ describe("Tournaments Router Backend Endpoints", () => {
         }).success,
       ).toBe(true);
       expect(
-        updateTournamentMatchSchema.safeParse({ result: "won" }).success,
+        updateTournamentMatchSchema.safeParse({
+          expectedUpdatedAt: "2026-08-14T09:00:00.000Z",
+          result: "won",
+        }).success,
       ).toBe(true);
       expect(
         updateTournamentMatchSchema.safeParse({
+          expectedUpdatedAt: null,
           scoreSelf: null,
           scoreOpponent: null,
         }).success,
+      ).toBe(true);
+      expect(
+        matchCompletionSchema.safeParse({
+          completed: true,
+          expectedUpdatedAt: "2026-08-14T09:00:00.000Z",
+        }).success,
+      ).toBe(true);
+      expect(
+        archiveTournamentMatchSchema.safeParse({ expectedUpdatedAt: null })
+          .success,
       ).toBe(true);
       expect(updateTournamentMatchSchema.safeParse({}).success).toBe(false);
     });

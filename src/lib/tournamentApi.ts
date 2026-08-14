@@ -4,6 +4,7 @@ import type {
   TournamentMatch,
   TournamentMatchesResponse,
   TournamentMatchResponse,
+  TournamentMatchRevisionInput,
   TournamentMatchUpdateInput,
   TournamentMatchWriteInput,
   TournamentResponse,
@@ -50,7 +51,10 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function jsonRequest(method: "POST" | "PUT", body: unknown): RequestInit {
+function jsonRequest(
+  method: "POST" | "PUT" | "DELETE",
+  body: unknown,
+): RequestInit {
   return {
     method,
     headers: { "Content-Type": "application/json" },
@@ -144,13 +148,14 @@ export async function setTournamentMatchCompletion(
   tournamentId: string,
   matchId: string,
   completed: boolean,
+  expectedUpdatedAt: string | null,
 ): Promise<TournamentMatch> {
   const payload = await requestJson<TournamentMatchResponse>(
     tournamentPath(
       tournamentId,
       `/matches/${encodeURIComponent(matchId)}/completion`,
     ),
-    jsonRequest("PUT", { completed }),
+    jsonRequest("PUT", { completed, expectedUpdatedAt }),
   );
   return payload.match;
 }
@@ -158,9 +163,10 @@ export async function setTournamentMatchCompletion(
 export async function archiveTournamentMatch(
   tournamentId: string,
   matchId: string,
+  expectedUpdatedAt: TournamentMatchRevisionInput["expectedUpdatedAt"],
 ): Promise<void> {
   await requestJson<{ success: true }>(
     tournamentPath(tournamentId, `/matches/${encodeURIComponent(matchId)}`),
-    { method: "DELETE" },
+    jsonRequest("DELETE", { expectedUpdatedAt }),
   );
 }
