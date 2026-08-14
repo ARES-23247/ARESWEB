@@ -223,12 +223,6 @@ export default function BlogFeedPage() {
                 </Link>
               );
             })}
-
-            {posts.length === 0 && (
-              <div className="text-white p-6 glass-card hero-card col-span-full border-dashed">
-                No posts published yet.
-              </div>
-            )}
           </div>
         )}
       </div>
