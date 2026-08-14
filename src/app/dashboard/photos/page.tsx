@@ -72,7 +72,8 @@ export default function DashboardPhotosPage() {
   const [moreAlbums, setMoreAlbums] = useState(false);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [loadingAlbums, setLoadingAlbums] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMorePhotos, setLoadingMorePhotos] = useState(false);
+  const [loadingMoreAlbums, setLoadingMoreAlbums] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -120,10 +121,13 @@ export default function DashboardPhotosPage() {
   const [uploadGoogle, setUploadGoogle] = useState(false);
   const [uploadAi, setUploadAi] = useState(true);
   const [uploads, setUploads] = useState<UploadState[]>([]);
+  const photoRequestSequence = useRef(0);
+  const albumRequestSequence = useRef(0);
 
   const loadPhotos = useCallback(
     async (append = false, cursor: string | null = null) => {
-      if (append) setLoadingMore(true);
+      const requestSequence = ++photoRequestSequence.current;
+      if (append) setLoadingMorePhotos(true);
       else setLoadingPhotos(true);
       setError(null);
       try {
@@ -139,6 +143,7 @@ export default function DashboardPhotosPage() {
         if (!response.ok)
           throw await apiFailure(response, "Photo library could not load.");
         const page = (await response.json()) as PhotoPage;
+        if (requestSequence !== photoRequestSequence.current) return;
         setPhotos((current) =>
           append
             ? [
@@ -154,10 +159,13 @@ export default function DashboardPhotosPage() {
         setPhotoCursor(page.nextCursor);
         setMorePhotos(page.hasMore);
       } catch (cause) {
+        if (requestSequence !== photoRequestSequence.current) return;
         setError(cause instanceof Error ? cause.message : String(cause));
       } finally {
-        setLoadingPhotos(false);
-        setLoadingMore(false);
+        if (requestSequence === photoRequestSequence.current) {
+          setLoadingPhotos(false);
+          setLoadingMorePhotos(false);
+        }
       }
     },
     [albumFilter, showArchivedPhotos],
@@ -165,7 +173,8 @@ export default function DashboardPhotosPage() {
 
   const loadAlbums = useCallback(
     async (append = false, cursor: string | null = null) => {
-      if (append) setLoadingMore(true);
+      const requestSequence = ++albumRequestSequence.current;
+      if (append) setLoadingMoreAlbums(true);
       else setLoadingAlbums(true);
       setError(null);
       try {
@@ -180,6 +189,7 @@ export default function DashboardPhotosPage() {
         if (!response.ok)
           throw await apiFailure(response, "Albums could not load.");
         const page = (await response.json()) as AlbumPage;
+        if (requestSequence !== albumRequestSequence.current) return;
         setAlbums((current) =>
           append
             ? [
@@ -195,10 +205,13 @@ export default function DashboardPhotosPage() {
         setAlbumCursor(page.nextCursor);
         setMoreAlbums(page.hasMore);
       } catch (cause) {
+        if (requestSequence !== albumRequestSequence.current) return;
         setError(cause instanceof Error ? cause.message : String(cause));
       } finally {
-        setLoadingAlbums(false);
-        setLoadingMore(false);
+        if (requestSequence === albumRequestSequence.current) {
+          setLoadingAlbums(false);
+          setLoadingMoreAlbums(false);
+        }
       }
     },
     [showArchivedAlbums],
@@ -397,14 +410,38 @@ export default function DashboardPhotosPage() {
       const response = await authenticatedFetch(path, { method: "DELETE" });
       if (!response.ok)
         throw await apiFailure(response, "Item could not be archived.");
-      if (pendingArchive.kind === "photo")
+      if (pendingArchive.kind === "photo") {
+        const archivedPhoto = pendingArchive.item;
         setPhotos((current) =>
-          current.filter((photo) => photo.id !== pendingArchive.item.id),
+          showArchivedPhotos
+            ? current.map((photo) =>
+                photo.id === archivedPhoto.id
+                  ? { ...photo, isArchived: true }
+                  : photo,
+              )
+            : current.filter((photo) => photo.id !== archivedPhoto.id),
         );
-      else
+        if (archivedPhoto.albumId) {
+          setAlbums((current) =>
+            current.map((album) =>
+              album.id === archivedPhoto.albumId
+                ? { ...album, mediaCount: Math.max(0, album.mediaCount - 1) }
+                : album,
+            ),
+          );
+        }
+      } else {
+        const archivedAlbum = pendingArchive.item;
         setAlbums((current) =>
-          current.filter((album) => album.id !== pendingArchive.item.id),
+          showArchivedAlbums
+            ? current.map((album) =>
+                album.id === archivedAlbum.id
+                  ? { ...album, isArchived: true, isPublic: false }
+                  : album,
+              )
+            : current.filter((album) => album.id !== archivedAlbum.id),
         );
+      }
       setPendingArchive(null);
       setPhotoEditor(null);
       setNotice("Item moved to the archive. You can restore it later.");
@@ -426,9 +463,30 @@ export default function DashboardPhotosPage() {
       const response = await authenticatedFetch(path, { method: "POST" });
       if (!response.ok)
         throw await apiFailure(response, "Item could not be restored.");
-      if (kind === "photo")
-        setPhotos((current) => current.filter((photo) => photo.id !== id));
-      else setAlbums((current) => current.filter((album) => album.id !== id));
+      if (kind === "photo") {
+        const payload = (await response.json()) as { photo: ManagedPhoto };
+        setPhotos((current) =>
+          current.map((photo) =>
+            photo.id === payload.photo.id ? payload.photo : photo,
+          ),
+        );
+        if (payload.photo.albumId) {
+          setAlbums((current) =>
+            current.map((album) =>
+              album.id === payload.photo.albumId
+                ? { ...album, mediaCount: album.mediaCount + 1 }
+                : album,
+            ),
+          );
+        }
+      } else {
+        const payload = (await response.json()) as { album: ManagedAlbum };
+        setAlbums((current) =>
+          current.map((album) =>
+            album.id === payload.album.id ? payload.album : album,
+          ),
+        );
+      }
       setNotice("Item restored to the active library.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -906,7 +964,7 @@ export default function DashboardPhotosPage() {
           )}
           {morePhotos && (
             <LoadMore
-              busy={loadingMore}
+              busy={loadingMorePhotos}
               onClick={() => void loadPhotos(true, photoCursor)}
               label="photos"
             />
@@ -1057,7 +1115,7 @@ export default function DashboardPhotosPage() {
           )}
           {moreAlbums && (
             <LoadMore
-              busy={loadingMore}
+              busy={loadingMoreAlbums}
               onClick={() => void loadAlbums(true, albumCursor)}
               label="albums"
             />

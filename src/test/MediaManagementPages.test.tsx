@@ -54,6 +54,26 @@ const photo = {
   isArchived: false,
 };
 
+const album = {
+  id: "album-1",
+  title: "Competition 2026",
+  description: "Event photos",
+  category: "Competition" as const,
+  coverImageUrl: "",
+  isPublic: true,
+  mediaCount: 1,
+  createdAt: "2026-01-01",
+  isArchived: false,
+};
+
+function deferredResponse() {
+  let resolve!: (value: Response) => void;
+  const promise = new Promise<Response>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 describe("media management pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -257,18 +277,256 @@ describe("media management pages", () => {
     );
   });
 
-  it("creates an album through the extracted editor dialog", async () => {
-    const album = {
-      id: "album-1",
-      title: "Competition 2026",
-      description: "Event photos",
-      category: "Competition" as const,
-      coverImageUrl: "",
-      isPublic: true,
-      mediaCount: 0,
-      createdAt: "2026-01-01",
-      isArchived: false,
+  it("ignores an older photo response after the album filter changes", async () => {
+    const initialPhotos = deferredResponse();
+    const filteredPhoto = {
+      ...photo,
+      id: "photo-2",
+      caption: "Filtered competition photo",
+      albumId: album.id,
     };
+    vi.mocked(authenticatedFetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?") && !url.includes("albumId=")) {
+        return initialPhotos.promise;
+      }
+      if (
+        url.startsWith("/api/photos?") &&
+        url.includes(`albumId=${album.id}`)
+      ) {
+        return response({
+          photos: [filteredPhoto],
+          hasMore: false,
+          nextCursor: null,
+        });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        return response({ albums: [album], hasMore: false, nextCursor: null });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    const filter = await screen.findByLabelText("Album", {
+      selector: "select#photo-album-filter",
+    });
+    fireEvent.change(filter, { target: { value: album.id } });
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Filtered competition photo",
+      }),
+    ).toBeInTheDocument();
+
+    initialPhotos.resolve(
+      response({ photos: [photo], hasMore: false, nextCursor: null }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "Robot at practice" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("ignores an older album response after the archive filter changes", async () => {
+    const initialAlbums = deferredResponse();
+    const archivedAlbum = {
+      ...album,
+      id: "album-archived",
+      title: "Archived competition album",
+      isArchived: true,
+      isPublic: false,
+    };
+    vi.mocked(authenticatedFetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        return response({ photos: [], hasMore: false, nextCursor: null });
+      }
+      if (
+        url.startsWith("/api/photos/albums?") &&
+        !url.includes("includeArchived=true")
+      ) {
+        return initialAlbums.promise;
+      }
+      if (
+        url.startsWith("/api/photos/albums?") &&
+        url.includes("includeArchived=true")
+      ) {
+        return response({
+          albums: [archivedAlbum],
+          hasMore: false,
+          nextCursor: null,
+        });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    fireEvent.click(screen.getByRole("tab", { name: "Albums" }));
+    fireEvent.click(screen.getByLabelText("Show archived albums"));
+
+    expect(
+      await screen.findByRole("heading", { name: archivedAlbum.title }),
+    ).toBeInTheDocument();
+    initialAlbums.resolve(
+      response({
+        albums: [{ ...album, id: "album-old", title: "Old album response" }],
+        hasMore: false,
+        nextCursor: null,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "Old album response" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("keeps a photo visible while archiving and restoring in the inclusive archive view", async () => {
+    vi.mocked(authenticatedFetch).mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        return response({ photos: [photo], hasMore: false, nextCursor: null });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        return response({ albums: [], hasMore: false, nextCursor: null });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      if (url === "/api/photos/photo-1" && init?.method === "DELETE") {
+        return response({ success: true, archived: true });
+      }
+      if (url === "/api/photos/photo-1/restore" && init?.method === "POST") {
+        return response({ photo: { ...photo, isArchived: false } });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    expect(
+      await screen.findByRole("heading", { name: "Robot at practice" }),
+    ).toBeInTheDocument();
+    const showArchivedPhotos = screen.getByLabelText("Show archived photos");
+    fireEvent.click(showArchivedPhotos);
+    await waitFor(() =>
+      expect(authenticatedFetch).toHaveBeenCalledWith(
+        expect.stringContaining("includeArchived=true"),
+      ),
+    );
+    expect(showArchivedPhotos).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Archive photo" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Archive$/ }));
+
+    expect(await screen.findByText("Archived")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Robot at practice" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Restore photo" }));
+    await waitFor(() =>
+      expect(screen.queryByText("Archived")).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Robot at practice" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps an album visible while archiving and restoring in the inclusive archive view", async () => {
+    vi.mocked(authenticatedFetch).mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        return response({ photos: [], hasMore: false, nextCursor: null });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        return response({ albums: [album], hasMore: false, nextCursor: null });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      if (
+        url === `/api/photos/albums/${album.id}` &&
+        init?.method === "DELETE"
+      ) {
+        return response({ success: true, archived: true });
+      }
+      if (
+        url === `/api/photos/albums/${album.id}/restore` &&
+        init?.method === "POST"
+      ) {
+        return response({
+          album: { ...album, isArchived: false, isPublic: false },
+        });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    fireEvent.click(screen.getByRole("tab", { name: "Albums" }));
+    expect(
+      await screen.findByRole("heading", { name: album.title }),
+    ).toBeInTheDocument();
+    const showArchivedAlbums = screen.getByLabelText("Show archived albums");
+    fireEvent.click(showArchivedAlbums);
+    await waitFor(() =>
+      expect(authenticatedFetch).toHaveBeenCalledWith(
+        expect.stringContaining("includeArchived=true"),
+      ),
+    );
+    expect(showArchivedAlbums).toBeChecked();
+    fireEvent.click(
+      screen.getByRole("button", { name: `Archive ${album.title}` }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Archive$/ }));
+
+    expect(await screen.findByText("Archived")).toBeInTheDocument();
+    expect(screen.queryByText("Public")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: album.title }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: `Restore ${album.title}` }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("Archived")).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("heading", { name: album.title }),
+    ).toBeInTheDocument();
+  });
+
+  it("creates an album through the extracted editor dialog", async () => {
     vi.mocked(authenticatedFetch).mockImplementation(async (input, init) => {
       const url = String(input);
       if (url.startsWith("/api/photos?")) {
