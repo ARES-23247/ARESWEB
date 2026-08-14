@@ -2,6 +2,7 @@
 
 import { logger } from "@/utils/logger";
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
@@ -309,18 +310,18 @@ export default function SeasonsPage() {
             the future.
           </p>
           <div className="flex flex-wrap justify-center gap-4 relative z-10">
-            <a
-              href="/sponsors"
+            <Link
+              to="/sponsors"
               className="px-8 py-4 bg-white text-ares-red font-black ares-cut-sm hover:scale-105 transition-all shadow-lg"
             >
               SPONSOR ARES
-            </a>
-            <a
-              href="/join"
+            </Link>
+            <Link
+              to="/join"
               className="px-8 py-4 bg-obsidian text-white font-black ares-cut-sm hover:bg-white/10 transition-all border border-white/10"
             >
               JOIN THE TEAM
-            </a>
+            </Link>
           </div>
         </div>
       </section>
