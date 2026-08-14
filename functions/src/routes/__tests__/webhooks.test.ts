@@ -43,7 +43,7 @@ vi.mock("../../lib/socialSyndication", () => ({
   syndicatePublishedPost: (...args: unknown[]) => mocks.syndicate(...args),
 }));
 
-import webhooksRouter from "../webhooks";
+import webhooksRouter, { syndicationQuotaKey } from "../webhooks";
 
 describe("Webhooks Router Backend Endpoints", () => {
   let req: any;
@@ -160,6 +160,8 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(stack).toHaveLength(3);
       expect(stack[0].name).toBe("ensureTeamMember");
       expect(stack[1].handle).toEqual(expect.any(Function));
+      expect(syndicationQuotaKey({ user: { uid: "publisher-uid" } } as never)).toBe("publisher-uid");
+      expect(syndicationQuotaKey({} as never)).toBe("missing-verified-identity");
     });
 
     it("reads the approved post server-side and records successful delivery", async () => {
@@ -227,6 +229,25 @@ describe("Webhooks Router Backend Endpoints", () => {
 
       expect(mocks.syndicate).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ success: true, alreadySyndicated: true });
+    });
+
+    it("returns accepted while the same approval is already being delivered", async () => {
+      req.body = { slug: "state-finals-2026" };
+      mocks.transactionGet
+        .mockResolvedValueOnce({ exists: true, data: () => approvedPost })
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            status: "in_progress",
+            version: approvedPost.approvedAt,
+            startedAt: new Date().toISOString(),
+          }),
+        });
+      await getHandler("/syndicate-post", "post")(req, res, next);
+
+      expect(mocks.syndicate).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(202);
+      expect(res.json).toHaveBeenCalledWith({ success: true, pending: true });
     });
 
     it("records delivery failure and returns an upstream error", async () => {

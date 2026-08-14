@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import DocumentDiffViewer from "@/components/dashboard/DocumentDiffViewer";
+import { computeLineDiff } from "@/lib/diff";
 
 describe("DocumentDiffViewer", () => {
   const defaultProps = {
@@ -49,6 +50,59 @@ describe("DocumentDiffViewer", () => {
     fireEvent.click(restoreBtn);
 
     expect(onRevert).toHaveBeenCalled();
+  });
+
+  it("closes the top-layer comparison with Escape", () => {
+    const onClose = vi.fn();
+    render(<DocumentDiffViewer {...defaultProps} onClose={onClose} />);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("keeps large comparisons bounded and disables the unbounded split view", () => {
+    const largeRevision = Array.from({ length: 2_000 }, (_, index) => `old ${index}`).join("\n");
+    const largeCurrent = Array.from({ length: 2_000 }, (_, index) => `new ${index}`).join("\n");
+    render(
+      <DocumentDiffViewer
+        {...defaultProps}
+        revisionContent={largeRevision}
+        currentContent={largeCurrent}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("bounded preview");
+    expect(screen.getByRole("button", { name: /split/i })).toBeDisabled();
+  });
+
+  it("preserves shared prefixes and suffixes in a bounded large comparison", () => {
+    const original = [
+      "shared heading",
+      ...Array.from({ length: 1_100 }, (_, index) => `old ${index}`),
+      "shared footer",
+    ].join("\n");
+    const compared = [
+      "shared heading",
+      ...Array.from({ length: 1_100 }, (_, index) => `new ${index}`),
+      "shared footer",
+    ].join("\n");
+
+    const result = computeLineDiff(original, compared);
+
+    expect(result.isSimplified).toBe(true);
+    expect(result.unchangedCount).toBe(2);
+    expect(result.lines[0]).toMatchObject({
+      type: "unchanged",
+      line: "shared heading",
+      originalLineNumber: 1,
+      comparedLineNumber: 1,
+    });
+    expect(result.lines.at(-1)).toMatchObject({
+      type: "unchanged",
+      line: "shared footer",
+      originalLineNumber: 1_102,
+      comparedLineNumber: 1_102,
+    });
   });
 
   it("renders nothing when isOpen is false", () => {

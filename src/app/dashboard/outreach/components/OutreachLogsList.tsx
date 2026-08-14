@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, RefreshCw, AlertCircle, Sparkles, MapPin, Clock, Edit2, Archive, ArchiveRestore, Award } from "lucide-react";
+import { Search, RefreshCw, AlertCircle, Sparkles, MapPin, Clock, Edit2, Archive, ArchiveRestore, FileText } from "lucide-react";
 
 export interface OutreachLog {
   id: string;
@@ -78,10 +78,10 @@ export default function OutreachLogsList({
             type="button"
             onClick={onExportPortfolio}
             className="px-4 py-2 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/40 text-ares-gold ares-cut-sm text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_15px_rgba(229,168,35,0.15)] shrink-0"
-            title="Generate FIRST Award & Outreach Portfolio"
+            title="Review and export recorded outreach impact"
           >
-            <Award size={14} />
-            <span>Award Portfolio</span>
+            <FileText size={14} aria-hidden="true" />
+            <span>Impact Report</span>
           </button>
         )}
       </div>

@@ -32,6 +32,7 @@ export default function DocumentDiffViewer({
   const diff = useMemo(() => {
     return computeLineDiff(revisionContent, currentContent);
   }, [revisionContent, currentContent]);
+  const splitAvailable = !diff.isSimplified && !diff.isTruncated;
 
   if (!isOpen) return null;
 
@@ -81,9 +82,10 @@ export default function DocumentDiffViewer({
               <button
                 type="button"
                 onClick={() => setViewMode("split")}
+                disabled={!splitAvailable}
                 aria-pressed={viewMode === "split"}
                 className={`px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all ${
-                  viewMode === "split" ? "bg-white/15 text-white" : "text-marble/60 hover:text-white"
+                  viewMode === "split" ? "bg-white/15 text-white" : "text-marble/60 hover:text-white disabled:opacity-40"
                 }`}
                 title="Side by side split view"
               >
@@ -125,7 +127,7 @@ export default function DocumentDiffViewer({
 
         {/* Diff Content Body */}
         <div className="flex-1 overflow-y-auto p-4 font-mono text-xs leading-relaxed bg-obsidian">
-          {viewMode === "unified" ? (
+          {viewMode === "unified" || !splitAvailable ? (
             <div className="space-y-0.5">
               {diff.lines.map((line, idx) => {
                 const isAdded = line.type === "added";

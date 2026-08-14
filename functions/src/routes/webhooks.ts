@@ -23,10 +23,15 @@ const zulipWebhookSchema = z.object({
 const syndicatePostSchema = z.object({
   slug: z.string().trim().min(1).max(160).regex(/^[A-Za-z0-9_-]+$/),
 }).strict();
+
+export function syndicationQuotaKey(req: AuthenticatedRequest): string {
+  return req.user?.uid || "missing-verified-identity";
+}
+
 const syndicationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => (req as AuthenticatedRequest).user?.uid || "missing-verified-identity",
+  keyGenerator: syndicationQuotaKey,
   message: { error: "Too many announcement requests. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
