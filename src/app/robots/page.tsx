@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Code, Cpu, Edit2, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
+import { Code, Compass, Cpu, Edit2, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";

@@ -186,6 +186,8 @@ export default defineConfig({
         "src/app/sponsors/page.tsx",
         "src/app/robots/api.ts",
         "src/app/robots/RobotEditorModal.tsx",
+        "src/lib/autonomousRoutineData.ts",
+        "src/app/robots/autonomous/page.tsx",
       ],
       thresholds: {
         // Ratchet the measured legacy baseline while enforcing the project
