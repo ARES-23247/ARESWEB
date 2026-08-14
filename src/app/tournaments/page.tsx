@@ -407,7 +407,7 @@ export default function TournamentsFeedPage() {
                         year: "numeric",
                       })}
                     </span>
-                    {t.status === "past" && (t.opr || 0) > 0 && (
+                    {(t.opr || 0) > 0 && (
                       <span className="flex items-center gap-1 text-ares-gold">
                         <Activity size={12} />
                         OPR: {t.opr}

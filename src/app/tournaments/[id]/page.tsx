@@ -29,6 +29,7 @@ import {
   TournamentScoutingSection,
   type TournamentPhoto,
 } from "./TournamentDetailSections";
+import { TournamentAlliancePlanner } from "./TournamentAlliancePlanner";
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -395,6 +396,7 @@ export default function TournamentDetailPage() {
             )}
 
             <TournamentScoutingSection tournament={tournament} />
+            <TournamentAlliancePlanner tournament={tournament} />
             <TournamentPhotosSection
               hasAlbum={Boolean(tournament.photoAlbumId)}
               photos={photos}
