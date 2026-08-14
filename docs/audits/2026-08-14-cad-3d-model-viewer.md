@@ -22,7 +22,7 @@ In Cycle 23, ARESWEB integrated a high-performance, accessible, interactive 3D W
 
 ### B. Graceful Degradation & Zero-Failure WebGL Fallbacks
 - **Hardware Acceleration Fallback:** Detects WebGL capability on mount via `isWebGLAvailable()`. In environments where WebGL is unavailable or restricted (software rendering, low-spec mobile, headless browsers), renders a high-contrast accessible fallback banner directing users to direct Onshape CAD and STEP archives.
-- **Embedded Onshape Live CAD Viewer:** Secure optional drawer embedding live Onshape models via strict sandboxed iframes (`sandbox="allow-scripts allow-same-origin allow-popups allow-forms"`).
+- **Embedded Onshape Live CAD Viewer:** Secure optional drawer embedding live Onshape models via strict sandboxed iframes (`sandbox="allow-scripts allow-forms allow-popups allow-presentation"`).
 
 ### C. Open-Source Fabrication Downloads
 - **STEP Master Assemblies:** Provides verified direct downloads for complete robot STEP solid models (`ares-xxiv-full-assembly.step`, `ares-xxiii-full-assembly.step`).

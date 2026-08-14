@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import * as THREE from "three";
 import Cad3DViewerPage, {
   ROBOT_CAD_MODELS,
   isWebGLAvailable,
