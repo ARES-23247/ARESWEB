@@ -319,6 +319,36 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* ─── ALUMNI NETWORK & MENTORSHIP CALLOUT BANNER ─── */}
+      <section className="py-16 bg-gradient-to-b from-black/20 to-black/40 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="bg-gradient-to-r from-ares-red/10 via-white/5 to-transparent border border-white/10 p-8 md:p-12 rounded-2xl ares-cut flex flex-col lg:flex-row items-center justify-between gap-8 backdrop-blur-md">
+            <div className="space-y-4 max-w-2xl text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full ares-cut-sm">
+                <GraduationCap size={12} className="text-ares-gold" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-ares-gold font-heading">
+                  FIRST® Alumni Network &amp; Career Pathways
+                </span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white font-heading uppercase tracking-tight">
+                Connect with ARES Alumni in Frontier Engineering
+              </h2>
+              <p className="text-xs text-marble/80 leading-relaxed">
+                Our graduates represent ARES across NASA, MIT, Tesla, Lockheed Martin, and CMU Robotics. Current students can book 1-on-1 career coaching, college preparation, and robotics engineering mentorship.
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <Link
+                to="/community/alumni"
+                className="px-6 py-3.5 bg-ares-red hover:bg-ares-bronze text-white font-black uppercase tracking-widest text-xs ares-cut-sm shadow-xl shadow-ares-red/20 transition-all inline-flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                Explore Alumni Directory <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── QUICK FAQS SECTION ─── */}
       <section className="py-24 bg-black/10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
@@ -358,3 +388,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

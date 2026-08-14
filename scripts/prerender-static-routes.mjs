@@ -11,6 +11,7 @@ const defaultImage = `${baseUrl}/favicon.webp`;
 export const staticPageMetadata = [
   ["/", "Home", "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia."],
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission."],
+  ["/community/alumni", "FIRST Alumni Network & Career Mentorship", "Connect with ARES 23247 alumni at NASA, MIT, Lockheed Martin, Tesla, and CMU Robotics for student mentorship and career pathways."],
   ["/accessibility", "Accessibility & Web Standards", "Read the ARES 23247 accessibility commitment and supported ways to report a barrier."],
   ["/academy", "ARES Academy", "Explore ARES Academy robotics, mathematics, physics, and engineering lessons."],
   ["/blog", "Blog", "Read technical updates, design notes, code breakdowns, and outreach reflections from ARES 23247."],
@@ -78,3 +79,4 @@ export function prerenderStaticRoutes() {
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   prerenderStaticRoutes();
 }
+

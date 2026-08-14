@@ -55,6 +55,7 @@ export default function Footer() {
             <li><Link to="/gallery" className="hover:text-ares-gold transition-colors flex items-center gap-2">Photo Gallery</Link></li>
             <li><Link to="/videos" className="hover:text-ares-gold transition-colors flex items-center gap-2">Video Gallery</Link></li>
             <li><Link to="/blog" className="hover:text-ares-gold transition-colors flex items-center gap-2">Team Blog</Link></li>
+            <li><Link to="/community/alumni" className="hover:text-ares-gold transition-colors flex items-center gap-2">Alumni & Mentorship</Link></li>
             <li><Link to="/join" className="hover:text-ares-cyan transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">Join the Team</Link></li>
             <li><Link to="/calendar" className="hover:text-ares-gold transition-colors flex items-center gap-2">
               <Calendar aria-hidden="true" size={12} className="text-ares-gold" /> Team Calendar
@@ -193,3 +194,4 @@ export default function Footer() {
     </footer>
   );
 }
+

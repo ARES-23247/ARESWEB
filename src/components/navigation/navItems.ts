@@ -32,6 +32,7 @@ export const TEAM_LINKS: NavItemConfig[] = [
   { label: "Photo Gallery", to: "/gallery", icon: ImageIcon, iconColor: "text-ares-red" },
   { label: "Video Gallery", to: "/videos", icon: Play, iconColor: "text-ares-red" },
   { label: "Team Blog", to: "/blog", icon: BookOpen, iconColor: "text-ares-bronze" },
+  { label: "Alumni & Mentorship", to: "/community/alumni", icon: GraduationCap, iconColor: "text-ares-gold" },
   { label: "Join the Team", to: "/join", icon: Check, iconColor: "text-ares-cyan" },
   { label: "Team Calendar", to: "/calendar", icon: CalendarIcon, iconColor: "text-ares-red", dividerBefore: true },
 ];
@@ -45,3 +46,4 @@ export const RESOURCE_LINKS: NavItemConfig[] = [
   { label: "ARESLib", to: "/docs", icon: BookOpen, iconColor: "text-ares-red", isAresLib: true },
   { label: "Official Store", to: "/store", icon: ShoppingBag, iconColor: "text-ares-bronze" },
 ];
+
