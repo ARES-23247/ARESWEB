@@ -5,7 +5,8 @@ import { logger } from "./lib/logger";
 import { injectMetadata, metadataForDocument, parseDynamicRoute, renderNotFound } from "./webRendering";
 import { RUNTIME_SERVICE_ACCOUNTS } from "./functionConfig";
 
-const SHELL_URL = "https://aresfirst-portal.web.app/index.html";
+const SHELL_URL = "https://aresfirst-portal.web.app/dashboard";
+const HEALTH_PATH = "/__deployment-health/web";
 
 async function loadShell(): Promise<string> {
   // Always resolve the active Hosting release. Caching a previous release's
@@ -26,6 +27,17 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.setHeader("Allow", "GET, HEAD");
     res.status(405).send("Method not allowed");
+    return;
+  }
+
+  if (req.path === HEALTH_PATH) {
+    try {
+      await loadShell();
+      res.status(200).set("Cache-Control", "no-store").type("json").send('{"status":"healthy"}');
+    } catch (error) {
+      logger.error("web-render", "Dynamic web shell health check failed", error);
+      res.status(503).set("Cache-Control", "no-store").type("json").send('{"status":"unavailable"}');
+    }
     return;
   }
 

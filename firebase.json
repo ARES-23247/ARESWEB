@@ -171,6 +171,10 @@
           "function": "publicApi"
         },
         {
+          "source": "/__deployment-health/web",
+          "function": "web"
+        },
+        {
           "source": "/academy/playground",
           "destination": "/index.html"
         },
