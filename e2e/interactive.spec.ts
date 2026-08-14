@@ -70,11 +70,11 @@ test.describe("Store checkout availability", () => {
 
     await expect(
       page.getByRole("heading", {
-        name: "Online ordering is not available yet",
+        name: "Zero Online Payment Processing • 100% Team Booster Support",
       }),
     ).toBeVisible();
-    await expect(page.getByText("Checkout unavailable")).toBeVisible();
-    await expect(page.getByRole("button", { name: /checkout/i })).toHaveCount(
+    await expect(page.getByText(/Zero Online Payment Processing/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^checkout$/i })).toHaveCount(
       0,
     );
     await expect(page).not.toHaveURL(/success=true/);

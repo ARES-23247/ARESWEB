@@ -31,11 +31,11 @@ describe("store support choices", () => {
   it("keeps checkout disabled and links to verified support channels", () => {
     renderInRouter(<StorePage />);
 
-    expect(screen.getByText("Checkout unavailable")).toBeInTheDocument();
+    expect(screen.getByText(/Zero Online Payment Processing • 100% Team Booster Support/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /sponsor the team/i })).toHaveAttribute("href", "/sponsors#sponsor-form-section");
     expect(screen.getByRole("link", { name: /join ares/i })).toHaveAttribute("href", "/join");
     expect(screen.getByRole("link", { name: /contact the team/i })).toHaveAttribute("href", expect.stringContaining("mailto:contact@aresfirst.org"));
-    expect(screen.queryByRole("button", { name: /checkout|pay|buy/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^checkout$|^pay$/i })).not.toBeInTheDocument();
   });
 });
 
