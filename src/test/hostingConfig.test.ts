@@ -50,6 +50,25 @@ describe("Firebase Hosting crawl configuration", () => {
     });
   });
 
+  it("allows immutable caching only for query-addressed raster social cards", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[]; rewrites: HostingRewrite[] } };
+    const broadRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/!(assets){,/**}");
+    const ogRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/api/og");
+    const ogRule = config.hosting.headers[ogRuleIndex];
+
+    expect(ogRuleIndex).toBeGreaterThan(broadRuleIndex);
+    expect(ogRule.headers).toContainEqual({
+      key: "Cache-Control",
+      value: "public, max-age=86400, s-maxage=31536000, immutable",
+    });
+    expect(config.hosting.rewrites).toContainEqual({
+      source: "/api/og{,/**}",
+      function: "publicApi",
+    });
+  });
+
   it("applies a bounded public media cache policy after the broad no-store policy", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
@@ -81,6 +100,7 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(rewriteMap.get("/api/profiles{,/**}")).toBe("coreApi");
     expect(rewriteMap.get("/api/tasks{,/**}")).toBe("communicationsApi");
     expect(rewriteMap.get("/api/robots{,/**}")).toBe("publicApi");
+    expect(rewriteMap.get("/api/og{,/**}")).toBe("publicApi");
     expect(rewriteMap.get("/api/**")).toBe("publicApi");
   });
 

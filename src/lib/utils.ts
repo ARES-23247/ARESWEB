@@ -29,40 +29,33 @@ export function cleanThumbnailUrl(url?: string): string {
   if (!url) return "";
 
   let cleanedUrl = url;
-  try {
-    // Decode any percent-encoding in the URL first (e.g., %3A%2F%2F -> ://)
-    const decoded = decodeURIComponent(url);
-    
-    // Find if it has /api/media/ followed by http
-    const match = decoded.match(/\/api\/media\/(https?:\/.*)/i);
-    if (match) {
-      cleanedUrl = match[1];
-      // Normalize single slashes if they were stripped or malformed (https:/ -> https://)
-      if (cleanedUrl.startsWith("https:/") && !cleanedUrl.startsWith("https://")) {
-        cleanedUrl = cleanedUrl.replace("https:/", "https://");
-      } else if (cleanedUrl.startsWith("http:/") && !cleanedUrl.startsWith("http://")) {
-        cleanedUrl = cleanedUrl.replace("http:/", "http://");
-      }
-    } else {
-      cleanedUrl = decoded;
+  const legacyProxyMatch = url.match(/\/api\/media\/(.+)$/i);
+  if (legacyProxyMatch) {
+    cleanedUrl = legacyProxyMatch[1];
+    try {
+      // Decode only the URL nested in the retired proxy. Decoding an ordinary
+      // Firebase Storage URL changes encoded object separators (%2F) into path
+      // separators and points the browser at a different, nonexistent object.
+      cleanedUrl = decodeURIComponent(cleanedUrl);
+    } catch {
+      // Keep malformed legacy values unchanged so the browser can fail safely.
     }
-  } catch {
-    // Fallback if decodeURIComponent fails
-    const match = url.match(/\/api\/media\/(https?:\/.*)/i);
-    if (match) {
-      cleanedUrl = match[1];
-      if (cleanedUrl.startsWith("https:/") && !cleanedUrl.startsWith("https://")) {
-        cleanedUrl = cleanedUrl.replace("https:/", "https://");
-      } else if (cleanedUrl.startsWith("http:/") && !cleanedUrl.startsWith("http://")) {
-        cleanedUrl = cleanedUrl.replace("http:/", "http://");
-      }
+
+    // Normalize single slashes from the retired proxy format (https:/ -> https://).
+    if (/^https?:\/(?!\/)/i.test(cleanedUrl)) {
+      cleanedUrl = cleanedUrl.replace(/^(https?):\//i, "$1://");
     }
   }
 
   try {
     const parsed = new URL(cleanedUrl);
-    const videoId = parsed.pathname.match(/^\/vi\/([A-Za-z0-9_-]{11})(?:\/|$)/)?.[1];
-    if (videoId && /^(?:i\d?|img)\.ytimg\.com$|^img\.youtube\.com$/i.test(parsed.hostname)) {
+    const videoId = parsed.pathname.match(
+      /^\/vi\/([A-Za-z0-9_-]{11})(?:\/|$)/,
+    )?.[1];
+    if (
+      videoId &&
+      /^(?:i\d?|img)\.ytimg\.com$|^img\.youtube\.com$/i.test(parsed.hostname)
+    ) {
       return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     }
   } catch {

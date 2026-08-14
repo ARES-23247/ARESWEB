@@ -78,4 +78,29 @@ describe("RevisionHistoryTable", () => {
     fireEvent.click(buttons[1]); // Click revert for Bob's revision
     expect(mockOnRevert).toHaveBeenCalledWith(mockRevisions[1]);
   });
+
+  it("compares the saved revision content rather than its summary", () => {
+    render(
+      <RevisionHistoryTable
+        revisions={[{
+          ...mockRevisions[0],
+          content: "actual old document content",
+          description: "summary that is not document content",
+        }]}
+        isLoading={false}
+        onRevert={vi.fn()}
+        currentTitle="Current draft"
+        currentContent="actual new document content"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Diff" }));
+
+    expect(screen.getByRole("dialog", { name: /Version Comparison/i })).toHaveTextContent(
+      "actual old document content",
+    );
+    expect(screen.getByRole("dialog", { name: /Version Comparison/i })).toHaveTextContent(
+      "actual new document content",
+    );
+  });
 });

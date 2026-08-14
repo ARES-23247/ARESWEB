@@ -135,10 +135,13 @@ export default defineConfig({
       // 0% instead of disappearing when its importing test is removed.
       include: [
         "src/lib/api.ts",
+        "src/lib/diff.ts",
+        "src/lib/outreachExport.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",
         "src/components/PublicDataState.tsx",
+        "src/components/BlogThumbnailImage.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/profile/page.tsx",
         "src/app/dashboard/profile/components/*.tsx",
@@ -168,6 +171,18 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/BlogThumbnailImage.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/diff.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/outreachExport.ts": {
           lines: 85,
           functions: 100,
         },

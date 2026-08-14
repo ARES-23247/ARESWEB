@@ -266,3 +266,20 @@ select option {
   outline: 2px solid var(--ares-cyan) !important;
   outline-offset: 2px !important;
 }
+
+/* Print only the explicitly opened outreach report, not the dashboard behind it. */
+@media print {
+  body:has(.outreach-report-print) * {
+    visibility: hidden;
+  }
+
+  body:has(.outreach-report-print) .outreach-report-print,
+  body:has(.outreach-report-print) .outreach-report-print * {
+    visibility: visible;
+  }
+
+  body:has(.outreach-report-print) .outreach-report-print {
+    position: absolute;
+    inset: 0;
+  }
+}

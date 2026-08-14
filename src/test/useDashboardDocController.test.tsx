@@ -4,11 +4,14 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 
-const { deleteDocMock, restoreDocMock, saveDocMock } = vi.hoisted(() => ({
+const { authenticatedFetchMock, deleteDocMock, restoreDocMock, saveDocMock } = vi.hoisted(() => ({
+  authenticatedFetchMock: vi.fn(() => Promise.resolve(new Response(null, { status: 200 }))),
   deleteDocMock: vi.fn(() => Promise.resolve()),
   restoreDocMock: vi.fn(() => Promise.resolve()),
   saveDocMock: vi.fn(() => Promise.resolve()),
 }));
+
+vi.mock("@/lib/api", () => ({ authenticatedFetch: authenticatedFetchMock }));
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
@@ -47,6 +50,7 @@ describe("useDashboardDocController archive workflow", () => {
     vi.clearAllMocks();
     deleteDocMock.mockResolvedValue(undefined);
     restoreDocMock.mockResolvedValue(undefined);
+    authenticatedFetchMock.mockResolvedValue(new Response(null, { status: 200 }));
   });
 
   it("requests confirmation without archiving, supports cancel, then archives only after confirmation", async () => {
@@ -94,5 +98,26 @@ describe("useDashboardDocController archive workflow", () => {
     await act(async () => result.current.handleRestore("archived-guide"));
 
     expect(restoreDocMock).toHaveBeenCalledWith("archived-guide");
+  });
+
+  it("announces an approved blog by slug without trusting client-authored metadata", async () => {
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleApproveAndPublish({
+      slug: "state-finals",
+      title: "State Finals",
+      snippet: "Client-controlled summary",
+      author: "Client-controlled author",
+      category: "Tournament",
+    } as never));
+
+    expect(saveDocMock).toHaveBeenCalled();
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      "/api/webhooks/syndicate-post",
+      expect.objectContaining({ body: JSON.stringify({ slug: "state-finals" }) }),
+    );
   });
 });

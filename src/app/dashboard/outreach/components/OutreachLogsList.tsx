@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, RefreshCw, AlertCircle, Sparkles, MapPin, Clock, Edit2, Archive, ArchiveRestore } from "lucide-react";
+import { Search, RefreshCw, AlertCircle, Sparkles, MapPin, Clock, Edit2, Archive, ArchiveRestore, FileText } from "lucide-react";
 
 export interface OutreachLog {
   id: string;
@@ -28,6 +28,7 @@ interface OutreachLogsListProps {
   onArchive: (log: OutreachLog) => void;
   onRestore: (log: OutreachLog) => void;
   onFetchLogs: () => void;
+  onExportPortfolio?: () => void;
 }
 
 export default function OutreachLogsList({
@@ -43,6 +44,7 @@ export default function OutreachLogsList({
   onArchive,
   onRestore,
   onFetchLogs,
+  onExportPortfolio,
 }: OutreachLogsListProps) {
   // Filter logs based on search query
   const filteredLogs = logs.filter((log) => {
@@ -56,18 +58,32 @@ export default function OutreachLogsList({
 
   return (
     <div className="space-y-6 text-left">
-      {/* Search bar */}
-      <div className="relative w-full">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
-        <label htmlFor="outreach-search" className="sr-only">Search outreach logs</label>
-        <input
-          id="outreach-search"
-          type="text"
-          placeholder="Search outreach events by title, summary, or location..."
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
-        />
+      {/* Search and Action Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/40" size={16} />
+          <label htmlFor="outreach-search" className="sr-only">Search outreach logs</label>
+          <input
+            id="outreach-search"
+            type="text"
+            placeholder="Search outreach events by title, summary, or location..."
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            className="w-full bg-obsidian border border-white/10 ares-cut-sm pl-10 pr-4 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold"
+          />
+        </div>
+
+        {onExportPortfolio && (
+          <button
+            type="button"
+            onClick={onExportPortfolio}
+            className="px-4 py-2 bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/40 text-ares-gold ares-cut-sm text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_15px_rgba(229,168,35,0.15)] shrink-0"
+            title="Review and export recorded outreach impact"
+          >
+            <FileText size={14} aria-hidden="true" />
+            <span>Impact Report</span>
+          </button>
+        )}
       </div>
 
       {/* List display */}

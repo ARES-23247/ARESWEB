@@ -56,6 +56,16 @@ export function getCanonicalUrl(url?: string): string {
   }
 }
 
+export function getOgImageUrl(title: string, options?: { category?: string; author?: string; date?: string; theme?: "gold" | "cyan" | "red" }): string {
+  const params = new URLSearchParams();
+  params.set("title", title.trim().slice(0, 100) || "ARES 23247 Robotics");
+  if (options?.category) params.set("category", options.category.trim().slice(0, 30));
+  if (options?.author) params.set("author", options.author.trim().slice(0, 40));
+  if (options?.date) params.set("date", options.date.trim().slice(0, 30));
+  if (options?.theme) params.set("theme", options.theme);
+  return `${siteConfig.urls.base}/api/og?${params.toString()}`;
+}
+
 function compactObject<T extends Record<string, unknown>>(value: T): T {
   return Object.fromEntries(
     Object.entries(value).filter(([, item]) => item !== undefined && item !== "")

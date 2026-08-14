@@ -11,6 +11,7 @@ import { db } from "@/lib/firebaseFirestore";
 import PendingVolunteerEvents, { TeamEvent } from "./components/PendingVolunteerEvents";
 import OutreachLogsList, { OutreachLog } from "./components/OutreachLogsList";
 import OutreachForm from "./components/OutreachForm";
+import OutreachPortfolioExportModal from "./components/OutreachPortfolioExportModal";
 
 interface OperationStatus {
   kind: "success" | "error" | "info";
@@ -63,6 +64,7 @@ export default function OutreachManagerPage() {
   const [error, setError] = useState("");
   const [operationStatus, setOperationStatus] = useState<OperationStatus | null>(null);
   const [archiveConfirmationId, setArchiveConfirmationId] = useState<string | null>(null);
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
 
   // Search and Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -426,6 +428,7 @@ export default function OutreachManagerPage() {
             onArchive={handleArchiveLog}
             onRestore={handleRestoreLog}
             onFetchLogs={fetchLogs}
+            onExportPortfolio={() => setIsPortfolioModalOpen(true)}
           />
 
         </div>
@@ -457,6 +460,13 @@ export default function OutreachManagerPage() {
         </div>
 
       </div>
+
+      {/* FIRST Award & Outreach Portfolio Export Modal */}
+      <OutreachPortfolioExportModal
+        isOpen={isPortfolioModalOpen}
+        onClose={() => setIsPortfolioModalOpen(false)}
+        logs={logs}
+      />
     </div>
   );
 }

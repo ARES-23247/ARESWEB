@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
+import { GitCompare } from "lucide-react";
+import DocumentDiffViewer from "./dashboard/DocumentDiffViewer";
 
 export interface GenericRevision {
   id: string;
@@ -7,6 +9,7 @@ export interface GenericRevision {
   editedByAvatar?: string;
   status?: string;
   title?: string;
+  content?: string;
   description?: string;
   details?: string;
   snippet?: string;
@@ -16,13 +19,19 @@ interface RevisionHistoryTableProps<T extends GenericRevision> {
   revisions: T[];
   isLoading: boolean;
   onRevert: (revision: T) => void;
+  currentTitle?: string;
+  currentContent?: string;
 }
 
 export default function RevisionHistoryTable<T extends GenericRevision>({
   revisions,
   isLoading,
   onRevert,
+  currentTitle = "Current Document",
+  currentContent = "",
 }: RevisionHistoryTableProps<T>) {
+  const [selectedDiffRev, setSelectedDiffRev] = useState<T | null>(null);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-2">
@@ -49,6 +58,7 @@ export default function RevisionHistoryTable<T extends GenericRevision>({
             ? avatar
             : `https://api.dicebear.com/7.x/bottts/svg?seed=${avatar}`
           : `https://api.dicebear.com/7.x/bottts/svg?seed=${rev.editedByName}`;
+        const revisionContent = rev.content || rev.details || rev.description || rev.snippet || "";
 
         return (
           <div
@@ -83,7 +93,7 @@ export default function RevisionHistoryTable<T extends GenericRevision>({
               </div>
             </div>
 
-            <div className="flex items-center gap-4 w-full md:w-auto justify-end shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-end shrink-0">
               {rev.status && (
                 <span
                   className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded ${
@@ -94,6 +104,17 @@ export default function RevisionHistoryTable<T extends GenericRevision>({
                 >
                   {rev.status}
                 </span>
+              )}
+              {(currentContent || revisionContent) && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDiffRev(rev)}
+                  className="px-2.5 py-1 bg-white/5 border border-white/15 text-marble/80 hover:text-ares-cyan hover:border-ares-cyan/50 hover:bg-ares-cyan/10 transition-colors font-bold text-[10px] uppercase ares-cut-sm cursor-pointer flex items-center gap-1"
+                  title="Compare differences with current version"
+                >
+                  <GitCompare size={11} aria-hidden="true" />
+                  <span>Diff</span>
+                </button>
               )}
               <button
                 type="button"
@@ -106,6 +127,21 @@ export default function RevisionHistoryTable<T extends GenericRevision>({
           </div>
         );
       })}
+
+      {/* Version Diff Viewer Modal */}
+      {selectedDiffRev && (
+        <DocumentDiffViewer
+          isOpen={Boolean(selectedDiffRev)}
+          onClose={() => setSelectedDiffRev(null)}
+          currentTitle={currentTitle}
+          currentContent={currentContent}
+          revisionTitle={selectedDiffRev.title}
+          revisionContent={selectedDiffRev.content || selectedDiffRev.details || selectedDiffRev.description || selectedDiffRev.snippet || ""}
+          revisionAuthor={selectedDiffRev.editedByName}
+          revisionTimestamp={selectedDiffRev.timestamp}
+          onRevert={() => onRevert(selectedDiffRev)}
+        />
+      )}
     </div>
   );
 }

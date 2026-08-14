@@ -131,6 +131,20 @@ export function useDashboardDocController(
       approvedAt: new Date().toISOString()
     };
     await saveDoc(slug, finalPayload, userNickname, userAvatar);
+
+    if (collectionName === "posts") {
+      try {
+        const { authenticatedFetch } = await import("@/lib/api");
+        const response = await authenticatedFetch("/api/webhooks/syndicate-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}: announcement delivery failed`);
+      } catch (err) {
+        logger.warn("Social syndication background notification skipped or failed:", err);
+      }
+    }
   };
 
   const handleDelete = async (slug: string) => {

@@ -32,6 +32,15 @@ describe("dynamic web rendering", () => {
       canonicalUrl: "https://aresfirst.org/blog/build-update",
       type: "article",
     });
+    expect(metadataForDocument(blog, {
+      status: "published",
+      isDeleted: 0,
+      title: "No Thumbnail",
+      author: "CircuitFox",
+      date: "2026-08-14",
+    })?.image).toBe(
+      "https://aresfirst.org/api/og?title=No+Thumbnail&category=Blog&author=CircuitFox&date=2026-08-14",
+    );
     expect(metadataForDocument(blog, { status: "draft", isDeleted: 0 })).toBeNull();
     expect(metadataForDocument(blog, { status: "published", isDeleted: 1 })).toBeNull();
     expect(metadataForDocument(blog, { status: "published", searchIndexable: false })).toBeNull();

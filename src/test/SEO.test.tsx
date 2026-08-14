@@ -4,6 +4,7 @@ import { HelmetProvider } from "react-helmet-async";
 import SEO, {
   createAdditionalSchema,
   getCanonicalUrl,
+  getOgImageUrl,
   ORGANIZATION_SCHEMA
 } from "@/components/SEO";
 import EducationalCredentialSchema from "@/components/EducationalCredentialSchema";
@@ -191,5 +192,23 @@ describe("SEO", () => {
 describe("getCanonicalUrl", () => {
   it("falls back to the official site when the input cannot be parsed", () => {
     expect(getCanonicalUrl("http://[invalid")).toBe("https://aresfirst.org/");
+  });
+});
+
+describe("getOgImageUrl", () => {
+  it("bounds dynamic card query values before constructing a public URL", () => {
+    const url = new URL(getOgImageUrl(`  ${"x".repeat(150)}  `, {
+      category: "c".repeat(60),
+      author: "a".repeat(80),
+      date: "d".repeat(60),
+      theme: "gold",
+    }));
+
+    expect(url.origin + url.pathname).toBe("https://aresfirst.org/api/og");
+    expect(url.searchParams.get("title")).toHaveLength(100);
+    expect(url.searchParams.get("category")).toHaveLength(30);
+    expect(url.searchParams.get("author")).toHaveLength(40);
+    expect(url.searchParams.get("date")).toHaveLength(30);
+    expect(url.searchParams.get("theme")).toBe("gold");
   });
 });
