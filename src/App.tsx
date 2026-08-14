@@ -34,6 +34,7 @@ const FinanceLedgerPage = lazy(() => import("@/app/finance/page"));
 const GalleryPage = lazy(() => import("@/app/gallery/page"));
 const VideosPage = lazy(() => import("@/app/videos/page"));
 const JoinPage = lazy(() => import("@/app/join/page"));
+const JoinApplyWizardPage = lazy(() => import("@/app/join/apply/page"));
 const LeaderboardPage = lazy(() => import("@/app/leaderboard/page"));
 const LocationMorgantownPage = lazy(() => import("@/app/location-morgantown/page"));
 const OutreachPage = lazy(() => import("@/app/outreach/page"));
@@ -121,6 +122,7 @@ export default function App() {
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/videos" element={<VideosPage />} />
                   <Route path="/join" element={<JoinPage />} />
+                  <Route path="/join/apply" element={<JoinApplyWizardPage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
                   <Route path="/outreach" element={<OutreachPage />} />

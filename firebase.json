@@ -255,6 +255,10 @@
           "destination": "/prerender/join.html"
         },
         {
+          "source": "/join/apply",
+          "destination": "/prerender/join-apply.html"
+        },
+        {
           "source": "/leaderboard",
           "destination": "/prerender/leaderboard.html"
         },
