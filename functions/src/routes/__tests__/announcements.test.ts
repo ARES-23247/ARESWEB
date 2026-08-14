@@ -4,14 +4,23 @@ const mocks = vi.hoisted(() => ({
   settingsGet: vi.fn(),
   batchSet: vi.fn(),
   batchCommit: vi.fn(),
+  middlewareOrder: [] as string[],
+  rateLimiter: vi.fn(
+    (_req: unknown, _res: unknown, next: (error?: unknown) => void) => {
+      mocks.middlewareOrder.push("rate-limit");
+      next();
+    },
+  ),
   ensureAdmin: vi.fn(
     (req: { user?: { uid: string } }, _res: unknown, next: (error?: unknown) => void) => {
+      mocks.middlewareOrder.push("auth");
       req.user = { uid: "admin-1" };
       next();
     },
   ),
 }));
 
+vi.mock("express-rate-limit", () => ({ default: () => mocks.rateLimiter }));
 vi.mock("../../middleware/auth", () => ({ ensureAdmin: mocks.ensureAdmin }));
 vi.mock("../../lib/firebase-admin", () => {
   const settingsRef = { get: mocks.settingsGet };
@@ -97,6 +106,7 @@ const activeDocument = {
 describe("site announcement routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.middlewareOrder.length = 0;
     mocks.batchCommit.mockResolvedValue(undefined);
     mocks.settingsGet.mockResolvedValue({ exists: true, data: () => activeDocument });
   });
@@ -151,6 +161,8 @@ describe("site announcement routes", () => {
     const { req, res } = await invoke("/admin", "get");
 
     expect(mocks.ensureAdmin).toHaveBeenCalledTimes(1);
+    expect(mocks.rateLimiter).toHaveBeenCalledTimes(1);
+    expect(mocks.middlewareOrder).toEqual(["auth", "rate-limit"]);
     expect(req.user).toEqual({ uid: "admin-1" });
     expect(res.headers.get("Cache-Control")).toBe("private, no-store");
     expect(res.payload).toEqual({
@@ -176,6 +188,8 @@ describe("site announcement routes", () => {
     });
 
     expect(mocks.ensureAdmin).toHaveBeenCalledTimes(1);
+    expect(mocks.rateLimiter).toHaveBeenCalledTimes(1);
+    expect(mocks.middlewareOrder).toEqual(["auth", "rate-limit"]);
     expect(mocks.batchSet).toHaveBeenCalledTimes(2);
     expect(mocks.batchSet.mock.calls[0][1]).toEqual(
       expect.objectContaining({
@@ -226,6 +240,8 @@ describe("site announcement routes", () => {
   it("disables an existing announcement atomically", async () => {
     const { res } = await invoke("/admin", "delete");
 
+    expect(mocks.rateLimiter).toHaveBeenCalledTimes(1);
+    expect(mocks.middlewareOrder).toEqual(["auth", "rate-limit"]);
     expect(mocks.batchSet).toHaveBeenCalledTimes(2);
     expect(mocks.batchSet.mock.calls[0][1]).toEqual(
       expect.objectContaining({ isActive: false, revision: expect.any(String) }),

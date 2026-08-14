@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
@@ -10,6 +11,13 @@ import { validate } from "../middleware/validation";
 const router = express.Router();
 const SETTINGS_DOCUMENT = "siteAnnouncement";
 const SEVERITIES = ["info", "important", "urgent"] as const;
+const adminAnnouncementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { error: "Too many announcement requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const internalPathSchema = z
   .string()
@@ -146,6 +154,7 @@ router.get(
 router.get(
   "/admin",
   ensureAdmin,
+  adminAnnouncementLimiter,
   asyncHandler(async (_req, res) => {
     res.set("Cache-Control", "private, no-store");
     const snapshot = await adminDb.collection("settings").doc(SETTINGS_DOCUMENT).get();
@@ -172,6 +181,7 @@ router.get(
 router.put(
   "/admin",
   ensureAdmin,
+  adminAnnouncementLimiter,
   validate(announcementWriteSchema),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const input = req.body as AnnouncementWrite;
@@ -220,6 +230,7 @@ router.put(
 router.delete(
   "/admin",
   ensureAdmin,
+  adminAnnouncementLimiter,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const announcementRef = adminDb.collection("settings").doc(SETTINGS_DOCUMENT);
     const snapshot = await announcementRef.get();
