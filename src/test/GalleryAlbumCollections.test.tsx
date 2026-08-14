@@ -3,10 +3,6 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import GalleryPage from "../app/gallery/page";
 import {
-  ALBUM_CATEGORIES,
-  GALLERY_ALBUMS,
-  GALLERY_PHOTOS,
-  GALLERY_SEASONS,
   getCuratedAlbums,
   getCuratedPhotos,
   isSafePublicTag,
@@ -22,7 +18,6 @@ import {
   mergeApiPhotosWithCurated,
   ZERO_PII_DISCLAIMER,
   type GalleryPhoto,
-  type GalleryAlbum,
 } from "@/lib/galleryData";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
@@ -401,3 +396,4 @@ describe("GalleryAlbumCollections & Interactive Lightbox Suite", () => {
     expect(screen.getByText(/All media tagged exclusively by robot subsystems/i)).toBeInTheDocument();
   });
 });
+

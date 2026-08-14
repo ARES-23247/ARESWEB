@@ -27,7 +27,6 @@ import {
   ALBUM_CATEGORIES,
   GALLERY_SEASONS,
   type AlbumCategory,
-  type GalleryAlbum,
   type GalleryPhoto,
   getCuratedAlbums,
   mergeApiPhotosWithCurated,
@@ -898,3 +897,4 @@ export default function GalleryPage() {
     </div>
   );
 }
+
