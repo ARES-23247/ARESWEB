@@ -31,6 +31,8 @@ $javaHomes += Get-ChildItem -Path "$env:ProgramFiles\Java\jdk-*" -Directory -Err
     Select-Object -ExpandProperty FullName
 $javaHomes += Get-ChildItem -Path "$env:ProgramFiles\Eclipse Adoptium\jdk-*" -Directory -ErrorAction SilentlyContinue |
     Select-Object -ExpandProperty FullName
+$javaHomes += Get-ChildItem -Path "$env:ProgramFiles\Microsoft\jdk-*" -Directory -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty FullName
 
 $supportedJavaHome = $null
 foreach ($javaHome in ($javaHomes | Select-Object -Unique)) {
@@ -38,8 +40,16 @@ foreach ($javaHome in ($javaHomes | Select-Object -Unique)) {
     if (-not (Test-Path -LiteralPath $javaExecutable)) {
         continue
     }
-    $javaOutput = (& $javaExecutable -version 2>&1 | Out-String)
-    if ($javaOutput -match 'version "(\d+)' -and [int]$Matches[1] -ge 21) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $javaOutput = (& $javaExecutable -version 2>&1 | Out-String)
+        $javaExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($javaExitCode -eq 0 -and $javaOutput -match 'version "(\d+)' -and [int]$Matches[1] -ge 21) {
         $supportedJavaHome = $javaHome
         break
     }
@@ -52,7 +62,13 @@ if (-not $supportedJavaHome) {
 $env:JAVA_HOME = $supportedJavaHome
 $env:PATH = "$(Join-Path $supportedJavaHome 'bin');$env:PATH"
 
-Write-Host "Using Node $resolvedNode, pnpm $resolvedPnpm, Java $((& java -version 2>&1 | Select-Object -First 1))."
+$javaVersionLine = if ($javaOutput -match '(?m)(?:openjdk|java) version "[^"]+"') {
+    $Matches[0]
+}
+else {
+    'version 21 or newer'
+}
+Write-Host "Using Node $resolvedNode, pnpm $resolvedPnpm, Java $javaVersionLine."
 
 if ($Command.Count -gt 0) {
     $commandName = $Command[0]

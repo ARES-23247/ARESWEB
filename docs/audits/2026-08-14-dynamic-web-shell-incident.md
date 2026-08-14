@@ -82,6 +82,20 @@
   must pass protected CI and the same 12-check live contract before this
   incident is considered resolved.
 
-Protected CI, deployment, and live acceptance checks remain required. This
-report documents a bounded incident and remediation; it is not a claim that
-all public rendering failure modes are eliminated.
+## Resolution
+
+- Final release: `1b452b2db975309da97685d0997f6d8b12fdaa4b`.
+- Protected CI passed lint, TypeScript, frontend and Functions coverage, rules,
+  production build, bundle budgets, Functions build, and 52 Playwright tests.
+- The protected deployment passed its 12-check canonical health contract,
+  including the new dynamic web-shell dependency check.
+- Independent exact-release verification repeated all 12 checks successfully.
+- Direct requests returned HTTP 200 with route-specific raw metadata for
+  `/blog/our-old-website` and `/academy/climbing-anchor-angles`; a missing event
+  continued to return HTTP 404.
+- An in-app browser hard reload rendered the complete published blog article
+  with the correct title and content. The incident is resolved for the tested
+  routes and release.
+
+This report documents a bounded incident and verified remediation; it is not a
+claim that all public rendering failure modes are eliminated.
