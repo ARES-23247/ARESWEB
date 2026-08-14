@@ -15,6 +15,7 @@ export const staticPageMetadata = [
   ["/academy", "ARES Academy", "Explore ARES Academy robotics, mathematics, physics, and engineering lessons."],
   ["/blog", "Blog", "Read technical updates, design notes, code breakdowns, and outreach reflections from ARES 23247."],
   ["/calendar", "Team Calendar", "See published ARES 23247 practices, competitions, outreach programs, and team events."],
+  ["/calculator", "FTC Match Scoring Calculator & Strategy Planner", "Calculate match scores, simulate strategy scenarios, and analyze INTO THE DEEP scoring for FIRST Tech Challenge."],
   ["/developer-api", "API Reference", "A limited reference for supported ARESWEB public endpoints.", true],
   ["/docs", "ARESLib Documentation", "Read ARESLib documentation, control-loop guides, and robotics API references."],
   ["/finance", "Financial Transparency Ledger", "Review public financial accountability information for ARES 23247."],
