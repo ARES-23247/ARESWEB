@@ -147,4 +147,33 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(mockSet).not.toHaveBeenCalled();
     });
   });
+
+  describe("POST /api/webhooks/syndicate-post", () => {
+    it("successfully syndicates post to Discord and Zulip", async () => {
+      req.body = {
+        slug: "state-finals-2026",
+        title: "State Finals Victory",
+        snippet: "We won the state tournament!",
+        category: "Tournament",
+      };
+
+      await getHandler("/syndicate-post", "post")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+      }));
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("rejects request if slug or title is missing", async () => {
+      req.body = { slug: "" };
+
+      await getHandler("/syndicate-post", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({
+        status: 400,
+        message: "Missing required post slug or title.",
+      }));
+    });
+  });
 });

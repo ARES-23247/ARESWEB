@@ -106,6 +106,10 @@
           "function": "publicApi"
         },
         {
+          "source": "/api/og{,/**}",
+          "function": "publicApi"
+        },
+        {
           "source": "/api/sitemap.xml",
           "function": "publicApi"
         },

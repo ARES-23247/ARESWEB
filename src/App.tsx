@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import SEO from "@/components/SEO";
 
 // Create TanStack Query Client
@@ -99,6 +100,7 @@ export default function App() {
           <AnalyticsTracker />
           <AuthProvider>
             <LayoutWrapper>
+              <OfflineIndicator />
               <ErrorBoundary>
                 <Suspense fallback={<AppLoading />}>
                 <Routes>

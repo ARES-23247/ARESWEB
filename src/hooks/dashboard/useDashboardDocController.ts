@@ -131,6 +131,27 @@ export function useDashboardDocController(
       approvedAt: new Date().toISOString()
     };
     await saveDoc(slug, finalPayload, userNickname, userAvatar);
+
+    if (collectionName === "posts") {
+      try {
+        const untypedDoc = docItem as unknown as Record<string, unknown>;
+        const { authenticatedFetch } = await import("@/lib/api");
+        await authenticatedFetch("/api/webhooks/syndicate-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug,
+            title: typeof untypedDoc.title === "string" ? untypedDoc.title : "New Post",
+            snippet: typeof untypedDoc.snippet === "string" ? untypedDoc.snippet : undefined,
+            category: typeof untypedDoc.category === "string" ? untypedDoc.category : undefined,
+            thumbnail: typeof untypedDoc.thumbnail === "string" ? untypedDoc.thumbnail : undefined,
+            author: userNickname || "ARES Member",
+          }),
+        });
+      } catch (err) {
+        logger.warn("Social syndication background notification skipped or failed:", err);
+      }
+    }
   };
 
   const handleDelete = async (slug: string) => {

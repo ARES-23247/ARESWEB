@@ -5,6 +5,8 @@ import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { ensureTeamMember } from "../middleware/auth";
+import { syndicatePublishedPost } from "../lib/socialSyndication";
 
 const router = express.Router();
 const zulipWebhookSchema = z.object({
@@ -86,6 +88,23 @@ router.post("/zulip", asyncHandler(async (req, res) => {
 
   logger.info("webhooks", "Synced a verified Zulip comment to its task");
   res.json({ content: "" });
+}));
+
+// POST /api/webhooks/syndicate-post
+router.post("/syndicate-post", ensureTeamMember, asyncHandler(async (req, res) => {
+  const { slug, title, snippet, category, thumbnail, author } = req.body || {};
+  if (typeof slug !== "string" || !slug.trim() || typeof title !== "string" || !title.trim()) {
+    throw new ApiError(400, "Missing required post slug or title.");
+  }
+  const result = await syndicatePublishedPost({
+    slug: slug.trim(),
+    title: title.trim(),
+    snippet: typeof snippet === "string" ? snippet.trim() : undefined,
+    category: typeof category === "string" ? category.trim() : undefined,
+    thumbnail: typeof thumbnail === "string" ? thumbnail.trim() : undefined,
+    author: typeof author === "string" ? author.trim() : "ARES Member",
+  });
+  res.json({ success: true, syndication: result });
 }));
 
 export default router;
