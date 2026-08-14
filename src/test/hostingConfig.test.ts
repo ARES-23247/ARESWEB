@@ -14,6 +14,23 @@ interface HostingRewrite {
 }
 
 describe("Firebase Hosting crawl configuration", () => {
+  it("keeps the raw and prerendered homepage identified as the ARES team", () => {
+    const indexHtml = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+    const prerenderSource = readFileSync(
+      resolve(process.cwd(), "scripts/prerender-static-routes.mjs"),
+      "utf8",
+    );
+
+    expect(indexHtml).toContain("<title>ARES 23247 | Morgantown Robotics Team</title>");
+    expect(indexHtml).toContain(
+      "<h1>ARES 23247 | Appalachian Robotics &amp; Engineering Society</h1>",
+    );
+    expect(indexHtml).not.toContain("<title>ARES Analytics</title>");
+    expect(prerenderSource).toContain(
+      '? "ARES 23247 | Morgantown Robotics Team"',
+    );
+  });
+
   it("does not allow inline executable scripts", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),

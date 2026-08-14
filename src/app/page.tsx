@@ -13,16 +13,27 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
-      <SEO exactTitle title="ARES Analytics" description="ARES Analytics is the local-first desktop application from ARES 23247 for FTC and FRC robot project authoring, simulation, telemetry, match-log analysis, and evidence-based tuning." />
+      <SEO
+        exactTitle
+        title="ARES 23247 | Morgantown Robotics Team"
+        description="ARES 23247 is the Appalachian Robotics & Engineering Society, a FIRST® Tech Challenge team building robots, technical leaders, and STEM opportunities in Morgantown, West Virginia."
+      />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-obsidian">
         {/* Motif Background Isolated Layer */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none isolate" aria-hidden="true">
           <div
-            className="absolute right-[-10%] top-[10%] w-[85%] h-[85%] opacity-[0.05] bg-contain bg-center bg-no-repeat rotate-12"
-            style={{ backgroundImage: "url('/favicon.svg')" }}
+            data-testid="hero-watermark"
+            className="absolute -right-[12%] top-[4%] h-[92%] w-[88%] rotate-12 bg-contain bg-center bg-no-repeat opacity-[0.05]"
+            style={{
+              backgroundImage: "url('/favicon.svg')",
+              WebkitMaskImage:
+                "radial-gradient(ellipse 72% 68% at 58% 50%, black 0%, rgba(0, 0, 0, 0.85) 48%, transparent 82%)",
+              maskImage:
+                "radial-gradient(ellipse 72% 68% at 58% 50%, black 0%, rgba(0, 0, 0, 0.85) 48%, transparent 82%)",
+            }}
           ></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/95 to-obsidian/35"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-12 pb-16 flex flex-col items-start text-left">
@@ -37,12 +48,12 @@ export default function Home() {
                 Appalachian Robotics & Engineering Society
               </p>
               <h1 className="text-[3.5rem] md:text-[6rem] lg:text-[7.5rem] font-bold text-white leading-[0.85] uppercase font-heading relative z-10 w-full">
-                ARES Analytics
+                <span className="sr-only">ARES 23247 — </span>
+                <span className="block mb-2 text-white">Engineered</span>
+                <span className="bg-ares-red px-4 sm:px-6 py-2 pb-3 mt-2 inline-block whitespace-nowrap ares-cut-sm shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] text-white font-bold">
+                  To Inspire
+                </span>
               </h1>
-              <p className="mt-6 max-w-3xl text-xl md:text-2xl font-semibold leading-relaxed text-marble/90">
-                Local-first robot mission control for FTC and FRC project authoring, simulation,
-                telemetry, match-log analysis, and evidence-based tuning.
-              </p>
             </div>
           </div>
 
@@ -106,7 +117,11 @@ export default function Home() {
       </section>
 
       {/* ─── ARES ANALYTICS PUBLIC PRODUCT IDENTITY ─── */}
-      <section aria-labelledby="ares-analytics-heading" className="py-20 bg-white/5 border-y border-white/10">
+      <section
+        aria-labelledby="ares-analytics-heading"
+        aria-label="ARES Analytics"
+        className="py-20 bg-white/5 border-y border-white/10"
+      >
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
           <div>
             <p className="text-ares-gold font-bold uppercase tracking-[0.25em] text-xs font-heading mb-3">
