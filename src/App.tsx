@@ -22,6 +22,7 @@ const queryClient = new QueryClient({
 // Lazy-load public pages for optimal bundle splitting
 const Home = lazy(() => import("@/app/page"));
 const AboutPage = lazy(() => import("@/app/about/page"));
+const AwardsPage = lazy(() => import("@/app/awards/page"));
 const AcademyPage = lazy(() => import("@/app/academy/page"));
 const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page"));
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
@@ -106,6 +107,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<AboutPage />} />
+                  <Route path="/awards" element={<AwardsPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
                   <Route path="/academy/playground" element={<AcademyPlaygroundPage />} />
                   <Route path="/academy/:slug" element={<AcademyPage />} />

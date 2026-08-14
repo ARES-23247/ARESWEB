@@ -4,7 +4,7 @@ import { logger } from "@/utils/logger";
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
+import { Trophy, History, MapPin, Cpu, ExternalLink, Award as AwardIcon, ChevronRight } from "lucide-react";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
@@ -244,9 +244,17 @@ export default function SeasonsPage() {
       {/* Trophy Case Section */}
       <section className="py-32 px-6 relative z-10 bg-obsidian">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-16">
-            <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Digital Trophy Case</h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-16">
+            <div className="flex items-center gap-4 flex-1">
+              <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Digital Trophy Case</h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent hidden md:block" />
+            </div>
+            <Link
+              to="/awards"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-ares-gold/20 hover:bg-ares-gold text-ares-gold hover:text-black font-bold text-xs uppercase tracking-widest ares-cut-sm border border-ares-gold/40 transition-all self-start md:self-auto shadow-md"
+            >
+              <AwardIcon size={14} /> Full Interactive Honors & Citations <ChevronRight size={14} />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

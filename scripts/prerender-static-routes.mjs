@@ -12,6 +12,7 @@ export const staticPageMetadata = [
   ["/", "Home", "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia."],
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission."],
   ["/accessibility", "Accessibility & Web Standards", "Read the ARES 23247 accessibility commitment and supported ways to report a barrier."],
+  ["/awards", "Team Awards & Honors", "Explore official FIRST® Tech Challenge awards, official judge citations, championship banners, and honors won by ARES 23247."],
   ["/academy", "ARES Academy", "Explore ARES Academy robotics, mathematics, physics, and engineering lessons."],
   ["/blog", "Blog", "Read technical updates, design notes, code breakdowns, and outreach reflections from ARES 23247."],
   ["/calendar", "Team Calendar", "See published ARES 23247 practices, competitions, outreach programs, and team events."],

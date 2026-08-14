@@ -51,6 +51,7 @@ export default function Footer() {
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
             <li><Link to="/about" className="hover:text-ares-gold transition-colors flex items-center gap-2">Who We Are</Link></li>
             <li><Link to="/seasons" className="hover:text-ares-gold transition-colors flex items-center gap-2">Seasons & Legacy</Link></li>
+            <li><Link to="/awards" className="hover:text-ares-gold transition-colors flex items-center gap-2">Awards & Honors</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-gold transition-colors flex items-center gap-2">Outreach & Impact</Link></li>
             <li><Link to="/gallery" className="hover:text-ares-gold transition-colors flex items-center gap-2">Photo Gallery</Link></li>
             <li><Link to="/videos" className="hover:text-ares-gold transition-colors flex items-center gap-2">Video Gallery</Link></li>

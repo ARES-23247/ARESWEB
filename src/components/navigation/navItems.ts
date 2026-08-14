@@ -1,6 +1,7 @@
 import { 
   Users,
   Trophy,
+  Award,
   Sparkles,
   Image as ImageIcon,
   Play,
@@ -28,6 +29,7 @@ export interface NavItemConfig {
 export const TEAM_LINKS: NavItemConfig[] = [
   { label: "Who We Are", to: "/about", icon: Users, iconColor: "text-ares-cyan" },
   { label: "Seasons & Legacy", to: "/seasons", icon: Trophy, iconColor: "text-ares-gold" },
+  { label: "Awards & Honors", to: "/awards", icon: Award, iconColor: "text-ares-gold" },
   { label: "Outreach & Impact", to: "/outreach", icon: Sparkles, iconColor: "text-ares-red" },
   { label: "Photo Gallery", to: "/gallery", icon: ImageIcon, iconColor: "text-ares-red" },
   { label: "Video Gallery", to: "/videos", icon: Play, iconColor: "text-ares-red" },
