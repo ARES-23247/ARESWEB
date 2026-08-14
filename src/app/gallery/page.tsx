@@ -138,6 +138,21 @@ export default function GalleryPage() {
     setSelectedPhoto(filteredPhotos[nextIndex]);
   }, [filteredPhotos, selectedPhoto]);
 
+  useEffect(() => {
+    if (!selectedPhoto) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        selectAdjacentPhoto(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        selectAdjacentPhoto(1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPhoto, selectAdjacentPhoto]);
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-obsidian text-marble">
       <SEO title="Photo Gallery" description="Browse published ARES 23247 build, competition, and outreach photos with verified archive metadata." />
@@ -276,7 +291,14 @@ export default function GalleryPage() {
               <>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <span className="rounded bg-ares-red px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white">{selectedPhoto.category}</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="rounded bg-ares-red px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white">{selectedPhoto.category}</span>
+                      {filteredPhotos.length > 1 && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-marble/60">
+                          {filteredPhotos.findIndex((p) => p.key === selectedPhoto.key) + 1} of {filteredPhotos.length}
+                        </span>
+                      )}
+                    </div>
                     <Dialog.Title className="mt-3 font-heading text-2xl font-black uppercase text-white">{selectedPhoto.title ?? "Title not provided"}</Dialog.Title>
                     <Dialog.Description className="mt-2 text-sm text-marble/75">{selectedPhoto.description ?? "Description not provided"}</Dialog.Description>
                   </div>
