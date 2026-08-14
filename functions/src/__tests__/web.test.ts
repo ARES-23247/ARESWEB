@@ -40,7 +40,7 @@ describe("dynamic web function", () => {
     });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
-      text: async () => '<html><head><title>Old</title><meta name="description" content="old"><meta property="og:title" content="old"><meta property="og:description" content="old"><meta property="og:type" content="website"></head><body><div id="root"></div></body></html>',
+      text: async () => '<html><head><title>Old</title><meta name="description" content="old"><meta property="og:title" content="old"><meta property="og:description" content="old"><meta property="og:type" content="website"></head><body><div id="root"><main>Crawl fallback</main></div><script type="module" src="/assets/index-release.js"></script></body></html>',
     }));
     const response = responseDouble();
 
@@ -60,7 +60,7 @@ describe("dynamic web function", () => {
   it("exercises the active app shell through a data-independent health route", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
-      text: async () => '<html><head></head><body><div id="root"></div></body></html>',
+      text: async () => '<html><head></head><body><div class="app" id="root"><main>Crawl fallback</main></div><script type="module" src="/assets/index-release.js"></script></body></html>',
     }));
     const response = responseDouble();
 

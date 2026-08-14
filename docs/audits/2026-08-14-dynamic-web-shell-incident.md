@@ -20,9 +20,12 @@
   loaded shell could still work, which made the outage easy to miss.
 - Root cause: the renderer fetched
   `https://aresfirst-portal.web.app/index.html`. Firebase Hosting clean-URL
-  behavior resolved that request to the prerendered home page, which correctly
-  failed the renderer's application-shell validation because it did not
+  behavior resolved that request to the prerendered home page, and the
+  application-shell validator rejected it because it did not
   contain `<div id="root"></div>`.
+
+  That empty-root requirement was obsolete: the current app shell intentionally
+  includes crawlable fallback content inside its root container.
 
 ## Remediation
 
@@ -36,6 +39,9 @@
   pass it before deployment is declared healthy.
 - Protect the shell URL and Hosting rewrite with Functions and frontend
   regression tests.
+- Validate the shell structurally by requiring the root container, the built
+  client entry script, and a complete head rather than requiring obsolete
+  whitespace and empty-content formatting.
 
 ## Acceptance criteria
 
@@ -64,6 +70,17 @@
 - Playwright: 52 end-to-end tests passed.
 - Production dependency audit: no known high-severity vulnerabilities.
 - Deployment contract: 8 Functions / 12 health checks validated.
+
+## Deployment follow-up
+
+- Release `73e401a95b8db05a659cfcc72ffd77f0f8e165ca` deployed the first
+  remediation, but the newly added health check correctly failed with HTTP 503.
+- The deployed `/dashboard` response was a valid built application document
+  containing a non-empty root fallback and a hashed client entry script. Cloud
+  Run logs confirmed the obsolete exact empty-root check was the rejection.
+- The structural validation change and its production-shaped regression fixture
+  must pass protected CI and the same 12-check live contract before this
+  incident is considered resolved.
 
 Protected CI, deployment, and live acceptance checks remain required. This
 report documents a bounded incident and remediation; it is not a claim that

@@ -7,6 +7,9 @@ import { RUNTIME_SERVICE_ACCOUNTS } from "./functionConfig";
 
 const SHELL_URL = "https://aresfirst-portal.web.app/dashboard";
 const HEALTH_PATH = "/__deployment-health/web";
+const ROOT_CONTAINER_PATTERN = /<div\b[^>]*\bid=(?:"root"|'root')[^>]*>/i;
+const CLIENT_ENTRY_PATTERN =
+  /<script\b[^>]*\bsrc=(?:"\/assets\/index-[^"]+\.js"|'\/assets\/index-[^']+\.js')[^>]*>/i;
 
 async function loadShell(): Promise<string> {
   // Always resolve the active Hosting release. Caching a previous release's
@@ -17,7 +20,7 @@ async function loadShell(): Promise<string> {
   });
   if (!response.ok) throw new Error(`Hosting shell returned HTTP ${response.status}`);
   const html = await response.text();
-  if (!html.includes('<div id="root"></div>') || !html.includes("</head>")) {
+  if (!ROOT_CONTAINER_PATTERN.test(html) || !CLIENT_ENTRY_PATTERN.test(html) || !html.includes("</head>")) {
     throw new Error("Hosting shell is not a valid application document");
   }
   return html;
