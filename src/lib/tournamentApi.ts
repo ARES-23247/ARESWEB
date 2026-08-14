@@ -4,6 +4,7 @@ import type {
   TournamentMatch,
   TournamentMatchesResponse,
   TournamentMatchResponse,
+  TournamentMatchUpdateInput,
   TournamentMatchWriteInput,
   TournamentResponse,
   TournamentsResponse,
@@ -32,11 +33,12 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     let payload: ErrorPayload = {};
     try {
-      payload = await response.json() as ErrorPayload;
+      payload = (await response.json()) as ErrorPayload;
     } catch {
       // Status and statusText still provide an actionable diagnostic.
     }
-    const serverMessage = typeof payload.error === "string" ? payload.error : undefined;
+    const serverMessage =
+      typeof payload.error === "string" ? payload.error : undefined;
     const code = typeof payload.code === "string" ? payload.code : undefined;
     throw new TournamentApiError(
       response.status,
@@ -45,7 +47,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       `HTTP ${response.status}: ${response.statusText || "Request failed"}${serverMessage ? ` — ${serverMessage}` : ""}`,
     );
   }
-  return await response.json() as T;
+  return (await response.json()) as T;
 }
 
 function jsonRequest(method: "POST" | "PUT", body: unknown): RequestInit {
@@ -62,16 +64,25 @@ function tournamentPath(tournamentId: string, suffix = ""): string {
 
 export async function fetchTournaments(limit = 50): Promise<Tournament[]> {
   const safeLimit = Math.min(100, Math.max(1, Math.trunc(limit)));
-  const payload = await requestJson<TournamentsResponse>(`/api/tournaments?limit=${safeLimit}`);
+  const payload = await requestJson<TournamentsResponse>(
+    `/api/tournaments?limit=${safeLimit}`,
+  );
   return payload.tournaments;
 }
 
-export async function fetchTournament(tournamentId: string): Promise<Tournament> {
-  const payload = await requestJson<TournamentResponse>(tournamentPath(tournamentId));
+export async function fetchTournament(
+  tournamentId: string,
+): Promise<Tournament> {
+  const payload = await requestJson<TournamentResponse>(
+    tournamentPath(tournamentId),
+  );
   return payload.tournament;
 }
 
-export async function fetchTournamentMatches(tournamentId: string, limit = 250): Promise<TournamentMatch[]> {
+export async function fetchTournamentMatches(
+  tournamentId: string,
+  limit = 250,
+): Promise<TournamentMatch[]> {
   const safeLimit = Math.min(250, Math.max(1, Math.trunc(limit)));
   const payload = await requestJson<TournamentMatchesResponse>(
     tournamentPath(tournamentId, `/matches?limit=${safeLimit}`),
@@ -79,8 +90,13 @@ export async function fetchTournamentMatches(tournamentId: string, limit = 250):
   return payload.matches;
 }
 
-export async function createTournament(input: TournamentWriteInput): Promise<Tournament> {
-  const payload = await requestJson<TournamentResponse>("/api/tournaments", jsonRequest("POST", input));
+export async function createTournament(
+  input: TournamentWriteInput,
+): Promise<Tournament> {
+  const payload = await requestJson<TournamentResponse>(
+    "/api/tournaments",
+    jsonRequest("POST", input),
+  );
   return payload.tournament;
 }
 
@@ -96,7 +112,9 @@ export async function updateTournament(
 }
 
 export async function archiveTournament(tournamentId: string): Promise<void> {
-  await requestJson<{ success: true }>(tournamentPath(tournamentId), { method: "DELETE" });
+  await requestJson<{ success: true }>(tournamentPath(tournamentId), {
+    method: "DELETE",
+  });
 }
 
 export async function createTournamentMatch(
@@ -113,7 +131,7 @@ export async function createTournamentMatch(
 export async function updateTournamentMatch(
   tournamentId: string,
   matchId: string,
-  input: Partial<TournamentMatchWriteInput>,
+  input: TournamentMatchUpdateInput,
 ): Promise<TournamentMatch> {
   const payload = await requestJson<TournamentMatchResponse>(
     tournamentPath(tournamentId, `/matches/${encodeURIComponent(matchId)}`),
@@ -128,13 +146,19 @@ export async function setTournamentMatchCompletion(
   completed: boolean,
 ): Promise<TournamentMatch> {
   const payload = await requestJson<TournamentMatchResponse>(
-    tournamentPath(tournamentId, `/matches/${encodeURIComponent(matchId)}/completion`),
+    tournamentPath(
+      tournamentId,
+      `/matches/${encodeURIComponent(matchId)}/completion`,
+    ),
     jsonRequest("PUT", { completed }),
   );
   return payload.match;
 }
 
-export async function archiveTournamentMatch(tournamentId: string, matchId: string): Promise<void> {
+export async function archiveTournamentMatch(
+  tournamentId: string,
+  matchId: string,
+): Promise<void> {
   await requestJson<{ success: true }>(
     tournamentPath(tournamentId, `/matches/${encodeURIComponent(matchId)}`),
     { method: "DELETE" },

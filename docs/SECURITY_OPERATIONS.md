@@ -113,6 +113,11 @@ The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
 GitHub, or Zulip secrets.
 
+`cleanupOldInquiries` runs daily and must throw when its Firestore work fails.
+The function uses a bounded three-attempt retry policy; never catch and convert
+a failed retention run into a successful invocation, because that suppresses
+Cloud Functions failure telemetry and leaves stale inquiry PII undiscoverable.
+
 Every deployed workload also uses a dedicated runtime service account. The
 service-account email is part of `infra/gcp/production-deployment.json` and the
 post-deployment drift check fails if a Function falls back to another identity.

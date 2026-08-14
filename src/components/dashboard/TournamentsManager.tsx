@@ -5,19 +5,34 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, ShieldAlert, Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { Tournament } from "@/types/tournament";
-import { archiveTournament, createTournament, fetchTournaments, updateTournament } from "@/lib/tournamentApi";
-import { TournamentForm, type TournamentFormSubmission } from "./tournaments/TournamentForm";
+import {
+  archiveTournament,
+  createTournament,
+  fetchTournaments,
+  updateTournament,
+} from "@/lib/tournamentApi";
+import {
+  TournamentForm,
+  type TournamentFormSubmission,
+} from "./tournaments/TournamentForm";
 import { TournamentList } from "./tournaments/TournamentList";
 
 export default function TournamentsManager() {
   const queryClient = useQueryClient();
   const { user, authorizedUser, loading: authLoading } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
+  const [editingTournament, setEditingTournament] = useState<Tournament | null>(
+    null,
+  );
   const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
 
   const isAuthorized = useMemo(
-    () => Boolean(user && authorizedUser && ["admin", "coach"].includes(authorizedUser.role)),
+    () =>
+      Boolean(
+        user &&
+        authorizedUser &&
+        ["admin", "coach"].includes(authorizedUser.role),
+      ),
     [user, authorizedUser],
   );
 
@@ -43,17 +58,23 @@ export default function TournamentsManager() {
     mutationFn: async ({ id, ...submission }: TournamentFormSubmission) => {
       const input = {
         name: submission.name,
+        seasonName: submission.seasonName || undefined,
+        challengeName: submission.challengeName || undefined,
         date: submission.date,
         location: submission.location,
         description: submission.description ?? undefined,
         status: submission.status,
         opr: submission.opr ?? 0,
         photoAlbumId: submission.photoAlbumId || undefined,
-        scoutingDetails: submission.scoutingDetails ? {
-          autoPathNotes: submission.scoutingDetails.autoPathNotes ?? undefined,
-          driverFeedback: submission.scoutingDetails.driverFeedback ?? undefined,
-          robotSpecs: submission.scoutingDetails.robotSpecs ?? undefined,
-        } : undefined,
+        scoutingDetails: submission.scoutingDetails
+          ? {
+              autoPathNotes:
+                submission.scoutingDetails.autoPathNotes ?? undefined,
+              driverFeedback:
+                submission.scoutingDetails.driverFeedback ?? undefined,
+              robotSpecs: submission.scoutingDetails.robotSpecs ?? undefined,
+            }
+          : undefined,
         oprList: submission.oprList ?? [],
       };
       return id ? updateTournament(id, input) : createTournament(input);
@@ -89,7 +110,9 @@ export default function TournamentsManager() {
     return (
       <div className="flex flex-col justify-center items-center py-20 text-marble/55">
         <div className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
-        <span className="text-xs uppercase tracking-widest font-black">Loading administrative states...</span>
+        <span className="text-xs uppercase tracking-widest font-black">
+          Loading administrative states...
+        </span>
       </div>
     );
   }
@@ -97,9 +120,17 @@ export default function TournamentsManager() {
   if (!isAuthorized) {
     return (
       <div className="p-8 bg-ares-red/5 border border-ares-red/20 rounded-2xl flex flex-col items-center justify-center text-center max-w-md mx-auto my-12">
-        <ShieldAlert className="text-ares-gold w-12 h-12 mb-4 animate-pulse" aria-hidden="true" />
-        <h2 className="text-lg font-bold text-white uppercase mb-2">Unauthorized Terminal Access</h2>
-        <p className="text-xs text-marble/60 leading-relaxed">Tournament publishing and match changes require an administrator or coach account.</p>
+        <ShieldAlert
+          className="text-ares-gold w-12 h-12 mb-4 animate-pulse"
+          aria-hidden="true"
+        />
+        <h2 className="text-lg font-bold text-white uppercase mb-2">
+          Unauthorized Terminal Access
+        </h2>
+        <p className="text-xs text-marble/60 leading-relaxed">
+          Tournament publishing and match changes require an administrator or
+          coach account.
+        </p>
       </div>
     );
   }
@@ -112,11 +143,17 @@ export default function TournamentsManager() {
             <Trophy className="text-ares-gold" size={22} aria-hidden="true" />
             Tournaments Log Manager
           </h2>
-          <p className="text-xs text-marble/60 mt-1">Add, update, or soft-delete active tournaments and OPR leaderboards.</p>
+          <p className="text-xs text-marble/60 mt-1">
+            Add, update, or soft-delete active tournaments and OPR leaderboards.
+          </p>
         </div>
 
         {!isFormOpen && (
-          <button type="button" onClick={openCreateForm} className="clipped-button bg-ares-red border border-ares-bronze/40 text-white font-black text-xs tracking-wider uppercase inline-flex items-center gap-2 py-2.5 px-6 self-start cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan">
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="clipped-button bg-ares-red border border-ares-bronze/40 text-white font-black text-xs tracking-wider uppercase inline-flex items-center gap-2 py-2.5 px-6 self-start cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
             <Plus size={14} aria-hidden="true" /> Add Tournament
           </button>
         )}
