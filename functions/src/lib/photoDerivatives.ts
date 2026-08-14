@@ -64,8 +64,10 @@ interface StorageBucket {
 
 function safeHttpsUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/api/photos/")) return trimmed;
   try {
-    const url = new URL(value);
+    const url = new URL(trimmed);
     return url.protocol === "https:" ? url.toString() : null;
   } catch {
     return null;
