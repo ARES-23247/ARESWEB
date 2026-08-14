@@ -3,7 +3,7 @@
 import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, onSnapshot, getCountFromServer, query, where, limit } from "firebase/firestore";
+import { and, collection, onSnapshot, getCountFromServer, or, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { maskEmail } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 
 import { TaskItem } from "@/types/task";
+import { normalizeTaskRecord, selectPriorityTasks } from "./tasks/taskRecord";
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();
@@ -37,61 +38,58 @@ export default function DashboardHome() {
   const [blogCount, setBlogCount] = useState(0);
   const [docCount, setDocCount] = useState(0);
   const [recentTasks, setRecentTasks] = useState<TaskItem[]>([]);
-  const [isDbConnected, setIsDbConnected] = useState(false);
+  const [databaseState, setDatabaseState] = useState<"connecting" | "connected" | "error">("connecting");
 
   const userRole = authorizedUser?.role || "Pending Verification";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
+  const canUseAi = userRole === "admin" || userRole === "coach";
 
-  // Fetch counts once on mount and subscribe to recent tasks (limited to 10)
+  // Fetch content counts once and keep the bounded task summary synchronized.
   useEffect(() => {
     if (import.meta.env.MODE === "e2e") return;
 
     const fetchCounts = async () => {
       try {
-        const [tasksSnap, activeTasksSnap, blogsSnap, docsSnap] = await Promise.all([
-          getCountFromServer(collection(db, "tasks")),
-          getCountFromServer(query(collection(db, "tasks"), where("status", "!=", "completed"))),
-          getCountFromServer(collection(db, "posts")),
-          getCountFromServer(query(collection(db, "docs"), where("isDeleted", "==", 0)))
+        const [blogsSnap, docsSnap] = await Promise.all([
+          getCountFromServer(query(
+            collection(db, "posts"),
+            where("status", "==", "published"),
+            where("isDeleted", "==", 0)
+          )),
+          getCountFromServer(query(
+            collection(db, "docs"),
+            and(
+              where("status", "==", "published"),
+              where("isDeleted", "==", 0),
+              or(where("displayInMathCorner", "==", 1), where("displayInScienceCorner", "==", 1))
+            )
+          ))
         ]);
 
-        setTaskCount(tasksSnap.data().count);
-        setActiveTasks(activeTasksSnap.data().count);
         setBlogCount(blogsSnap.data().count);
         setDocCount(docsSnap.data().count);
-        setIsDbConnected(true);
+        setDatabaseState("connected");
       } catch (err) {
         logger.error("Error fetching dashboard counts:", err);
+        setDatabaseState("error");
       }
     };
 
     fetchCounts();
 
     try {
-      const qTasks = query(
-        collection(db, "tasks"),
-        where("archived", "==", false),
-        where("status", "!=", "completed"),
-        limit(10)
-      );
+      const qTasks = query(collection(db, "tasks"), limit(500));
       const unsubTasks = onSnapshot(qTasks, (snapshot) => {
-        setIsDbConnected(true);
-        if (!snapshot.empty) {
-          // Get top 4 active tasks sorted by priority (high first)
-          const list = snapshot.docs
-            .map(d => ({ id: d.id, ...d.data() } as TaskItem))
-            .filter(t => !t.archived && t.status !== "completed")
-            .sort((a, b) => {
-              const priorityWeight = { high: 3, medium: 2, low: 1 };
-              return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
-            })
-            .slice(0, 4);
-          setRecentTasks(list);
-        } else {
-          setRecentTasks([]);
-        }
+        setDatabaseState("connected");
+        const visibleTasks = snapshot.docs
+          .map(d => normalizeTaskRecord(d.id, d.data()))
+          .filter(task => task.isDeleted !== 1);
+        setTaskCount(visibleTasks.length);
+        setActiveTasks(visibleTasks.filter(task => !task.archived && task.status !== "completed").length);
+        setRecentTasks(selectPriorityTasks(visibleTasks));
       }, (err) => {
         logger.error("Tasks listener error:", err);
+        setDatabaseState("error");
       });
 
       return () => {
@@ -278,7 +276,7 @@ export default function DashboardHome() {
           {/* Active Tasks Feed */}
           <div className="glass-card p-6 border border-white/10 flex-grow flex flex-col">
             <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
-              <ClipboardList size={16} /> Urgent Operational Tasks
+              <ClipboardList size={16} /> Priority Operational Tasks
             </h3>
             
             <div className="space-y-3.5 flex-1">
@@ -374,20 +372,25 @@ export default function DashboardHome() {
           {/* Connected Services Status */}
           <div className="glass-card p-6 border border-white/10">
             <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
-              <Terminal size={16} /> Portal Infrastructure Status
+              <Terminal size={16} /> Portal Service Configuration
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <Database size={14} className="text-ares-cyan" />
-                  <span className="font-semibold text-marble">Firestore Database</span>
+                  <span className="font-semibold text-marble">Firestore Synchronization</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {isDbConnected ? (
+                  {databaseState === "connected" ? (
                     <>
                       <CheckCircle2 size={12} className="text-ares-success" />
                       <span className="text-ares-success">Connected</span>
+                    </>
+                  ) : databaseState === "error" ? (
+                    <>
+                      <XCircle size={12} className="text-ares-danger" />
+                      <span className="text-ares-danger">Unavailable</span>
                     </>
                   ) : (
                     <>
@@ -404,15 +407,15 @@ export default function DashboardHome() {
                   <span className="font-semibold text-marble">Gemini AI Copilot</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {!isUnverified ? (
+                  {canUseAi ? (
                     <>
                       <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Online</span>
+                      <span className="text-ares-success">Role eligible</span>
                     </>
                   ) : (
                     <>
                       <XCircle size={12} className="text-marble/40" />
-                      <span className="text-marble/40">Gated</span>
+                      <span className="text-marble/40">Role restricted</span>
                     </>
                   )}
                 </div>
@@ -427,12 +430,12 @@ export default function DashboardHome() {
                   {recaptchaActive ? (
                     <>
                       <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Active V3</span>
+                      <span className="text-ares-success">Configured</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle size={12} className="text-ares-gold animate-pulse" />
-                      <span className="text-ares-gold">Bypass Mode</span>
+                      <span className="text-ares-gold">Not configured</span>
                     </>
                   )}
                 </div>
@@ -441,18 +444,18 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <UploadCloud size={14} className="text-ares-success" />
-                  <span className="font-semibold text-marble">Cloud Storage Node</span>
+                  <span className="font-semibold text-marble">Authenticated Session</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
                   {user ? (
                     <>
                       <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Online</span>
+                      <span className="text-ares-success">Signed in</span>
                     </>
                   ) : (
                     <>
                       <XCircle size={12} className="text-ares-danger" />
-                      <span className="text-ares-danger">Offline</span>
+                      <span className="text-ares-danger">Signed out</span>
                     </>
                   )}
                 </div>

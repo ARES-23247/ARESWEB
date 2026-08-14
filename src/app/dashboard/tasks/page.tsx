@@ -15,6 +15,7 @@ import { PublicDataState } from "@/components/PublicDataState";
 import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
 import { describeTaskError, TaskOperationError } from "./taskErrors";
 import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask } from "./taskSubtasks";
+import { normalizeTaskRecord } from "./taskRecord";
 
 const MOCK_TASKS: TaskItem[] = [
   {
@@ -143,23 +144,7 @@ export default function KanbanPage() {
             setLoadError(null);
             return;
           }
-          const list = snapshot.docs.map((docSnap) => {
-            const data = docSnap.data();
-            return {
-              id: docSnap.id,
-              title: data.title || "Untitled Task",
-              description: data.description || "",
-              status: data.status || "todo",
-              priority: data.priority || "medium",
-              subteam: data.subteam || "software",
-              assignees: data.assignees || [],
-              subtasks: data.subtasks || [],
-              archived: data.archived || false,
-              isDeleted: data.isDeleted === 1 ? 1 : 0,
-              createdAt: data.createdAt || new Date().toISOString(),
-              commentsCount: data.commentsCount || (data.comments?.length || 0)
-            } as TaskItem;
-          });
+          const list = snapshot.docs.map((docSnap) => normalizeTaskRecord(docSnap.id, docSnap.data()));
           setTasks(list.filter((task) => task.isDeleted !== 1));
           setIsLive(true);
           setLoadError(null);
