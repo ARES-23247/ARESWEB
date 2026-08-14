@@ -89,6 +89,7 @@ export function registerProfileRosterRoutes(router: Router): void {
               data.email,
             ]),
             bio: data.bio || "",
+            funFact: typeof data.funFact === "string" && data.funFact.trim() ? data.funFact.trim() : "",
             colleges: isStudent ? [] : data.colleges || [],
             contactEmail: data.contactEmail || "",
           };
@@ -104,6 +105,7 @@ export function registerProfileRosterRoutes(router: Router): void {
         memberType: member.memberType,
         avatar: member.avatar,
         bio: member.bio,
+        funFact: member.funFact,
         colleges: member.colleges,
       }));
       res.json({ members });

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen, RefreshCw } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
@@ -25,14 +25,14 @@ const FILTER_SECTIONS = [
   { type: "student", label: "Students", icon: <Cpu size={12} /> },
   { type: "mentor", label: "Mentors", icon: <BookOpen size={12} /> },
   { type: "coach", label: "Coaches", icon: <Award size={12} /> },
-  { type: "alumni", label: "Alumni", icon: <GraduationCap size={12} /> }
+  { type: "alumni", label: "Alumni", icon: <GraduationCap size={12} /> },
 ];
 
 const MEMBER_TYPE_ORDER: Record<string, number> = {
   coach: 0,
   mentor: 1,
   student: 2,
-  alumni: 3
+  alumni: 3,
 };
 
 const PUBLIC_MEMBER_TYPES = ["student", "alumni", "mentor", "coach"] as const;
@@ -127,13 +127,14 @@ export default function AboutPage() {
     void fetchRoster();
   }, [fetchRoster]);
 
-  const filteredMembers = activeFilter === "all" 
-    ? roster 
-    : roster.filter(m => m.memberType === activeFilter);
+  const filteredMembers = activeFilter === "all"
+    ? roster
+    : roster.filter((m) => m.memberType === activeFilter);
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
       <SEO title="About Us" description="Meet the students, coaches, mentors, and alumni of ARES 23247. Learn about our mission to bring robotics and STEM education to Morgantown and West Virginia." />
+      
       {/* ─── HERO ─── */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />
@@ -212,7 +213,7 @@ export default function AboutPage() {
             <fieldset className="mt-8">
               <legend className="sr-only">Filter the public team roster</legend>
               <div className="flex flex-wrap justify-center gap-2">
-                {FILTER_SECTIONS.map(tab => (
+                {FILTER_SECTIONS.map((tab) => (
                   <button
                     key={tab.type}
                     type="button"
@@ -264,57 +265,65 @@ export default function AboutPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
-              {filteredMembers.map(member => (
+              {filteredMembers.map((member) => (
                 <div
                   key={member.key}
                   className="bg-white/5 border border-white/10 hero-card p-6 flex flex-col justify-between hover:border-ares-red/30 transition-all duration-300 group backdrop-blur-sm shadow-md"
                 >
                   <div className="flex flex-col items-center text-center">
-                  {/* PII Nickname compliance & avatar stack */}
-                  <div className="w-16 h-16 rounded-2xl bg-black/45 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform flex items-center justify-center relative shrink-0 shadow-inner">
-                    {member.avatar ? (
-                      <img src={member.avatar} alt={`${member.nickname}'s approved avatar`} loading="lazy" decoding="async" className="w-full h-full object-contain" />
-                    ) : (
-                      <Users aria-label="Approved avatar not provided" role="img" className="h-8 w-8 text-marble/75" />
+                    {/* PII Nickname compliance & avatar stack */}
+                    <div className="w-16 h-16 rounded-2xl bg-black/45 border border-white/10 overflow-hidden p-2 group-hover:scale-105 transition-transform flex items-center justify-center relative shrink-0 shadow-inner">
+                      {member.avatar ? (
+                        <img src={member.avatar} alt={`${member.nickname}'s approved avatar`} loading="lazy" decoding="async" className="w-full h-full object-contain" />
+                      ) : (
+                        <Users aria-label="Approved avatar not provided" role="img" className="h-8 w-8 text-marble/75" />
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-white mt-4 group-hover:text-ares-gold transition-colors font-heading leading-tight">
+                      {member.nickname}
+                    </h3>
+                    <span className="mt-1.5 inline-block rounded-full bg-white/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-ares-gold border border-white/5">
+                      {member.memberType}
+                    </span>
+                    {member.pronouns && (
+                      <span className="text-[10px] text-marble/70 mt-1 font-mono font-medium block">
+                        ({member.pronouns})
+                      </span>
+                    )}
+                    <p className="text-xs text-marble/70 mt-3 leading-relaxed font-medium">
+                      {member.bio ?? "Bio not provided"}
+                    </p>
+                    {member.funFact && (
+                      <p className="mt-2 text-[11px] text-ares-bronze italic leading-snug">
+                        &ldquo;{member.funFact}&rdquo;
+                      </p>
                     )}
                   </div>
-                  <h3 className="text-base font-bold text-white mt-4 group-hover:text-ares-gold transition-colors font-heading leading-tight">
-                    {member.nickname}
-                  </h3>
-                  {member.pronouns && (
-                    <span className="text-[10px] text-marble/70 mt-1 font-mono font-medium block">
-                      ({member.pronouns})
-                    </span>
-                  )}
-                  <p className="text-xs text-marble/70 mt-3 leading-relaxed font-medium">
-                    {member.bio ?? "Bio not provided"}
-                  </p>
-                </div>
 
-                <div className="mt-6 pt-4 border-t border-white/5">
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    {member.subteams.map(subteam => (
-                      <span
-                        key={subteam}
-                        className="px-2 py-0.5 bg-ares-red text-white border border-ares-red text-[8px] font-black uppercase tracking-widest rounded-md"
-                      >
-                        {subteam}
-                      </span>
-                    ))}
-                  </div>
-
-                  {member.memberType === "alumni" && member.colleges && member.colleges.length > 0 && (
-                    <div className="flex items-center justify-center gap-1.5 mt-3 text-[9px] font-mono text-ares-gold uppercase font-bold">
-                      <GraduationCap size={12} /> {member.colleges[0].split(".")[0]}
+                  <div className="mt-6 pt-4 border-t border-white/5">
+                    <div className="flex flex-wrap gap-1.5 justify-center">
+                      {member.subteams.map((subteam) => (
+                        <span
+                          key={subteam}
+                          className="px-2 py-0.5 bg-ares-red text-white border border-ares-red text-[8px] font-black uppercase tracking-widest rounded-md"
+                        >
+                          {subteam}
+                        </span>
+                      ))}
                     </div>
-                  )}
+
+                    {member.memberType === "alumni" && member.colleges && member.colleges.length > 0 && (
+                      <div className="flex items-center justify-center gap-1.5 mt-3 text-[9px] font-mono text-ares-gold uppercase font-bold">
+                        <GraduationCap size={12} /> {member.colleges[0].split(".")[0]}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* ─── QUICK FAQS SECTION ─── */}
       <section className="py-24 bg-black/10 border-t border-white/5">
@@ -335,8 +344,8 @@ export default function AboutPage() {
               { q: "Geographic Limits?", a: "We accept FLL and FTC students from Monongalia, Harrison, and SW Pennsylvania who can drive to our Morgantown labs." },
               { q: "Costs to Participate?", a: "None. All parts, entry fees, hotel travel, and tools are funded by our amazing corporate sponsors and partners." },
               { q: "The Build Season?", a: "Games reveal in September. We construct prototypes in fall, build code in winter, and compete from January through May." },
-              { q: "Time Commitments?", a: "One major unified laboratory session each weekend, with optional weekday build slots for hardware developers." }
-            ].map(faq => (
+              { q: "Time Commitments?", a: "One major unified laboratory session each weekend, with optional weekday build slots for hardware developers." },
+            ].map((faq) => (
               <div
                 key={faq.q}
                 className="bg-white/5 border border-white/10 p-8 rounded-2xl hero-card hover:border-ares-red/20 transition-colors group"
