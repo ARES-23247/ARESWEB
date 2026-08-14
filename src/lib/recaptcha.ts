@@ -14,7 +14,8 @@ function isLocalDevelopmentHost(): boolean {
 }
 
 function configuredSiteKey(): string {
-  return import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || (import.meta.env.DEV ? DEVELOPMENT_SITE_KEY : "");
+  const isNonProduction = import.meta.env.DEV || import.meta.env.MODE === "e2e" || import.meta.env.MODE === "test";
+  return import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || (isNonProduction ? DEVELOPMENT_SITE_KEY : "");
 }
 
 function loadRecaptcha(siteKey: string): Promise<NonNullable<Window["grecaptcha"]>> {
@@ -66,7 +67,7 @@ export async function getRecaptchaToken(options: RecaptchaTokenOptions = {}): Pr
     throw new Error("Security verification is available only in the browser.");
   }
 
-  const isNonProductionTestMode = import.meta.env.DEV || import.meta.env.MODE === "e2e";
+  const isNonProductionTestMode = import.meta.env.DEV || import.meta.env.MODE === "e2e" || import.meta.env.MODE === "test";
   const allowDevelopmentBypass = options.allowDevelopmentBypass !== false &&
     isNonProductionTestMode &&
     (isLocalDevelopmentHost() || window.ARES_E2E_BYPASS === true);
