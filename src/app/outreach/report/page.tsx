@@ -156,19 +156,18 @@ export default function OutreachReportPage() {
 
   const filteredLogs = useMemo(() => {
     return stats.activeLogs.filter((log) => {
+      const title = (log.title ?? "").toLowerCase();
+      const loc = (log.location ?? "").toLowerCase();
+      const summ = (log.impactSummary ?? "").toLowerCase();
+
       if (selectedCategory !== "all") {
-        const titleLower = log.title.toLowerCase();
-        const summaryLower = log.impactSummary.toLowerCase();
         const catLower = selectedCategory.toLowerCase();
-        if (!titleLower.includes(catLower) && !summaryLower.includes(catLower)) {
+        if (!title.includes(catLower) && !summ.includes(catLower)) {
           return false;
         }
       }
       if (searchQuery.trim().length > 0) {
         const q = searchQuery.toLowerCase();
-        const title = log.title.toLowerCase();
-        const loc = log.location.toLowerCase();
-        const summ = log.impactSummary.toLowerCase();
         return title.includes(q) || loc.includes(q) || summ.includes(q);
       }
       return true;
@@ -220,7 +219,7 @@ export default function OutreachReportPage() {
             <button
               type="button"
               onClick={handleDownloadCsv}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-black uppercase tracking-widest ares-cut-sm transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-black uppercase tracking-widest ares-cut-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               <Download size={14} aria-hidden="true" />
               Export CSV
@@ -228,9 +227,9 @@ export default function OutreachReportPage() {
 
             <button
               type="button"
-              onClick={() => loadLogs(true)}
+              onClick={() => void loadLogs(true)}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded bg-white/5 hover:bg-white/10 text-marble/80 text-xs font-bold uppercase tracking-wider transition-all"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded bg-white/5 hover:bg-white/10 text-marble/80 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} aria-hidden="true" />
               Refresh
@@ -239,7 +238,7 @@ export default function OutreachReportPage() {
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-ares-gold hover:bg-ares-gold/90 text-black text-xs font-black uppercase tracking-widest ares-cut-sm shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-ares-gold hover:bg-ares-gold/90 text-black text-xs font-black uppercase tracking-widest ares-cut-sm shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               <Printer size={16} aria-hidden="true" />
               Print / Save as PDF
@@ -394,6 +393,11 @@ export default function OutreachReportPage() {
               </div>
             </div>
           </div>
+          {error && (
+            <p className="text-[11px] text-marble/60 mt-2 italic print:hidden">
+              Note: Offline archived records displayed ({error}).
+            </p>
+          )}
         </section>
 
         {/* Detailed Outreach Service Chronicle */}
@@ -421,9 +425,9 @@ export default function OutreachReportPage() {
           )}
 
           <div className="space-y-4">
-            {filteredLogs.map((log) => (
+            {filteredLogs.map((log, idx) => (
               <article
-                key={log.id}
+                key={log.id ?? `log-row-${idx}`}
                 className="p-5 rounded-xl bg-white/5 border border-white/10 space-y-3 break-inside-avoid print:border-gray-300 print:bg-white"
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -433,29 +437,29 @@ export default function OutreachReportPage() {
                   <div className="flex items-center gap-3 text-[10px] font-mono text-marble/60 print:text-gray-600">
                     <span className="flex items-center gap-1">
                       <Calendar size={12} className="text-ares-gold print:text-amber-800" aria-hidden="true" />
-                      {log.date}
+                      {log.date ?? "Undated"}
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin size={12} className="text-ares-red print:text-red-700" aria-hidden="true" />
-                      {log.location}
+                      {log.location ?? "Morgantown, WV"}
                     </span>
                   </div>
                 </div>
 
                 <p className="text-xs text-marble/85 print:text-gray-800 leading-relaxed">
-                  {log.impactSummary}
+                  {log.impactSummary || "No event summary recorded."}
                 </p>
 
                 <div className="pt-2 border-t border-white/5 flex flex-wrap gap-4 text-[11px] print:border-black/10">
                   <div className="flex items-center gap-1.5">
                     <Clock size={13} className="text-ares-cyan print:text-cyan-800" aria-hidden="true" />
-                    <span className="font-bold text-white print:text-black">{log.hours}</span>
+                    <span className="font-bold text-white print:text-black">{log.hours ?? 0}</span>
                     <span className="text-marble/60 print:text-gray-600">Service Hours</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
                     <Users size={13} className="text-ares-gold print:text-amber-800" aria-hidden="true" />
-                    <span className="font-bold text-white print:text-black">{log.peopleReached.toLocaleString()}</span>
+                    <span className="font-bold text-white print:text-black">{(log.peopleReached ?? 0).toLocaleString()}</span>
                     <span className="text-marble/60 print:text-gray-600">People Reached</span>
                   </div>
                 </div>
@@ -479,7 +483,7 @@ export default function OutreachReportPage() {
             <button
               type="button"
               onClick={handleDownloadCsv}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-ares-gold hover:bg-ares-gold/90 text-black text-xs font-black uppercase tracking-widest ares-cut-sm shadow-sharp-sm print:hidden shrink-0"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-ares-gold hover:bg-ares-gold/90 text-black text-xs font-black uppercase tracking-widest ares-cut-sm shadow-sharp-sm print:hidden shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               <Download size={14} aria-hidden="true" />
               Download CSV

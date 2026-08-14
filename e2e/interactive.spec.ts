@@ -230,3 +230,29 @@ test.describe("Markdown Editor & Blog Post Creator E2E tests", () => {
     ).toHaveValue(summary);
   });
 });
+
+test.describe("Sponsorship Packet and Community Outreach Reports E2E tests", () => {
+  test("renders printable sponsorship deck and updates calculated tier with pledge slider", async ({
+    page,
+  }) => {
+    await page.goto("/sponsors/packet");
+    await expect(page.getByRole("heading", { level: 1, name: /Sponsorship/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/501\(c\)\(3\)/i).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Print \/ Save as PDF/i })).toBeVisible();
+
+    const slider = page.getByLabel("Sponsorship pledge amount");
+    await expect(slider).toBeVisible();
+    await slider.fill("1000");
+    await expect(page.getByText(/Unlocked Benefits for \$1,000/i)).toBeVisible();
+  });
+
+  test("renders outreach impact report with stats, chronicle, and formula-safe CSV export button", async ({
+    page,
+  }) => {
+    await page.goto("/outreach/report");
+    await expect(page.getByRole("heading", { level: 1, name: /Outreach/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: /Export CSV/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Print \/ Save as PDF/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verified Service Chronicle" })).toBeVisible();
+  });
+});

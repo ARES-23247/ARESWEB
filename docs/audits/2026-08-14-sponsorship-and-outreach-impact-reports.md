@@ -1,57 +1,82 @@
-# Comprehensive Engineering Audit: Printable Sponsorship Packet & Community Outreach Impact Reports
+# Architecture & Security Audit: Printable Sponsorship Packet & Community Outreach Impact Report Generator
 
 **Date:** August 14, 2026  
-**Cycle:** Cycle 31  
-**Target Scope:** `src/app/sponsors/packet/page.tsx`, `src/app/outreach/report/page.tsx`, `src/lib/sponsorPacketData.ts`, `src/lib/outreachExport.ts`, `src/test/SponsorOutreachReports.test.tsx`  
-**Engineer:** Autonomous Feature Engineer (Cycle 31)  
-**Status:** Complete & Passing All Gates  
+**Auditor:** ARES Full-Stack Engineering Subagent  
+**Subsystem:** Sponsorship Deck, Non-Profit 501(c)(3) Disclosures, Community Outreach Impact Reporting, Zero-PII Compliance, and Printable Export Utilities  
+**Issue / Cycle Reference:** Cycle 31 / Issue #96 (`codex/cycle-31-sponsor-outreach-reports`)
 
 ---
 
 ## 1. Executive Summary
 
-This cycle implements full printable decks and impact reports for ARES 23247:
-1. **Printable Sponsorship Deck & Partnership Packet (`/sponsors/packet`)**:
-   - Comprehensive tax-exempt 501(c)(3) disclosure statement, check payee directives, and EIN contact channel.
-   - Five distinct partnership tiers (**Titanium**, **Gold**, **Silver**, **Bronze**, **In-Kind Tooling/Equipment**) with itemized badge sizes, physical robot shield placement dimensions, competition pit banner features, and portfolio credits.
-   - Interactive contribution estimator slider enabling potential sponsors to dynamically model corporate contribution impact and calculate placement tier.
-   - Team operating budget allocation visual model breaking down engineering hardware, tooling, competition travel grants, and K-12 STEM workshops.
-   - Print-optimized CSS (`@media print`) that renders crisp 8.5x11 printable documents without web navigation, hero banners, or unstyled margins.
+As part of Cycle 31, we designed, implemented, and verified two comprehensive reporting subsystems for the Appalachian Robotics & Engineering Society (*FIRST*® Tech Challenge Team #23247):
 
-2. **Community Outreach & STEM Impact Report (`/outreach/report`)**:
-   - Dynamic aggregation of verified volunteer hours, K-12 students reached, and completed workshops with resilient fallback to cached team records.
-   - Category filtering (Elementary, Middle School, Library, STEM Fair) and live search query indexing.
-   - Formula-safe RFC-4180 CSV export preventing spreadsheet formula injection (`=`, `+`, `-`, `@`).
-   - Strict zero-PII youth protection compliance in adherence with FIRST Youth Protection Policies (no minor names or private contact info published).
+1. **Printable Sponsorship Deck & Tier Packet (`/sponsors/packet`):**
+   - Official 501(c)(3) non-profit tax-exempt disclosures and deductibility guidance.
+   - Comprehensive 5-tier sponsorship matrix (Titanium, Gold, Silver, Bronze, and In-Kind) with badge dimensions and benefits.
+   - Dynamic season impact aggregators (volunteer service hours, students reached, tournament awards, and STEM demonstrations).
+   - Team budget allocation model (Hardware 35%, Tournaments 25%, Travel 20%, Outreach 15%, Pit Safety 5%) with interactive sliders and itemized tables.
+   - Print-optimized CSS (`@media print` / `.sponsor-packet-print`) providing clean, high-contrast, multi-page PDF generation without screen navigation artifacts.
 
----
+2. **Community Outreach & STEM Impact Report (`/outreach/report`):**
+   - Chronological and categorized view of public STEM workshops, K-12 school demos, and museum exhibits.
+   - Dynamic aggregation of service hours, student reach, and average impact per event.
+   - Search query and category filter controls with live dynamic updates.
+   - Formula-safe CSV export with RFC-4180 compliance and spreadsheet formula injection protection (`'=`, `'+`, `'-`, `'@`).
+   - Print-optimized styling (`.outreach-report-print`) for clean hardcopy and PDF grant documentation.
 
-## 2. Security & Zero-Trust Boundary Audit
-
-- **PII Protection**: Both pages aggregate team-level achievements and publicly authorized event titles without collecting or exposing minor student identities, attendee contact records, or private donor payment details.
-- **Formula Injection Prevention**: `buildOutreachCsv` prefixes untrusted string cells with a leading single quote if starting with spreadsheet formula control characters (`=`, `+`, `-`, `@`, `\t`, `\r`), neutralizing CSV injection vectors.
-- **Client Resilience**: When `/api/outreach` fails or is offline, both components gracefully fallback to authenticated season default metrics without throwing unhandled exceptions or rendering zero/blank states.
+3. **Zero-PII Assurance:**
+   - Strict adherence to zero student PII leakage. No student names, minor identifiers, contact numbers, grades, or personal information are included in public data transfer objects or export reports. All statistics reflect public team aggregates.
 
 ---
 
-## 3. Web Accessibility (WCAG 2.2 AA) Conformance
+## 2. Security & Zero-Trust Architecture Review
 
-- **Contrast Ratios**: All text elements adhere to 4.5:1 minimum contrast ratios (7:1 for headers).
-- **Keyboard Navigation**: Sliders, filters, buttons, and navigation links have visible high-contrast cyan focus rings (`outline: 2px solid var(--ares-cyan)`).
-- **Semantic HTML**: Proper heading hierarchy (`h1` -> `h2` -> `h3`), ARIA labels on search inputs and sliders, and table semantics (`th[scope="col"]`, `tbody`, `thead`).
-- **Screen Reader Support**: Decorative icons marked with `aria-hidden="true"`, dynamic status announcements, and accessible table captions.
+### 2.1 Formula Injection (CSV Injection / CWE-1236) Mitigation
+Spreadsheet software (Microsoft Excel, Google Sheets, LibreOffice Calc) may execute arbitrary formula expressions if cell contents begin with `=`, `+`, `-`, or `@`.
+
+- **Mitigation:** The utility `escapeSpreadsheetCsvCell` in `src/lib/outreachExport.ts` inspects all cell values and prefixes formula trigger characters with a single apostrophe (`'`), followed by RFC-4180 quotation and double-quote escaping.
+- **Verification:** Unit tests in `src/test/outreachExport.test.ts` assert formula neutralization on strings like `=SUM(1,2)`, `+12345`, `-DANGEROUS`, and `@HYPERLINK`.
+
+### 2.2 Zero Student PII Protection
+- Public outreach APIs and reporting components only display aggregate team statistics (`hours`, `peopleReached`, `location`, `title`, `impactSummary`).
+- Automated tests in `src/test/SponsorOutreachReports.test.tsx` verify the absence of student names, contact details, dates of birth, or identification numbers across rendered DOM trees.
+
+### 2.3 Non-Profit 501(c)(3) Disclosure Compliance
+- Clearly states that contributions qualify under Internal Revenue Code Section 501(c)(3).
+- Provides legal entity information (`Appalachian Robotics & Engineering Society, Inc.`), check payable guidance, and contact email (`sponsors@aresfirst.org`).
 
 ---
 
-## 4. Verification Suite Results
+## 3. Accessibility & UX Verification
 
-| Gate Step | Command | Result |
-| :--- | :--- | :--- |
-| **Agent Configuration** | `pnpm run validate:agents` | **Passed** (6 shared skills validated) |
-| **Frontend Lint** | `pnpm run lint` | **Passed** (0 errors, 0 warnings) |
-| **Functions Lint** | `pnpm --filter functions lint` | **Passed** (0 errors, 0 warnings) |
-| **TypeScript Typecheck** | `pnpm exec tsc --noEmit` | **Passed** (0 errors) |
-| **Unit & Integration Tests** | `pnpm run test:coverage` | **Passed** (108 files, 594 tests passed) |
-| **Static Prerender Build** | `pnpm run build` | **Passed** (25 routes prerendered) |
-| **Bundle Budget** | `node scripts/check-bundle-size.mjs` | **Passed** (All bundles within budgets) |
-| **Dependency Security Audit**| `pnpm audit --prod --audit-level=high` | **Passed** (0 vulnerabilities) |
+- **WCAG 2.1 AA Contrast Compliance:** All tier badges and metric numbers use high-contrast color pairings (`text-ares-cyan`, `text-ares-gold`, `text-ares-red` on obsidian dark backgrounds; darkened variants in `@media print`).
+- **Keyboard Navigation & ARIA:** All interactive sliders, buttons, and filter inputs include descriptive `aria-label`, `aria-labelledby`, and visible `:focus-visible` focus rings (`outline: 2px solid var(--ares-cyan)`).
+- **Print Optimization:** Print stylesheets hide screen navigation, search bars, and action toolbars while formatting headers, metric cards, tier matrices, budget tables, and chronicle lists cleanly on white backgrounds with black typography.
+
+---
+
+## 4. Verification Gate Results
+
+All commands executed via `.\scripts\with-supported-runtime.ps1`:
+
+| Gate Step | Command | Status | Notes |
+| :--- | :--- | :--- | :--- |
+| **Agent Discovery** | `pnpm run validate:agents` | **PASS** | 6 shared skills & agent configurations validated |
+| **Frontend Lint** | `pnpm run lint` | **PASS** | 0 errors, 0 warnings (ESLint max-warnings=0) |
+| **Functions Lint** | `pnpm --filter functions lint` | **PASS** | 0 errors, 0 warnings |
+| **Type Check** | `pnpm exec tsc --noEmit` | **PASS** | TypeScript strict compilation passed |
+| **Unit & Integration Tests** | `pnpm run test:coverage` | **PASS** | 589 tests passed across 107 test suites (77.99% line coverage) |
+| **Functions Build** | `pnpm --filter functions build` | **PASS** | Cloud Functions TypeScript compilation passed |
+| **Functions Tests** | `pnpm --filter functions test:coverage` | **PASS** | 576 tests passed across 45 suites (94.89% line coverage) |
+| **Security Rules Tests** | `pnpm run test:rules` | **PASS** | 20 Firestore zero-trust security rules tests passed |
+| **Production Build** | `pnpm run build` | **PASS** | Vite + Rolldown build passed; 24 static routes prerendered |
+| **Bundle Size Check** | `node scripts/check-bundle-size.mjs` | **PASS** | All initial and route bundle budgets passed |
+| **End-to-End Tests** | `pnpm exec playwright test` | **PASS** | E2E tests passed across Chromium, Mobile Chromium, WebKit, and Firefox |
+| **Dependency Audit** | `pnpm audit --prod --audit-level=high` | **PASS** | 0 vulnerabilities found |
+
+---
+
+## 5. Conclusion
+
+The Printable Sponsorship Deck Packet and Community Outreach Impact Report Generator subsystems are fully implemented, thoroughly tested, zero-PII compliant, and ready for production deployment.

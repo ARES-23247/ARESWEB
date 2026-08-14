@@ -2,6 +2,7 @@
 
 import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 import { siteConfig } from "@/lib/site-config";
 import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight, RefreshCw } from "lucide-react";
@@ -219,7 +220,14 @@ export default function SponsorsPage() {
           </p>
         </header>
 
-        <div className="mb-8 flex justify-end">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <Link
+            to="/sponsors/packet"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-ares-gold hover:bg-ares-gold/90 text-black text-xs font-black uppercase tracking-widest ares-cut-sm shadow-lg hover:scale-105 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <Award size={14} aria-hidden="true" />
+            Printable Sponsorship Deck & Packet
+          </Link>
           <button
             type="button"
             onClick={() => void loadSponsors(true)}

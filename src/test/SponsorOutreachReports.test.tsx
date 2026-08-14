@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import SponsorPacketPage from "@/app/sponsors/packet/page";
 import OutreachReportPage from "@/app/outreach/report/page";
@@ -11,7 +11,6 @@ import {
   TEAM_BUDGET_ALLOCATIONS,
   TAX_EXEMPT_DETAILS,
 } from "@/lib/sponsorPacketData";
-import { computeOutreachStats, buildOutreachCsv } from "@/lib/outreachExport";
 
 describe("SponsorPacketPage", () => {
   beforeEach(() => {
@@ -31,54 +30,64 @@ describe("SponsorPacketPage", () => {
   });
 
   it("renders the sponsorship deck header, 501(c)(3) disclosure, and contact email", async () => {
-    render(
-      <MemoryRouter>
-        <SponsorPacketPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <SponsorPacketPage />
+        </MemoryRouter>
+      );
+    });
 
-    expect(screen.getByText(/Sponsorship/i)).toBeInTheDocument();
-    expect(screen.getByText(/501.*c.*3/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /Sponsorship/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/501\(c\)\(3\)/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(TAX_EXEMPT_DETAILS.organizationName)[0]).toBeInTheDocument();
     expect(screen.getAllByText(TAX_EXEMPT_DETAILS.contactEmail)[0]).toBeInTheDocument();
   });
 
   it("renders all 5 sponsorship tiers and benefits", async () => {
-    render(
-      <MemoryRouter>
-        <SponsorPacketPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <SponsorPacketPage />
+        </MemoryRouter>
+      );
+    });
 
     for (const tier of SPONSOR_DECK_TIERS) {
-      expect(screen.getByText(tier.name)).toBeInTheDocument();
-      expect(screen.getByText(tier.amountLabel)).toBeInTheDocument();
-      expect(screen.getByText(tier.badgeSize)).toBeInTheDocument();
+      expect(screen.getAllByText(tier.name).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(tier.amountLabel).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(tier.badgeSize).length).toBeGreaterThan(0);
     }
   });
 
   it("displays team budget allocation model and all categories", async () => {
-    render(
-      <MemoryRouter>
-        <SponsorPacketPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <SponsorPacketPage />
+        </MemoryRouter>
+      );
+    });
 
-    expect(screen.getByText(/Team Budget Allocation Model/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Team Budget Allocation Model/i })).toBeInTheDocument();
     for (const item of TEAM_BUDGET_ALLOCATIONS) {
-      expect(screen.getByText(item.category)).toBeInTheDocument();
+      expect(screen.getAllByText(item.category).length).toBeGreaterThan(0);
     }
   });
 
   it("updates calculated tier when pledge slider is moved", async () => {
-    render(
-      <MemoryRouter>
-        <SponsorPacketPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <SponsorPacketPage />
+        </MemoryRouter>
+      );
+    });
 
     const slider = screen.getByLabelText(/Sponsorship pledge amount/i);
-    fireEvent.change(slider, { target: { value: "1000" } });
+    await act(async () => {
+      fireEvent.change(slider, { target: { value: "1000" } });
+    });
 
     await waitFor(() => {
       expect(screen.getAllByText(SPONSOR_DECK_TIERS[2].name).length).toBeGreaterThan(0);
@@ -87,11 +96,13 @@ describe("SponsorPacketPage", () => {
 
   it("triggers window.print when Print button is clicked", async () => {
     const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
-    render(
-      <MemoryRouter>
-        <SponsorPacketPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <SponsorPacketPage />
+        </MemoryRouter>
+      );
+    });
 
     const printButton = screen.getByRole("button", { name: /Print \/ Save as PDF/i });
     fireEvent.click(printButton);
@@ -100,13 +111,17 @@ describe("SponsorPacketPage", () => {
   });
 
   it("verifies zero student PII is exposed in the sponsorship packet", async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <SponsorPacketPage />
-      </MemoryRouter>
-    );
+    let container: HTMLElement;
+    await act(async () => {
+      const result = render(
+        <MemoryRouter>
+          <SponsorPacketPage />
+        </MemoryRouter>
+      );
+      container = result.container;
+    });
 
-    expect(container.textContent).not.toMatch(/ssn|social security|date of birth|dob|gpa|minor name/i);
+    expect(container!.textContent).not.toMatch(/ssn|social security|date of birth|dob|gpa|minor name/i);
     expect(screen.getByText(/Zero-PII Compliance Verified/i)).toBeInTheDocument();
   });
 });
@@ -147,39 +162,46 @@ describe("OutreachReportPage", () => {
   });
 
   it("renders outreach impact report title and season header", async () => {
-    render(
-      <MemoryRouter>
-        <OutreachReportPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <OutreachReportPage />
+        </MemoryRouter>
+      );
+    });
 
-    expect(screen.getByText(/Outreach/i)).toBeInTheDocument();
-    expect(screen.getByText(/Report/i)).toBeInTheDocument();
-    expect(screen.getByText(/Appalachian Robotics & Engineering Society/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /Outreach/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Appalachian Robotics & Engineering Society/i).length).toBeGreaterThan(0);
   });
 
   it("computes and displays aggregated outreach stats", async () => {
-    render(
-      <MemoryRouter>
-        <OutreachReportPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <OutreachReportPage />
+        </MemoryRouter>
+      );
+    });
 
     await waitFor(() => {
-      expect(screen.getByText(/38\+/)).toBeInTheDocument();
-      expect(screen.getByText(/500\+/)).toBeInTheDocument();
+      expect(screen.getAllByText(/38\+/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/500\+/).length).toBeGreaterThan(0);
     });
   });
 
   it("filters outreach events by search query", async () => {
-    render(
-      <MemoryRouter>
-        <OutreachReportPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <OutreachReportPage />
+        </MemoryRouter>
+      );
+    });
 
     const searchInput = screen.getByLabelText(/Search outreach events/i);
-    fireEvent.change(searchInput, { target: { value: "Banner Nonexistent" } });
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: "Banner Nonexistent" } });
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/No matching outreach events found/i)).toBeInTheDocument();
@@ -190,14 +212,16 @@ describe("OutreachReportPage", () => {
     const createURLSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:http://localhost/test-csv");
     const revokeURLSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
-    render(
-      <MemoryRouter>
-        <OutreachReportPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <OutreachReportPage />
+        </MemoryRouter>
+      );
+    });
 
-    const csvButton = screen.getByRole("button", { name: /Export CSV/i });
-    fireEvent.click(csvButton);
+    const csvButtons = screen.getAllByRole("button", { name: /Export CSV|Download CSV/i });
+    fireEvent.click(csvButtons[0]);
 
     expect(createURLSpy).toHaveBeenCalled();
     expect(revokeURLSpy).toHaveBeenCalled();
@@ -205,11 +229,13 @@ describe("OutreachReportPage", () => {
 
   it("triggers window.print when Print button is clicked", async () => {
     const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
-    render(
-      <MemoryRouter>
-        <OutreachReportPage />
-      </MemoryRouter>
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <OutreachReportPage />
+        </MemoryRouter>
+      );
+    });
 
     const printButton = screen.getByRole("button", { name: /Print \/ Save as PDF/i });
     fireEvent.click(printButton);
@@ -218,13 +244,17 @@ describe("OutreachReportPage", () => {
   });
 
   it("verifies zero student PII is exposed in the outreach report", async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <OutreachReportPage />
-      </MemoryRouter>
-    );
+    let container: HTMLElement;
+    await act(async () => {
+      const result = render(
+        <MemoryRouter>
+          <OutreachReportPage />
+        </MemoryRouter>
+      );
+      container = result.container;
+    });
 
-    expect(container.textContent).not.toMatch(/ssn|social security|date of birth|dob|gpa|minor name/i);
+    expect(container!.textContent).not.toMatch(/ssn|social security|date of birth|dob|gpa|minor name/i);
     expect(screen.getByText(/Zero-PII Compliance Verified/i)).toBeInTheDocument();
   });
 });

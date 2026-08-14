@@ -151,6 +151,12 @@ export function OutreachImpactFeed({ logs, isLoading, isRefreshing, error, onRef
             <p className="text-xs text-marble/65 uppercase tracking-widest mt-1 font-semibold">Timeline of STEM Service Demos</p>
           </div>
           <div className="flex flex-wrap gap-4">
+            <Link
+              to="/outreach/report"
+              className="flex items-center gap-1.5 rounded border border-ares-gold/40 bg-ares-gold/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ares-gold hover:bg-ares-gold/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <Target aria-hidden="true" size={12} /> Impact Report & Deck
+            </Link>
             {logs.length > 0 && (
               <a
                 href={createOutreachCsvDataUrl(logs)}
