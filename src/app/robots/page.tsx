@@ -111,11 +111,19 @@ export default function RobotsFeedPage() {
           <p className="text-lg text-marble/75 max-w-2xl mx-auto font-medium leading-relaxed mb-8">
             An archive of robotics systems engineered for the <i>FIRST</i>® Tech Challenge by team ARES.
           </p>
-          {canEdit && (
-            <button onClick={() => openEditor(null)} className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
-              <Plus aria-hidden="true" size={16} /> Deploy new robot
-            </button>
-          )}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/robots/bom"
+              className="clipped-button bg-ares-gold/20 text-ares-gold hover:bg-ares-gold hover:text-black border border-ares-gold/40 font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
+            >
+              <Scale aria-hidden="true" size={16} /> Subsystem BOM & Weight Inspector
+            </Link>
+            {canEdit && (
+              <button onClick={() => openEditor(null)} className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
+                <Plus aria-hidden="true" size={16} /> Deploy new robot
+              </button>
+            )}
+          </div>
         </header>
 
         {isLoading ? (

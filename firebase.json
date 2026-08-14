@@ -195,6 +195,10 @@
           "function": "web"
         },
         {
+          "source": "/robots/bom",
+          "destination": "/prerender/robots-bom.html"
+        },
+        {
           "source": "/robots/**",
           "function": "web"
         },
@@ -273,6 +277,10 @@
         {
           "source": "/robots",
           "destination": "/prerender/robots.html"
+        },
+        {
+          "source": "/robots/bom",
+          "destination": "/prerender/robots-bom.html"
         },
         {
           "source": "/seasons",
