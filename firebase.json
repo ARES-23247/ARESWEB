@@ -91,6 +91,10 @@
           "function": "publicApi"
         },
         {
+          "source": "/api/announcements{,/**}",
+          "function": "publicApi"
+        },
+        {
           "source": "/api/sponsors{,/**}",
           "function": "publicApi"
         },

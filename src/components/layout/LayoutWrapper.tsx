@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SkipLink from "@/components/SkipLink";
+import SiteAnnouncementBanner from "@/components/SiteAnnouncementBanner";
 
 export default function LayoutWrapper({
   children,
@@ -83,11 +84,13 @@ export default function LayoutWrapper({
     return (
       <div className="min-h-screen bg-obsidian text-marble flex flex-col">
         <SkipLink />
+        <SiteAnnouncementBanner />
         {announcer}
         <main
           id="main-content"
           tabIndex={-1}
           className="flex-grow flex flex-col focus:outline-none"
+          style={{ paddingTop: "var(--site-announcement-height, 0px)" }}
         >
           {children}
         </main>
@@ -98,12 +101,14 @@ export default function LayoutWrapper({
   return (
     <div className="min-h-screen bg-obsidian text-marble flex flex-col justify-between">
       <SkipLink />
+      <SiteAnnouncementBanner />
       {announcer}
       <Navbar />
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex-grow pt-24 focus:outline-none"
+        className="flex-grow focus:outline-none"
+        style={{ paddingTop: "calc(6rem + var(--site-announcement-height, 0px))" }}
       >
         {children}
       </main>

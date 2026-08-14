@@ -169,7 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* Mobile top-nav header */}
-        <header className="md:hidden flex items-center justify-between px-6 py-4 bg-black/40 border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+        <header style={{ top: "var(--site-announcement-height, 0px)" }} className="md:hidden flex items-center justify-between px-6 py-4 bg-black/40 border-b border-white/5 sticky z-30 backdrop-blur-md">
           <span className="text-lg font-black tracking-tighter text-white font-heading">
             ARES <span className="bg-ares-red text-white px-1.5 py-0.5 ares-cut-sm font-bold text-xs ml-1">23247</span>
           </span>

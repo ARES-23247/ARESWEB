@@ -245,6 +245,26 @@ read-only inspection. Follow
 [`MEDIA_DERIVATIVE_BACKFILL.md`](./MEDIA_DERIVATIVE_BACKFILL.md); never add its
 apply command to CI, Hosting deployment, or Functions startup.
 
+## Public site announcements
+
+Administrators and coaches can manage the single site-wide announcement at
+`/dashboard/announcements`. Visitors do not need an account to read a currently
+active announcement. The public endpoint returns only the message, priority,
+optional internal link, schedule bounds, and opaque revision; it never returns
+the publishing user's ID or other Firestore metadata.
+
+- Treat every announcement as public. Do not include student names, contact
+  details, private addresses, travel plans, or other personal information.
+- Use only internal links beginning with `/`. The API rejects external links so
+  a compromised or mistaken announcement cannot become a phishing redirect.
+- Scheduling is evaluated server-side. Disable an obsolete announcement from
+  the manager instead of editing Firestore directly.
+- Direct client access to the `settings/siteAnnouncement` document remains
+  denied by Firestore rules. All reads and writes go through the bounded DTO
+  route, and every publish/disable operation creates an audit record.
+- A visitor's dismissal is scoped to the announcement revision. Publishing a
+  changed message creates a new opaque revision and makes it visible again.
+
 ## GitHub Actions deployment controls
 
 - Pull-request jobs must not receive Firebase or Google Cloud credentials.

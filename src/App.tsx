@@ -68,6 +68,7 @@ const DashboardZulipPage = lazy(() => import("@/app/dashboard/zulip/page"));
 const DashboardSponsorsPage = lazy(() => import("@/app/dashboard/sponsors/page"));
 const DashboardOutreachPage = lazy(() => import("@/app/dashboard/outreach/page"));
 const DashboardTournamentsPage = lazy(() => import("@/app/dashboard/tournaments/page"));
+const DashboardAnnouncementsPage = lazy(() => import("@/app/dashboard/announcements/page"));
 
 // Premium fallback loader with ARES branding
 function AppLoading() {
@@ -155,6 +156,7 @@ export default function App() {
                     <Route path="sponsors" element={<DashboardSponsorsPage />} />
                     <Route path="outreach" element={<DashboardOutreachPage />} />
                     <Route path="tournaments" element={<DashboardTournamentsPage />} />
+                    <Route path="announcements" element={<DashboardAnnouncementsPage />} />
                   </Route>
                   
                   {/* 404 Route */}

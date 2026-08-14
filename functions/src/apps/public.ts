@@ -9,8 +9,10 @@ import sponsorsRouter from "../routes/sponsors";
 import storeRouter from "../routes/store";
 import tournamentsRouter from "../routes/tournaments";
 import ogRouter from "../routes/og";
+import announcementsRouter from "../routes/announcements";
 
 export const publicApp = createApiApp({ routes: [
+  { path: "/api/announcements", router: announcementsRouter },
   { path: "/api/calendar", router: calendarRouter },
   { path: "/api/sponsors", router: sponsorsRouter },
   { path: "/api/outreach", router: outreachRouter },
