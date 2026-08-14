@@ -76,6 +76,16 @@ describe("finance ledger reliability and accessibility", () => {
     fireEvent.click(screen.getByRole("button", { name: "expense" }));
     expect(screen.getByRole("button", { name: "expense" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/showing 2 matching records from 3 loaded/i)).toBeInTheDocument();
+
+    const exportCsvLink = screen.getByRole("link", {
+      name: "Download financial ledger records as CSV",
+    });
+    expect(exportCsvLink).toBeInTheDocument();
+    expect(exportCsvLink).toHaveAttribute("download", "ares-23247-finance-ledger.csv");
+    expect(exportCsvLink).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^data:text\/csv;charset=utf-8,%EF%BB%BF/)
+    );
   });
 
   it("keeps loaded records visible and explains a 403 refresh failure", async () => {

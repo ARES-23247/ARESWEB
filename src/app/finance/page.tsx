@@ -7,6 +7,7 @@ import {
   ArrowLeftRight,
   Award,
   ChevronDown,
+  Download,
   FileSpreadsheet,
   Globe,
   RefreshCw,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import SeasonPicker from "@/components/SeasonPicker";
+import { financeCsvDataUrl, financeCsvFilename } from "@/lib/financeCsv";
 
 interface Transaction {
   id: string;
@@ -211,15 +213,28 @@ export default function FinanceLedgerPage() {
               onChange={(value) => setSelectedSeason(value ? Number.parseInt(value, 10) : null)}
             />
           </div>
-          <button
-            type="button"
-            onClick={() => void loadTransactions(null, "refresh")}
-            disabled={isRefreshing}
-            className="inline-flex min-h-11 items-center gap-2 border border-ares-gold/50 bg-ares-gold/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-ares-gold transition-colors hover:bg-ares-gold hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-wait disabled:opacity-60"
-          >
-            <RefreshCw aria-hidden="true" size={15} className={isRefreshing ? "animate-spin" : ""} />
-            {isRefreshing ? "Refreshing" : "Refresh ledger"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {transactions.length > 0 && (
+              <a
+                href={financeCsvDataUrl(filteredTransactions)}
+                download={financeCsvFilename(selectedSeason)}
+                className="inline-flex min-h-11 items-center gap-2 border border-white/20 bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-colors hover:border-ares-gold hover:bg-ares-gold/10 hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                aria-label="Download financial ledger records as CSV"
+              >
+                <Download aria-hidden="true" size={15} />
+                Export CSV
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => void loadTransactions(null, "refresh")}
+              disabled={isRefreshing}
+              className="inline-flex min-h-11 items-center gap-2 border border-ares-gold/50 bg-ares-gold/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-ares-gold transition-colors hover:bg-ares-gold hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCw aria-hidden="true" size={15} className={isRefreshing ? "animate-spin" : ""} />
+              {isRefreshing ? "Refreshing" : "Refresh ledger"}
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
