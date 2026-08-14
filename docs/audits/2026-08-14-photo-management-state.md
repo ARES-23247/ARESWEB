@@ -79,6 +79,6 @@ Results:
 
 ## Residual risk and next work
 
-- The live page remains 1,318 lines and coordinates library, albums, uploads, Google Picker polling, and dialogs. This is a maintainability risk, but a broad component/hook extraction was deliberately deferred so the correctness fix remains small and independently reviewable. A later cycle should split data controllers from presentational panels without changing API behavior.
+- Follow-up: the 1,318-line page risk was addressed in the next independently reviewable cycle by extracting library, album, Google sync, and shared-state presentation modules. See `2026-08-14-photo-management-components.md`.
 - This cycle did not mutate production media, exercise Google Picker import, or perform a legacy derivative backfill. Those actions require separate production-data approval.
 - Automated accessibility and four-browser interaction gates passed, but this is not a new manual WCAG conformance claim.

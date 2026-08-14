@@ -48,8 +48,17 @@ test.describe("Kanban Task Board status movement tests", () => {
 
     const submit = editor.getByRole("button", { name: "Add Task Card" });
     await expect(submit).toBeDisabled();
-    await editor.getByLabel("Task Title").fill("Validate drivetrain telemetry");
-    await expect(submit).toBeEnabled();
+    const title = editor.getByLabel("Task Title");
+    const taskTitle = "Validate drivetrain telemetry";
+    // A development-mode remount can race the first synthetic input event
+    // under a saturated WebKit run. Retry the complete user action together
+    // with its observable value and validation result, never the assertion in
+    // isolation.
+    await expect(async () => {
+      await title.fill(taskTitle);
+      await expect(title).toHaveValue(taskTitle);
+      await expect(submit).toBeEnabled();
+    }).toPass();
   });
 });
 

@@ -526,6 +526,78 @@ describe("media management pages", () => {
     ).toBeInTheDocument();
   });
 
+  it("prevents overlapping photo mutations while a restore is pending", async () => {
+    const restoreResponse = deferredResponse();
+    const archivedPhoto = { ...photo, isArchived: true };
+    const activePhoto = {
+      ...photo,
+      id: "photo-2",
+      caption: "Second active photo",
+    };
+    vi.mocked(authenticatedFetch).mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        return response({
+          photos: url.includes("includeArchived=true")
+            ? [archivedPhoto, activePhoto]
+            : [activePhoto],
+          hasMore: false,
+          nextCursor: null,
+        });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        return response({ albums: [], hasMore: false, nextCursor: null });
+      }
+      if (url === "/api/photos/auth/status") {
+        return response({
+          provider: "google-photos",
+          accountOwner: "team",
+          configured: true,
+          credentialStorage: "secret-manager",
+          capabilities: ["picker-import"],
+        });
+      }
+      if (url === "/api/photos/photo-1/restore" && init?.method === "POST") {
+        return restoreResponse.promise;
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    fireEvent.click(await screen.findByLabelText("Show archived photos"));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Restore photo" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Restore photo" }),
+    ).toBeDisabled();
+    for (const button of screen.getAllByRole("button", {
+      name: "Archive photo",
+    })) {
+      expect(button).toBeDisabled();
+    }
+    for (const button of screen.getAllByRole("button", {
+      name: "Edit photo details",
+    })) {
+      expect(button).toBeDisabled();
+    }
+
+    restoreResponse.resolve(
+      response({ photo: { ...archivedPhoto, isArchived: false } }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Restore photo" }),
+      ).not.toBeInTheDocument(),
+    );
+    for (const button of screen.getAllByRole("button", {
+      name: "Archive photo",
+    })) {
+      expect(button).toBeEnabled();
+    }
+  });
+
   it("creates an album through the extracted editor dialog", async () => {
     vi.mocked(authenticatedFetch).mockImplementation(async (input, init) => {
       const url = String(input);
