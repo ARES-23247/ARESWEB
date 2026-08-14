@@ -263,6 +263,10 @@
           "destination": "/prerender/location-morgantown.html"
         },
         {
+          "source": "/notebook",
+          "destination": "/prerender/notebook.html"
+        },
+        {
           "source": "/outreach",
           "destination": "/prerender/outreach.html"
         },

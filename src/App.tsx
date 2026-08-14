@@ -36,6 +36,7 @@ const VideosPage = lazy(() => import("@/app/videos/page"));
 const JoinPage = lazy(() => import("@/app/join/page"));
 const LeaderboardPage = lazy(() => import("@/app/leaderboard/page"));
 const LocationMorgantownPage = lazy(() => import("@/app/location-morgantown/page"));
+const EngineeringNotebookPage = lazy(() => import("@/app/notebook/page"));
 const OutreachPage = lazy(() => import("@/app/outreach/page"));
 const PrivacyPage = lazy(() => import("@/app/privacy/page"));
 const RobotsFeedPage = lazy(() => import("@/app/robots/page"));
@@ -123,6 +124,7 @@ export default function App() {
                   <Route path="/join" element={<JoinPage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/location-morgantown" element={<LocationMorgantownPage />} />
+                  <Route path="/notebook" element={<EngineeringNotebookPage />} />
                   <Route path="/outreach" element={<OutreachPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/robots" element={<RobotsFeedPage />} />

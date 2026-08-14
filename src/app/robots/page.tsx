@@ -111,6 +111,12 @@ export default function RobotsFeedPage() {
           <p className="text-lg text-marble/75 max-w-2xl mx-auto font-medium leading-relaxed mb-8">
             An archive of robotics systems engineered for the <i>FIRST</i>® Tech Challenge by team ARES.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+            <Link to="/notebook" className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 px-4 py-2.5 ares-cut-sm text-xs font-bold text-ares-gold hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-ares-cyan">
+              <Cpu aria-hidden="true" size={15} className="text-ares-cyan" />
+              Explore Engineering Notebook & Design Iterations →
+            </Link>
+          </div>
           {canEdit && (
             <button onClick={() => openEditor(null)} className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
               <Plus aria-hidden="true" size={16} /> Deploy new robot
