@@ -135,7 +135,7 @@ service cloud.firestore {
 
     // Public collections (blogs, calendar, knowledge base docs)
     match /posts/{postSlug} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if (isAuthenticated() && isAuthorized()) || (resource.data.status == "published" && resource.data.isDeleted == 0);
       allow create, update: if isAuthorized() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
@@ -186,7 +186,7 @@ service cloud.firestore {
     }
 
     match /docs/{docSlug} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if (isAuthenticated() && isAuthorized()) || (resource.data.status == "published" && resource.data.isDeleted == 0);
       allow create, update: if isAuthorized() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
@@ -277,7 +277,7 @@ service cloud.firestore {
 
     // robots
     match /robots/{robotId} {
-      allow read: if isAuthorized() || resource.data.isDeleted == 0;
+      allow read: if (isAuthenticated() && isAuthorized()) || resource.data.isDeleted == 0;
       allow create: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
                     request.resource.data.isDeleted == 0;
       allow update: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
@@ -304,7 +304,7 @@ service cloud.firestore {
 
     // documents
     match /documents/{docId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if (isAuthenticated() && isAuthorized()) || (resource.data.status == "published" && resource.data.isDeleted == 0);
       allow create: if isAuthorized() && hasNoServerDriveFields() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
@@ -328,7 +328,7 @@ service cloud.firestore {
 
     // seasons
     match /seasons/{seasonId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if (isAuthenticated() && isAuthorized()) || (resource.data.status == "published" && resource.data.isDeleted == 0);
       allow create, update: if isAuthorized() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
@@ -338,7 +338,7 @@ service cloud.firestore {
 
     // awards
     match /awards/{awardId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if (isAuthenticated() && isAuthorized()) || (resource.data.status == "published" && resource.data.isDeleted == 0);
       allow create, update: if isAuthorized() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')

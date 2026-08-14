@@ -79,5 +79,9 @@
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.10",
     "workbox-window": "^7.4.1"
+  },
+  "imports": {
+    "#module-evaluator": "./node_modules/vitest/dist/module-evaluator.js",
+    "#nodejs-worker-loader": "./node_modules/vitest/dist/nodejs-worker-loader.js"
   }
 }
