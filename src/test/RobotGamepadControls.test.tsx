@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import RobotGamepadControlsPage from "../app/robots/controls/page";
@@ -31,18 +31,19 @@ describe("RobotGamepadControlsPage Component", () => {
 
     expect(screen.getByRole("heading", { name: /Driver Controls/i })).toBeInTheDocument();
     expect(screen.getByText(/Tele-Op Drive System Matrix/i)).toBeInTheDocument();
-    expect(screen.getByText(/DRIVER 1 · FIELD PILOT/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Chassis Drivetrain & Field Navigation Pilot/i),
-    ).toBeInTheDocument();
+
+    const banner = screen.getByTestId("driver-profile-banner");
+    expect(banner).toHaveTextContent(/DRIVER 1 · FIELD PILOT/i);
+    expect(banner).toHaveTextContent(/Chassis Drivetrain & Field Navigation Pilot/i);
   });
 
   it("renders all controller quick-select buttons", () => {
     renderComponent();
 
+    const ribbon = screen.getByTestId("quick-select-ribbon");
     for (const btn of CONTROLLER_BUTTONS) {
       expect(
-        screen.getByRole("button", { name: new RegExp(`Select ${btn.name}`, "i") }),
+        within(ribbon).getByRole("button", { name: new RegExp(`Select ${btn.name}`, "i") }),
       ).toBeInTheDocument();
     }
   });
@@ -63,16 +64,17 @@ describe("RobotGamepadControlsPage Component", () => {
     const driver2Tab = screen.getByRole("tab", { name: /Driver 2: Systems Operator/i });
     fireEvent.click(driver2Tab);
 
-    expect(screen.getByText(/DRIVER 2 · SYSTEMS OPERATOR/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Subsystems & Manipulator Operator/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Dual Viper Slides/i)).toBeInTheDocument();
+    const banner = screen.getByTestId("driver-profile-banner");
+    expect(banner).toHaveTextContent(/DRIVER 2 · SYSTEMS OPERATOR/i);
+    expect(banner).toHaveTextContent(/Subsystems & Manipulator Operator/i);
+
+    const subsystems = screen.getByTestId("driver-subsystems");
+    expect(subsystems).toHaveTextContent(/Dual Slides/i);
 
     const driver1Tab = screen.getByRole("tab", { name: /Driver 1: Field Pilot/i });
     fireEvent.click(driver1Tab);
 
-    expect(screen.getByText(/DRIVER 1 · FIELD PILOT/i)).toBeInTheDocument();
+    expect(screen.getByTestId("driver-badge")).toHaveTextContent(/DRIVER 1 · FIELD PILOT/i);
   });
 
   it("inspects button details when a controller button is clicked", () => {
@@ -98,8 +100,7 @@ describe("RobotGamepadControlsPage Component", () => {
   it("supports SVG button clicks and hover states", () => {
     renderComponent();
 
-    // Click SVG trigger directly
-    const svgLt = screen.getByRole("button", { name: "Left Trigger" });
+    const svgLt = screen.getByTestId("svg-btn-left_trigger");
     fireEvent.click(svgLt);
 
     const inspector = screen.getByTestId("action-inspector");
@@ -113,13 +114,13 @@ describe("RobotGamepadControlsPage Component", () => {
   it("supports keyboard navigation on SVG buttons (Enter and Space keys)", () => {
     renderComponent();
 
-    const svgRt = screen.getByRole("button", { name: "Right Trigger" });
+    const svgRt = screen.getByTestId("svg-btn-right_trigger");
     fireEvent.keyDown(svgRt, { key: "Enter", code: "Enter" });
 
     const inspector = screen.getByTestId("action-inspector");
     expect(inspector).toHaveTextContent(/Straight-Line Sprint Lock/i);
 
-    const svgLb = screen.getByRole("button", { name: "Left Bumper" });
+    const svgLb = screen.getByTestId("svg-btn-left_bumper");
     fireEvent.keyDown(svgLb, { key: " ", code: "Space" });
     expect(inspector).toHaveTextContent(/Slow \/ Precision Maneuver Hold/i);
   });
@@ -132,9 +133,10 @@ describe("RobotGamepadControlsPage Component", () => {
     });
     fireEvent.change(searchInput, { target: { value: "Brake" } });
 
-    expect(screen.getByText(/Emergency Field Brake/i)).toBeInTheDocument();
-    expect(screen.getByText(/Analog Dynamic Progressive Brake/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Turbo Boost/i)).not.toBeInTheDocument();
+    const table = screen.getByTestId("controls-table");
+    expect(within(table).getByText(/Emergency Field Brake/i)).toBeInTheDocument();
+    expect(within(table).getByText(/Analog Dynamic Progressive Brake/i)).toBeInTheDocument();
+    expect(within(table).queryByText(/Turbo Boost/i)).not.toBeInTheDocument();
   });
 
   it("filters mappings table by category pill", () => {
@@ -143,9 +145,10 @@ describe("RobotGamepadControlsPage Component", () => {
     const automationBtn = screen.getByRole("button", { name: "Automation" });
     fireEvent.click(automationBtn);
 
-    expect(screen.getByText(/Auto-Align to Scoring Submersible/i)).toBeInTheDocument();
-    expect(screen.getByText(/Auto-Align Specimen Rung/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Field-Centric Drivetrain/i)).not.toBeInTheDocument();
+    const table = screen.getByTestId("controls-table");
+    expect(within(table).getByText(/Auto-Align to Scoring Submersible/i)).toBeInTheDocument();
+    expect(within(table).getByText(/Auto-Align Specimen Rung/i)).toBeInTheDocument();
+    expect(within(table).queryByText(/Field-Centric Drivetrain/i)).not.toBeInTheDocument();
   });
 
   it("shows empty state and allows resetting filters", () => {
@@ -161,7 +164,8 @@ describe("RobotGamepadControlsPage Component", () => {
     const resetBtn = screen.getByRole("button", { name: /Reset filters/i });
     fireEvent.click(resetBtn);
 
-    expect(screen.getByText(/Field-Centric Drivetrain/i)).toBeInTheDocument();
+    const table = screen.getByTestId("controls-table");
+    expect(within(table).getByText(/Field-Centric Drivetrain/i)).toBeInTheDocument();
   });
 
   it("renders print cheat sheet section and handles print trigger", () => {
@@ -174,7 +178,7 @@ describe("RobotGamepadControlsPage Component", () => {
     fireEvent.click(printBtn);
     expect(printSpy).toHaveBeenCalledTimes(1);
 
-    const printSection = document.querySelector(".driver-cards-print");
+    const printSection = screen.getByTestId("print-cheat-sheet");
     expect(printSection).toBeInTheDocument();
     expect(printSection).toHaveTextContent(/ARES 23247 FTC · DRIVE TEAM CHEAT SHEET/i);
     expect(printSection).toHaveTextContent(/DRIVER 1: FIELD PILOT/i);
@@ -184,8 +188,8 @@ describe("RobotGamepadControlsPage Component", () => {
   it("selects a mapping from the table list", () => {
     renderComponent();
 
-    const rowAction = screen.getByText(/Turbo Boost \/ Max Velocity Sprint/i);
-    fireEvent.click(rowAction);
+    const row = screen.getByTestId("row-d1-right-bumper");
+    fireEvent.click(row);
 
     const inspector = screen.getByTestId("action-inspector");
     expect(inspector).toHaveTextContent(/Right Bumper/i);

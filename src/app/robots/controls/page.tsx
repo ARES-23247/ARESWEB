@@ -192,11 +192,15 @@ export default function RobotGamepadControlsPage() {
         </div>
 
         {/* Driver Profile Summary Banner */}
-        <div className="glass-card ares-cut p-6 border border-white/10 mb-10 bg-gradient-to-r from-white/[0.02] to-white/[0.05]">
+        <div
+          data-testid="driver-profile-banner"
+          className="glass-card ares-cut p-6 border border-white/10 mb-10 bg-gradient-to-r from-white/[0.02] to-white/[0.05]"
+        >
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <span
+                  data-testid="driver-badge"
                   className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
                     activeDriver === "driver1"
                       ? "bg-blue-500/20 text-cyan-300 border-cyan-500/40"
@@ -221,7 +225,7 @@ export default function RobotGamepadControlsPage() {
                 <div className="text-[10px] uppercase font-black tracking-widest text-ares-gold/90 mb-1">
                   Primary Subsystems
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5" data-testid="driver-subsystems">
                   {driverProfile.subsystems.map((sub, idx) => (
                     <span
                       key={idx}
@@ -289,7 +293,7 @@ export default function RobotGamepadControlsPage() {
               </div>
 
               {/* Quick Controller Button Selector Ribbon */}
-              <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="mt-4 pt-4 border-t border-white/10" data-testid="quick-select-ribbon">
                 <div className="text-[11px] font-black uppercase tracking-widest text-marble/60 mb-2">
                   Quick Select Control Target
                 </div>
@@ -445,7 +449,10 @@ export default function RobotGamepadControlsPage() {
         </div>
 
         {/* Safety & Safeguard Overview Matrix */}
-        <div className="glass-card ares-cut p-6 border border-white/10 mb-12">
+        <div
+          data-testid="safety-matrix"
+          className="glass-card ares-cut p-6 border border-white/10 mb-12"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <div className="inline-flex items-center gap-2 text-ares-gold text-xs font-black uppercase tracking-wider mb-1">
@@ -487,7 +494,10 @@ export default function RobotGamepadControlsPage() {
         </div>
 
         {/* Complete Mappings Filterable Roster Table */}
-        <div className="glass-card ares-cut p-6 border border-white/10 mb-12">
+        <div
+          data-testid="controls-table"
+          className="glass-card ares-cut p-6 border border-white/10 mb-12"
+        >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-xl font-black uppercase font-heading text-white">
@@ -582,6 +592,7 @@ export default function RobotGamepadControlsPage() {
                     return (
                       <tr
                         key={mapping.id}
+                        data-testid={`row-${mapping.id}`}
                         onClick={() => handleSelectButton(mapping.buttonId)}
                         className={`cursor-pointer transition-colors ${
                           isSelected
@@ -602,7 +613,7 @@ export default function RobotGamepadControlsPage() {
                           </span>
                         </td>
                         <td className="py-3 px-3 font-bold text-white">
-                          <div>{mapping.actionName}</div>
+                          <div className="mapping-action-name">{mapping.actionName}</div>
                           <div className="text-[11px] font-normal text-marble/60 line-clamp-1">
                             {mapping.description}
                           </div>
@@ -642,6 +653,7 @@ export default function RobotGamepadControlsPage() {
           Formatted specifically for pocket laminate drive team reference cards.
          ========================================================================= */}
       <section
+        data-testid="print-cheat-sheet"
         className="driver-cards-print hidden print:block bg-white text-black p-4 max-w-4xl mx-auto font-sans"
         aria-label="Drive team laminated cheat sheet print layout"
       >
@@ -755,6 +767,7 @@ function GamepadSvgVisualizer({
 
   return (
     <svg
+      data-testid="gamepad-svg"
       viewBox="0 0 640 420"
       className="w-full h-full max-h-[380px] select-none"
       role="img"
@@ -808,6 +821,7 @@ function GamepadSvgVisualizer({
       {/* Left Trigger (LT) */}
       <g
         id="btn-left-trigger"
+        data-testid="svg-btn-left_trigger"
         tabIndex={0}
         role="button"
         aria-label="Left Trigger"
@@ -844,6 +858,7 @@ function GamepadSvgVisualizer({
       {/* Right Trigger (RT) */}
       <g
         id="btn-right-trigger"
+        data-testid="svg-btn-right_trigger"
         tabIndex={0}
         role="button"
         aria-label="Right Trigger"
@@ -880,6 +895,7 @@ function GamepadSvgVisualizer({
       {/* Left Bumper (LB) */}
       <g
         id="btn-left-bumper"
+        data-testid="svg-btn-left_bumper"
         tabIndex={0}
         role="button"
         aria-label="Left Bumper"
@@ -920,6 +936,7 @@ function GamepadSvgVisualizer({
       {/* Right Bumper (RB) */}
       <g
         id="btn-right-bumper"
+        data-testid="svg-btn-right_bumper"
         tabIndex={0}
         role="button"
         aria-label="Right Bumper"
@@ -960,6 +977,7 @@ function GamepadSvgVisualizer({
       {/* Left Stick (LS) */}
       <g
         id="btn-left-stick"
+        data-testid="svg-btn-left_stick"
         tabIndex={0}
         role="button"
         aria-label="Left Thumbstick"
@@ -1001,6 +1019,7 @@ function GamepadSvgVisualizer({
       {/* Right Stick (RS) */}
       <g
         id="btn-right-stick"
+        data-testid="svg-btn-right_stick"
         tabIndex={0}
         role="button"
         aria-label="Right Thumbstick"
@@ -1046,6 +1065,7 @@ function GamepadSvgVisualizer({
         {/* Up */}
         <g
           id="btn-dpad-up"
+          data-testid="svg-btn-dpad_up"
           tabIndex={0}
           role="button"
           aria-label="D-Pad Up"
@@ -1073,6 +1093,7 @@ function GamepadSvgVisualizer({
         {/* Down */}
         <g
           id="btn-dpad-down"
+          data-testid="svg-btn-dpad_down"
           tabIndex={0}
           role="button"
           aria-label="D-Pad Down"
@@ -1100,6 +1121,7 @@ function GamepadSvgVisualizer({
         {/* Left */}
         <g
           id="btn-dpad-left"
+          data-testid="svg-btn-dpad_left"
           tabIndex={0}
           role="button"
           aria-label="D-Pad Left"
@@ -1127,6 +1149,7 @@ function GamepadSvgVisualizer({
         {/* Right */}
         <g
           id="btn-dpad-right"
+          data-testid="svg-btn-dpad_right"
           tabIndex={0}
           role="button"
           aria-label="D-Pad Right"
@@ -1157,6 +1180,7 @@ function GamepadSvgVisualizer({
       {/* Button Y (Top / Yellow) */}
       <g
         id="btn-button-y"
+        data-testid="svg-btn-button_y"
         tabIndex={0}
         role="button"
         aria-label="Button Y"
@@ -1188,6 +1212,7 @@ function GamepadSvgVisualizer({
       {/* Button B (Right / Red) */}
       <g
         id="btn-button-b"
+        data-testid="svg-btn-button_b"
         tabIndex={0}
         role="button"
         aria-label="Button B"
@@ -1219,6 +1244,7 @@ function GamepadSvgVisualizer({
       {/* Button A (Bottom / Green) */}
       <g
         id="btn-button-a"
+        data-testid="svg-btn-button_a"
         tabIndex={0}
         role="button"
         aria-label="Button A"
@@ -1250,6 +1276,7 @@ function GamepadSvgVisualizer({
       {/* Button X (Left / Blue) */}
       <g
         id="btn-button-x"
+        data-testid="svg-btn-button_x"
         tabIndex={0}
         role="button"
         aria-label="Button X"
@@ -1281,6 +1308,7 @@ function GamepadSvgVisualizer({
       {/* Button Back */}
       <g
         id="btn-button-back"
+        data-testid="svg-btn-button_back"
         tabIndex={0}
         role="button"
         aria-label="Back Button"
@@ -1321,6 +1349,7 @@ function GamepadSvgVisualizer({
       {/* Button Start */}
       <g
         id="btn-button-start"
+        data-testid="svg-btn-button_start"
         tabIndex={0}
         role="button"
         aria-label="Start Button"
