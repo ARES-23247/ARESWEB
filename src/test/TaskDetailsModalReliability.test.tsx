@@ -45,6 +45,7 @@ vi.mock("@/app/dashboard/tasks/components/TaskCommentsSection", () => ({ default
 vi.mock("@/app/dashboard/tasks/components/TaskEditorAiCopilot", () => ({ default: () => <div>AI Copilot</div> }));
 
 import TaskDetailsModal from "@/app/dashboard/tasks/components/TaskDetailsModal";
+import { authenticatedFetch } from "@/lib/api";
 
 const existingTask: TaskItem = {
   id: "task-1",
@@ -87,6 +88,11 @@ describe("TaskDetailsModal reliability", () => {
     focusTrap.close = null;
     firestore.updateDoc.mockResolvedValue(undefined);
     firestore.setDoc.mockResolvedValue(undefined);
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    } as Response);
   });
 
   it("requires a non-empty title and disables create until it is valid", () => {
@@ -147,6 +153,36 @@ describe("TaskDetailsModal reliability", () => {
 
     expect(await screen.findByText("Unable to create task")).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("persists an optional date-only deadline on task creation", async () => {
+    const onCreateTask = vi.fn(async (_task: TaskItem) => null);
+    renderModal({ taskId: null, tasks: [], onCreateTask });
+
+    fireEvent.change(screen.getByLabelText("Task Title"), { target: { value: "Prepare judging notebook" } });
+    fireEvent.change(screen.getByLabelText(/Due Date/i), { target: { value: "2026-09-12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add Task Card" }));
+
+    await waitFor(() => expect(onCreateTask).toHaveBeenCalledOnce());
+    expect(onCreateTask.mock.calls[0][0]).toMatchObject({
+      title: "Prepare judging notebook",
+      dueDate: "2026-09-12",
+    });
+    await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledOnce());
+    expect(JSON.parse(String(vi.mocked(authenticatedFetch).mock.calls[0][1]?.body)))
+      .toMatchObject({ dueDate: "2026-09-12" });
+  });
+
+  it("clears an existing deadline explicitly when saving", async () => {
+    renderModal({ tasks: [{ ...existingTask, dueDate: "2026-09-12" }] });
+
+    const dueDate = screen.getByLabelText(/Due Date/i);
+    expect(dueDate).toHaveValue("2026-09-12");
+    fireEvent.change(dueDate, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(firestore.updateDoc).toHaveBeenCalledOnce());
+    expect(firestore.updateDoc.mock.calls[0][1]).toMatchObject({ dueDate: null });
   });
 
   it("keeps a subtask draft when the transaction fails", async () => {

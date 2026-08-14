@@ -31,6 +31,7 @@ const notificationSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   subteam: z.string().trim().max(80).optional(),
   priority: z.string().trim().max(80).optional(),
+  dueDate: z.string().date().optional(),
 }).strict();
 
 function safeAuthorLabel(req: AuthenticatedRequest): string {
@@ -59,7 +60,7 @@ router.post("/comment", ensureTeamMember, asyncHandler(async (req: Authenticated
 router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
   const parsed = notificationSchema.safeParse(req.body);
   if (!parsed.success) throw new ApiError(400, "Enter valid task notification details.");
-  const { taskId, action, title, status, description, subteam, priority } = parsed.data;
+  const { taskId, action, title, status, description, subteam, priority, dueDate } = parsed.data;
 
   const streamName = process.env.ZULIP_KANBAN_STREAM || "kanban";
   const topic = `Task-${taskId}`;
@@ -71,10 +72,14 @@ router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
       description ? `\n${description}` : "",
       `**Priority:** ${priority || "medium"}`,
       `**Subteam:** ${subteam || "software"}`,
+      dueDate ? `**Due:** ${dueDate}` : "",
       `[Open Kanban Board](https://aresfirst.org/dashboard/tasks)`
     ].filter(Boolean).join("\n");
   } else if (action === "move") {
-    content = `🔄 **Task Status Updated:** Card is now in **${status || "unknown"}**`;
+    content = [
+      `🔄 **Task Status Updated:** Card is now in **${status || "unknown"}**`,
+      dueDate ? `**Due:** ${dueDate}` : "",
+    ].filter(Boolean).join("\n");
   } else {
     throw new ApiError(400, "Invalid action.");
   }

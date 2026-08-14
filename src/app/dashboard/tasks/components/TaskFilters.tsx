@@ -1,11 +1,12 @@
 import React from "react";
 import { Plus } from "lucide-react";
+import type { TaskSortMode } from "../taskRecord";
 
 interface TaskFiltersProps {
   canEdit: boolean;
   onOpenCreate: () => void;
-  sortBy: "newest" | "priority";
-  onSortByChange: (sort: "newest" | "priority") => void;
+  sortBy: TaskSortMode;
+  onSortByChange: (sort: TaskSortMode) => void;
   showArchived: boolean;
   onShowArchivedChange: (show: boolean) => void;
   filterSubteam: string;
@@ -39,15 +40,21 @@ export default function TaskFilters({
       <div className="flex items-center gap-3 bg-black/45 p-1.5 rounded-lg border border-white/5 shrink-0">
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <label htmlFor="board-sort" className="text-[10px] font-bold uppercase tracking-wider text-marble/55">Sort:</label>
+          <label
+            htmlFor="board-sort"
+            className="text-[10px] font-bold uppercase tracking-wider text-marble/55"
+          >
+            Sort:
+          </label>
           <select
             id="board-sort"
             value={sortBy}
-            onChange={(e) => onSortByChange(e.target.value as "newest" | "priority")}
+            onChange={(e) => onSortByChange(e.target.value as TaskSortMode)}
             className="bg-black/60 border border-white/10 rounded px-2.5 py-1 text-[10px] font-bold uppercase text-white focus:outline-none focus:border-ares-red transition-colors cursor-pointer font-sans"
           >
             <option value="newest">Newest First</option>
             <option value="priority">Priority (High-Low)</option>
+            <option value="due">Due Date (Soonest)</option>
           </select>
         </div>
 

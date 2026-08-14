@@ -109,7 +109,8 @@ describe("Tasks Router Backend Endpoints", () => {
       req.body = {
         taskId: "123",
         action: "create",
-        title: "Fix intake slide calibrations"
+        title: "Fix intake slide calibrations",
+        dueDate: "2026-09-12",
       };
 
       await invokeRoute("/notify", "post");
@@ -119,6 +120,11 @@ describe("Tasks Router Backend Endpoints", () => {
           success: true,
           message: "Notification sent to Zulip."
         })
+      );
+      expect(sendZulipMessage).toHaveBeenCalledWith(
+        expect.any(String),
+        "Task-123",
+        expect.stringContaining("**Due:** 2026-09-12"),
       );
     });
 
@@ -134,6 +140,20 @@ describe("Tasks Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Enter valid task notification details.");
       expect(err.status).toBe(400);
+    });
+
+    it("rejects an impossible due date", async () => {
+      req.body = {
+        taskId: "123",
+        action: "create",
+        title: "Fix intake slide calibrations",
+        dueDate: "2026-02-29",
+      };
+
+      await invokeRoute("/notify", "post");
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+      expect(sendZulipMessage).not.toHaveBeenCalled();
     });
 
     it("returns an upstream error when Zulip rejects the notification", async () => {

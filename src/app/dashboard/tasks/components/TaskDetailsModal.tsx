@@ -56,6 +56,7 @@ export default function TaskDetailsModal({
   const taskSubteam = task?.subteam;
   const taskStatus = task?.status;
   const taskAssignees = task?.assignees;
+  const taskDueDate = task?.dueDate;
 
   const [modalTitle, setModalTitle] = useState(task?.title || "");
   const [modalDesc, setModalDesc] = useState(task?.description || "");
@@ -63,6 +64,7 @@ export default function TaskDetailsModal({
   const [modalSubteam, setModalSubteam] = useState(task?.subteam || "software");
   const [modalStatus, setModalStatus] = useState(task?.status || "todo");
   const [modalAssignees, setModalAssignees] = useState<string[]>(task?.assignees || []);
+  const [modalDueDate, setModalDueDate] = useState(task?.dueDate || "");
   const [submitting, setSubmitting] = useState(false);
   const [newSubTitle, setNewSubTitle] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -110,6 +112,7 @@ export default function TaskDetailsModal({
       setModalSubteam(taskSubteam);
       setModalStatus(taskStatus);
       setModalAssignees(taskAssignees || []);
+      setModalDueDate(taskDueDate || "");
     } else {
       setModalTitle("");
       setModalDesc("");
@@ -117,8 +120,9 @@ export default function TaskDetailsModal({
       setModalSubteam("software");
       setModalStatus("todo");
       setModalAssignees([]);
+      setModalDueDate("");
     }
-  }, [task, taskAssignees, taskDescription, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
+  }, [task, taskAssignees, taskDescription, taskDueDate, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
 
   if (taskId && !task) return null;
 
@@ -141,6 +145,7 @@ export default function TaskDetailsModal({
           assignees: modalAssignees.length > 0 ? modalAssignees : user ? [user.uid] : [],
           subtasks: [],
           archived: false,
+          dueDate: modalDueDate || null,
           createdAt: new Date().toISOString()
         };
 
@@ -165,6 +170,7 @@ export default function TaskDetailsModal({
             description: newTaskData.description,
             priority: newTaskData.priority,
             subteam: newTaskData.subteam,
+            dueDate: newTaskData.dueDate || undefined,
           }),
         }).then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -194,6 +200,7 @@ export default function TaskDetailsModal({
           subteam: modalSubteam,
           status: modalStatus,
           assignees: modalAssignees,
+          dueDate: modalDueDate || null,
         });
 
         if (setSyncState) setSyncState("syncing");
@@ -207,6 +214,7 @@ export default function TaskDetailsModal({
             priority: modalPriority,
             subteam: modalSubteam,
             status: modalStatus,
+            dueDate: modalDueDate || undefined,
           }),
         }).then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -417,6 +425,23 @@ export default function TaskDetailsModal({
               <option value="high">High</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="modal-due-date" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">
+            Due Date <span className="normal-case font-medium">(optional)</span>
+          </label>
+          <input
+            id="modal-due-date"
+            type="date"
+            value={modalDueDate}
+            onChange={(event) => setModalDueDate(event.target.value)}
+            disabled={!canEdit}
+            className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          />
+          <p className="mt-1.5 text-[10px] text-marble/55">
+            Uses the team member's local calendar date; no time of day is implied.
+          </p>
         </div>
 
         <div>

@@ -15,7 +15,7 @@ import { PublicDataState } from "@/components/PublicDataState";
 import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
 import { describeTaskError, TaskOperationError } from "./taskErrors";
 import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask } from "./taskSubtasks";
-import { normalizeTaskRecord } from "./taskRecord";
+import { normalizeTaskRecord, sortTasks, type TaskSortMode } from "./taskRecord";
 
 const MOCK_TASKS: TaskItem[] = [
   {
@@ -77,7 +77,7 @@ export default function KanbanPage() {
 
   // Operational state extensions
   const [showArchived, setShowArchived] = useState(false);
-  const [sortBy, setSortBy] = useState<"newest" | "priority">("newest");
+  const [sortBy, setSortBy] = useState<TaskSortMode>("newest");
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
@@ -203,6 +203,7 @@ export default function KanbanPage() {
             action: "move",
             title: task.title,
             status: newStatus,
+            dueDate: task.dueDate || undefined,
           }),
         });
         runZulipSync(syncPromise);
@@ -439,21 +440,10 @@ export default function KanbanPage() {
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         {columns.map((col) => {
-          let colTasks = filteredTasks.filter((t) => t.status === col.id);
-
-          colTasks = [...colTasks].sort((a, b) => {
-            if (sortBy === "priority") {
-              const priorityMap = { high: 3, medium: 2, low: 1 };
-              const priorityA = priorityMap[a.priority] || 0;
-              const priorityB = priorityMap[b.priority] || 0;
-              if (priorityA !== priorityB) {
-                return priorityB - priorityA;
-              }
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            } else {
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            }
-          });
+          const colTasks = sortTasks(
+            filteredTasks.filter((task) => task.status === col.id),
+            sortBy,
+          );
 
           return (
             <TaskBoardColumn

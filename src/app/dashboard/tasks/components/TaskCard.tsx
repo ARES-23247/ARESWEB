@@ -1,7 +1,13 @@
 import React from "react";
-import { Archive, CheckSquare, MessageSquare } from "lucide-react";
+import {
+  Archive,
+  CalendarClock,
+  CheckSquare,
+  MessageSquare,
+} from "lucide-react";
 
 import { SubTask, TaskComment, TaskItem, MemberProfile } from "@/types/task";
+import { describeTaskDueDate, getTaskDueState } from "../taskRecord";
 export type { SubTask, TaskComment, TaskItem, MemberProfile };
 
 interface TaskCardProps {
@@ -10,7 +16,10 @@ interface TaskCardProps {
   draggingTaskId: string | null;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
   onDragEnd: () => void;
-  onMoveStatus: (taskId: string, status: TaskItem["status"]) => Promise<unknown> | void;
+  onMoveStatus: (
+    taskId: string,
+    status: TaskItem["status"],
+  ) => Promise<unknown> | void;
   onEditTask: (taskId: string) => void;
   onArchiveTask: (taskId: string, archive: boolean) => void;
   teamProfiles: MemberProfile[];
@@ -31,6 +40,8 @@ export default function TaskCard({
   const doneSub = task.subtasks?.filter((s) => s.done).length || 0;
   const progressPercent = totalSub > 0 ? (doneSub / totalSub) * 100 : 0;
   const commentsCount = task.commentsCount ?? (task.comments?.length || 0);
+  const dueState = getTaskDueState(task);
+  const dueLabel = describeTaskDueDate(task);
 
   return (
     <article
@@ -52,7 +63,9 @@ export default function TaskCard({
         onEditTask(task.id);
       }}
       className={`bg-black/35 border border-white/5 ares-cut p-4.5 transition-all duration-200 hover:border-ares-red hover:-translate-y-0.5 shadow-sm flex flex-col justify-between gap-4 cursor-grab active:cursor-grabbing text-left ${
-        draggingTaskId === task.id ? "opacity-30 border-dashed border-white/20" : ""
+        draggingTaskId === task.id
+          ? "opacity-30 border-dashed border-white/20"
+          : ""
       }`}
     >
       <div className={draggingTaskId ? "pointer-events-none" : ""}>
@@ -88,8 +101,8 @@ export default function TaskCard({
                 task.priority === "high"
                   ? "bg-ares-gold/20 text-ares-gold border-ares-gold/30"
                   : task.priority === "medium"
-                  ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
-                  : "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
+                    ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
+                    : "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
               }`}
             >
               {task.priority}
@@ -113,6 +126,21 @@ export default function TaskCard({
         <p className="text-marble/60 text-[11px] leading-relaxed mb-4 line-clamp-3">
           {task.description || "No description provided."}
         </p>
+
+        {dueLabel && (
+          <p
+            className={`mb-3 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${
+              dueState === "overdue"
+                ? "text-ares-red-light"
+                : dueState === "today"
+                  ? "text-ares-gold"
+                  : "text-marble/65"
+            }`}
+          >
+            <CalendarClock aria-hidden="true" size={12} />
+            {dueLabel}
+          </p>
+        )}
 
         {/* Subtasks Progress stats */}
         {totalSub > 0 && (
@@ -141,7 +169,9 @@ export default function TaskCard({
         <div className="flex -space-x-1.5 overflow-hidden">
           {task.assignees?.slice(0, 4).map((uid) => {
             const profile = teamProfiles.find((p) => p.uid === uid);
-            const avatar = profile?.avatar || `https://api.dicebear.com/9.x/bottts/svg?seed=${uid}`;
+            const avatar =
+              profile?.avatar ||
+              `https://api.dicebear.com/9.x/bottts/svg?seed=${uid}`;
             const name = profile?.nickname || "Team Member";
             return (
               <img
@@ -162,14 +192,19 @@ export default function TaskCard({
 
         {canEdit && (
           <div className="min-w-0 flex-1">
-            <label htmlFor={`move-task-${task.id}`} className="sr-only">Move {task.title} to another status</label>
+            <label htmlFor={`move-task-${task.id}`} className="sr-only">
+              Move {task.title} to another status
+            </label>
             <select
               id={`move-task-${task.id}`}
               value={task.status}
               onClick={(event) => event.stopPropagation()}
               onChange={(event) => {
                 event.stopPropagation();
-                void onMoveStatus(task.id, event.target.value as TaskItem["status"]);
+                void onMoveStatus(
+                  task.id,
+                  event.target.value as TaskItem["status"],
+                );
               }}
               className="w-full rounded border border-white/10 bg-obsidian px-2 py-1 text-[10px] font-semibold text-marble focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
@@ -184,7 +219,8 @@ export default function TaskCard({
         {/* Comments count indicator */}
         {commentsCount > 0 && (
           <span className="flex items-center gap-1.5 text-[10px] font-black text-marble/45 uppercase tracking-wider">
-            <MessageSquare size={11} className="text-ares-gold" /> {commentsCount}
+            <MessageSquare size={11} className="text-ares-gold" />{" "}
+            {commentsCount}
           </span>
         )}
       </div>

@@ -7,12 +7,16 @@ import {
   toggleSubtask,
 } from "@/app/dashboard/tasks/taskSubtasks";
 import {
+  describeTaskDueDate,
+  getTaskDueState,
   normalizeTaskDate,
+  normalizeTaskDueDate,
   normalizeTaskPriority,
   normalizeTaskRecord,
   normalizeTaskStatus,
   normalizeTaskSubteam,
   selectPriorityTasks,
+  sortTasks,
 } from "@/app/dashboard/tasks/taskRecord";
 
 describe("Kanban reliability utilities", () => {
@@ -94,6 +98,25 @@ describe("Kanban reliability utilities", () => {
     expect(normalizeTaskDate(null)).toBe("1970-01-01T00:00:00.000Z");
   });
 
+  it("normalizes date-only deadlines and derives local calendar labels", () => {
+    const referenceDate = new Date(2026, 7, 14, 23, 30);
+
+    expect(normalizeTaskDueDate(" 2026-08-15 ")).toBe("2026-08-15");
+    expect(normalizeTaskDueDate("2026-02-29")).toBeNull();
+    expect(normalizeTaskDueDate(20260815)).toBeNull();
+    expect(getTaskDueState({ dueDate: "2026-08-13", status: "todo" }, referenceDate)).toBe("overdue");
+    expect(getTaskDueState({ dueDate: "2026-08-14", status: "review" }, referenceDate)).toBe("today");
+    expect(getTaskDueState({ dueDate: "2026-08-15", status: "in_progress" }, referenceDate)).toBe("upcoming");
+    expect(getTaskDueState({ dueDate: "2026-08-13", status: "completed" }, referenceDate)).toBeNull();
+    expect(getTaskDueState({ dueDate: null, status: "todo" }, referenceDate)).toBeNull();
+    expect(getTaskDueState({ dueDate: "invalid", status: "todo" }, referenceDate)).toBeNull();
+    expect(describeTaskDueDate({ dueDate: "2026-08-13", status: "todo" }, referenceDate)).toBe("Overdue · Aug 13");
+    expect(describeTaskDueDate({ dueDate: "2026-08-14", status: "todo" }, referenceDate)).toBe("Due today");
+    expect(describeTaskDueDate({ dueDate: "2026-08-15", status: "todo" }, referenceDate)).toBe("Due Aug 15");
+    expect(describeTaskDueDate({ dueDate: "invalid", status: "todo" }, referenceDate)).toBeNull();
+    expect(describeTaskDueDate({ dueDate: null, status: "todo" }, referenceDate)).toBeNull();
+  });
+
   it("bounds untrusted task records while preserving usable legacy content", () => {
     const task = normalizeTaskRecord("trusted-document-id", {
       id: "spoofed-id",
@@ -111,6 +134,7 @@ describe("Kanban reliability utilities", () => {
       isDeleted: true,
       createdAt: 0,
       commentsCount: -10,
+      dueDate: "2026-08-15",
     });
 
     expect(task).toMatchObject({
@@ -124,6 +148,7 @@ describe("Kanban reliability utilities", () => {
       isDeleted: 1,
       createdAt: "1970-01-01T00:00:00.000Z",
       commentsCount: 0,
+      dueDate: "2026-08-15",
     });
     expect(task.title).toHaveLength(240);
     expect(task.description).toHaveLength(20_000);
@@ -157,5 +182,35 @@ describe("Kanban reliability utilities", () => {
 
     expect(selected.map(({ id }) => id)).toEqual(["high", "newer-medium"]);
     expect(selectPriorityTasks([task("only")], -1)).toEqual([]);
+  });
+
+  it("sorts by newest, priority, or earliest deadline without mutating input", () => {
+    const task = (id: string, overrides: Record<string, unknown> = {}) => normalizeTaskRecord(id, {
+      title: id,
+      status: "todo",
+      priority: "medium",
+      subteam: "software",
+      createdAt: "2026-08-10T00:00:00.000Z",
+      ...overrides,
+    });
+    const tasks = [
+      task("no-due-high", { priority: "high", createdAt: "2026-08-12T00:00:00.000Z" }),
+      task("later", { dueDate: "2026-08-20", createdAt: "2026-08-11T00:00:00.000Z" }),
+      task("sooner-low", { dueDate: "2026-08-15", priority: "low" }),
+      task("sooner-high", { dueDate: "2026-08-15", priority: "high" }),
+    ];
+
+    expect(sortTasks(tasks, "due").map(({ id }) => id)).toEqual([
+      "sooner-high", "sooner-low", "later", "no-due-high",
+    ]);
+    expect(sortTasks(tasks, "priority").map(({ id }) => id)).toEqual([
+      "no-due-high", "sooner-high", "later", "sooner-low",
+    ]);
+    expect(sortTasks(tasks, "newest").map(({ id }) => id)).toEqual([
+      "no-due-high", "later", "sooner-low", "sooner-high",
+    ]);
+    expect(tasks.map(({ id }) => id)).toEqual([
+      "no-due-high", "later", "sooner-low", "sooner-high",
+    ]);
   });
 });

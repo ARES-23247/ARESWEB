@@ -102,6 +102,7 @@ describe("Firestore zero-trust rules", () => {
       assignees: ["member-user"],
       subtasks: [],
       archived: false,
+      dueDate: "2026-08-20",
       createdAt: "2026-08-14T00:00:00.000Z",
     };
 
@@ -120,6 +121,11 @@ describe("Firestore zero-trust rules", () => {
       ...canonicalTask,
       id: "unknown-field",
       internalOverride: true,
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks", "invalid-due-date"), {
+      ...canonicalTask,
+      id: "invalid-due-date",
+      dueDate: "August 20",
     }));
     await assertFails(setDoc(doc(memberDb, "tasks", "oversized-list"), {
       ...canonicalTask,
@@ -141,7 +147,10 @@ describe("Firestore zero-trust rules", () => {
 
     await assertSucceeds(updateDoc(legacyTask, { title: "Canonical title" }));
     await assertSucceeds(updateDoc(legacyTask, { priority: "medium", subteam: "hardware" }));
+    await assertSucceeds(updateDoc(legacyTask, { dueDate: "2026-08-20" }));
+    await assertSucceeds(updateDoc(legacyTask, { dueDate: null }));
     await assertFails(updateDoc(legacyTask, { priority: "normal" }));
+    await assertFails(updateDoc(legacyTask, { dueDate: "08/20/2026" }));
     await assertFails(updateDoc(legacyTask, { forgedRole: "admin" }));
     await assertFails(deleteDoc(legacyTask));
   });
