@@ -13,10 +13,10 @@ interface ApiErrorBody {
 export async function formatSimulationSource(code: string): Promise<string> {
   const prettier = (await import("prettier/standalone")).default;
   const prettierPluginEstree = await import("prettier/plugins/estree");
-  const prettierPluginTs = await import("prettier/plugins/typescript");
+  const prettierPluginBabel = await import("prettier/plugins/babel");
   return prettier.format(code, {
-    parser: "typescript",
-    plugins: [prettierPluginEstree, prettierPluginTs],
+    parser: "babel-ts",
+    plugins: [prettierPluginEstree, prettierPluginBabel],
     tabWidth: 2,
     printWidth: 100,
     semi: true,

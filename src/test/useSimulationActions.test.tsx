@@ -81,7 +81,7 @@ describe("useSimulationActions", () => {
     expect((error as Error).message).toContain("HTTP 403: Forbidden");
   });
 
-  it("formats TypeScript without loading the unrelated Babel parser", async () => {
+  it("formats TypeScript with the smaller Babel TypeScript parser", async () => {
     const formatted = await formatSimulationSource(
       "interface Point{x:number;y:number};const point:Point={x:1,y:2}",
     );
@@ -91,6 +91,17 @@ describe("useSimulationActions", () => {
   y: number;
 }
 const point: Point = { x: 1, y: 2 };
+`);
+  });
+
+  it("formats TSX simulation components without losing type syntax", async () => {
+    const formatted = await formatSimulationSource(
+      "export default function Sim({speed}:{speed:number}){return <div>{speed}</div>}",
+    );
+
+    expect(formatted).toBe(`export default function Sim({ speed }: { speed: number }) {
+  return <div>{speed}</div>;
+}
 `);
   });
 });
