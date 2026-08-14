@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { GreekMeander } from "./GreekMeander";
 import { siteConfig } from "@/lib/site-config";
-import { Mail, Users, Calendar, BookOpen, ShoppingBag, Globe, ShieldCheck, Heart } from "lucide-react";
+import { Mail, Users, Calendar, BookOpen, ShoppingBag, Globe, ShieldCheck, Heart, ShieldAlert } from "lucide-react";
 
 export default function Footer() {
   const [mounted, setMounted] = useState(false);
@@ -72,6 +72,7 @@ export default function Footer() {
             <li><Link to="/robots" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robots Fleet</Link></li>
             <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">3D Models Archive</a></li>
             <li><a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">CAD Workspace</a></li>
+            <li><Link to="/safety" className="hover:text-ares-gold transition-colors flex items-center gap-2"><ShieldAlert size={12} className="text-ares-red" /> Safety Matrix</Link></li>
             <li><Link to="/academy" className="hover:text-ares-gold transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">ARES Academy</Link></li>
             <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2 group">
               <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden border border-white/10">
@@ -171,6 +172,9 @@ export default function Footer() {
             Accessibility
           </Link>
 
+          <Link to="/safety" className="hover:text-ares-gold transition-colors flex items-center gap-2">
+            <ShieldAlert size={12} className="text-ares-cyan" /> Safety
+          </Link>
           <Link to="/privacy" className="hover:text-ares-gold transition-colors flex items-center gap-2">
             <ShieldCheck size={12} className="text-ares-cyan" /> Privacy
           </Link>

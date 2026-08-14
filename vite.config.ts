@@ -139,6 +139,11 @@ export default defineConfig({
     mockReset: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
+    server: {
+      deps: {
+        inline: [/@tanstack\/react-query/],
+      },
+    },
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
@@ -154,6 +159,7 @@ export default defineConfig({
         "src/lib/api.ts",
         "src/lib/contentUrls.ts",
         "src/lib/diff.ts",
+        "src/lib/safetyMatrixData.ts",
         "src/lib/dateOnly.ts",
         "src/lib/outreachExport.ts",
         "src/lib/security.ts",

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen, RefreshCw } from "lucide-react";
+import { ArrowRight, GraduationCap, Cpu, Users, Award, BookOpen, RefreshCw, ShieldCheck } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 import { logger } from "@/utils/logger";
@@ -355,6 +355,36 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      {/* ─── WORKSHOP SAFETY & CERTIFICATIONS CALLOUT ─── */}
+      <section className="py-16 bg-black/30 border-t border-white/5">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="bg-white/5 border border-ares-gold/20 rounded-2xl p-8 hero-card flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-ares-red/15 border border-ares-red/30 flex items-center justify-center text-ares-red shrink-0">
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-ares-gold font-heading">
+                  Workshop Safety Standards
+                </span>
+                <h3 className="text-xl font-bold text-white font-heading uppercase mt-0.5">
+                  Machine Tool Safety &amp; Qualifications
+                </h3>
+                <p className="text-xs text-marble/70 mt-1 max-w-xl leading-relaxed">
+                  Before operating our CNC router, 3D printers, drill press, or bandsaw, all students must pass our interactive zero-PII qualification quizzes.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/safety"
+              className="px-5 py-2.5 bg-ares-red hover:bg-ares-bronze text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-ares-red/20 shrink-0 flex items-center gap-2"
+            >
+              Safety Matrix <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
