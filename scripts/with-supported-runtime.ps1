@@ -56,7 +56,7 @@ Write-Host "Using Node $resolvedNode, pnpm $resolvedPnpm, Java $((& java -versio
 
 if ($Command.Count -gt 0) {
     $commandName = $Command[0]
-    $commandArguments = if ($Command.Count -gt 1) { $Command[1..($Command.Count - 1)] } else { @() }
+    [string[]]$commandArguments = if ($Command.Count -gt 1) { [string[]]$Command[1..($Command.Count - 1)] } else { @() }
     & $commandName @commandArguments
     exit $LASTEXITCODE
 }

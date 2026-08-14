@@ -2,6 +2,7 @@ import { getApps, initializeApp } from "firebase-admin/app";
 import { getAppCheck } from "firebase-admin/app-check";
 import { getAuth } from "firebase-admin/auth";
 import {
+  FieldPath,
   FieldValue,
   getFirestore,
   type DocumentData,
@@ -45,6 +46,7 @@ const adminAuth = getAuth(app);
 const adminStorage = getStorage(app);
 const adminAppCheck = getAppCheck(app);
 const adminFieldValue = FieldValue;
+const adminFieldPath = FieldPath;
 
-export { adminAppCheck, adminAuth, adminDb, adminFieldValue, adminStorage };
+export { adminAppCheck, adminAuth, adminDb, adminFieldPath, adminFieldValue, adminStorage };
 export type { DocumentData as AdminDocumentData, DocumentReference as AdminDocumentReference };

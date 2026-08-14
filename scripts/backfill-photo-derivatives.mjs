@@ -82,11 +82,11 @@ export async function runPhotoDerivativeBackfill(options, dependencies = null) {
   });
 
   const { firebase, imageImport, derivatives } = dependencies ?? loadBackfillDependencies();
-  const { adminDb, adminStorage } = firebase;
-  const admin = firebase.default;
+  const { adminDb, adminStorage, adminFieldPath } = firebase;
+  const docIdField = adminFieldPath ? adminFieldPath.documentId() : (firebase.default?.firestore?.FieldPath?.documentId?.() ?? "__name__");
 
   let query = adminDb.collection("imported_photos")
-    .orderBy(admin.firestore.FieldPath.documentId())
+    .orderBy(docIdField)
     .limit(options.limit);
   if (options.after) query = query.startAfter(options.after);
   const snapshot = await query.get();

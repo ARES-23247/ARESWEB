@@ -36,6 +36,7 @@ describe("photo derivative backfill safety", () => {
       firebase: {
         adminDb: { collection: () => query, batch: () => batch },
         adminStorage: { bucket },
+        adminFieldPath: { documentId: () => "__name__" },
         default: { firestore: { FieldPath: { documentId: () => "__name__" } } },
       },
       imageImport: {},
@@ -134,6 +135,7 @@ describe("photo derivative backfill safety", () => {
           batch: () => ({ set: vi.fn(), commit }),
         },
         adminStorage: { bucket: () => ({ file: () => sourceFile }) },
+        adminFieldPath: { documentId: () => "__name__" },
         default: { firestore: { FieldPath: { documentId: () => "__name__" } } },
       },
       imageImport: { validateImageMagicBytes: () => ({ valid: true, format: "jpg" }) },
