@@ -1,11 +1,11 @@
 export interface OutreachExportRecord {
   title: string;
-  date: string;
+  date?: string | null;
   location?: string | null;
-  hours: number;
-  peopleReached: number;
+  hours?: number | null;
+  peopleReached?: number | null;
   impactSummary?: string | null;
-  isDeleted: 0 | 1;
+  isDeleted?: 0 | 1;
 }
 
 function nonnegativeFinite(value: unknown): number {
@@ -38,7 +38,7 @@ export function buildOutreachCsv(logs: OutreachExportRecord[]): string {
     ["Title", "Date", "Location", "Volunteer Hours", "People Reached", "Impact Summary"],
     ...activeLogs.map((log) => [
       log.title,
-      log.date,
+      log.date || "",
       log.location || "",
       nonnegativeFinite(log.hours),
       nonnegativeFinite(log.peopleReached),
@@ -46,6 +46,11 @@ export function buildOutreachCsv(logs: OutreachExportRecord[]): string {
     ]),
   ];
   return rows.map((row) => row.map(escapeSpreadsheetCsvCell).join(",")).join("\r\n");
+}
+
+export function createOutreachCsvDataUrl(logs: OutreachExportRecord[]): string {
+  const csv = buildOutreachCsv(logs);
+  return `data:text/csv;charset=utf-8,${encodeURIComponent(`\uFEFF${csv}`)}`;
 }
 
 export function currentSeasonLabel(date: Date): string {

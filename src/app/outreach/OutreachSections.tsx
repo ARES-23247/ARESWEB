@@ -1,6 +1,7 @@
-import { Activity, ArrowRight, Clock, Heart, MapPin, RefreshCw, Target } from "lucide-react";
+import { Activity, ArrowRight, Clock, Download, Heart, MapPin, RefreshCw, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PublicDataState } from "@/components/PublicDataState";
+import { createOutreachCsvDataUrl } from "@/lib/outreachExport";
 
 export interface OutreachLog {
   key: string;
@@ -150,6 +151,16 @@ export function OutreachImpactFeed({ logs, isLoading, isRefreshing, error, onRef
             <p className="text-xs text-marble/65 uppercase tracking-widest mt-1 font-semibold">Timeline of STEM Service Demos</p>
           </div>
           <div className="flex flex-wrap gap-4">
+            {logs.length > 0 && (
+              <a
+                href={createOutreachCsvDataUrl(logs)}
+                download="ares-23247-community-outreach-impact.csv"
+                aria-label="Export outreach impact log as CSV"
+                className="flex items-center gap-1.5 rounded border border-ares-cyan/30 bg-ares-cyan/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ares-cyan hover:bg-ares-cyan/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <Download aria-hidden="true" size={12} /> Export CSV
+              </a>
+            )}
             <button type="button" onClick={onRefresh} disabled={isLoading || isRefreshing} className="flex items-center gap-1.5 rounded border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
               <RefreshCw aria-hidden="true" size={12} /> Refresh records
             </button>

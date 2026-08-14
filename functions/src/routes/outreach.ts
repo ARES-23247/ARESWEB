@@ -42,14 +42,19 @@ interface OutreachWriteRequest {
   eventId?: string | null;
 }
 
+function nonnegativeNumber(value: unknown): number {
+  const num = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(num) && num >= 0 ? num : 0;
+}
+
 function toOutreachDto(id: string, data: OutreachLogDocument, includeLifecycle: boolean) {
   const dto = {
     id,
     title: typeof data.title === "string" ? data.title : "",
     date: typeof data.date === "string" ? data.date : "",
     location: typeof data.location === "string" ? data.location : null,
-    hours: Number(data.hours || 0),
-    peopleReached: Number(data.peopleReached || 0),
+    hours: nonnegativeNumber(data.hours),
+    peopleReached: nonnegativeNumber(data.peopleReached),
     impactSummary: typeof data.impactSummary === "string" ? data.impactSummary : null,
     eventId: typeof data.eventId === "string" ? data.eventId : null,
     createdAt: typeof data.createdAt === "string" ? data.createdAt : null,
@@ -115,23 +120,29 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   const { id, title, date, location, hours, peopleReached, impactSummary, eventId } = req.body as OutreachWriteRequest;
 
-  if (!title || !title.trim()) {
+  if (!title || typeof title !== "string" || !title.trim()) {
     throw new ApiError(400, "Outreach title is required.");
   }
 
-  if (!date || !date.trim()) {
+  if (!date || typeof date !== "string" || !date.trim()) {
     throw new ApiError(400, "Outreach date is required.");
   }
 
-  if (isNaN(hours) || hours < 0) {
+  const parsedHours = Number(hours);
+  if (!Number.isFinite(parsedHours) || parsedHours < 0) {
     throw new ApiError(400, "Hours must be a non-negative number.");
   }
 
-  if (isNaN(peopleReached) || peopleReached < 0) {
+  const parsedPeople = Number(peopleReached);
+  if (!Number.isFinite(parsedPeople) || parsedPeople < 0) {
     throw new ApiError(400, "People reached must be a non-negative number.");
   }
 
-  const logId = id && id.trim() ? id.trim() : `out_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  const cleanLocation = typeof location === "string" && location.trim() ? location.trim() : null;
+  const cleanSummary = typeof impactSummary === "string" && impactSummary.trim() ? impactSummary.trim() : null;
+  const cleanEventId = typeof eventId === "string" && eventId.trim() ? eventId.trim() : null;
+
+  const logId = id && typeof id === "string" && id.trim() ? id.trim() : `out_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
   const docRef = adminDb.collection("outreach_logs").doc(logId);
   const docSnap = await docRef.get();
@@ -143,11 +154,11 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
     await docRef.update({
       title: title.trim(),
       date: date.trim(),
-      location: location || null,
-      hours: Number(hours),
-      peopleReached: Number(peopleReached),
-      impactSummary: impactSummary || null,
-      eventId: eventId || null,
+      location: cleanLocation,
+      hours: parsedHours,
+      peopleReached: parsedPeople,
+      impactSummary: cleanSummary,
+      eventId: cleanEventId,
       updatedAt: timestamp,
     });
   } else {
@@ -156,11 +167,11 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       id: logId,
       title: title.trim(),
       date: date.trim(),
-      location: location || null,
-      hours: Number(hours),
-      peopleReached: Number(peopleReached),
-      impactSummary: impactSummary || null,
-      eventId: eventId || null,
+      location: cleanLocation,
+      hours: parsedHours,
+      peopleReached: parsedPeople,
+      impactSummary: cleanSummary,
+      eventId: cleanEventId,
       isDeleted: 0,
       createdAt: timestamp,
       updatedAt: timestamp,

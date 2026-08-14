@@ -97,23 +97,32 @@ export default function OutreachPage() {
   };
   const modalRef = useFocusTrap(isModalOpen, closeModal);
 
-  const submitInquiry = async (recaptchaToken: string) => {
+  const submitInquiry = async (
+    recaptchaToken: string,
+    inquiryName = name.trim(),
+    inquiryEmail = email.trim(),
+    inquiryDescription = description.trim(),
+    inquiryOrg = organization.trim(),
+    inquiryPhone = phone.trim()
+  ) => {
     try {
-      let appCheckHeaders = await getAppCheckHeader();
-      if (!appCheckHeaders["X-Firebase-AppCheck"]) appCheckHeaders = await getAppCheckHeader(true);
+      let appCheckHeaders = (await getAppCheckHeader()) || {};
+      if (!appCheckHeaders["X-Firebase-AppCheck"]) {
+        appCheckHeaders = (await getAppCheckHeader(true)) || {};
+      }
 
       const response = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...appCheckHeaders },
         body: JSON.stringify({
           type: "demo",
-          name,
-          email,
+          name: inquiryName,
+          email: inquiryEmail,
           metadata: {
-            organization: organization || undefined,
-            phone: phone || undefined,
-            message: description,
-            additional: description,
+            organization: inquiryOrg || undefined,
+            phone: inquiryPhone || undefined,
+            message: inquiryDescription,
+            additional: inquiryDescription,
           },
           recaptchaToken,
         }),
@@ -141,11 +150,16 @@ export default function OutreachPage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim() || !email.trim() || !description.trim()) return;
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedDescription = description.trim();
+    if (!trimmedName || !trimmedEmail || !trimmedDescription) return;
+
     setSubmitStatus("sending");
     setErrorMessage("");
     try {
-      await submitInquiry(await getRecaptchaToken());
+      const token = await getRecaptchaToken();
+      await submitInquiry(token, trimmedName, trimmedEmail, trimmedDescription, organization.trim(), phone.trim());
     } catch (error) {
       logger.error("Outreach inquiry verification failed.");
       setSubmitStatus("error");
@@ -187,7 +201,7 @@ export default function OutreachPage() {
                 <button type="button" onClick={closeModal} className="px-6 py-2 bg-ares-cyan hover:bg-ares-cyan/80 text-black text-[10px] font-black uppercase tracking-widest ares-cut-sm cursor-pointer transition-all mt-2">Done</button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} data-testid="outreach-demo-form" className="space-y-4">
                 {submitStatus === "error" && (
                   <div role="alert" aria-live="assertive" className="bg-ares-red/15 border border-ares-red/40 text-white p-3.5 ares-cut-sm text-xs font-semibold leading-relaxed flex items-start gap-2">
                     <AlertCircle aria-hidden="true" size={16} className="shrink-0 mt-0.5" />

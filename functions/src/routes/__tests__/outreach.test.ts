@@ -265,6 +265,23 @@ describe("Outreach Router Backend Endpoints", () => {
       expect(err.message).toBe("Hours must be a non-negative number.");
       expect(err.status).toBe(400);
     });
+
+    it("should throw error if peopleReached is non-numeric or negative", async () => {
+      req.body = {
+        title: "Demo",
+        date: "2026-05-20",
+        hours: 5,
+        peopleReached: -10,
+      };
+
+      const handler = getHandler("/admin", "post");
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
+      const err = next.mock.calls[0][0];
+      expect(err.message).toBe("People reached must be a non-negative number.");
+      expect(err.status).toBe(400);
+    });
   });
 
   describe("DELETE /api/outreach/admin/:id - Archive outreach log", () => {
