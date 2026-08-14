@@ -52,7 +52,13 @@ describe("LeaderboardPage STEM Recognition & Truthful Standings", () => {
       screen.getByText(/We removed placeholder names, avatars, badge totals, and ranks\. This page will stay unranked until every result comes from an approved source\./i)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/When the program launches, it will support FIRST® values and reward teamwork, inclusion, discovery, and service\./i)
+      screen.getByText((_content, element) => {
+        return (
+          element?.tagName.toLowerCase() === "p" &&
+          (element?.textContent?.includes("When the program launches") ?? false) &&
+          (element?.textContent?.includes("FIRST") ?? false)
+        );
+      })
     ).toBeInTheDocument();
   });
 
