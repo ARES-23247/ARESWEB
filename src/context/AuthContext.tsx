@@ -18,6 +18,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../lib/firebaseAuth";
 import { authenticatedFetch } from "../lib/api";
+import { getOrInitializeAppCheck } from "../lib/firebaseAppCheck";
 import { logger } from "../utils/logger";
 
 interface AuthorizedUser {
@@ -47,6 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMockRef = useRef(false);
 
   useEffect(() => {
+    // Prime App Check on startup so Auth and Firestore have active tokens immediately
+    if (typeof window !== "undefined") {
+      void getOrInitializeAppCheck();
+    }
+
     // Safety timeout: if Auth takes more than 1.5 seconds to initialize (e.g., emulators are offline/refused),
     // automatically force loading to false so the developer bypass lockscreen is visible.
     const safetyTimeout = setTimeout(() => {
@@ -170,6 +176,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      if (typeof window !== "undefined") {
+        await getOrInitializeAppCheck();
+      }
       await signInWithPopup(auth, provider);
     } catch (error) {
       logger.error("Google SSO login failed.");
