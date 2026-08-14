@@ -1,20 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Archive,
-  CheckCircle,
-  FolderOpen,
-  Image as ImageIcon,
-  Loader2,
-  Pencil,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Search,
-  Shield,
-  Upload,
-} from "lucide-react";
+import { Image as ImageIcon, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "@/lib/image";
@@ -24,10 +11,10 @@ import {
   ManagedAlbum,
   ManagedPhoto,
 } from "@/lib/media";
-import AccessibleTabs, {
-  tabElementId,
-  tabPanelId,
-} from "@/components/AccessibleTabs";
+import AccessibleTabs from "@/components/AccessibleTabs";
+import GooglePhotosSyncPanel from "./GooglePhotosSyncPanel";
+import PhotoAlbumsPanel from "./PhotoAlbumsPanel";
+import PhotoLibraryPanel, { type UploadState } from "./PhotoLibraryPanel";
 import PhotoManagementDialogs, {
   type AlbumEditorDraft,
   type PendingArchive,
@@ -49,13 +36,6 @@ interface PickerItem {
   id: string;
   mediaFile: { baseUrl: string; filename?: string; mimeType?: string };
 }
-interface UploadState {
-  key: string;
-  name: string;
-  state: "waiting" | "uploading" | "done" | "error";
-  detail?: string;
-}
-
 export default function DashboardPhotosPage() {
   const { user, authorizedUser } = useAuth();
   const canContribute = Boolean(
@@ -713,535 +693,78 @@ export default function DashboardPhotosPage() {
       )}
 
       {tab === "library" && (
-        <section
-          id={tabPanelId("photo-management", "library")}
-          role="tabpanel"
-          aria-labelledby={tabElementId("photo-management", "library")}
-          tabIndex={0}
-          className="space-y-7"
-        >
-          {canContribute && (
-            <div className="grid gap-5 border border-white/10 bg-black/25 p-5 lg:grid-cols-[1fr_18rem]">
-              <div>
-                <label
-                  htmlFor="photo-files"
-                  className="flex min-h-36 cursor-pointer flex-col items-center justify-center border-2 border-dashed border-white/15 p-6 text-center text-marble/70 focus-within:ring-2 focus-within:ring-ares-cyan"
-                >
-                  <Upload className="mb-2 text-ares-gold" aria-hidden="true" />
-                  <span className="text-xs font-black uppercase tracking-wider">
-                    Choose photos to upload
-                  </span>
-                  <span className="mt-1 text-[10px]">
-                    JPEG, PNG, or WebP. Files stay in the queue if one fails.
-                  </span>
-                  <input
-                    id="photo-files"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    className="sr-only"
-                    onChange={(event) => void uploadFiles(event.target.files)}
-                  />
-                </label>
-                {uploads.length > 0 && (
-                  <ul aria-live="polite" className="mt-3 space-y-2">
-                    {uploads.map((upload) => (
-                      <li
-                        key={upload.key}
-                        className="border border-white/10 p-2 text-xs text-marble"
-                      >
-                        <span className="font-bold">{upload.name}</span> —{" "}
-                        {upload.state}
-                        {upload.detail && (
-                          <p
-                            className={`mt-1 font-mono text-[10px] ${upload.state === "error" ? "text-white" : "text-marble/60"}`}
-                          >
-                            {upload.detail}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <fieldset className="space-y-4">
-                <legend className="text-xs font-black uppercase tracking-wider text-ares-gold">
-                  Upload options
-                </legend>
-                <div>
-                  <label
-                    htmlFor="upload-album"
-                    className="mb-1 block text-xs text-marble"
-                  >
-                    Album
-                  </label>
-                  <select
-                    id="upload-album"
-                    value={uploadAlbum}
-                    onChange={(event) => setUploadAlbum(event.target.value)}
-                    className="w-full border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  >
-                    <option value="">No album</option>
-                    {albums
-                      .filter((album) => !album.isArchived)
-                      .map((album) => (
-                        <option key={album.id} value={album.id}>
-                          {album.title}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <label className="flex items-start gap-2 text-xs text-marble">
-                  <input
-                    type="checkbox"
-                    checked={uploadAi}
-                    onChange={(event) => setUploadAi(event.target.checked)}
-                    className="mt-0.5 accent-ares-red"
-                  />{" "}
-                  Suggest a caption and tags
-                </label>
-                <label className="flex items-start gap-2 text-xs text-marble">
-                  <input
-                    type="checkbox"
-                    checked={uploadGoogle}
-                    disabled={!connection?.configured}
-                    onChange={(event) => setUploadGoogle(event.target.checked)}
-                    className="mt-0.5 accent-ares-red"
-                  />{" "}
-                  Also copy to the team Google Photos library
-                </label>
-              </fieldset>
-            </div>
-          )}
-          <div className="flex flex-col gap-4 border border-white/10 bg-black/25 p-4 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-wrap gap-3">
-              <div>
-                <label
-                  htmlFor="photo-search"
-                  className="mb-1 block text-[10px] font-bold uppercase text-marble/60"
-                >
-                  Search captions and tags
-                </label>
-                <div className="relative">
-                  <Search
-                    size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/50"
-                    aria-hidden="true"
-                  />
-                  <input
-                    id="photo-search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    className="border border-white/15 bg-obsidian py-2 pl-9 pr-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  />
-                </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="photo-album-filter"
-                  className="mb-1 block text-[10px] font-bold uppercase text-marble/60"
-                >
-                  Album
-                </label>
-                <select
-                  id="photo-album-filter"
-                  value={albumFilter}
-                  onChange={(event) => setAlbumFilter(event.target.value)}
-                  className="border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  <option value="">All albums</option>
-                  {albums
-                    .filter((album) => !album.isArchived)
-                    .map((album) => (
-                      <option key={album.id} value={album.id}>
-                        {album.title}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-            {canManage && (
-              <label className="flex items-center gap-2 text-xs font-bold text-marble">
-                <input
-                  type="checkbox"
-                  checked={showArchivedPhotos}
-                  onChange={(event) =>
-                    setShowArchivedPhotos(event.target.checked)
-                  }
-                  className="accent-ares-red"
-                />{" "}
-                Show archived photos
-              </label>
-            )}
-          </div>
-          {loadingPhotos && photos.length === 0 ? (
-            <Loading label="Loading photos" />
-          ) : filteredPhotos.length === 0 ? (
-            <Empty
-              icon={<ImageIcon aria-hidden="true" />}
-              text="No photos match this view."
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredPhotos.map((photo) => (
-                <article
-                  key={photo.id}
-                  className="overflow-hidden border border-white/10 bg-black/25"
-                >
-                  <button
-                    type="button"
-                    onClick={() => openPhoto(photo)}
-                    className="block aspect-video w-full bg-black focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                    aria-label={`Open ${photo.caption || "team photo"} details`}
-                  >
-                    <img
-                      src={photo.thumbnailUrl || photo.publicUrl}
-                      alt={photo.altText || "Team photo; alt text needed"}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                  <div className="space-y-3 p-4">
-                    <div className="flex flex-wrap gap-2 text-[9px] font-bold uppercase">
-                      {photo.isSynced && (
-                        <span className="border border-ares-gold/40 px-2 py-1 text-ares-gold">
-                          Google synced
-                        </span>
-                      )}
-                      {photo.isArchived && (
-                        <span className="bg-ares-red px-2 py-1 text-white">
-                          Archived
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="font-heading font-black uppercase text-white">
-                      {photo.caption || "Team photo"}
-                    </h2>
-                    <p className="line-clamp-2 text-xs text-marble/65">
-                      {photo.altText ||
-                        "Add alt text so everyone can understand this image."}
-                    </p>
-                    <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-                      {!photo.isArchived && (
-                        <button
-                          type="button"
-                          onClick={() => openPhoto(photo)}
-                          aria-label="Edit photo details"
-                          className="border border-white/15 p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                        >
-                          <Pencil size={14} aria-hidden="true" />
-                        </button>
-                      )}
-                      {canManage &&
-                        (photo.isArchived ? (
-                          <button
-                            type="button"
-                            onClick={() => void restore("photo", photo.id)}
-                            disabled={actionBusy}
-                            aria-label="Restore photo"
-                            className="border border-ares-gold/40 p-2 text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                          >
-                            <RotateCcw size={14} aria-hidden="true" />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPendingArchive({ kind: "photo", item: photo })
-                            }
-                            aria-label="Archive photo"
-                            className="border border-ares-red/50 p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                          >
-                            <Archive size={14} aria-hidden="true" />
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-          {morePhotos && (
-            <LoadMore
-              busy={loadingMorePhotos}
-              onClick={() => void loadPhotos(true, photoCursor)}
-              label="photos"
-            />
-          )}
-        </section>
+        <PhotoLibraryPanel
+          canContribute={canContribute}
+          canManage={canManage}
+          albums={albums}
+          connection={connection}
+          uploads={uploads}
+          uploadAlbum={uploadAlbum}
+          uploadAi={uploadAi}
+          uploadGoogle={uploadGoogle}
+          onUploadFiles={(files) => void uploadFiles(files)}
+          onUploadAlbumChange={setUploadAlbum}
+          onUploadAiChange={setUploadAi}
+          onUploadGoogleChange={setUploadGoogle}
+          search={search}
+          albumFilter={albumFilter}
+          showArchived={showArchivedPhotos}
+          onSearchChange={setSearch}
+          onAlbumFilterChange={setAlbumFilter}
+          onShowArchivedChange={setShowArchivedPhotos}
+          loading={loadingPhotos}
+          photos={filteredPhotos}
+          actionBusy={actionBusy}
+          onOpenPhoto={openPhoto}
+          onRestorePhoto={(photoId) => void restore("photo", photoId)}
+          onRequestArchive={(photo) =>
+            setPendingArchive({ kind: "photo", item: photo })
+          }
+          hasMore={morePhotos}
+          loadingMore={loadingMorePhotos}
+          onLoadMore={() => void loadPhotos(true, photoCursor)}
+        />
       )}
 
       {tab === "albums" && (
-        <section
-          id={tabPanelId("photo-management", "albums")}
-          role="tabpanel"
-          aria-labelledby={tabElementId("photo-management", "albums")}
-          tabIndex={0}
-          className="space-y-7"
-        >
-          {canManage && (
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => openAlbum()}
-                className="inline-flex items-center gap-2 bg-ares-red px-4 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                <Plus size={15} aria-hidden="true" /> Create album
-              </button>
-            </div>
-          )}
-          <div className="flex justify-end">
-            {canManage && (
-              <label className="flex items-center gap-2 text-xs font-bold text-marble">
-                <input
-                  type="checkbox"
-                  checked={showArchivedAlbums}
-                  onChange={(event) =>
-                    setShowArchivedAlbums(event.target.checked)
-                  }
-                  className="accent-ares-red"
-                />{" "}
-                Show archived albums
-              </label>
-            )}
-          </div>
-          {loadingAlbums && albums.length === 0 ? (
-            <Loading label="Loading albums" />
-          ) : albums.length === 0 ? (
-            <Empty
-              icon={<FolderOpen aria-hidden="true" />}
-              text="No albums are ready yet."
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {albums.map((album) => (
-                <article
-                  key={album.id}
-                  className="overflow-hidden border border-white/10 bg-black/25"
-                >
-                  {album.coverImageUrl ? (
-                    <img
-                      src={album.coverImageUrl}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="aspect-video w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex aspect-video items-center justify-center bg-black/30 text-marble/30">
-                      <FolderOpen size={40} aria-hidden="true" />
-                    </div>
-                  )}
-                  <div className="space-y-3 p-5">
-                    <div className="flex flex-wrap gap-2 text-[9px] font-bold uppercase">
-                      <span className="bg-ares-red px-2 py-1 text-white">
-                        {album.category}
-                      </span>
-                      <span className="border border-white/15 px-2 py-1 text-marble/70">
-                        {album.mediaCount} photos
-                      </span>
-                      {album.isPublic && (
-                        <span className="border border-ares-gold/40 px-2 py-1 text-ares-gold">
-                          Public
-                        </span>
-                      )}
-                      {album.isArchived && (
-                        <span className="border border-white/20 px-2 py-1 text-marble">
-                          Archived
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="font-heading text-xl font-black uppercase text-white">
-                      {album.title}
-                    </h2>
-                    <p className="text-sm leading-relaxed text-marble/65">
-                      {album.description || "No description yet."}
-                    </p>
-                    <div className="flex justify-between border-t border-white/10 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAlbumFilter(album.id);
-                          setTab("library");
-                        }}
-                        className="text-xs font-bold text-ares-cyan focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                      >
-                        Open photos
-                      </button>
-                      {canManage && (
-                        <div className="flex gap-2">
-                          {!album.isArchived && (
-                            <button
-                              type="button"
-                              onClick={() => openAlbum(album)}
-                              aria-label={`Edit ${album.title}`}
-                              className="border border-white/15 p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                            >
-                              <Pencil size={14} aria-hidden="true" />
-                            </button>
-                          )}
-                          {album.isArchived ? (
-                            <button
-                              type="button"
-                              onClick={() => void restore("album", album.id)}
-                              aria-label={`Restore ${album.title}`}
-                              className="border border-ares-gold/40 p-2 text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                            >
-                              <RotateCcw size={14} aria-hidden="true" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPendingArchive({
-                                  kind: "album",
-                                  item: album,
-                                })
-                              }
-                              aria-label={`Archive ${album.title}`}
-                              className="border border-ares-red/50 p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                            >
-                              <Archive size={14} aria-hidden="true" />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-          {moreAlbums && (
-            <LoadMore
-              busy={loadingMoreAlbums}
-              onClick={() => void loadAlbums(true, albumCursor)}
-              label="albums"
-            />
-          )}
-        </section>
+        <PhotoAlbumsPanel
+          canManage={canManage}
+          showArchived={showArchivedAlbums}
+          onShowArchivedChange={setShowArchivedAlbums}
+          loading={loadingAlbums}
+          albums={albums}
+          actionBusy={actionBusy}
+          onCreateAlbum={() => openAlbum()}
+          onOpenAlbum={openAlbum}
+          onOpenPhotos={(albumId) => {
+            setAlbumFilter(albumId);
+            setTab("library");
+          }}
+          onRestoreAlbum={(albumId) => void restore("album", albumId)}
+          onRequestArchive={(album) =>
+            setPendingArchive({ kind: "album", item: album })
+          }
+          hasMore={moreAlbums}
+          loadingMore={loadingMoreAlbums}
+          onLoadMore={() => void loadAlbums(true, albumCursor)}
+        />
       )}
 
       {tab === "sync" && (
-        <section
-          id={tabPanelId("photo-management", "sync")}
-          role="tabpanel"
-          aria-labelledby={tabElementId("photo-management", "sync")}
-          tabIndex={0}
-          className="space-y-6"
-        >
-          <div className="border border-white/10 bg-black/25 p-6">
-            <h2 className="font-heading text-2xl font-black uppercase text-white">
-              Team Google Photos
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-marble/70">
-              This connection uses the team-owned Google account. Credentials
-              stay in Google Secret Manager and never appear in this page.
-            </p>
-            {!canManage ? (
-              <p className="mt-5 border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">
-                An admin or coach can import from the team account.
-              </p>
-            ) : connectionLoading ? (
-              <Loading label="Checking connection" />
-            ) : (
-              <div className="mt-5 flex flex-col gap-4 border border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  {connection?.configured ? (
-                    <CheckCircle
-                      className="text-ares-gold"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Shield className="text-marble/50" aria-hidden="true" />
-                  )}
-                  <div>
-                    <p className="font-bold text-white">
-                      {connection?.configured
-                        ? "Team connection ready"
-                        : "Team connection needs setup"}
-                    </p>
-                    <p className="text-xs text-marble/60">
-                      Stored in Secret Manager. No account IDs or tokens are
-                      shown.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void loadConnection()}
-                  className="inline-flex items-center gap-2 border border-white/20 px-4 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  <RefreshCw size={14} aria-hidden="true" /> Check again
-                </button>
-              </div>
-            )}
-          </div>
-          {canManage && connection?.configured && (
-            <div className="border border-white/10 bg-black/25 p-6">
-              <h3 className="font-heading text-xl font-black uppercase text-white">
-                Import selected photos
-              </h3>
-              <p className="mt-2 text-sm text-marble/70">
-                Open the Google picker, choose team photos, then import them
-                into an active album or leave them unassigned.
-              </p>
-              <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <label
-                    htmlFor="sync-album"
-                    className="mb-1 block text-xs font-bold text-marble"
-                  >
-                    Import into album
-                  </label>
-                  <select
-                    id="sync-album"
-                    value={syncAlbum}
-                    onChange={(event) => setSyncAlbum(event.target.value)}
-                    className="w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  >
-                    <option value="">No album</option>
-                    {albums
-                      .filter((album) => !album.isArchived)
-                      .map((album) => (
-                        <option key={album.id} value={album.id}>
-                          {album.title}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void startPicker()}
-                  disabled={pickerBusy}
-                  className="bg-ares-red px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-                >
-                  {pickerBusy ? "Working" : "Choose from Google Photos"}
-                </button>
-              </div>
-              {pickerStatus && (
-                <p
-                  role="status"
-                  className="mt-4 border border-ares-gold/30 bg-ares-gold/10 p-3 text-sm text-marble"
-                >
-                  {pickerStatus}
-                </p>
-              )}
-              {pickerItems.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => void importPickerItems()}
-                  disabled={pickerBusy}
-                  className="mt-4 bg-ares-red px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-                >
-                  Import {pickerItems.length} selected photo
-                  {pickerItems.length === 1 ? "" : "s"}
-                </button>
-              )}
-            </div>
-          )}
-        </section>
+        <GooglePhotosSyncPanel
+          canManage={canManage}
+          connection={connection}
+          connectionLoading={connectionLoading}
+          onCheckConnection={() => void loadConnection()}
+          albums={albums}
+          syncAlbum={syncAlbum}
+          onSyncAlbumChange={setSyncAlbum}
+          pickerBusy={pickerBusy}
+          pickerStatus={pickerStatus}
+          pickerItemCount={pickerItems.length}
+          onStartPicker={() => void startPicker()}
+          onImportPickerItems={() => void importPickerItems()}
+        />
       )}
 
       <PhotoManagementDialogs
@@ -1269,50 +792,6 @@ export default function DashboardPhotosPage() {
         onArchiveOpenChange={(open) => !open && setPendingArchive(null)}
         onConfirmArchive={() => void archivePending()}
       />
-    </div>
-  );
-}
-
-function Loading({ label }: { label: string }) {
-  return (
-    <div
-      role="status"
-      className="flex justify-center gap-2 py-16 text-ares-gold"
-    >
-      <Loader2 className="motion-safe:animate-spin" aria-hidden="true" />
-      <span className="text-sm">{label}</span>
-    </div>
-  );
-}
-
-function Empty({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <div className="border border-white/10 bg-black/20 p-14 text-center text-marble/50">
-      <span className="mx-auto mb-3 block w-fit">{icon}</span>
-      <p className="text-sm">{text}</p>
-    </div>
-  );
-}
-
-function LoadMore({
-  busy,
-  onClick,
-  label,
-}: {
-  busy: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <div className="text-center">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={busy}
-        className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-      >
-        {busy ? "Loading" : `Load more ${label}`}
-      </button>
     </div>
   );
 }
