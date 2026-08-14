@@ -11,6 +11,8 @@ const publicEndpoints = [
   ["GET", "/api/robots", "Published robot records"],
   ["GET", "/api/sponsors", "Published sponsors"],
   ["GET", "/api/outreach", "Published outreach summaries"],
+  ["GET", "/api/finance", "Published team financial transactions"],
+  ["GET", "/api/simulations", "Published simulations metadata"],
 ] as const;
 
 export default function DeveloperApiPage() {
