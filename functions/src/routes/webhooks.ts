@@ -28,6 +28,13 @@ export function syndicationQuotaKey(req: AuthenticatedRequest): string {
   return req.user?.uid || "missing-verified-identity";
 }
 
+const syndicationIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: "Too many announcement requests. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const syndicationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
@@ -192,6 +199,7 @@ router.post("/zulip", asyncHandler(async (req, res) => {
 // POST /api/webhooks/syndicate-post
 router.post(
   "/syndicate-post",
+  syndicationIpLimiter,
   ensureTeamMember,
   syndicationLimiter,
   asyncHandler(async (req: AuthenticatedRequest, res) => {

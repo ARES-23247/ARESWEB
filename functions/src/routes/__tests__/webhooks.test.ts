@@ -157,9 +157,10 @@ describe("Webhooks Router Backend Endpoints", () => {
 
     it("keeps verified authorization and a publisher quota before the handler", () => {
       const stack = routeStack("/syndicate-post", "post");
-      expect(stack).toHaveLength(3);
-      expect(stack[0].name).toBe("ensureTeamMember");
-      expect(stack[1].handle).toEqual(expect.any(Function));
+      expect(stack).toHaveLength(4);
+      expect(stack[0].handle).toEqual(expect.any(Function));
+      expect(stack[1].name).toBe("ensureTeamMember");
+      expect(stack[2].handle).toEqual(expect.any(Function));
       expect(syndicationQuotaKey({ user: { uid: "publisher-uid" } } as never)).toBe("publisher-uid");
       expect(syndicationQuotaKey({} as never)).toBe("missing-verified-identity");
     });
