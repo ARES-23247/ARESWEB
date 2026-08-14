@@ -152,6 +152,7 @@ export default defineConfig({
       // 0% instead of disappearing when its importing test is removed.
       include: [
         "src/lib/api.ts",
+        "src/lib/contentUrls.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
         "src/lib/outreachExport.ts",
@@ -194,6 +195,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/contentUrls.ts": {
           lines: 85,
           functions: 100,
         },

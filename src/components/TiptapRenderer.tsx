@@ -1,5 +1,6 @@
 import React, { ReactNode, Suspense } from "react";
 import { Info, AlertTriangle, Lightbulb } from "lucide-react";
+import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
 import { SIM_COMPONENTS } from "./generated/sim-registry";
 
 export interface ASTMark {
@@ -18,12 +19,17 @@ export interface ASTNode {
   attrs?: Record<string, string | number | boolean>;
 }
 
+function boundedText(value: unknown, maximum = 300): string {
+  return typeof value === "string" ? value.trim().slice(0, maximum) : "";
+}
+
 const renderText = (node: ASTNode) => {
-  let text: ReactNode = node.text || "";
+  let text: ReactNode = typeof node.text === "string" ? node.text : "";
   if (!node.marks || !Array.isArray(node.marks)) return text;
 
   // We copy the marks array and process it
   node.marks.forEach((mark) => {
+    if (typeof mark !== "object" || mark === null) return;
     if (mark.type === "bold") {
       text = <strong key={typeof text === "string" ? text + "-b" : "b"}>{text}</strong>;
     }
@@ -47,25 +53,31 @@ const renderText = (node: ASTNode) => {
       );
     }
     if (mark.type === "link") {
-      const href = (mark.attrs?.href as string) || "#";
-      text = (
-        <a
-          key={typeof text === "string" ? text + "-link" : "link"}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-ares-gold underline decoration-ares-gold/40 underline-offset-2 hover:text-ares-cyan hover:decoration-ares-cyan transition-colors"
-        >
-          {text}
-        </a>
-      );
+      const href = safeContentLinkUrl(mark.attrs?.href);
+      if (href) {
+        const opensNewTab = /^https?:/i.test(href);
+        text = (
+          <a
+            key={typeof text === "string" ? text + "-link" : "link"}
+            href={href}
+            target={opensNewTab ? "_blank" : undefined}
+            rel={opensNewTab ? "noopener noreferrer" : undefined}
+            className="text-ares-gold underline decoration-ares-gold/40 underline-offset-2 hover:text-ares-cyan hover:decoration-ares-cyan transition-colors"
+          >
+            {text}
+          </a>
+        );
+      }
     }
   });
   return text;
 };
 
 const renderHeading = (node: ASTNode, children: ReactNode) => {
-  const level = node.attrs?.level || node.level || 1;
+  const requestedLevel = Number(node.attrs?.level ?? node.level ?? 1);
+  const level = Number.isFinite(requestedLevel)
+    ? Math.min(6, Math.max(1, Math.trunc(requestedLevel)))
+    : 1;
   const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
   let className = "font-heading font-bold mb-4 text-white border-b border-white/10 pb-2";
@@ -148,7 +160,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "horizontalRule":
       return <hr className="my-6 border-t border-white/10" />;
     case "interactiveComponent": {
-      const componentName = node.attrs?.componentName as string;
+      const componentName = boundedText(node.attrs?.componentName, 128);
       if (!componentName) return null;
       const SimComponent = SIM_COMPONENTS[componentName] || SIM_COMPONENTS[componentName.toLowerCase()];
       if (!SimComponent) {
@@ -171,19 +183,32 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
         </div>
       );
     }
-    case "image":
+    case "image": {
+      const src = safeContentImageUrl(node.attrs?.src ?? node.src);
+      const alt = boundedText(node.attrs?.alt ?? node.alt);
+      const title = boundedText(node.attrs?.title);
+      if (!src) {
+        return (
+          <p role="note" className="my-4 rounded border border-white/10 bg-black/20 p-3 text-sm text-marble/70">
+            Image unavailable{alt ? `: ${alt}` : ""}
+          </p>
+        );
+      }
       return (
         <div className="my-6 flex flex-col items-center gap-2">
           <img
-            src={node.attrs?.src as string}
-            alt={(node.attrs?.alt as string) || ""}
+            src={src}
+            alt={alt}
             className="rounded-lg max-w-full h-auto border border-white/10 shadow-lg"
+            loading="lazy"
+            decoding="async"
           />
-          {node.attrs?.title && (
-            <span className="text-xs text-marble/50 italic">{node.attrs.title as string}</span>
+          {title && (
+            <span className="text-xs text-marble/50 italic">{title}</span>
           )}
         </div>
       );
+    }
     case "codeBlock":
       return (
         <pre className="bg-black/50 border border-white/10 p-4 rounded-lg my-4 overflow-x-auto text-xs font-mono text-ares-cyan">
