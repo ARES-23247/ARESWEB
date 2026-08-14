@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+﻿import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
@@ -139,6 +139,11 @@ export default defineConfig({
     mockReset: true,
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
+    server: {
+      deps: {
+        inline: [/@tanstack\/react-query/],
+      },
+    },
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
@@ -152,6 +157,9 @@ export default defineConfig({
       // 0% instead of disappearing when its importing test is removed.
       include: [
         "src/lib/api.ts",
+        "src/lib/blogSyndication.ts",
+        "src/components/blog/ArticleQuoteCallout.tsx",
+        "src/components/blog/BlogTableOfContents.tsx",
         "src/lib/contentUrls.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
@@ -192,6 +200,18 @@ export default defineConfig({
         // standard on security-sensitive utilities and newly covered code.
         lines: 56,
         functions: 42,
+        "src/lib/blogSyndication.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/blog/ArticleQuoteCallout.tsx": {
+          lines: 80,
+          functions: 80,
+        },
+        "src/components/blog/BlogTableOfContents.tsx": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/security.ts": {
           lines: 85,
           functions: 100,

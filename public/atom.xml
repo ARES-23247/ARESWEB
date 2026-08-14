@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>ARES 23247 Team Blog</title>
+  <subtitle>Technical updates, mechanical designs, code breakdowns, and outreach reflections from ARES 23247.</subtitle>
+  <id>https://aresfirst.org/blog</id>
+  <updated>2026-08-14T18:00:00.000Z</updated>
+  <link href="https://aresfirst.org/blog" rel="alternate" />
+  <link href="https://aresfirst.org/atom.xml" rel="self" />
+  <entry>
+    <title>Into the Deep Odometry Breakthrough</title>
+    <id>https://aresfirst.org/blog/into-the-deep-odometry-breakthrough</id>
+    <link href="https://aresfirst.org/blog/into-the-deep-odometry-breakthrough" rel="alternate" />
+    <updated>2026-08-12T00:00:00.000Z</updated>
+    <author>
+      <name>Lead Programmer</name>
+    </author>
+    <category term="Engineering" />
+    <summary>How we achieved millimeter accuracy with optical flow sensor fusion.</summary>
+  </entry>
+  <entry>
+    <title>Morgantown Library STEM Demo</title>
+    <id>https://aresfirst.org/blog/morgantown-library-stem-demo</id>
+    <link href="https://aresfirst.org/blog/morgantown-library-stem-demo" rel="alternate" />
+    <updated>2026-08-05T00:00:00.000Z</updated>
+    <author>
+      <name>Outreach Lead</name>
+    </author>
+    <category term="Outreach" />
+    <summary>Reflections on introducing 45 elementary students to FIRST robotics.</summary>
+  </entry>
+</feed>

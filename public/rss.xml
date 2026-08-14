@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ARES 23247 Team Blog</title>
+    <link>https://aresfirst.org/blog</link>
+    <description>Technical updates, mechanical designs, code breakdowns, and outreach reflections from ARES 23247.</description>
+    <language>en-US</language>
+    <lastBuildDate>Fri, 14 Aug 2026 18:00:00 GMT</lastBuildDate>
+    <atom:link href="https://aresfirst.org/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Into the Deep Odometry Breakthrough</title>
+      <link>https://aresfirst.org/blog/into-the-deep-odometry-breakthrough</link>
+      <guid isPermaLink="true">https://aresfirst.org/blog/into-the-deep-odometry-breakthrough</guid>
+      <pubDate>Wed, 12 Aug 2026 00:00:00 GMT</pubDate>
+      <author>contact@aresfirst.org (Lead Programmer)</author>
+      <category>Engineering</category>
+      <description>How we achieved millimeter accuracy with optical flow sensor fusion.</description>
+    </item>
+    <item>
+      <title>Morgantown Library STEM Demo</title>
+      <link>https://aresfirst.org/blog/morgantown-library-stem-demo</link>
+      <guid isPermaLink="true">https://aresfirst.org/blog/morgantown-library-stem-demo</guid>
+      <pubDate>Wed, 05 Aug 2026 00:00:00 GMT</pubDate>
+      <author>contact@aresfirst.org (Outreach Lead)</author>
+      <category>Outreach</category>
+      <description>Reflections on introducing 45 elementary students to FIRST robotics.</description>
+    </item>
+  </channel>
+</rss>

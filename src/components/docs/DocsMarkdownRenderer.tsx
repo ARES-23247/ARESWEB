@@ -5,6 +5,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Link as LinkIcon } from "lucide-react";
 import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
+import ArticleQuoteCallout from "@/components/blog/ArticleQuoteCallout";
 import { SIM_COMPONENTS, SIM_TAG_NAMES } from "../generated/sim-registry";
 
 // ── Lazy-loaded Non-Sim Components ─────────────────────────────────────
@@ -171,11 +172,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           }
           return <pre className="bg-obsidian border border-white/10 rounded-lg p-4 overflow-x-auto">{children}</pre>;
         },
-        blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-ares-gold/50 pl-4 py-2 my-4 italic text-marble/70 bg-white/5">
-            {children}
-          </blockquote>
-        ),
+        blockquote: ({ children }) => <ArticleQuoteCallout>{children}</ArticleQuoteCallout>,
         table: ({ children }) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-white/10 border border-white/10">{children}</table></div>,
         thead: ({ children }) => <thead className="bg-white/5">{children}</thead>,
         tbody: ({ children }) => <tbody className="divide-y divide-white/5">{children}</tbody>,

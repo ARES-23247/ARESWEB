@@ -1,20 +1,23 @@
-"use client";
+﻿"use client";
 
 import { logger } from "@/utils/logger";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { doc, onSnapshot } from "firebase/firestore";
+import { Helmet } from "react-helmet-async";
 import { db } from "@/lib/firebaseFirestore";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
-import { Pencil } from "lucide-react";
+import { Pencil, Clock } from "lucide-react";
 import SEO from "@/components/SEO";
 import ShareButtons from "@/components/ShareButtons";
 import { PublicDataState } from "@/components/PublicDataState";
 import BlogThumbnailImage, {
   getBlogThumbnailSource,
 } from "@/components/BlogThumbnailImage";
+import BlogTableOfContents from "@/components/blog/BlogTableOfContents";
+import { calculateReadingTime } from "@/lib/blogSyndication";
 
 interface BlogPostDetails {
   slug: string;
@@ -24,6 +27,7 @@ interface BlogPostDetails {
   thumbnail?: string;
   author?: string;
   authorAvatar?: string;
+  category?: string;
   content: string;
 }
 
@@ -83,6 +87,7 @@ export default function BlogPostPage() {
           thumbnail: data.thumbnail || "",
           author: data.author || "ARES Member",
           authorAvatar: data.authorAvatar || "",
+          category: data.category || "Engineering",
           content: data.content || data.snippet || "",
         });
         setLoadError(null);
@@ -140,6 +145,7 @@ export default function BlogPostPage() {
   }
 
   const heroImage = getBlogThumbnailSource(post);
+  const readingTime = calculateReadingTime(post.content);
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble">
@@ -158,8 +164,26 @@ export default function BlogPostPage() {
             const parsed = Date.parse(post.date);
             return isNaN(parsed) ? undefined : new Date(parsed).toISOString();
           })(),
+          wordCount: readingTime.words,
+          readingTime: readingTime.timeRequiredIso,
         }}
       />
+      {/* RSS 2.0 & Atom Feed Discovery */}
+      <Helmet>
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="ARES 23247 Team Blog (RSS 2.0)"
+          href="/rss.xml"
+        />
+        <link
+          rel="alternate"
+          type="application/atom+xml"
+          title="ARES 23247 Team Blog (Atom)"
+          href="/atom.xml"
+        />
+      </Helmet>
+
       {/* ─── STANDALONE BLOG HERO ─── */}
       <section className="relative w-full h-[50vh] min-h-[400px] flex items-center overflow-hidden bg-obsidian border-b-4 border-ares-cyan">
         <BlogThumbnailImage
@@ -179,7 +203,7 @@ export default function BlogPostPage() {
           aria-hidden="true"
         ></div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-6 w-full mt-16">
+        <div className="relative z-10 max-w-5xl mx-auto px-6 w-full mt-16">
           <Link
             to="/blog"
             className="text-ares-gold hover:text-white uppercase tracking-widest text-xs font-bold transition-all flex items-center gap-2 mb-6 w-fit"
@@ -187,9 +211,18 @@ export default function BlogPostPage() {
             <span>&larr;</span> Back to all posts
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <span className="w-fit px-4 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
+            <div className="flex flex-wrap items-center gap-3">
+              {post.category && (
+                <span className="px-3.5 py-1.5 ares-cut-sm text-xs font-black uppercase tracking-widest bg-ares-red/80 text-white border border-ares-red shadow-[0_0_15px_rgba(192,0,0,0.4)]">
+                  {post.category}
+                </span>
+              )}
+              <span className="w-fit px-3.5 py-1.5 ares-cut-sm text-xs font-bold uppercase tracking-widest bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/50 shadow-[0_0_15px_rgba(0,192,192,0.4)]">
                 {post.date}
+              </span>
+              <span className="flex items-center gap-1.5 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 text-xs font-semibold text-marble/90">
+                <Clock size={13} className="text-ares-gold" />
+                {readingTime.text}
               </span>
               <div className="flex items-center gap-2 px-3 py-1.5 ares-cut-sm bg-white/5 border border-white/10 w-fit">
                 <img
@@ -226,20 +259,37 @@ export default function BlogPostPage() {
         </div>
       </section>
 
-      {/* ─── BLOG BODY ─── */}
-      <div className="w-full max-w-4xl mx-auto px-6 py-12">
-        <article className="prose prose-invert prose-ares max-w-none">
-          <DocsMarkdownRenderer content={post.content} />
-        </article>
-      </div>
+      {/* ─── BLOG BODY & STICKY SCROLLSPY TOC ─── */}
+      <div className="w-full max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Main Article Content */}
+          <div className="lg:col-span-8">
+            {/* Mobile / Tablet Collapsible Table of Contents */}
+            <div className="lg:hidden mb-8">
+              <BlogTableOfContents content={post.content} />
+            </div>
 
-      {/* ─── SHARE SECTION ─── */}
-      <div className="w-full max-w-4xl mx-auto px-6 pb-16">
-        <ShareButtons
-          title={post.title}
-          description={post.snippet}
-          theme="gold"
-        />
+            <article className="prose prose-invert prose-ares max-w-none">
+              <DocsMarkdownRenderer content={post.content} />
+            </article>
+
+            {/* Share Section */}
+            <div className="mt-12 pt-8 border-t border-white/10">
+              <ShareButtons
+                title={post.title}
+                description={post.snippet}
+                theme="gold"
+              />
+            </div>
+          </div>
+
+          {/* Sticky Desktop Table of Contents Sidebar */}
+          <aside className="lg:col-span-4 hidden lg:block">
+            <div className="sticky top-28 space-y-6">
+              <BlogTableOfContents content={post.content} />
+            </div>
+          </aside>
+        </div>
       </div>
 
       {/* ─── UPGRADED FULL BLOG EDITOR DRAWER ─── */}

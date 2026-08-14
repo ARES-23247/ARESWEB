@@ -7,7 +7,9 @@ import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
-const BLOG_CATEGORIES: string[] = [];
+import { BLOG_CATEGORY_ITEMS } from "@/lib/blogSyndication";
+
+const BLOG_CATEGORIES: string[] = [...BLOG_CATEGORY_ITEMS];
 
 export default function BlogManagementPage({
   editorOnly = false,
