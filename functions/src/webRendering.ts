@@ -30,17 +30,33 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function safeImage(value: unknown): string {
+function safeImageOrNull(value: unknown): string | null {
   const candidate = stringValue(value);
-  if (!candidate) return DEFAULT_IMAGE;
+  if (!candidate) return null;
   try {
     const url = new URL(candidate, BASE_URL);
     return url.protocol === "https:" && url.username === "" && url.password === ""
       ? url.toString()
-      : DEFAULT_IMAGE;
+      : null;
   } catch {
-    return DEFAULT_IMAGE;
+    return null;
   }
+}
+
+function safeImage(value: unknown): string {
+  return safeImageOrNull(value) ?? DEFAULT_IMAGE;
+}
+
+function blogSocialImage(data: Record<string, unknown>, title: string): string {
+  const thumbnail = safeImageOrNull(data.thumbnail);
+  if (thumbnail) return thumbnail;
+
+  const params = new URLSearchParams({ title: title.slice(0, 100), category: "Blog" });
+  const author = stringValue(data.author).slice(0, 40);
+  const date = stringValue(data.date).slice(0, 30);
+  if (author) params.set("author", author);
+  if (date) params.set("date", date);
+  return `${BASE_URL}/api/og?${params.toString()}`;
 }
 
 export function parseDynamicRoute(pathname: string): DynamicRoute | null {
@@ -82,7 +98,7 @@ export function metadataForDocument(
       description: stringValue(data.snippet) || `Read ${title} on the ARES 23247 team blog.`,
       canonicalUrl,
       type: "article",
-      image: safeImage(data.thumbnail),
+      image: blogSocialImage(data, title),
     };
   }
   if (route.kind === "event") {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link2, Check, Share2 } from "lucide-react";
 
 interface ShareButtonsProps {
@@ -9,6 +9,22 @@ interface ShareButtonsProps {
 
 export default function ShareButtons({ title, description, theme = "gold" }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (feedbackTimer.current !== null) clearTimeout(feedbackTimer.current);
+  }, []);
+
+  const showFeedback = (message: string) => {
+    if (feedbackTimer.current !== null) clearTimeout(feedbackTimer.current);
+    setFeedback(message);
+    feedbackTimer.current = setTimeout(() => {
+      setFeedback("");
+      setCopied(false);
+      feedbackTimer.current = null;
+    }, 2500);
+  };
 
   const getShareUrl = () => {
     return typeof window !== "undefined" ? window.location.href : "";
@@ -22,17 +38,25 @@ export default function ShareButtons({ title, description, theme = "gold" }: Sha
           text: description || title,
           url: getShareUrl(),
         });
-      } catch {
-        // User cancelled or share aborted
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          showFeedback("The device share menu was unavailable. Use Copy link instead.");
+        }
       }
     }
   };
 
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
+  const handleCopyLink = async () => {
+    try {
+      if (typeof window === "undefined" || !navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      showFeedback("Link copied to clipboard.");
+    } catch {
+      setCopied(false);
+      showFeedback("Could not copy the link. Copy it from the address bar instead.");
     }
   };
 
@@ -132,13 +156,14 @@ export default function ShareButtons({ title, description, theme = "gold" }: Sha
 
         {/* Copy Link */}
         <button
-          onClick={handleCopyLink}
+          onClick={() => void handleCopyLink()}
           className="w-9 h-9 rounded bg-white/5 border border-white/10 flex items-center justify-center text-marble/80 hover:text-ares-success hover:border-ares-success hover:bg-ares-success/10 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ares-success"
           title="Copy link"
           aria-label="Copy link"
         >
           {copied ? <Check size={14} className="text-ares-success" /> : <Link2 size={14} />}
         </button>
+        <p role="status" aria-atomic="true" className="sr-only">{feedback}</p>
       </div>
     </div>
   );

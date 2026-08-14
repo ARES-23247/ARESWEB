@@ -5,6 +5,7 @@ import OfflineIndicator from "@/components/OfflineIndicator";
 describe("OfflineIndicator", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it("renders nothing when online by default", () => {
@@ -24,7 +25,7 @@ describe("OfflineIndicator", () => {
     const statusBanner = screen.getByRole("status");
     expect(statusBanner).toBeInTheDocument();
     expect(statusBanner).toHaveTextContent("Pit Mode:");
-    expect(statusBanner).toHaveTextContent("Interactive simulations, engineering references, and cached tools are fully operational.");
+    expect(statusBanner).toHaveTextContent("Previously loaded pages may remain available, but live data and changes will not sync.");
   });
 
   it("renders connection restored toast when online event fires", () => {
@@ -37,6 +38,17 @@ describe("OfflineIndicator", () => {
 
     const statusBanner = screen.getByRole("status");
     expect(statusBanner).toBeInTheDocument();
-    expect(statusBanner).toHaveTextContent("Connected — Team portal sync restored.");
+    expect(statusBanner).toHaveTextContent("Network connection restored. Live data may take a moment to refresh.");
+  });
+
+  it("clears the transient reconnect status after its bounded timeout", () => {
+    vi.useFakeTimers();
+    Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+    render(<OfflineIndicator />);
+
+    act(() => window.dispatchEvent(new Event("online")));
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(3500));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

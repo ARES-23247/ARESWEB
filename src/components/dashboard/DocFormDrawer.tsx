@@ -533,6 +533,8 @@ export default function DocFormDrawer({
                 revisions={revisions}
                 isLoading={loadingRevisions}
                 onRevert={handleRevertToRevision}
+                currentTitle={draft.title}
+                currentContent={draft.content}
               />
             </div>
           )}

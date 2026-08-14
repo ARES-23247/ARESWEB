@@ -5,6 +5,8 @@ import ShareButtons from "@/components/ShareButtons";
 describe("ShareButtons", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+    Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
   });
 
   it("renders all social sharing buttons and copy link button", () => {
@@ -36,19 +38,38 @@ describe("ShareButtons", () => {
 
   it("copies current URL to clipboard when copy link button is clicked", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      configurable: true,
+    });
 
     render(<ShareButtons title="Build Log" />);
     const copyButton = screen.getByRole("button", { name: "Copy link" });
 
     fireEvent.click(copyButton);
 
-    expect(writeTextMock).toHaveBeenCalled();
+    await waitFor(() => expect(writeTextMock).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("Link copied to clipboard.");
+  });
+
+  it("reports clipboard failure instead of showing false success", async () => {
+    const writeTextMock = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      configurable: true,
+    });
+
+    render(<ShareButtons title="Build Log" />);
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(
+      "Could not copy the link. Copy it from the address bar instead.",
+    ));
   });
 
   it("invokes navigator.share when native share button is clicked", async () => {
     const shareMock = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { share: shareMock });
+    Object.defineProperty(navigator, "share", { value: shareMock, configurable: true });
 
     render(<ShareButtons title="Build Log" description="A quick summary" />);
     const shareButton = screen.getByRole("button", { name: "Share via device menu" });

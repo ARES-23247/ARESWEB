@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WifiOff, CheckCircle2 } from "lucide-react";
 
 export default function OfflineIndicator() {
@@ -6,18 +6,27 @@ export default function OfflineIndicator() {
     return typeof navigator !== "undefined" ? !navigator.onLine : false;
   });
   const [showReconnected, setShowReconnected] = useState(false);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const clearReconnectTimer = () => {
+      if (reconnectTimer.current !== null) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = null;
+      }
+    };
     const handleOnline = () => {
+      clearReconnectTimer();
       setIsOffline(false);
       setShowReconnected(true);
-      const timer = setTimeout(() => {
+      reconnectTimer.current = setTimeout(() => {
         setShowReconnected(false);
+        reconnectTimer.current = null;
       }, 3500);
-      return () => clearTimeout(timer);
     };
 
     const handleOffline = () => {
+      clearReconnectTimer();
       setIsOffline(true);
       setShowReconnected(false);
     };
@@ -28,6 +37,7 @@ export default function OfflineIndicator() {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      clearReconnectTimer();
     };
   }, []);
 
@@ -38,8 +48,8 @@ export default function OfflineIndicator() {
         aria-live="polite"
         className="fixed top-0 inset-x-0 z-50 bg-ares-success/90 backdrop-blur-md text-white text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow-lg transition-all"
       >
-        <CheckCircle2 size={14} className="animate-bounce" aria-hidden="true" />
-        <span>Connected — Team portal sync restored.</span>
+        <CheckCircle2 size={14} aria-hidden="true" />
+        <span>Network connection restored. Live data may take a moment to refresh.</span>
       </aside>
     );
   }
@@ -58,7 +68,7 @@ export default function OfflineIndicator() {
       <WifiOff size={14} className="text-ares-gold flex-shrink-0" aria-hidden="true" />
       <span>
         <strong className="text-ares-gold uppercase tracking-wider font-extrabold mr-1">Pit Mode:</strong>
-        You are offline. Interactive simulations, engineering references, and cached tools are fully operational.
+        You are offline. Previously loaded pages may remain available, but live data and changes will not sync.
       </span>
     </aside>
   );

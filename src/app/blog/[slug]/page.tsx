@@ -102,6 +102,11 @@ export default function BlogPostPage() {
   if (loadError || !post) {
     return (
       <div className="min-h-screen bg-obsidian px-6 py-24 text-marble">
+        <SEO
+          title={loadError ? "Article Temporarily Unavailable" : "Post Not Found"}
+          description="This ARES 23247 blog article is unavailable."
+          noindex
+        />
         <div className="mx-auto max-w-3xl">
           <PublicDataState
             title={loadError ? "Unable to Load Blog Post" : "Blog Post Not Found"}
@@ -163,9 +168,9 @@ export default function BlogPostPage() {
                         ? post.authorAvatar
                         : `/favicon.png`)
                       : "/favicon.png"
-                  } 
-                  alt={post.author} 
-                  className="w-5 h-5 rounded-full object-cover border border-ares-gold/40" 
+                  }
+                  alt=""
+                  className="w-5 h-5 rounded-full object-cover border border-ares-gold/40"
                 />
                 <span className="text-xs text-marble/90 font-medium">{post.author}</span>
               </div>

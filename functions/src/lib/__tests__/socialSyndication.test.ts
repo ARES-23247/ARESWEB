@@ -8,57 +8,52 @@ vi.mock("../zulip", () => ({
 import { syndicatePublishedPost } from "../socialSyndication";
 
 describe("socialSyndication", () => {
-  const originalEnv = process.env;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...originalEnv };
   });
 
-  it("syndicates to Discord webhook and Zulip stream when configured", async () => {
-    process.env.DISCORD_ANNOUNCEMENTS_WEBHOOK = "https://discord.com/api/webhooks/123/abc";
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+  it("sends one bounded announcement to the configured Zulip stream", async () => {
     sendZulipMessageMock.mockResolvedValue(true);
 
     const result = await syndicatePublishedPost({
       title: "Championship Victory",
       slug: "championship-victory",
       snippet: "We won the state finals!",
-      author: "Lead Programmer",
+      author: "CircuitFox",
       category: "Competitions",
-    }, "https://aresfirst.org", fetchMock as any);
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://discord.com/api/webhooks/123/abc",
-      expect.objectContaining({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      })
-    );
-
-    const discordPayload = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(discordPayload.embeds[0].title).toBe("🚀 Championship Victory");
-    expect(discordPayload.embeds[0].url).toBe("https://aresfirst.org/blog/championship-victory");
+    });
 
     expect(sendZulipMessageMock).toHaveBeenCalledWith(
       "announcements",
-      "Blog: Championship Victory",
-      expect.stringContaining("Championship Victory")
+      "Blog: Competitions — Championship Victory",
+      expect.stringContaining("https://aresfirst.org/blog/championship-victory"),
     );
-
-    expect(result).toEqual({ discord: true, zulip: true });
+    expect(result).toEqual({ zulip: true });
   });
 
-  it("handles missing Discord webhook gracefully without crashing", async () => {
-    delete process.env.DISCORD_ANNOUNCEMENTS_WEBHOOK;
+  it("neutralizes mention and Markdown injection from stored post text", async () => {
     sendZulipMessageMock.mockResolvedValue(true);
 
-    const result = await syndicatePublishedPost({
-      title: "Weekly Build Log",
-      slug: "weekly-build-log",
+    await syndicatePublishedPost({
+      title: "@**all** [unsafe](https://example.org)",
+      slug: "safe-slug",
+      snippet: "@everyone <script>\u0001",
+      author: "@**admins**",
     });
 
-    expect(result.discord).toBe(false);
-    expect(result.zulip).toBe(true);
+    const content = sendZulipMessageMock.mock.calls[0][2] as string;
+    expect(content).not.toContain("@**all**");
+    expect(content).not.toContain("@everyone");
+    expect(content).not.toContain("<script>");
+    expect(content).toContain("@\u200B");
+  });
+
+  it("returns an explicit failure when Zulip rejects the announcement", async () => {
+    sendZulipMessageMock.mockResolvedValue(false);
+
+    await expect(syndicatePublishedPost({
+      title: "Weekly Build Log",
+      slug: "weekly-build-log",
+    })).resolves.toEqual({ zulip: false });
   });
 });

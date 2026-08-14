@@ -210,6 +210,17 @@
         "validJson": true
       },
       {
+        "name": "raster social card",
+        "origin": "primary",
+        "path": "/api/og?title=Deployment%20Health",
+        "status": 200,
+        "contentType": "image/png",
+        "headerIncludes": {
+          "cache-control": ["max-age=86400", "s-maxage=31536000", "immutable"],
+          "x-content-type-options": ["nosniff"]
+        }
+      },
+      {
         "name": "public videos API",
         "origin": "primary",
         "path": "/api/videos/public?limit=1",

@@ -1,11 +1,12 @@
 import express from "express";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
-import { ensureTeamMember } from "../middleware/auth";
+import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { syndicatePublishedPost } from "../lib/socialSyndication";
 
 const router = express.Router();
@@ -19,6 +20,99 @@ const zulipWebhookSchema = z.object({
     sender_full_name: z.string().max(120).optional(),
   }),
 });
+const syndicatePostSchema = z.object({
+  slug: z.string().trim().min(1).max(160).regex(/^[A-Za-z0-9_-]+$/),
+}).strict();
+const syndicationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => (req as AuthenticatedRequest).user?.uid || "missing-verified-identity",
+  message: { error: "Too many announcement requests. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const PUBLISHER_ROLES = new Set(["admin", "coach", "mentor"]);
+const SYNDICATION_RECEIPTS = "internal_social_syndication";
+const CLAIM_TIMEOUT_MS = 10 * 60 * 1000;
+
+interface ClaimedPost {
+  alreadyComplete?: boolean;
+  pending?: boolean;
+  version: string;
+  payload?: {
+    slug: string;
+    title: string;
+    snippet?: string;
+    category?: string;
+    author?: string;
+  };
+}
+
+function optionalText(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const text = value.trim().slice(0, maxLength);
+  return text || undefined;
+}
+
+async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
+  const postRef = adminDb.collection("posts").doc(slug);
+  const receiptRef = adminDb.collection(SYNDICATION_RECEIPTS).doc(slug);
+  const now = new Date();
+
+  return adminDb.runTransaction(async (transaction) => {
+    const [postSnapshot, receiptSnapshot] = await Promise.all([
+      transaction.get(postRef),
+      transaction.get(receiptRef),
+    ]);
+    if (!postSnapshot.exists) throw new ApiError(404, "Published blog post not found.");
+
+    const data = postSnapshot.data() || {};
+    if (
+      data.status !== "published" ||
+      data.approvalStatus !== "approved" ||
+      data.isDeleted !== 0
+    ) {
+      throw new ApiError(409, "Only an approved, published blog post can be announced.");
+    }
+
+    const title = optionalText(data.title, 160);
+    const approvedAt = optionalText(data.approvedAt, 100);
+    if (!title || !approvedAt || Number.isNaN(Date.parse(approvedAt))) {
+      throw new ApiError(409, "The published blog post is missing approval metadata.");
+    }
+
+    const receipt = receiptSnapshot.exists ? receiptSnapshot.data() || {} : {};
+    if (receipt.version === approvedAt && receipt.status === "complete") {
+      return { alreadyComplete: true, version: approvedAt };
+    }
+    const startedAtMs = typeof receipt.startedAt === "string" ? Date.parse(receipt.startedAt) : Number.NaN;
+    if (
+      receipt.version === approvedAt &&
+      receipt.status === "in_progress" &&
+      Number.isFinite(startedAtMs) &&
+      startedAtMs > now.getTime() - CLAIM_TIMEOUT_MS
+    ) {
+      return { pending: true, version: approvedAt };
+    }
+
+    transaction.set(receiptRef, {
+      version: approvedAt,
+      status: "in_progress",
+      startedAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+    return {
+      version: approvedAt,
+      payload: {
+        slug,
+        title,
+        snippet: optionalText(data.snippet, 500),
+        category: optionalText(data.category, 60),
+        author: optionalText(data.author, 80) || optionalText(data.original_authorNickname, 80),
+      },
+    };
+  });
+}
 
 function timingSafeEqual(a: string, b: string): boolean {
   if (typeof a !== "string" || typeof b !== "string") return false;
@@ -91,20 +185,47 @@ router.post("/zulip", asyncHandler(async (req, res) => {
 }));
 
 // POST /api/webhooks/syndicate-post
-router.post("/syndicate-post", ensureTeamMember, asyncHandler(async (req, res) => {
-  const { slug, title, snippet, category, thumbnail, author } = req.body || {};
-  if (typeof slug !== "string" || !slug.trim() || typeof title !== "string" || !title.trim()) {
-    throw new ApiError(400, "Missing required post slug or title.");
-  }
-  const result = await syndicatePublishedPost({
-    slug: slug.trim(),
-    title: title.trim(),
-    snippet: typeof snippet === "string" ? snippet.trim() : undefined,
-    category: typeof category === "string" ? category.trim() : undefined,
-    thumbnail: typeof thumbnail === "string" ? thumbnail.trim() : undefined,
-    author: typeof author === "string" ? author.trim() : "ARES Member",
-  });
-  res.json({ success: true, syndication: result });
-}));
+router.post(
+  "/syndicate-post",
+  ensureTeamMember,
+  syndicationLimiter,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (!req.authorizationRole || !PUBLISHER_ROLES.has(req.authorizationRole)) {
+      throw new ApiError(403, "Only an approved publisher can announce a blog post.");
+    }
+    const parsed = syndicatePostSchema.safeParse(req.body);
+    if (!parsed.success) throw new ApiError(400, "Enter a valid published post slug.");
+
+    const claim = await claimPublishedPost(parsed.data.slug);
+    if (claim.alreadyComplete) {
+      res.json({ success: true, alreadySyndicated: true });
+      return;
+    }
+    if (claim.pending || !claim.payload) {
+      res.status(202).json({ success: true, pending: true });
+      return;
+    }
+
+    const receiptRef = adminDb.collection(SYNDICATION_RECEIPTS).doc(parsed.data.slug);
+    const result = await syndicatePublishedPost(claim.payload);
+    const completedAt = new Date().toISOString();
+    if (!result.zulip) {
+      await receiptRef.set({
+        version: claim.version,
+        status: "failed",
+        updatedAt: completedAt,
+      }, { merge: true });
+      throw new ApiError(502, "Zulip did not accept the blog announcement.");
+    }
+
+    await receiptRef.set({
+      version: claim.version,
+      status: "complete",
+      completedAt,
+      updatedAt: completedAt,
+    }, { merge: true });
+    res.json({ success: true, syndication: result });
+  }),
+);
 
 export default router;

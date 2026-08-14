@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 import ogRouter from "../og";
 
@@ -7,109 +8,76 @@ function handler(path: string, method: string) {
   return layer!.route!.stack.at(-1)!.handle;
 }
 
-describe("GET /api/og dynamic OpenGraph generator", () => {
-  it("renders a valid 1200x630 SVG social card with default values", async () => {
-    const res = {
-      set: vi.fn().mockReturnThis(),
-      send: vi.fn().mockReturnThis(),
-      status: vi.fn().mockReturnThis(),
-      end: vi.fn().mockReturnThis(),
-    };
-    const next = vi.fn();
+function responseDouble() {
+  return {
+    set: vi.fn().mockReturnThis(),
+    send: vi.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    end: vi.fn().mockReturnThis(),
+  };
+}
 
-    await handler("/", "get")({ query: {}, headers: {} }, res, next);
+async function render(query: Record<string, string> = {}, headers: Record<string, string> = {}) {
+  const res = responseDouble();
+  const next = vi.fn();
+  await handler("/", "get")({ query, headers }, res, next);
+  return { res, next };
+}
+
+describe("GET /api/og dynamic OpenGraph generator", () => {
+  it("keeps an abuse limiter in front of the raster renderer", () => {
+    const routeIndex = ogRouter.stack.findIndex((entry) => entry.route?.path === "/");
+    expect(routeIndex).toBeGreaterThan(0);
+    expect(ogRouter.stack.slice(0, routeIndex)).toHaveLength(1);
+    expect(ogRouter.stack[0].route).toBeUndefined();
+    expect(ogRouter.stack[0].handle).toEqual(expect.any(Function));
+  });
+
+  it("renders a crawler-compatible 1200x630 PNG with immutable cache headers", async () => {
+    const { res, next } = await render();
 
     expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
-      "Content-Type": "image/svg+xml; charset=utf-8",
+      "Content-Type": "image/png",
       "Cache-Control": "public, max-age=86400, s-maxage=31536000, immutable",
       "X-Content-Type-Options": "nosniff",
+      "ETag": expect.stringMatching(/^"[A-Za-z0-9_-]{43}"$/),
     }));
-
-    const svg = res.send.mock.calls[0][0];
-    expect(svg).toContain('<svg width="1200" height="630"');
-    expect(svg).toContain("ARES 23247");
-    expect(svg).toContain("aresfirst.org");
+    const png = res.send.mock.calls[0][0] as Buffer;
+    const metadata = await sharp(png).metadata();
+    expect(metadata).toMatchObject({ format: "png", width: 1200, height: 630 });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("renders custom title, category, author, and theme", async () => {
-    const res = {
-      set: vi.fn().mockReturnThis(),
-      send: vi.fn().mockReturnThis(),
-      status: vi.fn().mockReturnThis(),
-      end: vi.fn().mockReturnThis(),
-    };
-    const next = vi.fn();
+  it("renders bounded custom text and strips invalid XML control characters", async () => {
+    const { res, next } = await render({
+      title: `${'<script>alert("xss")</script>'} & Engineering\u0001 ${"x".repeat(200)}`,
+      category: "Tournament",
+      author: "Lead & Coach",
+      date: "Feb 2026",
+      theme: "cyan",
+    });
 
-    await handler("/", "get")({
-      query: {
-        title: "2026 WV State Championship Victory",
-        category: "Tournament",
-        author: "David Mentor",
-        date: "Feb 2026",
-        theme: "cyan",
-      },
-      headers: {},
-    }, res, next);
-
-    const svg = res.send.mock.calls[0][0];
-    expect(svg).toContain("2026 WV State Championship");
-    expect(svg).toContain("TOURNAMENT");
-    expect(svg).toContain("David Mentor");
-    expect(svg).toContain("#00F0FF"); // Cyan theme accent
+    const metadata = await sharp(res.send.mock.calls[0][0] as Buffer).metadata();
+    expect(metadata).toMatchObject({ format: "png", width: 1200, height: 630 });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it("escapes unsafe XML characters in input parameters", async () => {
-    const res = {
-      set: vi.fn().mockReturnThis(),
-      send: vi.fn().mockReturnThis(),
-      status: vi.fn().mockReturnThis(),
-      end: vi.fn().mockReturnThis(),
-    };
-    const next = vi.fn();
+  it("uses a full-content digest so titles with the same prefix have different ETags", async () => {
+    const sharedPrefix = "This title has a deliberately shared prefix ";
+    const first = await render({ title: `${sharedPrefix}alpha` });
+    const second = await render({ title: `${sharedPrefix}bravo` });
 
-    await handler("/", "get")({
-      query: {
-        title: '<script>alert("xss")</script> & Engineering',
-        category: '<style>',
-        author: 'Lead & Coach',
-      },
-      headers: {},
-    }, res, next);
-
-    const svg = res.send.mock.calls[0][0];
-    expect(svg).not.toContain("<script>");
-    expect(svg).toContain("&lt;script&gt;");
-    expect(svg).toContain("&amp; Engineering");
+    expect(first.res.set.mock.calls[0][0].ETag).not.toBe(second.res.set.mock.calls[0][0].ETag);
   });
 
-  it("returns 304 Not Modified when ETag matches", async () => {
-    const res = {
-      set: vi.fn().mockReturnThis(),
-      send: vi.fn().mockReturnThis(),
-      status: vi.fn().mockReturnThis(),
-      end: vi.fn().mockReturnThis(),
-    };
-    const next = vi.fn();
+  it("returns 304 without rendering a body when the strong ETag matches", async () => {
+    const first = await render({ title: "Cached Title" });
+    const etag = first.res.set.mock.calls[0][0].ETag as string;
+    const second = await render({ title: "Cached Title" }, { "if-none-match": etag });
 
-    // First call to generate ETag
-    await handler("/", "get")({ query: { title: "Cached Title" }, headers: {} }, res, next);
-    const etag = res.set.mock.calls[0][0].ETag;
-
-    const res2 = {
-      set: vi.fn().mockReturnThis(),
-      send: vi.fn().mockReturnThis(),
-      status: vi.fn().mockReturnThis(),
-      end: vi.fn().mockReturnThis(),
-    };
-
-    await handler("/", "get")({
-      query: { title: "Cached Title" },
-      headers: { "if-none-match": etag },
-    }, res2, next);
-
-    expect(res2.status).toHaveBeenCalledWith(304);
-    expect(res2.end).toHaveBeenCalled();
-    expect(res2.send).not.toHaveBeenCalled();
+    expect(second.res.set).toHaveBeenCalledWith(expect.objectContaining({ ETag: etag }));
+    expect(second.res.status).toHaveBeenCalledWith(304);
+    expect(second.res.end).toHaveBeenCalled();
+    expect(second.res.send).not.toHaveBeenCalled();
   });
 });

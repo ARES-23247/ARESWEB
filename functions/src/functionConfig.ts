@@ -13,7 +13,7 @@ export const API_ROUTE_GROUPS = {
   public: [
     "/api/calendar", "/api/sponsors", "/api/outreach", "/api/tournaments",
     "/api/robots", "/api/store", "/api/finance", "/api/reference",
-    "/sitemap.xml", "/api/sitemap.xml",
+    "/api/og", "/sitemap.xml", "/api/sitemap.xml",
   ],
   core: ["/api/inquiries", "/api/profiles"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
