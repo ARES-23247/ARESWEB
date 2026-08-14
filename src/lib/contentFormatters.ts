@@ -1,13 +1,14 @@
 import type { ASTNode } from "@/components/TiptapRenderer";
 
-const DEFAULT_EVENT_PLACEHOLDER = "Describe your upcoming event or write a full recap here...";
+const DEFAULT_EVENT_PLACEHOLDER =
+  "Describe your upcoming event or write a full recap here...";
 
 /**
  * Safely parses and validates a Tiptap / ProseMirror AST node from unknown input.
  */
 export function toTiptapAst(content: unknown): ASTNode | null {
   if (!content) return null;
-  
+
   if (typeof content === "object" && content !== null) {
     const candidate = content as Record<string, unknown>;
     if (candidate.type === "doc" && Array.isArray(candidate.content)) {
@@ -20,7 +21,12 @@ export function toTiptapAst(content: unknown): ASTNode | null {
     if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
       try {
         const parsed = JSON.parse(trimmed);
-        if (parsed && typeof parsed === "object" && parsed.type === "doc" && Array.isArray(parsed.content)) {
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          parsed.type === "doc" &&
+          Array.isArray(parsed.content)
+        ) {
           return parsed as ASTNode;
         }
       } catch {
@@ -37,19 +43,24 @@ export function toTiptapAst(content: unknown): ASTNode | null {
  */
 export function extractTextFromAst(node: ASTNode | null | undefined): string {
   if (!node) return "";
-  
+
   if (node.type === "text" && typeof node.text === "string") {
     return node.text;
   }
+  if (node.type === "hardBreak") return "\n";
 
   if (node.content && Array.isArray(node.content)) {
-    const parts = node.content.map((child) => extractTextFromAst(child)).filter(Boolean);
-    
+    const parts = node.content
+      .map((child) => extractTextFromAst(child))
+      .filter(Boolean);
+
     // Use newlines between block-level elements, spaces between inline text
     if (["doc", "bulletList", "orderedList"].includes(node.type)) {
       return parts.join("\n").trim();
     }
-    if (["paragraph", "heading", "blockquote", "listItem"].includes(node.type)) {
+    if (
+      ["paragraph", "heading", "blockquote", "listItem"].includes(node.type)
+    ) {
       return parts.join("").trim();
     }
     return parts.join(" ").trim();
@@ -68,20 +79,28 @@ export function toPlainText(content: unknown, maxLength?: number): string {
   if (typeof content === "object") {
     const ast = toTiptapAst(content);
     const extracted = ast ? extractTextFromAst(ast) : "";
-    const clean = extracted.trim() === DEFAULT_EVENT_PLACEHOLDER ? "" : extracted.trim();
-    return maxLength && clean.length > maxLength ? clean.slice(0, maxLength).trim() + "..." : clean;
+    const clean =
+      extracted.trim() === DEFAULT_EVENT_PLACEHOLDER ? "" : extracted.trim();
+    return maxLength && clean.length > maxLength
+      ? clean.slice(0, maxLength).trim() + "..."
+      : clean;
   }
 
   if (typeof content === "string") {
     const trimmed = content.trim();
-    
+
     // Check if it's stringified JSON AST
     if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
       const ast = toTiptapAst(trimmed);
       if (ast) {
         const extracted = extractTextFromAst(ast);
-        const clean = extracted.trim() === DEFAULT_EVENT_PLACEHOLDER ? "" : extracted.trim();
-        return maxLength && clean.length > maxLength ? clean.slice(0, maxLength).trim() + "..." : clean;
+        const clean =
+          extracted.trim() === DEFAULT_EVENT_PLACEHOLDER
+            ? ""
+            : extracted.trim();
+        return maxLength && clean.length > maxLength
+          ? clean.slice(0, maxLength).trim() + "..."
+          : clean;
       }
     }
 
@@ -89,7 +108,9 @@ export function toPlainText(content: unknown, maxLength?: number): string {
       return "";
     }
 
-    return maxLength && trimmed.length > maxLength ? trimmed.slice(0, maxLength).trim() + "..." : trimmed;
+    return maxLength && trimmed.length > maxLength
+      ? trimmed.slice(0, maxLength).trim() + "..."
+      : trimmed;
   }
 
   return String(content);
@@ -109,15 +130,17 @@ export function astToMarkdown(node: ASTNode | null | undefined): string {
         if (mark.type === "italic") text = `*${text}*`;
         if (mark.type === "code") text = `\`${text}\``;
         if (mark.type === "strike") text = `~~${text}~~`;
-        if (mark.type === "link" && mark.attrs?.href) text = `[${text}](${mark.attrs.href})`;
+        if (mark.type === "link" && mark.attrs?.href)
+          text = `[${text}](${mark.attrs.href})`;
       }
     }
     return text;
   }
 
-  const childrenMarkdown = node.content && Array.isArray(node.content)
-    ? node.content.map((child) => astToMarkdown(child))
-    : [];
+  const childrenMarkdown =
+    node.content && Array.isArray(node.content)
+      ? node.content.map((child) => astToMarkdown(child))
+      : [];
 
   switch (node.type) {
     case "doc":
@@ -125,13 +148,18 @@ export function astToMarkdown(node: ASTNode | null | undefined): string {
     case "paragraph":
       return childrenMarkdown.join("");
     case "heading": {
-      const level = Math.min(6, Math.max(1, Number(node.attrs?.level ?? node.level ?? 1)));
+      const level = Math.min(
+        6,
+        Math.max(1, Number(node.attrs?.level ?? node.level ?? 1)),
+      );
       return `${"#".repeat(level)} ${childrenMarkdown.join("")}`;
     }
     case "bulletList":
       return childrenMarkdown.map((item) => `- ${item}`).join("\n");
     case "orderedList":
-      return childrenMarkdown.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
+      return childrenMarkdown
+        .map((item, idx) => `${idx + 1}. ${item}`)
+        .join("\n");
     case "listItem":
       return childrenMarkdown.join("");
     case "blockquote":
@@ -146,6 +174,8 @@ export function astToMarkdown(node: ASTNode | null | undefined): string {
       return `\`\`\`\n${childrenMarkdown.join("")}\n\`\`\``;
     case "horizontalRule":
       return "---";
+    case "hardBreak":
+      return "  \n";
     default:
       return childrenMarkdown.join("");
   }

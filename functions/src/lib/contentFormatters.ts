@@ -1,4 +1,5 @@
-const DEFAULT_EVENT_PLACEHOLDER = "Describe your upcoming event or write a full recap here...";
+const DEFAULT_EVENT_PLACEHOLDER =
+  "Describe your upcoming event or write a full recap here...";
 
 interface AstNode {
   type: string;
@@ -10,18 +11,23 @@ interface AstNode {
 
 export function extractTextFromAst(node: AstNode | null | undefined): string {
   if (!node) return "";
-  
+
   if (node.type === "text" && typeof node.text === "string") {
     return node.text;
   }
+  if (node.type === "hardBreak") return "\n";
 
   if (node.content && Array.isArray(node.content)) {
-    const parts = node.content.map((child) => extractTextFromAst(child)).filter(Boolean);
-    
+    const parts = node.content
+      .map((child) => extractTextFromAst(child))
+      .filter(Boolean);
+
     if (["doc", "bulletList", "orderedList"].includes(node.type)) {
       return parts.join("\n").trim();
     }
-    if (["paragraph", "heading", "blockquote", "listItem"].includes(node.type)) {
+    if (
+      ["paragraph", "heading", "blockquote", "listItem"].includes(node.type)
+    ) {
       return parts.join("").trim();
     }
     return parts.join(" ").trim();
@@ -40,8 +46,11 @@ export function toPlainText(content: unknown, maxLength?: number): string {
     const candidate = content as Record<string, unknown>;
     if (candidate.type === "doc" && Array.isArray(candidate.content)) {
       const extracted = extractTextFromAst(candidate as unknown as AstNode);
-      const clean = extracted.trim() === DEFAULT_EVENT_PLACEHOLDER ? "" : extracted.trim();
-      return maxLength && clean.length > maxLength ? clean.slice(0, maxLength).trim() + "..." : clean;
+      const clean =
+        extracted.trim() === DEFAULT_EVENT_PLACEHOLDER ? "" : extracted.trim();
+      return maxLength && clean.length > maxLength
+        ? clean.slice(0, maxLength).trim() + "..."
+        : clean;
     }
   }
 
@@ -50,10 +59,20 @@ export function toPlainText(content: unknown, maxLength?: number): string {
     if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
       try {
         const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-        if (parsed && typeof parsed === "object" && parsed.type === "doc" && Array.isArray(parsed.content)) {
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          parsed.type === "doc" &&
+          Array.isArray(parsed.content)
+        ) {
           const extracted = extractTextFromAst(parsed as unknown as AstNode);
-          const clean = extracted.trim() === DEFAULT_EVENT_PLACEHOLDER ? "" : extracted.trim();
-          return maxLength && clean.length > maxLength ? clean.slice(0, maxLength).trim() + "..." : clean;
+          const clean =
+            extracted.trim() === DEFAULT_EVENT_PLACEHOLDER
+              ? ""
+              : extracted.trim();
+          return maxLength && clean.length > maxLength
+            ? clean.slice(0, maxLength).trim() + "..."
+            : clean;
         }
       } catch {
         // Fall through to plain text
@@ -64,7 +83,9 @@ export function toPlainText(content: unknown, maxLength?: number): string {
       return "";
     }
 
-    return maxLength && trimmed.length > maxLength ? trimmed.slice(0, maxLength).trim() + "..." : trimmed;
+    return maxLength && trimmed.length > maxLength
+      ? trimmed.slice(0, maxLength).trim() + "..."
+      : trimmed;
   }
 
   return String(content);
