@@ -48,7 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMockRef = useRef(false);
 
   useEffect(() => {
-    // Prime App Check on startup so Auth and Firestore have active tokens immediately
+    // Prime App Check for protected backend and Firestore requests. Do this in
+    // the background: Google Sign-In must open directly from the user gesture
+    // or browser popup protection may block it.
     if (typeof window !== "undefined") {
       void getOrInitializeAppCheck();
     }
@@ -176,9 +178,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      if (typeof window !== "undefined") {
-        await getOrInitializeAppCheck();
-      }
       await signInWithPopup(auth, provider);
     } catch (error) {
       logger.error("Google SSO login failed.");

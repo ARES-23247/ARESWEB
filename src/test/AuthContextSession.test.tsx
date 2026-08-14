@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   auth: { currentUser: null as { uid: string } | null },
@@ -10,19 +10,24 @@ const mocks = vi.hoisted(() => ({
     photoURL: null;
   },
   onAuthStateChanged: vi.fn(),
+  signInWithPopup: vi.fn(),
+  getOrInitializeAppCheck: vi.fn(),
   authenticatedFetch: vi.fn(),
   logger: { error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
 vi.mock("../lib/firebaseAuth", () => ({ auth: mocks.auth }));
 vi.mock("../lib/api", () => ({ authenticatedFetch: mocks.authenticatedFetch }));
+vi.mock("../lib/firebaseAppCheck", () => ({
+  getOrInitializeAppCheck: mocks.getOrInitializeAppCheck,
+}));
 vi.mock("../utils/logger", () => ({ logger: mocks.logger }));
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
   onAuthStateChanged: mocks.onAuthStateChanged,
   signInWithEmailAndPassword: vi.fn(),
-  signInWithPopup: vi.fn(),
+  signInWithPopup: mocks.signInWithPopup,
   signOut: vi.fn(),
 }));
 
@@ -39,10 +44,17 @@ function SessionProbe() {
   );
 }
 
+function LoginProbe() {
+  const { loginWithGoogle } = useAuth();
+  return <button onClick={() => void loginWithGoogle()}>Sign in</button>;
+}
+
 describe("AuthProvider backend session linking", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    mocks.getOrInitializeAppCheck.mockResolvedValue(undefined);
+    mocks.signInWithPopup.mockResolvedValue(undefined);
     mocks.currentUser = {
       uid: "firebase-user-1",
       email: "member@example.com",
@@ -55,6 +67,26 @@ describe("AuthProvider backend session linking", () => {
         return vi.fn();
       },
     );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("opens Google Sign-In without waiting for App Check initialization", async () => {
+    mocks.currentUser = null;
+    mocks.getOrInitializeAppCheck.mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 200 })));
+
+    render(
+      <AuthProvider>
+        <LoginProbe />
+      </AuthProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    await waitFor(() => expect(mocks.signInWithPopup).toHaveBeenCalledTimes(1));
   });
 
   it("links an authenticated Firebase user through the verified session API", async () => {

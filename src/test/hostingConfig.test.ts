@@ -50,6 +50,27 @@ describe("Firebase Hosting crawl configuration", () => {
     });
   });
 
+  it("applies a bounded public media cache policy after the broad no-store policy", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const broadRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/!(assets){,/**}");
+    const mediaRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/api/photos/public/media/**",
+    );
+    const mediaRule = config.hosting.headers[mediaRuleIndex];
+
+    expect(broadRuleIndex).toBeGreaterThanOrEqual(0);
+    expect(mediaRuleIndex).toBeGreaterThan(broadRuleIndex);
+    expect(mediaRule.headers).toContainEqual({
+      key: "Cache-Control",
+      value: "public, max-age=300, s-maxage=300, must-revalidate",
+    });
+    expect(mediaRule.headers).not.toContainEqual(
+      expect.objectContaining({ value: expect.stringContaining("immutable") }),
+    );
+  });
+
   it("routes each API family to a narrowly secret-bound function", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),

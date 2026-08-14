@@ -52,6 +52,19 @@
               "value": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
             }
           ]
+        },
+        {
+          "source": "/api/photos/public/media/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=300, s-maxage=300, must-revalidate"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
         }
       ],
       "trailingSlash": false,
