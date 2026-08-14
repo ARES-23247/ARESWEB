@@ -304,8 +304,7 @@ export default function AcademyPage() {
                       className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 transition-colors cursor-pointer"
                       onClick={() => {
                         navigate(`${basePath}/${r.slug}`);
-                        setSearchOpen(false);
-                        setSearchQuery("");
+                        closeSearch();
                       }}
                     >
                       <div className="text-sm font-bold text-white">{r.title}</div>
