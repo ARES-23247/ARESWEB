@@ -2,7 +2,6 @@ import React from "react";
 import TiptapRenderer, { ASTNode } from "@/components/TiptapRenderer";
 import { EventItem } from "./types";
 import { toTiptapAst, toPlainText } from "@/lib/contentFormatters";
-import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 
 interface EventDescriptionProps {
   event: EventItem;
@@ -31,7 +30,9 @@ export default function EventDescription({ event, parsedAst }: EventDescriptionP
 
   return (
     <div className="prose prose-invert max-w-none">
-      <DocsMarkdownRenderer content={plainText} />
+      <p className="whitespace-pre-wrap text-base md:text-lg leading-relaxed text-marble/90">
+        {plainText}
+      </p>
     </div>
   );
 }
