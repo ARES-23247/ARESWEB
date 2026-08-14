@@ -14,6 +14,7 @@ import type {
 } from "@/lib/media";
 import {
   PhotoManagementEmpty,
+  PhotoManagementFailure,
   PhotoManagementLoading,
   PhotoManagementLoadMore,
 } from "./PhotoManagementPrimitives";
@@ -45,6 +46,8 @@ interface PhotoLibraryPanelProps {
   onAlbumFilterChange: (albumId: string) => void;
   onShowArchivedChange: (enabled: boolean) => void;
   loading: boolean;
+  loadError: string | null;
+  onRetry: () => void;
   photos: ManagedPhoto[];
   actionBusy: boolean;
   onOpenPhoto: (photo: ManagedPhoto) => void;
@@ -75,6 +78,8 @@ export default function PhotoLibraryPanel({
   onAlbumFilterChange,
   onShowArchivedChange,
   loading,
+  loadError,
+  onRetry,
   photos,
   actionBusy,
   onOpenPhoto,
@@ -244,14 +249,23 @@ export default function PhotoLibraryPanel({
         )}
       </div>
 
+      {loadError && (
+        <PhotoManagementFailure
+          title="Photos could not load."
+          detail={loadError}
+          retryLabel="Retry photos"
+          onRetry={onRetry}
+        />
+      )}
+
       {loading && photos.length === 0 ? (
         <PhotoManagementLoading label="Loading photos" />
-      ) : photos.length === 0 ? (
+      ) : photos.length === 0 && !loadError ? (
         <PhotoManagementEmpty
           icon={<ImageIcon aria-hidden="true" />}
           text="No photos match this view."
         />
-      ) : (
+      ) : photos.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {photos.map((photo) => (
             <article
@@ -331,7 +345,7 @@ export default function PhotoLibraryPanel({
             </article>
           ))}
         </div>
-      )}
+      ) : null}
 
       {hasMore && (
         <PhotoManagementLoadMore

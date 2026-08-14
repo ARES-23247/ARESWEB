@@ -164,7 +164,7 @@ export default defineConfig({
         "src/components/BlogThumbnailImage.tsx",
         "src/components/PwaUpdatePrompt.tsx",
         "src/components/SEO.tsx",
-        "src/app/dashboard/photos/*.tsx",
+        "src/app/dashboard/photos/*.{ts,tsx}",
         "src/app/dashboard/profile/page.tsx",
         "src/app/dashboard/tasks/taskRecord.ts",
         "src/app/dashboard/tasks/taskSubtasks.ts",
