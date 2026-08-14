@@ -222,13 +222,13 @@ router.post(
     const receiptRef = adminDb.collection(SYNDICATION_RECEIPTS).doc(parsed.data.slug);
     const result = await syndicatePublishedPost(claim.payload);
     const completedAt = new Date().toISOString();
-    if (!result.zulip) {
+    if (!result.zulip && !result.bluesky) {
       await receiptRef.set({
         version: claim.version,
         status: "failed",
         updatedAt: completedAt,
       }, { merge: true });
-      throw new ApiError(502, "Zulip did not accept the blog announcement.");
+      throw new ApiError(502, "Social syndication did not deliver to any configured channels.");
     }
 
     await receiptRef.set({

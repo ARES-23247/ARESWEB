@@ -53,7 +53,7 @@ describe("Webhooks Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ZULIP_WEBHOOK_TOKEN = "correct-webhook-token";
-    mocks.syndicate.mockResolvedValue({ zulip: true });
+    mocks.syndicate.mockResolvedValue({ zulip: true, bluesky: true });
     mocks.receiptSet.mockResolvedValue(undefined);
     req = {
       body: {},
@@ -186,7 +186,7 @@ describe("Webhooks Router Backend Endpoints", () => {
         expect.objectContaining({ status: "complete" }),
         { merge: true },
       );
-      expect(res.json).toHaveBeenCalledWith({ success: true, syndication: { zulip: true } });
+      expect(res.json).toHaveBeenCalledWith({ success: true, syndication: { zulip: true, bluesky: true } });
       expect(next).not.toHaveBeenCalled();
     });
 

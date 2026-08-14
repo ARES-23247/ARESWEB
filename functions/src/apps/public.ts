@@ -10,6 +10,7 @@ import storeRouter from "../routes/store";
 import tournamentsRouter from "../routes/tournaments";
 import ogRouter from "../routes/og";
 import announcementsRouter from "../routes/announcements";
+import feedRouter from "../routes/feed";
 
 export const publicApp = createApiApp({ routes: [
   { path: "/api/announcements", router: announcementsRouter },
@@ -24,4 +25,6 @@ export const publicApp = createApiApp({ routes: [
   { path: "/api/og", router: ogRouter },
   { path: "/sitemap.xml", router: sitemapRouter },
   { path: "/api/sitemap.xml", router: sitemapRouter },
+  { path: "/feed.xml", router: feedRouter },
+  { path: "/api/feed.xml", router: feedRouter },
 ] });

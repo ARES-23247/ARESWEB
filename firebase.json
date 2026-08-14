@@ -131,6 +131,18 @@
           "function": "publicApi"
         },
         {
+          "source": "/sitemap.xml",
+          "function": "publicApi"
+        },
+        {
+          "source": "/feed.xml",
+          "function": "publicApi"
+        },
+        {
+          "source": "/api/feed.xml",
+          "function": "publicApi"
+        },
+        {
           "source": "/api/inquiries{,/**}",
           "function": "coreApi"
         },
