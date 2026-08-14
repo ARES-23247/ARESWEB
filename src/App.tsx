@@ -23,6 +23,7 @@ const queryClient = new QueryClient({
 const Home = lazy(() => import("@/app/page"));
 const AboutPage = lazy(() => import("@/app/about/page"));
 const AcademyPage = lazy(() => import("@/app/academy/page"));
+const AcademyLibraryPage = lazy(() => import("@/app/academy/library/page"));
 const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page"));
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
@@ -107,6 +108,7 @@ export default function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/academy/library" element={<AcademyLibraryPage />} />
                   <Route path="/academy/playground" element={<AcademyPlaygroundPage />} />
                   <Route path="/academy/:slug" element={<AcademyPage />} />
                   <Route path="/docs" element={<AcademyPage />} />
