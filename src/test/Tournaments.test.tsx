@@ -335,6 +335,14 @@ describe("TournamentDetailPage", () => {
       screen.getByText(/FIRST® World Championship 2026/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Match Checklist/i)).toBeInTheDocument();
+    const csvDownload = screen.getByRole("link", {
+      name: "Download all match records as CSV",
+    });
+    expect(csvDownload).toHaveAttribute("download", "ares-match-plan.csv");
+    expect(csvDownload).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^data:text\/csv;charset=utf-8,%EF%BB%BF/),
+    );
     expect(screen.getByText("April 29, 2026")).toBeInTheDocument();
     expect(screen.getByText("1/1")).toBeInTheDocument();
     expect(screen.getByText("1-0-0")).toBeInTheDocument();

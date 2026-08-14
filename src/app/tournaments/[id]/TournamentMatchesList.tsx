@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Bookmark, Plus, Check, Edit2, Trash2, Info } from "lucide-react";
+import { Bookmark, Plus, Check, Edit2, Trash2, Info, Download } from "lucide-react";
 import { TournamentMatch } from "@/types/tournament";
 import { summarizeTournamentMatches } from "@/lib/tournamentStats";
+import { tournamentMatchCsvDataUrl } from "@/lib/tournamentMatchCsv";
 import { TournamentMatchEditForm } from "./TournamentMatchEditForm";
 
 interface TournamentMatchesListProps {
@@ -99,6 +100,7 @@ export default function TournamentMatchesList({
     });
   }, [matches, matchSearchQuery]);
   const summary = useMemo(() => summarizeTournamentMatches(matches), [matches]);
+  const csvDataUrl = useMemo(() => tournamentMatchCsvDataUrl(matches), [matches]);
 
   return (
     <section className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden backdrop-blur-sm shadow-xl text-left">
@@ -125,6 +127,17 @@ export default function TournamentMatchesList({
             onChange={(e) => setMatchSearchQuery(e.target.value)}
             className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-[11px] text-white placeholder-marble/45 focus:outline-none focus:border-ares-red"
           />
+          {matches.length > 0 && (
+            <a
+              href={csvDataUrl}
+              download="ares-match-plan.csv"
+              aria-label="Download all match records as CSV"
+              className="flex items-center gap-1 rounded border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white transition-colors hover:border-ares-gold hover:text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <Download size={12} aria-hidden="true" />
+              Export CSV
+            </a>
+          )}
           {canEdit && (
             <button
               type="button"
