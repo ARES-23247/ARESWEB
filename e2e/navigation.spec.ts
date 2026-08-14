@@ -3,19 +3,26 @@ import { test, expect } from './fixtures';
 test.describe('Navigation & Accessibility E2E tests', () => {
   test('should navigate to homepage and verify branding', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle('ARES Analytics');
-    // The OAuth application name and product purpose are the primary homepage identity.
-    const heroHeading = page.getByRole('heading', { name: 'ARES Analytics' }).first();
+    await expect(page).toHaveTitle('ARES 23247 | Morgantown Robotics Team');
+    // The team—not one of its software projects—is the primary homepage identity.
+    const heroHeading = page.getByRole('heading', {
+      name: 'ARES 23247 — Engineered To Inspire',
+    });
     await expect(heroHeading).toBeVisible();
+    const watermarkMask = await page.getByTestId('hero-watermark').evaluate((element) => {
+      const style = getComputedStyle(element);
+      return style.maskImage || style.webkitMaskImage;
+    });
+    expect(watermarkMask).toContain('radial-gradient');
 
     // Verify key button "View Schedule" is visible
     const viewScheduleButton = page.getByRole('link', { name: 'View Schedule' });
     await expect(viewScheduleButton).toBeVisible();
 
-    // Google OAuth verification and prospective users must be able to identify the
-    // desktop product and reach its public policy pages without signing in.
-    await expect(page.getByRole('heading', { name: 'ARES Analytics' }).first()).toBeVisible();
+    // ARES Analytics remains identifiable as a secondary team project for OAuth
+    // verification, without displacing the team's public identity.
     const analyticsSection = page.getByLabel('ARES Analytics');
+    await expect(analyticsSection.getByRole('heading', { name: 'ARES Analytics' })).toBeVisible();
     await expect(analyticsSection.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
     await expect(analyticsSection.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
   });
