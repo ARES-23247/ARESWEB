@@ -70,9 +70,9 @@ export default function JoinPage() {
         ? { school: school.trim(), grade, interests: selectedInterests, additional: additional.trim(), phone: phone || undefined }
         : { occupation: occupation.trim(), interests: selectedInterests, additional: additional.trim(), phone: phone || undefined };
 
-      let appCheckHeaders = await getAppCheckHeader();
+      let appCheckHeaders = (await getAppCheckHeader()) || {};
       if (!appCheckHeaders["X-Firebase-AppCheck"]) {
-        appCheckHeaders = await getAppCheckHeader(true);
+        appCheckHeaders = (await getAppCheckHeader(true)) || {};
       }
 
       const res = await fetch("/api/inquiries", {
