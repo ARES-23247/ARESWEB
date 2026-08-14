@@ -25,6 +25,7 @@ export const staticPageMetadata = [
   ["/outreach", "Community Outreach", "Discover ARES 23247 community STEM programs, impact reports, and robot demonstrations."],
   ["/privacy", "Privacy Policy", "Read how ARES 23247 protects visitor, applicant, and team-member information."],
   ["/robots", "Our Robots", "Explore competition robots engineered by ARES 23247 for the FIRST® Tech Challenge."],
+  ["/robots/controls", "Gamepad Driver Controls", "Interactive gamepad driver controls mapper, tele-op layout visualizer, and drive team quick-reference guide."],
   ["/seasons", "Team Legacy", "Explore the competition seasons, achievements, awards, and growth of ARES 23247."],
   ["/sponsors", "Our Sponsors", "Meet the organizations supporting ARES 23247 youth robotics and STEM education."],
   ["/store", "Team Store", "Official ARES 23247 merchandise and team fundraising information."],

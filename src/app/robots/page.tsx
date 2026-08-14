@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Code, Cpu, Edit2, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
+import { Code, Cpu, Edit2, Gamepad2, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -102,7 +102,7 @@ export default function RobotsFeedPage() {
       <SEO title="Our Robots" description="Explore the competition robots engineered by ARES 23247 for the FIRST® Tech Challenge." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         <header className="text-center mb-16">
-          <div className="inline-block bg-ares-red text-white px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-xs mb-6 border border-ares-bronze">
+          <div className="inline-block bg-ares-red text-white px-4 py-1.5 ares-cut-sm font-black uppercase tracking-widest text-xs mb-6 border border-ares-bron">
             ARES 23247 Engineering
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 uppercase font-heading text-white">
@@ -111,11 +111,19 @@ export default function RobotsFeedPage() {
           <p className="text-lg text-marble/75 max-w-2xl mx-auto font-medium leading-relaxed mb-8">
             An archive of robotics systems engineered for the <i>FIRST</i>® Tech Challenge by team ARES.
           </p>
-          {canEdit && (
-            <button onClick={() => openEditor(null)} className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
-              <Plus aria-hidden="true" size={16} /> Deploy new robot
-            </button>
-          )}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/robots/controls"
+              className="clipped-button-sm bg-ares-red/20 hover:bg-ares-red text-ares-gold hover:text-white border border-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 transition-all focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <Gamepad2 aria-hidden="true" size={16} /> Driver Controls &amp; Cheat Sheet
+            </Link>
+            {canEdit && (
+              <button onClick={() => openEditor(null)} className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-6 inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none">
+                <Plus aria-hidden="true" size={16} /> Deploy new robot
+              </button>
+            )}
+          </div>
         </header>
 
         {isLoading ? (
