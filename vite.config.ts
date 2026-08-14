@@ -161,6 +161,7 @@ export default defineConfig({
         "src/lib/tournamentStats.ts",
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
+        "src/components/PwaUpdatePrompt.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/profile/page.tsx",
         "src/app/tournaments/[id]/TournamentMatchEditForm.tsx",

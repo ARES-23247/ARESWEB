@@ -1,14 +1,16 @@
 import { logger } from "@/utils/logger";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, WifiOff, X } from "lucide-react";
 import { registerSW } from "virtual:pwa-register";
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const REGISTRATION_RETRY_DELAY_MS = 1_500;
 const MAX_REGISTRATION_ATTEMPTS = 3;
+const UPDATE_ACTIVATION_TIMEOUT_MS = 8_000;
 
 interface PwaUpdatePromptProps {
   enabled?: boolean;
+  reloadPage?: () => void;
 }
 
 type UpdateServiceWorker = (reloadPage?: boolean) => Promise<void>;
@@ -17,15 +19,55 @@ function diagnosticMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaUpdatePromptProps) {
+export default function PwaUpdatePrompt({
+  enabled = import.meta.env.PROD,
+  reloadPage,
+}: PwaUpdatePromptProps) {
+  const performReload = useMemo(
+    () => reloadPage ?? window.location.reload.bind(window.location),
+    [reloadPage],
+  );
   const updateServiceWorker = useRef<UpdateServiceWorker | null>(null);
+  const activationTimeout = useRef<number | undefined>(undefined);
+  const controllerChangeHandler = useRef<(() => void) | null>(null);
+  const reloadStarted = useRef(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [offlineReady, setOfflineReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const clearActivationWait = useCallback(() => {
+    if (activationTimeout.current !== undefined) {
+      window.clearTimeout(activationTimeout.current);
+      activationTimeout.current = undefined;
+    }
+    if (
+      controllerChangeHandler.current &&
+      typeof navigator !== "undefined" &&
+      "serviceWorker" in navigator
+    ) {
+      navigator.serviceWorker.removeEventListener(
+        "controllerchange",
+        controllerChangeHandler.current,
+      );
+      controllerChangeHandler.current = null;
+    }
+  }, []);
+
+  const reloadWithActivatedWorker = useCallback(() => {
+    if (reloadStarted.current) return;
+    reloadStarted.current = true;
+    clearActivationWait();
+    performReload();
+  }, [clearActivationWait, performReload]);
+
   useEffect(() => {
-    if (!enabled || typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    if (
+      !enabled ||
+      typeof navigator === "undefined" ||
+      !("serviceWorker" in navigator)
+    )
+      return;
 
     let registration: ServiceWorkerRegistration | undefined;
     let registrationAttempts = 0;
@@ -33,7 +75,12 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
     let isDisposed = false;
 
     const checkForUpdate = () => {
-      if (document.visibilityState !== "visible" || !navigator.onLine || !registration) return;
+      if (
+        document.visibilityState !== "visible" ||
+        !navigator.onLine ||
+        !registration
+      )
+        return;
       void registration.update().catch((updateError: unknown) => {
         logger.error("PWA update check failed:", updateError);
         setError(`Update check failed: ${diagnosticMessage(updateError)}`);
@@ -43,20 +90,30 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
     const handleRegistrationError = (registrationError: unknown) => {
       if (isDisposed) return;
       registrationAttempts += 1;
-      if (registrationAttempts < MAX_REGISTRATION_ATTEMPTS && navigator.onLine) {
+      if (
+        registrationAttempts < MAX_REGISTRATION_ATTEMPTS &&
+        navigator.onLine
+      ) {
         logger.warn("PWA registration failed; retrying:", registrationError);
-        retryTimer = window.setTimeout(registerServiceWorker, REGISTRATION_RETRY_DELAY_MS);
+        retryTimer = window.setTimeout(
+          registerServiceWorker,
+          REGISTRATION_RETRY_DELAY_MS,
+        );
         return;
       }
 
       logger.error("PWA registration failed:", registrationError);
-      setError(`Offline access could not be enabled: ${diagnosticMessage(registrationError)}`);
+      setError(
+        `Offline access could not be enabled: ${diagnosticMessage(registrationError)}`,
+      );
     };
 
     const registrationOptions = () => ({
       immediate: true,
+      onNeedReload: reloadWithActivatedWorker,
       onNeedRefresh: () => {
         setError(null);
+        setIsUpdating(false);
         setUpdateAvailable(true);
       },
       onOfflineReady: () => {
@@ -64,7 +121,10 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
         setError(null);
         setOfflineReady(true);
       },
-      onRegisteredSW: (_serviceWorkerUrl: string, currentRegistration?: ServiceWorkerRegistration) => {
+      onRegisteredSW: (
+        _serviceWorkerUrl: string,
+        currentRegistration?: ServiceWorkerRegistration,
+      ) => {
         if (!currentRegistration) return;
         registration = currentRegistration;
         registrationAttempts = 0;
@@ -98,7 +158,10 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
 
     registerServiceWorker();
 
-    const intervalId = window.setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
+    const intervalId = window.setInterval(
+      checkForUpdate,
+      UPDATE_CHECK_INTERVAL_MS,
+    );
     document.addEventListener("visibilitychange", checkForUpdate);
     window.addEventListener("online", handleOnline);
 
@@ -106,18 +169,40 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
       isDisposed = true;
       window.clearInterval(intervalId);
       if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      clearActivationWait();
       document.removeEventListener("visibilitychange", checkForUpdate);
       window.removeEventListener("online", handleOnline);
     };
-  }, [enabled]);
+  }, [clearActivationWait, enabled, reloadWithActivatedWorker]);
 
   const installUpdate = async () => {
     if (!updateServiceWorker.current) return;
+    clearActivationWait();
+    reloadStarted.current = false;
     setIsUpdating(true);
     setError(null);
+
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      controllerChangeHandler.current = reloadWithActivatedWorker;
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        reloadWithActivatedWorker,
+        { once: true },
+      );
+    }
+
+    activationTimeout.current = window.setTimeout(() => {
+      clearActivationWait();
+      setError(
+        "Update activation timed out. Reload this page or try the update again.",
+      );
+      setIsUpdating(false);
+    }, UPDATE_ACTIVATION_TIMEOUT_MS);
+
     try {
       await updateServiceWorker.current(true);
     } catch (updateError) {
+      clearActivationWait();
       logger.error("PWA activation failed:", updateError);
       setError(`Update activation failed: ${diagnosticMessage(updateError)}`);
       setIsUpdating(false);
@@ -133,11 +218,19 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 rounded-lg bg-ares-red p-2 text-white">
-          {error ? <WifiOff aria-hidden="true" size={18} /> : <RefreshCw aria-hidden="true" size={18} />}
+          {error ? (
+            <WifiOff aria-hidden="true" size={18} />
+          ) : (
+            <RefreshCw aria-hidden="true" size={18} />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-sm font-black uppercase tracking-wide">
-            {updateAvailable ? "Portal update ready" : error ? "Offline support unavailable" : "Ready for offline use"}
+            {updateAvailable
+              ? "Portal update ready"
+              : error
+                ? "Offline support unavailable"
+                : "Ready for offline use"}
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-marble/80">
             {updateAvailable
@@ -146,7 +239,11 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
                 ? "Online browsing still works. Try again after reconnecting or reloading the page."
                 : "The current portal shell is available if your connection drops."}
           </p>
-          {error && <p className="mt-2 break-words font-mono text-[11px] text-marble/70">{error}</p>}
+          {error && (
+            <p className="mt-2 break-words font-mono text-[11px] text-marble/70">
+              {error}
+            </p>
+          )}
           {updateAvailable && (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -159,8 +256,14 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
               </button>
               <button
                 type="button"
-                onClick={() => setUpdateAvailable(false)}
-                className="rounded border border-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wide text-marble hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                onClick={() => {
+                  clearActivationWait();
+                  setUpdateAvailable(false);
+                  setError(null);
+                  setIsUpdating(false);
+                }}
+                disabled={isUpdating}
+                className="rounded border border-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wide text-marble hover:bg-white/10 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 Later
               </button>
@@ -170,11 +273,15 @@ export default function PwaUpdatePrompt({ enabled = import.meta.env.PROD }: PwaU
         <button
           type="button"
           aria-label="Dismiss notification"
+          disabled={isUpdating}
           onClick={() => {
+            clearActivationWait();
+            setUpdateAvailable(false);
             setOfflineReady(false);
             setError(null);
+            setIsUpdating(false);
           }}
-          className="rounded p-1 text-marble/70 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          className="rounded p-1 text-marble/70 hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
           <X aria-hidden="true" size={16} />
         </button>
