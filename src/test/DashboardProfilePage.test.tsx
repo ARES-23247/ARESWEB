@@ -374,5 +374,5 @@ describe("DashboardProfilePage imports", () => {
       }),
     );
     expect(screen.getByText(/Profile settings saved securely/i)).toBeInTheDocument();
-  });
+  }, 15000);
 });

@@ -33,6 +33,14 @@ export const globalErrorHandler = (
   const message = isApiError ? err.message : "Internal server error.";
   const code = isApiError ? err.code || `HTTP_${status}` : "INTERNAL_ERROR";
 
+  // A streaming response may already have sent image headers or body bytes.
+  // Do not append a JSON error payload to a partial binary response; terminate
+  // the connection and let the client retry the bounded media request.
+  if (res.headersSent) {
+    res.destroy(error);
+    return;
+  }
+
   res.status(status).json({
     error: message,
     code,

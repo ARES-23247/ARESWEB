@@ -17,13 +17,13 @@ export default function VideosPage() {
   const [filter, setFilter] = useState<"all" | "video" | "short">("all");
   const [selected, setSelected] = useState<ManagedVideo | null>(null);
 
-  const loadVideos = useCallback(async (append = false) => {
+  const loadVideos = useCallback(async (append = false, targetCursor: string | null = null) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ limit: "24" });
-      if (append && cursor) params.set("cursor", cursor);
+      if (append && targetCursor) params.set("cursor", targetCursor);
       const response = await fetch(`/api/videos/public?${params.toString()}`);
       if (!response.ok) throw await apiFailure(response, "Published videos could not load.");
       const payload = await response.json().catch(() => {
@@ -41,9 +41,11 @@ export default function VideosPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [cursor]);
+  }, []);
 
-  useEffect(() => { void loadVideos(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void loadVideos(false);
+  }, [loadVideos]);
 
   const visibleVideos = useMemo(
     () => filter === "all" ? videos : videos.filter((video) => video.type === filter),
@@ -81,7 +83,7 @@ export default function VideosPage() {
             <div className="space-y-3 p-5"><h2 className="font-heading text-lg font-black uppercase text-white">{video.title}</h2>{video.description && <p className="line-clamp-3 text-sm leading-relaxed text-marble/70">{video.description}</p>}<a href={video.watchUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-ares-cyan focus-visible:ring-2 focus-visible:ring-ares-cyan">Watch on YouTube <ExternalLink size={11} aria-hidden="true" /></a></div>
           </article>)}
         </div>}
-        {hasMore && <div className="mt-10 text-center"><button type="button" onClick={() => void loadVideos(true)} disabled={loadingMore} className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{loadingMore ? "Loading" : "Load more videos"}</button></div>}
+        {hasMore && <div className="mt-10 text-center"><button type="button" onClick={() => void loadVideos(true, cursor)} disabled={loadingMore} className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{loadingMore ? "Loading" : "Load more videos"}</button></div>}
       </div>
     </main>
 

@@ -11,6 +11,7 @@ vi.mock("../lib/firebaseAuth", () => ({
 
 vi.mock("../lib/firebaseAppCheck", () => ({
   getAppCheckHeader: firebaseMocks.getAppCheckHeader,
+  getOrInitializeAppCheck: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { authenticatedFetch } from "../lib/api";

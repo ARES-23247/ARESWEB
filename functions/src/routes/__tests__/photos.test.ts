@@ -18,6 +18,18 @@ const query: any = {
   doc,
 };
 
+const { streamPipeline } = vi.hoisted(() => ({
+  streamPipeline: vi.fn(),
+}));
+const readStream = { kind: "storage-read-stream" };
+const createReadStream = vi.fn(() => readStream);
+const getMetadata = vi.fn().mockResolvedValue([{ contentType: "image/jpeg", etag: '"test-etag"' }]);
+const storageFile = vi.fn(() => ({
+  getMetadata,
+  createReadStream,
+}));
+const storageBucket = { file: storageFile };
+
 vi.mock("../../lib/firebase-admin", () => ({
   adminFieldValue: { increment: vi.fn((value) => value) },
   adminDb: {
@@ -29,7 +41,7 @@ vi.mock("../../lib/firebase-admin", () => ({
       commit: batchCommit,
     })),
   },
-  adminStorage: { bucket: vi.fn() },
+  adminStorage: { bucket: vi.fn(() => storageBucket) },
   adminAuth: {},
 }));
 vi.mock("../../middleware/auth", () => ({
@@ -37,6 +49,7 @@ vi.mock("../../middleware/auth", () => ({
   ensureTeamMember: (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 vi.mock("../../lib/googleAuth", () => ({ getGooglePhotosAccessToken: vi.fn() }));
+vi.mock("node:stream/promises", () => ({ pipeline: streamPipeline }));
 
 import photosRouter from "../photos";
 
@@ -51,7 +64,12 @@ function photo(id: string, data: Record<string, unknown>) {
 }
 
 describe("photos routes", () => {
-  const res = { json: vi.fn().mockReturnThis(), status: vi.fn().mockReturnThis() };
+  const res = {
+    json: vi.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    end: vi.fn().mockReturnThis(),
+  };
   const next = vi.fn();
 
   beforeEach(() => {
@@ -59,6 +77,7 @@ describe("photos routes", () => {
     queryGet.mockResolvedValue({ docs: [] });
     docGet.mockResolvedValue({ exists: true, data: () => ({}) });
     batchCommit.mockResolvedValue(undefined);
+    streamPipeline.mockResolvedValue(undefined);
   });
 
   async function expectApiError(path: string, method: string, req: Record<string, unknown>, status: number, message: string) {
@@ -194,7 +213,7 @@ describe("photos routes", () => {
             capturedAt: "2026-01-01",
             location: " Arena ",
             description: "Finals",
-            storagePath: "hidden",
+            storagePath: "gallery/active.jpg",
           }),
           photo("unsafe", { albumId: "album", publicUrl: "http://example.com/no.jpg" }),
           photo("archived", { albumId: "album", publicUrl: "https://example.com/old.jpg", isDeleted: 1 }),
@@ -206,7 +225,7 @@ describe("photos routes", () => {
       expect(payload).toEqual({
         photos: [{
           id: "active",
-          publicUrl: "https://storage.googleapis.com/active.jpg",
+          publicUrl: "/api/photos/public/media/active/original",
           caption: "Robot",
           altText: "Drive team",
           category: "Competition",
@@ -364,6 +383,269 @@ describe("photos routes", () => {
       next.mockClear();
       docGet.mockResolvedValueOnce({ exists: false });
       await expectApiError("/:photoId/restore", "post", { params: { photoId: "missing" } }, 404, "Photo not found.");
+    });
+  });
+
+  describe("GET /public/media/:photoId/:variant", () => {
+    it("streams original media with CDN edge caching headers", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            albumId: "public-album",
+            storagePath: "gallery/photo-1.jpg",
+            mimeType: "image/jpeg",
+            isDeleted: 0,
+          }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      getMetadata.mockResolvedValueOnce([{ contentType: "image/jpeg", etag: '"etag-123"' }]);
+
+      await handler("/public/media/:photoId/:variant", "get")(
+        { params: { photoId: "photo-1", variant: "original" }, headers: {} },
+        res,
+        next
+      );
+
+      expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "public, max-age=300, s-maxage=300, must-revalidate",
+        "ETag": '"etag-123"',
+        "Content-Disposition": "inline",
+        "X-Content-Type-Options": "nosniff",
+      }));
+      expect(storageFile).toHaveBeenCalledWith("gallery/photo-1.jpg");
+      expect(streamPipeline).toHaveBeenCalledWith(readStream, res);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("streams thumbnail WebP variant when requested", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            albumId: "public-album",
+            storagePath: "gallery/photo-1.jpg",
+            thumbnailPath: "gallery/photo-1-thumbnail.webp",
+            isDeleted: 0,
+          }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      getMetadata.mockResolvedValueOnce([{ contentType: "image/webp", etag: '"thumb-etag"' }]);
+
+      await handler("/public/media/:photoId/:variant", "get")(
+        { params: { photoId: "photo-1", variant: "thumbnail" }, headers: {} },
+        res,
+        next
+      );
+
+      expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
+        "Content-Type": "image/webp",
+        "Cache-Control": "public, max-age=300, s-maxage=300, must-revalidate",
+        "ETag": '"thumb-etag"',
+      }));
+      expect(storageFile).toHaveBeenCalledWith("gallery/photo-1-thumbnail.webp");
+      expect(streamPipeline).toHaveBeenCalledWith(readStream, res);
+    });
+
+    it("returns 304 Not Modified when ETag matches If-None-Match header", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            albumId: "public-album",
+            storagePath: "gallery/photo-1.jpg",
+            isDeleted: 0,
+          }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      getMetadata.mockResolvedValueOnce([{ contentType: "image/jpeg", etag: '"cached-etag"' }]);
+
+      await handler("/public/media/:photoId/:variant", "get")(
+        { params: { photoId: "photo-1", variant: "original" }, headers: { "if-none-match": '"cached-etag"' } },
+        res,
+        next
+      );
+
+      expect(res.status).toHaveBeenCalledWith(304);
+      expect(res.end).toHaveBeenCalled();
+      expect(streamPipeline).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid variants and invalid photo IDs", async () => {
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "photo-1", variant: "invalid" }, headers: {} },
+        400,
+        "Invalid media variant. Must be 'original', 'medium', or 'thumbnail'."
+      );
+
+      next.mockClear();
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "photo-1", variant: ["original"] }, headers: {} },
+        400,
+        "Invalid media variant. Must be 'original', 'medium', or 'thumbnail'."
+      );
+
+      next.mockClear();
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "bad id with spaces", variant: "original" }, headers: {} },
+        400,
+        "Invalid photo ID."
+      );
+    });
+
+    it("uses the original MIME type when a requested derivative is unavailable", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            albumId: "public-album",
+            storagePath: "gallery/photo-1.jpg",
+            mimeType: "image/jpeg",
+            isDeleted: 0,
+          }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      getMetadata.mockResolvedValueOnce([{}]);
+
+      await handler("/public/media/:photoId/:variant", "get")(
+        { params: { photoId: "photo-1", variant: "thumbnail" }, headers: {} },
+        res,
+        next
+      );
+
+      expect(storageFile).toHaveBeenCalledWith("gallery/photo-1.jpg");
+      expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
+        "Content-Type": "image/jpeg",
+      }));
+      expect(res.set).toHaveBeenCalledWith(expect.not.objectContaining({ ETag: expect.anything() }));
+      expect(streamPipeline).toHaveBeenCalledWith(readStream, res);
+    });
+
+    it("returns 404 when photo does not exist or is deleted", async () => {
+      docGet.mockResolvedValueOnce({ exists: false });
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "missing-photo", variant: "original" }, headers: {} },
+        404,
+        "Photo not found."
+      );
+
+      next.mockClear();
+      docGet.mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 1, storagePath: "path" }) });
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "deleted-photo", variant: "original" }, headers: {} },
+        404,
+        "Photo not found."
+      );
+    });
+
+    it("returns 404 when photo belongs to a private or deleted album", async () => {
+      // Photo exists but belongs to album
+      docGet
+        .mockResolvedValueOnce({ exists: true, data: () => ({ albumId: "private-album", isDeleted: 0, storagePath: "path" }) })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: false, isDeleted: 0 }) });
+
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "private-album-photo", variant: "original" }, headers: {} },
+        404,
+        "Photo not found."
+      );
+    });
+
+    it("returns 404 when a photo is not assigned to a public album", async () => {
+      docGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ isDeleted: 0, storagePath: "gallery/unassigned.jpg" }),
+      });
+
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "unassigned-photo", variant: "original" }, headers: {} },
+        404,
+        "Photo not found."
+      );
+      expect(storageFile).not.toHaveBeenCalled();
+    });
+
+    it("rejects storage paths outside the gallery namespace and active-content MIME types", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ albumId: "public-album", isDeleted: 0, storagePath: "editor/uploads/file.html" }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "bad-path", variant: "original" }, headers: {} },
+        404,
+        "Photo media file not found."
+      );
+
+      next.mockClear();
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ albumId: "public-album", isDeleted: 0, storagePath: "gallery/file.svg" }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      getMetadata.mockResolvedValueOnce([{ contentType: "image/svg+xml", etag: '"svg"' }]);
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "bad-mime", variant: "original" }, headers: {} },
+        404,
+        "Photo media file not found."
+      );
+    });
+
+    it("forwards asynchronous Storage stream failures through async error handling", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ albumId: "public-album", isDeleted: 0, storagePath: "gallery/photo.jpg" }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      streamPipeline.mockRejectedValueOnce(new Error("stream failed"));
+
+      await handler("/public/media/:photoId/:variant", "get")(
+        { params: { photoId: "stream-failure", variant: "original" }, headers: {} },
+        res,
+        next
+      );
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "stream failed" }));
+    });
+
+    it("returns 404 when underlying storage file is missing (404 from storage)", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ albumId: "public-album", isDeleted: 0, storagePath: "gallery/missing.jpg" }),
+        })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isPublic: true, isDeleted: 0 }) });
+      getMetadata.mockRejectedValueOnce({ code: 404, message: "Not found in bucket" });
+
+      await expectApiError(
+        "/public/media/:photoId/:variant",
+        "get",
+        { params: { photoId: "missing-storage-file", variant: "original" }, headers: {} },
+        404,
+        "Photo file not found in storage."
+      );
     });
   });
 });

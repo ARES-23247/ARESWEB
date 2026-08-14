@@ -7,7 +7,7 @@ type AppCheckInstance = ReturnType<AppCheckModule["initializeAppCheck"]>;
 let appCheck: AppCheckInstance | undefined;
 let appCheckInitialization: Promise<AppCheckInstance | undefined> | undefined;
 
-async function getOrInitializeAppCheck(): Promise<AppCheckInstance | undefined> {
+export async function getOrInitializeAppCheck(): Promise<AppCheckInstance | undefined> {
   if (appCheck || typeof window === "undefined") return appCheck;
 
   const siteKey = import.meta.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;

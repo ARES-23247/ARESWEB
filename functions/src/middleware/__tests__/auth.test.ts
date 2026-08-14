@@ -333,4 +333,13 @@ describe("errorHandler", () => {
     expect(statusMock).toHaveBeenCalledWith(404);
     expect(jsonMock).toHaveBeenCalledWith({ error: "Not Found Custom", code: "HTTP_404" });
   });
+
+  it("terminates a partial streaming response instead of appending JSON", () => {
+    const err = new Error("stream failed");
+    const destroy = vi.fn();
+    globalErrorHandler(err, req as any, { headersSent: true, destroy } as any, next);
+
+    expect(destroy).toHaveBeenCalledWith(err);
+    expect(statusMock).not.toHaveBeenCalled();
+  });
 });

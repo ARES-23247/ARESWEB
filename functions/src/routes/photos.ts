@@ -1,5 +1,6 @@
 import express from "express";
-import { adminDb, adminFieldValue } from "../lib/firebase-admin";
+import { pipeline } from "node:stream/promises";
+import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -85,6 +86,45 @@ function photoDto(id: string, data: PhotoRecord) {
   };
 }
 
+type MediaVariant = "original" | "medium" | "thumbnail";
+
+const VALID_VARIANTS = new Set<MediaVariant>(["original", "medium", "thumbnail"]);
+const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PUBLIC_MEDIA_CACHE_CONTROL = "public, max-age=300, s-maxage=300, must-revalidate";
+
+function parseMediaVariant(value: unknown): MediaVariant {
+  const variant = typeof value === "string" ? value.toLowerCase() : "";
+  if (!VALID_VARIANTS.has(variant as MediaVariant)) {
+    throw new ApiError(400, "Invalid media variant. Must be 'original', 'medium', or 'thumbnail'.");
+  }
+  return variant as MediaVariant;
+}
+
+function safeGalleryPath(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const path = value.trim();
+  const segments = path.split("/");
+  if (
+    path.length === 0
+    || path.length > 1_024
+    || !path.startsWith("gallery/")
+    || path.includes("\\")
+    || segments.some((segment) => !segment || segment === "." || segment === "..")
+  ) {
+    return "";
+  }
+  return path;
+}
+
+function mediaPath(data: PhotoRecord, variant: MediaVariant): string {
+  const derivativePath = variant === "thumbnail"
+    ? safeGalleryPath(data.thumbnailPath)
+    : variant === "medium"
+      ? safeGalleryPath(data.mediumPath)
+      : "";
+  return derivativePath || safeGalleryPath(data.storagePath);
+}
+
 async function withCursor(query: FirebaseFirestore.Query, cursor: unknown): Promise<FirebaseFirestore.Query> {
   if (typeof cursor !== "string" || !cursor) return query;
   const id = safeId(cursor, "photo cursor");
@@ -144,7 +184,7 @@ router.get("/public", asyncHandler(async (req, res) => {
     return query.limit(limit + 1).get();
   }));
   const candidates = snapshots.flatMap((snapshot) => snapshot.docs)
-    .filter((doc) => doc.data().isDeleted !== 1 && Boolean(safeHttpsUrl(doc.data().publicUrl)))
+    .filter((doc) => doc.data().isDeleted !== 1 && (Boolean(safeHttpsUrl(doc.data().publicUrl)) || Boolean(safeGalleryPath(doc.data().storagePath))))
     .sort((left, right) => {
       const leftDate = typeof left.data().importedAt === "string" ? left.data().importedAt : "";
       const rightDate = typeof right.data().importedAt === "string" ? right.data().importedAt : "";
@@ -153,16 +193,30 @@ router.get("/public", asyncHandler(async (req, res) => {
   const page = candidates.slice(0, limit);
   const photos = page.map((doc) => {
     const data = doc.data();
+    const hasStoragePath = Boolean(safeGalleryPath(data.storagePath));
+    const publicUrl = hasStoragePath
+      ? `/api/photos/public/media/${doc.id}/original`
+      : safeHttpsUrl(data.publicUrl);
+    const derivativeFields = photoDerivativeDtoFields(data);
+    const thumbnailUrl = Boolean(safeGalleryPath(data.thumbnailPath))
+      ? `/api/photos/public/media/${doc.id}/thumbnail`
+      : derivativeFields.thumbnailUrl;
+    const mediumUrl = Boolean(safeGalleryPath(data.mediumPath))
+      ? `/api/photos/public/media/${doc.id}/medium`
+      : derivativeFields.mediumUrl;
+
     return {
       id: doc.id,
-      publicUrl: safeHttpsUrl(data.publicUrl),
+      publicUrl,
       caption: text(data.caption, 500) || undefined,
       altText: text(data.altText, 300) || undefined,
       category: typeof data.albumId === "string" ? publicAlbums.get(data.albumId) || undefined : undefined,
       capturedAt: typeof data.capturedAt === "string" ? data.capturedAt : undefined,
       location: text(data.location, 120) || undefined,
       description: text(data.description, 1_000) || undefined,
-      ...photoDerivativeDtoFields(data),
+      ...derivativeFields,
+      thumbnailUrl,
+      mediumUrl,
     };
   }).filter((photo) => photo.publicUrl);
   res.json({
@@ -170,6 +224,72 @@ router.get("/public", asyncHandler(async (req, res) => {
     hasMore: candidates.length > limit || snapshots.some((snapshot) => snapshot.docs.length > limit),
     nextCursor: page.length ? page[page.length - 1].id : null,
   });
+}));
+
+router.get("/public/media/:photoId/:variant", asyncHandler(async (req, res) => {
+  const photoId = safeId(req.params.photoId, "photo ID");
+  const variant = parseMediaVariant(req.params.variant);
+
+  const photoDoc = await adminDb.collection("imported_photos").doc(photoId).get();
+  if (!photoDoc.exists) {
+    throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+  }
+
+  const data = (photoDoc.data() || {}) as PhotoRecord;
+  if (data.isDeleted === 1) {
+    throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+  }
+
+  if (typeof data.albumId !== "string" || !/^[A-Za-z0-9_-]{1,300}$/.test(data.albumId)) {
+    throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+  }
+  const albumDoc = await adminDb.collection("albums").doc(data.albumId).get();
+  if (!albumDoc.exists || albumDoc.data()?.isPublic !== true || albumDoc.data()?.isDeleted === 1) {
+    throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+  }
+
+  const targetPath = mediaPath(data, variant);
+  if (!targetPath) {
+    throw new ApiError(404, "Photo media file not found.", "PHOTO_NOT_FOUND");
+  }
+
+  const file = adminStorage.bucket().file(targetPath);
+  let metadata: { contentType?: string; etag?: string } = {};
+  try {
+    const [meta] = await file.getMetadata();
+    metadata = meta as { contentType?: string; etag?: string };
+  } catch (err: unknown) {
+    const code = (err as { code?: number })?.code;
+    if (code === 404) {
+      throw new ApiError(404, "Photo file not found in storage.", "PHOTO_NOT_FOUND");
+    }
+    throw err;
+  }
+
+  // A legacy record may not have derivatives, in which case mediaPath falls
+  // back to the original object. Derive the fallback MIME from the selected
+  // object path rather than the requested variant.
+  const isWebp = targetPath.toLowerCase().endsWith(".webp");
+  const contentType = metadata.contentType || (isWebp ? "image/webp" : (typeof data.mimeType === "string" ? data.mimeType : "image/jpeg"));
+  if (!ALLOWED_MEDIA_TYPES.has(contentType)) {
+    throw new ApiError(404, "Photo media file not found.", "PHOTO_NOT_FOUND");
+  }
+  const responseHeaders: Record<string, string> = {
+    "Content-Type": contentType,
+    "Cache-Control": PUBLIC_MEDIA_CACHE_CONTROL,
+    "Content-Disposition": "inline",
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (metadata.etag) responseHeaders.ETag = metadata.etag;
+  res.set(responseHeaders);
+
+  const ifNoneMatch = req.headers["if-none-match"];
+  if (metadata.etag && ifNoneMatch === metadata.etag) {
+    res.status(304).end();
+    return;
+  }
+
+  await pipeline(file.createReadStream(), res);
 }));
 
 router.use("/albums", albumsRouter);

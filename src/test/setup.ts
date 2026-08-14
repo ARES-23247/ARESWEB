@@ -12,4 +12,7 @@ vi.mock("../lib/firebaseCore", () => ({ app: {} }));
 vi.mock("../lib/firebaseAuth", () => ({ auth: { currentUser: null } }));
 vi.mock("../lib/firebaseFirestore", () => ({ db: {} }));
 vi.mock("../lib/firebaseStorage", () => ({ storage: {} }));
-vi.mock("../lib/firebaseAppCheck", () => ({ getAppCheckHeader: vi.fn().mockResolvedValue({}) }));
+vi.mock("../lib/firebaseAppCheck", () => ({
+  getAppCheckHeader: vi.fn().mockResolvedValue({}),
+  getOrInitializeAppCheck: vi.fn().mockResolvedValue(undefined),
+}));

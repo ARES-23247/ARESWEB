@@ -61,8 +61,8 @@ export default function OutreachPage() {
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
   const [logLoadError, setLogLoadError] = useState<string | null>(null);
 
-  const loadOutreachLogs = useCallback(async () => {
-    if (logs.length > 0) setIsRefreshingLogs(true);
+  const loadOutreachLogs = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setIsRefreshingLogs(true);
     else setIsLoadingLogs(true);
 
     try {
@@ -79,13 +79,11 @@ export default function OutreachPage() {
       setIsLoadingLogs(false);
       setIsRefreshingLogs(false);
     }
-  }, [logs.length]);
+  }, []);
 
   useEffect(() => {
     void loadOutreachLogs();
-    // Initial request only. Retry uses the visible button below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadOutreachLogs]);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -168,7 +166,7 @@ export default function OutreachPage() {
       <OutreachHero />
       <OutreachImpactStats totals={totals} isLoading={isLoadingLogs} isRefreshing={isRefreshingLogs} error={logLoadError} hasLogs={logs.length > 0} onRetry={() => void loadOutreachLogs()} />
       <OutreachInitiative />
-      <OutreachImpactFeed logs={logs} isLoading={isLoadingLogs} isRefreshing={isRefreshingLogs} error={logLoadError} onRefresh={() => void loadOutreachLogs()} onRequestDemo={openModal} />
+      <OutreachImpactFeed logs={logs} isLoading={isLoadingLogs} isRefreshing={isRefreshingLogs} error={logLoadError} onRefresh={() => void loadOutreachLogs(true)} onRequestDemo={openModal} />
       <OutreachVolunteerCta onRequestDemo={openModal} />
 
       {isModalOpen && (

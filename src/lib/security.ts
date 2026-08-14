@@ -155,13 +155,14 @@ export function validateIdParam(param: string | undefined): string | null {
     return param;
   }
 
-  // Check for slug-like format (alphanumeric with hyphens)
-  // Uses non-capturing group for efficiency and clarity
-  // Pattern is provably safe: linear time complexity O(n), no nested quantifiers
-  // Length is capped at 128 characters above
-  // eslint-disable-next-line security/detect-unsafe-regex
-  const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
-  if (slugPattern.test(param)) {
+  // Check for slug-like format (alphanumeric with single hyphens)
+  // Non-backtracking O(n) check, length capped at 128 above
+  if (
+    !param.startsWith("-") &&
+    !param.endsWith("-") &&
+    !param.includes("--") &&
+    /^[a-z0-9-]+$/i.test(param)
+  ) {
     return param;
   }
 

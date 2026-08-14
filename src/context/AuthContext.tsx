@@ -18,6 +18,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../lib/firebaseAuth";
 import { authenticatedFetch } from "../lib/api";
+import { getOrInitializeAppCheck } from "../lib/firebaseAppCheck";
 import { logger } from "../utils/logger";
 
 interface AuthorizedUser {
@@ -47,6 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMockRef = useRef(false);
 
   useEffect(() => {
+    // Prime App Check for protected backend and Firestore requests. Do this in
+    // the background: Google Sign-In must open directly from the user gesture
+    // or browser popup protection may block it.
+    if (typeof window !== "undefined") {
+      void getOrInitializeAppCheck();
+    }
+
     // Safety timeout: if Auth takes more than 1.5 seconds to initialize (e.g., emulators are offline/refused),
     // automatically force loading to false so the developer bypass lockscreen is visible.
     const safetyTimeout = setTimeout(() => {
