@@ -30,6 +30,7 @@ export const staticPageMetadata = [
   ["/store", "Team Store", "Official ARES 23247 merchandise and team fundraising information."],
   ["/tech-stack", "Technical Stack & Cloud Architecture", "Explore the technology and cloud architecture behind the ARES 23247 team portal."],
   ["/terms", "Terms of Service", "Read the ARES 23247 website terms of service and acceptable-use policies."],
+  ["/tournaments/strategy", "Field Strategy & Match Estimator", "Interactive 144\" FTC field strategy canvas, autonomous path builder, partner synergy calculator, and printable match sheets."],
   ["/videos", "Video Hub", "Watch ARES 23247 match recordings, robot reveals, team highlights, and learning guides."],
 ];
 

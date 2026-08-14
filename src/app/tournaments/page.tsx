@@ -17,6 +17,7 @@ import {
   Lock,
   ChevronRight,
   ShieldAlert,
+  Compass,
 } from "lucide-react";
 import { PublicDataState } from "@/components/PublicDataState";
 import { formatDateOnly } from "@/lib/dateOnly";
@@ -183,22 +184,33 @@ export default function TournamentsFeedPage() {
       />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         {/* Breadcrumb Header */}
-        <header className="mb-12">
-          <div className="inline-flex items-center gap-2 bg-ares-red/10 text-ares-gold border border-ares-bronze/30 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
-            <Trophy size={12} className="text-ares-gold" aria-hidden="true" />
-            <span>ARES 23247 Competition Logs</span>
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-ares-red/10 text-ares-gold border border-ares-bronze/30 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+              <Trophy size={12} className="text-ares-gold" aria-hidden="true" />
+              <span>ARES 23247 Competition Logs</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading mb-4 text-white">
+              Tournament{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
+                Scouting Vault
+              </span>
+            </h1>
+            <p className="text-sm text-marble/60 max-w-2xl leading-relaxed">
+              Access tactical match checklists, custom driver feedback loops, and
+              comparative team analytics. Synthesizing robot telemetry to optimize
+              our autonomous paths.
+            </p>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading mb-4 text-white">
-            Tournament{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
-              Scouting Vault
-            </span>
-          </h1>
-          <p className="text-sm text-marble/60 max-w-2xl leading-relaxed">
-            Access tactical match checklists, custom driver feedback loops, and
-            comparative team analytics. Synthesizing robot telemetry to optimize
-            our autonomous paths.
-          </p>
+          <div>
+            <Link
+              to="/tournaments/strategy"
+              className="clipped-button bg-gradient-to-r from-ares-red to-ares-gold hover:from-ares-gold hover:to-ares-red text-white font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2 px-5 py-3 shadow-xl transition-all cursor-pointer"
+            >
+              <Compass size={16} className="text-white" />
+              <span>Field Strategy Planner</span>
+            </Link>
+          </div>
         </header>
 
         {/* Summary Counter Grid */}
