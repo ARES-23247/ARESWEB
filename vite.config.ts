@@ -169,6 +169,7 @@ export default defineConfig({
         "src/app/dashboard/tasks/taskRecord.ts",
         "src/app/dashboard/tasks/taskSubtasks.ts",
         "src/app/tournaments/[id]/TournamentMatchEditForm.tsx",
+        "src/app/tournaments/[id]/TournamentMatchPrintDialog.tsx",
         "src/app/dashboard/profile/components/*.tsx",
         "src/app/dashboard/inquiries/page.tsx",
         "src/app/dashboard/outreach/page.tsx",

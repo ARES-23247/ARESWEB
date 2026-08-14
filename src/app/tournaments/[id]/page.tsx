@@ -365,6 +365,11 @@ export default function TournamentDetailPage() {
             {(!isMatchesError || matches.length > 0) && (
               <TournamentMatchesList
                 isPast={tournament.status === "past"}
+                tournamentName={tournament.name}
+                tournamentDate={tournament.date}
+                tournamentLocation={tournament.location}
+                seasonName={tournament.seasonName}
+                challengeName={tournament.challengeName}
                 matches={matches}
                 canEdit={canEdit}
                 isMatchesLoading={isMatchesLoading}

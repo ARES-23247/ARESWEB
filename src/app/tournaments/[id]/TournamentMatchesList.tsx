@@ -12,9 +12,15 @@ import { TournamentMatch } from "@/types/tournament";
 import { summarizeTournamentMatches } from "@/lib/tournamentStats";
 import { tournamentMatchCsvDataUrl } from "@/lib/tournamentMatchCsv";
 import { TournamentMatchEditForm } from "./TournamentMatchEditForm";
+import TournamentMatchPrintDialog from "./TournamentMatchPrintDialog";
 
 interface TournamentMatchesListProps {
   isPast: boolean;
+  tournamentName: string;
+  tournamentDate: string;
+  tournamentLocation: string;
+  seasonName?: string | null;
+  challengeName?: string | null;
   matches: TournamentMatch[];
   canEdit: boolean;
   isMatchesLoading: boolean;
@@ -29,6 +35,11 @@ interface TournamentMatchesListProps {
 
 export default function TournamentMatchesList({
   isPast,
+  tournamentName,
+  tournamentDate,
+  tournamentLocation,
+  seasonName,
+  challengeName,
   matches,
   canEdit,
   isMatchesLoading,
@@ -139,15 +150,25 @@ export default function TournamentMatchesList({
             className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-[11px] text-white placeholder-marble/45 focus:outline-none focus:border-ares-red"
           />
           {matches.length > 0 && (
-            <a
-              href={csvDataUrl}
-              download="ares-match-plan.csv"
-              aria-label="Download all match records as CSV"
-              className="flex items-center gap-1 rounded border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white transition-colors hover:border-ares-gold hover:text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              <Download size={12} aria-hidden="true" />
-              Export CSV
-            </a>
+            <>
+              <a
+                href={csvDataUrl}
+                download="ares-match-plan.csv"
+                aria-label="Download all match records as CSV"
+                className="flex items-center gap-1 rounded border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white transition-colors hover:border-ares-gold hover:text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <Download size={12} aria-hidden="true" />
+                Export CSV
+              </a>
+              <TournamentMatchPrintDialog
+                tournamentName={tournamentName}
+                tournamentDate={tournamentDate}
+                tournamentLocation={tournamentLocation}
+                seasonName={seasonName}
+                challengeName={challengeName}
+                matches={matches}
+              />
+            </>
           )}
           {canEdit && (
             <button
