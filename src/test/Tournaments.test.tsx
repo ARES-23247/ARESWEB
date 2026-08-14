@@ -134,6 +134,7 @@ describe("Tournaments Module Lucide Check", () => {
       "Info",
       "FileText",
       "Bookmark",
+      "ClipboardList",
     ];
 
     requiredIcons.forEach((iconName) => {

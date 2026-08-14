@@ -31,6 +31,7 @@ export const staticPageMetadata = [
   ["/tech-stack", "Technical Stack & Cloud Architecture", "Explore the technology and cloud architecture behind the ARES 23247 team portal."],
   ["/terms", "Terms of Service", "Read the ARES 23247 website terms of service and acceptable-use policies."],
   ["/videos", "Video Hub", "Watch ARES 23247 match recordings, robot reveals, team highlights, and learning guides."],
+  ["/tournaments/scouting/entry", "Match Scouting Entry", "Interactive FTC match scouting entry sheet with scoring counters and offline synchronization.", false],
 ];
 
 function escapeHtml(value) {

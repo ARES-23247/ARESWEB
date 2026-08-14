@@ -48,6 +48,7 @@ const TermsPage = lazy(() => import("@/app/terms/page"));
 const TechStackPage = lazy(() => import("@/app/tech-stack/page"));
 const TournamentsFeedPage = lazy(() => import("@/app/tournaments/page"));
 const TournamentDetailPage = lazy(() => import("@/app/tournaments/[id]/page"));
+const TournamentScoutingEntryPage = lazy(() => import("@/app/tournaments/scouting/entry/page"));
 
 // Lazy-load dashboard pages
 const DashboardLayout = lazy(() => import("@/app/dashboard/layout"));
@@ -134,6 +135,7 @@ export default function App() {
                   <Route path="/tech-stack" element={<TechStackPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/tournaments" element={<TournamentsFeedPage />} />
+                  <Route path="/tournaments/scouting/entry" element={<TournamentScoutingEntryPage />} />
                   <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
                   
                   {/* Dashboard routes nested under DashboardLayout */}
