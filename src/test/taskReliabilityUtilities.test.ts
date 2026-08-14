@@ -7,6 +7,7 @@ import {
   toggleSubtask,
 } from "@/app/dashboard/tasks/taskSubtasks";
 import {
+  buildDuplicateTaskCounts,
   describeTaskDueDate,
   getTaskDueState,
   normalizeTaskDate,
@@ -17,6 +18,8 @@ import {
   normalizeTaskSubteam,
   selectPriorityTasks,
   sortTasks,
+  summarizeTaskDescription,
+  taskMatchesSearch,
 } from "@/app/dashboard/tasks/taskRecord";
 
 describe("Kanban reliability utilities", () => {
@@ -115,6 +118,82 @@ describe("Kanban reliability utilities", () => {
     expect(describeTaskDueDate({ dueDate: "2026-08-15", status: "todo" }, referenceDate)).toBe("Due Aug 15");
     expect(describeTaskDueDate({ dueDate: "invalid", status: "todo" }, referenceDate)).toBeNull();
     expect(describeTaskDueDate({ dueDate: null, status: "todo" }, referenceDate)).toBeNull();
+  });
+
+  it("summarizes rich and Markdown task descriptions without exposing serialized documents", () => {
+    const richDescription = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "googleDriveEmbed",
+          attrs: {
+            src: "https://docs.google.com/document/d/private-id/edit",
+            title: "Ball Script",
+          },
+        },
+        { type: "paragraph", content: [{ type: "text", text: "Review before practice." }] },
+      ],
+    });
+
+    expect(summarizeTaskDescription(richDescription)).toBe(
+      "Google Drive attachment: Ball Script Review before practice.",
+    );
+    expect(summarizeTaskDescription("### Inspect **intake** with the [guide](https://example.org)"))
+      .toBe("Inspect intake with the guide");
+    expect(summarizeTaskDescription("{Inspect the drivetrain JSON output}")).toBe(
+      "{Inspect the drivetrain JSON output}",
+    );
+    expect(summarizeTaskDescription("  ")).toBeNull();
+    expect(summarizeTaskDescription(null)).toBeNull();
+  });
+
+  it("uses truthful attachment labels and bounds unusually large summaries", () => {
+    const attachmentDescription = JSON.stringify({
+      type: "doc",
+      content: [
+        { type: "image", attrs: { alt: "Intake prototype" } },
+        { type: "interactiveComponent", attrs: { componentName: "Physics" } },
+        { type: "googleDriveEmbed", attrs: {} },
+      ],
+    });
+    const emptyRichDescription = JSON.stringify({ type: "doc", content: [] });
+
+    expect(summarizeTaskDescription(attachmentDescription)).toBe(
+      "Image: Intake prototype Simulation: Physics Google Drive attachment",
+    );
+    expect(summarizeTaskDescription(emptyRichDescription)).toBe("Attached rich task content");
+    expect(summarizeTaskDescription("x".repeat(400))).toMatch(/^x{239}…$/);
+  });
+
+  it("matches useful task fields and identifies normalized duplicate titles", () => {
+    const createTask = (id: string, title: string, overrides: Record<string, unknown> = {}) =>
+      normalizeTaskRecord(id, {
+        title,
+        description: "Inspect the drivetrain before practice.",
+        status: "in_progress",
+        priority: "high",
+        subteam: "hardware",
+        createdAt: "2026-08-14T00:00:00.000Z",
+        ...overrides,
+      });
+    const tasks = [
+      createTask("first", "Review  robot plan"),
+      createTask("second", " review robot PLAN "),
+      createTask("unique", "Prepare notebook", { priority: "low" }),
+    ];
+
+    expect(taskMatchesSearch(tasks[0], "drivetrain")).toBe(true);
+    expect(taskMatchesSearch(tasks[0], "IN PROGRESS")).toBe(true);
+    expect(taskMatchesSearch(tasks[0], "hardware")).toBe(true);
+    expect(taskMatchesSearch(tasks[0], "  ")).toBe(true);
+    expect(taskMatchesSearch(tasks[0], "outreach")).toBe(false);
+
+    const duplicates = buildDuplicateTaskCounts(tasks);
+    expect([...duplicates.entries()]).toEqual([
+      ["first", 2],
+      ["second", 2],
+    ]);
+    expect(duplicates.has("unique")).toBe(false);
   });
 
   it("bounds untrusted task records while preserving usable legacy content", () => {

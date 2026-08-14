@@ -3,11 +3,16 @@ import {
   Archive,
   CalendarClock,
   CheckSquare,
+  Copy,
   MessageSquare,
 } from "lucide-react";
 
 import { SubTask, TaskComment, TaskItem, MemberProfile } from "@/types/task";
-import { describeTaskDueDate, getTaskDueState } from "../taskRecord";
+import {
+  describeTaskDueDate,
+  getTaskDueState,
+  summarizeTaskDescription,
+} from "../taskRecord";
 export type { SubTask, TaskComment, TaskItem, MemberProfile };
 
 interface TaskCardProps {
@@ -23,6 +28,7 @@ interface TaskCardProps {
   onEditTask: (taskId: string) => void;
   onArchiveTask: (taskId: string, archive: boolean) => void;
   teamProfiles: MemberProfile[];
+  duplicateCount?: number;
 }
 
 export default function TaskCard({
@@ -35,6 +41,7 @@ export default function TaskCard({
   onEditTask,
   onArchiveTask,
   teamProfiles,
+  duplicateCount = 1,
 }: TaskCardProps) {
   const totalSub = task.subtasks?.length || 0;
   const doneSub = task.subtasks?.filter((s) => s.done).length || 0;
@@ -42,6 +49,7 @@ export default function TaskCard({
   const commentsCount = task.commentsCount ?? (task.comments?.length || 0);
   const dueState = getTaskDueState(task);
   const dueLabel = describeTaskDueDate(task);
+  const descriptionSummary = summarizeTaskDescription(task.description);
 
   return (
     <article
@@ -71,13 +79,21 @@ export default function TaskCard({
       <div className={draggingTaskId ? "pointer-events-none" : ""}>
         {/* Card tags */}
         <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[9px] bg-white/5 border border-white/10 px-2 py-0.5 rounded font-black uppercase tracking-wider text-marble/80">
               {task.subteam}
             </span>
             {task.archived && (
               <span className="text-[9px] bg-ares-gold/20 border border-ares-gold/30 px-2 py-0.5 rounded font-black uppercase tracking-wider text-ares-gold animate-pulse">
                 Archived
+              </span>
+            )}
+            {duplicateCount > 1 && (
+              <span
+                className="inline-flex items-center gap-1 rounded border border-ares-gold/30 bg-ares-gold/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-ares-gold"
+                title={`${duplicateCount} active cards share this title`}
+              >
+                <Copy aria-hidden="true" size={9} /> Potential duplicate ×{duplicateCount}
               </span>
             )}
           </div>
@@ -124,7 +140,7 @@ export default function TaskCard({
           </button>
         </h4>
         <p className="text-marble/60 text-[11px] leading-relaxed mb-4 line-clamp-3">
-          {task.description || "No description provided."}
+          {descriptionSummary || "No description provided."}
         </p>
 
         {dueLabel && (

@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import type { TaskSortMode } from "../taskRecord";
 
 interface TaskFiltersProps {
@@ -11,6 +11,11 @@ interface TaskFiltersProps {
   onShowArchivedChange: (show: boolean) => void;
   filterSubteam: string;
   onFilterSubteamChange: (subteam: string) => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  showDuplicatesOnly: boolean;
+  onShowDuplicatesOnlyChange: (show: boolean) => void;
+  duplicateTaskCount: number;
 }
 
 export default function TaskFilters({
@@ -22,6 +27,11 @@ export default function TaskFilters({
   onShowArchivedChange,
   filterSubteam,
   onFilterSubteamChange,
+  searchQuery,
+  onSearchQueryChange,
+  showDuplicatesOnly,
+  onShowDuplicatesOnlyChange,
+  duplicateTaskCount,
 }: TaskFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center shrink-0 w-full lg:w-auto text-left">
@@ -36,8 +46,21 @@ export default function TaskFilters({
         </button>
       )}
 
+      <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/5 bg-black/45 px-2.5 py-1.5">
+        <Search aria-hidden="true" size={13} className="shrink-0 text-marble/55" />
+        <label htmlFor="task-search" className="sr-only">Search tasks</label>
+        <input
+          id="task-search"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          placeholder="Search tasks"
+          className="w-36 bg-transparent text-xs text-white placeholder:text-marble/45 focus-visible:outline-none sm:w-44"
+        />
+      </div>
+
       {/* Sort & Archive Controls */}
-      <div className="flex items-center gap-3 bg-black/45 p-1.5 rounded-lg border border-white/5 shrink-0">
+      <div className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-white/5 bg-black/45 p-1.5 sm:w-auto">
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
           <label
@@ -69,6 +92,19 @@ export default function TaskFilters({
             className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 cursor-pointer"
           />
           Show Archived
+        </label>
+
+        <div className="h-4 w-px bg-white/10" />
+
+        <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-marble/75 hover:text-white cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showDuplicatesOnly}
+            onChange={(event) => onShowDuplicatesOnlyChange(event.target.checked)}
+            disabled={duplicateTaskCount === 0 && !showDuplicatesOnly}
+            className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+          />
+          Potential duplicates ({duplicateTaskCount})
         </label>
       </div>
 

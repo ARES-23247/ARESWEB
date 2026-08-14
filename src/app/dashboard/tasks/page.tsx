@@ -1,7 +1,7 @@
 "use client";
 
 import { logger } from "@/utils/logger";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { collection, doc, onSnapshot, setDoc, updateDoc, query, limit, runTransaction, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +15,13 @@ import { PublicDataState } from "@/components/PublicDataState";
 import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
 import { describeTaskError, TaskOperationError } from "./taskErrors";
 import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask } from "./taskSubtasks";
-import { normalizeTaskRecord, sortTasks, type TaskSortMode } from "./taskRecord";
+import {
+  buildDuplicateTaskCounts,
+  normalizeTaskRecord,
+  sortTasks,
+  taskMatchesSearch,
+  type TaskSortMode,
+} from "./taskRecord";
 
 const MOCK_TASKS: TaskItem[] = [
   {
@@ -67,6 +73,8 @@ export default function KanbanPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -350,8 +358,16 @@ export default function KanbanPage() {
     await handleMoveStatus(taskId, newStatus);
   };
 
+  const duplicateTaskCounts = useMemo(
+    () => buildDuplicateTaskCounts(tasks.filter((task) => !task.archived)),
+    [tasks],
+  );
   const filteredTasks = tasks.filter(
-    (t) => (filterSubteam === "all" || t.subteam === filterSubteam) && (!t.archived || showArchived)
+    (task) =>
+      (filterSubteam === "all" || task.subteam === filterSubteam) &&
+      (!task.archived || showArchived) &&
+      taskMatchesSearch(task, searchQuery) &&
+      (!showDuplicatesOnly || duplicateTaskCounts.has(task.id)),
   );
 
   const columns: { id: TaskItem["status"]; title: string; emoji: string }[] = [
@@ -412,6 +428,11 @@ export default function KanbanPage() {
           onShowArchivedChange={setShowArchived}
           filterSubteam={filterSubteam}
           onFilterSubteamChange={setFilterSubteam}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          showDuplicatesOnly={showDuplicatesOnly}
+          onShowDuplicatesOnlyChange={setShowDuplicatesOnly}
+          duplicateTaskCount={duplicateTaskCounts.size}
         />
       </header>
 
@@ -436,6 +457,12 @@ export default function KanbanPage() {
       )}
 
       <p role="status" aria-live="polite" className="sr-only">{moveAnnouncement}</p>
+
+      {!loadError && tasks.length > 0 && filteredTasks.length === 0 && (
+        <p role="status" className="rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-sm text-marble/75">
+          No tasks match the current search and filters.
+        </p>
+      )}
 
       {/* Board Columns Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
@@ -462,6 +489,7 @@ export default function KanbanPage() {
               onEditTask={setEditingTaskId}
               onArchiveTask={handleArchiveTask}
               teamProfiles={teamProfiles}
+              duplicateCounts={duplicateTaskCounts}
             />
           );
         })}

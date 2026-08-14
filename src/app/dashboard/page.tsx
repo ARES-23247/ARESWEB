@@ -28,7 +28,13 @@ import {
 } from "lucide-react";
 
 import { TaskItem } from "@/types/task";
-import { describeTaskDueDate, getTaskDueState, normalizeTaskRecord, selectPriorityTasks } from "./tasks/taskRecord";
+import {
+  describeTaskDueDate,
+  getTaskDueState,
+  normalizeTaskRecord,
+  selectPriorityTasks,
+  summarizeTaskDescription,
+} from "./tasks/taskRecord";
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();
@@ -290,6 +296,7 @@ export default function DashboardHome() {
                 recentTasks.map((task) => {
                   const dueLabel = describeTaskDueDate(task);
                   const dueState = getTaskDueState(task);
+                  const descriptionSummary = summarizeTaskDescription(task.description);
                   return <Link
                     key={task.id}
                     to="/dashboard/tasks"
@@ -302,7 +309,7 @@ export default function DashboardHome() {
                           {task.title}
                         </p>
                         <p className="text-[10px] text-marble/50 mt-0.5 truncate leading-relaxed">
-                          {task.description || "No description provided."}
+                          {descriptionSummary || "No description provided."}
                         </p>
                         {dueLabel && (
                           <p className={`mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${
