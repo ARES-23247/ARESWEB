@@ -83,10 +83,10 @@ export default function GalleryPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
-  const loadPhotos = useCallback(async (cursor?: string) => {
+  const loadPhotos = useCallback(async (cursor?: string, isRefresh = false) => {
     const append = Boolean(cursor);
     if (append) setIsLoadingMore(true);
-    else if (photos.length > 0) setIsRefreshing(true);
+    else if (isRefresh) setIsRefreshing(true);
     else setIsLoading(true);
 
     try {
@@ -120,13 +120,11 @@ export default function GalleryPage() {
       setIsRefreshing(false);
       setIsLoadingMore(false);
     }
-  }, [photos.length]);
+  }, []);
 
   useEffect(() => {
     void loadPhotos();
-    // Initial request only. Retry uses the visible button below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadPhotos]);
 
   const filteredPhotos = useMemo(
     () => activeCategory === "all" ? photos : photos.filter((photo) => photo.category === activeCategory),
@@ -178,7 +176,7 @@ export default function GalleryPage() {
               ))}
               <button
                 type="button"
-                onClick={() => void loadPhotos()}
+                onClick={() => void loadPhotos(undefined, true)}
                 disabled={isLoading || isRefreshing}
                 className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-[9px] font-black uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >

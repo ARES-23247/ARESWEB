@@ -98,8 +98,8 @@ export default function SponsorsPage() {
   const [isRefreshingSponsors, setIsRefreshingSponsors] = useState(false);
   const [sponsorLoadError, setSponsorLoadError] = useState<string | null>(null);
 
-  const loadSponsors = useCallback(async () => {
-    if (sponsors.length > 0) setIsRefreshingSponsors(true);
+  const loadSponsors = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setIsRefreshingSponsors(true);
     else setIsLoadingSponsors(true);
 
     try {
@@ -118,13 +118,11 @@ export default function SponsorsPage() {
       setIsLoadingSponsors(false);
       setIsRefreshingSponsors(false);
     }
-  }, [sponsors.length]);
+  }, []);
 
   useEffect(() => {
     void loadSponsors();
-    // Initial request only. Retry uses the visible button below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadSponsors]);
 
   // Group sponsors by tier
   const groupedSponsors = sponsors.reduce((acc, s) => {
@@ -222,7 +220,7 @@ export default function SponsorsPage() {
         <div className="mb-8 flex justify-end">
           <button
             type="button"
-            onClick={() => void loadSponsors()}
+            onClick={() => void loadSponsors(true)}
             disabled={isLoadingSponsors || isRefreshingSponsors}
             className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >

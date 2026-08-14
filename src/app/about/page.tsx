@@ -90,44 +90,42 @@ export default function AboutPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchRoster = useCallback(async () => {
-      if (roster.length > 0) setIsRefreshing(true);
-      else setIsLoading(true);
-      try {
-        const response = await fetch("/api/profiles/about-roster");
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        const data: unknown = await response.json();
-        if (!isRecord(data) || !Array.isArray(data.members)) {
-          throw new Error("HTTP 502: Invalid roster response");
-        }
-        const visibleMembers = data.members
-          .map(parseTeamMember)
-          .filter((member): member is TeamMember => member !== null);
-
-        // Sort by role order, then nickname
-        visibleMembers.sort((a, b) => {
-          const orderA = MEMBER_TYPE_ORDER[a.memberType] ?? 99;
-          const orderB = MEMBER_TYPE_ORDER[b.memberType] ?? 99;
-          if (orderA !== orderB) return orderA - orderB;
-          return a.nickname.localeCompare(b.nickname);
-        });
-
-        setRoster(visibleMembers);
-        setLoadError(null);
-      } catch (err) {
-        logger.error("Error fetching roster:", err);
-        setLoadError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+  const fetchRoster = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setIsRefreshing(true);
+    else setIsLoading(true);
+    try {
+      const response = await fetch("/api/profiles/about-roster");
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const data: unknown = await response.json();
+      if (!isRecord(data) || !Array.isArray(data.members)) {
+        throw new Error("HTTP 502: Invalid roster response");
       }
-  }, [roster.length]);
+      const visibleMembers = data.members
+        .map(parseTeamMember)
+        .filter((member): member is TeamMember => member !== null);
+
+      // Sort by role order, then nickname
+      visibleMembers.sort((a, b) => {
+        const orderA = MEMBER_TYPE_ORDER[a.memberType] ?? 99;
+        const orderB = MEMBER_TYPE_ORDER[b.memberType] ?? 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.nickname.localeCompare(b.nickname);
+      });
+
+      setRoster(visibleMembers);
+      setLoadError(null);
+    } catch (err) {
+      logger.error("Error fetching roster:", err);
+      setLoadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     void fetchRoster();
-    // Initial request only. Retry and refresh use visible buttons below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchRoster]);
 
   const filteredMembers = activeFilter === "all" 
     ? roster 

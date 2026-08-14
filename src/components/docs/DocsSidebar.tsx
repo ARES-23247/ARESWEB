@@ -168,8 +168,7 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
                     {docs.map((doc) => (
                       <Link
                         key={doc.slug}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        to={`${basePath}/${doc.slug}` as any}
+                        to={`${basePath}/${doc.slug}`}
                         className={`block pl-6 pr-2 py-1.5 text-sm ares-cut-sm transition-colors ${
                           currentSlug === doc.slug
                             ? "bg-ares-red text-white font-bold"

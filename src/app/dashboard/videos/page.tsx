@@ -48,13 +48,13 @@ export default function VideosManagementPage() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  const loadVideos = useCallback(async (append = false) => {
+  const loadVideos = useCallback(async (append = false, targetCursor: string | null = null) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ limit: "30", includeArchived: String(showArchived) });
-      if (append && cursor) params.set("cursor", cursor);
+      if (append && targetCursor) params.set("cursor", targetCursor);
       const response = await authenticatedFetch(`/api/videos?${params.toString()}`);
       if (!response.ok) throw await apiFailure(response, "Video library could not load.");
       const page = await response.json() as VideoPage;
@@ -69,9 +69,11 @@ export default function VideosManagementPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [cursor, showArchived]);
+  }, [showArchived]);
 
-  useEffect(() => { void loadVideos(false); }, [showArchived]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void loadVideos(false);
+  }, [loadVideos]);
 
   const visibleVideos = useMemo(() => {
     const filtered = typeFilter === "all" ? [...videos] : videos.filter((video) => video.type === typeFilter);
@@ -223,7 +225,7 @@ export default function VideosManagementPage() {
         </article>)}
       </div>}
 
-      {hasMore && <div className="text-center"><button type="button" onClick={() => void loadVideos(true)} disabled={loadingMore} className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{loadingMore ? "Loading" : "Load more videos"}</button></div>}
+      {hasMore && <div className="text-center"><button type="button" onClick={() => void loadVideos(true, cursor)} disabled={loadingMore} className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{loadingMore ? "Loading" : "Load more videos"}</button></div>}
 
       <Dialog.Root open={editorOpen} onOpenChange={(open) => !saving && setEditorOpen(open)}><Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[100] bg-black/80" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[101] max-h-[90vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none"><div className="flex items-start justify-between gap-4"><div><Dialog.Title className="font-heading text-2xl font-black uppercase text-white">{editing ? "Edit video" : "Add video"}</Dialog.Title><Dialog.Description className="mt-1 text-sm text-marble/60">Use a link from the official team YouTube channel.</Dialog.Description></div><Dialog.Close asChild><button type="button" disabled={saving} aria-label="Close video editor" className="p-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><X aria-hidden="true" /></button></Dialog.Close></div>
         <form onSubmit={(event) => void saveVideo(event)} className="mt-6 space-y-4"><div><label htmlFor="video-title-input" className="mb-1 block text-xs font-bold text-marble">Title</label><input id="video-title-input" required maxLength={180} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div><label htmlFor="video-link-input" className="mb-1 block text-xs font-bold text-marble">YouTube URL or video ID</label><input id="video-link-input" required value={draft.videoId} onChange={(event) => setDraft({ ...draft, videoId: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 font-mono text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div><label htmlFor="video-description-input" className="mb-1 block text-xs font-bold text-marble">Summary</label><textarea id="video-description-input" maxLength={2000} rows={4} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="w-full resize-y border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="video-kind-input" className="mb-1 block text-xs font-bold text-marble">Media type</label><select id="video-kind-input" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as VideoDraft["type"] })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="video">Video</option><option value="short">Short</option></select></div><div><label htmlFor="video-status-input" className="mb-1 block text-xs font-bold text-marble">Status</label><select id="video-status-input" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as VideoDraft["status"] })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="draft">Draft</option><option value="published">Published</option></select></div></div><div><label htmlFor="video-thumbnail-input" className="mb-1 block text-xs font-bold text-marble">Thumbnail URL (optional)</label><input id="video-thumbnail-input" type="url" value={draft.thumbnailUrl} onChange={(event) => setDraft({ ...draft, thumbnailUrl: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div>{saveError && <div role="alert" className="border border-ares-red bg-ares-red/15 p-3 text-white"><p className="text-xs font-bold">Your draft is still here. The video was not saved.</p><p className="mt-1 font-mono text-[10px] text-white/80">{saveError}</p></div>}<div className="flex justify-end gap-3 border-t border-white/10 pt-4"><Dialog.Close asChild><button type="button" disabled={saving} className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close><button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{saving && <Loader2 size={14} className="motion-safe:animate-spin" aria-hidden="true" />}{saving ? "Saving" : "Save video"}</button></div></form>

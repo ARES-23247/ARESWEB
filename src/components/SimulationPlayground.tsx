@@ -166,8 +166,18 @@ export default function SimulationPlayground() {
     setSimName("Untitled Simulation");
     setPendingAiChanges(null);
     resetChat();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compileCode, resetChat]);
+  }, [
+    compileCode,
+    resetChat,
+    setActiveFile,
+    setConsoleLogs,
+    setFiles,
+    setPendingAiChanges,
+    setSimId,
+    setSimName,
+    setTelemetry,
+    setTestResults,
+  ]);
 
   const handleRun = useCallback(() => {
     setTelemetry({});
