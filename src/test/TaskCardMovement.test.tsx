@@ -102,4 +102,11 @@ describe("TaskCard status movement", () => {
     fireEvent.click(screen.getByText("Preserve the server-backed move path."));
     expect(onEditTask).toHaveBeenCalledWith("task-1");
   });
+
+  it("shows a truthful overdue deadline without implying a time of day", () => {
+    renderCard({ task: { ...task, dueDate: "2000-01-01" } });
+
+    expect(screen.getByText("Overdue · Jan 1")).toBeInTheDocument();
+    expect(screen.queryByText(/midnight/i)).not.toBeInTheDocument();
+  });
 });

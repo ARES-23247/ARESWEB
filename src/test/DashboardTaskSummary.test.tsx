@@ -49,6 +49,7 @@ describe("Command center task summary", () => {
               priority: "normal",
               subteam: "Mechanical",
               createdAt: "2026-08-14T00:00:00.000Z",
+              dueDate: "2000-01-01",
             }),
           },
           {
@@ -83,6 +84,7 @@ describe("Command center task summary", () => {
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     expect(screen.queryByText("Deleted task")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Priority Operational Tasks/i })).toBeInTheDocument();
+    expect(screen.getByText("Overdue · Jan 1")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("3")).toBeInTheDocument();

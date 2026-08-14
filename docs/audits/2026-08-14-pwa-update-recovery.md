@@ -22,3 +22,13 @@ discard unsaved form data.
 
 The complete supported-runtime gate and protected deployment workflow remain
 required before this remediation is considered released.
+
+## Production follow-up
+
+The remediation was merged and deployed through protected CI in pull request
+52. During the next release validation, an older background dashboard tab kept
+its already-rendered prompt while a fresh active tab installed the waiting
+worker successfully. Reloading the older tab then cleared the prompt with no
+activation or registration error. A fresh active tab therefore did not
+reproduce the original indefinite disabled state; the observed residual was a
+stale background-tab view, not evidence of another failed worker activation.

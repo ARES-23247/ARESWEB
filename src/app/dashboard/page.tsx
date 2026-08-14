@@ -16,6 +16,7 @@ import {
   Zap,
   PenTool,
   Calendar,
+  CalendarClock,
   GraduationCap,
   TerminalSquare,
   ArrowUpRight,
@@ -27,7 +28,7 @@ import {
 } from "lucide-react";
 
 import { TaskItem } from "@/types/task";
-import { normalizeTaskRecord, selectPriorityTasks } from "./tasks/taskRecord";
+import { describeTaskDueDate, getTaskDueState, normalizeTaskRecord, selectPriorityTasks } from "./tasks/taskRecord";
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();
@@ -286,8 +287,10 @@ export default function DashboardHome() {
                   <Link to="/dashboard/tasks" className="text-ares-cyan hover:underline mt-1 font-bold">Go to Tasks board &rarr;</Link>
                 </div>
               ) : (
-                recentTasks.map((task) => (
-                  <Link
+                recentTasks.map((task) => {
+                  const dueLabel = describeTaskDueDate(task);
+                  const dueState = getTaskDueState(task);
+                  return <Link
                     key={task.id}
                     to="/dashboard/tasks"
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/25 border border-white/5 hover:border-white/15 rounded-xl gap-3 transition-all cursor-pointer group"
@@ -301,6 +304,17 @@ export default function DashboardHome() {
                         <p className="text-[10px] text-marble/50 mt-0.5 truncate leading-relaxed">
                           {task.description || "No description provided."}
                         </p>
+                        {dueLabel && (
+                          <p className={`mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${
+                            dueState === "overdue"
+                              ? "text-ares-red-light"
+                              : dueState === "today"
+                                ? "text-ares-gold"
+                                : "text-marble/60"
+                          }`}>
+                            <CalendarClock aria-hidden="true" size={10} /> {dueLabel}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -315,8 +329,8 @@ export default function DashboardHome() {
                         {getStatusLabel(task.status)}
                       </span>
                     </div>
-                  </Link>
-                ))
+                  </Link>;
+                })
               )}
             </div>
 

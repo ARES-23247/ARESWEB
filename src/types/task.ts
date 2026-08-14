@@ -32,6 +32,7 @@ export interface TaskItem {
   archived?: boolean;
   isDeleted?: 0 | 1;
   createdAt: string;
+  dueDate?: string | null;
   comments?: TaskComment[];
   commentsCount?: number;
 }
