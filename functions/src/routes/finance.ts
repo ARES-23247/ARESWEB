@@ -2,8 +2,17 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
+import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
+const SCAN_PAGE_SIZE = 100;
+const MAX_SCAN_DOCUMENTS = 500;
+
+function isPublicFinanceRecord(data: FirebaseFirestore.DocumentData): boolean {
+  const isDeleted = data.isDeleted === 1 || data.isDeleted === true;
+  const status = typeof data.status === "string" ? data.status.trim().toLowerCase() : "";
+  return !isDeleted && status !== "void";
+}
 
 router.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -18,23 +27,42 @@ router.use(rateLimit({
 router.get("/", asyncHandler(async (req, res) => {
   const limitValue = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit ?? "50"), 10) || 50));
   const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
-
-  let query = adminDb.collection("finance_transactions")
-    .orderBy("date", "desc")
-    .limit(limitValue + 1);
+  const collection = adminDb.collection("finance_transactions");
+  let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined;
 
   if (cursor) {
-    const cursorDocument = await adminDb.collection("finance_transactions").doc(cursor).get();
-    if (cursorDocument.exists) query = query.startAfter(cursorDocument);
+    if (!/^[A-Za-z0-9_-]{1,200}$/.test(cursor)) throw new ApiError(400, "Invalid finance cursor.");
+    const cursorDocument = await collection.doc(cursor).get();
+    if (!cursorDocument.exists) throw new ApiError(400, "Finance cursor was not found.");
+    scanCursor = cursorDocument;
   }
 
-  const snapshot = await query.get();
-  const validDocs = snapshot.docs.filter((doc) => {
-    const data = doc.data();
-    return data.isDeleted !== 1 && data.status !== "void";
-  });
+  const validDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let scannedDocuments = 0;
+  let exhausted = false;
 
-  const hasMore = snapshot.docs.length > limitValue;
+  while (validDocs.length < limitValue + 1 && scannedDocuments < MAX_SCAN_DOCUMENTS && !exhausted) {
+    const pageSize = Math.min(SCAN_PAGE_SIZE, MAX_SCAN_DOCUMENTS - scannedDocuments);
+    let query = collection.orderBy("date", "desc").limit(pageSize);
+    if (scanCursor) query = query.startAfter(scanCursor);
+
+    const snapshot = await query.get();
+    if (snapshot.empty || snapshot.docs.length === 0) {
+      exhausted = true;
+      break;
+    }
+
+    for (const document of snapshot.docs) {
+      scanCursor = document;
+      scannedDocuments += 1;
+      if (isPublicFinanceRecord(document.data())) validDocs.push(document);
+      if (validDocs.length >= limitValue + 1 || scannedDocuments >= MAX_SCAN_DOCUMENTS) break;
+    }
+
+    if (snapshot.docs.length < pageSize) exhausted = true;
+  }
+
+  const hasMore = validDocs.length > limitValue || (!exhausted && scannedDocuments >= MAX_SCAN_DOCUMENTS);
   const documents = validDocs.slice(0, limitValue);
   const transactions = documents.map((document) => {
     const data = document.data();
@@ -53,7 +81,7 @@ router.get("/", asyncHandler(async (req, res) => {
     success: true,
     transactions,
     hasMore,
-    nextCursor: hasMore ? snapshot.docs[limitValue - 1]?.id ?? null : null,
+    nextCursor: hasMore ? documents.at(-1)?.id ?? scanCursor?.id ?? null : null,
   });
 }));
 

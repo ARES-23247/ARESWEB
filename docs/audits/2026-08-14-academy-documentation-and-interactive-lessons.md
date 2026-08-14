@@ -10,14 +10,14 @@
 
 ## Confirmed Findings and Remediation
 
-### ACA-01 — Search Overlay Query Parameter Desynchronization on Result Selection
+### ACA-01 — Search result navigation and query cleanup conflicted
 
-- **Severity**: low
+- **Severity**: medium
 - **Confidence**: high
-- **Evidence**: In `src/app/academy/page.tsx`, selecting a search result within the search overlay modal set local `searchOpen` and `searchQuery` state directly without invoking the canonical `closeSearch()` callback, potentially leaving stale `?q=` URL query search parameters in browser history during navigation.
-- **Impact**: Lingering URL search parameters across document navigation.
-- **Remediation**: Updated result selection `onClick` handler to invoke `closeSearch()`, ensuring URL query parameters and focus trap state are cleanly recycled.
-- **Acceptance test**: `src/test/AcademyPage.test.tsx` passes.
+- **Evidence**: The original remediation navigated to the selected lesson and then called `closeSearch()`. That callback issued a second navigation using the stale current pathname, so the selected lesson was immediately replaced whenever the search opened from `?q=`.
+- **Impact**: Search results appeared clickable but left readers on the original lesson.
+- **Remediation**: Result selection now clears local search state and performs one navigation to the selected lesson with only `q` removed. Unrelated query parameters are preserved.
+- **Acceptance test**: `src/test/AcademyPage.test.tsx` starts from a URL containing `q` plus another parameter, clicks a result, and verifies both the destination pathname and cleaned query string.
 - **Status**: fixed.
 
 ### ACA-02 — Missing Integration Test Coverage for Documentation & Feedback Workflows
@@ -34,5 +34,4 @@
 
 ## Verification Evidence
 
-- `pnpm vitest run src/test/AcademyPage.test.tsx`: 5/5 tests passed.
-- Scoped ESLint & TypeScript: 0 warnings, 0 errors.
+The earlier 5/5 result did not exercise the result click and therefore did not support the navigation claim. Current verification is recorded in the delivery summary after the corrected test runs.

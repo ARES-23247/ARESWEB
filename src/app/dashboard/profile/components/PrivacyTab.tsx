@@ -82,7 +82,7 @@ export default function PrivacyTab({
           />
           <div>
             <span className="text-xs font-extrabold text-white uppercase tracking-wider block">Display on Public Roster</span>
-            <span className="text-[10px] text-marble/60 leading-normal block mt-0.5">Allow your profile biography, nickname, and subteams to be listed on the public About page.</span>
+            <span className="text-[10px] text-marble/60 leading-normal block mt-0.5">Student profiles show only an approved nickname and avatar, plus the student role label. Adult profiles may also show pronouns, biography, subteams, and alumni education when provided. Fun facts remain private.</span>
           </div>
         </label>
 

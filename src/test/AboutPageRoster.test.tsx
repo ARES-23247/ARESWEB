@@ -55,7 +55,7 @@ describe("AboutPage Roster Presentation & Privacy", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders role badges, pronouns, and fun facts for all roster members", async () => {
+  it("renders approved roster fields but ignores private fun facts", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(mockRoster)));
 
     render(
@@ -75,9 +75,13 @@ describe("AboutPage Roster Presentation & Privacy", () => {
     expect(screen.getByText("mentor")).toBeInTheDocument();
     expect(screen.getByText("alumni")).toBeInTheDocument();
 
-    // Verify fun facts
-    expect(screen.getByText(/Solved a 1000-piece Rubik's cube/i)).toBeInTheDocument();
-    expect(screen.getByText(/Has coached FTC teams for over a decade/i)).toBeInTheDocument();
+    expect(screen.queryByText("they/them")).not.toBeInTheDocument();
+    expect(screen.queryByText("Autonomous pathing specialist.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Programming")).not.toBeInTheDocument();
+    expect(screen.getByText(/he\/him/)).toBeInTheDocument();
+    expect(screen.getByText("Lead FTC coach and systems mentor.")).toBeInTheDocument();
+    expect(screen.queryByText(/Solved a 1000-piece Rubik's cube/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Has coached FTC teams for over a decade/i)).not.toBeInTheDocument();
   });
 
   it("filters roster members accurately when clicking category tabs", async () => {

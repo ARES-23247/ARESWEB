@@ -114,7 +114,7 @@ export default function VideosPage() {
               ))}
             </div>
             <a
-              href="https://www.youtube.com/@ares23247WV"
+              href="https://www.youtube.com/@ARESFTC"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 border border-white/15 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ares-cyan"

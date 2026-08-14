@@ -57,6 +57,7 @@ describe("VideosPage Filter, Sandbox, & Keyboard Navigation", () => {
 
     expect(await screen.findByRole("heading", { name: "Championship Autonomous Pathing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "15-Second Claw Cycle Demonstration" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Team YouTube/i })).toHaveAttribute("href", "https://www.youtube.com/@ARESFTC");
 
     // Filter by Shorts
     fireEvent.click(screen.getByRole("button", { name: "Shorts" }));

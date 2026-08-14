@@ -19,71 +19,7 @@ interface Sponsor {
   websiteUrl?: string;
 }
 
-interface TierBenefitInfo {
-  tier: SponsorTier;
-  amount: string;
-  description: string;
-  highlights: readonly string[];
-}
-
 const SPONSOR_TIERS: readonly SponsorTier[] = ["Titanium", "Gold", "Silver", "Bronze", "In-Kind"];
-
-const TIER_BENEFITS: readonly TierBenefitInfo[] = [
-  {
-    tier: "Titanium",
-    amount: "$5,000+",
-    description: "Premier Title Partnership",
-    highlights: [
-      "Prominent logo on competition robot chassis & lift mechanism",
-      "Premier placement on team pit banners & official jerseys",
-      "Featured recognition in press releases & web headers",
-      "VIP pit passes & invitation to championship matches",
-      "Custom robotics demo & student showcase at your facility",
-    ],
-  },
-  {
-    tier: "Gold",
-    amount: "$2,500+",
-    description: "Major Engineering Partner",
-    highlights: [
-      "Prominent logo on competition robot side panels",
-      "Logo on team pit banner & competition shirts",
-      "Website logo with prominent backlink & sponsor profile",
-      "Invitations to team scrimmages & open house demonstrations",
-    ],
-  },
-  {
-    tier: "Silver",
-    amount: "$1,000+",
-    description: "Subsystem & Technology Partner",
-    highlights: [
-      "Logo on competition robot side shield",
-      "Logo on official team pit banner",
-      "Website directory placement with organization link",
-      "Framed commemorative team photograph & appreciation plaque",
-    ],
-  },
-  {
-    tier: "Bronze",
-    amount: "$500+",
-    description: "Community & Tooling Supporter",
-    highlights: [
-      "Logo on team website sponsor directory",
-      "Name listed on competition pit display",
-      "Annual team season review newsletter & sponsor certificate",
-    ],
-  },
-  {
-    tier: "In-Kind",
-    amount: "Parts, Machining, or Mentorship",
-    description: "Materials & Technical Mentorship",
-    highlights: [
-      "Recognition commensurate with fair-market value of donations",
-      "Logo on website & pit display matching equivalent cash tier",
-      "Direct technical collaboration with student design subteams",
-    ],
-  },
-];
 
 const TIER_STYLING: Record<SponsorTier, { icon: React.ReactNode; glass: string; border: string; glow: string; text: string }> = {
   Titanium: { 
@@ -199,7 +135,7 @@ export default function SponsorsPage() {
   const tiersOrdered = SPONSOR_TIERS;
 
   // Form Submission via server-side secure API Endpoint + Google reCAPTCHA
-  const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
@@ -411,68 +347,6 @@ export default function SponsorsPage() {
           </>
         )}
 
-        {/* Tier Benefits & Opportunities Grid */}
-        <section aria-labelledby="sponsorship-tiers-heading" className="mt-28">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-black uppercase tracking-widest mb-4 select-none">
-              <Zap aria-hidden="true" size={12} /> Partnership Tiers
-            </div>
-            <h2 id="sponsorship-tiers-heading" className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white font-heading">
-              Sponsorship Opportunities
-            </h2>
-            <p className="mt-3 text-sm text-marble/80 max-w-xl mx-auto">
-              Every dollar directly funds robot parts, competition entry fees, student travel stipends, and community STEM outreach.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {TIER_BENEFITS.map((benefit) => {
-              const styling = TIER_STYLING[benefit.tier];
-              return (
-                <div
-                  key={benefit.tier}
-                  className={`ares-cut flex flex-col justify-between border p-6 transition-all hover:bg-white/[0.06] ${styling.border} ${styling.glass}`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-3 mb-4">
-                      <div className="flex items-center gap-2">
-                        {styling.icon}
-                        <h3 className={`text-xl font-black uppercase tracking-tight ${styling.text}`}>
-                          {benefit.tier}
-                        </h3>
-                      </div>
-                      <span className="font-mono text-xs font-black uppercase tracking-wider text-white bg-white/10 px-2.5 py-1 rounded">
-                        {benefit.amount}
-                      </span>
-                    </div>
-                    <p className="text-xs font-bold text-marble/70 uppercase tracking-wider mb-4">
-                      {benefit.description}
-                    </p>
-                    <ul className="space-y-2.5 text-xs text-marble/90 mb-6">
-                      {benefit.highlights.map((highlight, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <ShieldCheck aria-hidden="true" size={14} className={`shrink-0 mt-0.5 ${styling.text}`} />
-                          <span>{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLevel(`${benefit.tier} Tier Sponsor`);
-                      document.getElementById("sponsor-form-section")?.scrollIntoView?.({ behavior: "smooth" });
-                    }}
-                    className="w-full text-center py-2 px-4 border border-white/20 bg-white/5 hover:bg-white/15 text-xs font-black uppercase tracking-widest text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan cursor-pointer"
-                  >
-                    Select {benefit.tier}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
         {/* Form Section */}
         <section id="sponsor-form-section" aria-labelledby="sponsor-form-heading" className="mt-24 p-6 md:p-12 ares-cut-lg bg-obsidian border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative shadow-2xl">
           
@@ -593,7 +467,6 @@ export default function SponsorsPage() {
               <div className="pt-2">
                 <button 
                   type="submit" 
-                  onClick={handleSubmit}
                   disabled={submitStatus === "sending"} 
                   aria-busy={submitStatus === "sending"}
                   className="px-8 py-3.5 w-full bg-ares-red text-white font-black uppercase tracking-widest ares-cut-sm hover:bg-ares-bronze hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none cursor-pointer text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"

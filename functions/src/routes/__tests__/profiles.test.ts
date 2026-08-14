@@ -114,9 +114,13 @@ describe("Profiles Router Backend Endpoints", () => {
             nickname: "RobotBuilder",
             memberType: "student",
             isDeleted: 0,
+            pronouns: "they/them",
+            subteams: ["Programming"],
+            bio: "Private student biography",
             contactEmail: "student@aresfirst.org",
             firstName: "John",
-            lastName: "Doe"
+            lastName: "Doe",
+            funFact: "Private profile detail",
           }),
         },
       ];
@@ -150,6 +154,10 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(members[0].contactEmail).toBeUndefined();
       expect(members[0].userId).toBeUndefined();
       expect(members[0].uid).toBeUndefined();
+      expect(members[0].funFact).toBeUndefined();
+      expect(members[0].pronouns).toBeUndefined();
+      expect(members[0].subteams).toBeUndefined();
+      expect(members[0].bio).toBeUndefined();
     });
 
     it("should never fall back to a legal name or identifier-derived avatar", async () => {
