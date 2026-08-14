@@ -141,6 +141,7 @@ export default defineConfig({
         "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",
         "src/components/PublicDataState.tsx",
+        "src/components/BlogThumbnailImage.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/profile/page.tsx",
         "src/app/dashboard/profile/components/*.tsx",
@@ -170,6 +171,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/BlogThumbnailImage.tsx": {
           lines: 85,
           functions: 100,
         },
