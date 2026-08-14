@@ -106,6 +106,15 @@ describe("production deployment contract", () => {
     expect(contract.buildIdentity.serviceAccount).toBe(
       "205869391101-compute@developer.gserviceaccount.com",
     );
+    expect(
+      contract.functions.find(({ id }) => id === "coreApi")?.secrets,
+    ).toEqual([
+      "ENCRYPTION_SECRET",
+      "PROFILE_SYNC_SECRET",
+      "RECAPTCHA_SECRET_KEY",
+      "ZULIP_API_KEY",
+      "ZULIP_BOT_EMAIL",
+    ]);
   });
 
   it("rejects duplicate services, public schedules, wildcard roles, and malformed bounds", () => {
