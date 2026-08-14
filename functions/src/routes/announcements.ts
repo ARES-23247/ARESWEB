@@ -11,6 +11,13 @@ import { validate } from "../middleware/validation";
 const router = express.Router();
 const SETTINGS_DOCUMENT = "siteAnnouncement";
 const SEVERITIES = ["info", "important", "urgent"] as const;
+const announcementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { error: "Too many announcement requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const adminAnnouncementLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
@@ -18,6 +25,8 @@ const adminAnnouncementLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+router.use(announcementLimiter);
 
 const internalPathSchema = z
   .string()

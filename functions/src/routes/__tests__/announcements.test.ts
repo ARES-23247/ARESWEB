@@ -111,6 +111,19 @@ describe("site announcement routes", () => {
     mocks.settingsGet.mockResolvedValue({ exists: true, data: () => activeDocument });
   });
 
+  it("applies an outer rate limiter before every public and administrative route", () => {
+    const outerLimiterIndex = announcementsRouter.stack.findIndex(
+      (layer) => !layer.route && layer.handle === mocks.rateLimiter,
+    );
+    const routeIndexes = announcementsRouter.stack
+      .map((layer, index) => (layer.route ? index : -1))
+      .filter((index) => index >= 0);
+
+    expect(outerLimiterIndex).toBeGreaterThanOrEqual(0);
+    expect(routeIndexes.length).toBeGreaterThan(0);
+    expect(routeIndexes.every((index) => outerLimiterIndex < index)).toBe(true);
+  });
+
   it("returns a minimized active announcement without authentication", async () => {
     const { req, res } = await invoke("/", "get");
 
