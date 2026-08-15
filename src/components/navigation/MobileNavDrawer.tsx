@@ -1,7 +1,12 @@
 import { type RefObject, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { CircleAlert, LayoutDashboard, User as UserIcon, X } from "lucide-react";
+import {
+  CircleAlert,
+  LayoutDashboard,
+  User as UserIcon,
+  X,
+} from "lucide-react";
 import { TEAM_LINKS, RESOURCE_LINKS } from "./navItems";
 import { NavLinkItem } from "./NavLinkItem";
 import { useFocusTrap } from "@/lib/useFocusTrap";
@@ -72,9 +77,12 @@ export function MobileNavDrawer({
   useEffect(() => {
     if (!isOpen) return;
 
-    const portal = document.querySelector<HTMLElement>("[data-mobile-nav-portal]");
+    const portal = document.querySelector<HTMLElement>(
+      "[data-mobile-nav-portal]",
+    );
     const siblings = Array.from(document.body.children).filter(
-      (element): element is HTMLElement => element instanceof HTMLElement && element !== portal,
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement && element !== portal,
     );
     const previousBodyOverflow = document.body.style.overflow;
     const returnFocusTarget = returnFocusRef?.current;
@@ -119,17 +127,20 @@ export function MobileNavDrawer({
         aria-modal="true"
         aria-labelledby="mobile-navigation-title"
         tabIndex={-1}
-        className="absolute inset-y-0 right-0 flex w-[min(90vw,24rem)] flex-col gap-5 overflow-y-auto border-l border-ares-bronze/30 bg-obsidian p-6 shadow-2xl"
+        className="absolute inset-y-0 right-0 flex h-[100dvh] w-[min(92vw,24rem)] flex-col gap-4 overflow-y-auto overscroll-contain border-l border-ares-bronze/30 bg-obsidian p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl sm:gap-5 sm:p-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
       >
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <h2 id="mobile-navigation-title" className="text-sm font-black uppercase tracking-widest text-white">
+        <div className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-3 border-b border-white/10 bg-obsidian pb-3">
+          <h2
+            id="mobile-navigation-title"
+            className="text-sm font-black uppercase tracking-widest text-white"
+          >
             Mobile navigation menu
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close navigation menu"
-            className="flex h-10 w-10 items-center justify-center rounded border border-white/10 text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded border border-white/10 text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
             <X aria-hidden="true" size={20} />
           </button>
@@ -139,9 +150,14 @@ export function MobileNavDrawer({
           <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ares-gold">
             Team &amp; Organization
           </p>
-          <div className="flex flex-col gap-3 pl-2">
+          <div className="flex flex-col gap-1">
             {TEAM_LINKS.map((item) => (
-              <NavLinkItem key={item.label} item={item} variant="mobile-drawer" onClick={onClose} />
+              <NavLinkItem
+                key={item.label}
+                item={item}
+                variant="mobile-drawer"
+                onClick={onClose}
+              />
             ))}
           </div>
         </div>
@@ -150,9 +166,14 @@ export function MobileNavDrawer({
           <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ares-gold">
             Resources
           </p>
-          <div className="flex flex-col gap-3 pl-2">
+          <div className="flex flex-col gap-1">
             {RESOURCE_LINKS.map((item) => (
-              <NavLinkItem key={item.label} item={item} variant="mobile-drawer" onClick={onClose} />
+              <NavLinkItem
+                key={item.label}
+                item={item}
+                variant="mobile-drawer"
+                onClick={onClose}
+              />
             ))}
           </div>
         </div>
@@ -160,27 +181,46 @@ export function MobileNavDrawer({
         <div className="my-1 h-px bg-white/10" aria-hidden="true" />
 
         {loading ? (
-          <span className="text-xs text-marble/60" role="status">Verifying session...</span>
+          <span className="text-xs text-marble/60" role="status">
+            Verifying session...
+          </span>
         ) : isSignedIn && user ? (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <img
-                src={userImage || `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(user.uid)}`}
+                src={
+                  userImage ||
+                  `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(user.uid)}`
+                }
                 alt=""
                 className="h-8 w-8 rounded-full border border-ares-bronze/40 bg-black/40"
               />
               <div>
-                <p className="text-sm font-bold text-white">{user.displayName || "ARES Member"}</p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-ares-gold">{userRole}</p>
+                <p className="text-sm font-bold text-white">
+                  {user.displayName || "ARES Member"}
+                </p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-ares-gold">
+                  {userRole}
+                </p>
               </div>
             </div>
             <Link
               to="/dashboard"
               onClick={onClose}
-              className="relative mt-2 flex w-full items-center justify-center gap-2 rounded border border-white/10 bg-white/5 py-2 text-center text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="relative mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
-              <LayoutDashboard aria-hidden="true" size={12} className="text-ares-gold" /> Command Center
-              {hasPendingInquiries && <span className="absolute right-4 top-2 h-2 w-2 rounded-full bg-ares-red" aria-label="Pending inquiries" />}
+              <LayoutDashboard
+                aria-hidden="true"
+                size={12}
+                className="text-ares-gold"
+              />{" "}
+              Command Center
+              {hasPendingInquiries && (
+                <span
+                  className="absolute right-4 top-2 h-2 w-2 rounded-full bg-ares-red"
+                  aria-label="Pending inquiries"
+                />
+              )}
               {pendingInquiriesError && (
                 <CircleAlert
                   aria-label={`Pending inquiry status unavailable: ${pendingInquiriesError}`}
@@ -192,9 +232,14 @@ export function MobileNavDrawer({
             <Link
               to="/dashboard/profile"
               onClick={onClose}
-              className="flex w-full items-center justify-center gap-2 rounded border border-white/10 bg-white/5 py-2 text-center text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
-              <UserIcon aria-hidden="true" size={12} className="text-ares-cyan" /> My Profile
+              <UserIcon
+                aria-hidden="true"
+                size={12}
+                className="text-ares-cyan"
+              />{" "}
+              My Profile
             </Link>
             <button
               type="button"
@@ -202,7 +247,7 @@ export function MobileNavDrawer({
                 logout();
                 onClose();
               }}
-              className="mt-2 w-full rounded border border-ares-red/40 bg-ares-red/20 py-2 text-center text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-ares-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="mt-2 min-h-11 w-full rounded border border-ares-red/40 bg-ares-red/20 px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-ares-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               Sign Out
             </button>
@@ -214,7 +259,7 @@ export function MobileNavDrawer({
               loginWithGoogle();
               onClose();
             }}
-            className="w-full rounded border border-ares-bronze/30 bg-ares-red py-3 text-center text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            className="min-h-11 w-full rounded border border-ares-bronze/30 bg-ares-red px-3 py-3 text-center text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
             Sign In with Google
           </button>

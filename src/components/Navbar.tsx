@@ -3,10 +3,10 @@
 import { logger } from "@/utils/logger";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { 
-  Calendar as CalendarIcon, 
-  ShoppingBag, 
-  GraduationCap
+import {
+  Calendar as CalendarIcon,
+  ShoppingBag,
+  GraduationCap,
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
@@ -21,8 +21,12 @@ import { MobileNavDrawer } from "./navigation/MobileNavDrawer";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [hasPendingInquiries, setHasPendingInquiries] = useState<boolean | null>(null);
-  const [pendingInquiriesError, setPendingInquiriesError] = useState<string | null>(null);
+  const [hasPendingInquiries, setHasPendingInquiries] = useState<
+    boolean | null
+  >(null);
+  const [pendingInquiriesError, setPendingInquiriesError] = useState<
+    string | null
+  >(null);
   const navbarRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
@@ -44,21 +48,32 @@ export default function Navbar() {
 
     async function loadPendingInquiryState() {
       try {
-        const response = await authenticatedFetch("/api/inquiries/pending-exists", {
-          signal: controller.signal,
-        });
+        const response = await authenticatedFetch(
+          "/api/inquiries/pending-exists",
+          {
+            signal: controller.signal,
+          },
+        );
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
+          throw new Error(
+            `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+          );
         }
-        const result = await response.json() as { hasPending?: unknown };
+        const result = (await response.json()) as { hasPending?: unknown };
         if (typeof result.hasPending !== "boolean") {
           throw new Error("Invalid pending inquiry response");
         }
         setHasPendingInquiries(result.hasPending);
       } catch (error) {
         if (controller.signal.aborted) return;
-        const diagnostic = error instanceof Error ? error.message : "Pending inquiry request failed";
-        logger.error("Error loading pending inquiry status for navigation:", error);
+        const diagnostic =
+          error instanceof Error
+            ? error.message
+            : "Pending inquiry request failed";
+        logger.error(
+          "Error loading pending inquiry status for navigation:",
+          error,
+        );
         setHasPendingInquiries(null);
         setPendingInquiriesError(diagnostic);
       }
@@ -71,7 +86,10 @@ export default function Navbar() {
   // Close dropdowns when clicking outside navbar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
+      if (
+        navbarRef.current &&
+        !navbarRef.current.contains(event.target as Node)
+      ) {
         setActiveDropdown(null);
       }
     }
@@ -96,9 +114,19 @@ export default function Navbar() {
   };
 
   return (
-    <nav ref={navbarRef} role="navigation" aria-label="Main Navigation" style={{ top: "var(--site-announcement-height, 0px)" }} className="fixed left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze">
+    <nav
+      ref={navbarRef}
+      role="navigation"
+      aria-label="Main Navigation"
+      style={{ top: "var(--site-announcement-height, 0px)" }}
+      className="fixed left-0 w-full z-50 bg-obsidian shadow-2xl px-6 pt-4 pb-4 transition-all duration-500 overflow-visible border-t-4 border-ares-bronze"
+    >
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        <GreekMeander variant="thin" opacity="opacity-40" className="absolute top-0 left-0" />
+        <GreekMeander
+          variant="thin"
+          opacity="opacity-40"
+          className="absolute top-0 left-0"
+        />
       </div>
       <div className="flex items-center justify-between relative z-10">
         <Link
@@ -106,11 +134,13 @@ export default function Navbar() {
           className="text-2xl font-bold tracking-tighter text-white flex items-center gap-2 font-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
           aria-label="ARES 23247 Home"
         >
-          ARES <span className="bg-ares-red text-white px-2 py-0.5 ares-cut-sm shadow-inner font-bold">23247</span>
+          ARES{" "}
+          <span className="bg-ares-red text-white px-2 py-0.5 ares-cut-sm shadow-inner font-bold">
+            23247
+          </span>
         </Link>
 
         <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-widest animate-fade-in">
-          
           {/* 1. Team Dropdown */}
           <NavDropdown
             label="Team"
@@ -130,21 +160,39 @@ export default function Navbar() {
           />
 
           {/* 3. High-Priority Links */}
-          <Link to="/calendar" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+          <Link
+            to="/calendar"
+            className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
+          >
             <CalendarIcon size={14} /> Calendar
           </Link>
 
-          <Link to="/store" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+          <Link
+            to="/store"
+            className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
+          >
             <ShoppingBag size={14} /> Store
           </Link>
 
-          <Link to="/academy" aria-label="Academy" className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1">
+          <Link
+            to="/academy"
+            aria-label="Academy"
+            className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
+          >
             <GraduationCap size={14} /> Academy
           </Link>
 
-          <Link to="/docs" aria-label="ARES Documentation Library" className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group/lib border border-white/5 bg-white/5">
-            <span className="bg-ares-red h-full px-3 flex items-center text-[10px] font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">ARES</span>
-            <span className="text-marble h-full px-3 flex items-center text-[10px] font-heading font-bold uppercase tracking-[0.2em] group-hover/lib:bg-white/10 transition-colors">LIB</span>
+          <Link
+            to="/docs"
+            aria-label="ARES Documentation Library"
+            className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group/lib border border-white/5 bg-white/5"
+          >
+            <span className="bg-ares-red h-full px-3 flex items-center text-[10px] font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">
+              ARES
+            </span>
+            <span className="text-marble h-full px-3 flex items-center text-[10px] font-heading font-bold uppercase tracking-[0.2em] group-hover/lib:bg-white/10 transition-colors">
+              LIB
+            </span>
           </Link>
         </div>
 
@@ -166,14 +214,20 @@ export default function Navbar() {
           ref={mobileMenuButtonRef}
           type="button"
           onClick={() => setOpen(!open)}
-          className="md:hidden text-ares-gold w-10 h-10 flex flex-col justify-center items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded transition-colors group"
+          className="group flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded text-ares-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan md:hidden"
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={open}
           aria-controls="mobile-navigation-drawer"
         >
-          <span className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "rotate-45 translate-y-2.5" : "group-hover:w-8"}`}></span>
-          <span className={`w-7 h-1 bg-current block rounded-full transition-opacity duration-300 ${open ? "opacity-0" : "group-hover:w-5"}`}></span>
-          <span className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "-rotate-45 -translate-y-2.5" : "group-hover:w-8"}`}></span>
+          <span
+            className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "rotate-45 translate-y-2.5" : "group-hover:w-8"}`}
+          ></span>
+          <span
+            className={`w-7 h-1 bg-current block rounded-full transition-opacity duration-300 ${open ? "opacity-0" : "group-hover:w-5"}`}
+          ></span>
+          <span
+            className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "-rotate-45 -translate-y-2.5" : "group-hover:w-8"}`}
+          ></span>
         </button>
       </div>
 
