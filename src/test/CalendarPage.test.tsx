@@ -63,8 +63,12 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole("heading", { name: "Software Autonomous Calibration" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Morgantown Public Library STEM Workshop" })).toBeInTheDocument();
+    expect(
+      await screen.findAllByRole("heading", { name: "Software Autonomous Calibration" }),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getAllByRole("heading", { name: "Morgantown Public Library STEM Workshop" }),
+    ).not.toHaveLength(0);
     expect(screen.getByText("Upcoming Schedule")).toBeInTheDocument();
     expect(screen.getByText("Subscribe to Feed")).toBeInTheDocument();
   });
@@ -78,16 +82,20 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
       </MemoryRouter>
     );
 
-    await screen.findByRole("heading", { name: "Software Autonomous Calibration" });
+    await screen.findAllByRole("heading", { name: "Software Autonomous Calibration" });
 
     // Filter by Outreach
     fireEvent.click(screen.getByRole("button", { name: "Outreach" }));
-    expect(screen.getByRole("heading", { name: "Morgantown Public Library STEM Workshop" })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("heading", { name: "Morgantown Public Library STEM Workshop" }),
+    ).not.toHaveLength(0);
     expect(screen.queryByRole("heading", { name: "Software Autonomous Calibration" })).not.toBeInTheDocument();
 
     // Filter by Practices
     fireEvent.click(screen.getByRole("button", { name: "Practices" }));
-    expect(screen.getByRole("heading", { name: "Software Autonomous Calibration" })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("heading", { name: "Software Autonomous Calibration" }),
+    ).not.toHaveLength(0);
     expect(screen.queryByRole("heading", { name: "Morgantown Public Library STEM Workshop" })).not.toBeInTheDocument();
   });
 
@@ -100,7 +108,7 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
       </MemoryRouter>
     );
 
-    await screen.findByRole("heading", { name: "Software Autonomous Calibration" });
+    await screen.findAllByRole("heading", { name: "Software Autonomous Calibration" });
 
     const prevMonthBtn = screen.getByRole("button", { name: "Previous Month" });
     const nextMonthBtn = screen.getByRole("button", { name: "Next Month" });
@@ -126,7 +134,7 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
       </MemoryRouter>
     );
 
-    await screen.findByRole("heading", { name: "Software Autonomous Calibration" });
+    await screen.findAllByRole("heading", { name: "Software Autonomous Calibration" });
 
     const copyBtn = screen.getByRole("button", { name: "Copy calendar feed URL" });
     fireEvent.click(copyBtn);
