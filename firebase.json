@@ -67,6 +67,32 @@
           ]
         },
         {
+          "source": "/feed.xml",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
+        },
+        {
+          "source": "/api/feed.xml",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
+        },
+        {
           "source": "/api/photos/public/media/**",
           "headers": [
             {
@@ -128,10 +154,6 @@
         },
         {
           "source": "/api/sitemap.xml",
-          "function": "publicApi"
-        },
-        {
-          "source": "/sitemap.xml",
           "function": "publicApi"
         },
         {

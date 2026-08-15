@@ -15,17 +15,25 @@ interface HostingRewrite {
 
 describe("Firebase Hosting crawl configuration", () => {
   it("keeps the raw and prerendered homepage identified as the ARES team", () => {
-    const indexHtml = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+    const indexHtml = readFileSync(
+      resolve(process.cwd(), "index.html"),
+      "utf8",
+    );
     const prerenderSource = readFileSync(
       resolve(process.cwd(), "scripts/prerender-static-routes.mjs"),
       "utf8",
     );
 
-    expect(indexHtml).toContain("<title>ARES 23247 | Morgantown Robotics Team</title>");
+    expect(indexHtml).toContain(
+      "<title>ARES 23247 | Morgantown Robotics Team</title>",
+    );
     expect(indexHtml).toContain(
       "<h1>ARES 23247 | Appalachian Robotics &amp; Engineering Society</h1>",
     );
     expect(indexHtml).not.toContain("<title>ARES Analytics</title>");
+    expect(indexHtml).toMatch(
+      /rel="alternate"\s+type="application\/rss\+xml"/u,
+    );
     expect(prerenderSource).toContain(
       '? "ARES 23247 | Morgantown Robotics Team"',
     );
@@ -35,14 +43,23 @@ describe("Firebase Hosting crawl configuration", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { headers: HostingHeaderRule[] } };
-    const broadRule = config.hosting.headers.find((rule) => rule.source === "/!(assets){,/**}");
-    const csp = broadRule?.headers.find((header) => header.key === "Content-Security-Policy")?.value;
-    const indexHtml = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+    const broadRule = config.hosting.headers.find(
+      (rule) => rule.source === "/!(assets){,/**}",
+    );
+    const csp = broadRule?.headers.find(
+      (header) => header.key === "Content-Security-Policy",
+    )?.value;
+    const indexHtml = readFileSync(
+      resolve(process.cwd(), "index.html"),
+      "utf8",
+    );
 
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
     expect(csp).toContain("script-src-attr 'none'");
-    expect(csp).toContain("style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com");
+    expect(csp).toContain(
+      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    );
     expect(csp).toContain("style-src-attr 'unsafe-inline'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("worker-src 'self' blob:");
@@ -55,8 +72,12 @@ describe("Firebase Hosting crawl configuration", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { headers: HostingHeaderRule[] } };
-    const broadRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/!(assets){,/**}");
-    const sitemapRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/sitemap.xml");
+    const broadRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/!(assets){,/**}",
+    );
+    const sitemapRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/sitemap.xml",
+    );
     const sitemapRule = config.hosting.headers[sitemapRuleIndex];
 
     expect(broadRuleIndex).toBeGreaterThanOrEqual(0);
@@ -67,12 +88,44 @@ describe("Firebase Hosting crawl configuration", () => {
     });
   });
 
+  it("applies the bounded feed cache policy after the broad app-shell policy", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const broadRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/!(assets){,/**}",
+    );
+
+    for (const source of ["/feed.xml", "/api/feed.xml"]) {
+      const ruleIndex = config.hosting.headers.findIndex(
+        (rule) => rule.source === source,
+      );
+      expect(ruleIndex).toBeGreaterThan(broadRuleIndex);
+      expect(config.hosting.headers[ruleIndex].headers).toEqual(
+        expect.arrayContaining([
+          {
+            key: "Cache-Control",
+            value:
+              "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ]),
+      );
+    }
+  });
+
   it("allows immutable caching only for query-addressed raster social cards", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
-    ) as { hosting: { headers: HostingHeaderRule[]; rewrites: HostingRewrite[] } };
-    const broadRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/!(assets){,/**}");
-    const ogRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/api/og");
+    ) as {
+      hosting: { headers: HostingHeaderRule[]; rewrites: HostingRewrite[] };
+    };
+    const broadRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/!(assets){,/**}",
+    );
+    const ogRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/api/og",
+    );
     const ogRule = config.hosting.headers[ogRuleIndex];
 
     expect(ogRuleIndex).toBeGreaterThan(broadRuleIndex);
@@ -90,7 +143,9 @@ describe("Firebase Hosting crawl configuration", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { headers: HostingHeaderRule[] } };
-    const broadRuleIndex = config.hosting.headers.findIndex((rule) => rule.source === "/!(assets){,/**}");
+    const broadRuleIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/!(assets){,/**}",
+    );
     const mediaRuleIndex = config.hosting.headers.findIndex(
       (rule) => rule.source === "/api/photos/public/media/**",
     );
@@ -111,13 +166,20 @@ describe("Firebase Hosting crawl configuration", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { rewrites: HostingRewrite[] } };
-    const rewriteMap = new Map(config.hosting.rewrites.map((rewrite) => [rewrite.source, rewrite.function]));
+    const rewriteMap = new Map(
+      config.hosting.rewrites.map((rewrite) => [
+        rewrite.source,
+        rewrite.function,
+      ]),
+    );
 
     expect(rewriteMap.get("/api/photos{,/**}")).toBe("mediaApi");
     expect(rewriteMap.get("/api/profiles{,/**}")).toBe("coreApi");
     expect(rewriteMap.get("/api/tasks{,/**}")).toBe("communicationsApi");
     expect(rewriteMap.get("/api/robots{,/**}")).toBe("publicApi");
     expect(rewriteMap.get("/api/og{,/**}")).toBe("publicApi");
+    expect(rewriteMap.get("/feed.xml")).toBe("publicApi");
+    expect(rewriteMap.get("/api/feed.xml")).toBe("publicApi");
     expect(rewriteMap.get("/api/**")).toBe("publicApi");
   });
 
@@ -126,20 +188,39 @@ describe("Firebase Hosting crawl configuration", () => {
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { rewrites: HostingRewrite[] } };
 
-    expect(config.hosting.rewrites).not.toContainEqual(expect.objectContaining({ source: "**" }));
-    for (const source of ["/blog/**", "/academy/**", "/docs/**", "/events/**", "/robots/**"]) {
-      expect(config.hosting.rewrites).toContainEqual({ source, function: "web" });
+    expect(config.hosting.rewrites).not.toContainEqual(
+      expect.objectContaining({ source: "**" }),
+    );
+    for (const source of [
+      "/blog/**",
+      "/academy/**",
+      "/docs/**",
+      "/events/**",
+      "/robots/**",
+    ]) {
+      expect(config.hosting.rewrites).toContainEqual({
+        source,
+        function: "web",
+      });
     }
     expect(config.hosting.rewrites).toContainEqual({
       source: "/__deployment-health/web",
       function: "web",
     });
-    expect(config.hosting.rewrites).toContainEqual({ source: "/dashboard{,/**}", destination: "/index.html" });
+    expect(config.hosting.rewrites).toContainEqual({
+      source: "/dashboard{,/**}",
+      destination: "/index.html",
+    });
 
-    const viteConfig = readFileSync(resolve(process.cwd(), "vite.config.ts"), "utf8");
+    const viteConfig = readFileSync(
+      resolve(process.cwd(), "vite.config.ts"),
+      "utf8",
+    );
     expect(viteConfig).toContain("navigateFallbackAllowlist");
     expect(viteConfig).not.toContain("navigateFallbackDenylist");
-    expect(viteConfig).not.toMatch(/navigateFallbackAllowlist:[\s\S]{0,500}blog/);
+    expect(viteConfig).not.toMatch(
+      /navigateFallbackAllowlist:[\s\S]{0,500}blog/,
+    );
   });
 
   it("keeps known static routes synchronized with the prerender build", () => {
@@ -150,11 +231,14 @@ describe("Firebase Hosting crawl configuration", () => {
       resolve(process.cwd(), "scripts/prerender-static-routes.mjs"),
       "utf8",
     );
-    const routes = [...prerenderSource.matchAll(/^\s*\["(\/[^"]*)",/gm)].map((match) => match[1]);
+    const routes = [...prerenderSource.matchAll(/^\s*\["(\/[^"]*)",/gm)].map(
+      (match) => match[1],
+    );
 
     expect(routes.length).toBeGreaterThan(20);
     for (const route of routes) {
-      const filename = route === "/" ? "home" : route.slice(1).replaceAll("/", "-");
+      const filename =
+        route === "/" ? "home" : route.slice(1).replaceAll("/", "-");
       expect(config.hosting.rewrites).toContainEqual({
         source: route,
         destination: `/prerender/${filename}.html`,
