@@ -19,6 +19,7 @@ vi.mock("virtual:pwa-register", () => ({
 
 describe("PwaUpdatePrompt", () => {
   beforeEach(() => {
+    window.sessionStorage.clear();
     registerSWMock.mockReturnValue(updateServiceWorkerMock);
     Object.defineProperty(navigator, "serviceWorker", {
       configurable: true,
@@ -51,22 +52,21 @@ describe("PwaUpdatePrompt", () => {
     expect(reloadPage).toHaveBeenCalledTimes(1);
   });
 
-  it("recovers when an update never activates", async () => {
+  it("falls back to a real reload when an update never activates", async () => {
     vi.useFakeTimers();
-    render(<PwaUpdatePrompt enabled reloadPage={vi.fn()} />);
+    const reloadPage = vi.fn();
+    render(<PwaUpdatePrompt enabled reloadPage={reloadPage} />);
     const callbacks = registerSWMock.mock.calls[0][0];
 
     act(() => callbacks.onNeedRefresh());
     fireEvent.click(screen.getByRole("button", { name: "Reload and update" }));
     await act(async () => vi.advanceTimersByTimeAsync(8_000));
 
-    expect(
-      screen.getByRole("button", { name: "Reload and update" }),
-    ).toBeEnabled();
-    expect(screen.getByText(/activation timed out/i)).toBeVisible();
-
-    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    expect(reloadPage).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
+    expect(window.sessionStorage.getItem("ares:pwa-update-dismissed")).toBe(
+      "1",
+    );
   });
 
   it("dismisses an available update before activation starts", () => {
@@ -79,6 +79,9 @@ describe("PwaUpdatePrompt", () => {
     );
 
     expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
+
+    act(() => callbacks.onNeedRefresh());
+    expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
   });
 
   it("defers an available update with the Later action", () => {
@@ -87,6 +90,21 @@ describe("PwaUpdatePrompt", () => {
 
     act(() => callbacks.onNeedRefresh());
     fireEvent.click(screen.getByRole("button", { name: "Later" }));
+
+    expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
+  });
+
+  it("keeps a deferred update dismissed after the component remounts", () => {
+    const first = render(<PwaUpdatePrompt enabled />);
+    const firstCallbacks = registerSWMock.mock.calls[0][0];
+
+    act(() => firstCallbacks.onNeedRefresh());
+    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    first.unmount();
+
+    render(<PwaUpdatePrompt enabled />);
+    const remountedCallbacks = registerSWMock.mock.calls[1][0];
+    act(() => remountedCallbacks.onNeedRefresh());
 
     expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
   });

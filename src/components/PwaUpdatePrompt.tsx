@@ -7,6 +7,7 @@ const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const REGISTRATION_RETRY_DELAY_MS = 1_500;
 const MAX_REGISTRATION_ATTEMPTS = 3;
 const UPDATE_ACTIVATION_TIMEOUT_MS = 8_000;
+const DISMISSED_UPDATE_SESSION_KEY = "ares:pwa-update-dismissed";
 
 interface PwaUpdatePromptProps {
   enabled?: boolean;
@@ -17,6 +18,30 @@ type UpdateServiceWorker = (reloadPage?: boolean) => Promise<void>;
 
 function diagnosticMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function updateDismissedForSession(): boolean {
+  try {
+    return window.sessionStorage.getItem(DISMISSED_UPDATE_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberDismissedUpdate(): void {
+  try {
+    window.sessionStorage.setItem(DISMISSED_UPDATE_SESSION_KEY, "1");
+  } catch {
+    // Storage can be unavailable in privacy-restricted browsing contexts.
+  }
+}
+
+function clearDismissedUpdate(): void {
+  try {
+    window.sessionStorage.removeItem(DISMISSED_UPDATE_SESSION_KEY);
+  } catch {
+    // A successful activation can still reload when storage is unavailable.
+  }
 }
 
 export default function PwaUpdatePrompt({
@@ -57,8 +82,29 @@ export default function PwaUpdatePrompt({
     if (reloadStarted.current) return;
     reloadStarted.current = true;
     clearActivationWait();
+    clearDismissedUpdate();
     performReload();
   }, [clearActivationWait, performReload]);
+
+  const reloadAfterActivationTimeout = useCallback(() => {
+    if (reloadStarted.current) return;
+    reloadStarted.current = true;
+    clearActivationWait();
+    rememberDismissedUpdate();
+    setUpdateAvailable(false);
+    setError(null);
+    setIsUpdating(false);
+    performReload();
+  }, [clearActivationWait, performReload]);
+
+  const dismissUpdate = useCallback(() => {
+    clearActivationWait();
+    rememberDismissedUpdate();
+    reloadStarted.current = false;
+    setUpdateAvailable(false);
+    setError(null);
+    setIsUpdating(false);
+  }, [clearActivationWait]);
 
   useEffect(() => {
     if (
@@ -114,6 +160,7 @@ export default function PwaUpdatePrompt({
       },
       onNeedRefresh: () => {
         if (isDisposed) return;
+        if (updateDismissedForSession()) return;
         setError(null);
         setIsUpdating(false);
         setUpdateAvailable(true);
@@ -181,6 +228,7 @@ export default function PwaUpdatePrompt({
   const installUpdate = async () => {
     if (!updateServiceWorker.current) return;
     clearActivationWait();
+    clearDismissedUpdate();
     reloadStarted.current = false;
     setIsUpdating(true);
     setError(null);
@@ -195,11 +243,7 @@ export default function PwaUpdatePrompt({
     }
 
     activationTimeout.current = window.setTimeout(() => {
-      clearActivationWait();
-      setError(
-        "Update activation timed out. Reload this page or try the update again.",
-      );
-      setIsUpdating(false);
+      reloadAfterActivationTimeout();
     }, UPDATE_ACTIVATION_TIMEOUT_MS);
 
     try {
@@ -254,10 +298,7 @@ export default function PwaUpdatePrompt({
               <button
                 type="button"
                 onClick={() => {
-                  clearActivationWait();
-                  setUpdateAvailable(false);
-                  setError(null);
-                  setIsUpdating(false);
+                  dismissUpdate();
                 }}
                 disabled={isUpdating}
                 className="rounded border border-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wide text-marble hover:bg-white/10 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -272,10 +313,7 @@ export default function PwaUpdatePrompt({
           aria-label="Dismiss notification"
           disabled={isUpdating}
           onClick={() => {
-            clearActivationWait();
-            setUpdateAvailable(false);
-            setError(null);
-            setIsUpdating(false);
+            dismissUpdate();
           }}
           className="rounded p-1 text-marble/70 hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
