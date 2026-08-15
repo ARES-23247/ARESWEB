@@ -1,41 +1,115 @@
+import { createHash } from "node:crypto";
 import { logger } from "./logger";
+
+const BLUESKY_ORIGIN = "https://bsky.social";
+const SITE_ORIGIN = "https://aresfirst.org";
+const OUTBOUND_TIMEOUT_MS = 10_000;
+const MAX_POST_GRAPHEMES = 300;
+const MAX_POST_BYTES = 3_000;
 
 export interface BlueskyPostOptions {
   title: string;
   slug: string;
+  version: string;
   snippet?: string;
-  author?: string;
-  coverImageUrl?: string;
 }
 
-export function getBlueskyCredentials() {
+interface BlueskySession {
+  accessJwt: string;
+  did: string;
+}
+
+interface BlueskyPostRecord {
+  text: string;
+  facets: Array<{
+    index: { byteStart: number; byteEnd: number };
+    features: Array<{
+      $type: "app.bsky.richtext.facet#link";
+      uri: string;
+    }>;
+  }>;
+  embed: {
+    $type: "app.bsky.embed.external";
+    external: {
+      uri: string;
+      title: string;
+      description: string;
+    };
+  };
+}
+
+export function getBlueskyCredentials(): {
+  handle: string;
+  appPassword: string;
+} {
   const configuredHandle = (process.env.BLUESKY_HANDLE || "").trim();
   const configuredPassword = (process.env.BLUESKY_APP_PASSWORD || "").trim();
+  const disabledValues = new Set(["disabled", "none"]);
 
-  const handle = configuredHandle || "ares23247.bsky.social";
-  const appPassword = configuredPassword && !["disabled", "none"].includes(configuredPassword.toLowerCase())
-    ? configuredPassword
-    : "";
-
-  return { handle, appPassword };
+  return {
+    handle: configuredHandle || "ares23247.bsky.social",
+    appPassword:
+      configuredPassword &&
+      !disabledValues.has(configuredPassword.toLowerCase())
+        ? configuredPassword
+        : "",
+  };
 }
 
-/**
- * Computes byte-level facets for links and mentions in Bluesky AT Protocol posts.
- */
-function createUrlFacets(text: string, url: string) {
-  const utf8Encoder = new TextEncoder();
-  const fullBytes = utf8Encoder.encode(text);
-  const urlBytes = utf8Encoder.encode(url);
+function utf8Length(value: string): number {
+  return Buffer.byteLength(value, "utf8");
+}
 
-  const byteIndex = Buffer.from(fullBytes).indexOf(Buffer.from(urlBytes));
-  if (byteIndex === -1) return [];
+function graphemeSegments(value: string): string[] {
+  return Array.from(
+    new Intl.Segmenter("en", { granularity: "grapheme" }).segment(value),
+    ({ segment }) => segment,
+  );
+}
+
+function truncateToLimits(
+  value: string,
+  maxGraphemes: number,
+  maxBytes: number,
+): string {
+  if (maxGraphemes <= 0 || maxBytes <= 0) return "";
+  let output = "";
+  let bytes = 0;
+  let graphemes = 0;
+
+  for (const segment of graphemeSegments(value)) {
+    const segmentBytes = utf8Length(segment);
+    if (graphemes + 1 > maxGraphemes || bytes + segmentBytes > maxBytes) break;
+    output += segment;
+    bytes += segmentBytes;
+    graphemes += 1;
+  }
+
+  return output;
+}
+
+function remainingLimits(value: string): {
+  graphemes: number;
+  bytes: number;
+} {
+  return {
+    graphemes: MAX_POST_GRAPHEMES - graphemeSegments(value).length,
+    bytes: MAX_POST_BYTES - utf8Length(value),
+  };
+}
+
+function createUrlFacet(
+  text: string,
+  url: string,
+): BlueskyPostRecord["facets"] {
+  const byteStart = Buffer.from(text, "utf8").indexOf(Buffer.from(url, "utf8"));
+  if (byteStart < 0) return [];
 
   return [
     {
       index: {
-        byteStart: byteIndex,
-        byteEnd: byteIndex + urlBytes.length,
+        byteStart,
+        byteEnd: byteStart + utf8Length(url),
       },
       features: [
         {
@@ -47,100 +121,189 @@ function createUrlFacets(text: string, url: string) {
   ];
 }
 
+function normalizeText(value: string | undefined): string {
+  return (value || "")
+    .replace(/[\u0000-\u001F\u007F\u202A-\u202E\u2066-\u2069]/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+export function buildBlueskyPost(
+  options: BlueskyPostOptions,
+): BlueskyPostRecord {
+  if (!/^[A-Za-z0-9_-]{1,160}$/u.test(options.slug)) {
+    throw new Error("Invalid blog post slug for Bluesky syndication.");
+  }
+
+  const postUrl = `${SITE_ORIGIN}/blog/${encodeURIComponent(options.slug)}`;
+  const prefix = "🚀 New on the ARES Engineering Blog:\n";
+  const suffix = `\n\nRead more: ${postUrl}`;
+  const mandatory = `${prefix}${suffix}`;
+  const titleLimits = remainingLimits(mandatory);
+  const title =
+    truncateToLimits(
+      normalizeText(options.title) || "New ARES team update",
+      titleLimits.graphemes,
+      titleLimits.bytes,
+    ) || "ARES update";
+
+  let text = `${prefix}${title}${suffix}`;
+  const snippet = normalizeText(options.snippet);
+  if (snippet) {
+    const separator = "\n\n";
+    const withSeparator = `${prefix}${title}${separator}${suffix}`;
+    const snippetLimits = remainingLimits(withSeparator);
+    const boundedSnippet = truncateToLimits(
+      snippet,
+      snippetLimits.graphemes,
+      snippetLimits.bytes,
+    );
+    if (boundedSnippet)
+      text = `${prefix}${title}${separator}${boundedSnippet}${suffix}`;
+  }
+
+  const description = truncateToLimits(
+    snippet || "Read the latest update from ARES 23247.",
+    300,
+    1_000,
+  );
+
+  return {
+    text,
+    facets: createUrlFacet(text, postUrl),
+    embed: {
+      $type: "app.bsky.embed.external",
+      external: {
+        uri: postUrl,
+        title: truncateToLimits(title, 160, 1_000),
+        description,
+      },
+    },
+  };
+}
+
+function isBlueskySession(value: unknown): value is BlueskySession {
+  if (!value || typeof value !== "object") return false;
+  const session = value as Record<string, unknown>;
+  return (
+    typeof session.accessJwt === "string" &&
+    session.accessJwt.length > 0 &&
+    session.accessJwt.length <= 8_192 &&
+    typeof session.did === "string" &&
+    session.did.startsWith("did:") &&
+    session.did.length <= 512
+  );
+}
+
+function isPutRecordResponse(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const response = value as Record<string, unknown>;
+  return (
+    typeof response.uri === "string" &&
+    response.uri.startsWith("at://") &&
+    typeof response.cid === "string" &&
+    response.cid.length > 0
+  );
+}
+
+function recordKey(options: BlueskyPostOptions): string {
+  return `ares-${createHash("sha256")
+    .update(`aresweb-blog:${options.slug}:${options.version}`)
+    .digest("hex")
+    .slice(0, 40)}`;
+}
+
+async function postJson(
+  endpoint: string,
+  body: Record<string, unknown>,
+  authorization?: string,
+): Promise<Response> {
+  return fetch(`${BLUESKY_ORIGIN}/xrpc/${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(authorization ? { Authorization: `Bearer ${authorization}` } : {}),
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(OUTBOUND_TIMEOUT_MS),
+  });
+}
+
 /**
- * Posts a formatted announcement to Bluesky using AT Protocol REST APIs.
+ * Upserts a formatted announcement through the AT Protocol. A deterministic
+ * record key makes retries safe after ambiguous network failures.
  */
 export async function sendBlueskyPost(
   options: BlueskyPostOptions,
-  siteUrl = "https://aresfirst.org",
 ): Promise<boolean> {
   const { handle, appPassword } = getBlueskyCredentials();
-
   if (!appPassword) {
-    logger.warn("bluesky", "Bluesky syndication inactive: BLUESKY_APP_PASSWORD is not configured in Secret Manager.");
+    logger.warn(
+      "bluesky",
+      "Bluesky syndication inactive because its app password is not configured.",
+    );
     return false;
   }
 
-  const postUrl = `${siteUrl.replace(/\/+$/, "")}/blog/${encodeURIComponent(options.slug)}`;
-  const title = options.title.trim().slice(0, 160);
-  const snippet = (options.snippet || "").trim().slice(0, 140);
-  
-  // Format post text with UTF-8 safe limits (Bluesky limit: 300 graphemes)
-  const header = `🚀 New on the ARES Engineering Blog:\n${title}`;
-  const linkSection = `\n\nRead more on ${postUrl}`;
-  const availableSnippetLength = Math.max(0, 280 - (header.length + linkSection.length));
-  
-  const textBody = availableSnippetLength > 20 && snippet
-    ? `${header}\n\n${snippet.slice(0, availableSnippetLength)}...${linkSection}`
-    : `${header}${linkSection}`;
-
   try {
-    // Step 1: Create session
-    const sessionRes = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        identifier: handle,
-        password: appPassword,
-      }),
+    const record = buildBlueskyPost(options);
+    const createdAtMs = Date.parse(options.version);
+    if (!Number.isFinite(createdAtMs)) {
+      throw new Error("Invalid syndication version timestamp.");
+    }
+    const sessionResponse = await postJson("com.atproto.server.createSession", {
+      identifier: handle,
+      password: appPassword,
     });
-
-    if (!sessionRes.ok) {
-      const errorText = await sessionRes.text();
-      logger.error("bluesky", "Failed to authenticate with Bluesky API", {
-        status: sessionRes.status,
-        error: errorText,
+    if (!sessionResponse.ok) {
+      logger.error("bluesky", "Bluesky authentication failed", {
+        status: sessionResponse.status,
       });
       return false;
     }
 
-    const session = (await sessionRes.json()) as { accessJwt: string; did: string };
-    const facets = createUrlFacets(textBody, postUrl);
+    const sessionBody: unknown = await sessionResponse.json();
+    if (!isBlueskySession(sessionBody)) {
+      logger.error("bluesky", "Bluesky returned an invalid session response");
+      return false;
+    }
 
-    // Step 2: Create post record
-    const recordPayload: Record<string, unknown> = {
-      $type: "app.bsky.feed.post",
-      text: textBody,
-      createdAt: new Date().toISOString(),
-      facets,
-      embed: {
-        $type: "app.bsky.embed.external",
-        external: {
-          uri: postUrl,
-          title,
-          description: snippet || "Read the latest update from ARES 23247.",
+    const postResponse = await postJson(
+      "com.atproto.repo.putRecord",
+      {
+        repo: sessionBody.did,
+        collection: "app.bsky.feed.post",
+        rkey: recordKey(options),
+        validate: true,
+        record: {
+          $type: "app.bsky.feed.post",
+          ...record,
+          createdAt: new Date(createdAtMs).toISOString(),
         },
       },
-    };
-
-    const postRes = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.accessJwt}`,
-      },
-      body: JSON.stringify({
-        repo: session.did,
-        collection: "app.bsky.feed.post",
-        record: recordPayload,
-      }),
-    });
-
-    if (!postRes.ok) {
-      const errorText = await postRes.text();
-      logger.error("bluesky", "Failed to create Bluesky post record", {
-        status: postRes.status,
-        error: errorText,
+      sessionBody.accessJwt,
+    );
+    if (!postResponse.ok) {
+      logger.error("bluesky", "Bluesky post upsert failed", {
+        status: postResponse.status,
       });
       return false;
     }
 
-    logger.info("bluesky", "Successfully syndicated post to Bluesky", { slug: options.slug });
-    return true;
-  } catch (err) {
-    logger.error("bluesky", "Error during Bluesky syndication", {
+    const postBody: unknown = await postResponse.json();
+    if (!isPutRecordResponse(postBody)) {
+      logger.error("bluesky", "Bluesky returned an invalid post response");
+      return false;
+    }
+
+    logger.info("bluesky", "Syndicated a blog post to Bluesky", {
       slug: options.slug,
-      reason: err instanceof Error ? err.name : "unknown",
+    });
+    return true;
+  } catch (error) {
+    logger.error("bluesky", "Bluesky syndication failed", {
+      slug: options.slug,
+      reason: error instanceof Error ? error.name : "unknown",
     });
     return false;
   }

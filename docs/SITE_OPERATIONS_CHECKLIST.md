@@ -48,6 +48,15 @@ Manager:
 Confirm that the bot can access only the streams and actions it needs. Never
 publish or hard-code a Zulip join link.
 
+For Bluesky blog announcements, create a dedicated app password on the team
+Bluesky account and store both values in Google Secret Manager:
+
+- `BLUESKY_HANDLE`
+- `BLUESKY_APP_PASSWORD`
+
+Use an app password, never the account's primary password. The production
+deployment contract will fail closed until both Secret Manager values exist.
+
 ## 3. Confirm encryption and profile privacy
 
 - Confirm `ENCRYPTION_SECRET` is a strong Secret Manager value and has not

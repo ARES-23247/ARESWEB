@@ -7,12 +7,14 @@ deployed Firebase ruleset.
 ## Required secret controls
 
 Production Functions depend on independent Secret Manager values. Verify that
-both values are active before a deployment, and use the same commands when either
-credential must be rotated:
+all listed values are active before a deployment, and use the same commands when
+a credential must be rotated:
 
 ```text
 firebase functions:secrets:set GITHUB_PAT
 firebase functions:secrets:set PROFILE_SYNC_SECRET
+firebase functions:secrets:set BLUESKY_HANDLE
+firebase functions:secrets:set BLUESKY_APP_PASSWORD
 ```
 
 `GITHUB_PAT` should be a fine-grained token limited to the ARESWEB repository and
@@ -108,7 +110,8 @@ not inherit unrelated credentials:
   and Zulip bot secrets used for inquiry alerts and member provisioning.
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with only the Drive credential and quota secret.
-- `communicationsApi`: task, Zulip, webhook, and simulation routes, with only their four integration secrets.
+- `communicationsApi`: task, Zulip, webhook, simulation, and social
+  syndication routes, with only their six integration secrets.
 
 The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
@@ -130,7 +133,7 @@ The production access baseline is:
 | `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync, Zulip bot credentials |
 | `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
 | `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
-| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub and Zulip credentials                                       |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub, Zulip, and Bluesky credentials                             |
 | `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                                         |
 | `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                                        |
 | `web`                    | Firestore user                                                                                        | none                                                               |
