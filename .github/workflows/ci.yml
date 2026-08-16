@@ -297,8 +297,19 @@ jobs:
       - name: Switch Hosting routes and deploy verified rules
         run: pnpm exec firebase deploy --only hosting,firestore:rules,firestore:indexes,storage --project aresfirst-portal --non-interactive
 
-      - name: Verify canonical production health
-        run: node scripts/check-production-health.mjs --deployment-id "${{ github.sha }}"
+      - name: Verify deployed Firebase surface
+        run: >-
+          node scripts/check-production-health.mjs
+          --deployment-id "${{ github.sha }}"
+          --primary-origin "https://aresfirst-portal.web.app"
+
+      # Cloudflare intentionally rejects some GitHub-hosted runner IPs. Keep
+      # this probe visible without making an edge reputation decision override
+      # the strict Firebase deployment gate above. Google Cloud Monitoring is
+      # the authoritative continuous check for the canonical public domain.
+      - name: Report canonical domain reachability from GitHub runner
+        continue-on-error: true
+        run: curl --fail --silent --show-error --max-time 20 https://aresfirst.org/ > /dev/null
 
       - name: Record deployment summary
         run: |
@@ -308,4 +319,5 @@ jobs:
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Drift contract: build identity, 8 Functions, and 8 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Live health: 10 canonical/Hosting checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Live health: 12 strict Firebase surface checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Canonical domain: continuously checked by Google Cloud Monitoring" >> "$GITHUB_STEP_SUMMARY"

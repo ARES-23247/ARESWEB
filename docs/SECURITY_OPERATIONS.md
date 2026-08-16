@@ -220,6 +220,13 @@ at least two public checker regions fail for one minute or when the TLS
 certificate has fewer than 15 days remaining, and it sends both opened and
 closed notifications.
 
+The protected release workflow runs the complete route, response, metadata,
+404, and security-header contract against the Firebase Hosting origin. This
+avoids false deployment failures when Cloudflare intentionally rejects a
+GitHub-hosted runner IP. A best-effort canonical-domain probe remains visible in
+the workflow, while the multi-region uptime check above is authoritative for
+continuous `aresfirst.org` reachability and TLS monitoring.
+
 The same channel is linked to both active billing-account budgets: `$50 Monthly
 budget alert` and `BigQuery`. Default Billing IAM recipients remain enabled, so
 the explicit operations recipient supplements rather than replaces billing

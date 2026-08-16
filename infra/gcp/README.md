@@ -37,8 +37,12 @@ Google Cloud CLI, deploys the reviewed release, and then:
 3. verifies every Function runs as the dedicated account in its contract;
 4. verifies `allUsers` has `roles/run.invoker` only where `public` is true;
 5. verifies private scheduled services do not grant `allUsers` any role; and
-6. probes the canonical domain and Firebase Hosting origin for success routes,
-   raw metadata, true page/API 404s, sitemap behavior, and security headers.
+6. probes the Firebase Hosting origin for success routes, raw metadata, true
+   page/API 404s, sitemap behavior, and security headers; and
+7. reports canonical-domain reachability without allowing Cloudflare's
+   treatment of a GitHub-hosted runner IP to override that strict deployment
+   gate. The multi-region Google Cloud Monitoring uptime check remains the
+   authoritative continuous canonical-domain check.
 
 Unexpected infrastructure fails the deployment job for operator review. It is
 never automatically removed.
