@@ -240,7 +240,9 @@ function existingChannelIds(
 
 function postMetadata(service: string): Record<string, unknown> | undefined {
   if (service === "facebook") return { facebook: { type: "post" } };
-  if (service === "instagram") return { instagram: { type: "post" } };
+  if (service === "instagram") {
+    return { instagram: { type: "post", shouldShareToFeed: true } };
+  }
   return undefined;
 }
 
