@@ -58,7 +58,7 @@ describe("SEO", () => {
 
     const json = JSON.stringify(ORGANIZATION_SCHEMA);
     expect(json).toContain("https://github.com/ARES-23247");
-    expect(json).not.toContain("ARES23247");
+    expect(json).not.toContain("github.com/ARES23247");
     expect(json).not.toContain("foundingDate");
     expect(json).not.toContain("founder");
   });
@@ -68,8 +68,9 @@ describe("SEO", () => {
     expect(json).toContain('"name":"West Virginia"');
     expect(json).toContain("https://bsky.app/profile/ares23247.bsky.social");
     expect(json).toContain("https://www.tiktok.com/@ares.robotics.23247");
-    expect(json).toContain("https://x.com/ARESFTC");
+    expect(json).toContain("https://x.com/ARES23247");
     expect(json).toContain("https://www.linkedin.com/company/ares-23247");
+    expect(json).toContain("https://www.instagram.com/aresftc23247/");
   });
 
   it("marks search results noindex while keeping a clean canonical URL", async () => {

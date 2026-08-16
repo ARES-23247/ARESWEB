@@ -111,7 +111,8 @@ export const ORGANIZATION_SCHEMA = {
     `https://bsky.app/profile/${siteConfig.urls.bluesky}`,
     `https://www.tiktok.com/@${siteConfig.urls.tiktok}`,
     `https://x.com/${siteConfig.urls.twitter}`,
-    `https://www.linkedin.com/${siteConfig.urls.linkedin}`
+    `https://www.linkedin.com/${siteConfig.urls.linkedin}`,
+    `https://www.instagram.com/${siteConfig.urls.instagram}/`
   ]
 };
 
