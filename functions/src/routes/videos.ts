@@ -7,6 +7,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
 import { logger } from "../lib/logger";
 import { requireRouteParam } from "../middleware/validation";
+import { syndicatePublishedVideo } from "../lib/socialSyndication";
 
 const router = express.Router();
 const TEAM_UPLOADS_PLAYLIST_ID = "UUre4FN7UThyVd-biFk0n-Ig";
@@ -14,6 +15,10 @@ const SYNC_SOURCE = "youtube-playlist";
 const MAX_PLAYLIST_PAGES = 20;
 const BATCH_SIZE = 400;
 const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+/** YouTube uploads older than this are backfill, not announcements. */
+const SYNC_ANNOUNCE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+/** Bound on announcements per sync so playlist repairs never flood channels. */
+const SYNC_ANNOUNCE_MAX_POSTS = 3;
 
 type VideoType = "video" | "short";
 type VideoStatus = "draft" | "published";
@@ -31,6 +36,7 @@ interface VideoRecord {
   archivedAt?: unknown;
   syncSource?: unknown;
   sourcePlaylistId?: unknown;
+  syndicatedAt?: unknown;
 }
 
 interface VideoInput {
@@ -212,6 +218,40 @@ router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * Announces a video that just transitioned to published. The syndicatedAt
+ * marker is written before announcing so a retried or re-saved edit never
+ * double-posts; every channel links back to the on-site video hub.
+ */
+async function announceNewlyPublishedVideo(
+  ref: FirebaseFirestore.DocumentReference,
+  docId: string,
+  before: FirebaseFirestore.DocumentData | undefined,
+  record: { title: string; description: string; thumbnailUrl: string; status: string; updatedAt: string },
+): Promise<void> {
+  if (record.status !== "published") return;
+  if (before?.status === "published" || before?.syndicatedAt) return;
+  await ref.update({ syndicatedAt: record.updatedAt });
+  try {
+    const result = await syndicatePublishedVideo({
+      title: record.title,
+      docId,
+      version: record.updatedAt,
+      snippet: record.description,
+      thumbnail: record.thumbnailUrl,
+    });
+    logger.info("videos", "Announced a published video on social channels", {
+      docId,
+      result,
+    });
+  } catch (error) {
+    logger.error("videos", "Video social announcement failed", {
+      docId,
+      reason: error instanceof Error ? error.name : "unknown",
+    });
+  }
+}
+
 router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
   const input = parseInput(req.body as VideoInput);
   const id = `video_${input.videoId}`;
@@ -229,6 +269,7 @@ router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
     archivedAt: null,
   };
   await ref.set(record, { merge: true });
+  await announceNewlyPublishedVideo(ref, id, existing.data(), record);
   res.status(201).json({ success: true, video: toVideoDto(id, record) });
 }));
 
@@ -247,6 +288,7 @@ router.patch("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
     updatedAt: new Date().toISOString(),
   };
   await ref.set(updated, { merge: true });
+  await announceNewlyPublishedVideo(ref, id, snapshot.data(), updated);
   res.json({ success: true, video: toVideoDto(id, { ...snapshot.data(), ...updated }) });
 }));
 
@@ -352,7 +394,30 @@ router.post(
     });
   }
 
+  // Snapshot the pre-sync library so only genuinely new uploads are announced.
   const collection = adminDb.collection("videos");
+  const announceable: Array<{ docId: string; title: string; description: string; thumbnailUrl: string; createdAt: string }> = [];
+  const syncCutoff = Date.now() - SYNC_ANNOUNCE_MAX_AGE_MS;
+  if (records.size > 0) {
+    const preSync = await collection.where("syncSource", "==", SYNC_SOURCE).limit(1_000).get();
+    const preSyncDocs = new Map(preSync.docs.map((doc) => [doc.id, doc.data()]));
+    for (const [id, data] of records) {
+      const before = preSyncDocs.get(id);
+      if (before && (before.syndicatedAt || before.status === "published")) continue;
+      const createdAtMs = Date.parse(String(data.createdAt));
+      if (!Number.isFinite(createdAtMs) || createdAtMs < syncCutoff) continue;
+      data.syndicatedAt = syncedAt;
+      announceable.push({
+        docId: id,
+        title: String(data.title || ""),
+        description: String(data.description || ""),
+        thumbnailUrl: String(data.thumbnailUrl || ""),
+        createdAt: String(data.createdAt || syncedAt),
+      });
+    }
+    announceable.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
   await commitBatches([...records].map(([id, data]) => (batch) => batch.set(collection.doc(id), data, { merge: true })));
 
   let archivedCount = 0;
@@ -372,6 +437,33 @@ router.post(
     }
     await commitBatches(archiveOperations);
     archivedCount = archiveOperations.length;
+  }
+
+  for (const video of announceable.slice(-SYNC_ANNOUNCE_MAX_POSTS)) {
+    try {
+      const result = await syndicatePublishedVideo({
+        title: video.title,
+        docId: video.docId,
+        version: syncedAt,
+        snippet: video.description,
+        thumbnail: video.thumbnailUrl,
+      });
+      logger.info("videos", "Announced a synced YouTube upload on social channels", {
+        docId: video.docId,
+        result,
+      });
+    } catch (error) {
+      logger.error("videos", "Sync announcement failed", {
+        docId: video.docId,
+        reason: error instanceof Error ? error.name : "unknown",
+      });
+    }
+  }
+  if (announceable.length > SYNC_ANNOUNCE_MAX_POSTS) {
+    logger.warn("videos", "Capped sync announcements", {
+      announceable: announceable.length,
+      announced: SYNC_ANNOUNCE_MAX_POSTS,
+    });
   }
 
   logger.info("videos", "YouTube sync completed", {

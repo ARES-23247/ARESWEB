@@ -47,6 +47,25 @@ describe("Bluesky AT Protocol syndication", () => {
     });
   });
 
+  it("builds a video announcement that links to the on-site hub", () => {
+    const record = buildBlueskyPost({
+      title: "Season Reveal",
+      slug: "video_dQw4w9WgXcQ",
+      version: "2026-08-16T00:00:00.000Z",
+      snippet: "Watch the new robot in action.",
+      kind: "video",
+    });
+    expect(record.text).toContain("🎬 New ARES video:");
+    expect(record.text).toContain("Watch: https://aresfirst.org/videos");
+    expect(record.text).not.toContain("/blog/");
+    expect(record.facets).toEqual([
+      expect.objectContaining({
+        features: [expect.objectContaining({ uri: "https://aresfirst.org/videos" })],
+      }),
+    ]);
+    expect(record.embed.external.uri).toBe("https://aresfirst.org/videos");
+  });
+
   it("authenticates and idempotently upserts a validated post", async () => {
     process.env.BLUESKY_APP_PASSWORD = "test-app-password-123";
     const fetchMock = vi

@@ -80,6 +80,7 @@ export interface BufferPostOptions {
   slug: string;
   snippet?: string;
   thumbnail?: string;
+  kind?: "blog" | "video";
 }
 
 export interface BuiltBufferPost {
@@ -149,11 +150,14 @@ export function buildBufferPost(options: BufferPostOptions): BuiltBufferPost {
     throw new Error("Invalid blog post slug for Buffer syndication.");
   }
 
-  const postUrl = `${SITE_ORIGIN}/blog/${encodeURIComponent(options.slug)}`;
+  const kind = options.kind ?? "blog";
+  const postUrl = kind === "video"
+    ? `${SITE_ORIGIN}/videos`
+    : `${SITE_ORIGIN}/blog/${encodeURIComponent(options.slug)}`;
   const title = normalizeText(options.title) || "New ARES team update";
   const snippet = normalizeText(options.snippet);
-  const prefix = `🚀 ${truncateGraphemes(title, 120)}`;
-  const suffix = `\n\nRead more: ${postUrl}`;
+  const prefix = `${kind === "video" ? "🎬" : "🚀"} ${truncateGraphemes(title, 120)}`;
+  const suffix = kind === "video" ? `\n\nWatch: ${postUrl}` : `\n\nRead more: ${postUrl}`;
   const available = MAX_POST_GRAPHEMES - graphemeLength(prefix + suffix) - 2;
   const boundedSnippet = truncateGraphemes(snippet, available);
   const text = boundedSnippet

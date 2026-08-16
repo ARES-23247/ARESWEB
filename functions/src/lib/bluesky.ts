@@ -9,11 +9,15 @@ const MAX_POST_GRAPHEMES = 300;
 const MAX_POST_BYTES = 3_000;
 const TID_ALPHABET = "234567abcdefghijklmnopqrstuvwxyz";
 
+export type SyndicationKind = "blog" | "video";
+
 export interface BlueskyPostOptions {
   title: string;
+  /** Blog slug or video document ID; namespaced per kind in the record key. */
   slug: string;
   version: string;
   snippet?: string;
+  kind?: SyndicationKind;
 }
 
 interface BlueskySession {
@@ -136,9 +140,12 @@ export function buildBlueskyPost(
     throw new Error("Invalid blog post slug for Bluesky syndication.");
   }
 
-  const postUrl = `${SITE_ORIGIN}/blog/${encodeURIComponent(options.slug)}`;
-  const prefix = "🚀 New on the ARES Engineering Blog:\n";
-  const suffix = `\n\nRead more: ${postUrl}`;
+  const kind = options.kind ?? "blog";
+  const postUrl = kind === "video"
+    ? `${SITE_ORIGIN}/videos`
+    : `${SITE_ORIGIN}/blog/${encodeURIComponent(options.slug)}`;
+  const prefix = kind === "video" ? "🎬 New ARES video:\n" : "🚀 New on the ARES Engineering Blog:\n";
+  const suffix = kind === "video" ? `\n\nWatch: ${postUrl}` : `\n\nRead more: ${postUrl}`;
   const mandatory = `${prefix}${suffix}`;
   const titleLimits = remainingLimits(mandatory);
   const title =
@@ -210,7 +217,7 @@ function isPutRecordResponse(value: unknown): boolean {
 function recordKey(options: BlueskyPostOptions, createdAtMs: number): string {
   const clockId =
     createHash("sha256")
-      .update(`aresweb-blog:${options.slug}:${options.version}`)
+      .update(`aresweb-${options.kind ?? "blog"}:${options.slug}:${options.version}`)
       .digest()
       .readUInt16BE(0) & 0x03ff;
   let value =

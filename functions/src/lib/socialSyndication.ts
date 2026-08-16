@@ -15,6 +15,7 @@ export interface PublishedPostPayload {
   author?: string;
   category?: string;
   thumbnail?: string;
+  kind?: "blog" | "video";
 }
 
 function boundedPlainText(
@@ -39,6 +40,7 @@ function escapeZulipMarkdown(value: string): string {
 async function deliverToZulip(
   post: PublishedPostPayload,
   postUrl: string,
+  label = "Blog",
 ): Promise<boolean> {
   const title = boundedPlainText(post.title, "New Blog Post", 160);
   const author = boundedPlainText(post.author, "ARES Team", 80);
@@ -57,11 +59,11 @@ async function deliverToZulip(
     ].join("\n\n");
     const delivered = await sendZulipMessage(
       "announcements",
-      `Blog: ${category} — ${title}`.slice(0, 200),
+      `${label}: ${category} — ${title}`.slice(0, 200),
       zulipContent,
     );
     if (delivered) {
-      logger.info("socialSyndication", "Published blog announcement to Zulip", {
+      logger.info("socialSyndication", "Published syndication announcement to Zulip", {
         slug: post.slug,
       });
     } else {
@@ -94,11 +96,12 @@ async function deliverToBluesky(post: PublishedPostPayload): Promise<boolean> {
         "Read our latest team update on the ARES Robotics engineering blog.",
         500,
       ),
+      kind: post.kind,
     });
     if (delivered) {
       logger.info(
         "socialSyndication",
-        "Published blog announcement to Bluesky",
+        "Published syndication announcement to Bluesky",
         { slug: post.slug },
       );
     }
@@ -123,9 +126,10 @@ async function deliverToBuffer(post: PublishedPostPayload): Promise<boolean> {
         500,
       ),
       thumbnail: post.thumbnail,
+      kind: post.kind,
     });
     if (delivered) {
-      logger.info("socialSyndication", "Queued blog announcement in Buffer", {
+      logger.info("socialSyndication", "Queued syndication announcement in Buffer", {
         slug: post.slug,
       });
     }
@@ -160,6 +164,74 @@ export async function syndicatePublishedPost(
       async (channel): Promise<readonly [SyndicationChannel, boolean]> => [
         channel,
         await deliverToChannel(channel, post, postUrl),
+      ],
+    ),
+  );
+
+  return Object.fromEntries(deliveries) as SyndicationResult;
+}
+
+export interface PublishedVideoPayload {
+  title: string;
+  /** The videos collection document ID (e.g. video_dQw4w9WgXcQ). */
+  docId: string;
+  /** Last-updated timestamp; makes Bluesky record keys deterministic per publish. */
+  version: string;
+  snippet?: string;
+  thumbnail?: string;
+}
+
+async function deliverVideoToChannel(
+  channel: SyndicationChannel,
+  video: PublishedVideoPayload,
+  videoUrl: string,
+): Promise<boolean> {
+  if (channel === "zulip") {
+    return deliverToZulip(
+      {
+        title: video.title,
+        slug: video.docId,
+        version: video.version,
+        snippet: video.snippet,
+        category: "Video",
+      },
+      videoUrl,
+      "Video",
+    );
+  }
+  if (channel === "bluesky") {
+    return deliverToBluesky({
+      title: video.title,
+      slug: video.docId,
+      version: video.version,
+      snippet: video.snippet,
+      kind: "video",
+    });
+  }
+  return deliverToBuffer({
+    title: video.title,
+    slug: video.docId,
+    snippet: video.snippet,
+    thumbnail: video.thumbnail,
+    kind: "video",
+  });
+}
+
+/**
+ * Announces a newly published video on every enabled channel. Each post
+ * carries the on-site video hub URL so social traffic lands on aresfirst.org.
+ */
+export async function syndicatePublishedVideo(
+  video: PublishedVideoPayload,
+  channels: readonly SyndicationChannel[] = SYNDICATION_CHANNELS,
+): Promise<SyndicationResult> {
+  const selectedChannels = new Set(channels);
+  const videoUrl = "https://aresfirst.org/videos";
+  const deliveries = await Promise.all(
+    SYNDICATION_CHANNELS.filter((channel) => selectedChannels.has(channel)).map(
+      async (channel): Promise<readonly [SyndicationChannel, boolean]> => [
+        channel,
+        await deliverVideoToChannel(channel, video, videoUrl),
       ],
     ),
   );

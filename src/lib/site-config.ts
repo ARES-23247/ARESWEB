@@ -14,6 +14,9 @@ export const siteConfig = {
     tiktok: "ares.robotics.23247",
     twitter: "ARESFTC",
     linkedin: "company/ares-23247",
+    instagram: "ares23247",
+    youtube: "@ARESFTC",
+    facebook: "ARES23247",
     onshape: "https://cad.onshape.com/documents?nodeId=681f8b6764dc7e001a56cb6e&resourceType=resourcecompanyowner",
     toa: "https://theorangealliance.org/teams/23247"
   },

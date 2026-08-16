@@ -30,6 +30,30 @@ describe("Buffer social syndication", () => {
     delete process.env.BUFFER_API_KEY;
   });
 
+  it("builds a video announcement with the hub link and thumbnail", () => {
+    const built = buildBufferPost({
+      title: "Season Reveal",
+      slug: "video_dQw4w9WgXcQ",
+      snippet: "Watch the new robot in action.",
+      thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      kind: "video",
+    });
+    expect(built.text).toContain("🎬 Season Reveal");
+    expect(built.text).toContain("Watch: https://aresfirst.org/videos");
+    expect(built.text).not.toContain("/blog/");
+    expect(built.imageUrl).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+  });
+
+  it("never truncates the video link for long titles and snippets", () => {
+    const built = buildBufferPost({
+      title: "T".repeat(120),
+      slug: "video_dQw4w9WgXcQ",
+      snippet: "x".repeat(600),
+      kind: "video",
+    });
+    expect(built.text.endsWith("Watch: https://aresfirst.org/videos")).toBe(true);
+  });
+
   it("fails safely when the API key is absent or explicitly disabled", async () => {
     await expect(sendBufferPosts(post)).resolves.toBe(false);
     process.env.BUFFER_API_KEY = "disabled";
