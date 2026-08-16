@@ -119,7 +119,6 @@ describe("production deployment contract", () => {
       contract.functions.find(({ id }) => id === "communicationsApi")?.secrets,
     ).toEqual([
       "BLUESKY_APP_PASSWORD",
-      "BLUESKY_HANDLE",
       "GITHUB_PAT",
       "ZULIP_API_KEY",
       "ZULIP_BOT_EMAIL",

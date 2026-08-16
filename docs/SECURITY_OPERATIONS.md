@@ -13,7 +13,6 @@ a credential must be rotated:
 ```text
 firebase functions:secrets:set GITHUB_PAT
 firebase functions:secrets:set PROFILE_SYNC_SECRET
-firebase functions:secrets:set BLUESKY_HANDLE
 firebase functions:secrets:set BLUESKY_APP_PASSWORD
 ```
 
@@ -111,7 +110,7 @@ not inherit unrelated credentials:
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with only the Drive credential and quota secret.
 - `communicationsApi`: task, Zulip, webhook, simulation, and social
-  syndication routes, with only their six integration secrets.
+  syndication routes, with only their five integration secrets.
 
 The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,

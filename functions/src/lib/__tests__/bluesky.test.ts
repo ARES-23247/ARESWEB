@@ -27,7 +27,6 @@ describe("Bluesky AT Protocol syndication", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    delete process.env.BLUESKY_HANDLE;
     delete process.env.BLUESKY_APP_PASSWORD;
   });
 
@@ -41,16 +40,14 @@ describe("Bluesky AT Protocol syndication", () => {
       handle: "ares23247.bsky.social",
       appPassword: "",
     });
-    process.env.BLUESKY_HANDLE = " team.example.com ";
     process.env.BLUESKY_APP_PASSWORD = " app-password ";
     expect(getBlueskyCredentials()).toEqual({
-      handle: "team.example.com",
+      handle: "ares23247.bsky.social",
       appPassword: "app-password",
     });
   });
 
   it("authenticates and idempotently upserts a validated post", async () => {
-    process.env.BLUESKY_HANDLE = "ares23247.bsky.social";
     process.env.BLUESKY_APP_PASSWORD = "test-app-password-123";
     const fetchMock = vi
       .fn()

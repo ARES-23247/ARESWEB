@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { logger } from "./logger";
 
 const BLUESKY_ORIGIN = "https://bsky.social";
+const BLUESKY_HANDLE = "ares23247.bsky.social";
 const SITE_ORIGIN = "https://aresfirst.org";
 const OUTBOUND_TIMEOUT_MS = 10_000;
 const MAX_POST_GRAPHEMES = 300;
@@ -42,12 +43,11 @@ export function getBlueskyCredentials(): {
   handle: string;
   appPassword: string;
 } {
-  const configuredHandle = (process.env.BLUESKY_HANDLE || "").trim();
   const configuredPassword = (process.env.BLUESKY_APP_PASSWORD || "").trim();
   const disabledValues = new Set(["disabled", "none"]);
 
   return {
-    handle: configuredHandle || "ares23247.bsky.social",
+    handle: BLUESKY_HANDLE,
     appPassword:
       configuredPassword &&
       !disabledValues.has(configuredPassword.toLowerCase())
