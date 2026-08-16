@@ -38,6 +38,7 @@ const STATIC_URLS = [
   { loc: `${BASE_URL}/seasons`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/sponsors`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/store`, changefreq: "monthly", priority: "0.60" },
+  { loc: `${BASE_URL}/tournaments`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/tech-stack`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.50" }
 ] as const;

@@ -45,6 +45,24 @@
           ]
         },
         {
+          "source": "/dashboard{,/**}",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "/tasks",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
           "source": "/api/og",
           "headers": [
             {
@@ -235,6 +253,10 @@
         {
           "source": "/robots/**",
           "function": "web"
+        },
+        {
+          "source": "/tournaments",
+          "destination": "/prerender/tournaments.html"
         },
         {
           "source": "/dashboard{,/**}",
