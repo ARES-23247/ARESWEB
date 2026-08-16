@@ -14,6 +14,7 @@ export const API_ROUTE_GROUPS = {
     "/api/announcements", "/api/calendar", "/api/sponsors", "/api/outreach", "/api/tournaments",
     "/api/robots", "/api/store", "/api/finance", "/api/reference",
     "/api/og", "/sitemap.xml", "/api/sitemap.xml",
+    "/feed.xml", "/api/feed.xml",
   ],
   core: ["/api/inquiries", "/api/profiles"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
@@ -29,7 +30,7 @@ export const FUNCTION_SECRET_BINDINGS = {
     "GOOGLE_PHOTOS_REFRESH_TOKEN", "GEMINI_API_KEY", "YOUTUBE_API_KEY",
   ],
   driveApi: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN"],
-  communicationsApi: ["GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN"],
+  communicationsApi: ["GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN", "BLUESKY_APP_PASSWORD"],
 } as const;
 
 /**

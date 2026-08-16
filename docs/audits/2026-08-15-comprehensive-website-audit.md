@@ -85,6 +85,12 @@ defects.
   standard.
 - **Acceptance test**: `pnpm --filter functions test:coverage` reports simulations.ts
   ≥85% lines and 100% functions.
+- **Status**: **Remediated 2026-08-16.** Added eleven tests covering the gist-creation
+  route (success, defaults, empty file map, missing PAT, upstream rejection), the retired
+  DELETE endpoint, the legacy-path fallback and 404 branches of GET /:id, the 20-character
+  gist ID format, and gist-not-found. simulations.ts now reports 100% lines / 100%
+  functions (91% branches), and a per-file threshold in `functions/vitest.config.mts`
+  locks the 85/100 floor. Verified with the full functions coverage gate and lint.
 
 ### B2. Public raw Firestore read of `robots` bypasses DTO normalization — Low / Inference
 

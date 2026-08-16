@@ -5,6 +5,12 @@ import { Response, NextFunction } from "express";
 import { adminAuth, adminDb } from "../../lib/firebase-admin";
 
 // Mock Firebase Admin
+// vi.mock factories are hoisted above ordinary consts, so the shared link-path
+// mocks must come from vi.hoisted to be initialized before the factory runs.
+const { mockLinkWhereGet, mockLinkBatchCommit } = vi.hoisted(() => ({
+  mockLinkWhereGet: vi.fn(),
+  mockLinkBatchCommit: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("../../lib/firebase-admin", () => {
   const mockGet = vi.fn();
   const mockSet = vi.fn();
@@ -18,6 +24,14 @@ vi.mock("../../lib/firebase-admin", () => {
           get: mockGet,
           set: mockSet,
         }),
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({ get: mockLinkWhereGet }),
+        }),
+      }),
+      batch: vi.fn().mockReturnValue({
+        set: vi.fn(),
+        delete: vi.fn(),
+        commit: mockLinkBatchCommit,
       }),
     },
   };
@@ -115,6 +129,27 @@ describe("Auth Middleware", () => {
       const err = vi.mocked(next).mock.calls[0][0] as ApiError;
       expect(err.status).toBe(403);
       expect(err.message).toBe("Forbidden: User not authorized");
+    });
+
+    it("should link a pre-authorized record by verified email and retry", async () => {
+      req.headers!.authorization = "Bearer admin-token";
+      vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({
+        uid: "google-uid-1",
+        email: "New@Team.org",
+        email_verified: true,
+      } as any);
+      const mockGet = adminDb.collection("").doc("").get;
+      vi.mocked(mockGet)
+        .mockResolvedValueOnce({ exists: false } as any)
+        .mockResolvedValueOnce({ exists: true, data: () => ({ role: "admin" }) } as any);
+      mockLinkWhereGet.mockResolvedValue({
+        docs: [{ id: "generated-invite-id", data: () => ({ email: "new@team.org", role: "admin", isDeleted: 0 }), ref: {} }],
+      });
+
+      await ensureAdmin(req as AuthenticatedRequest, res as Response, next);
+      expect(mockLinkBatchCommit).toHaveBeenCalled();
+      expect(req.user).toEqual({ uid: "google-uid-1", email: "New@Team.org", email_verified: true });
+      expect(next).toHaveBeenCalledWith();
     });
 
     it("should return 403 if user exists but has insufficient privileges", async () => {

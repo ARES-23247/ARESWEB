@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { adminAuth, adminDb } from "../lib/firebase-admin";
+import { linkAuthorizedUserByEmail } from "../lib/linkAuthorizedUser";
 import { ApiError } from "./errorHandler";
 import { logger } from "../lib/logger";
 
@@ -55,10 +56,27 @@ export async function ensureAuth(req: AuthenticatedRequest, _res: Response, next
   }
 }
 
+/**
+ * Loads the authorization document for a UID. When the document is missing,
+ * attempts to link a pre-authorized record (keyed by a generated ID before the
+ * user first signed in) by verified email, then retries the load once.
+ */
+async function loadAuthorizationDoc(decodedToken: DecodedIdToken) {
+  const ref = adminDb.collection("authorized_users").doc(decodedToken.uid);
+  const snapshot = await ref.get();
+  if (snapshot.exists) return snapshot;
+  const linked = await linkAuthorizedUserByEmail({
+    uid: decodedToken.uid,
+    email: decodedToken.email,
+    emailVerified: decodedToken.email_verified,
+  });
+  return linked ? await ref.get() : snapshot;
+}
+
 export async function ensureAdmin(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   try {
     const decodedToken = await extractAndVerifyToken(req);
-    const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
+    const userDoc = await loadAuthorizationDoc(decodedToken);
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
     }
@@ -83,7 +101,7 @@ export async function ensureTeamMember(req: AuthenticatedRequest, _res: Response
       return;
     }
     const decodedToken = await extractAndVerifyToken(req);
-    const userDoc = await adminDb.collection("authorized_users").doc(decodedToken.uid).get();
+    const userDoc = await loadAuthorizationDoc(decodedToken);
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
     }

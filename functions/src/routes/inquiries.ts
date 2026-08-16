@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb, adminAuth } from "../lib/firebase-admin";
-import { encrypt, decrypt, getEncryptionSecret } from "../lib/crypto";
+import { encrypt, decrypt, getEncryptionSecret, DECRYPTION_FAILED } from "../lib/crypto";
 import { sendZulipAlert } from "../lib/zulip";
 import { ensureAdmin, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler, maskEmail, maskName } from "../lib/utils";
@@ -126,12 +126,13 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
     const maskedName = maskName(name);
     const maskedEmail = maskEmail(email);
 
-    const metadataMessage = typeof metadata?.message === "string" ? metadata.message : "";
+    // The applicant's free-text message can contain PII they typed themselves;
+    // keep it in the encrypted record only and point reviewers at the Command
+    // Center instead of forwarding it into Zulip retention.
     const messageBody = `**Name:** ${maskedName}
 **Email:** ${maskedEmail}
 **Type:** ${type}
-**Message:** ${metadataMessage ? (metadataMessage.length > 80 ? metadataMessage.substring(0, 80) + "..." : metadataMessage) : "(no message payload)"}
-[Open Command Center to view applicant details](https://aresfirst.org/dashboard)`;
+[Open Command Center to review the applicant's message](https://aresfirst.org/dashboard)`;
 
     // Await Zulip Sync
     await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);
@@ -303,10 +304,13 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   let name = data.name;
   let email = data.email;
 
+  // Malformed ciphertext fails closed inside decrypt() and returns the
+  // sentinel; never pre-authorize an account built from undecrypted values.
   try {
     if (name && name.includes(":")) {
       name = await decrypt(name, secret);
     }
+    if (name === DECRYPTION_FAILED) throw new Error("sentinel");
   } catch {
     throw new ApiError(500, "Failed to decrypt applicant name.");
   }
@@ -315,6 +319,7 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     if (email && email.includes(":")) {
       email = await decrypt(email, secret);
     }
+    if (email === DECRYPTION_FAILED) throw new Error("sentinel");
   } catch {
     throw new ApiError(500, "Failed to decrypt applicant email.");
   }

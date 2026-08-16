@@ -65,9 +65,12 @@ export async function encrypt(text: string, secret: string): Promise<string> {
   return `${saltHex}:${ivHex}:${cipherHex}`;
 }
 
+export const DECRYPTION_FAILED = "[Decryption Failed]";
+const HEX_SEGMENT = /^[0-9a-f]+$/i;
+
 export async function decrypt(encryptedText: string, secret: string): Promise<string> {
   if (!encryptedText || !encryptedText.includes(":")) return encryptedText;
-  
+
   try {
     const parts = encryptedText.split(":");
     let saltHex: string | undefined;
@@ -79,25 +82,34 @@ export async function decrypt(encryptedText: string, secret: string): Promise<st
     } else if (parts.length === 2) {
       [ivHex, cipherHex] = parts;
     } else {
-      return encryptedText;
+      // Structurally invalid ciphertext must fail closed: returning the raw
+      // input would surface unverified data as if it were decrypted plaintext.
+      logger.warn("crypto", "Rejected a malformed encrypted value");
+      return DECRYPTION_FAILED;
     }
 
-    if (!ivHex || !cipherHex) return encryptedText;
-    
+    const validHex = (value: string, evenLength = false) =>
+      HEX_SEGMENT.test(value) && value.length > 0 && (!evenLength || value.length % 2 === 0);
+
+    if (!validHex(ivHex, true) || !validHex(cipherHex) || (saltHex !== undefined && !validHex(saltHex, true))) {
+      logger.warn("crypto", "Rejected a malformed encrypted value");
+      return DECRYPTION_FAILED;
+    }
+
     const iv = new Uint8Array(ivHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
     const ciphertext = new Uint8Array(cipherHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
-    
+
     const key = await getCryptoKey(secret, saltHex);
-    
+
     const decrypted = await subtle.decrypt(
       { name: "AES-GCM", iv: iv },
       key,
       ciphertext
     );
-    
+
     return new TextDecoder().decode(decrypted);
   } catch (err) {
     logger.error("crypto", "Decryption failed", err);
-    return "[Decryption Failed]";
+    return DECRYPTION_FAILED;
   }
 }

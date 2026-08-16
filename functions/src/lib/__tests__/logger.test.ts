@@ -32,4 +32,13 @@ describe("redacting functions logger", () => {
     expect(output).toContain('"type":"Error"');
     expect(output).not.toContain("student@example.com");
   });
+
+  it("redacts phone-shaped digit runs in free text while preserving dates", () => {
+    logger.warn("test", "Caller left a number: 555-867-5309 and +1 (304) 555-0100 on 2026-08-16");
+
+    const output = vi.mocked(console.warn).mock.calls[0][0] as string;
+    expect(output).not.toContain("555-867-5309");
+    expect(output).not.toContain("(304) 555-0100");
+    expect(output).toContain("2026-08-16");
+  });
 });

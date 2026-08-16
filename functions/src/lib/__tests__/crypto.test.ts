@@ -38,4 +38,15 @@ describe("Crypto PII module", () => {
     const decrypted = await decrypt("a:b", secret);
     expect(decrypted).toBe("[Decryption Failed]");
   });
+
+  it("should fail closed on structurally malformed ciphertext", async () => {
+    for (const malformed of ["::::", "a:b:c:d", "encrypted:alice@team.org", "12:34:", ":abcdef"]) {
+      await expect(decrypt(malformed, secret)).resolves.toBe("[Decryption Failed]");
+    }
+  });
+
+  it("should fail closed on non-hex ciphertext segments", async () => {
+    await expect(decrypt("zz:zz:zz", secret)).resolves.toBe("[Decryption Failed]");
+    await expect(decrypt("aaff:abcd1234:not-hex-at-all", secret)).resolves.toBe("[Decryption Failed]");
+  });
 });

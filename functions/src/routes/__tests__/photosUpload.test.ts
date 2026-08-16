@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockGet, mockSet, mockUpdate, mockSubSet, mockSubDelete,
-  mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockCollection,
+  mockBatchUpdate, mockBatchSet, mockBatchDelete, mockBatchCommit, mockSave, mockCollection,
 } = vi.hoisted(() => {
   const mockGet = vi.fn();
   const mockSet = vi.fn();
@@ -11,6 +11,7 @@ const {
   const mockSubDelete = vi.fn();
   const mockBatchUpdate = vi.fn();
   const mockBatchSet = vi.fn();
+  const mockBatchDelete = vi.fn();
   const mockBatchCommit = vi.fn();
   const mockSave = vi.fn();
   const mockDoc = vi.fn((id: string) => ({
@@ -29,7 +30,7 @@ const {
   const mockCollection = vi.fn(() => ({ ...mockQuery, doc: mockDoc }));
   return {
     mockGet, mockSet, mockUpdate, mockSubSet, mockSubDelete,
-    mockBatchUpdate, mockBatchSet, mockBatchCommit, mockSave, mockCollection,
+    mockBatchUpdate, mockBatchSet, mockBatchDelete, mockBatchCommit, mockSave, mockCollection,
   };
 });
 
@@ -37,7 +38,7 @@ vi.mock("../../lib/firebase-admin", () => ({
   adminFieldValue: { increment: (value: number) => ({ increment: value }) },
   adminDb: {
     collection: mockCollection,
-    batch: vi.fn(() => ({ update: mockBatchUpdate, set: mockBatchSet, commit: mockBatchCommit })),
+    batch: vi.fn(() => ({ update: mockBatchUpdate, set: mockBatchSet, delete: mockBatchDelete, commit: mockBatchCommit })),
   },
   adminStorage: {
     bucket: vi.fn(() => ({
@@ -211,11 +212,14 @@ describe("Photos upload route", () => {
       });
     const res = response();
     await handler()({ body: imageBody({ albumId: "new-album" }) }, res);
-    expect(mockBatchUpdate).toHaveBeenCalled();
-    expect(mockBatchSet).toHaveBeenCalled();
-    expect(mockBatchCommit).toHaveBeenCalled();
-    expect(mockUpdate).toHaveBeenCalledTimes(2);
-    expect(mockSubDelete).toHaveBeenCalled();
+    // Photo move, new-album copy, both album counts, and the old-album
+    // subcollection delete must all live in a single committed batch.
+    expect(mockBatchUpdate).toHaveBeenCalledTimes(3);
+    expect(mockBatchSet).toHaveBeenCalledTimes(1);
+    expect(mockBatchDelete).toHaveBeenCalledTimes(1);
+    expect(mockBatchCommit).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockSubDelete).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ cached: true, photo: expect.objectContaining({ albumId: "new-album" }) }));
   });
 

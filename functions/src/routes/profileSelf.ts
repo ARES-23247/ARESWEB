@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
-import { decrypt, encrypt, getEncryptionSecret } from "../lib/crypto";
+import { decrypt, encrypt, getEncryptionSecret, DECRYPTION_FAILED } from "../lib/crypto";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ensureAdmin, ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
@@ -135,7 +135,7 @@ async function decryptPrivateText(value: unknown, secret: string, field: string)
   if (typeof value !== "string" || !value) return "";
   if (!isEncryptedValue(value)) return value.trim();
   const plaintext = await decrypt(value, secret);
-  if (plaintext === "[Decryption Failed]") {
+  if (plaintext === DECRYPTION_FAILED) {
     logger.error("profiles", "Could not decrypt a private profile field", { field });
     throw new ApiError(500, "Could not read private profile details. Please contact an administrator.");
   }

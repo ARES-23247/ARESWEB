@@ -1,42 +1,59 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendZulipMessageMock = vi.fn();
+const sendBlueskyPostMock = vi.fn();
+
 vi.mock("../zulip", () => ({
   sendZulipMessage: (...args: unknown[]) => sendZulipMessageMock(...args),
 }));
 
+vi.mock("../bluesky", () => ({
+  sendBlueskyPost: (...args: unknown[]) => sendBlueskyPostMock(...args),
+}));
+
 import { syndicatePublishedPost } from "../socialSyndication";
+
+const post = {
+  title: "Championship Victory",
+  slug: "championship-victory",
+  version: "2026-08-14T20:00:00.000Z",
+  snippet: "We won the state finals!",
+  author: "CircuitFox",
+  category: "Competitions",
+};
 
 describe("socialSyndication", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sendZulipMessageMock.mockResolvedValue(true);
+    sendBlueskyPostMock.mockResolvedValue(true);
   });
 
-  it("sends one bounded announcement to the configured Zulip stream", async () => {
-    sendZulipMessageMock.mockResolvedValue(true);
-
-    const result = await syndicatePublishedPost({
-      title: "Championship Victory",
-      slug: "championship-victory",
-      snippet: "We won the state finals!",
-      author: "CircuitFox",
-      category: "Competitions",
+  it("sends announcements to Zulip and Bluesky concurrently", async () => {
+    await expect(syndicatePublishedPost(post)).resolves.toEqual({
+      zulip: true,
+      bluesky: true,
     });
-
     expect(sendZulipMessageMock).toHaveBeenCalledWith(
       "announcements",
       "Blog: Competitions — Championship Victory",
-      expect.stringContaining("https://aresfirst.org/blog/championship-victory"),
+      expect.stringContaining(
+        "https://aresfirst.org/blog/championship-victory",
+      ),
     );
-    expect(result).toEqual({ zulip: true });
+    expect(sendBlueskyPostMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Championship Victory",
+        slug: "championship-victory",
+        version: post.version,
+      }),
+    );
   });
 
   it("neutralizes mention and Markdown injection from stored post text", async () => {
-    sendZulipMessageMock.mockResolvedValue(true);
-
     await syndicatePublishedPost({
+      ...post,
       title: "@**all** [unsafe](https://example.org)",
-      slug: "safe-slug",
       snippet: "@everyone <script>\u0001",
       author: "@**admins**",
     });
@@ -48,12 +65,26 @@ describe("socialSyndication", () => {
     expect(content).toContain("@\u200B");
   });
 
-  it("returns an explicit failure when Zulip rejects the announcement", async () => {
-    sendZulipMessageMock.mockResolvedValue(false);
+  it("retries only the requested failed channel", async () => {
+    await expect(syndicatePublishedPost(post, ["bluesky"])).resolves.toEqual({
+      bluesky: true,
+    });
+    expect(sendBlueskyPostMock).toHaveBeenCalledTimes(1);
+    expect(sendZulipMessageMock).not.toHaveBeenCalled();
+  });
 
-    await expect(syndicatePublishedPost({
-      title: "Weekly Build Log",
-      slug: "weekly-build-log",
-    })).resolves.toEqual({ zulip: false });
+  it("reports independent channel failures without rejecting", async () => {
+    sendZulipMessageMock.mockRejectedValue(new Error("zulip unavailable"));
+    sendBlueskyPostMock.mockRejectedValue(new Error("bluesky unavailable"));
+    await expect(syndicatePublishedPost(post)).resolves.toEqual({
+      zulip: false,
+      bluesky: false,
+    });
+  });
+
+  it("returns an empty result when no channels are requested", async () => {
+    await expect(syndicatePublishedPost(post, [])).resolves.toEqual({});
+    expect(sendZulipMessageMock).not.toHaveBeenCalled();
+    expect(sendBlueskyPostMock).not.toHaveBeenCalled();
   });
 });

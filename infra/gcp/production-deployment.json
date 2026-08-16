@@ -46,6 +46,7 @@
       "serviceAccount": "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
+        "BLUESKY_APP_PASSWORD",
         "GITHUB_PAT",
         "ZULIP_API_KEY",
         "ZULIP_BOT_EMAIL",
@@ -270,6 +271,22 @@
             "s-maxage=3600",
             "stale-while-revalidate=86400"
           ]
+        }
+      },
+      {
+        "name": "public blog RSS feed",
+        "origin": "primary",
+        "path": "/feed.xml",
+        "status": 200,
+        "contentType": "application/rss+xml",
+        "bodyIncludes": ["<rss version=\"2.0\""],
+        "headerIncludes": {
+          "cache-control": [
+            "max-age=300",
+            "s-maxage=3600",
+            "stale-while-revalidate=86400"
+          ],
+          "x-content-type-options": ["nosniff"]
         }
       },
       {

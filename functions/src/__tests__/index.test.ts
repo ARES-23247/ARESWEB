@@ -255,6 +255,18 @@ describe("Express App Endpoints", () => {
     );
   });
 
+  it("mounts the public RSS router at the canonical feed paths", () => {
+    for (const path of ["/feed.xml", "/api/feed.xml"]) {
+      const feedMount = stackFor(publicApp).find(
+        (layer: any) => layer.name === "router" && matchesPath(layer, path),
+      );
+      expect(feedMount).toBeDefined();
+      expect(
+        feedMount.handle.stack.some((layer: any) => layer.route?.path === "/"),
+      ).toBe(true);
+    }
+  });
+
   it("binds no secrets to public routes and caps every other blast radius", () => {
     expect(FUNCTION_SECRET_BINDINGS.publicApi).toEqual([]);
     expect(

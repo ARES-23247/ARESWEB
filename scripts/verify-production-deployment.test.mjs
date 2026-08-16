@@ -115,6 +115,15 @@ describe("production deployment contract", () => {
       "ZULIP_API_KEY",
       "ZULIP_BOT_EMAIL",
     ]);
+    expect(
+      contract.functions.find(({ id }) => id === "communicationsApi")?.secrets,
+    ).toEqual([
+      "BLUESKY_APP_PASSWORD",
+      "GITHUB_PAT",
+      "ZULIP_API_KEY",
+      "ZULIP_BOT_EMAIL",
+      "ZULIP_WEBHOOK_TOKEN",
+    ]);
   });
 
   it("rejects duplicate services, public schedules, wildcard roles, and malformed bounds", () => {
