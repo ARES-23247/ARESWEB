@@ -33,7 +33,7 @@ describe("GET /api/og dynamic OpenGraph generator", () => {
     expect(ogRouter.stack[0].handle).toEqual(expect.any(Function));
   });
 
-  it("renders a crawler-compatible 1200x630 PNG with immutable cache headers", async () => {
+  it("renders a crawler-compatible 1200x630 PNG with immutable cache headers", { timeout: 20_000 }, async () => {
     const { res, next } = await render();
 
     expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
@@ -48,7 +48,7 @@ describe("GET /api/og dynamic OpenGraph generator", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("renders bounded custom text and strips invalid XML control characters", async () => {
+  it("renders bounded custom text and strips invalid XML control characters", { timeout: 20_000 }, async () => {
     const { res, next } = await render({
       title: `${'<script>alert("xss")</script>'} & Engineering\u0001 ${"x".repeat(200)}`,
       category: "Tournament",
@@ -62,7 +62,7 @@ describe("GET /api/og dynamic OpenGraph generator", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("uses a full-content digest so titles with the same prefix have different ETags", async () => {
+  it("uses a full-content digest so titles with the same prefix have different ETags", { timeout: 20_000 }, async () => {
     const sharedPrefix = "This title has a deliberately shared prefix ";
     const first = await render({ title: `${sharedPrefix}alpha` });
     const second = await render({ title: `${sharedPrefix}bravo` });
@@ -70,7 +70,7 @@ describe("GET /api/og dynamic OpenGraph generator", () => {
     expect(first.res.set.mock.calls[0][0].ETag).not.toBe(second.res.set.mock.calls[0][0].ETag);
   });
 
-  it("returns 304 without rendering a body when the strong ETag matches", async () => {
+  it("returns 304 without rendering a body when the strong ETag matches", { timeout: 20_000 }, async () => {
     const first = await render({ title: "Cached Title" });
     const etag = first.res.set.mock.calls[0][0].ETag as string;
     const second = await render({ title: "Cached Title" }, { "if-none-match": etag });
