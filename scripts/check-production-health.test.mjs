@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  applyHealthOriginOverride,
   buildHealthCheckUrl,
   parseArgs,
   runHealthCheck,
@@ -195,10 +196,53 @@ describe("health checker arguments", () => {
     ).toEqual({
       contractPath: "contract.json",
       deploymentId: "sha.123",
+      primaryOrigin: undefined,
     });
     expect(() => parseArgs(["--deployment-id", "bad id"])).toThrow(
       "Deployment id",
     );
     expect(() => parseArgs(["--other"])).toThrow("Unknown argument");
+  });
+
+  it("allows a strict alternate HTTPS origin without accepting URL paths or credentials", () => {
+    expect(
+      parseArgs([
+        "--deployment-id",
+        "sha.123",
+        "--primary-origin",
+        "https://aresfirst-portal.web.app",
+      ]),
+    ).toEqual({
+      contractPath: "infra/gcp/production-deployment.json",
+      deploymentId: "sha.123",
+      primaryOrigin: "https://aresfirst-portal.web.app",
+    });
+    expect(() =>
+      parseArgs(["--primary-origin", "http://aresfirst.org"]),
+    ).toThrow("valid HTTPS origin");
+    expect(() =>
+      parseArgs(["--primary-origin", "https://aresfirst.org/path"]),
+    ).toThrow("valid HTTPS origin");
+    expect(() =>
+      parseArgs(["--primary-origin", "https://user:pass@aresfirst.org"]),
+    ).toThrow("valid HTTPS origin");
+    expect(() => parseArgs(["--primary-origin"])).toThrow(
+      "requires an HTTPS origin",
+    );
+  });
+
+  it("overrides only the primary health origin without mutating the contract", () => {
+    const original = contractWith([]);
+    const overridden = applyHealthOriginOverride(
+      original,
+      "https://aresfirst-portal.web.app",
+    );
+    expect(overridden.health.primaryOrigin).toBe(
+      "https://aresfirst-portal.web.app",
+    );
+    expect(overridden.health.hostingOrigin).toBe(
+      "https://aresfirst-portal.web.app",
+    );
+    expect(original.health.primaryOrigin).toBe("https://aresfirst.org");
   });
 });

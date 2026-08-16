@@ -14,6 +14,37 @@ function validateDeploymentId(deploymentId) {
   return deploymentId;
 }
 
+function validateOrigin(origin, optionName) {
+  let parsed;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    throw new Error(`${optionName} must be a valid HTTPS origin`);
+  }
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.pathname !== "/" ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    throw new Error(`${optionName} must be a valid HTTPS origin`);
+  }
+  return parsed.origin;
+}
+
+export function applyHealthOriginOverride(contract, primaryOrigin) {
+  if (!primaryOrigin) return contract;
+  return {
+    ...contract,
+    health: {
+      ...contract.health,
+      primaryOrigin: validateOrigin(primaryOrigin, "--primary-origin"),
+    },
+  };
+}
+
 export function validateHealthResponse(check, response, body) {
   const failures = [];
   if (response.status !== check.status)
@@ -137,21 +168,36 @@ export function parseArgs(argv) {
   const options = {
     contractPath: "infra/gcp/production-deployment.json",
     deploymentId: process.env.GITHUB_SHA ?? `manual-${Date.now()}`,
+    primaryOrigin: undefined,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--contract") options.contractPath = argv[++index];
     else if (arg === "--deployment-id") options.deploymentId = argv[++index];
-    else throw new Error(`Unknown argument: ${arg}`);
+    else if (arg === "--primary-origin") {
+      options.primaryOrigin = argv[++index];
+      if (!options.primaryOrigin) {
+        throw new Error("--primary-origin requires an HTTPS origin");
+      }
+    } else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!options.contractPath) throw new Error("--contract requires a path");
   validateDeploymentId(options.deploymentId);
+  if (options.primaryOrigin !== undefined) {
+    options.primaryOrigin = validateOrigin(
+      options.primaryOrigin,
+      "--primary-origin",
+    );
+  }
   return options;
 }
 
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const contract = loadContract(options.contractPath);
+  const contract = applyHealthOriginOverride(
+    loadContract(options.contractPath),
+    options.primaryOrigin,
+  );
   const result = await runHealthChecks(contract, {
     deploymentId: options.deploymentId,
   });
