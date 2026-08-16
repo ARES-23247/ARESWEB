@@ -370,8 +370,10 @@ describe("Robot fleet rules", () => {
     const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
 
-    await assertSucceeds(getDoc(doc(publicDb, "robots", "active")));
+    // Raw documents are team-only; the public website uses the robots DTO API.
+    await assertFails(getDoc(doc(publicDb, "robots", "active")));
     await assertFails(getDoc(doc(publicDb, "robots", "archived")));
+    await assertSucceeds(getDoc(doc(memberDb, "robots", "active")));
     await assertSucceeds(setDoc(doc(adminDb, "robots", "admin-created"), { name: "Admin", isDeleted: 0 }));
     await assertSucceeds(setDoc(doc(coachDb, "robots", "coach-created"), { name: "Coach", isDeleted: 0 }));
     await assertSucceeds(setDoc(doc(mentorDb, "robots", "mentor-created"), { name: "Mentor", isDeleted: 0 }));

@@ -276,8 +276,10 @@ service cloud.firestore {
     }
 
     // robots
+    // Public consumers use the bounded robots DTO API; raw documents stay
+    // team-only so fields outside the DTO can never leak publicly.
     match /robots/{robotId} {
-      allow read: if isAuthorized() || resource.data.isDeleted == 0;
+      allow read: if isAuthorized();
       allow create: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
                     request.resource.data.isDeleted == 0;
       allow update: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
