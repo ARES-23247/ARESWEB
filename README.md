@@ -15,7 +15,7 @@ The project is structured as a pnpm monorepo:
 ## 🛠️ Getting Started
 
 ### Prerequisites
-Use **Node.js 22.13 or newer in the Node 22 line**, **pnpm 11.21.0**, and
+Use **Node.js 24.15 or newer in the Node 24 line**, **pnpm 11.21.0**, and
 **Java 21 or newer** for Firebase emulators.
 
 Verify the active toolchain before installing dependencies:

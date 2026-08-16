@@ -73,7 +73,7 @@ remove the override before closing the incident.
 
 ## 5. Run the release gate
 
-Use Node 22.13 or newer in the Node 22 line, pnpm 11.21.0, and Java 21 or newer.
+Use Node 24.15 or newer in the Node 24 line, pnpm 11.21.0, and Java 21 or newer.
 Run every command in the repository `AGENTS.md` verification gate. Do not skip
 coverage, rules, browser tests, the bundle budget, or the production dependency
 audit.
