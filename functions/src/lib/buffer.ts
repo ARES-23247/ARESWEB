@@ -7,8 +7,15 @@ const MAX_POST_GRAPHEMES = 260;
 const MAX_ORGANIZATIONS = 10;
 const MAX_CHANNELS_PER_ORGANIZATION = 20;
 const MAX_RECENT_POSTS = 100;
+const DEFAULT_SOCIAL_IMAGE = `${SITE_ORIGIN}/social-post-default.jpg`;
 
 const BUFFER_SERVICES = new Set(["facebook", "instagram", "twitter"]);
+const ACTIVE_POST_STATUSES = new Set([
+  "needs_approval",
+  "scheduled",
+  "sending",
+  "sent",
+]);
 
 const ORGANIZATIONS_QUERY = `
   query AresOrganizations {
@@ -44,6 +51,7 @@ const RECENT_POSTS_QUERY = `
       edges {
         node {
           channelId
+          status
           text
         }
       }
@@ -152,8 +160,7 @@ export function buildBufferPost(options: BufferPostOptions): BuiltBufferPost {
     ? `${prefix}\n\n${boundedSnippet}${suffix}`
     : `${prefix}${suffix}`;
   const imageUrl =
-    safePublicImageUrl(options.thumbnail) ||
-    `${SITE_ORIGIN}/api/og?title=${encodeURIComponent(title.slice(0, 160))}&category=Blog`;
+    safePublicImageUrl(options.thumbnail) || DEFAULT_SOCIAL_IMAGE;
 
   return { text, imageUrl };
 }
@@ -220,20 +227,34 @@ function existingChannelIds(
     edges.flatMap((edge) => {
       if (!isRecord(edge) || !isRecord(edge.node)) return [];
       const channelId = boundedId(edge.node.channelId);
-      return channelId && edge.node.text === expectedText ? [channelId] : [];
+      const status =
+        typeof edge.node.status === "string" ? edge.node.status : "";
+      return channelId &&
+        edge.node.text === expectedText &&
+        ACTIVE_POST_STATUSES.has(status)
+        ? [channelId]
+        : [];
     }),
   );
 }
 
+function postMetadata(service: string): Record<string, unknown> | undefined {
+  if (service === "facebook") return { facebook: { type: "post" } };
+  if (service === "instagram") return { instagram: { type: "post" } };
+  return undefined;
+}
+
 async function createBufferPost(
   apiKey: string,
-  channelId: string,
+  channel: BufferChannel,
   post: BuiltBufferPost,
 ): Promise<boolean> {
+  const metadata = postMetadata(channel.service);
   const data = await bufferRequest(apiKey, CREATE_POST_MUTATION, {
     input: {
       assets: [{ image: { url: post.imageUrl } }],
-      channelId,
+      channelId: channel.id,
+      ...(metadata ? { metadata } : {}),
       mode: "addToQueue",
       needsApproval: false,
       schedulingType: "automatic",
@@ -296,7 +317,7 @@ export async function sendBufferPosts(
 
       const pending = channels.filter(({ id }) => !existing.has(id));
       const results = await Promise.all(
-        pending.map(({ id }) => createBufferPost(apiKey, id, post)),
+        pending.map((channel) => createBufferPost(apiKey, channel, post)),
       );
       createdCount += results.filter(Boolean).length;
       failedCount += results.filter((created) => !created).length;
