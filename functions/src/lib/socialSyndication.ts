@@ -211,6 +211,7 @@ async function deliverVideoToChannel(
   return deliverToBuffer({
     title: video.title,
     slug: video.docId,
+    version: video.version,
     snippet: video.snippet,
     thumbnail: video.thumbnail,
     kind: "video",
