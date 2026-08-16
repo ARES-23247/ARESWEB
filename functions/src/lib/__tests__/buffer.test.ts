@@ -58,7 +58,7 @@ describe("Buffer social syndication", () => {
     expect(
       buildBufferPost({ ...post, thumbnail: "http://localhost/private.jpg" })
         .imageUrl,
-    ).toMatch(/^https:\/\/aresfirst\.org\/api\/og\?/u);
+    ).toBe("https://aresfirst.org/social-post-default.jpg");
     expect(
       buildBufferPost({ ...post, snippet: "", thumbnail: "not-a-url" }).text,
     ).not.toContain("undefined");
@@ -132,6 +132,21 @@ describe("Buffer social syndication", () => {
       source: "aresweb",
       assets: [{ image: { url: post.thumbnail } }],
     });
+    expect(createInputs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          channelId: "facebook-1",
+          metadata: { facebook: { type: "post" } },
+        }),
+        expect.objectContaining({
+          channelId: "instagram-1",
+          metadata: { instagram: { type: "post" } },
+        }),
+      ]),
+    );
+    expect(
+      createInputs.find(({ channelId }) => channelId === "twitter-1"),
+    ).not.toHaveProperty("metadata");
   });
 
   it("deduplicates an already queued channel before retrying the remainder", async () => {
@@ -154,8 +169,20 @@ describe("Buffer social syndication", () => {
         graphql({
           posts: {
             edges: [
-              { node: { channelId: "facebook-1", text: expectedText } },
-              { node: { channelId: "twitter-1", text: "older text" } },
+              {
+                node: {
+                  channelId: "facebook-1",
+                  text: expectedText,
+                  status: "sent",
+                },
+              },
+              {
+                node: {
+                  channelId: "twitter-1",
+                  text: expectedText,
+                  status: "error",
+                },
+              },
               { node: null },
             ],
           },
