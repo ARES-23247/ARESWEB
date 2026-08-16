@@ -313,6 +313,10 @@
           "destination": "/prerender/privacy.html"
         },
         {
+          "source": "/robotics-west-virginia",
+          "destination": "/prerender/robotics-west-virginia.html"
+        },
+        {
           "source": "/robots",
           "destination": "/prerender/robots.html"
         },

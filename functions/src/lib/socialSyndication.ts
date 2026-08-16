@@ -1,8 +1,9 @@
 import { logger } from "./logger";
 import { sendBlueskyPost } from "./bluesky";
+import { sendBufferPosts } from "./buffer";
 import { sendZulipMessage } from "./zulip";
 
-export const SYNDICATION_CHANNELS = ["zulip", "bluesky"] as const;
+export const SYNDICATION_CHANNELS = ["zulip", "bluesky", "buffer"] as const;
 export type SyndicationChannel = (typeof SYNDICATION_CHANNELS)[number];
 export type SyndicationResult = Partial<Record<SyndicationChannel, boolean>>;
 
@@ -13,6 +14,7 @@ export interface PublishedPostPayload {
   snippet?: string;
   author?: string;
   category?: string;
+  thumbnail?: string;
 }
 
 function boundedPlainText(
@@ -110,6 +112,43 @@ async function deliverToBluesky(post: PublishedPostPayload): Promise<boolean> {
   }
 }
 
+async function deliverToBuffer(post: PublishedPostPayload): Promise<boolean> {
+  try {
+    const delivered = await sendBufferPosts({
+      title: boundedPlainText(post.title, "New Blog Post", 160),
+      slug: post.slug,
+      snippet: boundedPlainText(
+        post.snippet,
+        "Read our latest team update on the ARES Robotics engineering blog.",
+        500,
+      ),
+      thumbnail: post.thumbnail,
+    });
+    if (delivered) {
+      logger.info("socialSyndication", "Queued blog announcement in Buffer", {
+        slug: post.slug,
+      });
+    }
+    return delivered;
+  } catch (error) {
+    logger.error("socialSyndication", "Error sending Buffer announcement", {
+      slug: post.slug,
+      reason: error instanceof Error ? error.name : "unknown",
+    });
+    return false;
+  }
+}
+
+async function deliverToChannel(
+  channel: SyndicationChannel,
+  post: PublishedPostPayload,
+  postUrl: string,
+): Promise<boolean> {
+  if (channel === "zulip") return deliverToZulip(post, postUrl);
+  if (channel === "bluesky") return deliverToBluesky(post);
+  return deliverToBuffer(post);
+}
+
 export async function syndicatePublishedPost(
   post: PublishedPostPayload,
   channels: readonly SyndicationChannel[] = SYNDICATION_CHANNELS,
@@ -120,9 +159,7 @@ export async function syndicatePublishedPost(
     SYNDICATION_CHANNELS.filter((channel) => selectedChannels.has(channel)).map(
       async (channel): Promise<readonly [SyndicationChannel, boolean]> => [
         channel,
-        channel === "zulip"
-          ? await deliverToZulip(post, postUrl)
-          : await deliverToBluesky(post),
+        await deliverToChannel(channel, post, postUrl),
       ],
     ),
   );

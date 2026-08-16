@@ -47,6 +47,7 @@
       "public": true,
       "secrets": [
         "BLUESKY_APP_PASSWORD",
+        "BUFFER_API_KEY",
         "GITHUB_PAT",
         "ZULIP_API_KEY",
         "ZULIP_BOT_EMAIL",

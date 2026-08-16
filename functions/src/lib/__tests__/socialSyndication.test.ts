@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendZulipMessageMock = vi.fn();
 const sendBlueskyPostMock = vi.fn();
+const sendBufferPostsMock = vi.fn();
 
 vi.mock("../zulip", () => ({
   sendZulipMessage: (...args: unknown[]) => sendZulipMessageMock(...args),
@@ -9,6 +10,10 @@ vi.mock("../zulip", () => ({
 
 vi.mock("../bluesky", () => ({
   sendBlueskyPost: (...args: unknown[]) => sendBlueskyPostMock(...args),
+}));
+
+vi.mock("../buffer", () => ({
+  sendBufferPosts: (...args: unknown[]) => sendBufferPostsMock(...args),
 }));
 
 import { syndicatePublishedPost } from "../socialSyndication";
@@ -20,6 +25,7 @@ const post = {
   snippet: "We won the state finals!",
   author: "CircuitFox",
   category: "Competitions",
+  thumbnail: "https://images.example.org/championship.jpg",
 };
 
 describe("socialSyndication", () => {
@@ -27,12 +33,14 @@ describe("socialSyndication", () => {
     vi.clearAllMocks();
     sendZulipMessageMock.mockResolvedValue(true);
     sendBlueskyPostMock.mockResolvedValue(true);
+    sendBufferPostsMock.mockResolvedValue(true);
   });
 
-  it("sends announcements to Zulip and Bluesky concurrently", async () => {
+  it("sends announcements to Zulip, Bluesky, and Buffer concurrently", async () => {
     await expect(syndicatePublishedPost(post)).resolves.toEqual({
       zulip: true,
       bluesky: true,
+      buffer: true,
     });
     expect(sendZulipMessageMock).toHaveBeenCalledWith(
       "announcements",
@@ -46,6 +54,13 @@ describe("socialSyndication", () => {
         title: "Championship Victory",
         slug: "championship-victory",
         version: post.version,
+      }),
+    );
+    expect(sendBufferPostsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Championship Victory",
+        slug: "championship-victory",
+        thumbnail: "https://images.example.org/championship.jpg",
       }),
     );
   });
@@ -66,19 +81,22 @@ describe("socialSyndication", () => {
   });
 
   it("retries only the requested failed channel", async () => {
-    await expect(syndicatePublishedPost(post, ["bluesky"])).resolves.toEqual({
-      bluesky: true,
+    await expect(syndicatePublishedPost(post, ["buffer"])).resolves.toEqual({
+      buffer: true,
     });
-    expect(sendBlueskyPostMock).toHaveBeenCalledTimes(1);
+    expect(sendBufferPostsMock).toHaveBeenCalledTimes(1);
+    expect(sendBlueskyPostMock).not.toHaveBeenCalled();
     expect(sendZulipMessageMock).not.toHaveBeenCalled();
   });
 
   it("reports independent channel failures without rejecting", async () => {
     sendZulipMessageMock.mockRejectedValue(new Error("zulip unavailable"));
     sendBlueskyPostMock.mockRejectedValue(new Error("bluesky unavailable"));
+    sendBufferPostsMock.mockRejectedValue(new Error("buffer unavailable"));
     await expect(syndicatePublishedPost(post)).resolves.toEqual({
       zulip: false,
       bluesky: false,
+      buffer: false,
     });
   });
 
@@ -86,5 +104,6 @@ describe("socialSyndication", () => {
     await expect(syndicatePublishedPost(post, [])).resolves.toEqual({});
     expect(sendZulipMessageMock).not.toHaveBeenCalled();
     expect(sendBlueskyPostMock).not.toHaveBeenCalled();
+    expect(sendBufferPostsMock).not.toHaveBeenCalled();
   });
 });

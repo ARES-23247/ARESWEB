@@ -89,7 +89,9 @@ describe("Bluesky AT Protocol syndication", () => {
         $type: "app.bsky.feed.post",
       },
     });
-    expect(postBody.rkey).toMatch(/^ares-[a-f0-9]{40}$/u);
+    expect(postBody.rkey).toMatch(
+      /^[234567abcdefghij][234567abcdefghijklmnopqrstuvwxyz]{12}$/u,
+    );
     expect(postBody.record.text).toContain(
       "https://aresfirst.org/blog/state-championship-recap",
     );

@@ -58,6 +58,20 @@ deployment contract will fail closed until the Secret Manager value exists.
 The public team handle, `ares23247.bsky.social`, is intentionally kept in source
 instead of being misclassified as a secret.
 
+For Facebook, Instagram, and Twitter/X blog announcements, store a Buffer API
+key in Google Secret Manager:
+
+- `BUFFER_API_KEY`
+
+The Buffer account must have the intended team Facebook, Instagram, and
+Twitter/X channels connected. The backend uses an explicit service allowlist;
+it ignores Bluesky and every other Buffer channel. Bluesky remains on the
+direct AT Protocol integration above so it cannot receive duplicate posts.
+Buffer posts include a public HTTPS image because Instagram requires image
+media. If a blog thumbnail is absent or unsafe, the team-generated social card
+is used instead. Never put the Buffer key in GitHub, Firestore, browser storage,
+logs, or source code.
+
 ## 3. Confirm encryption and profile privacy
 
 - Confirm `ENCRYPTION_SECRET` is a strong Secret Manager value and has not

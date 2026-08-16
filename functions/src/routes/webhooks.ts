@@ -71,6 +71,7 @@ interface ClaimedPost {
     snippet?: string;
     category?: string;
     author?: string;
+    thumbnail?: string;
   };
 }
 
@@ -78,7 +79,9 @@ function receiptDeliveries(
   receipt: Record<string, unknown>,
   version: string,
 ): Record<SyndicationChannel, boolean> {
-  if (receipt.version !== version) return { zulip: false, bluesky: false };
+  if (receipt.version !== version) {
+    return { zulip: false, bluesky: false, buffer: false };
+  }
   const stored =
     receipt.deliveries && typeof receipt.deliveries === "object"
       ? (receipt.deliveries as Record<string, unknown>)
@@ -91,6 +94,7 @@ function receiptDeliveries(
   return {
     zulip: stored.zulip === true || legacyZulipComplete,
     bluesky: stored.bluesky === true,
+    buffer: stored.buffer === true,
   };
 }
 
@@ -175,6 +179,7 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
         author:
           optionalText(data.author, 80) ||
           optionalText(data.original_authorNickname, 80),
+        thumbnail: optionalText(data.thumbnail, 2_048),
       },
     };
   });

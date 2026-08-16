@@ -44,7 +44,7 @@ vi.mock("../../lib/firebase-admin", () => ({
 }));
 
 vi.mock("../../lib/socialSyndication", () => ({
-  SYNDICATION_CHANNELS: ["zulip", "bluesky"],
+  SYNDICATION_CHANNELS: ["zulip", "bluesky", "buffer"],
   syndicatePublishedPost: (...args: unknown[]) => mocks.syndicate(...args),
 }));
 
@@ -58,7 +58,11 @@ describe("Webhooks Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ZULIP_WEBHOOK_TOKEN = "correct-webhook-token";
-    mocks.syndicate.mockResolvedValue({ zulip: true, bluesky: true });
+    mocks.syndicate.mockResolvedValue({
+      zulip: true,
+      bluesky: true,
+      buffer: true,
+    });
     mocks.receiptSet.mockResolvedValue(undefined);
     req = {
       body: {},
@@ -178,6 +182,7 @@ describe("Webhooks Router Backend Endpoints", () => {
       snippet: "We won the state tournament!",
       category: "Tournament",
       author: "CircuitFox",
+      thumbnail: "https://images.example.org/state-finals.jpg",
     };
 
     it("keeps verified authorization and a publisher quota before the handler", () => {
@@ -208,26 +213,27 @@ describe("Webhooks Router Backend Endpoints", () => {
           title: "State Finals Victory",
           version: approvedPost.approvedAt,
           author: "CircuitFox",
+          thumbnail: "https://images.example.org/state-finals.jpg",
         }),
-        ["zulip", "bluesky"],
+        ["zulip", "bluesky", "buffer"],
       );
       expect(mocks.transactionSet).toHaveBeenCalledWith(
         expect.objectContaining({ kind: "receipt" }),
         expect.objectContaining({
           status: "in_progress",
-          deliveries: { zulip: false, bluesky: false },
+          deliveries: { zulip: false, bluesky: false, buffer: false },
         }),
       );
       expect(mocks.receiptSet).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "complete",
-          deliveries: { zulip: true, bluesky: true },
+          deliveries: { zulip: true, bluesky: true, buffer: true },
         }),
         { merge: true },
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
-        syndication: { zulip: true, bluesky: true },
+        syndication: { zulip: true, bluesky: true, buffer: true },
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -278,7 +284,7 @@ describe("Webhooks Router Backend Endpoints", () => {
           data: () => ({
             status: "complete",
             version: approvedPost.approvedAt,
-            deliveries: { zulip: true, bluesky: true },
+            deliveries: { zulip: true, bluesky: true, buffer: true },
           }),
         });
       await getHandler("/syndicate-post", "post")(req, res, next);
@@ -290,7 +296,7 @@ describe("Webhooks Router Backend Endpoints", () => {
       });
     });
 
-    it("migrates a legacy Zulip receipt and sends only to Bluesky", async () => {
+    it("migrates a legacy Zulip receipt and sends to newer channels", async () => {
       req.body = { slug: "state-finals-2026" };
       mocks.transactionGet
         .mockResolvedValueOnce({ exists: true, data: () => approvedPost })
@@ -301,18 +307,47 @@ describe("Webhooks Router Backend Endpoints", () => {
             version: approvedPost.approvedAt,
           }),
         });
-      mocks.syndicate.mockResolvedValue({ bluesky: true });
+      mocks.syndicate.mockResolvedValue({ bluesky: true, buffer: true });
 
       await getHandler("/syndicate-post", "post")(req, res, next);
 
       expect(mocks.syndicate).toHaveBeenCalledWith(
         expect.objectContaining({ slug: "state-finals-2026" }),
-        ["bluesky"],
+        ["bluesky", "buffer"],
       );
       expect(mocks.receiptSet).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "complete",
-          deliveries: { zulip: true, bluesky: true },
+          deliveries: { zulip: true, bluesky: true, buffer: true },
+        }),
+        { merge: true },
+      );
+    });
+
+    it("adds Buffer without replaying already delivered modern channels", async () => {
+      req.body = { slug: "state-finals-2026" };
+      mocks.transactionGet
+        .mockResolvedValueOnce({ exists: true, data: () => approvedPost })
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            status: "complete",
+            version: approvedPost.approvedAt,
+            deliveries: { zulip: true, bluesky: true },
+          }),
+        });
+      mocks.syndicate.mockResolvedValue({ buffer: true });
+
+      await getHandler("/syndicate-post", "post")(req, res, next);
+
+      expect(mocks.syndicate).toHaveBeenCalledWith(
+        expect.objectContaining({ slug: "state-finals-2026" }),
+        ["buffer"],
+      );
+      expect(mocks.receiptSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "complete",
+          deliveries: { zulip: true, bluesky: true, buffer: true },
         }),
         { merge: true },
       );
@@ -348,7 +383,7 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(mocks.receiptSet).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-          deliveries: { zulip: false, bluesky: false },
+          deliveries: { zulip: false, bluesky: false, buffer: false },
         }),
         { merge: true },
       );
