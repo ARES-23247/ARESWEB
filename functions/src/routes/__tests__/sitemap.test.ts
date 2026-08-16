@@ -22,10 +22,6 @@ const mocks = vi.hoisted(() => ({
         })
       }
     ],
-    academy: [
-      { id: "tutorial-1", data: () => ({ updatedAt: "not-a-date" }) },
-      { id: "e2e-test-quick-start", data: () => ({}) }
-    ],
     docs: [
       {
         id: "math-lesson",
@@ -136,7 +132,6 @@ describe("sitemap route", () => {
     expect(xml).toContain("<lastmod>2026-08-01T12:30:00.000Z</lastmod>");
     expect(xml).toContain("<loc>https://aresfirst.org/robots/robot-1</loc>");
     expect(xml).toContain("<lastmod>2026-07-01T10:00:00.000Z</lastmod>");
-    expect(xml).toContain("<loc>https://aresfirst.org/academy/tutorial-1</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/academy/math-lesson</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/docs/areslib-doc</loc>");
     expect(xml).not.toContain("hidden-doc");
@@ -151,7 +146,7 @@ describe("sitemap route", () => {
     expect(xml).not.toContain("test-event-1");
     expect(xml).toContain("</urlset>");
 
-    expect(mocks.queries.size).toBe(5);
+    expect(mocks.queries.size).toBe(4);
     for (const query of mocks.queries.values()) {
       expect(query.orderBy).toHaveBeenCalledWith(expect.anything(), "asc");
       expect(query.limit).toHaveBeenCalledWith(250);
