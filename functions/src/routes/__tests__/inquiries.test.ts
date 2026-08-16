@@ -9,6 +9,9 @@ vi.mock("express-rate-limit", () => {
   };
 });
 
+const { mockSendZulipAlert } = vi.hoisted(() => ({ mockSendZulipAlert: vi.fn().mockResolvedValue(true) }));
+vi.mock("../../lib/zulip", () => ({ sendZulipAlert: mockSendZulipAlert }));
+
 import inquiriesRouter from "../inquiries";
 
 // Set encryption secret for tests (avoiding blacklisted keys)
@@ -19,6 +22,7 @@ vi.mock("../../lib/crypto", () => ({
   encrypt: vi.fn().mockImplementation(async (val) => `encrypted:${val}`),
   decrypt: vi.fn().mockImplementation(async (val) => val.replace("encrypted:", "")),
   getEncryptionSecret: vi.fn().mockReturnValue("a_very_strong_secret_that_is_at_least_32_characters_long_for_testing_purposes"),
+  DECRYPTION_FAILED: "[Decryption Failed]",
 }));
 
 // Mock Firebase Admin
@@ -216,6 +220,32 @@ describe("Inquiries Router Backend Endpoints", () => {
   });
 
   describe("POST /api/inquiries/:id/approve-account", () => {
+    it("should refuse to pre-authorize an account built from undecryptable values", async () => {
+      const handler = getHandler("/:id/approve-account", "post");
+      req.params.id = "inq_bad";
+
+      const mockInquirySnap = {
+        exists: true,
+        data: () => ({
+          name: "malformed:ciphertext",
+          email: "malformed:ciphertext",
+          type: "student",
+          status: "pending",
+        }),
+      };
+      const mockDoc = adminDb.collection("inquiries").doc as any;
+      mockDoc().get.mockResolvedValue(mockInquirySnap);
+      // decrypt() fails closed by returning the sentinel for malformed input.
+      vi.mocked(decrypt).mockResolvedValueOnce("[Decryption Failed]");
+
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      const err = next.mock.calls[0] ? next.mock.calls[0][0] : undefined;
+      expect(err.status).toBe(500);
+      expect(err.message).toBe("Failed to decrypt applicant name.");
+    });
+
     it("should reject account creation for sponsor inquiry types", async () => {
       const handler = getHandler("/:id/approve-account", "post");
       req.params.id = "inq_123";
@@ -500,6 +530,12 @@ describe("Inquiries Router Backend Endpoints", () => {
         metadata: 'encrypted:{"message":"Hello ARES"}',
         isDeleted: 0,
       }));
+      // The applicant's free-text message must stay in the encrypted record
+      // and never be forwarded into the Zulip alert body.
+      expect(mockSendZulipAlert).toHaveBeenCalled();
+      const zulipBody = String(mockSendZulipAlert.mock.calls[0][2]);
+      expect(zulipBody).not.toContain("Hello ARES");
+      expect(zulipBody).not.toContain("**Message:**");
     });
 
     it("should persist attacker-controlled names and emails that resemble test data", async () => {

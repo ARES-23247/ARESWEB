@@ -23,7 +23,11 @@ function redactText(value: string): string {
     .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, `Bearer ${REDACTED}`)
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, REDACTED)
     .replace(/github_pat_[A-Za-z0-9_]+/g, REDACTED)
-    .replace(/AIza[A-Za-z0-9_-]{20,}/g, REDACTED);
+    .replace(/AIza[A-Za-z0-9_-]{20,}/g, REDACTED)
+    // Phone-shaped digit runs (9+ digits, optionally formatted) — short digit
+    // groups like dates and version numbers are preserved.
+    .replace(/\+?[0-9][0-9()\s.-]{7,}[0-9]/g, (match) =>
+      match.replace(/\D/g, "").length >= 9 ? REDACTED : match);
 }
 
 function safeLogValue(value: unknown, seen = new WeakSet<object>()): unknown {

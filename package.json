@@ -20,6 +20,7 @@
     "test:coverage": "vitest run --coverage",
     "test:rules:unit": "vitest run --config vitest.rules.config.ts",
     "test:rules": "firebase emulators:exec --project aresweb-ci --only firestore,storage \"node node_modules/vitest/vitest.mjs run --config vitest.rules.config.ts\"",
+    "test:functions-emulator": "firebase emulators:exec --project aresweb-ci --only firestore \"pnpm --filter functions test:emulator\"",
     "test:e2e": "playwright test"
   },
   "dependencies": {

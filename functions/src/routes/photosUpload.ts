@@ -26,15 +26,6 @@ const uploadUnifiedLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-async function updateAlbumMediaCount(albumId: string, delta: number) {
-  if (!albumId) return;
-  const albumRef = adminDb.collection("albums").doc(albumId);
-  await albumRef.update({
-    mediaCount: adminFieldValue.increment(delta),
-    updatedAt: new Date().toISOString()
-  });
-}
-
 // POST /api/photos/upload-unified
 // Accepts base64 encoded photo and metadata, performs storage upload, optional Google Photos upload, and optional AI labeling
 router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHandler(async (req, res) => {
@@ -99,25 +90,32 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
 
     // If an albumId is provided and the existing photo isn't already in it, assign it
     if (albumId && existingPhotoData.albumId !== albumId) {
+      const previousAlbumId = typeof existingPhotoData.albumId === "string" ? existingPhotoData.albumId : null;
       const batch = adminDb.batch();
-      
+
       // Update photo doc in imported_photos
       batch.update(existingPhotoDoc.ref, { albumId });
-      
-      // Copy to new album's photos subcollection
+
+      // Copy to new album's photos subcollection and move both album counts in
+      // the same batch so a partial failure cannot desync mediaCount or leave
+      // duplicate photo docs behind.
       const albumRef = adminDb.collection("albums").doc(albumId);
       const newAlbumPhotoRef = albumRef.collection("photos").doc(existingPhotoDoc.id);
       batch.set(newAlbumPhotoRef, { ...existingPhotoData, albumId });
-      
-      await batch.commit();
-      await updateAlbumMediaCount(albumId, 1);
-      
-      // Decrement the old album count if it was previously assigned elsewhere
-      if (existingPhotoData.albumId) {
-        await updateAlbumMediaCount(existingPhotoData.albumId, -1);
-        const oldAlbumRef = adminDb.collection("albums").doc(existingPhotoData.albumId);
-        await oldAlbumRef.collection("photos").doc(existingPhotoDoc.id).delete();
+      batch.update(albumRef, {
+        mediaCount: adminFieldValue.increment(1),
+        updatedAt: new Date().toISOString(),
+      });
+      if (previousAlbumId) {
+        const oldAlbumRef = adminDb.collection("albums").doc(previousAlbumId);
+        batch.update(oldAlbumRef, {
+          mediaCount: adminFieldValue.increment(-1),
+          updatedAt: new Date().toISOString(),
+        });
+        batch.delete(oldAlbumRef.collection("photos").doc(existingPhotoDoc.id));
       }
+
+      await batch.commit();
     }
     
     res.json({

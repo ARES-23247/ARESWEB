@@ -141,6 +141,57 @@ describe("Simulations Router Backend Endpoints", () => {
       expect(err.status).toBe(400);
       expect(err.message).toBe("Invalid simulation ID");
     });
+
+    it("should return 404 for IDs outside the github: namespace", async () => {
+      req.params.id = "gist:0123456789abcdef0123456789abcdef";
+
+      const handler = getHandler("/:id", "get");
+      await handler(req, res, next);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(404);
+      expect(err.message).toBe("Simulation not found");
+    });
+
+    it("should fall back to the legacy flat-file path when the folder layout is missing", async () => {
+      req.params.id = "github:legacySim";
+
+      fetchMock
+        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce({
+          ok: true,
+          text: vi.fn().mockResolvedValue("export default function LegacySim() {}"),
+        });
+
+      const handler = getHandler("/:id", "get");
+      await handler(req, res, next);
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        "https://api.github.com/repos/ARES-23247/ARESWEB/contents/src/sims/legacySim.tsx",
+        expect.any(Object)
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        simulation: expect.objectContaining({
+          id: "github:legacySim",
+          files: JSON.stringify({ "legacySim.tsx": "export default function LegacySim() {}" }),
+        }),
+      });
+    });
+
+    it("should return 404 when neither the folder nor legacy path exists", async () => {
+      req.params.id = "github:missingSim";
+
+      fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+      const handler = getHandler("/:id", "get");
+      await handler(req, res, next);
+
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(404);
+      expect(err.message).toBe("Simulation not found in GitHub");
+    });
   });
 
   describe("POST /api/simulations - Retired direct publishing", () => {
@@ -178,6 +229,20 @@ describe("Simulations Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.status).toBe(410);
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("DELETE /api/simulations/:id - Retired direct deletion", () => {
+    it("should reject deletion attempts with 410 Gone", async () => {
+      req.params.id = "github:climbingCenterOfMass";
+
+      const handler = getHandler("/:id", "delete");
+      await handler(req, res, next);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(410);
+      expect(err.message).toContain("Direct repository deletion has been retired");
     });
   });
 
@@ -227,6 +292,153 @@ describe("Simulations Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.status).toBe(400);
       expect(err.message).toBe("Invalid Gist ID");
+    });
+
+    it("should accept the 20-character legacy gist ID format", async () => {
+      req.params.id = "0123456789abcdef0123";
+
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          description: null,
+          owner: {},
+          public: false,
+          created_at: "2026-05-24T12:00:00Z",
+          updated_at: "2026-05-24T13:00:00Z",
+          files: { "main.tsx": { content: "" } },
+        }),
+      });
+
+      const handler = getHandler("/gist/:id", "get");
+      await handler(req, res, next);
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.github.com/gists/0123456789abcdef0123",
+        expect.any(Object)
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        simulation: expect.objectContaining({
+          id: "gist:0123456789abcdef0123",
+          name: "Gist Simulation",
+          authorId: "anonymous",
+          isPublic: 0,
+          files: JSON.stringify({ "main.tsx": "" }),
+        }),
+      });
+    });
+
+    it("should return 404 when the gist does not exist", async () => {
+      req.params.id = "0123456789abcdef0123456789abcdef";
+
+      fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+      const handler = getHandler("/gist/:id", "get");
+      await handler(req, res, next);
+
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(404);
+      expect(err.message).toBe("Gist not found");
+    });
+  });
+
+  describe("POST /api/simulations/gist - Create Gist share", () => {
+    it("should create a public gist and return its URL", async () => {
+      req.body = {
+        name: "My Shareable Sim",
+        files: { "index.tsx": "export default function Sim() {}" },
+      };
+
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          id: "0123456789abcdef0123456789abcdef",
+          html_url: "https://gist.github.com/0123456789abcdef0123456789abcdef",
+        }),
+      });
+
+      const handler = getHandler("/gist", "post");
+      await handler(req, res, next);
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.github.com/gists",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer mock-pat-key",
+          }),
+          body: JSON.stringify({
+            description: "My Shareable Sim",
+            public: true,
+            files: { "index.tsx": { content: "export default function Sim() {}" } },
+          }),
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        gistId: "0123456789abcdef0123456789abcdef",
+        url: "https://gist.github.com/0123456789abcdef0123456789abcdef",
+      });
+    });
+
+    it("should substitute empty file contents and default the name", async () => {
+      req.body = { files: { "empty.tsx": "" } };
+
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: "abc", html_url: "https://gist.github.com/abc" }),
+      });
+
+      const handler = getHandler("/gist", "post");
+      await handler(req, res, next);
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.github.com/gists",
+        expect.objectContaining({
+          body: JSON.stringify({
+            description: "ARESWEB Simulation Gist",
+            public: true,
+            files: { "empty.tsx": { content: "// Empty file" } },
+          }),
+        })
+      );
+    });
+
+    it("should reject empty file maps with 400", async () => {
+      req.body = { files: {} };
+
+      const handler = getHandler("/gist", "post");
+      await handler(req, res, next);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(400);
+      expect(err.message).toBe("No files provided");
+    });
+
+    it("should fail closed when the GitHub PAT is not configured", async () => {
+      delete process.env.GITHUB_PAT;
+      req.body = { files: { "index.tsx": "const x = 1;" } };
+
+      const handler = getHandler("/gist", "post");
+      await handler(req, res, next);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(500);
+      expect(err.message).toBe("GitHub PAT not configured");
+    });
+
+    it("should surface a 500 when gist creation is rejected upstream", async () => {
+      req.body = { files: { "index.tsx": "const x = 1;" } };
+
+      fetchMock.mockResolvedValue({ ok: false, status: 403 });
+
+      const handler = getHandler("/gist", "post");
+      await handler(req, res, next);
+
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(500);
+      expect(err.message).toBe("Failed to create GitHub Gist");
     });
   });
 });

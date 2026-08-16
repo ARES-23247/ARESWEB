@@ -5,7 +5,7 @@ process.env.ENCRYPTION_SECRET = "dummy-encryption-secret-must-be-32-chars-long";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.{test,spec}.ts"],
+    include: ["src/**/*.{test,spec}.ts", "!src/**/*.emulator.test.ts"],
     clearMocks: true,
     restoreMocks: true,
     coverage: {
@@ -15,6 +15,14 @@ export default defineConfig({
         lines: 65,
         functions: 82,
         "src/middleware/**/*.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/simulations.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/linkAuthorizedUser.ts": {
           lines: 85,
           functions: 100,
         },
