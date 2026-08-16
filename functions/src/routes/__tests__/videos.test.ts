@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const docGet = vi.fn();
 const docSet = vi.fn();
+const docUpdate = vi.fn();
 const queryGet = vi.fn();
 const batchSet = vi.fn();
 const batchCommit = vi.fn();
-const doc = vi.fn(() => ({ get: docGet, set: docSet }));
+const doc = vi.fn(() => ({ get: docGet, set: docSet, update: docUpdate }));
+const syndicateVideo = vi.fn().mockResolvedValue({ zulip: true, bluesky: true, buffer: true });
 const query: any = {
   where: vi.fn(() => query),
   orderBy: vi.fn(() => query),
@@ -19,6 +21,9 @@ vi.mock("../../lib/firebase-admin", () => ({
     collection: vi.fn(() => ({ ...query, doc })),
     batch: vi.fn(() => ({ set: batchSet, commit: batchCommit })),
   },
+}));
+vi.mock("../../lib/socialSyndication", () => ({
+  syndicatePublishedVideo: (...args: unknown[]) => syndicateVideo(...args),
 }));
 vi.mock("../../middleware/auth", () => ({
   ensureAdmin: (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -60,6 +65,37 @@ describe("videos routes", () => {
       "enforceDistributedQuota",
       expect.any(String),
     ]);
+  });
+
+  it("announces a newly created published video exactly once", async () => {
+    docGet.mockResolvedValueOnce({ exists: false, data: () => ({}) });
+    await handler("/", "post")({ body: { videoId: "abcdefghijk", title: "Fresh Upload", status: "published" } }, res, next);
+    expect(docUpdate).toHaveBeenCalledWith({ syndicatedAt: expect.any(String) });
+    expect(syndicateVideo).toHaveBeenCalledTimes(1);
+    expect(syndicateVideo).toHaveBeenCalledWith(expect.objectContaining({
+      docId: "video_abcdefghijk",
+      title: "Fresh Upload",
+    }));
+  });
+
+  it("does not announce a newly created draft", async () => {
+    docGet.mockResolvedValueOnce({ exists: false, data: () => ({}) });
+    await handler("/", "post")({ body: { videoId: "abcdefghijk", title: "Draft Upload", status: "draft" } }, res, next);
+    expect(syndicateVideo).not.toHaveBeenCalled();
+    expect(docUpdate).not.toHaveBeenCalled();
+  });
+
+  it("announces when an edit flips a draft to published", async () => {
+    docGet.mockResolvedValueOnce({ exists: true, data: () => ({ status: "draft", isDeleted: 0 }) });
+    await handler("/:videoId", "patch")({ params: { videoId: "video_abcdefghijk" }, body: { videoId: "abcdefghijk", title: "Going Live", status: "published" } }, res, next);
+    expect(syndicateVideo).toHaveBeenCalledTimes(1);
+    expect(syndicateVideo).toHaveBeenCalledWith(expect.objectContaining({ title: "Going Live" }));
+  });
+
+  it("never re-announces an edit that keeps a video published", async () => {
+    docGet.mockResolvedValueOnce({ exists: true, data: () => ({ status: "published", isDeleted: 0, syndicatedAt: "2026-08-01T00:00:00.000Z" }) });
+    await handler("/:videoId", "patch")({ params: { videoId: "video_abcdefghijk" }, body: { videoId: "abcdefghijk", title: "Title Tweak", status: "published" } }, res, next);
+    expect(syndicateVideo).not.toHaveBeenCalled();
   });
 
   it("returns a bounded public DTO without sync metadata", async () => {
@@ -238,6 +274,7 @@ describe("videos routes", () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [validItem("abcdefghijk", "One"), { snippet: { resourceId: { videoId: "bad" } } }], nextPageToken: "page-2" }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [validItem("lmnopqrstuv", "Two")] }) }));
+    queryGet.mockResolvedValueOnce({ docs: [] });
     queryGet.mockResolvedValueOnce({
       docs: [
         { id: "video_oldrecord1", ref: { path: "videos/video_oldrecord1" }, data: () => ({ sourcePlaylistId: "UUre4FN7UThyVd-biFk0n-Ig", isDeleted: 0 }) },
@@ -252,6 +289,36 @@ describe("videos routes", () => {
     expect(batchSet).toHaveBeenCalledTimes(3);
     expect(batchCommit).toHaveBeenCalledTimes(2);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ pagesFetched: 2, addedUpdatedCount: 2, archivedCount: 1, archivalSkipped: false }));
+  });
+
+  it("announces only fresh uploads discovered by sync", async () => {
+    process.env.YOUTUBE_API_KEY = "secret-key";
+    const freshDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const item = (id: string, title: string, publishedAt: string) => ({
+      snippet: {
+        title,
+        description: "",
+        publishedAt,
+        resourceId: { videoId: id },
+        thumbnails: { high: { url: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` } },
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [
+        item("freshvideo1", "Fresh Upload", freshDate),
+        item("stalevideo1", "Ancient Upload", "2020-01-01T00:00:00.000Z"),
+      ] }),
+    }));
+    queryGet.mockResolvedValueOnce({ docs: [] });
+
+    await handler("/sync", "post")({ user: { uid: "admin" } }, res, next);
+
+    expect(syndicateVideo).toHaveBeenCalledTimes(1);
+    expect(syndicateVideo).toHaveBeenCalledWith(expect.objectContaining({
+      docId: "video_freshvideo1",
+      title: "Fresh Upload",
+    }));
   });
 
   it("surfaces YouTube network and HTTP failures without changing records", async () => {

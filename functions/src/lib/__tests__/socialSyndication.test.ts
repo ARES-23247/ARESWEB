@@ -16,7 +16,7 @@ vi.mock("../buffer", () => ({
   sendBufferPosts: (...args: unknown[]) => sendBufferPostsMock(...args),
 }));
 
-import { syndicatePublishedPost } from "../socialSyndication";
+import { syndicatePublishedPost, syndicatePublishedVideo } from "../socialSyndication";
 
 const post = {
   title: "Championship Victory",
@@ -27,6 +27,48 @@ const post = {
   category: "Competitions",
   thumbnail: "https://images.example.org/championship.jpg",
 };
+
+describe("socialSyndication videos", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sendZulipMessageMock.mockResolvedValue(true);
+    sendBlueskyPostMock.mockResolvedValue(true);
+    sendBufferPostsMock.mockResolvedValue(true);
+  });
+
+  it("announces a published video on every channel with the hub link", async () => {
+    await expect(
+      syndicatePublishedVideo({
+        title: "Season Reveal",
+        docId: "video_dQw4w9WgXcQ",
+        version: "2026-08-16T00:00:00.000Z",
+        snippet: "Watch the new robot in action.",
+        thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      }),
+    ).resolves.toEqual({ zulip: true, bluesky: true, buffer: true });
+
+    expect(sendZulipMessageMock).toHaveBeenCalledWith(
+      "announcements",
+      "Video: Video — Season Reveal",
+      expect.stringContaining("https://aresfirst.org/videos"),
+    );
+    expect(sendBlueskyPostMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Season Reveal",
+        slug: "video_dQw4w9WgXcQ",
+        kind: "video",
+      }),
+    );
+    expect(sendBufferPostsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Season Reveal",
+        slug: "video_dQw4w9WgXcQ",
+        kind: "video",
+        thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      }),
+    );
+  });
+});
 
 describe("socialSyndication", () => {
   beforeEach(() => {

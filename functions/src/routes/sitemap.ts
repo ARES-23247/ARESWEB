@@ -159,10 +159,6 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
         filters: [["isDeleted", "==", 0]],
       }),
       readCollectionPages({
-        collection: "academy",
-        filters: [["status", "==", "published"], ["isDeleted", "==", 0]],
-      }),
-      readCollectionPages({
         collection: "docs",
         filters: [["status", "==", "published"], ["isDeleted", "==", 0]],
       }),
@@ -181,7 +177,7 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
 
   STATIC_URLS.forEach(addEntry);
 
-  const [postsSnap, robotsSnap, academySnap, docsSnap, eventsSnap] = snapshots;
+  const [postsSnap, robotsSnap, docsSnap, eventsSnap] = snapshots;
 
   postsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
@@ -201,17 +197,6 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
       loc: `${BASE_URL}/robots/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
       priority: "0.60",
-      lastmod: getLastModified(data)
-    });
-  });
-
-  academySnap.forEach((doc) => {
-    const data = doc.data() as Record<string, unknown>;
-    if (!isSitemapRecordIndexable(doc.id, data)) return;
-    addEntry({
-      loc: `${BASE_URL}/academy/${encodeURIComponent(doc.id)}`,
-      changefreq: "weekly",
-      priority: "0.70",
       lastmod: getLastModified(data)
     });
   });
