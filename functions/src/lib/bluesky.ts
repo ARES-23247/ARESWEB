@@ -7,6 +7,7 @@ const SITE_ORIGIN = "https://aresfirst.org";
 const OUTBOUND_TIMEOUT_MS = 10_000;
 const MAX_POST_GRAPHEMES = 300;
 const MAX_POST_BYTES = 3_000;
+const TID_ALPHABET = "234567abcdefghijklmnopqrstuvwxyz";
 
 export interface BlueskyPostOptions {
   title: string;
@@ -206,11 +207,23 @@ function isPutRecordResponse(value: unknown): boolean {
   );
 }
 
-function recordKey(options: BlueskyPostOptions): string {
-  return `ares-${createHash("sha256")
-    .update(`aresweb-blog:${options.slug}:${options.version}`)
-    .digest("hex")
-    .slice(0, 40)}`;
+function recordKey(options: BlueskyPostOptions, createdAtMs: number): string {
+  const clockId =
+    createHash("sha256")
+      .update(`aresweb-blog:${options.slug}:${options.version}`)
+      .digest()
+      .readUInt16BE(0) & 0x03ff;
+  let value =
+    ((BigInt(createdAtMs) * 1_000n) << 10n) | BigInt(clockId);
+  let tid = "";
+  for (let index = 0; index < 13; index += 1) {
+    tid = TID_ALPHABET[Number(value & 31n)] + tid;
+    value >>= 5n;
+  }
+  if (!/^[234567abcdefghij][234567abcdefghijklmnopqrstuvwxyz]{12}$/u.test(tid)) {
+    throw new Error("Invalid Bluesky TID generated from syndication version.");
+  }
+  return tid;
 }
 
 async function postJson(
@@ -273,7 +286,7 @@ export async function sendBlueskyPost(
       {
         repo: sessionBody.did,
         collection: "app.bsky.feed.post",
-        rkey: recordKey(options),
+        rkey: recordKey(options, createdAtMs),
         validate: true,
         record: {
           $type: "app.bsky.feed.post",

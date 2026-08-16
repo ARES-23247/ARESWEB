@@ -140,7 +140,9 @@ describe("Buffer social syndication", () => {
         }),
         expect.objectContaining({
           channelId: "instagram-1",
-          metadata: { instagram: { type: "post" } },
+          metadata: {
+            instagram: { type: "post", shouldShareToFeed: true },
+          },
         }),
       ]),
     );
