@@ -21,8 +21,8 @@ export default function Home() {
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
       <SEO
         exactTitle
-        title="ARES 23247 | Morgantown Robotics Team"
-        description="ARES 23247 is the Appalachian Robotics & Engineering Society, a FIRST® Tech Challenge team building robots, technical leaders, and STEM opportunities in Morgantown, West Virginia."
+        title="ARES 23247 | West Virginia Robotics Team (Morgantown, WV)"
+        description="ARES 23247 is a West Virginia robotics team in Morgantown — the Appalachian Robotics & Engineering Society, a FIRST® Tech Challenge team building robots, technical leaders, and STEM opportunities across West Virginia."
       />
       {/* ─── HERO ─── */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-obsidian">

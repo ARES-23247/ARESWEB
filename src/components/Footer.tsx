@@ -52,6 +52,8 @@ export default function Footer() {
             <li><Link to="/about" className="hover:text-ares-gold transition-colors flex items-center gap-2">Who We Are</Link></li>
             <li><Link to="/seasons" className="hover:text-ares-gold transition-colors flex items-center gap-2">Seasons & Legacy</Link></li>
             <li><Link to="/outreach" className="hover:text-ares-gold transition-colors flex items-center gap-2">Outreach & Impact</Link></li>
+            <li><Link to="/robotics-west-virginia" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robotics in West Virginia</Link></li>
+            <li><Link to="/location-morgantown" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robotics in Morgantown</Link></li>
             <li><Link to="/gallery" className="hover:text-ares-gold transition-colors flex items-center gap-2">Photo Gallery</Link></li>
             <li><Link to="/videos" className="hover:text-ares-gold transition-colors flex items-center gap-2">Video Gallery</Link></li>
             <li><Link to="/blog" className="hover:text-ares-gold transition-colors flex items-center gap-2">Team Blog</Link></li>

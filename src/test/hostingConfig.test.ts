@@ -25,17 +25,17 @@ describe("Firebase Hosting crawl configuration", () => {
     );
 
     expect(indexHtml).toContain(
-      "<title>ARES 23247 | Morgantown Robotics Team</title>",
+      "<title>ARES 23247 | West Virginia Robotics Team (Morgantown, WV)</title>",
     );
     expect(indexHtml).toContain(
-      "<h1>ARES 23247 | Appalachian Robotics &amp; Engineering Society</h1>",
+      "<h1>ARES 23247 — West Virginia Robotics Team in Morgantown</h1>",
     );
     expect(indexHtml).not.toContain("<title>ARES Analytics</title>");
     expect(indexHtml).toMatch(
       /rel="alternate"\s+type="application\/rss\+xml"/u,
     );
     expect(prerenderSource).toContain(
-      '? "ARES 23247 | Morgantown Robotics Team"',
+      '? "ARES 23247 | West Virginia Robotics Team (Morgantown, WV)"',
     );
   });
 

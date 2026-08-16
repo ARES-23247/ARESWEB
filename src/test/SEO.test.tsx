@@ -63,6 +63,15 @@ describe("SEO", () => {
     expect(json).not.toContain("founder");
   });
 
+  it("anchors the organization to West Virginia and verified social profiles", () => {
+    const json = JSON.stringify(ORGANIZATION_SCHEMA);
+    expect(json).toContain('"name":"West Virginia"');
+    expect(json).toContain("https://bsky.app/profile/ares23247.bsky.social");
+    expect(json).toContain("https://www.tiktok.com/@ares.robotics.23247");
+    expect(json).toContain("https://x.com/ARESFTC");
+    expect(json).toContain("https://www.linkedin.com/company/ares-23247");
+  });
+
   it("marks search results noindex while keeping a clean canonical URL", async () => {
     window.history.replaceState({}, "", "/academy?q=control#results");
     renderWithHelmet(<SEO title="Academy Search" />);

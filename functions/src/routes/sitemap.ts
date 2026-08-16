@@ -33,6 +33,7 @@ const STATIC_URLS = [
   { loc: `${BASE_URL}/location-morgantown`, changefreq: "monthly", priority: "0.60" },
   { loc: `${BASE_URL}/outreach`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/robotics-west-virginia`, changefreq: "monthly", priority: "0.70" },
   { loc: `${BASE_URL}/robots`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/seasons`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/sponsors`, changefreq: "monthly", priority: "0.80" },

@@ -24,6 +24,7 @@ export const staticPageMetadata = [
   ["/location-morgantown", "Robotics in Morgantown, West Virginia", "Meet ARES 23247, a FIRST® Tech Challenge team based in Morgantown, West Virginia."],
   ["/outreach", "Community Outreach", "Discover ARES 23247 community STEM programs, impact reports, and robot demonstrations."],
   ["/privacy", "Privacy Policy", "Read how ARES 23247 protects visitor, applicant, and team-member information."],
+  ["/robotics-west-virginia", "Robotics in West Virginia", "A guide to robotics in West Virginia from ARES 23247 — FIRST programs, finding a team, and starting a new WV robotics team."],
   ["/robots", "Our Robots", "Explore competition robots engineered by ARES 23247 for the FIRST® Tech Challenge."],
   ["/seasons", "Team Legacy", "Explore the competition seasons, achievements, awards, and growth of ARES 23247."],
   ["/sponsors", "Our Sponsors", "Meet the organizations supporting ARES 23247 youth robotics and STEM education."],
@@ -43,7 +44,7 @@ function outputName(route) {
 
 export function renderStaticShell(shell, [route, pageTitle, description, noindex = false]) {
   const title = pageTitle === "Home"
-    ? "ARES 23247 | Morgantown Robotics Team"
+    ? "ARES 23247 | West Virginia Robotics Team (Morgantown, WV)"
     : `${pageTitle} | ARES 23247`;
   const canonical = `${baseUrl}${route}`;
   let html = shell

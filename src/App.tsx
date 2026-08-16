@@ -39,6 +39,7 @@ const LocationMorgantownPage = lazy(() => import("@/app/location-morgantown/page
 const OutreachPage = lazy(() => import("@/app/outreach/page"));
 const PrivacyPage = lazy(() => import("@/app/privacy/page"));
 const RobotsFeedPage = lazy(() => import("@/app/robots/page"));
+const RoboticsWestVirginiaPage = lazy(() => import("@/app/robotics-west-virginia/page"));
 const RobotDetailPage = lazy(() => import("@/app/robots/[id]/page"));
 const SeasonsPage = lazy(() => import("@/app/seasons/page"));
 const SponsorsPage = lazy(() => import("@/app/sponsors/page"));
@@ -127,6 +128,7 @@ export default function App() {
                   <Route path="/outreach" element={<OutreachPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/robots" element={<RobotsFeedPage />} />
+                  <Route path="/robotics-west-virginia" element={<RoboticsWestVirginiaPage />} />
                   <Route path="/robots/:id" element={<RobotDetailPage />} />
                   <Route path="/seasons" element={<SeasonsPage />} />
                   <Route path="/sponsors" element={<SponsorsPage />} />
