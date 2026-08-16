@@ -3,7 +3,7 @@ import { test, expect } from "./fixtures";
 test.describe("Navigation & Accessibility E2E tests", () => {
   test("should navigate to homepage and verify branding", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle("ARES 23247 | Morgantown Robotics Team");
+    await expect(page).toHaveTitle("ARES 23247 | West Virginia Robotics Team (Morgantown, WV)");
     // The team—not one of its software projects—is the primary homepage identity.
     const heroHeading = page.getByRole("heading", {
       name: "ARES 23247 — Engineered To Inspire",
