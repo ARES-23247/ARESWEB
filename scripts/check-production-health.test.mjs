@@ -156,6 +156,36 @@ describe("production health runner", () => {
     ).rejects.toThrow(/FAIL first[\s\S]*FAIL second/);
     expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
+
+  it("bounds concurrent probes so the health gate does not trigger edge protection", async () => {
+    const checks = Array.from({ length: 5 }, (_, index) => ({
+      name: `check ${index + 1}`,
+      origin: "primary",
+      path: `/check-${index + 1}`,
+      status: 200,
+      contentType: "text/html",
+    }));
+    let activeRequests = 0;
+    let peakRequests = 0;
+    const fetchImpl = vi.fn(async () => {
+      activeRequests += 1;
+      peakRequests = Math.max(peakRequests, activeRequests);
+      await Promise.resolve();
+      activeRequests -= 1;
+      return response("ok");
+    });
+
+    await expect(
+      runHealthChecks(contractWith(checks), {
+        deploymentId: "release-4",
+        fetchImpl,
+        sleep: vi.fn().mockResolvedValue(undefined),
+        logger: { log: vi.fn() },
+      }),
+    ).resolves.toEqual({ checks: 5 });
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    expect(peakRequests).toBe(2);
+  });
 });
 
 describe("health checker arguments", () => {

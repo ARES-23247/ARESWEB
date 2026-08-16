@@ -101,11 +101,23 @@ export async function runHealthCheck(contract, check, options) {
 
 export async function runHealthChecks(contract, options) {
   validateDeploymentId(options.deploymentId);
-  const results = await Promise.allSettled(
-    contract.health.checks.map((check) =>
-      runHealthCheck(contract, check, options),
-    ),
-  );
+  const results = [];
+  const maxConcurrentChecks = 2;
+  for (
+    let index = 0;
+    index < contract.health.checks.length;
+    index += maxConcurrentChecks
+  ) {
+    const checks = contract.health.checks.slice(
+      index,
+      index + maxConcurrentChecks,
+    );
+    results.push(
+      ...(await Promise.allSettled(
+        checks.map((check) => runHealthCheck(contract, check, options)),
+      )),
+    );
+  }
   const failures = results.filter((result) => result.status === "rejected");
   if (failures.length > 0) {
     throw new Error(
