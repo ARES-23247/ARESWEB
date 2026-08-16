@@ -131,7 +131,7 @@ describe("sitemap route", () => {
     expect(xml).toContain("<loc>https://aresfirst.org/leaderboard</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/store</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/docs</loc>");
-    expect(xml).not.toContain("<loc>https://aresfirst.org/tournaments</loc>");
+    expect(xml).toContain("<loc>https://aresfirst.org/tournaments</loc>");
     expect(xml).toContain("<loc>https://aresfirst.org/blog/blog%20%26%20post</loc>");
     expect(xml).toContain("<lastmod>2026-08-01T12:30:00.000Z</lastmod>");
     expect(xml).toContain("<loc>https://aresfirst.org/robots/robot-1</loc>");
