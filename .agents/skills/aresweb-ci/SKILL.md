@@ -5,7 +5,7 @@ description: Modify or diagnose ARESWEB linting, TypeScript, Vitest, Firebase em
 
 # ARESWEB verification and delivery
 
-Use Node 22.13 or newer in the Node 22 line, pnpm 11.21.0, and Java 21 or
+Use Node 24.15 or newer in the Node 24 line, pnpm 11.21.0, and Java 21 or
 newer for Firebase emulators. Treat `package.json`, `functions/package.json`,
 and `.github/workflows/ci.yml` as authoritative.
 

@@ -38,7 +38,7 @@ function contractWith(functions = [functionSpec()]) {
     project: "aresfirst-portal",
     region: "us-central1",
     platform: "gcfv2",
-    runtime: "nodejs22",
+    runtime: "nodejs24",
     buildIdentity: {
       serviceAccount: "205869391101-compute@developer.gserviceaccount.com",
       projectRoles: ["roles/logging.logWriter"],
@@ -74,7 +74,7 @@ function deployedFunction(spec = functionSpec(), overrides = {}) {
     project: "aresfirst-portal",
     region: "us-central1",
     platform: "gcfv2",
-    runtime: "nodejs22",
+    runtime: "nodejs24",
     runServiceId: spec.runServiceId,
     serviceAccount: spec.serviceAccount,
     state: "ACTIVE",

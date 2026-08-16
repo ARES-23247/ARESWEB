@@ -14,8 +14,8 @@ if (Test-Path -LiteralPath (Join-Path $fnmNodeHome 'node.exe')) {
 }
 
 $resolvedNode = (& node -p 'process.versions.node' 2>$null)
-if ($LASTEXITCODE -ne 0 -or $resolvedNode -notmatch '^22\.(1[3-9]|[2-9][0-9])\.') {
-    throw "Node 22.13+ in the Node 22 line was not found. Install $nodeVersion with fnm."
+if ($LASTEXITCODE -ne 0 -or $resolvedNode -notmatch '^24\.(1[5-9]|[2-9][0-9])\.') {
+    throw "Node 24.15+ in the Node 24 line was not found. Install $nodeVersion with fnm."
 }
 
 $resolvedPnpm = (& pnpm --version 2>$null)

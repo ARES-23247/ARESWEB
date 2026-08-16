@@ -18,7 +18,7 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  NODE_VERSION: "22.13.1"
+  NODE_VERSION: "24.18.0"
   PNPM_VERSION: "11.21.0"
 
 jobs:

@@ -12,7 +12,7 @@ export function getEncryptionSecret(): string {
 }
 
 
-async function getCryptoKey(secret: string, saltHex?: string): Promise<CryptoKey> {
+async function getCryptoKey(secret: string, saltHex?: string): Promise<webcrypto.CryptoKey> {
   const enc = new TextEncoder();
   const keyMaterial = await subtle.importKey(
     "raw",

@@ -3,7 +3,7 @@
   "project": "aresfirst-portal",
   "region": "us-central1",
   "platform": "gcfv2",
-  "runtime": "nodejs22",
+  "runtime": "nodejs24",
   "deploymentRoleFile": "infra/gcp/aresweb-deployment-auxiliary-role.json",
   "buildIdentity": {
     "serviceAccount": "205869391101-compute@developer.gserviceaccount.com",

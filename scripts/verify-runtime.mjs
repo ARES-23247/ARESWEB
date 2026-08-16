@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-const REQUIRED_NODE = { major: 22, minor: 13 };
+const REQUIRED_NODE = { major: 24, minor: 15 };
 const REQUIRED_PNPM = "11.21.0";
 const MINIMUM_JAVA_MAJOR = 21;
 
@@ -10,9 +10,13 @@ function fail(message) {
 }
 
 function runVersion(command, args) {
-  const result = spawnSync(command, args, {
+  const usesWindowsPnpmShim = process.platform === "win32" && command === "pnpm";
+  const executable = usesWindowsPnpmShim ? (process.env.ComSpec ?? "cmd.exe") : command;
+  const executableArgs = usesWindowsPnpmShim
+    ? ["/d", "/s", "/c", "pnpm.cmd --version"]
+    : args;
+  const result = spawnSync(executable, executableArgs, {
     encoding: "utf8",
-    shell: process.platform === "win32",
   });
   if (result.error || result.status !== 0) return null;
   return `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
@@ -20,7 +24,7 @@ function runVersion(command, args) {
 
 const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
 if (nodeMajor !== REQUIRED_NODE.major || nodeMinor < REQUIRED_NODE.minor) {
-  fail(`Unsupported Node.js ${process.versions.node}; use Node 22.13 or newer in the Node 22 line.`);
+  fail(`Unsupported Node.js ${process.versions.node}; use Node 24.15 or newer in the Node 24 line.`);
 }
 
 const pnpmVersion = runVersion("pnpm", ["--version"]);

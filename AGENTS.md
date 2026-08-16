@@ -37,7 +37,7 @@ vendor-specific directories.
 
 ## Verification gate
 
-Use Node 22.13 or newer in the Node 22 line (the Cloud Functions runtime),
+Use Node 24.15 or newer in the Node 24 line (the Cloud Functions runtime),
 pnpm 11.21.0, and Java 21 or newer for Firebase emulators. Run all of the
 following before handing off a code change:
 
