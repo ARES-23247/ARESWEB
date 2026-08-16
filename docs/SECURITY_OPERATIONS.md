@@ -14,6 +14,7 @@ a credential must be rotated:
 firebase functions:secrets:set GITHUB_PAT
 firebase functions:secrets:set PROFILE_SYNC_SECRET
 firebase functions:secrets:set BLUESKY_APP_PASSWORD
+firebase functions:secrets:set BUFFER_API_KEY
 ```
 
 `GITHUB_PAT` should be a fine-grained token limited to the ARESWEB repository and
@@ -110,7 +111,7 @@ not inherit unrelated credentials:
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with only the Drive credential and quota secret.
 - `communicationsApi`: task, Zulip, webhook, simulation, and social
-  syndication routes, with only their five integration secrets.
+  syndication routes, with only their six integration secrets.
 
 The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
@@ -132,7 +133,7 @@ The production access baseline is:
 | `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync, Zulip bot credentials |
 | `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
 | `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
-| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub, Zulip, and Bluesky credentials                             |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub, Zulip, Bluesky, and Buffer credentials                     |
 | `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                                         |
 | `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                                        |
 | `web`                    | Firestore user                                                                                        | none                                                               |
