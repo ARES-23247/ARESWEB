@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const WEEKDAYS: Array<{ code: string; label: string; title: string }> = [
   { code: "MO", label: "M", title: "Monday" },
@@ -42,6 +42,8 @@ interface EventRecurrenceSectionProps {
   occurrenceExceptions: Array<{ date: string; isCancelled: boolean }>;
   onCancelOccurrence: (date: string) => Promise<void>;
   onRestoreOccurrence: (date: string) => Promise<void>;
+  /** When the editor was opened from a specific occurrence, offer skipping it. */
+  suggestedSkipDate?: string | null;
 }
 
 export default function EventRecurrenceSection({
@@ -59,8 +61,14 @@ export default function EventRecurrenceSection({
   occurrenceExceptions,
   onCancelOccurrence,
   onRestoreOccurrence,
+  suggestedSkipDate,
 }: EventRecurrenceSectionProps) {
-  const [skipDate, setSkipDate] = useState("");
+  const [skipDate, setSkipDate] = useState(suggestedSkipDate ?? "");
+
+  // The drawer reuses this component across events; keep the suggestion fresh.
+  useEffect(() => {
+    setSkipDate(suggestedSkipDate ?? "");
+  }, [suggestedSkipDate]);
   const [skipBusy, setSkipBusy] = useState(false);
   const [skipError, setSkipError] = useState<string | null>(null);
 
@@ -195,6 +203,21 @@ export default function EventRecurrenceSection({
 
       {isEditingExistingRecurring && (
         <div className="border-t border-white/5 pt-3 space-y-2">
+          {suggestedSkipDate && !cancelledDates.some((exception) => exception.date === suggestedSkipDate) && (
+            <div className="flex flex-wrap items-center gap-2 bg-ares-gold/10 border border-ares-gold/30 rounded px-3 py-2">
+              <span className="text-[11px] text-marble">
+                Editing the series. Just cancel the {suggestedSkipDate} session?
+              </span>
+              <button
+                type="button"
+                onClick={() => void handleSkipDate()}
+                disabled={skipBusy || !canEdit}
+                className="text-[10px] font-black uppercase tracking-wider text-ares-gold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded disabled:opacity-50"
+              >
+                Skip {suggestedSkipDate}
+              </button>
+            </div>
+          )}
           <span className="block text-[10px] font-bold uppercase tracking-wider text-marble/60">
             Skipped dates
           </span>

@@ -32,6 +32,20 @@ import {
 
 /** Recurring sessions are materialized for a forward window from today. */
 const OCCURRENCE_WINDOW_DAYS = 56;
+const OCCURRENCE_WINDOW_MAX_DAYS = 190;
+/** Hard ceiling on expanded occurrences per page regardless of inputs. */
+const OCCURRENCE_PAGE_MAX = 300;
+
+function occurrenceWindowDays(requested: unknown): number {
+  const parsed = Number.parseInt(String(requested ?? ""), 10);
+  if (!Number.isFinite(parsed)) return OCCURRENCE_WINDOW_DAYS;
+  return Math.min(OCCURRENCE_WINDOW_MAX_DAYS, Math.max(OCCURRENCE_WINDOW_DAYS, parsed));
+}
+
+function perEventCap(windowDays: number): number {
+  // Roughly one session per weekday per week inside the window, bounded.
+  return Math.min(26, Math.ceil(windowDays / 7) * 2);
+}
 
 function todayYmd(): string {
   return new Date().toISOString().slice(0, 10);
@@ -61,11 +75,13 @@ async function loadCancelledDates(parentIds: readonly string[]): Promise<Map<str
 /**
  * Renders a page of documents as DTOs. Recurring events contribute their
  * upcoming occurrences (skipping cancelled dates) instead of only the first
- * session, so a weekly practice stays visible as it recurs.
+ * session, so a weekly practice stays visible as it recurs. `windowDays`
+ * bounds how far ahead sessions are materialized.
  */
 async function renderEventPage(
   documents: FirebaseFirestore.QueryDocumentSnapshot[],
   includeLifecycle: boolean,
+  windowDays: number,
 ) {
   const dtos = documents.map((document) =>
     eventDto(document.id, document.data() as EventDocument, includeLifecycle),
@@ -73,22 +89,27 @@ async function renderEventPage(
   const recurringIds = documents
     .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
     .map((document) => document.id);
-  if (recurringIds.length === 0) return { events: dtos, nextOccurrenceIds: new Set<string>() };
+  if (recurringIds.length === 0) return { events: dtos };
 
   const cancelled = await loadCancelledDates(recurringIds);
-  const expanded = dtos.flatMap((dto, index) => {
+  const cap = perEventCap(windowDays);
+  const expanded: ReturnType<typeof eventDto>[] = [];
+  for (const [index, dto] of dtos.entries()) {
     const data = documents[index].data() as EventDocument;
-    if (!readRecurrence(data.recurrence)) return [dto];
+    if (!readRecurrence(data.recurrence)) {
+      expanded.push(dto);
+      continue;
+    }
+    if (expanded.length >= OCCURRENCE_PAGE_MAX) break;
     const occurrences = expandEventOccurrences(dto, data, {
       fromDate: todayYmd(),
-      toDate: futureYmd(OCCURRENCE_WINDOW_DAYS),
+      toDate: futureYmd(windowDays),
       cancelledDates: cancelled.get(dto.id),
-      maxPerEvent: 4,
+      maxPerEvent: Math.min(cap, OCCURRENCE_PAGE_MAX - expanded.length),
     });
-    return occurrences.length > 0 ? occurrences : [];
-  });
-  const nextOccurrenceIds = new Set(expanded.map((dto) => dto.id));
-  return { events: expanded, nextOccurrenceIds };
+    expanded.push(...(occurrences.length > 0 ? occurrences : []));
+  }
+  return { events: expanded };
 }
 
 const router = express.Router();
@@ -174,7 +195,11 @@ router.get(
     const snapshot = await query.limit(limitValue + 1).get();
     const hasMore = snapshot.docs.length > limitValue;
     const pageDocuments = snapshot.docs.slice(0, limitValue);
-    const { events } = await renderEventPage(pageDocuments, false);
+    const { events } = await renderEventPage(
+      pageDocuments,
+      false,
+      occurrenceWindowDays(req.query.expandDays),
+    );
 
     res.json({
       success: true,
@@ -243,7 +268,11 @@ router.get(
     const snapshot = await query.limit(limitValue + 1).get();
     const hasMore = snapshot.docs.length > limitValue;
     const pageDocuments = snapshot.docs.slice(0, limitValue);
-    const { events } = await renderEventPage(pageDocuments, true);
+    const { events } = await renderEventPage(
+      pageDocuments,
+      true,
+      occurrenceWindowDays(req.query.expandDays),
+    );
     res.json({
       success: true,
       events,

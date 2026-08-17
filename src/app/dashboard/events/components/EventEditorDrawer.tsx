@@ -77,6 +77,7 @@ export default function EventEditorDrawer({
     occurrenceExceptions,
     handleCancelOccurrence,
     handleRestoreOccurrence,
+    occurrenceContextDate,
     isFullScreen,
     setIsFullScreen,
     activeTab,
@@ -284,6 +285,7 @@ export default function EventEditorDrawer({
                   occurrenceExceptions={occurrenceExceptions}
                   onCancelOccurrence={handleCancelOccurrence}
                   onRestoreOccurrence={handleRestoreOccurrence}
+                  suggestedSkipDate={occurrenceContextDate}
                 />
 
                 <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">

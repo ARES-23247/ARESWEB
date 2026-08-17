@@ -110,6 +110,8 @@ function normalizeEvent(value: unknown): TeamEvent {
     recurrence,
     recurrenceOf: optionalString(record, "recurrenceOf"),
     occurrenceDate: optionalString(record, "occurrenceDate"),
+    seriesDateStart: optionalString(record, "seriesDateStart"),
+    seriesDateEnd: optionalString(record, "seriesDateEnd"),
     locationId: optionalString(record, "locationId"),
     location: optionalString(record, "location"),
     publicVenue: publicVenueName && publicVenueAddress
@@ -175,14 +177,15 @@ function jsonRequest(method: "POST" | "PUT", body: unknown): RequestInit {
   };
 }
 
-function withPage(path: string, limit: number, cursor?: string | null): string {
+function withPage(path: string, limit: number, cursor?: string | null, expandDays?: number): string {
   const params = new URLSearchParams({ limit: String(Math.min(150, Math.max(1, Math.trunc(limit)))) });
   if (cursor) params.set("cursor", cursor);
+  if (expandDays) params.set("expandDays", String(Math.trunc(expandDays)));
   return `${path}?${params.toString()}`;
 }
 
-export async function fetchPublicEvents(limit = 50, cursor?: string | null): Promise<CalendarPageResult> {
-  const payload = await requestJson<EventsPayload>(withPage("/api/calendar/events", limit, cursor));
+export async function fetchPublicEvents(limit = 50, cursor?: string | null, expandDays?: number): Promise<CalendarPageResult> {
+  const payload = await requestJson<EventsPayload>(withPage("/api/calendar/events", limit, cursor, expandDays));
   if (!Array.isArray(payload.events)) throw new Error("Calendar response does not contain an event list.");
   return {
     events: payload.events.map(normalizeEvent),
@@ -195,8 +198,8 @@ export async function fetchPublicEvent(eventId: string): Promise<TeamEvent> {
   return normalizeEvent(payload.event);
 }
 
-export async function fetchManagedEvents(limit = 100, cursor?: string | null): Promise<CalendarPageResult> {
-  const payload = await requestJson<EventsPayload>(withPage("/api/calendar/manage", limit, cursor));
+export async function fetchManagedEvents(limit = 100, cursor?: string | null, expandDays?: number): Promise<CalendarPageResult> {
+  const payload = await requestJson<EventsPayload>(withPage("/api/calendar/manage", limit, cursor, expandDays));
   if (!Array.isArray(payload.events)) throw new Error("Calendar response does not contain an event list.");
   return {
     events: payload.events.map(normalizeEvent),

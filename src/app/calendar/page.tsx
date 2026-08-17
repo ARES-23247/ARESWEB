@@ -78,7 +78,7 @@ export default function CalendarPage() {
   const loadEvents = useCallback(async (cursor: string | null = null, append = false) => {
     setIsLoading(true);
     try {
-      const page = await fetchPublicEvents(50, cursor);
+      const page = await fetchPublicEvents(50, cursor, 190);
       setEvents((current) => {
         if (!append) return page.events;
         const merged = new Map(current.map((event) => [event.id, event]));
