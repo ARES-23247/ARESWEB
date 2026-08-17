@@ -7,6 +7,9 @@ import type { TaskItem } from "@/types/task";
 const firestore = vi.hoisted(() => ({
   updateDoc: vi.fn(),
   setDoc: vi.fn(),
+  batchUpdate: vi.fn(),
+  batchSet: vi.fn(),
+  batchCommit: vi.fn(),
 }));
 
 const focusTrap = vi.hoisted(() => ({
@@ -15,6 +18,15 @@ const focusTrap = vi.hoisted(() => ({
 
 vi.mock("firebase/firestore", () => ({
   doc: vi.fn((...parts: unknown[]) => ({ parts })),
+  collection: vi.fn((...parts: unknown[]) => ({ parts })),
+  query: vi.fn((value: unknown) => value),
+  orderBy: vi.fn((value: unknown) => value),
+  limit: vi.fn((value: number) => value),
+  onSnapshot: vi.fn((_ref: unknown, success: (snap: { docs: unknown[] }) => void) => {
+    success({ docs: [] });
+    return () => undefined;
+  }),
+  writeBatch: vi.fn(() => ({ update: firestore.batchUpdate, set: firestore.batchSet, commit: firestore.batchCommit })),
   updateDoc: firestore.updateDoc,
   setDoc: firestore.setDoc,
 }));
@@ -82,6 +94,10 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof TaskDetailsM
 
 describe("TaskDetailsModal reliability", () => {
   beforeEach(() => {
+    firestore.batchUpdate.mockReset();
+    firestore.batchSet.mockReset();
+    firestore.batchCommit.mockReset();
+    firestore.batchCommit.mockResolvedValue(undefined);
     vi.restoreAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.spyOn(window, "confirm").mockReturnValue(false);
@@ -128,7 +144,7 @@ describe("TaskDetailsModal reliability", () => {
 
   it("keeps the editor open and exposes diagnostic guidance when saving fails", async () => {
     const onClose = vi.fn();
-    firestore.updateDoc.mockRejectedValueOnce({ code: "permission-denied", message: "Forbidden" });
+    firestore.batchCommit.mockRejectedValueOnce({ code: "permission-denied", message: "Forbidden" });
     renderModal({ onClose });
 
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
@@ -181,8 +197,8 @@ describe("TaskDetailsModal reliability", () => {
     fireEvent.change(dueDate, { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(firestore.updateDoc).toHaveBeenCalledOnce());
-    expect(firestore.updateDoc.mock.calls[0][1]).toMatchObject({ dueDate: null });
+    await waitFor(() => expect(firestore.batchCommit).toHaveBeenCalledOnce());
+    expect(firestore.batchUpdate.mock.calls[0][1]).toMatchObject({ dueDate: null });
   });
 
   it("keeps a subtask draft when the transaction fails", async () => {

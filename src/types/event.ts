@@ -18,6 +18,9 @@ export interface TeamEvent {
   /** Present on expanded occurrences: the parent event id and this session's date. */
   recurrenceOf?: string;
   occurrenceDate?: string;
+  /** The parent series' first-session times (present on expanded occurrences). */
+  seriesDateStart?: string;
+  seriesDateEnd?: string;
   locationId?: string;
   location?: string;
   publicVenue?: {
