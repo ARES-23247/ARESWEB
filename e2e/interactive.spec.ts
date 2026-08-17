@@ -32,6 +32,15 @@ test.describe("Kanban Task Board status movement tests", () => {
     ).toBeVisible();
   });
 
+  test("opens the exact task card from a ?task= deep link", async ({ page, loginAs }) => {
+    await loginAs("admin");
+    await page.goto("/dashboard/tasks?task=task_1");
+
+    const dialog = page.getByRole("dialog", { name: "Task Card Details" });
+    await expect(dialog).toBeVisible({ timeout: 15000 });
+    await expect(dialog.getByLabel("Task Title")).toHaveValue("Calibrate Mecanum kS Friction Feedforward");
+  });
+
   test("blocks creating a task until a title is provided", async ({
     page,
     loginAs,

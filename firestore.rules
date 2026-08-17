@@ -219,6 +219,29 @@ service cloud.firestore {
           request.resource.data.content.size() <= 4000;
         allow delete: if isAuthorized() && resource.data.authorUid == request.auth.uid;
       }
+
+      // Client-written activity trail for the task board. Bounded to a fixed
+      // action vocabulary and size limits; entries are immutable once written.
+      match /revisions/{revisionId} {
+        allow read: if isAuthorized();
+        allow create: if isAuthorized() &&
+          revisionId.size() > 0 && revisionId.size() <= 160 &&
+          request.resource.data.keys().hasAll(['action', 'actorUid', 'actorName', 'createdAt']) &&
+          request.resource.data.keys().hasOnly(['action', 'actorUid', 'actorName', 'createdAt', 'from', 'to', 'fields']) &&
+          request.resource.data.action in ['created', 'updated', 'moved', 'archived', 'restored', 'deleted'] &&
+          request.resource.data.actorUid == request.auth.uid &&
+          request.resource.data.actorName is string &&
+          request.resource.data.actorName.size() <= 80 &&
+          request.resource.data.createdAt is string &&
+          request.resource.data.createdAt.size() <= 40 &&
+          (!request.resource.data.keys().hasAny(['from']) ||
+            (request.resource.data.from is string && request.resource.data.from.size() <= 40)) &&
+          (!request.resource.data.keys().hasAny(['to']) ||
+            (request.resource.data.to is string && request.resource.data.to.size() <= 40)) &&
+          (!request.resource.data.keys().hasAny(['fields']) ||
+            (request.resource.data.fields is list && request.resource.data.fields.size() <= 12));
+        allow update, delete: if false;
+      }
     }
 
     match /tournaments/{tournamentId} {

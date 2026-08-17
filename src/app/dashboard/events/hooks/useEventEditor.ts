@@ -124,7 +124,10 @@ export function useEventEditor({
   const [operationError, setOperationError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const editId = eventToEdit?.id || null;
+  // Editing an expanded occurrence edits its parent series; the occurrence
+  // date is offered as a one-tap skip suggestion instead.
+  const editId = (eventToEdit?.recurrenceOf || eventToEdit?.id) || null;
+  const occurrenceContextDate = eventToEdit?.recurrenceOf ? (eventToEdit.occurrenceDate || null) : null;
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
   const profileQuery = useCurrentProfile(user?.uid);
@@ -152,8 +155,12 @@ export function useEventEditor({
     if (isOpen) {
       if (eventToEdit) {
         setFormTitle(eventToEdit.title);
-        setFormDateStart(eventToEdit.dateStart ? eventToEdit.dateStart.slice(0, 16) : "");
-        setFormDateEnd(eventToEdit.dateEnd ? eventToEdit.dateEnd.slice(0, 16) : "");
+        const seriesStart = (eventToEdit as { seriesDateStart?: string }).seriesDateStart;
+        const seriesEnd = (eventToEdit as { seriesDateEnd?: string | null }).seriesDateEnd;
+        const firstSessionStart = seriesStart ?? eventToEdit.dateStart;
+        const firstSessionEnd = seriesEnd ?? eventToEdit.dateEnd;
+        setFormDateStart(firstSessionStart ? firstSessionStart.slice(0, 16) : "");
+        setFormDateEnd(firstSessionEnd ? firstSessionEnd.slice(0, 16) : "");
         setFormLocationId(eventToEdit.locationId || "");
         setFormDescription(normalizeForMarkdownEditor(eventToEdit.description));
         setFormCategory(eventToEdit.category);
@@ -527,5 +534,6 @@ export function useEventEditor({
     occurrenceExceptions,
     handleCancelOccurrence,
     handleRestoreOccurrence,
+    occurrenceContextDate,
   };
 }
