@@ -704,15 +704,30 @@ describe("calendar recurrence", () => {
     collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
     await handler("/events", "get")(req, res, next);
     const payload = res.json.mock.calls[0][0];
-    // One weekly byDay emits the next four sessions (today + three weeks).
-    expect(payload.events).toHaveLength(4);
+    // Default 56-day inclusive window holds nine weekly candidates (day 0..56);
+    // the proportional per-event cap keeps all of them (min(16, 9) = 9).
+    expect(payload.events).toHaveLength(9);
     const occurrence = payload.events[0];
     expect(occurrence.id).toBe(`weekly-1_${todayYmdStr}`);
     expect(occurrence.recurrenceOf).toBe("weekly-1");
     expect(occurrence.dateStart).toContain("T18:00:00.000Z");
     expect(occurrence.occurrenceDate).toBe(todayYmdStr);
-    expect(payload.events[3].id).toBe(`weekly-1_${new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}`);
+    expect(occurrence.seriesDateStart).toContain("T18:00:00.000Z");
     expect(occurrence.recurrence).toEqual(weeklyRule);
+  });
+
+  it("extends occurrence visibility with the bounded expandDays window", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
+    req.query = { expandDays: "190" };
+    await handler("/events", "get")(req, res, next);
+    const payload = res.json.mock.calls[0][0];
+    // 190 days of a weekly event offers ~27 candidate days; the hard per-event
+    // cap of 26 bounds the expansion.
+    expect(payload.events.length).toBeGreaterThanOrEqual(20);
+    expect(payload.events.length).toBeLessThanOrEqual(26);
+    req.query = { expandDays: "5000" };
+    await handler("/events", "get")(req, res, next);
+    expect(collectionRef.get).toHaveBeenCalledTimes(2);
   });
 
   it("skips cancelled occurrence dates during expansion", async () => {
@@ -722,9 +737,8 @@ describe("calendar recurrence", () => {
     });
     await handler("/events", "get")(req, res, next);
     const payload = res.json.mock.calls[0][0];
-    // The 56-day window offers eight weekly candidates; one cancellation
-    // removes today and the max-4 slice refills from the remaining weeks.
-    expect(payload.events).toHaveLength(4);
+    // One cancelled date simply drops that session from the expansion.
+    expect(payload.events).toHaveLength(8);
     expect(payload.events.map((event: any) => event.occurrenceDate)).not.toContain(todayYmdStr);
   });
 

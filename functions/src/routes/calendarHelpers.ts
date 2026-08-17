@@ -144,6 +144,10 @@ export function expandEventOccurrences(
     recurrenceOf: dto.id,
     dateStart: shiftIsoDays(dateStart, dayShift(date)),
     dateEnd: readString(data.dateEnd) ? shiftIsoDays(readString(data.dateEnd)!, dayShift(date)) : dto.dateEnd,
+    // The parent series' first-session times, so editors opened from an
+    // occurrence can seed the form with the series definition.
+    seriesDateStart: dateStart,
+    seriesDateEnd: readString(data.dateEnd) ?? null,
     occurrenceDate: date,
   }));
 }
