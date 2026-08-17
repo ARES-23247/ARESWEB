@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { logger } from "./logger";
 
 export function getZulipCredentials() {
@@ -83,15 +82,6 @@ export interface ZulipUser {
   [key: string]: unknown;
 }
 
-function getZulipErrorMessage(value: unknown): string {
-  if (!value || typeof value !== "object" || !("msg" in value)) return "";
-  return typeof value.msg === "string" ? value.msg : "";
-}
-
-function describeError(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
 export async function getZulipUsers(): Promise<ZulipUser[] | null> {
   const { url, email, apiKey } = getZulipCredentials();
 
@@ -122,87 +112,6 @@ export async function getZulipUsers(): Promise<ZulipUser[] | null> {
   } catch (err) {
     logger.error("zulip", "Exception fetching users", { error: err });
     return null;
-  }
-}
-
-export async function createZulipUser(
-  userEmail: string,
-  fullName: string
-): Promise<{ success: boolean; error?: string; message?: string }> {
-  const { url, email, apiKey } = getZulipCredentials();
-
-  if (!email || !apiKey) {
-    return { success: false, error: "Zulip integration is not active (missing bot email or api key)." };
-  }
-
-  const cleanEmail = userEmail.trim().toLowerCase();
-  const cleanName = fullName.trim();
-  const auth = Buffer.from(`${email}:${apiKey}`).toString("base64");
-
-  // Attempt 1: Direct user creation (available on self-hosted or human admin keys)
-  try {
-    const endpoint = `${url}/api/v1/users`;
-    const password = crypto.randomBytes(16).toString("hex") + "aA1!";
-
-    const params = new URLSearchParams();
-    params.append("email", cleanEmail);
-    params.append("password", password);
-    params.append("full_name", cleanName);
-
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-
-    if (res.ok) {
-      return { success: true, message: `Zulip account created for ${cleanEmail}` };
-    }
-
-    const errorData: unknown = await res.json().catch(() => ({}));
-    const msg = getZulipErrorMessage(errorData).toLowerCase();
-    if (msg.includes("already") || msg.includes("exists") || msg.includes("member")) {
-      return { success: true, message: `${cleanEmail} is already registered on Zulip.` };
-    }
-    logger.warn("zulip", "Direct user creation failed, attempting invitation fallback", { status: res.status, error: errorData });
-  } catch (err: unknown) {
-    logger.warn("zulip", "Exception in direct user creation", { error: err });
-  }
-
-  // Attempt 2: Zulip Invitation API (available for Admin Bots on Zulip Cloud)
-  try {
-    const inviteEndpoint = `${url}/api/v1/invites`;
-    const inviteParams = new URLSearchParams();
-    inviteParams.append("invitee_emails", cleanEmail);
-
-    const inviteRes = await fetch(inviteEndpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: inviteParams.toString(),
-    });
-
-    if (inviteRes.ok) {
-      return { success: true, message: `Zulip invitation email sent to ${cleanEmail}` };
-    }
-
-    const inviteError: unknown = await inviteRes.json().catch(() => ({}));
-    const msg = getZulipErrorMessage(inviteError).toLowerCase();
-    if (msg.includes("already") || msg.includes("exists") || msg.includes("member")) {
-      return { success: true, message: `${cleanEmail} is already a member of the Zulip workspace.` };
-    }
-
-    const errorMsg = getZulipErrorMessage(inviteError) || `Zulip invite failed with status ${inviteRes.status}`;
-    logger.error("zulip", "Failed to invite user via Zulip API", { status: inviteRes.status, error: inviteError });
-    return { success: false, error: errorMsg };
-  } catch (err: unknown) {
-    logger.error("zulip", "Exception in Zulip user invitation", { error: err });
-    return { success: false, error: describeError(err, "Internal server error inviting user.") };
   }
 }
 

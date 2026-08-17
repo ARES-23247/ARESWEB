@@ -123,29 +123,4 @@ describe("DashboardUsersPage paginated directory", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("HTTP 502: Identity provider unavailable");
   });
 
-  it("provisions by opaque user ID without sending an email or name", async () => {
-    const directory = directoryResponse([
-      { id: "member_uid", name: "CircuitFox", email: "private@example.org" },
-    ], null);
-    vi.mocked(authenticatedFetch)
-      .mockResolvedValueOnce(response({ success: true, provisionedCount: 0 }))
-      .mockResolvedValueOnce(directory)
-      .mockResolvedValueOnce(response({ success: true, linked: true }))
-      .mockResolvedValueOnce(response({ success: true, provisionedCount: 0 }))
-      .mockResolvedValueOnce(directoryResponse([
-        { id: "member_uid", name: "CircuitFox", email: "private@example.org" },
-      ], null));
-
-    render(<DashboardUsersPage />);
-    fireEvent.click(await screen.findByRole("button", { name: "Provision CircuitFox" }));
-
-    await waitFor(() => expect(authenticatedFetch).toHaveBeenNthCalledWith(
-      3,
-      "/api/zulip/admin/users/member_uid/provision",
-      { method: "POST" },
-    ));
-    const serializedCall = JSON.stringify(vi.mocked(authenticatedFetch).mock.calls[2]);
-    expect(serializedCall).not.toContain("private@example.org");
-    expect(serializedCall).not.toContain("CircuitFox");
-  });
 });

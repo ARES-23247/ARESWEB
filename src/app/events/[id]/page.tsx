@@ -314,7 +314,6 @@ export default function EventDetailPage() {
           fileBase64: compressed.base64,
           filename: file.name,
           mimeType: compressed.mimeType || file.type,
-          uploadToGoogle: true,
           runAiLabeling: false,
         }),
       });

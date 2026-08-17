@@ -33,7 +33,6 @@ export default function UserInviteForm({
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [inviteMemberType, setInviteMemberType] = useState("student");
-  const [createZulipCheckbox, setCreateZulipCheckbox] = useState(false);
   const [inviting, setInviting] = useState(false);
 
   const handleInviteUser = async (e: React.FormEvent) => {
@@ -70,37 +69,9 @@ export default function UserInviteForm({
         throw new Error(`HTTP ${inviteResponse.status}: ${inviteBody.error || inviteResponse.statusText}`);
       }
 
-      let zulipMsg = "";
-      // 3. Optionally provision Zulip
-      if (createZulipCheckbox) {
-        try {
-          const res = await authenticatedFetch("/api/profiles/zulip/users", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              email: emailClean,
-              fullName: nameClean
-            })
-          });
-
-          if (!res.ok) {
-            const data = await res.json();
-            zulipMsg = ` (However, Zulip account creation failed: ${data.error || "server error"})`;
-          } else {
-            zulipMsg = " and their Zulip account has been provisioned";
-          }
-        } catch (zErr: unknown) {
-          logger.error("Error inviting Zulip account:", zErr);
-          zulipMsg = ` (However, Zulip account creation failed: ${zErr instanceof Error ? zErr.message : "network error"})`;
-        }
-      }
-
-      setSuccess(`Successfully authorized ${emailClean}${zulipMsg}.`);
+      setSuccess(`Successfully authorized ${emailClean}.`);
       setInviteEmail("");
       setInviteName("");
-      setCreateZulipCheckbox(false);
       
       await fetchUsersData();
       setTimeout(() => setSuccess(null), 5000);
@@ -189,23 +160,6 @@ export default function UserInviteForm({
             <option value="alumni">Alumni</option>
             <option value="sponsor">Sponsor</option>
           </select>
-        </div>
-
-        {/* Zulip Account Provisioning Checkbox */}
-        <div className="flex items-center gap-3 pt-2">
-          <input
-            type="checkbox"
-            id="createZulipCheckbox"
-            checked={createZulipCheckbox}
-            onChange={(e) => setCreateZulipCheckbox(e.target.checked)}
-            className="w-4 h-4 bg-obsidian border border-white/10 rounded focus:ring-0 cursor-pointer"
-          />
-          <label 
-            htmlFor="createZulipCheckbox" 
-            className="text-xs font-semibold text-marble/75 hover:text-white cursor-pointer select-none"
-          >
-            Provision Zulip account now
-          </label>
         </div>
 
         {/* Submit Button */}

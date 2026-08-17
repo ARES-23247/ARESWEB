@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createZulipUser,
   getZulipCredentials,
   getZulipUsers,
   sendZulipMessage,
@@ -23,7 +22,6 @@ vi.mock("../../lib/firebase-admin", () => ({
 }));
 
 vi.mock("../../lib/zulip", () => ({
-  createZulipUser: vi.fn(),
   getZulipCredentials: vi.fn(),
   getZulipUsers: vi.fn(),
   sendZulipMessage: vi.fn(),
@@ -58,7 +56,6 @@ describe("Zulip API integrity", () => {
       apiKey: "secret-key",
     });
     vi.mocked(getZulipUsers).mockResolvedValue([]);
-    vi.mocked(createZulipUser).mockResolvedValue({ success: true });
   });
 
   function handler(path: string, method: string) {
@@ -166,43 +163,6 @@ describe("Zulip API integrity", () => {
     await handler("/config", "patch")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
     expect(batchCommit).not.toHaveBeenCalled();
-  });
-
-  it("provisions an active user with a nickname and returns no roster or email", async () => {
-    req.params.userId = "student_uid";
-    documentGet
-      .mockResolvedValueOnce({
-        exists: true,
-        data: () => ({ email: "student@example.org", name: "Private Legal Name", isDeleted: 0 }),
-      })
-      .mockResolvedValueOnce({
-        exists: true,
-        data: () => ({ nickname: "CircuitFox" }),
-      });
-
-    await handler("/admin/users/:userId/provision", "post")(req, res, next);
-
-    expect(createZulipUser).toHaveBeenCalledWith("student@example.org", "CircuitFox");
-    expect(auditAdd).toHaveBeenCalledWith(expect.objectContaining({
-      action: "zulip.member.provisioned",
-      actorUid: "member-uid",
-      targetUid: "student_uid",
-    }));
-    expect(res.json).toHaveBeenCalledWith({ success: true, linked: true });
-    expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("student@example.org");
-    expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("Private Legal Name");
-  });
-
-  it("does not provision missing or archived portal users", async () => {
-    req.params.userId = "archived_uid";
-    documentGet
-      .mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 1 }) })
-      .mockResolvedValueOnce({ exists: false, data: () => ({}) });
-
-    await handler("/admin/users/:userId/provision", "post")(req, res, next);
-
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
-    expect(createZulipUser).not.toHaveBeenCalled();
   });
 
   it("returns a bounded explicit topic DTO without sender emails", async () => {

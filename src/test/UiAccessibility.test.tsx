@@ -98,11 +98,9 @@ describe("accessible roster form controls", () => {
         editedRoles={{ "member-1": "mentor" }}
         editedMemberTypes={{}}
         savingRoles={{}}
-        creatingZulip={{}}
         onRoleChange={onRoleChange}
         onMemberTypeChange={vi.fn()}
         onSaveRole={vi.fn()}
-        onCreateZulip={vi.fn()}
         onRemoveUser={vi.fn()}
       />
     );

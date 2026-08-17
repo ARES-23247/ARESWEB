@@ -101,7 +101,6 @@ export default function DashboardPhotosPage() {
   const pickerPopup = useRef<Window | null>(null);
 
   const [uploadAlbum, setUploadAlbum] = useState("");
-  const [uploadGoogle, setUploadGoogle] = useState(false);
   const [uploadAi, setUploadAi] = useState(true);
   const [uploads, setUploads] = useState<UploadState[]>([]);
 
@@ -117,7 +116,6 @@ export default function DashboardPhotosPage() {
         );
       const status = (await response.json()) as GooglePhotosConnection;
       setConnection(status);
-      setUploadGoogle(status.configured);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -416,7 +414,6 @@ export default function DashboardPhotosPage() {
               filename,
               mimeType: compressed.mimeType,
               albumId: uploadAlbum || null,
-              uploadToGoogle: uploadGoogle && connection?.configured,
               runAiLabeling: uploadAi,
             }),
           },
@@ -424,7 +421,6 @@ export default function DashboardPhotosPage() {
         if (!response.ok) throw await apiFailure(response, "Upload failed.");
         const payload = (await response.json()) as {
           photo: ManagedPhoto;
-          googleSync?: { warning?: string | null };
         };
         setPhotos((current) => [
           payload.photo,
@@ -436,7 +432,6 @@ export default function DashboardPhotosPage() {
               ? {
                   ...item,
                   state: "done",
-                  detail: payload.googleSync?.warning || undefined,
                 }
               : item,
           ),
@@ -599,15 +594,12 @@ export default function DashboardPhotosPage() {
           canContribute={canContribute}
           canManage={canManage}
           albums={albums}
-          connection={connection}
           uploads={uploads}
           uploadAlbum={uploadAlbum}
           uploadAi={uploadAi}
-          uploadGoogle={uploadGoogle}
           onUploadFiles={(files) => void uploadFiles(files)}
           onUploadAlbumChange={setUploadAlbum}
           onUploadAiChange={setUploadAi}
-          onUploadGoogleChange={setUploadGoogle}
           search={search}
           albumFilter={albumFilter}
           showArchived={showArchivedPhotos}

@@ -3,7 +3,6 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import {
-  createZulipUser,
   getZulipCredentials,
   getZulipUsers,
   sendZulipMessage,
@@ -38,11 +37,6 @@ interface ZulipMessageRecord {
 const inviteConfigSchema = z.object({
   inviteUrl: z.string().trim().min(1).max(512),
 });
-
-const targetUserSchema = z.string()
-  .min(1)
-  .max(128)
-  .regex(/^[A-Za-z0-9_-]+$/, "Invalid user identifier.");
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -168,56 +162,6 @@ router.patch("/config", ensureAdmin, asyncHandler(async (req: AuthenticatedReque
   logger.info("zulip", "Updated Zulip invitation configuration", { actorUid });
   res.json({ success: true, workspace: { url: ZULIP_WORKSPACE_ORIGIN, inviteUrl } });
 }));
-
-// Provisions one authorized portal user without sending their email or name to the browser.
-router.post(
-  "/admin/users/:userId/provision",
-  ensureAdmin,
-  asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const parsedUserId = targetUserSchema.safeParse(req.params.userId);
-    if (!parsedUserId.success) {
-      throw new ApiError(400, "Invalid user identifier.");
-    }
-
-    const targetUid = parsedUserId.data;
-    const [authorizationSnapshot, profileSnapshot] = await Promise.all([
-      adminDb.collection("authorized_users").doc(targetUid).get(),
-      adminDb.collection("user_profiles").doc(targetUid).get(),
-    ]);
-    if (!authorizationSnapshot.exists || authorizationSnapshot.data()?.isDeleted === 1) {
-      throw new ApiError(404, "Active portal member not found.");
-    }
-
-    const authorization = authorizationSnapshot.data() || {};
-    const profile = profileSnapshot.data() || {};
-    const email = typeof authorization.email === "string" ? authorization.email.trim().toLowerCase() : "";
-    if (!z.string().email().safeParse(email).success) {
-      throw new ApiError(409, "The portal member does not have a valid sign-in email.");
-    }
-
-    const nickname = typeof profile.nickname === "string" ? profile.nickname.trim().slice(0, 120) : "";
-    const displayName = nickname || "ARES Member";
-    const result = await createZulipUser(email, displayName);
-    if (!result.success) {
-      logger.error("zulip", "Failed to provision a Zulip account", {
-        actorUid: req.user?.uid,
-        targetUid,
-        error: result.error,
-      });
-      throw new ApiError(502, "Zulip did not accept the account invitation.");
-    }
-
-    const createdAt = new Date().toISOString();
-    await adminDb.collection("audit_logs").add({
-      action: "zulip.member.provisioned",
-      actorUid: req.user!.uid,
-      targetUid,
-      createdAt,
-    });
-
-    res.json({ success: true, linked: true });
-  }),
-);
 
 // GET /api/zulip/topic
 router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {

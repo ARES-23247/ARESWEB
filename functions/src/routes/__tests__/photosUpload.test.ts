@@ -52,7 +52,6 @@ vi.mock("../../middleware/auth", () => ({
   ensureTeamMember: (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
-vi.mock("../../lib/googleAuth", () => ({ getGooglePhotosAccessToken: vi.fn() }));
 vi.mock("../../lib/imageImport", () => ({ validateImageMagicBytes: vi.fn() }));
 vi.mock("../../lib/vertex", () => ({ generatePhotoCaptionAndLabels: vi.fn() }));
 vi.mock("../../lib/photoDerivatives", () => ({
@@ -71,7 +70,6 @@ vi.mock("../../lib/photoDerivatives", () => ({
   })),
 }));
 
-import { getGooglePhotosAccessToken } from "../../lib/googleAuth";
 import { validateImageMagicBytes } from "../../lib/imageImport";
 import { generatePhotoCaptionAndLabels } from "../../lib/vertex";
 import { deleteStoredPhotoAssets, generatePhotoDerivatives, storePhotoAssets } from "../../lib/photoDerivatives";
@@ -108,7 +106,6 @@ describe("Photos upload route", () => {
     mockSave.mockResolvedValue(undefined);
     vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true, format: "jpg" });
     vi.mocked(generatePhotoCaptionAndLabels).mockResolvedValue({ caption: "AI caption", labels: ["robot"] });
-    vi.mocked(getGooglePhotosAccessToken).mockResolvedValue("team-token");
     vi.mocked(generatePhotoDerivatives).mockResolvedValue({
       width: 1600,
       height: 900,
@@ -267,43 +264,4 @@ describe("Photos upload route", () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ photo: expect.objectContaining({ caption: "", labels: [] }) }));
   });
 
-  it("syncs an uploaded image to the team Google library", async () => {
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce({ ok: true, text: async () => "upload-token" })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ newMediaItemResults: [{ status: { message: "Success" }, mediaItem: { id: "google-photo" } }] }) }));
-    const res = response();
-    await handler()({ body: imageBody({ uploadToGoogle: true, runAiLabeling: true }) }, res);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    const uploadBody = vi.mocked(fetch).mock.calls[0]?.[1]?.body;
-    expect(Buffer.from(uploadBody as Uint8Array)).toEqual(Buffer.from("sanitized"));
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      photo: expect.objectContaining({ isSynced: true }),
-      googleSync: { requested: true, succeeded: true, warning: null },
-    }));
-  });
-
-  it.each([
-    [
-      [{ ok: false, status: 503, statusText: "Unavailable" }],
-      "Google upload failed",
-    ],
-    [
-      [{ ok: true, text: async () => "token" }, { ok: false, status: 400, statusText: "Bad Request" }],
-      "Google batch create failed",
-    ],
-    [
-      [{ ok: true, text: async () => "token" }, { ok: true, json: async () => ({ newMediaItemResults: [{ status: { message: "Rejected" } }] }) }],
-      "Google creation status",
-    ],
-  ])("returns a non-secret warning when optional Google sync fails %#", async (responses, _expectedInternalError) => {
-    const fetchMock = vi.fn();
-    for (const item of responses) fetchMock.mockResolvedValueOnce(item);
-    vi.stubGlobal("fetch", fetchMock);
-    const res = response();
-    await handler()({ body: imageBody({ uploadToGoogle: true }) }, res);
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      googleSync: { requested: true, succeeded: false, warning: "The image was saved to the team site, but Google Photos sync failed." },
-    }));
-  });
 });
