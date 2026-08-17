@@ -32,7 +32,7 @@ const inquiryLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const inquiryMetadataSchema = z.record(z.unknown()).refine(
+const inquiryMetadataSchema = z.record(z.string(), z.unknown()).refine(
   (value) => JSON.stringify(value).length <= 10_000,
   "Metadata payload is too large."
 );
