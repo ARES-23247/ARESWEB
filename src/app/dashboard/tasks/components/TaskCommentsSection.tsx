@@ -1,6 +1,6 @@
 import { logger } from "@/utils/logger";
 import React, { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, increment, writeBatch } from "firebase/firestore";
+import { collection, doc, onSnapshot, increment, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { MessageSquare } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
@@ -31,6 +31,9 @@ export default function TaskCommentsSection({
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
+  // Self-heal trigger: reconcile the stored badge counter against the real
+  // comment documents whenever the modal is open on this card.
+  const commentsLoadedRef = React.useRef(false);
 
   useEffect(() => {
     const commentsRef = collection(db, "tasks", task.id, "comments");
@@ -50,6 +53,7 @@ export default function TaskCommentsSection({
         });
         list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         setComments(list);
+        commentsLoadedRef.current = true;
       },
       (error) => {
         logger.error(`Unable to load comments for task ${task.id}:`, error);
@@ -59,6 +63,14 @@ export default function TaskCommentsSection({
     return () => unsubscribe();
   }, [task.id]);
 
+  useEffect(() => {
+    if (!commentsLoadedRef.current || !canEdit) return;
+    if (task.commentsCount !== undefined && task.commentsCount !== comments.length) {
+      updateDoc(doc(db, "tasks", task.id), { commentsCount: comments.length })
+        .catch((err) => logger.warn("Comment count self-heal skipped:", err));
+    }
+  }, [canEdit, comments.length, task.commentsCount, task.id]);
+
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || submitting || !canEdit || !user) return;
@@ -67,7 +79,7 @@ export default function TaskCommentsSection({
     const myProfile = teamProfiles.find((p) => p.uid === user?.uid);
     const authorNickname = myProfile?.nickname || "Team Member";
 
-    const commentId = `comment_${Date.now()}`;
+    const commentId = `comment_${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
     const commentPayload = {
       id: commentId,
       author: authorNickname,

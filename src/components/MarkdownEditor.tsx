@@ -21,6 +21,7 @@ import {
   Subscript,
   Superscript,
   Table,
+  Network,
   TerminalSquare
 } from "lucide-react";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
@@ -174,6 +175,10 @@ export default function MarkdownEditor({
   const handleTable = () => {
     const tableTemplate = `\n| Column 1 | Column 2 | Column 3 |\n| :--- | :---: | ---: |\n| Row 1 Left | Row 1 Center | Row 1 Right |\n| Row 2 Left | Row 2 Center | Row 2 Right |\n`;
     insertMarkdown(tableTemplate, "");
+  };
+  const handleDiagram = () => {
+    const diagramTemplate = `\n\`\`\`mermaid\nflowchart TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Do the thing]\n    B -->|No| D[Skip]\n    C --> E[Done]\n    D --> E\n\`\`\`\n`;
+    insertMarkdown(diagramTemplate, "");
   };
 
   return (
@@ -353,6 +358,16 @@ export default function MarkdownEditor({
             title="Insert Table"
           >
             <Table size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={handleDiagram}
+            disabled={mode === "preview" || disabled}
+            className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
+            title="Insert Diagram (Mermaid)"
+            aria-label="Insert Mermaid diagram"
+          >
+            <Network size={13} />
           </button>
           <button
             type="button"
