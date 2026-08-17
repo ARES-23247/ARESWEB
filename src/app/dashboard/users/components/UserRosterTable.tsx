@@ -4,7 +4,6 @@ import {
   Users, 
   RefreshCw, 
   Mail, 
-  Sparkles, 
   Save, 
   Trash2,
   RotateCcw,
@@ -31,11 +30,9 @@ interface UserRosterTableProps {
   editedRoles: Record<string, string>;
   editedMemberTypes: Record<string, string>;
   savingRoles: Record<string, boolean>;
-  creatingZulip: Record<string, boolean>;
   onRoleChange: (userId: string, newRole: string) => void;
   onMemberTypeChange: (userId: string, newType: string) => void;
   onSaveRole: (userId: string) => void;
-  onCreateZulip: (userId: string) => void;
   onRemoveUser: (userId: string) => void;
   onRestoreUser?: (userId: string) => void;
 }
@@ -46,11 +43,9 @@ export default function UserRosterTable({
   editedRoles,
   editedMemberTypes,
   savingRoles,
-  creatingZulip,
   onRoleChange,
   onMemberTypeChange,
   onSaveRole,
-  onCreateZulip,
   onRemoveUser,
   onRestoreUser,
 }: UserRosterTableProps) {
@@ -91,7 +86,6 @@ export default function UserRosterTable({
         const isEdited = isRoleEdited || isMemberTypeEdited;
 
         const isSaving = savingRoles[u.id];
-        const isCreatingZ = creatingZulip[u.id];
 
         return (
           <motion.div
@@ -166,18 +160,7 @@ export default function UserRosterTable({
                     <span className="truncate max-w-[140px]">{u.zulipAccount.full_name}</span>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => onCreateZulip(u.id)}
-                    disabled={isCreatingZ || !u.email || u.isDeleted}
-                    className="w-fit px-2.5 py-1 bg-ares-gold/10 hover:bg-ares-gold/25 border border-ares-gold/30 hover:border-ares-gold/60 text-ares-gold text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isCreatingZ ? (
-                      <RefreshCw size={10} className="animate-spin" />
-                    ) : (
-                      <Sparkles size={10} />
-                    )}
-                    Provision Zulip
-                  </button>
+                  <span className="text-[10px] text-marble/45">Use the team invite link</span>
                 )}
               </div>
 

@@ -89,42 +89,4 @@ describe("UserInviteForm audited invitation flow", () => {
     await waitFor(() => expect(props.setError).toHaveBeenCalledWith("HTTP 503: Unavailable"));
   });
 
-  it("reports Zulip as a partial failure without rolling back portal access", async () => {
-    vi.mocked(authenticatedFetch)
-      .mockResolvedValueOnce(response({ success: true }))
-      .mockResolvedValueOnce(response({ error: "Zulip unavailable" }, 502, "Bad Gateway"));
-    const props = renderForm();
-    fireEvent.change(screen.getByLabelText("Email Address"), { target: { value: "member@example.org" } });
-    fireEvent.click(screen.getByLabelText("Provision Zulip account now"));
-    fireEvent.click(screen.getByRole("button", { name: "Authorize & Invite Member" }));
-
-    await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledTimes(2));
-    expect(props.setSuccess).toHaveBeenCalledWith(expect.stringContaining("Zulip account creation failed: Zulip unavailable"));
-    expect(props.fetchUsersData).toHaveBeenCalledOnce();
-  });
-
-  it("reports successful optional Zulip provisioning", async () => {
-    vi.mocked(authenticatedFetch)
-      .mockResolvedValueOnce(response({ success: true }))
-      .mockResolvedValueOnce(response({ success: true }));
-    const props = renderForm();
-    fireEvent.change(screen.getByLabelText("Email Address"), { target: { value: "zulip@example.org" } });
-    fireEvent.click(screen.getByLabelText("Provision Zulip account now"));
-    fireEvent.click(screen.getByRole("button", { name: "Authorize & Invite Member" }));
-    await waitFor(() => expect(props.fetchUsersData).toHaveBeenCalledOnce());
-    expect(props.setSuccess).toHaveBeenCalledWith("Successfully authorized zulip@example.org and their Zulip account has been provisioned.");
-  });
-
-  it("reports a Zulip network failure while retaining successful portal access", async () => {
-    vi.mocked(authenticatedFetch)
-      .mockResolvedValueOnce(response({ success: true }))
-      .mockRejectedValueOnce(new Error("network offline"));
-    const props = renderForm();
-    fireEvent.change(screen.getByLabelText("Email Address"), { target: { value: "fallback@example.org" } });
-    fireEvent.click(screen.getByLabelText("Provision Zulip account now"));
-    fireEvent.click(screen.getByRole("button", { name: "Authorize & Invite Member" }));
-
-    await waitFor(() => expect(props.fetchUsersData).toHaveBeenCalledOnce());
-    expect(props.setSuccess).toHaveBeenCalledWith(expect.stringContaining("Zulip account creation failed: network offline"));
-  });
 });

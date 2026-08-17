@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { tabElementId, tabPanelId } from "@/components/AccessibleTabs";
 import type {
-  GooglePhotosConnection,
   ManagedAlbum,
   ManagedPhoto,
 } from "@/lib/media";
@@ -30,15 +29,12 @@ interface PhotoLibraryPanelProps {
   canContribute: boolean;
   canManage: boolean;
   albums: ManagedAlbum[];
-  connection: GooglePhotosConnection | null;
   uploads: UploadState[];
   uploadAlbum: string;
   uploadAi: boolean;
-  uploadGoogle: boolean;
   onUploadFiles: (files: FileList | null) => void;
   onUploadAlbumChange: (albumId: string) => void;
   onUploadAiChange: (enabled: boolean) => void;
-  onUploadGoogleChange: (enabled: boolean) => void;
   search: string;
   albumFilter: string;
   showArchived: boolean;
@@ -62,15 +58,12 @@ export default function PhotoLibraryPanel({
   canContribute,
   canManage,
   albums,
-  connection,
   uploads,
   uploadAlbum,
   uploadAi,
-  uploadGoogle,
   onUploadFiles,
   onUploadAlbumChange,
   onUploadAiChange,
-  onUploadGoogleChange,
   search,
   albumFilter,
   showArchived,
@@ -176,16 +169,6 @@ export default function PhotoLibraryPanel({
                 className="mt-0.5 accent-ares-red"
               />{" "}
               Suggest a caption and tags
-            </label>
-            <label className="flex items-start gap-2 text-xs text-marble">
-              <input
-                type="checkbox"
-                checked={uploadGoogle}
-                disabled={!connection?.configured}
-                onChange={(event) => onUploadGoogleChange(event.target.checked)}
-                className="mt-0.5 accent-ares-red"
-              />{" "}
-              Also copy to the team Google Photos library
             </label>
           </fieldset>
         </div>

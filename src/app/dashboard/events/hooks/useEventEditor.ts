@@ -386,7 +386,6 @@ export function useEventEditor({
           fileBase64: base64,
           filename: file.name,
           mimeType: mimeType || file.type || "image/jpeg",
-          uploadToGoogle: true,
           runAiLabeling: false
         })
       });

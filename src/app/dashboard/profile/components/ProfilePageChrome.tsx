@@ -4,8 +4,6 @@ import {
   CheckCircle,
   ChevronRight,
   Info,
-  Loader2,
-  MessageSquare,
   User,
 } from "lucide-react";
 
@@ -19,17 +17,7 @@ const PROFILE_TABS: ReadonlyArray<{ id: ProfileTab; label: string }> = [
   { id: "safety", label: "Logistics & Safety" },
 ];
 
-interface ProfilePageHeaderProps {
-  canProvisionZulip: boolean;
-  isProvisioning: boolean;
-  onProvisionZulip: () => void;
-}
-
-export function ProfilePageHeader({
-  canProvisionZulip,
-  isProvisioning,
-  onProvisionZulip,
-}: ProfilePageHeaderProps) {
+export function ProfilePageHeader() {
   return (
     <header className="border-b border-white/5 pb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
@@ -41,22 +29,6 @@ export function ProfilePageHeader({
           Manage your personal profile details, subteam roles, career history, and public roster privacy options.
         </p>
       </div>
-      {canProvisionZulip && (
-        <div className="shrink-0">
-          <button
-            type="button"
-            onClick={onProvisionZulip}
-            disabled={isProvisioning}
-            className="px-4 py-2.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-wait disabled:opacity-60"
-          >
-            {isProvisioning ? (
-              <><Loader2 aria-hidden="true" size={14} className="animate-spin" /><span>Provisioning...</span></>
-            ) : (
-              <><MessageSquare aria-hidden="true" size={14} /><span>Provision Zulip Account</span></>
-            )}
-          </button>
-        </div>
-      )}
     </header>
   );
 }

@@ -28,7 +28,6 @@ export function usePhotoUpload() {
           filename,
           mimeType: compressed.mimeType,
           albumId: null,
-          uploadToGoogle: false,
           runAiLabeling: false,
         }),
       });

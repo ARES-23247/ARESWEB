@@ -93,7 +93,6 @@ export default function DashboardUsersPage() {
   const [editedMemberTypes, setEditedMemberTypes] = useState<Record<string, string>>({});
 
   // Zulip states
-  const [creatingZulip, setCreatingZulip] = useState<Record<string, boolean>>({});
   const [zulipWarning, setZulipWarning] = useState<string | null>(null);
 
   const userRole = authorizedUser?.role || "Pending Verification";
@@ -213,7 +212,6 @@ export default function DashboardUsersPage() {
       // Automatically attempt Zulip account creation if role is verified and Zulip is not yet linked
       if (targetRole !== "unverified" && !originalUser.zulipAccount) {
         setTimeout(() => {
-          handleCreateZulip(userId);
         }, 500);
       } else {
         setTimeout(() => setSuccess(null), 4000);
@@ -226,43 +224,6 @@ export default function DashboardUsersPage() {
     }
   };
 
-  const handleCreateZulip = async (userId: string) => {
-    const targetUser = usersList.find(u => u.id === userId);
-    if (!targetUser || !user) return;
-
-    setCreatingZulip(prev => ({ ...prev, [userId]: true }));
-    setSuccess(null);
-    setError(null);
-
-    try {
-      const res = await authenticatedFetch(
-        `/api/zulip/admin/users/${encodeURIComponent(userId)}/provision`,
-        { method: "POST" },
-      );
-
-      const data = await res.json().catch(() => ({})) as ApiErrorBody;
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${data.error || res.statusText}`);
-      }
-
-      setSuccess(`Zulip account provisioned successfully for ${targetUser.name}`);
-      
-      // Refresh user data to get updated Zulip linked status
-      await fetchUsersData();
-      
-      setTimeout(() => setSuccess(null), 4000);
-    } catch (err: unknown) {
-      logger.error("Error provisioning Zulip user:", err);
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("bot requests") || message.includes("administrator") || message.includes("not accept")) {
-        setError("Zulip did not accept the automated invitation. Ask a team administrator for the current approved join link.");
-      } else {
-        setError(`Zulip account creation failed: ${message}`);
-      }
-    } finally {
-      setCreatingZulip(prev => ({ ...prev, [userId]: false }));
-    }
-  };
 
   const handleRemoveUser = (userId: string) => {
     const targetUser = usersList.find(u => u.id === userId);
@@ -448,11 +409,9 @@ export default function DashboardUsersPage() {
             editedRoles={editedRoles}
             editedMemberTypes={editedMemberTypes}
             savingRoles={savingRoles}
-            creatingZulip={creatingZulip}
             onRoleChange={handleRoleChange}
             onMemberTypeChange={handleMemberTypeChange}
             onSaveRole={handleSaveRole}
-            onCreateZulip={handleCreateZulip}
             onRemoveUser={handleRemoveUser}
             onRestoreUser={handleRestoreUser}
           />

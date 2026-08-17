@@ -45,30 +45,8 @@ export default function DashboardProfilePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [provisioningZulip, setProvisioningZulip] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>("identity");
 
-  const handleSelfProvisionZulip = async () => {
-    setProvisioningZulip(true);
-    setSuccess(null);
-    setError(null);
-    try {
-      const res = await authenticatedFetch("/api/profiles/zulip/self-provision", {
-        method: "POST"
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to provision Zulip account.");
-      }
-      setSuccess("Zulip account provisioned successfully! Log into aresfirst.zulipchat.com with your Google account.");
-      setTimeout(() => setSuccess(null), 6000);
-    } catch (err: unknown) {
-      logger.error("Zulip self-provision error:", err);
-      setError(err instanceof Error ? err.message : "Failed to provision Zulip account.");
-    } finally {
-      setProvisioningZulip(false);
-    }
-  };
 
   // Form States
   const [nickname, setNickname] = useState("");
@@ -320,11 +298,7 @@ export default function DashboardProfilePage() {
 
   return (
     <div className="space-y-8">
-      <ProfilePageHeader
-        canProvisionZulip={userRole !== "unverified" && userRole !== "Pending Verification"}
-        isProvisioning={provisioningZulip}
-        onProvisionZulip={() => void handleSelfProvisionZulip()}
-      />
+      <ProfilePageHeader />
       <ProfileAlerts success={success} error={error} />
       {memberType === "student" && <StudentPrivacyNotice />}
 

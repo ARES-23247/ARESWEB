@@ -1,6 +1,5 @@
 import express from "express";
 import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
-import { getGooglePhotosAccessToken } from "../lib/googleAuth";
 import { validateImageMagicBytes } from "../lib/imageImport";
 import { ensureTeamMember } from "../middleware/auth";
 import { generatePhotoCaptionAndLabels } from "../lib/vertex";
@@ -29,12 +28,11 @@ const uploadUnifiedLimiter = rateLimit({
 // POST /api/photos/upload-unified
 // Accepts base64 encoded photo and metadata, performs storage upload, optional Google Photos upload, and optional AI labeling
 router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHandler(async (req, res) => {
-  const { fileBase64, filename, mimeType, albumId, uploadToGoogle, runAiLabeling } = req.body as {
+  const { fileBase64, filename, mimeType, albumId, runAiLabeling } = req.body as {
     fileBase64: string;
     filename: string;
     mimeType: string;
     albumId?: string | null;
-    uploadToGoogle?: boolean;
     runAiLabeling?: boolean;
   };
 
@@ -176,84 +174,6 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     }
   }
 
-  // Optional Google Photos upload
-  let googleMediaItemId: string | null = null;
-  let googleSyncWarning: string | null = null;
-  if (uploadToGoogle) {
-    try {
-      const googleToken = await getGooglePhotosAccessToken();
-      
-      // 1. Upload full-resolution bytes after camera metadata removal.
-      const uploadRes = await fetch("https://photoslibrary.googleapis.com/v1/uploads", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${googleToken}`,
-          "Content-Type": "application/octet-stream",
-          "X-Goog-Upload-File-Name": filename,
-          "X-Goog-Upload-Protocol": "raw"
-        },
-        body: new Uint8Array(derivatives.original.buffer)
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error(`Google upload failed with HTTP ${uploadRes.status}: ${uploadRes.statusText}`);
-      }
-
-      const uploadToken = await uploadRes.text();
-
-      // 2. Register media item in Google Photos library
-      interface GoogleBatchCreateBody {
-        newMediaItems: {
-          description?: string;
-          simpleMediaItem: {
-            uploadToken: string;
-            fileName: string;
-          };
-        }[];
-        albumId?: string;
-      }
-      const batchCreateBody: GoogleBatchCreateBody = {
-        newMediaItems: [
-          {
-            description: caption || "Uploaded via ARES Portal",
-            simpleMediaItem: {
-              uploadToken,
-              fileName: filename
-            }
-          }
-        ]
-      };
-
-      const batchRes = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${googleToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(batchCreateBody)
-      });
-
-      if (!batchRes.ok) {
-        throw new Error(`Google batch create failed with HTTP ${batchRes.status}: ${batchRes.statusText}`);
-      }
-
-      const batchData = await batchRes.json() as {
-        newMediaItemResults?: Array<{
-          status?: { message?: string };
-          mediaItem?: { id?: string };
-        }>;
-      };
-      const creationResult = batchData.newMediaItemResults?.[0];
-      if (creationResult?.status?.message && creationResult.status.message !== "Success") {
-        throw new Error(`Google creation status not success: ${creationResult.status.message}`);
-      }
-      googleMediaItemId = creationResult?.mediaItem?.id || null;
-    } catch (gErr: unknown) {
-      logger.warn("photos", "Google Photos sync upload error", gErr);
-      googleSyncWarning = "The image was saved to the team site, but Google Photos sync failed.";
-    }
-  }
-
   // Save metadata in Firestore imported_photos
   const photoMeta = {
     id: docId,
@@ -265,7 +185,6 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
     albumId: albumId || null,
     caption,
     labels,
-    googleMediaItemId,
     sha256: imageHash,
     isDeleted: 0,
     updatedAt: new Date().toISOString(),
@@ -303,14 +222,9 @@ router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHand
       mimeType,
       fileSize: derivatives.original.fileSize,
       importedAt: photoMeta.importedAt,
-      isSynced: Boolean(googleMediaItemId),
+      isSynced: false,
       isArchived: false,
       ...photoDerivativeDtoFields(storedAssets),
-    },
-    googleSync: {
-      requested: uploadToGoogle === true,
-      succeeded: Boolean(googleMediaItemId),
-      warning: googleSyncWarning,
     },
   });
 }));

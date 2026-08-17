@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { sendZulipMessage, sendZulipAlert, getZulipCredentials, getZulipUsers, createZulipUser } from "../zulip";
+import { sendZulipMessage, sendZulipAlert, getZulipCredentials, getZulipUsers } from "../zulip";
 
 describe("Zulip Integration Library", () => {
   const originalEnv = { ...process.env };
@@ -177,69 +177,4 @@ describe("Zulip Integration Library", () => {
     });
   });
 
-  describe("createZulipUser", () => {
-    it("should return success false if credentials missing", async () => {
-      process.env.ZULIP_BOT_EMAIL = "none";
-      process.env.ZULIP_API_KEY = "none";
-
-      const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({
-        success: false,
-        error: expect.stringContaining("Zulip integration is not active"),
-      });
-    });
-
-    it("should create user successfully", async () => {
-      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
-      process.env.ZULIP_API_KEY = "super-secret-api-key";
-
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-      });
-      vi.stubGlobal("fetch", mockFetch);
-
-      const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: true, message: expect.stringContaining("Zulip account created") });
-    });
-
-    it("should return error from response if not ok", async () => {
-      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
-      process.env.ZULIP_API_KEY = "super-secret-api-key";
-
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({ msg: "Invalid request parameter" }),
-      });
-      vi.stubGlobal("fetch", mockFetch);
-
-      const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: false, error: "Invalid request parameter" });
-    });
-
-    it("should return generic error if response not ok and json parse fails", async () => {
-      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
-      process.env.ZULIP_API_KEY = "super-secret-api-key";
-
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-        json: () => Promise.reject(new Error("no json")),
-      });
-      vi.stubGlobal("fetch", mockFetch);
-
-      const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: false, error: expect.stringContaining("403") });
-    });
-
-    it("should return success false if fetch throws", async () => {
-      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
-      process.env.ZULIP_API_KEY = "super-secret-api-key";
-
-      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Local exception")));
-
-      const result = await createZulipUser("new@team.org", "New User");
-      expect(result).toEqual({ success: false, error: "Local exception" });
-    });
-  });
 });

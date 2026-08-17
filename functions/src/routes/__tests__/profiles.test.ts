@@ -922,59 +922,6 @@ describe("Profiles Router Backend Endpoints", () => {
     });
   });
 
-  describe("Zulip account provisioning", () => {
-    it("requires both fields for an administrator-created Zulip account", async () => {
-      req.body = { email: "member@example.org" };
-
-      await getHandler("/zulip/users", "post")(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
-      expect(createZulipUser).not.toHaveBeenCalled();
-    });
-
-    it("surfaces Zulip admin provisioning failures and successes", async () => {
-      req.body = { email: "member@example.org", fullName: "Member Name" };
-      vi.mocked(createZulipUser)
-        .mockResolvedValueOnce({ success: false, error: "HTTP 503: Zulip unavailable" })
-        .mockResolvedValueOnce({ success: true, message: "Invitation sent" });
-
-      await getHandler("/zulip/users", "post")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 500, message: "HTTP 503: Zulip unavailable" }));
-
-      await getHandler("/zulip/users", "post")(req, res, next);
-      expect(createZulipUser).toHaveBeenLastCalledWith("member@example.org", "Member Name");
-      expect(res.json).toHaveBeenCalledWith({ success: true, message: "Invitation sent" });
-    });
-
-    it("requires a verified email for self-provisioning", async () => {
-      req.user = { uid: "member_uid", name: "Member Name" };
-
-      await getHandler("/zulip/self-provision", "post")(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
-      expect(createZulipUser).not.toHaveBeenCalled();
-    });
-
-    it("uses the verified subject and exposes self-provisioning failures honestly", async () => {
-      req.user = { uid: "member_uid", email: "member@example.org" };
-      vi.mocked(createZulipUser)
-        .mockResolvedValueOnce({ success: false })
-        .mockResolvedValueOnce({ success: true, userId: 123 });
-
-      await getHandler("/zulip/self-provision", "post")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({
-        status: 500,
-        message: "Failed to provision Zulip account.",
-      }));
-
-      await getHandler("/zulip/self-provision", "post")(req, res, next);
-      expect(createZulipUser).toHaveBeenLastCalledWith("member@example.org", "member");
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        message: "Zulip account provisioned successfully.",
-      });
-    });
-  });
 
   describe("POST /api/profiles/sync - Synchronize validation", () => {
     const runStack = async (path: string, method: string, req: any, res: any) => {
