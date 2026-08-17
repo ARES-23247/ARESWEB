@@ -67,7 +67,7 @@ export default function TaskCommentsSection({
     const myProfile = teamProfiles.find((p) => p.uid === user?.uid);
     const authorNickname = myProfile?.nickname || "Team Member";
 
-    const commentId = `comment_${Date.now()}`;
+    const commentId = `comment_${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
     const commentPayload = {
       id: commentId,
       author: authorNickname,
