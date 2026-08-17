@@ -1,4 +1,7 @@
-import type { SharpConstructor } from "sharp";
+// sharp ships as `export = sharp` (a callable), so its constructor type is
+// derived from the default import rather than a named export.
+import sharp from "sharp";
+type SharpConstructor = typeof sharp;
 
 // Normal clients and Google imports are already bounded to roughly 4.2 MP.
 // Keep defense-in-depth headroom without allowing a small compressed upload to
