@@ -41,8 +41,8 @@ describe("Validation Middleware", () => {
     const err = vi.mocked(next).mock.calls[0][0] as ApiError;
     expect(err.status).toBe(400);
     expect(err.message).toContain("Validation failed");
-    expect(err.message).toContain("name: Expected string, received number");
-    expect(err.message).toContain("age: Expected number, received string");
+    expect(err.message).toContain("name: Invalid input: expected string, received number");
+    expect(err.message).toContain("age: Invalid input: expected number, received string");
   });
 
   it("should propagate non-Zod errors directly", () => {
