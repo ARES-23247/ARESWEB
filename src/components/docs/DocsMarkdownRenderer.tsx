@@ -37,6 +37,11 @@ const EMBED_HOSTS = new Set([
   "player.vimeo.com",
 ]);
 
+const MermaidDiagram = React.lazy(() => import("./MermaidDiagram"));
+const LazyMermaidWrap = ({ children }: { children: React.ReactNode }) => (
+  <React.Suspense fallback={<div className="my-6 h-32 rounded-lg border border-white/10 bg-black/25" />}>{children}</React.Suspense>
+);
+
 export function validateEmbedUrl(url?: string): string | undefined {
   if (!url) return undefined;
   try {
@@ -154,6 +159,15 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           // Inline code (no className) vs code block (has language className)
           if (!className) {
             return <code className="px-1.5 py-0.5 bg-white/5 text-ares-cyan font-mono text-sm rounded border border-white/10">{children}</code>;
+          }
+          // Mermaid fences render as diagrams; the rest stay syntax blocks.
+          if (/language-mermaid/u.test(className)) {
+            const source = String(children ?? "").replace(/\n$/, "");
+            return (
+              <LazyMermaidWrap>
+                <MermaidDiagram code={source} />
+              </LazyMermaidWrap>
+            );
           }
           // Code blocks are handled by CodeBlock component
           return <code className={className}>{children}</code>;
