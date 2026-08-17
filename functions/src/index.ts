@@ -3,6 +3,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
 import { syncImportedDriveChanges } from "./lib/googleDriveLibrary";
+import { sendTaskDueDigest } from "./lib/taskDigest";
 import { ApiError } from "./middleware/errorHandler";
 import { createLazyAppHandler } from "./lazyApp";
 import {
@@ -142,6 +143,32 @@ export const cleanupOldInquiries = onSchedule(
       logger.error("cleanup", "Error running inquiries cleanup task", error);
       // A failed retention run must remain failed so Cloud Scheduler/Functions
       // retries and production alerts can detect that stale PII was not removed.
+      throw error;
+    }
+  },
+);
+
+// Daily 07:00 America/New_York: summarize
+// overdue and imminent task due dates for the team's kanban stream.
+export const taskDueDigest = onSchedule(
+  {
+    schedule: "0 7 * * *",
+    timeZone: "America/New_York",
+    memory: "256MiB",
+    timeoutSeconds: 60,
+    concurrency: 1,
+    maxInstances: 1,
+    serviceAccount: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
+    secrets: ["ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
+  },
+  async (_event) => {
+    try {
+      await sendTaskDueDigest();
+    } catch (error) {
+      logger.error("taskDigest", "Scheduled due-date digest failed", {
+        reason: error instanceof Error ? error.name : "unknown",
+      });
+      // Remain failed so Cloud Scheduler retries and the missed digest ships.
       throw error;
     }
   },
