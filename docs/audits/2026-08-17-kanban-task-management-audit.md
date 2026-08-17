@@ -70,14 +70,14 @@
   batch as the delete.
 - **Acceptance test**: delete a comment; the card badge matches the modal count.
 
-### K4. No keyboard path for moving cards — Medium / Confirmed
+### K4. No keyboard path for moving cards — WITHDRAWN 2026-08-17 (same day)
 
-- **Evidence**: moves are HTML5 drag-and-drop handlers only
-  (`page.tsx:342-359`); no focusable "Move to…" control on the card.
-- **Impact**: keyboard-only users cannot change status (a11y gap on a core flow).
-- **Remediation**: add a small "Move to" menu (buttons per column) on each card,
-  keeping DnD for pointer users.
-- **Acceptance test**: e2e moves a task using only the keyboard.
+- **Correction**: `TaskCard.tsx:209-233` already renders a native, fully
+  keyboard-operable status `<select>` on every editable card (shown when
+  `canEdit`), and the e2e suite already drives it
+  (`e2e/interactive.spec.ts:23-30` moves a card through the combobox). The
+  auditor reviewed only the page-level drag handlers. No defect, no coverage
+  gap — withdrawn in full.
 
 ### K5. Assignees are unvalidated strings — Low / Confirmed
 
@@ -108,9 +108,10 @@
 
 ## Improvement suggestions (prioritized, not implemented)
 
-1. **P1 — K1/K2/K3 comment integrity bundle** (echo guard, uuid ids, single count
-   source). Small, removes the only correctness bugs found.
-2. **P1 — keyboard moves (K4).** Completes accessibility of the board's primary action.
+1. **P1 — K1/K2/K3 comment integrity bundle** (echo guard, uuid ids,
+   redelivery-idempotent webhook). Small, removes the only correctness bugs found.
+2. ~~P1 — keyboard moves (K4)~~ withdrawn in full — the accessible select and
+   its e2e coverage both already existed; the finding was an inspection miss.
 3. **P2 — per-task deep links end to end (K6)**: route param + Zulip message links +
    card share button. Makes Zulip threads genuinely actionable.
 4. **P2 — due-date digests**: a scheduled function (the repo already runs two) that
