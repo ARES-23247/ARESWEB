@@ -188,7 +188,7 @@ export default function TaskCard({
             const avatar =
               profile?.avatar ||
               `https://api.dicebear.com/9.x/bottts/svg?seed=${uid}`;
-            const name = profile?.nickname || "Team Member";
+            const name = profile?.nickname || "Unknown member";
             return (
               <img
                 key={uid}

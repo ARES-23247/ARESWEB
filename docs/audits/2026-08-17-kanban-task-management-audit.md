@@ -132,3 +132,23 @@
   backlog without measurement.
 - The echo in K1 depends on workspace webhook configuration; it is permitted by code,
   not observed in production logs from here.
+
+## Remediation status — 2026-08-17 (same day, second pass)
+
+- **K1/K2**: fixed in the first remediation pass (bot-sender echo guard,
+  idempotent webhook ids, UUID web ids).
+- **K3**: fixed — opening a task modal now self-heals the stored badge counter
+  to the real comment-document count, covering any legacy drift.
+- **K5**: mitigated at display level — cards label unresolvable assignees
+  "Unknown member", and the editor lists unknown assignees with one-click
+  removal. Full server-side validation would require moving task writes behind
+  an audited API (larger change, deliberately not taken).
+- **K6**: fixed — `?task={id}` deep links open the exact card from Zulip
+  messages and a new per-card "Link" copy button; the board shows an overflow
+  notice past 500 cards.
+- **Due-date digests**: shipped — a scheduled function posts overdue/due-today/
+  due-tomorrow digests with per-card links to the kanban stream at 07:00 ET.
+- **Activity trail**: shipped — every create/move/archive/restore/delete/edit
+  writes an immutable, rules-bounded revision entry in the same batch, shown in
+  a Card History section (last 30 entries).
+- **K7**: accepted as documented divergence; no change.

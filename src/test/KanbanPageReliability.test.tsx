@@ -9,6 +9,8 @@ const firestore = vi.hoisted(() => ({
   runTransaction: vi.fn(),
   batchCommit: vi.fn(),
   batchUpdate: vi.fn(),
+  batchSet: vi.fn(),
+  countGet: vi.fn(),
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -20,7 +22,8 @@ vi.mock("firebase/firestore", () => ({
   updateDoc: firestore.updateDoc,
   setDoc: firestore.setDoc,
   runTransaction: firestore.runTransaction,
-  writeBatch: vi.fn(() => ({ update: firestore.batchUpdate, commit: firestore.batchCommit })),
+  getCountFromServer: vi.fn(() => firestore.countGet()),
+  writeBatch: vi.fn(() => ({ update: firestore.batchUpdate, set: firestore.batchSet, commit: firestore.batchCommit })),
 }));
 
 vi.mock("@/context/AuthContext", () => ({
@@ -116,6 +119,9 @@ const taskData = {
 describe("Kanban page reliability", () => {
   beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+    firestore.countGet.mockResolvedValue({ data: () => ({ count: 3 }) });
+    firestore.batchSet.mockResolvedValue(undefined);
+    firestore.batchCommit.mockResolvedValue(undefined);
     firestore.onSnapshot.mockImplementation((_query, onNext) => {
       onNext({
         empty: false,
@@ -129,7 +135,7 @@ describe("Kanban page reliability", () => {
   });
 
   it("keeps a card in its server-backed column and exposes permission guidance when a move fails", async () => {
-    firestore.updateDoc.mockRejectedValueOnce({ code: "permission-denied", message: "Forbidden" });
+    firestore.batchCommit.mockRejectedValueOnce({ code: "permission-denied", message: "Forbidden" });
     render(<KanbanPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Move task" }));
@@ -141,8 +147,8 @@ describe("Kanban page reliability", () => {
   });
 
   it("surfaces failed archive, soft-delete, and create operations without local success", async () => {
-    firestore.updateDoc.mockRejectedValue({ code: "unavailable", message: "Network offline" });
-    firestore.setDoc.mockRejectedValue({ code: "unavailable", message: "Network offline" });
+    // Board operations commit through batched writes; inject the failure there.
+    firestore.batchCommit.mockRejectedValue({ code: "unavailable", message: "Network offline" });
     render(<KanbanPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Archive task" }));
@@ -152,7 +158,10 @@ describe("Kanban page reliability", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit task" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete task" }));
     expect(await screen.findByText("Unable to delete task")).toBeInTheDocument();
-    expect(firestore.updateDoc).toHaveBeenLastCalledWith(expect.anything(), { isDeleted: 1, archived: true });
+    expect(firestore.batchUpdate).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ isDeleted: 1, archived: true }),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Open create" }));
     fireEvent.click(screen.getByRole("button", { name: "Create task now" }));
