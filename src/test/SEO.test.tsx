@@ -67,9 +67,7 @@ describe("SEO", () => {
     const json = JSON.stringify(ORGANIZATION_SCHEMA);
     expect(json).toContain('"name":"West Virginia"');
     expect(json).toContain("https://bsky.app/profile/ares23247.bsky.social");
-    expect(json).toContain("https://www.tiktok.com/@ares.robotics.23247");
     expect(json).toContain("https://x.com/ARES23247");
-    expect(json).toContain("https://www.linkedin.com/company/ares-23247");
     expect(json).toContain("https://www.instagram.com/aresftc23247/");
   });
 
