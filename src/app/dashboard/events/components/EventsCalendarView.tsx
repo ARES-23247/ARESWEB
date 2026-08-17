@@ -110,7 +110,7 @@ export default function EventsCalendarView({
                       )}
                     </div>
                     <h3 className="text-lg font-bold text-white font-heading uppercase tracking-tight">
-                      {evt.title}
+                      {evt.title}{evt.recurrence && (<span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">Repeats weekly</span>)}
                     </h3>
                     {toPlainText(evt.description) && (
                       <p className="text-marble/70 text-xs leading-relaxed">{toPlainText(evt.description)}</p>

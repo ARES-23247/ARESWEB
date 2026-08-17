@@ -18,6 +18,7 @@ import EventGalleryTab from "./EventGalleryTab";
 import EventRevisionsTab from "./EventRevisionsTab";
 import LocationManagerModal, { TeamLocation } from "./LocationManagerModal";
 import ShiftScheduleEditor from "./ShiftScheduleEditor";
+import EventRecurrenceSection from "./EventRecurrenceSection";
 import EventFormRoster from "./EventFormRoster";
 import EventEditorAiCopilot from "./EventEditorAiCopilot";
 import AccessibleTabs, { tabElementId, tabPanelId } from "@/components/AccessibleTabs";
@@ -65,6 +66,17 @@ export default function EventEditorDrawer({
     setFormIsVolunteer,
     formStatus,
     setFormStatus,
+    formRepeats,
+    setFormRepeats,
+    formInterval,
+    setFormInterval,
+    formByDay,
+    setFormByDay,
+    formUntil,
+    setFormUntil,
+    occurrenceExceptions,
+    handleCancelOccurrence,
+    handleRestoreOccurrence,
     isFullScreen,
     setIsFullScreen,
     activeTab,
@@ -255,6 +267,23 @@ export default function EventEditorDrawer({
                   canPublishDirectly={canPublishDirectly}
                   setIsLocationModalOpen={setIsLocationModalOpen}
                   setIsPhotoPickerOpen={setIsPhotoPickerOpen}
+                />
+
+                <EventRecurrenceSection
+                  canEdit={canEdit}
+                  formDateStart={formDateStart}
+                  formRepeats={formRepeats}
+                  setFormRepeats={setFormRepeats}
+                  formInterval={formInterval}
+                  setFormInterval={setFormInterval}
+                  formByDay={formByDay}
+                  setFormByDay={setFormByDay}
+                  formUntil={formUntil}
+                  setFormUntil={setFormUntil}
+                  isEditingExistingRecurring={Boolean(editId && eventToEdit?.recurrence)}
+                  occurrenceExceptions={occurrenceExceptions}
+                  onCancelOccurrence={handleCancelOccurrence}
+                  onRestoreOccurrence={handleRestoreOccurrence}
                 />
 
                 <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">

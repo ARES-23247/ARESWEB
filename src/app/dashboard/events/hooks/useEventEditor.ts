@@ -8,7 +8,17 @@ import { cleanUndefined } from "@/lib/utils";
 import { logger } from "@/utils/logger";
 import { TeamEvent } from "@/types/event";
 import { TeamLocation } from "../components/LocationManagerModal";
-import { archiveEvent, createEvent, restoreEvent, updateEvent, type EventWriteInput } from "@/app/calendar/api";
+import {
+  archiveEvent,
+  cancelEventOccurrence,
+  createEvent,
+  fetchEventOccurrences,
+  restoreEvent,
+  restoreEventOccurrence,
+  updateEvent,
+  type EventOccurrenceException,
+  type EventWriteInput,
+} from "@/app/calendar/api";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { normalizeForMarkdownEditor } from "@/lib/contentFormatters";
 
@@ -87,6 +97,11 @@ export function useEventEditor({
   const [formIsPotluck, setFormIsPotluck] = useState<number>(0);
   const [formIsVolunteer, setFormIsVolunteer] = useState<number>(0);
   const [formStatus, setFormStatus] = useState<"published" | "pending" | "draft">("published");
+  const [formRepeats, setFormRepeats] = useState<"none" | "weekly">("none");
+  const [formInterval, setFormInterval] = useState(1);
+  const [formByDay, setFormByDay] = useState<string[]>([]);
+  const [formUntil, setFormUntil] = useState("");
+  const [occurrenceExceptions, setOccurrenceExceptions] = useState<EventOccurrenceException[]>([]);
 
   // Modal display states
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -146,6 +161,10 @@ export function useEventEditor({
         setFormIsPotluck(eventToEdit.isPotluck || 0);
         setFormIsVolunteer(eventToEdit.isVolunteer || 0);
         setFormStatus(eventToEdit.status || "published");
+        setFormRepeats(eventToEdit.recurrence ? "weekly" : "none");
+        setFormInterval(eventToEdit.recurrence?.interval || 1);
+        setFormByDay(eventToEdit.recurrence?.byDay ?? []);
+        setFormUntil(eventToEdit.recurrence?.until || "");
       } else {
         // Create Mode
         setFormTitle("");
@@ -158,7 +177,12 @@ export function useEventEditor({
         setFormIsPotluck(0);
         setFormIsVolunteer(0);
         setFormStatus(canPublishDirectly ? "published" : "pending");
+        setFormRepeats("none");
+        setFormInterval(1);
+        setFormByDay([]);
+        setFormUntil("");
       }
+      setOccurrenceExceptions([]);
 
       // Reset modal UI states
       setIsFullScreen(false);
@@ -270,7 +294,15 @@ export function useEventEditor({
       coverImage: formCoverImage || undefined,
       isPotluck: formIsPotluck === 1 ? 1 : 0,
       isVolunteer: formIsVolunteer === 1 ? 1 : 0,
-      status: canPublishDirectly ? formStatus : "pending"
+      status: canPublishDirectly ? formStatus : "pending",
+      recurrence: formRepeats === "weekly" && formByDay.length > 0
+        ? {
+            frequency: "weekly",
+            interval: Math.min(8, Math.max(1, Math.trunc(formInterval) || 1)),
+            byDay: formByDay,
+            ...(formUntil ? { until: formUntil } : {}),
+          }
+        : undefined,
     };
 
     setIsSaving(true);
@@ -403,6 +435,32 @@ export function useEventEditor({
     }
   };
 
+  // Skipped-date management for recurring events
+  const refreshOccurrences = useCallback(async () => {
+    if (!editId || !eventToEdit?.recurrence) return;
+    try {
+      setOccurrenceExceptions(await fetchEventOccurrences(editId));
+    } catch (err) {
+      logger.warn("Could not load skipped dates:", err);
+    }
+  }, [editId, eventToEdit?.recurrence]);
+
+  useEffect(() => {
+    if (isOpen && editId && eventToEdit?.recurrence) void refreshOccurrences();
+  }, [isOpen, editId, eventToEdit?.recurrence, refreshOccurrences]);
+
+  const handleCancelOccurrence = useCallback(async (date: string) => {
+    if (!editId) return;
+    await cancelEventOccurrence(editId, date);
+    await refreshOccurrences();
+  }, [editId, refreshOccurrences]);
+
+  const handleRestoreOccurrence = useCallback(async (date: string) => {
+    if (!editId) return;
+    await restoreEventOccurrence(editId, date);
+    await refreshOccurrences();
+  }, [editId, refreshOccurrences]);
+
   return {
     formTitle,
     setFormTitle,
@@ -459,5 +517,16 @@ export function useEventEditor({
     handleRevertToRevision,
     handleImageUpload,
     handleDeletePhoto,
+    formRepeats,
+    setFormRepeats,
+    formInterval,
+    setFormInterval,
+    formByDay,
+    setFormByDay,
+    formUntil,
+    setFormUntil,
+    occurrenceExceptions,
+    handleCancelOccurrence,
+    handleRestoreOccurrence,
   };
 }

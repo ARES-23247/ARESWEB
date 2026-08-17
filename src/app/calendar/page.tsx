@@ -262,6 +262,7 @@ export default function CalendarPage() {
                             }`}
                           >
                             {event.title}
+                            {event.recurrence && (<span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">Repeats weekly</span>)}
                           </div>
                         ))}
                         {dayEvents.length > 2 && (
@@ -379,6 +380,7 @@ export default function CalendarPage() {
                     </div>
 
                     <h3 className="text-lg font-black text-white leading-tight uppercase font-heading relative z-10 group-hover:text-ares-gold transition-colors">{event.title}</h3>
+                    {event.recurrence && (<span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">Repeats weekly</span>)}
                     {toPlainText(event.description) && (
                       <p className="text-xs text-marble/85 leading-relaxed mt-2 max-w-3xl relative z-10">{toPlainText(event.description)}</p>
                     )}
