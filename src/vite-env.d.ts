@@ -54,3 +54,9 @@ interface Window {
     };
   };
 }
+
+// Monaco's contribution entry points ship without type declarations; they are
+// side-effect imports that register language services at runtime.
+declare module "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution";
+declare module "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution";
+declare module "monaco-editor/esm/vs/language/typescript/monaco.contribution";

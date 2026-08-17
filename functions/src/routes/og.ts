@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import express from "express";
 import rateLimit from "express-rate-limit";
-import type { SharpConstructor } from "sharp";
+// sharp ships as `export = sharp` (a callable), so its constructor type is
+// derived from the default import rather than a named export.
+import sharp from "sharp";
+type SharpConstructor = typeof sharp;
 import { asyncHandler } from "../lib/utils";
 
 const router = express.Router();

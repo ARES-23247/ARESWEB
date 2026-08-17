@@ -98,7 +98,7 @@ export default function EventsManagementPage({
   const loadManagementData = useCallback(async (cursor: string | null = null, append = false) => {
     if (append) setIsLoadingMore(true);
     try {
-      const result = await fetchManagedEvents(100, cursor);
+      const result = await fetchManagedEvents(100, cursor, 190);
       setEvents((current) => {
         if (!append) return result.events;
         const merged = new Map(current.map((event) => [event.id, event]));

@@ -15,7 +15,7 @@ import {
 
 const profileSyncSchema = z.object({
   userId: z
-    .string({ required_error: "Bad Request: Invalid or unsafe userId." })
+    .string({ error: "Bad Request: Invalid or unsafe userId." })
     .regex(/^[a-zA-Z0-9_-]+$/, "Bad Request: Invalid or unsafe userId."),
   profile: z
     .any()
