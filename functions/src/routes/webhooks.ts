@@ -17,11 +17,15 @@ const router = express.Router();
 const zulipWebhookSchema = z.object({
   token: z.string().min(1).max(512),
   trigger: z.enum(["message", "private_message", "direct_message", "mention"]),
+  sender_email: z.string().max(320).optional(),
   message: z.object({
     topic: z.string().max(200).optional(),
     subject: z.string().max(200).optional(),
     content: z.string().max(20_000),
     sender_full_name: z.string().max(120).optional(),
+    sender_email: z.string().max(320).optional(),
+    id: z.number().int().nonnegative().optional(),
+    timestamp: z.number().int().nonnegative().optional(),
   }),
 });
 const syndicatePostSchema = z
@@ -213,7 +217,16 @@ router.post(
     if (!payload.success) {
       throw new ApiError(400, "Invalid Zulip webhook payload.");
     }
-    const { message } = payload.data;
+    const { message, sender_email: topLevelSender } = payload.data;
+
+    // The workspace bot relays web comments to this stream; storing its own
+    // deliveries would echo every web comment back as a duplicate.
+    const botEmail = (process.env.ZULIP_BOT_EMAIL || "").trim().toLowerCase();
+    const senderEmail = (message.sender_email ?? topLevelSender ?? "").trim().toLowerCase();
+    if (botEmail && senderEmail === botEmail) {
+      res.json({ content: "" });
+      return;
+    }
 
     const topic = message.topic || message.subject;
     if (!topic || !topic.startsWith("Task-")) {
@@ -237,8 +250,26 @@ router.post(
       return;
     }
 
+    // Deterministic ids make webhook redeliveries idempotent: the same Zulip
+    // message upserts the same comment instead of duplicating it.
+    const messageIdentity = message.id !== undefined
+      ? String(message.id)
+      : `${message.sender_full_name ?? ""}|${message.timestamp ?? ""}|${message.content}`;
+    const commentId = `comment_zulip_${crypto
+      .createHash("sha256")
+      .update(`zulip:${messageIdentity}`)
+      .digest("hex")
+      .slice(0, 24)}`;
+
+    const commentRef = taskRef.collection("comments").doc(commentId);
+    const existingComment = await commentRef.get();
+    if (existingComment.exists) {
+      res.json({ content: "" });
+      return;
+    }
+
     const newComment = {
-      id: `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      id: commentId,
       author: message.sender_full_name || "Zulip User",
       content: cleanContent,
       createdAt: new Date().toISOString(),
@@ -246,7 +277,6 @@ router.post(
     };
 
     const batch = adminDb.batch();
-    const commentRef = taskRef.collection("comments").doc(newComment.id);
     batch.set(commentRef, newComment);
     batch.update(taskRef, {
       commentsCount: adminFieldValue.increment(1),

@@ -2,7 +2,7 @@
 
 import { logger } from "@/utils/logger";
 import { useEffect, useMemo, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, query, limit, runTransaction, writeBatch } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, limit, runTransaction, writeBatch, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
@@ -70,6 +70,7 @@ const MOCK_TASKS: TaskItem[] = [
 
 export default function KanbanPage() {
   const { user, authorizedUser } = useAuth();
+
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
@@ -88,6 +89,7 @@ export default function KanbanPage() {
   const [sortBy, setSortBy] = useState<TaskSortMode>("newest");
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [overflowCount, setOverflowCount] = useState(0);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
@@ -111,6 +113,32 @@ export default function KanbanPage() {
       setRetryOperation(() => retry);
       return describedError;
     }
+  };
+
+  const actorLabel = () => {
+    const profile = teamProfiles.find((p) => p.uid === user?.uid);
+    return profile?.nickname || "Team Member";
+  };
+
+  // Activity trail: one immutable revision entry per board operation, written
+  // in the same batch as the change it describes (rules-bounded).
+  const taskRevisionRef = (taskId: string) =>
+    doc(db, "tasks", taskId, "revisions", `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+
+  const writeTaskRevision = (
+    batch: ReturnType<typeof writeBatch>,
+    taskId: string,
+    entry: { action: "created" | "updated" | "moved" | "archived" | "restored" | "deleted"; from?: string; to?: string; fields?: string[] }
+  ) => {
+    batch.set(taskRevisionRef(taskId), {
+      action: entry.action,
+      ...(entry.from !== undefined ? { from: entry.from } : {}),
+      ...(entry.to !== undefined ? { to: entry.to } : {}),
+      ...(entry.fields !== undefined ? { fields: entry.fields } : {}),
+      actorUid: user?.uid || "unknown",
+      actorName: actorLabel(),
+      createdAt: new Date().toISOString(),
+    });
   };
 
   const runZulipSync = async (fetchPromise: Promise<Response>) => {
@@ -173,6 +201,30 @@ export default function KanbanPage() {
     }
   }, []);
 
+  // ?task={id} deep links (from Zulip messages or copied card links) arrive as
+  // full page loads, so the parameter is read from the location once and then
+  // cleared without a router dependency.
+  const [deepLinkId, setDeepLinkId] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get("task")
+  );
+  useEffect(() => {
+    if (!deepLinkId) return;
+    if (tasks.some((task) => task.id === deepLinkId)) {
+      setEditingTaskId(deepLinkId);
+      setDeepLinkId(null);
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState(null, "", cleanUrl);
+    }
+  }, [deepLinkId, tasks]);
+
+  // Surface silent truncation: the board queries at most 500 tasks.
+  useEffect(() => {
+    if (import.meta.env.MODE === "e2e") return;
+    getCountFromServer(query(collection(db, "tasks"), limit(501)))
+      .then((snap) => setOverflowCount(Math.max(0, snap.data().count - 500)))
+      .catch(() => setOverflowCount(0));
+  }, []);
+
   useEffect(() => {
     const fetchTeamRoster = async () => {
       try {
@@ -200,7 +252,10 @@ export default function KanbanPage() {
     }
     const performMove = async () => {
       const taskRef = doc(db, "tasks", taskId);
-      await updateDoc(taskRef, { status: newStatus });
+      const batch = writeBatch(db);
+      batch.update(taskRef, { status: newStatus });
+      if (task) writeTaskRevision(batch, taskId, { action: "moved", from: task.status, to: newStatus });
+      await batch.commit();
 
       if (task) {
         const syncPromise = authenticatedFetch("/api/tasks/notify", {
@@ -229,7 +284,10 @@ export default function KanbanPage() {
     if (!canEdit) return null;
     const performArchive = async () => {
       const taskRef = doc(db, "tasks", taskId);
-      await updateDoc(taskRef, { archived: isArchived });
+      const batch = writeBatch(db);
+      batch.update(taskRef, { archived: isArchived });
+      writeTaskRevision(batch, taskId, { action: isArchived ? "archived" : "restored" });
+      await batch.commit();
     };
     return executeTaskOperation(
       isArchived ? "archive task" : "restore task",
@@ -325,7 +383,11 @@ export default function KanbanPage() {
   const handleDeleteTask = async (taskId: string): Promise<TaskOperationError | null> => {
     if (!canEdit) return null;
     const performDelete = async () => {
-      await updateDoc(doc(db, "tasks", taskId), { isDeleted: 1, archived: true });
+      const taskRef = doc(db, "tasks", taskId);
+      const batch = writeBatch(db);
+      batch.update(taskRef, { isDeleted: 1, archived: true });
+      writeTaskRevision(batch, taskId, { action: "deleted" });
+      await batch.commit();
     };
     return executeTaskOperation("delete task", performDelete, () => handleDeleteTask(taskId));
   };
@@ -335,7 +397,13 @@ export default function KanbanPage() {
       setTasks((current) => [newTask, ...current]);
       return null;
     }
-    const performCreate = () => setDoc(doc(db, "tasks", newTask.id), newTask);
+    const performCreate = async () => {
+      const taskRef = doc(db, "tasks", newTask.id);
+      const batch = writeBatch(db);
+      batch.set(taskRef, newTask);
+      writeTaskRevision(batch, newTask.id, { action: "created" });
+      await batch.commit();
+    };
     return executeTaskOperation("create task", performCreate, () => handleCreateTask(newTask));
   };
 
@@ -461,6 +529,12 @@ export default function KanbanPage() {
       {!loadError && tasks.length > 0 && filteredTasks.length === 0 && (
         <p role="status" className="rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-sm text-marble/75">
           No tasks match the current search and filters.
+        </p>
+      )}
+
+      {overflowCount > 0 && (
+        <p role="status" className="rounded-lg border border-ares-gold/30 bg-ares-gold/10 px-4 py-3 text-sm text-ares-gold">
+          Showing the first 500 task cards; {overflowCount} more {overflowCount === 1 ? "card is" : "cards are"} hidden. Archive completed tasks to see older work.
         </p>
       )}
 

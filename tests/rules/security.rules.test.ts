@@ -89,6 +89,39 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(getDoc(doc(unknownDb, "tasks", "team-task")));
   });
 
+  it("accepts bounded task revision entries and rejects malformed or edited ones", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    await seedAuthorizedUser("other-user", "member");
+
+    const baseRevision = {
+      action: "moved",
+      actorUid: "member-user",
+      actorName: "CircuitFox",
+      createdAt: "2026-08-17T00:00:00.000Z",
+      from: "todo",
+      to: "in_progress",
+    };
+    await assertSucceeds(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), baseRevision));
+    await assertFails(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-bad-action"), {
+      ...baseRevision,
+      action: "exploded",
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-foreign-actor"), {
+      ...baseRevision,
+      actorUid: "someone-else",
+    }));
+    await assertFails(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-secret"), {
+      ...baseRevision,
+      secret: true,
+    }));
+    await assertFails(updateDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), {
+      action: "deleted",
+    }));
+    const unknownReader = testEnvironment.authenticatedContext("not-a-member").firestore();
+    await assertFails(getDoc(doc(unknownReader, "tasks/team-task/revisions", "rev-1")));
+  });
+
   it("accepts canonical task creates and bounds untrusted task fields", async () => {
     await seedAuthorizedUser("member-user", "member");
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();

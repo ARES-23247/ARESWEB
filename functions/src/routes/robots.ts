@@ -66,7 +66,13 @@ export const createRobotSchema = z.object({
 });
 
 export const updateRobotSchema = createRobotSchema.omit({ id: true }).partial().refine(
-  (value) => Object.keys(value).length > 0,
+  // Under zod 4, .partial() preserves the create schema's field defaults, so
+  // an empty body parses with defaulted keys present. Require at least one
+  // value that differs from those defaults instead of counting keys.
+  (value) =>
+    Object.values(value).some(
+      (entry) => entry !== undefined && entry !== "" && !(Array.isArray(entry) && entry.length === 0),
+    ),
   "At least one field is required",
 );
 

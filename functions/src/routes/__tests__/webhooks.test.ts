@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   taskGet: vi.fn(),
+  commentGet: vi.fn(),
   batchSet: vi.fn(),
   batchUpdate: vi.fn(),
   receiptSet: vi.fn(),
@@ -23,7 +24,7 @@ vi.mock("../../lib/firebase-admin", () => ({
         doc: vi.fn(() => ({
           get: mocks.taskGet,
           collection: vi.fn(() => ({
-            doc: vi.fn(() => ({ kind: "comment" })),
+            doc: vi.fn((id: string) => ({ kind: "comment", id, get: mocks.commentGet })),
           })),
         })),
       };
@@ -58,6 +59,8 @@ describe("Webhooks Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ZULIP_WEBHOOK_TOKEN = "correct-webhook-token";
+    delete process.env.ZULIP_BOT_EMAIL;
+    mocks.commentGet.mockResolvedValue({ exists: false });
     mocks.syndicate.mockResolvedValue({
       zulip: true,
       bluesky: true,
@@ -155,6 +158,55 @@ describe("Webhooks Router Backend Endpoints", () => {
         expect.objectContaining({ content: "Direct update.", source: "zulip" }),
       );
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it("ignores the workspace bot's own messages to prevent echo loops", async () => {
+      process.env.ZULIP_BOT_EMAIL = "ares-bot@zulipchat.com";
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "message",
+        sender_email: "ARES-Bot@zulipchat.com",
+        message: {
+          topic: "Task-123",
+          content: "Relayed web comment",
+          sender_full_name: "ARES Bot",
+          sender_email: "ares-bot@zulipchat.com",
+        },
+      };
+      await getHandler("/zulip", "post")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({ content: "" });
+      expect(mocks.taskGet).not.toHaveBeenCalled();
+      expect(mocks.batchSet).not.toHaveBeenCalled();
+      expect(mocks.batchUpdate).not.toHaveBeenCalled();
+    });
+
+    it("stores redelivered Zulip messages exactly once", async () => {
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "message",
+        message: {
+          topic: "Task-123",
+          content: "Checked code twice.",
+          sender_full_name: "Coach",
+          id: 987654,
+          timestamp: 1_755_000_000,
+        },
+      };
+      mocks.taskGet.mockResolvedValue({ exists: true });
+      await getHandler("/zulip", "post")(req, res, next);
+      expect(mocks.batchSet).toHaveBeenCalledTimes(1);
+      const storedRef = mocks.batchSet.mock.calls[0][0];
+      expect(storedRef.id).toMatch(/^comment_zulip_[0-9a-f]{24}$/);
+      expect(mocks.batchUpdate).toHaveBeenCalledTimes(1);
+
+      vi.clearAllMocks();
+      mocks.taskGet.mockResolvedValue({ exists: true });
+      mocks.commentGet.mockResolvedValue({ exists: true });
+      await getHandler("/zulip", "post")(req, res, next);
+      expect(res.json).toHaveBeenCalledWith({ content: "" });
+      expect(mocks.batchSet).not.toHaveBeenCalled();
+      expect(mocks.batchUpdate).not.toHaveBeenCalled();
     });
 
     it("rejects malformed authenticated payloads", async () => {
