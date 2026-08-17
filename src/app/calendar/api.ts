@@ -29,6 +29,12 @@ export interface EventWriteInput {
   title: string;
   dateStart: string;
   dateEnd?: string;
+  recurrence?: {
+    frequency: "weekly";
+    interval: number;
+    byDay: string[];
+    until?: string;
+  };
   locationId?: string;
   location?: string;
   description?: string;
@@ -82,11 +88,28 @@ function normalizeEvent(value: unknown): TeamEvent {
     : null;
   const publicVenueName = publicVenueRecord ? optionalString(publicVenueRecord, "name") : undefined;
   const publicVenueAddress = publicVenueRecord ? optionalString(publicVenueRecord, "address") : undefined;
+  const recurrenceRecord = record.recurrence && typeof record.recurrence === "object"
+    ? record.recurrence as Record<string, unknown>
+    : null;
+  const byDay = Array.isArray(recurrenceRecord?.byDay)
+    ? recurrenceRecord.byDay.filter((code): code is string => typeof code === "string")
+    : [];
+  const recurrence = recurrenceRecord && recurrenceRecord.frequency === "weekly" && byDay.length > 0
+    ? {
+        frequency: "weekly" as const,
+        interval: typeof recurrenceRecord.interval === "number" ? recurrenceRecord.interval : 1,
+        byDay,
+        until: typeof recurrenceRecord.until === "string" ? recurrenceRecord.until : undefined,
+      }
+    : undefined;
   return {
     id: requiredString(record, "id"),
     title: requiredString(record, "title"),
     dateStart: requiredString(record, "dateStart"),
     dateEnd: optionalString(record, "dateEnd"),
+    recurrence,
+    recurrenceOf: optionalString(record, "recurrenceOf"),
+    occurrenceDate: optionalString(record, "occurrenceDate"),
     locationId: optionalString(record, "locationId"),
     location: optionalString(record, "location"),
     publicVenue: publicVenueName && publicVenueAddress
@@ -204,6 +227,38 @@ export async function restoreEvent(eventId: string): Promise<void> {
 
 export async function publishEvent(eventId: string): Promise<void> {
   await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}/publish`, { method: "PATCH" });
+}
+
+export interface EventOccurrenceException {
+  date: string;
+  isCancelled: boolean;
+}
+
+export async function fetchEventOccurrences(eventId: string): Promise<EventOccurrenceException[]> {
+  const payload = await requestJson<{ occurrences?: unknown }>(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences`,
+  );
+  if (!Array.isArray(payload.occurrences)) throw new Error("Calendar response does not contain an occurrence list.");
+  return payload.occurrences.map((value) => {
+    if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid occurrence.");
+    const record = value as Record<string, unknown>;
+    if (typeof record.date !== "string") throw new Error("Calendar response contains an invalid occurrence date.");
+    return { date: record.date, isCancelled: record.isCancelled === true };
+  });
+}
+
+export async function cancelEventOccurrence(eventId: string, date: string): Promise<void> {
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}`,
+    { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cancelled: true }) },
+  );
+}
+
+export async function restoreEventOccurrence(eventId: string, date: string): Promise<void> {
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}/restore`,
+    { method: "PATCH" },
+  );
 }
 
 export async function fetchLocations(): Promise<TeamLocation[]> {

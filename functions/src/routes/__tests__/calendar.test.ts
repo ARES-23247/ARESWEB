@@ -16,14 +16,31 @@ vi.mock("../../lib/firebase-admin", () => {
     limit: vi.fn().mockReturnThis(),
     get: vi.fn(),
   };
+  const occurrencesQuery = {
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    get: vi.fn(),
+  };
+  const occurrenceGet = vi.fn();
+  const occurrenceSet = vi.fn();
+  const occurrenceRef = { id: "2026-08-20", get: occurrenceGet, set: occurrenceSet };
   const documentRef = {
     id: "generated-1",
     get: vi.fn(),
     set: vi.fn(),
     update: vi.fn(),
-    collection: vi.fn((name: string) => name === "photos"
-      ? nestedQuery
-      : { doc: vi.fn(() => revisionRef) }),
+    collection: vi.fn((name: string) => {
+      if (name === "photos") return nestedQuery;
+      if (name === "occurrences") {
+        return {
+          ...occurrencesQuery,
+          doc: vi.fn((date?: string) => date
+            ? { id: date, get: occurrenceGet, set: occurrenceSet }
+            : occurrenceRef),
+        };
+      }
+      return { doc: vi.fn(() => revisionRef) };
+    }),
   };
   const collectionRef = {
     ...query,
@@ -38,6 +55,7 @@ vi.mock("../../lib/firebase-admin", () => {
     adminDb: {
       collection: vi.fn(() => collectionRef),
       batch: vi.fn(() => batch),
+      __occurrences: { queryGet: occurrencesQuery.get, docGet: occurrenceGet, docSet: occurrenceSet },
     },
   };
 });
@@ -102,6 +120,9 @@ describe("calendar API", () => {
     documentRef.update.mockResolvedValue(undefined);
     batch.commit.mockResolvedValue(undefined);
     documentRef.collection("photos").get.mockResolvedValue({ docs: [] });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
+    (adminDb as any).__occurrences.docSet.mockReset();
+    (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
   });
 
   async function expectApiError(
@@ -636,5 +657,191 @@ describe("calendar API", () => {
     await handler("/events", "get")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.any(Error));
     expect(res.json).not.toHaveBeenCalled();
+  });
+});
+
+describe("calendar recurrence", () => {
+  const WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
+  const today = new Date();
+  const todayYmdStr = today.toISOString().slice(0, 10);
+  const todayCode = WEEKDAYS[(today.getUTCDay() + 6) % 7];
+  const weeklyRule = { frequency: "weekly", interval: 1, byDay: [todayCode] };
+
+  function recurringDocument(id = "weekly-1") {
+    return eventDocument(id, {
+      dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      dateEnd: `${todayYmdStr}T20:00:00.000Z`,
+      recurrence: weeklyRule,
+    });
+  }
+
+  let req: Record<string, unknown>;
+  let res: { json: ReturnType<typeof vi.fn>; send: ReturnType<typeof vi.fn>; setHeader: ReturnType<typeof vi.fn>; status: ReturnType<typeof vi.fn> };
+  let next: ReturnType<typeof vi.fn>;
+  let collectionRef: any;
+  let documentRef: any;
+  let batch: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    req = { query: {}, params: {}, body: {}, user: { uid: "member-1" }, authorizationRole: "mentor" };
+    res = { json: vi.fn(), send: vi.fn(), setHeader: vi.fn(), status: vi.fn().mockReturnThis() };
+    next = vi.fn();
+    collectionRef = adminDb.collection("events") as any;
+    documentRef = collectionRef.doc("weekly-1");
+    batch = adminDb.batch();
+    collectionRef.get.mockResolvedValue({ docs: [] });
+    documentRef.get.mockResolvedValue({ exists: true, id: "weekly-1", data: () => recurringDocument().data() });
+    documentRef.set.mockResolvedValue(undefined);
+    documentRef.update.mockResolvedValue(undefined);
+    batch.commit.mockResolvedValue(undefined);
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
+    (adminDb as any).__occurrences.docSet.mockReset();
+    (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
+  });
+
+  it("expands a recurring event into upcoming occurrences in list pages", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
+    await handler("/events", "get")(req, res, next);
+    const payload = res.json.mock.calls[0][0];
+    // One weekly byDay emits the next four sessions (today + three weeks).
+    expect(payload.events).toHaveLength(4);
+    const occurrence = payload.events[0];
+    expect(occurrence.id).toBe(`weekly-1_${todayYmdStr}`);
+    expect(occurrence.recurrenceOf).toBe("weekly-1");
+    expect(occurrence.dateStart).toContain("T18:00:00.000Z");
+    expect(occurrence.occurrenceDate).toBe(todayYmdStr);
+    expect(payload.events[3].id).toBe(`weekly-1_${new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}`);
+    expect(occurrence.recurrence).toEqual(weeklyRule);
+  });
+
+  it("skips cancelled occurrence dates during expansion", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({
+      docs: [{ id: todayYmdStr, data: () => ({ isCancelled: 1 }) }],
+    });
+    await handler("/events", "get")(req, res, next);
+    const payload = res.json.mock.calls[0][0];
+    // The 56-day window offers eight weekly candidates; one cancellation
+    // removes today and the max-4 slice refills from the remaining weeks.
+    expect(payload.events).toHaveLength(4);
+    expect(payload.events.map((event: any) => event.occurrenceDate)).not.toContain(todayYmdStr);
+  });
+
+  it("keeps plain events untouched by expansion", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [eventDocument("plain-1")] });
+    await handler("/events", "get")(req, res, next);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.events[0].id).toBe("plain-1");
+    expect(payload.events[0].recurrenceOf).toBeUndefined();
+    expect(payload.events[0].recurrence).toBeUndefined();
+  });
+
+  it("rejects invalid recurrence rules on write", async () => {
+    req.body = {
+      title: "Weekly Practice",
+      dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      category: "internal",
+      recurrence: { frequency: "weekly", interval: 9, byDay: ["MO"] },
+    };
+    await handler("/manage", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it("rejects a recurrence that ends before the first session", async () => {
+    req.body = {
+      title: "Weekly Practice",
+      dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      category: "internal",
+      recurrence: { frequency: "weekly", interval: 1, byDay: ["MO"], until: "2000-01-01" },
+    };
+    await handler("/manage", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+  });
+
+  it("persists the recurrence rule on create", async () => {
+    req.body = {
+      title: "Weekly Practice",
+      dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      dateEnd: `${todayYmdStr}T20:00:00.000Z`,
+      category: "internal",
+      recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"] },
+    };
+    await handler("/manage", "post")(req, res, next);
+    expect(batch.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"] },
+    }));
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json.mock.calls[0][0].event.recurrence).toEqual({ frequency: "weekly", interval: 2, byDay: ["TU", "TH"] });
+  });
+
+  it("guards occurrence endpoints behind the publisher role and validates dates", async () => {
+    const cancelLayer = calendarRouter.stack.find((entry) => (
+      entry.route?.path === "/manage/:id/occurrences/:date" && entry.route.methods.patch
+    ));
+    expect(cancelLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
+      "ensureTeamMember",
+      "ensureCalendarPublisher",
+      expect.any(String),
+    ]);
+
+    req.params = { id: "weekly-1", date: "not-a-date" };
+    await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "INVALID_DATE" }));
+  });
+
+  it("cancels and restores a single occurrence with audit trail", async () => {
+    req.params = { id: "weekly-1", date: "2026-09-03" };
+    req.body = { cancelled: true };
+    await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isCancelled: 1, date: "2026-09-03" }),
+      { merge: true },
+    );
+
+    (adminDb as any).__occurrences.docGet.mockResolvedValue({ exists: true, data: () => ({ isCancelled: 1 }) });
+    await handler("/manage/:id/occurrences/:date/restore", "patch")(req, res, next);
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isCancelled: 0 }),
+      { merge: true },
+    );
+  });
+
+  it("refuses occurrence operations on non-recurring events", async () => {
+    documentRef.get.mockResolvedValue({ exists: true, id: "plain-1", data: () => eventDocument("plain-1").data() });
+    req.params = { id: "plain-1", date: "2026-09-03" };
+    req.body = { cancelled: true };
+    await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 409, code: "NOT_RECURRING" }));
+  });
+
+  it("lists stored occurrence exceptions", async () => {
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({
+      docs: [{ id: "2026-09-03", data: () => ({ isCancelled: 1 }) }],
+    });
+    req.params = { id: "weekly-1" };
+    await handler("/manage/:id/occurrences", "get")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      occurrences: [{ date: "2026-09-03", isCancelled: true }],
+    });
+  });
+
+  it("emits RRULE and EXDATE lines for recurring events in the feed", async () => {
+    const thursday = eventDocument("weekly-1", {
+      dateStart: "2026-08-20T18:00:00.000Z",
+      dateEnd: "2026-08-20T20:00:00.000Z",
+      recurrence: { frequency: "weekly", interval: 2, byDay: ["TH"], until: "2026-12-31" },
+    });
+    collectionRef.get.mockResolvedValue({ docs: [thursday] });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({
+      docs: [{ id: "2026-09-03", data: () => ({ isCancelled: 1 }) }],
+    });
+    await handler("/feed", "get")(req, res, next);
+    const body = res.send.mock.calls[0][0] as string;
+    expect(body).toContain("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20261231T235959Z");
+    expect(body).toContain("EXDATE:20260903T180000Z");
+    expect(body).toContain("UID:weekly-1@aresfirst.org");
   });
 });

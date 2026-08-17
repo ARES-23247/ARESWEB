@@ -1,4 +1,5 @@
 import express, { NextFunction, Response } from "express";
+import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
@@ -9,13 +10,15 @@ import {
   addHours,
   canPublish,
   escapeIcalText,
-  eventDto,
   type EventDocument,
+  eventDto,
   eventPhotoDto,
   type EventPhotoDocument,
   eventWriteData,
   eventWriteSchema,
+  expandEventOccurrences,
   formatIcalDate,
+  isOccurrenceDate,
   locationDto,
   type LocationDocument,
   locationWriteSchema,
@@ -23,8 +26,70 @@ import {
   parseId,
   parseLimit,
   publicVenueDto,
+  readRecurrence,
   readString,
 } from "./calendarHelpers";
+
+/** Recurring sessions are materialized for a forward window from today. */
+const OCCURRENCE_WINDOW_DAYS = 56;
+
+function todayYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function futureYmd(days: number): string {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** Loads the cancelled occurrence dates for the recurring events on a page. */
+async function loadCancelledDates(parentIds: readonly string[]): Promise<Map<string, Set<string>>> {
+  const cancelled = new Map<string, Set<string>>();
+  for (const id of parentIds) {
+    const snapshot = await adminDb
+      .collection("events")
+      .doc(id)
+      .collection("occurrences")
+      .where("isCancelled", "==", 1)
+      .limit(100)
+      .get();
+    const dates = new Set(snapshot.docs.map((doc) => doc.id).filter(isOccurrenceDate));
+    if (dates.size > 0) cancelled.set(id, dates);
+  }
+  return cancelled;
+}
+
+/**
+ * Renders a page of documents as DTOs. Recurring events contribute their
+ * upcoming occurrences (skipping cancelled dates) instead of only the first
+ * session, so a weekly practice stays visible as it recurs.
+ */
+async function renderEventPage(
+  documents: FirebaseFirestore.QueryDocumentSnapshot[],
+  includeLifecycle: boolean,
+) {
+  const dtos = documents.map((document) =>
+    eventDto(document.id, document.data() as EventDocument, includeLifecycle),
+  );
+  const recurringIds = documents
+    .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
+    .map((document) => document.id);
+  if (recurringIds.length === 0) return { events: dtos, nextOccurrenceIds: new Set<string>() };
+
+  const cancelled = await loadCancelledDates(recurringIds);
+  const expanded = dtos.flatMap((dto, index) => {
+    const data = documents[index].data() as EventDocument;
+    if (!readRecurrence(data.recurrence)) return [dto];
+    const occurrences = expandEventOccurrences(dto, data, {
+      fromDate: todayYmd(),
+      toDate: futureYmd(OCCURRENCE_WINDOW_DAYS),
+      cancelledDates: cancelled.get(dto.id),
+      maxPerEvent: 4,
+    });
+    return occurrences.length > 0 ? occurrences : [];
+  });
+  const nextOccurrenceIds = new Set(expanded.map((dto) => dto.id));
+  return { events: expanded, nextOccurrenceIds };
+}
 
 const router = express.Router();
 
@@ -109,12 +174,11 @@ router.get(
     const snapshot = await query.limit(limitValue + 1).get();
     const hasMore = snapshot.docs.length > limitValue;
     const pageDocuments = snapshot.docs.slice(0, limitValue);
+    const { events } = await renderEventPage(pageDocuments, false);
 
     res.json({
       success: true,
-      events: pageDocuments.map((document) =>
-        eventDto(document.id, document.data() as EventDocument, false),
-      ),
+      events,
       nextCursor: hasMore ? (pageDocuments.at(-1)?.id ?? null) : null,
     });
   }),
@@ -179,11 +243,10 @@ router.get(
     const snapshot = await query.limit(limitValue + 1).get();
     const hasMore = snapshot.docs.length > limitValue;
     const pageDocuments = snapshot.docs.slice(0, limitValue);
+    const { events } = await renderEventPage(pageDocuments, true);
     res.json({
       success: true,
-      events: pageDocuments.map((document) =>
-        eventDto(document.id, document.data() as EventDocument, true),
-      ),
+      events,
       nextCursor: hasMore ? (pageDocuments.at(-1)?.id ?? null) : null,
     });
   }),
@@ -387,6 +450,111 @@ router.patch(
   }),
 );
 
+// Recurring-event occurrence management. Occurrence ids are calendar dates
+// (YYYY-MM-DD) under events/{id}/occurrences; only exceptions are stored.
+router.get(
+  "/manage/:id/occurrences",
+  ensureTeamMember,
+  asyncHandler(async (req, res) => {
+    const { id, data } = await getEvent(req.params.id, true);
+    if (!readRecurrence(data.recurrence)) {
+      throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
+    }
+    const snapshot = await adminDb
+      .collection("events")
+      .doc(id)
+      .collection("occurrences")
+      .limit(200)
+      .get();
+    res.json({
+      success: true,
+      occurrences: snapshot.docs
+        .filter((document) => isOccurrenceDate(document.id))
+        .map((document) => ({
+          date: document.id,
+          isCancelled: document.data().isCancelled === 1,
+        })),
+    });
+  }),
+);
+
+router.patch(
+  "/manage/:id/occurrences/:date",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, data } = await getEvent(req.params.id, true);
+    if (!readRecurrence(data.recurrence)) {
+      throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
+    }
+    const date = String(req.params.date ?? "");
+    if (!isOccurrenceDate(date)) {
+      throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+    }
+    parseBody(z.object({ cancelled: z.literal(true) }).strict(), req.body);
+    const timestamp = new Date().toISOString();
+    const ref = adminDb.collection("events").doc(id).collection("occurrences").doc(date);
+    await ref.set(
+      {
+        date,
+        isCancelled: 1,
+        cancelledAt: timestamp,
+        cancelledBy: req.user!.uid,
+        updatedAt: timestamp,
+      },
+      { merge: true },
+    );
+    await adminDb.collection("audit_logs").doc().set({
+      action: "calendar.occurrence.cancelled",
+      actorUid: req.user!.uid,
+      targetId: id,
+      occurrenceDate: date,
+      createdAt: timestamp,
+    });
+    res.json({ success: true, cancelled: true, date });
+  }),
+);
+
+router.patch(
+  "/manage/:id/occurrences/:date/restore",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, data } = await getEvent(req.params.id, true);
+    if (!readRecurrence(data.recurrence)) {
+      throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
+    }
+    const date = String(req.params.date ?? "");
+    if (!isOccurrenceDate(date)) {
+      throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+    }
+    const timestamp = new Date().toISOString();
+    const ref = adminDb.collection("events").doc(id).collection("occurrences").doc(date);
+    const snapshot = await ref.get();
+    if (!snapshot.exists || snapshot.data()?.isCancelled !== 1) {
+      res.json({ success: true, restored: true, message: "Occurrence is already scheduled." });
+      return;
+    }
+    await ref.set(
+      {
+        isCancelled: 0,
+        restoredAt: timestamp,
+        restoredBy: req.user!.uid,
+        updatedAt: timestamp,
+      },
+      { merge: true },
+    );
+    await adminDb.collection("audit_logs").doc().set({
+      action: "calendar.occurrence.restored",
+      actorUid: req.user!.uid,
+      targetId: id,
+      occurrenceDate: date,
+      createdAt: timestamp,
+    });
+    res.json({ success: true, restored: true, date });
+  }),
+);
+
 router.get(
   "/locations",
   ensureTeamMember,
@@ -542,12 +710,29 @@ router.get(
         formatIcalDate(readString(data.dateEnd)) ?? addHours(dateStart, 2);
       if (!end) continue;
       const updated = formatIcalDate(readString(data.updatedAt)) ?? start;
+      const recurrence = readRecurrence(data.recurrence);
       lines.push("BEGIN:VEVENT");
       lines.push(`UID:${document.id}@aresfirst.org`);
       lines.push(`DTSTAMP:${updated}`);
       lines.push(`LAST-MODIFIED:${updated}`);
       lines.push(`DTSTART:${start}`);
       lines.push(`DTEND:${end}`);
+      if (recurrence) {
+        // Calendar apps expand the rule natively; cancelled sessions become
+        // EXDATEs so subscribed clients skip them.
+        const rule = [
+          "FREQ=WEEKLY",
+          `INTERVAL=${recurrence.interval}`,
+          `BYDAY=${recurrence.byDay.join(",")}`,
+        ];
+        if (recurrence.until) rule.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
+        lines.push(`RRULE:${rule.join(";")}`);
+        const exdates = await loadCancelledDates([document.id]);
+        const cancelled = exdates.get(document.id);
+        if (cancelled && cancelled.size > 0) {
+          lines.push(`EXDATE:${[...cancelled].sort().map((date) => `${date.replace(/-/g, "")}T${start.slice(9, 15)}Z`).join(",")}`);
+        }
+      }
       lines.push(
         `SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`,
       );

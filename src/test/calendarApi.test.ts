@@ -4,14 +4,17 @@ import {
   archiveEvent,
   archiveLocation,
   CalendarApiError,
+  cancelEventOccurrence,
   createEvent,
   createLocation,
+  fetchEventOccurrences,
   fetchLocations,
   fetchManagedEvents,
   fetchPublicEvent,
   fetchPublicEvents,
   publishEvent,
   restoreEvent,
+  restoreEventOccurrence,
   restoreLocation,
   updateEvent,
   updateLocation,
@@ -140,5 +143,85 @@ describe("calendar API client", () => {
     expect(calls.some(([, init]) => init?.method === "PUT")).toBe(true);
     expect(calls.some(([, init]) => init?.method === "DELETE")).toBe(true);
     expect(calls.some(([, init]) => init?.method === "PATCH")).toBe(true);
+  });
+});
+
+describe("calendar recurrence client", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("normalizes recurrence rules and occurrence markers on event DTOs", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(
+      response({
+        success: true,
+        events: [{
+          ...event,
+          id: "weekly-1_2026-08-20",
+          recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"], until: "2026-12-31" },
+          recurrenceOf: "weekly-1",
+          occurrenceDate: "2026-08-20",
+        }],
+        nextCursor: null,
+      }),
+    );
+    const page = await fetchPublicEvents();
+    const occurrence = page.events[0];
+    expect(occurrence.recurrence).toEqual({
+      frequency: "weekly",
+      interval: 2,
+      byDay: ["TU", "TH"],
+      until: "2026-12-31",
+    });
+    expect(occurrence.recurrenceOf).toBe("weekly-1");
+    expect(occurrence.occurrenceDate).toBe("2026-08-20");
+  });
+
+  it("drops malformed recurrence data instead of inventing a rule", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(
+      response({
+        success: true,
+        events: [{ ...event, recurrence: { frequency: "monthly" } }],
+        nextCursor: null,
+      }),
+    );
+    const page = await fetchPublicEvents();
+    expect(page.events[0].recurrence).toBeUndefined();
+  });
+
+  it("sends the recurrence rule on create", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(
+      response({ success: true, event: { ...event, recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] } } }),
+    );
+    await createEvent({
+      title: "Practice",
+      dateStart: "2026-08-20T18:00:00.000Z",
+      category: "internal",
+      recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] },
+    });
+    const [, init] = vi.mocked(authenticatedFetch).mock.calls[0];
+    expect(JSON.parse(String(init!.body))).toEqual(expect.objectContaining({
+      recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] },
+    }));
+  });
+
+  it("lists, cancels, and restores occurrence exceptions", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(
+      response({ success: true, occurrences: [{ date: "2026-09-03", isCancelled: true }] }),
+    );
+    const exceptions = await fetchEventOccurrences("weekly-1");
+    expect(exceptions).toEqual([{ date: "2026-09-03", isCancelled: true }]);
+    expect(vi.mocked(authenticatedFetch).mock.calls[0][0]).toBe("/api/calendar/manage/weekly-1/occurrences");
+
+    vi.mocked(authenticatedFetch).mockResolvedValue(response({ success: true }));
+    await cancelEventOccurrence("weekly-1", "2026-09-03");
+    const [cancelPath, cancelInit] = vi.mocked(authenticatedFetch).mock.calls[1];
+    expect(cancelPath).toBe("/api/calendar/manage/weekly-1/occurrences/2026-09-03");
+    expect(cancelInit!.method).toBe("PATCH");
+
+    await restoreEventOccurrence("weekly-1", "2026-09-03");
+    const [restorePath, restoreInit] = vi.mocked(authenticatedFetch).mock.calls[2];
+    expect(restorePath).toBe("/api/calendar/manage/weekly-1/occurrences/2026-09-03/restore");
+    expect(restoreInit!.method).toBe("PATCH");
   });
 });
