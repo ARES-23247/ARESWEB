@@ -49,7 +49,8 @@ router.post("/comment", ensureTeamMember, asyncHandler(async (req: Authenticated
 
   const streamName = process.env.ZULIP_KANBAN_STREAM || "kanban";
   const topic = `Task-${taskId}`;
-  const messageContent = `💬 **${author}** (via Web):\n\n${content}`;
+  const taskLink = `https://aresfirst.org/dashboard/tasks?task=${encodeURIComponent(taskId)}`;
+  const messageContent = `💬 **${author}** (via Web):\n\n${content}\n\n[Open task card](${taskLink})`;
 
   const success = await sendZulipMessage(streamName, topic, messageContent);
   if (!success) throw new ApiError(502, "Zulip did not accept the task comment.");
@@ -66,6 +67,7 @@ router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
   const topic = `Task-${taskId}`;
   let content = "";
 
+  const taskLink = `https://aresfirst.org/dashboard/tasks?task=${encodeURIComponent(taskId)}`;
   if (action === "create") {
     content = [
       `🚀 **New Task Created:** ${title}`,
@@ -73,12 +75,13 @@ router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
       `**Priority:** ${priority || "medium"}`,
       `**Subteam:** ${subteam || "software"}`,
       dueDate ? `**Due:** ${dueDate}` : "",
-      `[Open Kanban Board](https://aresfirst.org/dashboard/tasks)`
+      `[Open task card](${taskLink})`
     ].filter(Boolean).join("\n");
   } else if (action === "move") {
     content = [
-      `🔄 **Task Status Updated:** Card is now in **${status || "unknown"}**`,
+      `🔄 **Task Status Updated:** ${title} is now in **${status || "unknown"}**`,
       dueDate ? `**Due:** ${dueDate}` : "",
+      `[Open task card](${taskLink})`
     ].filter(Boolean).join("\n");
   } else {
     throw new ApiError(400, "Invalid action.");

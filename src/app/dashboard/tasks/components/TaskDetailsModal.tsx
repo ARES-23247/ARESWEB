@@ -1,8 +1,8 @@
 import { logger } from "@/utils/logger";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { doc, updateDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc, writeBatch, collection as fsCollection, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
-import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus } from "lucide-react";
+import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus, Link2, History } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import MarkdownEditor from "@/components/MarkdownEditor";
@@ -73,6 +73,8 @@ export default function TaskDetailsModal({
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [revisions, setRevisions] = useState<Array<{ id: string; action: string; actorName: string; createdAt: string; from?: string; to?: string; fields?: string[] }>>([]);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const deleteTriggerRef = useRef<HTMLButtonElement>(null);
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
@@ -123,6 +125,27 @@ export default function TaskDetailsModal({
       setModalDueDate("");
     }
   }, [task, taskAssignees, taskDescription, taskDueDate, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
+
+  // Activity trail for this card, newest first, bounded to the last 30 entries.
+  useEffect(() => {
+    if (isCreateMode || !taskId) {
+      setRevisions([]);
+      return;
+    }
+    const revisionsQuery = fsQuery(
+      fsCollection(db, "tasks", taskId, "revisions"),
+      fsOrderBy("createdAt", "desc"),
+      fsLimit(30),
+    );
+    const unsubscribe = onSnapshot(
+      revisionsQuery,
+      (snapshot) => {
+        setRevisions(snapshot.docs.map((docSnap) => docSnap.data() as typeof revisions[number]));
+      },
+      (err) => logger.warn("Task history unavailable:", err),
+    );
+    return () => unsubscribe();
+  }, [isCreateMode, taskId]);
 
   if (taskId && !task) return null;
 
@@ -193,7 +216,18 @@ export default function TaskDetailsModal({
 
       } else if (task) {
         const taskRef = doc(db, "tasks", task.id);
-        await updateDoc(taskRef, {
+        const changedFields = ([
+          ["title", task.title, modalTitle.trim()],
+          ["description", task.description || "", modalDesc.trim()],
+          ["priority", task.priority, modalPriority],
+          ["subteam", task.subteam, modalSubteam],
+          ["status", task.status, modalStatus],
+          ["assignees", JSON.stringify(task.assignees || []), JSON.stringify(modalAssignees)],
+          ["due date", task.dueDate || "", modalDueDate || ""],
+        ] as const).filter(([, before, after]) => before !== after).map(([field]) => field);
+
+        const batch = writeBatch(db);
+        batch.update(taskRef, {
           title: modalTitle.trim(),
           description: modalDesc.trim(),
           priority: modalPriority,
@@ -202,6 +236,17 @@ export default function TaskDetailsModal({
           assignees: modalAssignees,
           dueDate: modalDueDate || null,
         });
+        if (changedFields.length > 0) {
+          batch.set(doc(db, "tasks", task.id, "revisions", `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`), {
+            action: "updated",
+            ...(task.status !== modalStatus ? { from: task.status, to: modalStatus } : {}),
+            fields: changedFields,
+            actorUid: user?.uid || "unknown",
+            actorName: teamProfiles.find((p) => p.uid === user?.uid)?.nickname || "Team Member",
+            createdAt: new Date().toISOString(),
+          });
+        }
+        await batch.commit();
 
         if (setSyncState) setSyncState("syncing");
         authenticatedFetch("/api/tasks/notify", {
@@ -291,6 +336,29 @@ export default function TaskDetailsModal({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Copy card link */}
+          {!isCreateMode && task && (
+            <button
+              type="button"
+              onClick={async () => {
+                const url = `https://aresfirst.org/dashboard/tasks?task=${encodeURIComponent(task.id)}`;
+                try {
+                  await navigator.clipboard.writeText(url);
+                } catch {
+                  // Clipboard access can be blocked; the URL is still shown via the title hint.
+                }
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+              title={`Card link: https://aresfirst.org/dashboard/tasks?task=${task.id}`}
+              aria-label="Copy a link to this task card"
+              className="h-8 px-3 rounded-lg border border-white/10 hover:border-white/25 text-marble/60 hover:text-white flex items-center gap-1.5 cursor-pointer transition-all text-[10px] font-black uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <Link2 size={11} aria-hidden="true" />
+              {linkCopied ? "Copied" : "Link"}
+            </button>
+          )}
+
           {/* AI Copilot Toggle */}
           {!isCreateMode && canUseAi && (
             <button
@@ -559,7 +627,64 @@ export default function TaskDetailsModal({
               )}
             </div>
 
+            {(() => {
+              const knownUids = new Set(teamProfiles.map((p) => p.uid));
+              const unknownAssignees = (task.assignees || []).filter((uid) => !knownUids.has(uid));
+              if (unknownAssignees.length === 0) return null;
+              return (
+                <div className="bg-black/20 p-3 rounded-xl border border-ares-gold/20">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-ares-gold mb-2">
+                    Unknown assignees
+                  </p>
+                  <p className="text-[11px] text-marble/70 mb-2">
+                    {unknownAssignees.length} assignee{unknownAssignees.length === 1 ? "" : "s"} on this card no longer match the team roster. Remove them below.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {unknownAssignees.map((uid) => (
+                      <button
+                        key={uid}
+                        type="button"
+                        onClick={() => setModalAssignees(modalAssignees.filter((a) => a !== uid))}
+                        disabled={!canEdit}
+                        className="bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-bold px-2 py-1 rounded inline-flex items-center gap-1 cursor-pointer hover:bg-ares-gold/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                        aria-label={`Remove unknown assignee ${uid}`}
+                      >
+                        {uid} <X size={10} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} setSyncState={setSyncState} />
+
+            <div className="bg-black/20 p-4 rounded-xl border border-white/5">
+              <h4 className="text-xs font-black text-ares-gold uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                <History size={12} aria-hidden="true" /> Card History
+              </h4>
+              {revisions.length === 0 ? (
+                <p className="text-[11px] text-marble/40 italic">No recorded activity yet.</p>
+              ) : (
+                <ol className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5">
+                  {revisions.map((entry) => (
+                    <li key={entry.id} className="text-[11px] text-marble/70 flex flex-wrap gap-x-2">
+                      <span className="font-bold text-white">
+                        {new Date(entry.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </span>
+                      <span>
+                        <span className="text-ares-cyan font-semibold">{entry.actorName || "Member"}</span>{" "}
+                        {entry.action === "moved"
+                          ? `moved ${entry.from || "?"} → ${entry.to || "?"}`
+                          : entry.action === "updated"
+                            ? `edited${entry.fields && entry.fields.length > 0 ? ` (${entry.fields.join(", ")})` : ""}`
+                            : entry.action}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </>
         )}
           </div>

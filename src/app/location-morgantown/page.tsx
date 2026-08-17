@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Users, Calendar, Trophy, GraduationCap } from "lucide-react";
+import { ArrowRight, MapPin, Users, Calendar, Trophy, GraduationCap, Bot, Plane } from "lucide-react";
 
 import SEO from "@/components/SEO";
 import BreadcrumbSchema from "@/components/BreadcrumbSchema";
@@ -88,6 +88,124 @@ export default function LocationMorgantownPage() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* More robotics in Morgantown */}
+      <section className="py-20 bg-obsidian">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-3xl md:text-4xl font-black text-white mb-4 text-center font-heading uppercase">
+            More <span className="text-ares-gold">Robotics in Morgantown</span>
+          </h2>
+          <p className="text-marble/70 text-center max-w-3xl mx-auto mb-12">
+            ARES 23247 is one part of a growing Morgantown robotics community. Students of every
+            age can find a program here — and several organizations make that possible.
+          </p>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-red/50 transition-all">
+              <div className="w-14 h-14 bg-ares-red rounded-lg flex items-center justify-center mb-6 text-white">
+                <Trophy aria-hidden="true" className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">MARS — <em>FIRST</em> Robotics Competition Team 2614</h3>
+              <p className="text-marble/70 leading-relaxed mb-4">
+                Mountaineer Area RoboticS (MARS) is Morgantown&rsquo;s internationally recognized
+                <em> FIRST</em> Robotics Competition team, based at WVU. The high-school-level FRC
+                program builds large competition robots each season, and MARS members also mentor
+                local <em>FIRST</em> LEGO League teams during the fall.
+              </p>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <a
+                  href="https://www.marsfirst.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                >
+                  marsfirst.org
+                </a>
+                <a
+                  href="https://www.thebluealliance.com/team/2614"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                >
+                  Competition history
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-cyan/50 transition-all">
+              <div className="w-14 h-14 bg-ares-cyan/20 rounded-lg flex items-center justify-center mb-6">
+                <Bot aria-hidden="true" className="w-7 h-7 text-ares-cyan" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3"><em>FIRST</em> LEGO League (FLL)</h3>
+              <p className="text-marble/70 leading-relaxed mb-4">
+                Elementary and middle school students begin with <em>FIRST</em> LEGO League:
+                teams research a real-world challenge, build a LEGO prototype, and present their
+                ideas at local events. Morgantown-area FLL teams are mentored by local high school
+                robotics students, including MARS and ARES members, making it a natural first step
+                toward FTC and FRC.
+              </p>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <a
+                  href="https://www.firstinspires.org/robotics/fll"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                >
+                  Explore FLL
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-gold/50 transition-all md:col-span-2">
+              <div className="flex flex-col md:flex-row md:items-start gap-6">
+                <div className="w-14 h-14 bg-ares-gold/20 rounded-lg flex items-center justify-center shrink-0">
+                  <Plane aria-hidden="true" className="w-7 h-7 text-ares-gold" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-3">West Virginia Robotics Alliance</h3>
+                  <p className="text-marble/70 leading-relaxed mb-4">
+                    The WV Robotics Alliance, partnered with NASA&rsquo;s Independent Verification
+                    and Validation facility in Fairmont, supports robotics education across the
+                    state — including workshops, funding help, and championship events. Through
+                    the REC Foundation, the Alliance runs the <strong>Aerial Drone Competition</strong>
+                    {" "}(the Dragonfly regional championship is held at Fairmont State University)
+                    and the <strong>V5 and VIQ Robotics Competitions</strong> — the programs
+                    formerly known as VEX. West Virginia teams can even request free drones to
+                    start competing.
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <a
+                      href="https://www.wvrobot.org/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                    >
+                      wvrobot.org
+                    </a>
+                    <a
+                      href="https://recf.org/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                    >
+                      REC Foundation
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p className="text-marble/60 text-center mt-10 text-sm">
+            Looking for programs across the whole Mountain State?{" "}
+            <Link
+              to="/robotics-west-virginia"
+              className="text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+            >
+              Explore robotics in West Virginia
+            </Link>
+            .
+          </p>
         </div>
       </section>
 
