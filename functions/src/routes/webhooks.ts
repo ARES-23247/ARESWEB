@@ -12,6 +12,8 @@ import {
   SyndicationChannel,
   syndicatePublishedPost,
 } from "../lib/socialSyndication";
+import { formatOnshapeEvent } from "../lib/onshape";
+import { sendZulipMessage } from "../lib/zulip";
 
 const router = express.Router();
 const zulipWebhookSchema = z.object({
@@ -39,9 +41,18 @@ const syndicatePostSchema = z
   })
   .strict();
 
-export function syndicationQuotaKey(req: AuthenticatedRequest): string {
-  return req.user?.uid || "missing-verified-identity";
-}
+export const syndicationQuotaKey = (req: AuthenticatedRequest): string =>
+  req.user?.uid || "missing-verified-identity";
+
+const onshapeWebhookSchema = z.object({
+  event: z.object({
+    eventType: z.string().min(1).max(100),
+    documentId: z.string().regex(/^[A-Za-z0-9]{10,64}$/),
+    documentName: z.string().max(200).optional(),
+    userName: z.string().max(120).optional(),
+    versionName: z.string().max(120).optional(),
+  }),
+});
 
 const syndicationIpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -285,6 +296,62 @@ router.post(
 
     logger.info("webhooks", "Synced a verified Zulip comment to its task");
     res.json({ content: "" });
+  }),
+);
+
+// POST /api/webhooks/onshape?token=<secret>
+// Onshape embeds the shared secret in the callback URL query because its
+// webhooks carry no signature header; the token is compared before the body
+// is interpreted and every payload field is treated as untrusted display text.
+router.post(
+  "/onshape",
+  rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 120,
+    message: { error: "Too many Onshape webhook requests. Please try again later." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
+  asyncHandler(async (req, res) => {
+    const expectedToken = process.env.ONSHAPE_WEBHOOK_TOKEN;
+
+    if (!expectedToken) {
+      logger.error("webhooks", "Server lacks ONSHAPE_WEBHOOK_TOKEN config");
+      throw new ApiError(500, "Webhook token not configured.");
+    }
+
+    const token = typeof req.query?.token === "string" ? req.query.token : "";
+
+    if (!token || !timingSafeEqual(token, expectedToken)) {
+      throw new ApiError(401, "Unauthorized: Invalid webhook token.");
+    }
+
+    const payload = onshapeWebhookSchema.safeParse(req.body);
+    if (!payload.success) {
+      throw new ApiError(400, "Invalid Onshape webhook payload.");
+    }
+
+    const stream = process.env.ONSHAPE_ZULIP_STREAM || "engineering";
+    const message = formatOnshapeEvent(payload.data.event, stream);
+
+    // Unrelayed event types are acknowledged so Onshape does not retry them.
+    if (!message) {
+      res.json({ status: "ignored" });
+      return;
+    }
+
+    const delivered = await sendZulipMessage(
+      message.stream,
+      message.topic,
+      message.content,
+    );
+
+    if (!delivered) {
+      throw new ApiError(502, "Zulip delivery failed for the Onshape event.");
+    }
+
+    logger.info("webhooks", "Relayed a verified Onshape event to Zulip");
+    res.json({ status: "delivered" });
   }),
 );
 

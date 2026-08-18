@@ -61,6 +61,7 @@ describe("App Check monitoring middleware", () => {
   it("exempts integrations that authenticate without Firebase App Check", () => {
     expect(shouldObserveAppCheck(createRequest("POST", "/api/profiles/sync"))).toBe(false);
     expect(shouldObserveAppCheck(createRequest("POST", "/api/webhooks/zulip"))).toBe(false);
+    expect(shouldObserveAppCheck(createRequest("POST", "/api/webhooks/onshape"))).toBe(false);
   });
 
   it("skips verification and logging for exempt requests", async () => {

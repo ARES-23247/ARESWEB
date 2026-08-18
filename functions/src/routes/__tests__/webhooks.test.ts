@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   transactionGet: vi.fn(),
   transactionSet: vi.fn(),
   syndicate: vi.fn(),
+  zulipSend: vi.fn(),
 }));
 
 vi.mock("../../lib/firebase-admin", () => ({
@@ -49,6 +50,10 @@ vi.mock("../../lib/socialSyndication", () => ({
   syndicatePublishedPost: (...args: unknown[]) => mocks.syndicate(...args),
 }));
 
+vi.mock("../../lib/zulip", () => ({
+  sendZulipMessage: (...args: unknown[]) => mocks.zulipSend(...args),
+}));
+
 import webhooksRouter, { syndicationQuotaKey } from "../webhooks";
 
 describe("Webhooks Router Backend Endpoints", () => {
@@ -59,8 +64,11 @@ describe("Webhooks Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ZULIP_WEBHOOK_TOKEN = "correct-webhook-token";
+    process.env.ONSHAPE_WEBHOOK_TOKEN = "correct-onshape-token";
+    delete process.env.ONSHAPE_ZULIP_STREAM;
     delete process.env.ZULIP_BOT_EMAIL;
     mocks.commentGet.mockResolvedValue({ exists: false });
+    mocks.zulipSend.mockResolvedValue(true);
     mocks.syndicate.mockResolvedValue({
       zulip: true,
       bluesky: true,
@@ -69,6 +77,7 @@ describe("Webhooks Router Backend Endpoints", () => {
     mocks.receiptSet.mockResolvedValue(undefined);
     req = {
       body: {},
+      query: {},
       user: { uid: "publisher-uid" },
       authorizationRole: "mentor",
     };
@@ -221,6 +230,123 @@ describe("Webhooks Router Backend Endpoints", () => {
         expect.objectContaining({ status: 400 }),
       );
       expect(mocks.batchSet).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /api/webhooks/onshape", () => {
+    it("rejects a missing or wrong URL token", async () => {
+      req.query = {};
+      req.body = { event: { eventType: "version.created", documentId: "a1b2c3d4e5f6g7h8i9j0" } };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 401 }),
+      );
+
+      req.query = { token: "wrong-onshape-token" };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 401,
+          message: expect.stringContaining("Invalid webhook token"),
+        }),
+      );
+      expect(mocks.zulipSend).not.toHaveBeenCalled();
+    });
+
+    it("fails closed when the server lacks the secret configuration", async () => {
+      delete process.env.ONSHAPE_WEBHOOK_TOKEN;
+      req.query = { token: "correct-onshape-token" };
+      req.body = { event: { eventType: "version.created", documentId: "a1b2c3d4e5f6g7h8i9j0" } };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 500 }),
+      );
+    });
+
+    it("rejects malformed event payloads", async () => {
+      req.query = { token: "correct-onshape-token" };
+      req.body = {
+        event: { eventType: "version.created", documentId: "../../evil" },
+      };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400 }),
+      );
+      expect(mocks.zulipSend).not.toHaveBeenCalled();
+    });
+
+    it("acknowledges unrelayed event types without posting", async () => {
+      req.query = { token: "correct-onshape-token" };
+      req.body = {
+        event: { eventType: "document.modified", documentId: "a1b2c3d4e5f6g7h8i9j0" },
+      };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({ status: "ignored" });
+      expect(mocks.zulipSend).not.toHaveBeenCalled();
+    });
+
+    it("relays a verified version event to the configured Zulip stream", async () => {
+      process.env.ONSHAPE_ZULIP_STREAM = "cad";
+      req.query = { token: "correct-onshape-token" };
+      req.body = {
+        event: {
+          eventType: "version.created",
+          documentId: "a1b2c3d4e5f6g7h8i9j0",
+          documentName: "2027 Robot",
+          userName: "Jane Doe",
+          versionName: "v42",
+        },
+      };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(mocks.zulipSend).toHaveBeenCalledWith(
+        "cad",
+        "CAD \u00b7 2027 Robot",
+        expect.stringContaining("Jane Doe created version v42"),
+      );
+      expect(res.json).toHaveBeenCalledWith({ status: "delivered" });
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("defaults to the engineering stream when no override is set", async () => {
+      req.query = { token: "correct-onshape-token" };
+      req.body = {
+        event: {
+          eventType: "comment.created",
+          documentId: "a1b2c3d4e5f6g7h8i9j0",
+          userName: "Jane Doe",
+        },
+      };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(mocks.zulipSend).toHaveBeenCalledWith(
+        "engineering",
+        expect.stringContaining("a1b2c3d4e5f6g7h8i9j0"),
+        expect.stringContaining("Jane Doe commented on"),
+      );
+      expect(res.json).toHaveBeenCalledWith({ status: "delivered" });
+    });
+
+    it("surfaces upstream Zulip failures instead of faking success", async () => {
+      mocks.zulipSend.mockResolvedValue(false);
+      req.query = { token: "correct-onshape-token" };
+      req.body = {
+        event: {
+          eventType: "version.created",
+          documentId: "a1b2c3d4e5f6g7h8i9j0",
+        },
+      };
+      await getHandler("/onshape", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 502 }),
+      );
+      expect(res.json).not.toHaveBeenCalledWith({ status: "delivered" });
     });
   });
 
