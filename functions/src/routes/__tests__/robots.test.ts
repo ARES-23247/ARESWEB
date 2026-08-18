@@ -4,6 +4,7 @@ import robotsRouter, {
   createRobotSchema,
   ensureRobotEditor,
   isTrustedOnshapeUrl,
+  isTrustedPrintablesUrl,
   robotDto,
   updateRobotSchema,
 } from "../robots";
@@ -71,21 +72,22 @@ describe("robots routes", () => {
     });
   });
 
-  describe("validation and DTOs", () => {
+  describe("data validation & schemas", () => {
     const validRobot = {
       id: "ares-prime",
-      name: "ARES Prime",
-      seasonName: "2026–2027",
-      challengeName: "Test challenge",
+      name: "Hydra",
+      seasonName: "2025-2026",
+      challengeName: "DEEP DIVE",
       weightLbs: 42,
       drivetrainType: "Mecanum",
       programmingLanguage: "Kotlin / ARESLib",
       revealVideoId: "abcdefghijk",
       onshapeUrl: "https://cad.onshape.com/documents/abc",
       cadViewerUrl: "https://cad.onshape.com/documents/abc/e/embed",
+      printablesUrl: "https://www.printables.com/@ARESFTC_3784306/models",
       primaryMechanism: "Arm",
       content: "Published description",
-      versions: [{ name: "V1", content: "Prototype", weightLbs: 40, drivetrainType: "Tank", primaryMechanism: "Lift", cadViewerUrl: "https://cad.onshape.com/documents/v1" }],
+      versions: [{ name: "V1", content: "Prototype", weightLbs: 40, drivetrainType: "Tank", primaryMechanism: "Lift", cadViewerUrl: "https://cad.onshape.com/documents/v1", printablesUrl: "https://printables.com/model/123-bracket" }],
     };
 
     it("accepts every field produced by the editor", () => {
@@ -113,6 +115,23 @@ describe("robots routes", () => {
       expect(isTrustedOnshapeUrl("https://cad.onshape.com/documents/abc")).toBe(true);
     });
 
+    it.each([
+      "http://printables.com/model/123",
+      "https://evil.example/printables",
+      "https://printables.com:8080/model/123",
+      "https://user:password@printables.com/model/123",
+      "javascript:alert(1)",
+      "not-a-url",
+    ])("rejects an untrusted Printables URL: %s", (url) => {
+      expect(isTrustedPrintablesUrl(url)).toBe(false);
+      expect(createRobotSchema.safeParse({ ...validRobot, printablesUrl: url }).success).toBe(false);
+    });
+
+    it("accepts trusted HTTPS Printables hosts", () => {
+      expect(isTrustedPrintablesUrl("https://www.printables.com/@ARESFTC_3784306")).toBe(true);
+      expect(isTrustedPrintablesUrl("https://printables.com/model/123456-odometry-pod")).toBe(true);
+    });
+
     it("rejects malformed IDs, video IDs, weights, and excessive versions", () => {
       expect(createRobotSchema.safeParse({ ...validRobot, id: "Bad ID" }).success).toBe(false);
       expect(createRobotSchema.safeParse({ ...validRobot, revealVideoId: "short" }).success).toBe(false);
@@ -126,15 +145,18 @@ describe("robots routes", () => {
         secret: "not part of the interface",
         onshapeUrl: "javascript:alert(1)",
         cadViewerUrl: "http://unsafe.example",
-        versions: [{ name: "V1", content: "", cadViewerUrl: "javascript:alert(1)", internal: "secret" }],
+        printablesUrl: "https://evil.example/model",
+        versions: [{ name: "V1", content: "", cadViewerUrl: "javascript:alert(1)", printablesUrl: "javascript:alert(2)", internal: "secret" }],
         isDeleted: 1,
       } as any);
       expect(dto).not.toHaveProperty("secret");
       expect(dto).not.toHaveProperty("isDeleted");
       expect(dto.onshapeUrl).toBe("");
       expect(dto.cadViewerUrl).toBe("");
+      expect(dto.printablesUrl).toBe("");
       expect(dto.versions[0]).not.toHaveProperty("internal");
       expect(dto.versions[0].cadViewerUrl).toBe("");
+      expect(dto.versions[0].printablesUrl).toBe("");
       expect(robotDto("r1", { isDeleted: 1 }, true)).toHaveProperty("isDeleted", 1);
     });
   });

@@ -3,6 +3,7 @@ export interface RobotVersion {
   weightLbs?: number;
   drivetrainType?: string;
   cadViewerUrl?: string;
+  printablesUrl?: string;
   primaryMechanism?: string;
   content: string;
 }
@@ -18,6 +19,7 @@ export interface RobotItem {
   revealVideoId?: string;
   onshapeUrl?: string;
   cadViewerUrl?: string;
+  printablesUrl?: string;
   primaryMechanism?: string;
   content?: string;
   versions?: RobotVersion[];

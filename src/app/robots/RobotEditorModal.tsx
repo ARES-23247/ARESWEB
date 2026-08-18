@@ -22,6 +22,7 @@ const emptyRobot: Omit<RobotItem, "id" | "isDeleted"> = {
   revealVideoId: "",
   onshapeUrl: "",
   cadViewerUrl: "",
+  printablesUrl: "",
   primaryMechanism: "",
   content: "",
   versions: [],
@@ -51,6 +52,7 @@ export default function RobotEditorModal({
       revealVideoId: editingRobot.revealVideoId ?? "",
       onshapeUrl: editingRobot.onshapeUrl ?? "",
       cadViewerUrl: editingRobot.cadViewerUrl ?? "",
+      printablesUrl: editingRobot.printablesUrl ?? "",
       primaryMechanism: editingRobot.primaryMechanism ?? "",
       content: editingRobot.content ?? "",
       versions: editingRobot.versions?.map((version) => ({ ...version })) ?? [],
@@ -161,6 +163,9 @@ export default function RobotEditorModal({
               <Field label="Onshape CAD embed URL" id="robot-cad-viewer" className={labelClass}>
                 <input id="robot-cad-viewer" type="url" value={draft.cadViewerUrl ?? ""} onChange={(e) => setField("cadViewerUrl", e.target.value)} className={inputClass} placeholder="https://cad.onshape.com/documents/..." />
               </Field>
+              <Field label="Printables 3D models URL" id="robot-printables" className={labelClass}>
+                <input id="robot-printables" type="url" value={draft.printablesUrl ?? ""} onChange={(e) => setField("printablesUrl", e.target.value)} className={inputClass} placeholder="https://www.printables.com/model/..." />
+              </Field>
             </div>
 
             <Field label="System description" id="robot-content" className={labelClass}>
@@ -185,7 +190,8 @@ export default function RobotEditorModal({
                       <Field label="Weight (lbs)" id={`${prefix}-weight`} className={labelClass}><input id={`${prefix}-weight`} type="number" min="0.1" max="100" step="0.1" value={version.weightLbs ?? ""} onChange={(e) => updateVersion(index, "weightLbs", e.target.value ? Number(e.target.value) : undefined)} className={inputClass} /></Field>
                       <Field label="Drivetrain" id={`${prefix}-drivetrain`} className={labelClass}><input id={`${prefix}-drivetrain`} value={version.drivetrainType ?? ""} onChange={(e) => updateVersion(index, "drivetrainType", e.target.value)} className={inputClass} maxLength={160} /></Field>
                       <Field label="Primary mechanism" id={`${prefix}-mechanism`} className={labelClass}><input id={`${prefix}-mechanism`} value={version.primaryMechanism ?? ""} onChange={(e) => updateVersion(index, "primaryMechanism", e.target.value)} className={inputClass} maxLength={240} /></Field>
-                      <Field label="Onshape CAD embed URL" id={`${prefix}-cad`} className={labelClass}><input id={`${prefix}-cad`} type="url" value={version.cadViewerUrl ?? ""} onChange={(e) => updateVersion(index, "cadViewerUrl", e.target.value)} className={inputClass} /></Field>
+                      <Field label="Onshape CAD embed URL" id={`${prefix}-cad`} className={labelClass}><input id={`${prefix}-cad`} type="url" value={version.cadViewerUrl ?? ""} onChange={(e) => updateVersion(index, "cadViewerUrl", e.target.value)} className={inputClass} placeholder="https://cad.onshape.com/..." /></Field>
+                      <Field label="Printables 3D models URL" id={`${prefix}-printables`} className={labelClass}><input id={`${prefix}-printables`} type="url" value={version.printablesUrl ?? ""} onChange={(e) => updateVersion(index, "printablesUrl", e.target.value)} className={inputClass} placeholder="https://www.printables.com/..." /></Field>
                     </div>
                     <Field label="Version description" id={`${prefix}-content`} className={labelClass}><textarea id={`${prefix}-content`} rows={3} value={version.content} onChange={(e) => updateVersion(index, "content", e.target.value)} className={`${inputClass} resize-y`} maxLength={20_000} /></Field>
                   </fieldset>

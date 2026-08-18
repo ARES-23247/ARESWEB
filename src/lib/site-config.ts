@@ -16,6 +16,8 @@ export const siteConfig = {
     youtube: "@ARESFTC",
     facebook: "ARES23247",
     onshape: "https://cad.onshape.com/documents?nodeId=681f8b6764dc7e001a56cb6e&resourceType=resourcecompanyowner",
+    printables: "@ARESFTC_3784306",
+    printablesUrl: "https://www.printables.com/@ARESFTC_3784306",
     toa: "https://theorangealliance.org/teams/23247"
   },
   contact: {

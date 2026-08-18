@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft } from "lucide-react";
+import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft, Layers } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
-import { canEmbedCadUrl, fetchRobot, isSafeExternalUrl, RobotApiError } from "../api";
+import { canEmbedCadUrl, fetchRobot, isSafeExternalUrl, isTrustedPrintablesUrl, RobotApiError } from "../api";
 
 export default function RobotDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -64,6 +64,7 @@ export default function RobotDetailPage() {
   const activeWeight = activeVersion && activeVersion.weightLbs !== undefined ? activeVersion.weightLbs : robot.weightLbs;
   const activeDrivetrain = activeVersion && activeVersion.drivetrainType !== undefined ? activeVersion.drivetrainType : robot.drivetrainType;
   const activeCadViewer = activeVersion && activeVersion.cadViewerUrl !== undefined ? activeVersion.cadViewerUrl : robot.cadViewerUrl;
+  const activePrintables = (activeVersion && activeVersion.printablesUrl) ? activeVersion.printablesUrl : robot.printablesUrl;
   const activeMechanism = activeVersion && activeVersion.primaryMechanism !== undefined ? activeVersion.primaryMechanism : robot.primaryMechanism;
   const activeContent = activeVersion && activeVersion.content !== undefined ? activeVersion.content : robot.content;
 
@@ -107,9 +108,19 @@ export default function RobotDetailPage() {
                 href={robot.onshapeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="clipped-button bg-ares-red text-white shadow-xl shadow-ares-red/20 group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                className="clipped-button bg-white/10 hover:bg-white/20 text-white shadow-xl group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               >
                 <LinkIcon aria-hidden="true" size={16} className="mr-2 group-hover:rotate-12 transition-transform" /> View CAD Workspace
+              </a>
+            )}
+            {isTrustedPrintablesUrl(activePrintables) && (
+              <a
+                href={activePrintables}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="clipped-button bg-[#fa6831] hover:bg-[#e05620] text-white shadow-xl shadow-[#fa6831]/20 group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center"
+              >
+                <Layers aria-hidden="true" size={16} className="mr-2 group-hover:scale-110 transition-transform" /> 3D Printable Parts
               </a>
             )}
           </div>
@@ -246,6 +257,21 @@ export default function RobotDetailPage() {
                       </div>
                       <span className="font-heading leading-tight">{robot.programmingLanguage}</span>
                     </div>
+                  </div>
+                )}
+
+                {isTrustedPrintablesUrl(activePrintables) && (
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#fa6831] block mb-2 font-heading">3D Printable Models</span>
+                    <a
+                      href={activePrintables}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-[#fa6831]/10 hover:bg-[#fa6831]/20 border border-[#fa6831]/30 ares-cut-sm text-white text-xs font-bold uppercase tracking-wider transition-colors group/link"
+                    >
+                      <Layers aria-hidden="true" size={16} className="text-[#fa6831] group-hover/link:scale-110 transition-transform" />
+                      <span>Download on Printables</span>
+                    </a>
                   </div>
                 )}
               </div>
