@@ -54,7 +54,6 @@ export default function EventsCalendarView({
         ) : (
           filteredEvents.map((evt) => {
             const startDate = new Date(evt.dateStart);
-            const isOutreach = evt.category === "outreach";
             const resolvedLocation =
               locations.find((l) => l.id === evt.locationId)?.name ||
               evt.location ||
@@ -70,20 +69,24 @@ export default function EventsCalendarView({
                 <div className="flex gap-4.5 items-start">
                   <div
                     className={`w-3.5 h-3.5 mt-1.5 rounded-full shrink-0 ${
-                      isOutreach
+                      evt.category === "outreach"
                         ? "bg-ares-gold shadow-[0_0_10px_rgba(255,184,28,0.4)]"
-                        : "bg-ares-red shadow-[0_0_10px_rgba(192,0,0,0.4)]"
+                        : evt.category === "competition"
+                          ? "bg-ares-cyan shadow-[0_0_10px_rgba(0,255,242,0.4)]"
+                          : "bg-ares-red shadow-[0_0_10px_rgba(192,0,0,0.4)]"
                     }`}
-                    title={isOutreach ? "Outreach" : "Internal Practice"}
+                    title={evt.category === "outreach" ? "Outreach" : evt.category === "competition" ? "Competition / Tournament" : "Internal Practice"}
                   />
 
                   <div className="space-y-1.5 max-w-2xl">
                     <div className="flex flex-wrap gap-2 items-center">
                       <span
                         className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
-                          isOutreach
+                          evt.category === "outreach"
                             ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
-                            : "bg-ares-red/15 border-ares-red/30 text-white"
+                            : evt.category === "competition"
+                              ? "bg-ares-cyan/15 border-ares-cyan/30 text-ares-cyan"
+                              : "bg-ares-red/15 border-ares-red/30 text-white"
                         }`}
                       >
                         {evt.category}

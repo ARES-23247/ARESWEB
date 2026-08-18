@@ -62,7 +62,7 @@ export default function EventsManagementPage({
   // Filter States
   const [filterSearch, setFilterSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "published" | "pending" | "draft" | "deleted">("all");
-  const [filterCategory, setFilterCategory] = useState<"all" | "internal" | "outreach">("all");
+  const [filterCategory, setFilterCategory] = useState<"all" | "internal" | "outreach" | "competition">("all");
   const [filterMonth, setFilterMonth] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
 

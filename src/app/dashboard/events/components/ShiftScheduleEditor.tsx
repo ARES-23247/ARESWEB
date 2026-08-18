@@ -16,8 +16,8 @@ interface ShiftScheduleEditorProps {
   setFormLocationId: (val: string) => void;
   formDescription: string;
   setFormDescription: (val: string) => void;
-  formCategory: "internal" | "outreach";
-  setFormCategory: (val: "internal" | "outreach") => void;
+  formCategory: "internal" | "outreach" | "competition";
+  setFormCategory: (val: "internal" | "outreach" | "competition") => void;
   formCoverImage: string;
   setFormCoverImage: (val: string) => void;
   formIsPotluck: number;
@@ -259,30 +259,42 @@ export default function ShiftScheduleEditor({
           <span className="block text-[10px] font-bold uppercase tracking-wider mb-2 text-marble/60">
             Event Category
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setFormCategory("internal")}
               disabled={!canEdit}
-              className={`flex-1 py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
+              className={`flex-1 min-w-[90px] py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
                 formCategory === "internal"
                   ? "bg-ares-red/15 border-ares-red text-white font-black"
                   : "bg-transparent border-white/10 text-marble/55 hover:text-white"
               }`}
             >
-              Internal Practice
+              Practice
             </button>
             <button
               type="button"
               onClick={() => setFormCategory("outreach")}
               disabled={!canEdit}
-              className={`flex-1 py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
+              className={`flex-1 min-w-[90px] py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
                 formCategory === "outreach"
                   ? "bg-ares-gold/15 border-ares-gold text-ares-gold font-black"
                   : "bg-transparent border-white/10 text-marble/55 hover:text-white"
               }`}
             >
-              Outreach & STEM
+              Outreach
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormCategory("competition")}
+              disabled={!canEdit}
+              className={`flex-1 min-w-[120px] py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
+                formCategory === "competition"
+                  ? "bg-ares-cyan/15 border-ares-cyan text-ares-cyan font-black"
+                  : "bg-transparent border-white/10 text-marble/55 hover:text-white"
+              }`}
+            >
+              Competition
             </button>
           </div>
         </div>

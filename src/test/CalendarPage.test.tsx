@@ -47,6 +47,17 @@ const mockEvents = [
     location: "Morgantown Public Library",
     createdAt: "2026-01-01T00:00:00Z",
   },
+  {
+    id: "evt_competition_1",
+    title: "WV FTC State Championship",
+    description: "Regional championship tournament.",
+    category: "competition",
+    status: "published",
+    dateStart: "2026-08-25T08:00:00Z",
+    dateEnd: "2026-08-25T18:00:00Z",
+    location: "Fairmont State University",
+    createdAt: "2026-01-01T00:00:00Z",
+  },
 ];
 
 describe("CalendarPage Interactive Grid & Filter UX", () => {
@@ -69,6 +80,9 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
     expect(
       screen.getAllByRole("heading", { name: "Morgantown Public Library STEM Workshop" }),
     ).not.toHaveLength(0);
+    expect(
+      screen.getAllByRole("heading", { name: "WV FTC State Championship" }),
+    ).not.toHaveLength(0);
     expect(screen.getByText("Upcoming Schedule")).toBeInTheDocument();
     expect(screen.getByText("Subscribe to Feed")).toBeInTheDocument();
   });
@@ -90,12 +104,22 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
       screen.getAllByRole("heading", { name: "Morgantown Public Library STEM Workshop" }),
     ).not.toHaveLength(0);
     expect(screen.queryByRole("heading", { name: "Software Autonomous Calibration" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "WV FTC State Championship" })).not.toBeInTheDocument();
 
     // Filter by Practices
     fireEvent.click(screen.getByRole("button", { name: "Practices" }));
     expect(
       screen.getAllByRole("heading", { name: "Software Autonomous Calibration" }),
     ).not.toHaveLength(0);
+    expect(screen.queryByRole("heading", { name: "Morgantown Public Library STEM Workshop" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "WV FTC State Championship" })).not.toBeInTheDocument();
+
+    // Filter by Competitions
+    fireEvent.click(screen.getByRole("button", { name: "Competitions" }));
+    expect(
+      screen.getAllByRole("heading", { name: "WV FTC State Championship" }),
+    ).not.toHaveLength(0);
+    expect(screen.queryByRole("heading", { name: "Software Autonomous Calibration" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Morgantown Public Library STEM Workshop" })).not.toBeInTheDocument();
   });
 

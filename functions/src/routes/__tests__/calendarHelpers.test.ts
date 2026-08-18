@@ -61,6 +61,13 @@ describe("calendar route helpers", () => {
     expect(publicDto).not.toHaveProperty("location");
     expect(publicDto).not.toHaveProperty("locationId");
 
+    const competitionDto = eventDto("event-comp", {
+      title: "WV State Championship",
+      dateStart: "2026-11-15T08:00:00.000Z",
+      category: "competition",
+    } as never, false);
+    expect(competitionDto).toMatchObject({ id: "event-comp", category: "competition" });
+
     expect(eventDto("event-2", { status: "invalid", isDeleted: 1 }, true)).toMatchObject({
       status: "draft",
       isDeleted: 1,

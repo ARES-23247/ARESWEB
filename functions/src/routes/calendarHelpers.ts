@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ApiError } from "../middleware/errorHandler";
 
 export const eventStatusSchema = z.enum(["published", "pending", "draft"]);
-const eventCategorySchema = z.enum(["internal", "outreach"]);
+const eventCategorySchema = z.enum(["internal", "outreach", "competition"]);
 const boundedText = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) => boundedText(max).optional();
 const optionalHttpsUrl = z.string().trim().url().refine(
@@ -249,7 +249,11 @@ export function eventDto(id: string, data: EventDocument, includeLifecycle: bool
     dateStart: readString(data.dateStart) ?? "",
     dateEnd: readString(data.dateEnd),
     description: readString(data.description),
-    category: data.category === "outreach" ? "outreach" as const : "internal" as const,
+    category: data.category === "outreach"
+      ? "outreach" as const
+      : data.category === "competition"
+        ? "competition" as const
+        : "internal" as const,
     coverImage: readString(data.coverImage),
     isPotluck: readFlag(data.isPotluck),
     isVolunteer: readFlag(data.isVolunteer),

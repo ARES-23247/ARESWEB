@@ -52,12 +52,18 @@ export function SelectedEventPanel({
               className={`p-4 border ares-cut-sm space-y-2 text-left relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 hover:border-white/20 ${
                 event.category === "outreach"
                   ? "bg-ares-gold/5 border-ares-gold/20 hover:bg-ares-gold/10"
-                  : "bg-ares-red/5 border-ares-red/20 hover:bg-ares-red/10"
+                  : event.category === "competition"
+                    ? "bg-ares-cyan/5 border-ares-cyan/20 hover:bg-ares-cyan/10"
+                    : "bg-ares-red/5 border-ares-red/20 hover:bg-ares-red/10"
               }`}
             >
               <div className="flex justify-between items-center relative z-10">
                 <span className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${
-                  event.category === "outreach" ? "bg-ares-gold text-black" : "bg-ares-red text-white"
+                  event.category === "outreach"
+                    ? "bg-ares-gold text-black"
+                    : event.category === "competition"
+                      ? "bg-ares-cyan text-black"
+                      : "bg-ares-red text-white"
                 }`}>
                   {event.category}
                 </span>
