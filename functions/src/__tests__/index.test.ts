@@ -275,7 +275,7 @@ describe("Express App Endpoints", () => {
           (secrets) => secrets.length,
         ),
       ),
-    ).toBe(6);
+    ).toBe(7);
     expect(new Set(Object.values(API_ROUTE_GROUPS).flat()).size).toBe(
       Object.values(API_ROUTE_GROUPS).flat().length,
     );

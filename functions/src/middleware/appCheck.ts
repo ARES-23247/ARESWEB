@@ -11,6 +11,7 @@ const OBSERVED_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const OBSERVATION_EXEMPTIONS = new Set([
   "POST /api/profiles/sync",
   "POST /api/webhooks/zulip",
+  "POST /api/webhooks/onshape",
 ]);
 
 export type AppCheckObservationStatus = "valid" | "missing" | "invalid";
