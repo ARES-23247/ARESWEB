@@ -32,6 +32,12 @@ vendor-specific directories.
   collection contains private fields, expose it through a server-side DTO API.
 - Preserve explicit error states in the UI. Never turn authorization, network,
   or upstream failures into empty data or zero values.
+- Never fabricate data, assets, or claims. Do not invent mock 3D parts, hardware
+  designs, CAD models, sponsors, alumni, students, mentors, awards, or technical
+  specs. Do not create static mock data files pretending to be real team artifacts.
+  All team content must originate from authenticated Firestore records, verified
+  team handles, or explicit user-supplied data. When an inventory or catalog is
+  empty, render a truthful empty state or direct profile link instead of mock items.
 - Do not deploy, rotate secrets, or change production data without explicit user
   approval. Record required operational steps in documentation instead.
 
