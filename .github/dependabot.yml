@@ -14,6 +14,11 @@ updates:
       # drop this ignore once the engine pin and runner Node line up.
       - dependency-name: "jsdom"
         update-types: ["version-update:semver-major"]
+      # typescript-eslint 8.x peers typescript >=4.8.4 <6.1.0, so 6.1+ and the
+      # native TS 7 line fail Dependabot's peer check and abort the whole
+      # weekly npm update run. 6.0.x patches stay eligible.
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
     groups:
       production-dependencies:
         dependency-type: production
