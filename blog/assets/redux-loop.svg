@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="660" fill="#FFFFFF"/>
+  <g font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+
+    <text x="600" y="42" text-anchor="middle" font-size="26" font-weight="700" fill="#0F172A">One loop runs the robot: Redux at 50 Hz</text>
+    <text x="600" y="68" text-anchor="middle" font-size="14" fill="#475569">immutable state · pure reducers · tasks that only emit actions</text>
+
+    <!-- top lane -->
+    <rect x="30" y="110" width="240" height="90" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+    <text x="150" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Sensors</text>
+    <text x="150" y="172" text-anchor="middle" font-size="12" fill="#64748B">readSensors() — every hardware</text>
+    <text x="150" y="188" text-anchor="middle" font-size="12" fill="#64748B">read cached once per loop</text>
+
+    <rect x="325" y="110" width="240" height="90" rx="12" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="2"/>
+    <text x="445" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">dispatch(RobotAction)</text>
+    <text x="445" y="172" text-anchor="middle" font-size="12" fill="#64748B">gamepad intent · path events ·</text>
+    <text x="445" y="188" text-anchor="middle" font-size="12" fill="#64748B">routine lifecycle · vision updates</text>
+
+    <rect x="620" y="110" width="240" height="90" rx="12" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="2"/>
+    <text x="740" y="141" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">Store (serialized)</text>
+    <text x="740" y="165" text-anchor="middle" font-size="12" fill="#64748B">PoseEstimatorRuntime middleware</text>
+    <text x="740" y="181" text-anchor="middle" font-size="12" fill="#64748B">fuses odometry + vision in a</text>
+    <text x="740" y="197" text-anchor="middle" font-size="12" fill="#64748B">3-DOF EKF before reducing</text>
+
+    <rect x="915" y="110" width="240" height="90" rx="12" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="2"/>
+    <text x="1035" y="148" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">rootReducer</text>
+    <text x="1035" y="172" text-anchor="middle" font-size="12" fill="#64748B">pure slice reducers; season code</text>
+    <text x="1035" y="188" text-anchor="middle" font-size="12" fill="#64748B">composes (e.g. MarvinReducer)</text>
+
+    <line x1="270" y1="155" x2="320" y2="155" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="565" y1="155" x2="615" y2="155" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="860" y1="155" x2="910" y2="155" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- down from rootReducer to new state -->
+    <line x1="1035" y1="200" x2="1035" y2="298" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- bottom lane (right to left) -->
+    <rect x="915" y="300" width="240" height="90" rx="12" fill="#F0FDF4" stroke="#A7F3D0" stroke-width="2"/>
+    <text x="1035" y="338" text-anchor="middle" font-size="15" font-weight="700" fill="#065F46">new RobotState</text>
+    <text x="1035" y="362" text-anchor="middle" font-size="12" fill="#64748B">immutable copy · published once ·</text>
+    <text x="1035" y="378" text-anchor="middle" font-size="12" fill="#64748B">subscribers read, never mutate</text>
+
+    <rect x="620" y="300" width="240" height="90" rx="12" fill="#F0FDF4" stroke="#A7F3D0" stroke-width="2"/>
+    <text x="740" y="332" text-anchor="middle" font-size="15" font-weight="700" fill="#065F46">writeOutputs(IO)</text>
+    <text x="740" y="356" text-anchor="middle" font-size="12" fill="#64748B">motors, servos — from cached</text>
+    <text x="740" y="372" text-anchor="middle" font-size="12" fill="#64748B">values only, never re-read HW</text>
+
+    <rect x="325" y="300" width="240" height="90" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+    <text x="445" y="338" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Hardware</text>
+    <text x="445" y="362" text-anchor="middle" font-size="12" fill="#64748B">robot moves; next loop tick</text>
+    <text x="445" y="378" text-anchor="middle" font-size="12" fill="#64748B">reads the result</text>
+
+    <line x1="915" y1="345" x2="865" y2="345" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="620" y1="345" x2="570" y2="345" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- telemetry: a parallel subscriber of state -->
+    <rect x="880" y="412" width="315" height="36" rx="18" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2"/>
+    <text x="1037" y="435" text-anchor="middle" font-size="12.5" fill="#B45309">Telemetry subscriber → NT4 :5810 + JSONL logs</text>
+    <line x1="1035" y1="390" x2="1035" y2="407" stroke="#D97706" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- closing the loop: hardware -> sensors -->
+    <path d="M 445,300 L 445,252 L 150,252 L 150,208" fill="none" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- sequencer annotation -->
+    <rect x="70" y="480" width="500" height="120" rx="12" fill="#F5FBFF" stroke="#BAE6FD" stroke-width="2"/>
+    <text x="90" y="510" font-size="15" font-weight="700" fill="#075985">Sequencer — TaskExecutor + task groups</text>
+    <text x="90" y="536" font-size="12.5" fill="#334155">RoutineCompiler turns routine steps into Sequential / Parallel / Race /</text>
+    <text x="90" y="556" font-size="12.5" fill="#334155">Deadline task trees. A task is a state machine whose execute() returns</text>
+    <text x="90" y="576" font-size="12.5" fill="#334155">List&lt;RobotAction&gt; for the store — it never touches hardware or state.</text>
+
+    <rect x="630" y="480" width="525" height="120" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+    <text x="650" y="510" font-size="15" font-weight="700" fill="#334155">Hot-path discipline</text>
+    <text x="650" y="536" font-size="12.5" fill="#334155">Zero allocations in the 50–100 Hz loop: pre-allocated buffers, object</text>
+    <text x="650" y="556" font-size="12.5" fill="#334155">pools (kalmanGainPool, pathPool), when over nested if/else, and one</text>
+    <text x="650" y="576" font-size="12.5" fill="#334155">clock (RobotClock) so simulation and replay stay deterministic.</text>
+
+    <text x="600" y="638" text-anchor="middle" font-size="12" font-style="italic" fill="#64748B">Every robot built on the library gets logging, replay, and telemetry through this same loop — no per-season glue.</text>
+  </g>
+</svg>

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="860" fill="#FFFFFF"/>
+  <g font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+
+    <text x="600" y="42" text-anchor="middle" font-size="26" font-weight="700" fill="#0F172A">Four repositories, one Kotlin toolchain</text>
+    <text x="600" y="68" text-anchor="middle" font-size="14" fill="#475569">ARES workspace — shared library, thin season shells for FTC + FRC, desktop mission control</text>
+
+    <!-- ARESLib box -->
+    <rect x="250" y="95" width="700" height="205" rx="12" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="2"/>
+    <path d="M 250,107 Q 250,95 262,95 L 938,95 Q 950,95 950,107 L 950,133 L 250,133 Z" fill="#4F46E5"/>
+    <text x="270" y="119" font-size="17" font-weight="700" fill="#FFFFFF">ARESLib-Kotlin — the shared foundation</text>
+    <text x="270" y="160" font-size="12" fill="#334155">core · codegen · ftc-mocks · ftc-hardware · frc-hardware · simulator (+3 platform runtimes) · ares-bom</text>
+
+    <text x="270" y="188" font-size="13" fill="#475569">• Redux store, actions, pure reducers</text>
+    <text x="270" y="210" font-size="13" fill="#475569">• Sequencer: Task, TaskExecutor, RobotSequence</text>
+    <text x="270" y="232" font-size="13" fill="#475569">• Pathing: Theta*, DetourGenerator, path followers</text>
+    <text x="270" y="254" font-size="13" fill="#475569">• 3-DOF EKF + Mahalanobis vision filter</text>
+
+    <text x="610" y="188" font-size="13" fill="#475569">• Safety: current budget, brownout guard</text>
+    <text x="610" y="210" font-size="13" fill="#475569">• NT4 telemetry server + log server (:5002)</text>
+    <text x="610" y="232" font-size="13" fill="#475569">• dyn4j simulator, headless CI mode</text>
+    <text x="610" y="254" font-size="13" fill="#475569">• Codegen: .ares JSON → deterministic Kotlin</text>
+
+    <text x="270" y="285" font-size="12" font-style="italic" fill="#64748B">≈132,900 LOC · 921 Kotlin files · 10 Gradle modules · consumed as immutable binaries via ares-bom</text>
+
+    <!-- solid arrows lib -> FTC / FRC / Analytics -->
+    <line x1="400" y1="300" x2="255" y2="345" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="800" y1="300" x2="945" y2="345" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="600" y1="300" x2="600" y2="620" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="400" y="330" font-size="12" fill="#475569">ares-bom</text>
+    <text x="770" y="330" font-size="12" fill="#475569">ares-bom</text>
+    <text x="612" y="465" font-size="12" fill="#475569">:shared depends on</text>
+    <text x="612" y="481" font-size="12" fill="#475569">org.aresfirst.ares:core</text>
+
+    <!-- FTC box -->
+    <rect x="80" y="350" width="340" height="180" rx="12" fill="#FFFFFF" stroke="#BAE6FD" stroke-width="2"/>
+    <path d="M 80,362 Q 80,350 92,350 L 408,350 Q 420,350 420,362 L 420,386 L 80,386 Z" fill="#0284C7"/>
+    <text x="96" y="373" font-size="15" font-weight="700" fill="#FFFFFF">ARES-FTC — FTC season shell</text>
+    <text x="96" y="410" font-size="13" fill="#334155">Android robot app · team 23247 (DECODE)</text>
+    <text x="96" y="434" font-size="13" fill="#475569">46 Kotlin files · 7,830 LOC</text>
+    <text x="96" y="458" font-size="13" fill="#475569">.ares project + GeneratedAresProject.kt</text>
+    <text x="96" y="482" font-size="13" fill="#475569">OpModes are thin entries over AresAutoBase</text>
+    <text x="96" y="512" font-size="12" font-style="italic" fill="#64748B">plus a desktop simulator module (real OpModes)</text>
+
+    <!-- FRC box -->
+    <rect x="780" y="350" width="340" height="180" rx="12" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="2"/>
+    <path d="M 780,362 Q 780,350 792,350 L 1108,350 Q 1120,350 1120,362 L 1120,386 L 780,386 Z" fill="#059669"/>
+    <text x="796" y="373" font-size="15" font-weight="700" fill="#FFFFFF">ARES-FRC — FRC season shell</text>
+    <text x="796" y="410" font-size="13" fill="#334155">RoboRIO · Marvin XIX (Crescendo)</text>
+    <text x="796" y="434" font-size="13" fill="#475569">65 Kotlin files · 9,731 LOC</text>
+    <text x="796" y="458" font-size="13" fill="#475569">MarvinReducer wraps rootReducer</text>
+    <text x="796" y="482" font-size="13" fill="#475569">routines compiled into the program — nothing</text>
+    <text x="796" y="502" font-size="13" fill="#475569">loose is loaded on the robot at runtime</text>
+
+    <!-- Analytics box -->
+    <rect x="350" y="625" width="500" height="170" rx="12" fill="#FFFFFF" stroke="#FED7AA" stroke-width="2"/>
+    <path d="M 350,637 Q 350,625 362,625 L 838,625 Q 850,625 850,637 L 850,661 L 350,661 Z" fill="#D97706"/>
+    <text x="366" y="648" font-size="15" font-weight="700" fill="#FFFFFF">ARES-Analytics — desktop mission control</text>
+    <text x="366" y="688" font-size="13" fill="#334155">Compose Desktop + Ktor gateway · ≈102,000 LOC</text>
+    <text x="366" y="712" font-size="13" fill="#475569">22 screens: PathPlanner, FieldEditor, Tuning, SysId, logs…</text>
+    <text x="366" y="736" font-size="13" fill="#475569">authors .ares documents · pushes live tuning over NT4</text>
+    <text x="366" y="760" font-size="13" fill="#475569">pulls logs → DuckDB; laptop owns any cloud sync</text>
+
+    <!-- network dashed arrows -->
+    <line x1="255" y1="530" x2="480" y2="620" stroke="#E11D48" stroke-width="2" stroke-dasharray="7 5" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="945" y1="530" x2="720" y2="620" stroke="#E11D48" stroke-width="2" stroke-dasharray="7 5" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <text x="300" y="580" font-size="12" fill="#E11D48">NT4 :5810</text>
+    <text x="830" y="580" font-size="12" fill="#E11D48">NT4 :5810</text>
+
+    <!-- legend -->
+    <line x1="80" y1="828" x2="120" y2="828" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="130" y="833" font-size="12.5" fill="#475569">build-time dependency (immutable library binaries)</text>
+    <line x1="470" y1="828" x2="510" y2="828" stroke="#E11D48" stroke-width="2" stroke-dasharray="7 5" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <text x="520" y="833" font-size="12.5" fill="#475569">runtime network: telemetry up · driveFrame + tuning down · robot logs pulled from :5002</text>
+  </g>
+</svg>

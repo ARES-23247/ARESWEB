@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="770" viewBox="0 0 1200 770">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="770" fill="#FFFFFF"/>
+  <g font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+
+    <text x="600" y="42" text-anchor="middle" font-size="26" font-weight="700" fill="#0F172A">Verified before it touches metal</text>
+    <text x="600" y="68" text-anchor="middle" font-size="14" fill="#475569">every routine change runs the same gauntlet — no robot required</text>
+
+    <!-- confidence rail -->
+    <line x1="42" y1="620" x2="42" y2="135" stroke="#64748B" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="26" y="380" font-size="12" fill="#475569" transform="rotate(-90 26 380)" text-anchor="middle">confidence grows downward</text>
+
+    <!-- layer 1 -->
+    <rect x="80" y="105" width="1070" height="110" rx="12" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="2"/>
+    <text x="110" y="140" font-size="16" font-weight="700" fill="#4338CA">1 · Library unit &amp; API tests</text>
+    <text x="110" y="168" font-size="13" fill="#334155">RoutineDocumentTest · RoutineManagerTest · AutonomousCatalogTest · apiCheck · ZeroGcRegressionTest</text>
+    <text x="110" y="190" font-size="13" fill="#475569">pure functions, schema validation, allocation budgets — fast, deterministic, no I/O</text>
+
+    <!-- layer 2 -->
+    <rect x="80" y="235" width="1070" height="110" rx="12" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="2"/>
+    <text x="110" y="270" font-size="16" font-weight="700" fill="#075985">2 · Headless simulation</text>
+    <text x="110" y="298" font-size="13" fill="#334155">ftc-mocks shadow the FTC SDK (42 stub files) · dyn4j steps 20 ms physics · real OpModes, headless</text>
+    <text x="110" y="320" font-size="13" fill="#475569">runSim writes ares_run_summary.json — RMSE x / y / heading + peak current; nonzero exit fails CI</text>
+
+    <!-- layer 3 -->
+    <rect x="80" y="365" width="1070" height="110" rx="12" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2"/>
+    <text x="110" y="400" font-size="16" font-weight="700" fill="#065F46">3 · Wire contracts &amp; calibration</text>
+    <text x="110" y="428" font-size="13" fill="#334155">runVerification drives real teleop over NT4 — driveFrame v2 control frames, lease + nonce handshake</text>
+    <text x="110" y="450" font-size="13" fill="#475569">runCalibrationVerification exercises 12 SysId / calibration routines end-to-end and checks streamed samples</text>
+
+    <!-- layer 4 -->
+    <rect x="80" y="495" width="1070" height="125" rx="12" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2"/>
+    <text x="110" y="530" font-size="16" font-weight="700" fill="#B45309">4 · Cross-repository CI (GitHub Actions)</text>
+    <text x="110" y="558" font-size="13" fill="#334155">verify-autos.ps1 — windows-latest, Temurin 17, serialized Gradle, 45-minute budget, four repo checkouts:</text>
+    <text x="110" y="580" font-size="13" fill="#475569">library tests → publishToMavenLocal → Analytics tests → :TeamCode:verifyAresProject + unit tests → FRC same gate</text>
+    <text x="110" y="602" font-size="13" fill="#475569">consumers always test against the exact library build that just passed — no version skew, ever</text>
+
+    <!-- honest limits note -->
+    <rect x="80" y="648" width="1070" height="82" rx="12" fill="#FEF2F2" stroke="#FECACA" stroke-width="2"/>
+    <text x="110" y="678" font-size="14" font-weight="700" fill="#991B1B">What this deliberately does not prove</text>
+    <text x="110" y="702" font-size="12.5" fill="#7F1D1D">Physical motor signs, drivetrain dimensions, Driver Station / gamepad firmware quirks. Those are verified with</text>
+    <text x="110" y="720" font-size="12.5" fill="#7F1D1D">restrained-hardware runs and a hand on the stop button — AUTO_TESTING.md says so in writing.</text>
+  </g>
+</svg>
