@@ -34,10 +34,22 @@ export function isTrustedOnshapeUrl(value: string): boolean {
   return url.hostname.toLowerCase() === "cad.onshape.com" && url.port === "";
 }
 
+export function isTrustedPrintablesUrl(value: string): boolean {
+  if (!isHttpsUrl(value)) return false;
+  const url = new URL(value);
+  const host = url.hostname.toLowerCase();
+  return (host === "printables.com" || host === "www.printables.com") && url.port === "";
+}
+
 const optionalText = (max: number) => z.string().trim().max(max).optional().default("");
 const trustedOnshapeUrl = z.string().trim().refine(
   (value) => value === "" || isTrustedOnshapeUrl(value),
   "Must be an HTTPS URL on cad.onshape.com",
+).optional().default("");
+
+const trustedPrintablesUrl = z.string().trim().refine(
+  (value) => value === "" || isTrustedPrintablesUrl(value),
+  "Must be an HTTPS URL on printables.com",
 ).optional().default("");
 
 export const robotVersionSchema = z.object({
@@ -47,6 +59,7 @@ export const robotVersionSchema = z.object({
   drivetrainType: optionalText(160),
   primaryMechanism: optionalText(240),
   cadViewerUrl: trustedOnshapeUrl,
+  printablesUrl: trustedPrintablesUrl,
 });
 
 export const createRobotSchema = z.object({
@@ -60,6 +73,7 @@ export const createRobotSchema = z.object({
   revealVideoId: z.string().trim().regex(/^[A-Za-z0-9_-]{11}$/, "Invalid YouTube video ID").or(z.literal("")).optional().default(""),
   onshapeUrl: trustedOnshapeUrl,
   cadViewerUrl: trustedOnshapeUrl,
+  printablesUrl: trustedPrintablesUrl,
   primaryMechanism: optionalText(240),
   content: optionalText(ROBOT_TEXT_LIMIT),
   versions: z.array(robotVersionSchema).max(30).optional().default([]),
@@ -86,6 +100,7 @@ interface RobotDocument {
   revealVideoId?: unknown;
   onshapeUrl?: unknown;
   cadViewerUrl?: unknown;
+  printablesUrl?: unknown;
   primaryMechanism?: unknown;
   content?: unknown;
   versions?: unknown;
@@ -109,6 +124,7 @@ function versionDto(value: unknown) {
     drivetrainType: stringValue(data.drivetrainType),
     primaryMechanism: stringValue(data.primaryMechanism),
     cadViewerUrl: isHttpsUrl(stringValue(data.cadViewerUrl)) ? stringValue(data.cadViewerUrl) : "",
+    printablesUrl: isTrustedPrintablesUrl(stringValue(data.printablesUrl)) ? stringValue(data.printablesUrl) : "",
   };
 }
 
@@ -124,6 +140,7 @@ export function robotDto(id: string, value: RobotDocument, includeArchiveState =
     revealVideoId: /^[A-Za-z0-9_-]{11}$/.test(stringValue(value.revealVideoId)) ? stringValue(value.revealVideoId) : "",
     onshapeUrl: isTrustedOnshapeUrl(stringValue(value.onshapeUrl)) ? stringValue(value.onshapeUrl) : "",
     cadViewerUrl: isHttpsUrl(stringValue(value.cadViewerUrl)) ? stringValue(value.cadViewerUrl) : "",
+    printablesUrl: isTrustedPrintablesUrl(stringValue(value.printablesUrl)) ? stringValue(value.printablesUrl) : "",
     primaryMechanism: stringValue(value.primaryMechanism),
     content: stringValue(value.content),
     versions: Array.isArray(value.versions) ? value.versions.slice(0, 30).map(versionDto) : [],

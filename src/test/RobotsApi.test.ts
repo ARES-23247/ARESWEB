@@ -8,6 +8,7 @@ import {
   fetchRobot,
   fetchRobots,
   isSafeExternalUrl,
+  isTrustedPrintablesUrl,
   restoreRobot,
   updateRobot,
 } from "../app/robots/api";
@@ -44,6 +45,17 @@ describe("robot API client", () => {
     expect(isSafeExternalUrl("javascript:alert(1)")).toBe(false);
     expect(isSafeExternalUrl("https://user:password@example.com")).toBe(false);
     expect(isSafeExternalUrl(undefined)).toBe(false);
+  });
+
+  it("only accepts trusted HTTPS printables.com and www.printables.com URLs", () => {
+    expect(isTrustedPrintablesUrl("https://www.printables.com/@ARESFTC_3784306")).toBe(true);
+    expect(isTrustedPrintablesUrl("https://printables.com/model/123-bracket")).toBe(true);
+    expect(isTrustedPrintablesUrl("http://printables.com/model/123-bracket")).toBe(false);
+    expect(isTrustedPrintablesUrl("https://evil.com/printables.com")).toBe(false);
+    expect(isTrustedPrintablesUrl("https://printables.com:8080/model/123")).toBe(false);
+    expect(isTrustedPrintablesUrl("https://user:pass@printables.com/model/123")).toBe(false);
+    expect(isTrustedPrintablesUrl("not a url")).toBe(false);
+    expect(isTrustedPrintablesUrl(undefined)).toBe(false);
   });
 
   it("loads public and editor fleet DTOs from the correct endpoints", async () => {

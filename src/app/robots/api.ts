@@ -47,6 +47,23 @@ export function isSafeExternalUrl(value: string | undefined): boolean {
   }
 }
 
+export function isTrustedPrintablesUrl(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    return (
+      url.protocol === "https:" &&
+      (host === "printables.com" || host === "www.printables.com") &&
+      url.port === "" &&
+      url.username === "" &&
+      url.password === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function errorDetail(response: Response): Promise<string> {
   try {
     const body = await response.json() as { error?: unknown; message?: unknown };

@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Code, Cpu, Edit2, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
+import { Code, Cpu, Edit2, ExternalLink, Layers, Plus, RotateCcw, Scale, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
+import { OPEN_HARDWARE_PARTS } from "@/data/openHardwareParts";
 import { useAuth } from "@/context/AuthContext";
 import {
   canManageRobots,
@@ -153,7 +154,14 @@ export default function RobotsFeedPage() {
                           {robot.weightLbs && <Spec icon={<Scale aria-hidden="true" size={14} />} text={`${robot.weightLbs} lbs`} />}
                           {robot.programmingLanguage && <Spec icon={<Code aria-hidden="true" size={14} />} text={robot.programmingLanguage} />}
                         </div>
-                        {robot.drivetrainType && <Spec icon={<Cpu aria-hidden="true" size={14} />} text={robot.drivetrainType} />}
+                        <div className="flex items-center justify-between gap-2">
+                          {robot.drivetrainType && <Spec icon={<Cpu aria-hidden="true" size={14} />} text={robot.drivetrainType} />}
+                          {robot.printablesUrl && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#fa6831]/15 border border-[#fa6831]/30 text-[#fa6831] text-[10px] font-black uppercase ares-cut-sm shrink-0">
+                              <Layers aria-hidden="true" size={12} /> 3D Files
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -185,6 +193,86 @@ export default function RobotsFeedPage() {
             })}
           </div>
         )}
+
+        {/* ─── OPEN HARDWARE & 3D PRINTABLES REPOSITORY ─── */}
+        <section aria-labelledby="open-hardware-heading" className="mt-28 border-t border-white/10 pt-20">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 ares-cut-sm bg-[#fa6831]/15 border border-[#fa6831]/30 text-[#fa6831] text-xs font-black uppercase tracking-widest mb-4">
+                <Layers aria-hidden="true" size={14} />
+                Open Hardware Repository
+              </div>
+              <h2 id="open-hardware-heading" className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight font-heading">
+                3D Printable <span className="text-[#fa6831]">Parts</span>
+              </h2>
+              <p className="text-marble/75 text-base max-w-2xl mt-4 leading-relaxed font-medium">
+                Tested and competition-proven 3D models engineered by ARES 23247. Download `.stl`, `.3mf`, and `.step` files directly from our Printables archive.
+              </p>
+            </div>
+
+            <a
+              href="https://www.printables.com/@ARESFTC_3784306"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="clipped-button bg-[#fa6831] hover:bg-[#e05620] text-white text-xs font-black uppercase tracking-wider py-3.5 px-6 inline-flex items-center gap-2 shrink-0 shadow-lg shadow-[#fa6831]/20 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <span>Visit @ARESFTC on Printables</span>
+              <ExternalLink aria-hidden="true" size={14} />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {OPEN_HARDWARE_PARTS.map((part) => (
+              <article key={part.id} className="glass-card p-6 md:p-8 ares-cut-lg border border-white/10 flex flex-col justify-between hover:border-[#fa6831]/40 transition-colors group">
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-ares-cyan bg-ares-cyan/10 px-2.5 py-1 ares-cut-sm">
+                      {part.category}
+                    </span>
+                    <span className="text-[10px] font-bold text-marble/60 uppercase tracking-wider">
+                      {part.recommendedMaterial}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-[#fa6831] transition-colors leading-snug">
+                    {part.title}
+                  </h3>
+
+                  <p className="text-marble/75 text-xs leading-relaxed mb-6">
+                    {part.description}
+                  </p>
+
+                  <div className="bg-black/40 p-3 ares-cut-sm border border-white/5 space-y-1.5 mb-6 text-[11px] text-marble/80">
+                    <div className="flex justify-between">
+                      <span className="text-marble/50 font-bold uppercase tracking-wider">Slicer Profile:</span>
+                      <span className="font-semibold text-white">{part.infillPercent}% infill · {part.perimeters} perimeters</span>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-1.5 mb-6">
+                    {part.features.map((feat) => (
+                      <li key={feat} className="text-xs text-marble/85 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#fa6831] shrink-0" aria-hidden="true" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <a
+                  href={part.printablesUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 bg-white/5 hover:bg-[#fa6831] text-marble hover:text-white ares-cut-sm text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-white/10 hover:border-transparent group/btn focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  <Layers aria-hidden="true" size={14} className="text-[#fa6831] group-hover/btn:text-white transition-colors" />
+                  <span>Download on Printables</span>
+                  <ExternalLink aria-hidden="true" size={12} className="opacity-60 group-hover/btn:opacity-100 transition-opacity" />
+                </a>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
 
       <RobotEditorModal isOpen={isOpen} onClose={() => setIsOpen(false)} editingRobot={editingRobot} onSubmit={submitEditor} isPending={createMutation.isPending || updateMutation.isPending} submissionError={submissionError} />
