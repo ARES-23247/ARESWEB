@@ -38,7 +38,7 @@ export interface EventWriteInput {
   locationId?: string;
   location?: string;
   description?: string;
-  category: "internal" | "outreach";
+  category: "internal" | "outreach" | "competition";
   coverImage?: string;
   isPotluck?: 0 | 1;
   isVolunteer?: 0 | 1;
@@ -79,7 +79,11 @@ function optionalString(record: Record<string, unknown>, key: string): string | 
 function normalizeEvent(value: unknown): TeamEvent {
   if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid event.");
   const record = value as Record<string, unknown>;
-  const category = record.category === "outreach" ? "outreach" : "internal";
+  const category = record.category === "outreach"
+    ? "outreach"
+    : record.category === "competition"
+      ? "competition"
+      : "internal";
   const status = record.status === "published" || record.status === "pending" || record.status === "draft"
     ? record.status
     : undefined;

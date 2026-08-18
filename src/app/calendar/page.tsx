@@ -258,7 +258,9 @@ export default function CalendarPage() {
                             className={`w-full text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border truncate ${
                               event.category === "outreach"
                                 ? "bg-ares-gold/10 text-ares-gold border-ares-gold/20"
-                                : "bg-ares-red/10 text-white border-ares-red/20"
+                                : event.category === "competition"
+                                  ? "bg-ares-cyan/10 text-ares-cyan border-ares-cyan/20"
+                                  : "bg-ares-red/10 text-white border-ares-red/20"
                             }`}
                           >
                             {event.title}
@@ -353,13 +355,19 @@ export default function CalendarPage() {
                     className={`block bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/40 hover:-translate-y-0.5 p-6 ares-cut-lg ${
                       event.category === "outreach"
                         ? "border-ares-gold/20 hover:shadow-[0_15px_30px_rgba(212,175,55,0.08)]"
-                        : "border-ares-red/20 hover:shadow-[0_15px_30px_rgba(192,0,0,0.08)]"
+                        : event.category === "competition"
+                          ? "border-ares-cyan/20 hover:shadow-[0_15px_30px_rgba(0,255,242,0.08)]"
+                          : "border-ares-red/20 hover:shadow-[0_15px_30px_rgba(192,0,0,0.08)]"
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4 mb-4 relative z-10">
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                          event.category === "outreach" ? "bg-ares-gold text-black" : "bg-ares-red text-white"
+                          event.category === "outreach"
+                            ? "bg-ares-gold text-black"
+                            : event.category === "competition"
+                              ? "bg-ares-cyan text-black"
+                              : "bg-ares-red text-white"
                         }`}>
                           {event.category}
                         </span>
@@ -419,7 +427,11 @@ export default function CalendarPage() {
                       <div key={event.id} className="relative group animate-fadeIn">
                         {/* Timeline Dot */}
                         <div className={`absolute -left-[21px] top-1 w-2 h-2 rounded-full border bg-obsidian transition-colors group-hover:bg-white ${
-                          event.category === "outreach" ? "border-ares-gold/50" : "border-ares-red/50"
+                          event.category === "outreach"
+                            ? "border-ares-gold/50"
+                            : event.category === "competition"
+                              ? "border-ares-cyan/50"
+                              : "border-ares-red/50"
                         }`} />
                         
                         <Link to={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
@@ -432,7 +444,11 @@ export default function CalendarPage() {
                               })}
                             </span>
                             <span className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
-                              event.category === "outreach" ? "bg-ares-gold/20 text-ares-gold" : "bg-ares-red/20 text-white"
+                              event.category === "outreach"
+                                ? "bg-ares-gold/20 text-ares-gold"
+                                : event.category === "competition"
+                                  ? "bg-ares-cyan/20 text-ares-cyan"
+                                  : "bg-ares-red/20 text-white"
                             }`}>
                               {event.category}
                             </span>

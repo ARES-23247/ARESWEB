@@ -10,7 +10,7 @@ export interface EventItem {
     address: string;
   };
   description?: string;
-  category: "internal" | "outreach";
+  category: "internal" | "outreach" | "competition";
   coverImage?: string;
   meetingNotes?: string;
   zulipStream?: string;

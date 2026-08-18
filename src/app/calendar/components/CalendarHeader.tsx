@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 
-export type CalendarFilter = "all" | "internal" | "outreach";
+export type CalendarFilter = "all" | "internal" | "outreach" | "competition";
 
 interface CalendarHeaderProps {
   canEdit: boolean;
@@ -32,7 +32,7 @@ export function CalendarHeader({ canEdit, filter, isLoading, isLive, eventCount,
           )}
         </h1>
         <p className="text-marble/85 text-base md:text-lg max-w-2xl leading-relaxed">
-          Plan and coordinate lab practices, software calibration sprints, and Spark! museum exhibits. Click on days to inspect active event details.
+          Plan and coordinate lab practices, tournaments and qualifier competitions, software calibration sprints, and Spark! museum exhibits. Click on days to inspect active event details.
         </p>
       </div>
 
@@ -42,8 +42,8 @@ export function CalendarHeader({ canEdit, filter, isLoading, isLive, eventCount,
             <Plus aria-hidden="true" size={11} /> New Event
           </button>
         )}
-        <div className="flex gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5" aria-label="Filter calendar events">
-          {(["all", "internal", "outreach"] as const).map((category) => (
+        <div className="flex flex-wrap gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5" aria-label="Filter calendar events">
+          {(["all", "internal", "outreach", "competition"] as const).map((category) => (
             <button
               type="button"
               key={category}
@@ -51,7 +51,7 @@ export function CalendarHeader({ canEdit, filter, isLoading, isLive, eventCount,
               aria-pressed={filter === category}
               className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${filter === category ? "bg-ares-red text-white" : "text-marble/55 hover:text-white hover:bg-white/5"}`}
             >
-              {category === "all" ? "All Events" : category === "internal" ? "Practices" : "Outreach"}
+              {category === "all" ? "All Events" : category === "internal" ? "Practices" : category === "outreach" ? "Outreach" : "Competitions"}
             </button>
           ))}
         </div>

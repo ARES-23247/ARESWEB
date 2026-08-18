@@ -28,7 +28,7 @@ export interface TeamEvent {
     address: string;
   };
   description?: string;
-  category: "internal" | "outreach";
+  category: "internal" | "outreach" | "competition";
   coverImage?: string;
   isPotluck?: number; // 0 or 1
   isVolunteer?: number; // 0 or 1

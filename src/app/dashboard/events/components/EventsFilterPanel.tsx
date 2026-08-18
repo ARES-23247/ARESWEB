@@ -4,8 +4,8 @@ import { RotateCcw } from "lucide-react";
 interface EventsFilterPanelProps {
   filterStatus: "all" | "published" | "pending" | "draft" | "deleted";
   setFilterStatus: (status: "all" | "published" | "pending" | "draft" | "deleted") => void;
-  filterCategory: "all" | "internal" | "outreach";
-  setFilterCategory: (category: "all" | "internal" | "outreach") => void;
+  filterCategory: "all" | "internal" | "outreach" | "competition";
+  setFilterCategory: (category: "all" | "internal" | "outreach" | "competition") => void;
   filterSearch: string;
   setFilterSearch: (search: string) => void;
   filterMonth: string;
@@ -106,13 +106,14 @@ export default function EventsFilterPanel({
         <div>
           <select
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value as "all" | "internal" | "outreach")}
+            onChange={(e) => setFilterCategory(e.target.value as "all" | "internal" | "outreach" | "competition")}
             aria-label="Filter events by category"
             className="w-full bg-black/60 border border-white/10 text-xs text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-ares-cyan cursor-pointer focus:ring-2 focus:ring-ares-cyan/25 font-bold"
           >
             <option value="all">📁 All Categories</option>
             <option value="internal">🏠 Internal Practices</option>
             <option value="outreach">🌍 Outreach Operations</option>
+            <option value="competition">🏆 Tournaments & Competitions</option>
           </select>
         </div>
 

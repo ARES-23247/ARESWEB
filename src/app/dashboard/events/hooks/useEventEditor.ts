@@ -29,7 +29,7 @@ export interface EventRevision {
   dateEnd?: string;
   locationId?: string;
   description?: string;
-  category: "internal" | "outreach";
+  category: "internal" | "outreach" | "competition";
   coverImage?: string;
   isPotluck?: number;
   isVolunteer?: number;
@@ -92,7 +92,7 @@ export function useEventEditor({
   const [formDateEnd, setFormDateEnd] = useState("");
   const [formLocationId, setFormLocationId] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formCategory, setFormCategory] = useState<"internal" | "outreach">("internal");
+  const [formCategory, setFormCategory] = useState<"internal" | "outreach" | "competition">("internal");
   const [formCoverImage, setFormCoverImage] = useState("");
   const [formIsPotluck, setFormIsPotluck] = useState<number>(0);
   const [formIsVolunteer, setFormIsVolunteer] = useState<number>(0);
