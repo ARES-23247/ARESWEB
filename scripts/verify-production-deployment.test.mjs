@@ -101,6 +101,7 @@ describe("production deployment contract", () => {
       "mediaApi",
       "syncGoogleDriveChanges",
       "publicApi",
+      "taskDueDigest",
       "web",
     ]);
     expect(contract.buildIdentity.serviceAccount).toBe(
@@ -115,6 +116,9 @@ describe("production deployment contract", () => {
       "ZULIP_API_KEY",
       "ZULIP_BOT_EMAIL",
     ]);
+    expect(
+      contract.functions.find(({ id }) => id === "taskDueDigest")?.secrets,
+    ).toEqual(["ZULIP_API_KEY", "ZULIP_BOT_EMAIL"]);
     expect(
       contract.functions.find(({ id }) => id === "communicationsApi")?.secrets,
     ).toEqual([

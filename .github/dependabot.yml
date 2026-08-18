@@ -8,6 +8,12 @@ updates:
       time: "09:00"
       timezone: America/New_York
     open-pull-requests-limit: 10
+    ignore:
+      # jsdom 30 lockfile regeneration is not reproducible between the pinned
+      # local Node 24.15 and CI's Node 24.18 (PR #138). Test-only dependency;
+      # drop this ignore once the engine pin and runner Node line up.
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
     groups:
       production-dependencies:
         dependency-type: production

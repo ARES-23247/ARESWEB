@@ -141,6 +141,18 @@
       "concurrency": 20
     },
     {
+      "id": "taskDueDigest",
+      "trigger": "schedule",
+      "runServiceId": "taskduedigest",
+      "serviceAccount": "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",
+      "public": false,
+      "secrets": ["ZULIP_API_KEY", "ZULIP_BOT_EMAIL"],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 256,
+      "maxInstances": 1,
+      "concurrency": 1
+    },
+    {
       "id": "web",
       "trigger": "https",
       "runServiceId": "web",
