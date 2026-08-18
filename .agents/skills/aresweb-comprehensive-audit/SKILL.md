@@ -15,7 +15,8 @@ used. Derive architecture and behavior from active source and configuration.
 2. Trace trust boundaries and primary user journeys before reviewing details.
 3. Review security/privacy, correctness, accessibility, performance/assets,
    SEO/crawl behavior, test fidelity, maintainability, UX truthfulness, and
-   delivery controls.
+   delivery controls. Specifically audit for and reject any fabricated 3D parts,
+   mock datasets, invented sponsors, alumni, awards, or false team capabilities.
 4. Run applicable static checks and focused tests. Distinguish executed evidence
    from inspection and inference.
 5. Reconcile duplicate or contradictory findings and publish one report under

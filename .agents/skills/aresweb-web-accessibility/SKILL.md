@@ -27,8 +27,11 @@ design tokens and components before changing styling; do not assume Next.js.
 - Use established semantic brand tokens; do not add arbitrary color values or
   generic cyan decoration.
 - Write concise user-facing instructions understandable by students and families.
-- Describe actual product behavior. Do not promise unavailable AI, offline,
-  privacy, API, or storage features.
+- Describe actual product behavior and authentic team assets only. Never invent
+  mock hardware designs, 3D parts, models, sponsors, alumni, awards, or claims.
+  Do not create hardcoded mock datasets. When no records exist, use truthful empty
+  states or direct official external links.
+- Do not promise unavailable AI, offline, privacy, API, or storage features.
 - Do not hide text in pseudo-elements, alter semantics, or disable checks to make
   an automated scanner pass.
 
