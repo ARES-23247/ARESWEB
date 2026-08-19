@@ -351,6 +351,41 @@ async function updateMatchAtRevision(
   return { snapshot, updateData };
 }
 
+// GET /api/tournaments/public/results - public competition history.
+// Deliberately unauthenticated for judges, sponsors, and other teams: a
+// minimal DTO with no scouting details, per-robot OPR lists, album ids, or
+// operational timestamps.
+router.get(
+  "/public/results",
+  asyncHandler(async (_req, res) => {
+    const snapshot = await adminDb
+      .collection("tournaments")
+      .where("isDeleted", "==", 0)
+      .orderBy("date", "desc")
+      .limit(100)
+      .get();
+    const results = snapshot.docs.map((document) => {
+      const data = document.data() as TournamentRecord;
+      const date = readString(data.date) ?? "";
+      return {
+        id: document.id,
+        name: readString(data.name) ?? "Untitled tournament",
+        seasonName: readString(data.seasonName),
+        challengeName: readString(data.challengeName),
+        date,
+        location: readString(data.location) ?? "",
+        description: readString(data.description),
+        status:
+          date && date >= new Date().toISOString().slice(0, 10)
+            ? "upcoming"
+            : "past",
+        opr: readNumber(data.opr),
+      };
+    });
+    res.json({ success: true, results });
+  }),
+);
+
 // Member-only reads keep private scouting details behind a verified team role.
 router.get(
   "/",
