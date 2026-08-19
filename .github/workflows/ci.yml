@@ -161,11 +161,6 @@ jobs:
       # Firefox's sandbox needs user namespaces (clone), which the default
       # container seccomp profile denies with EPERM.
       options: --security-opt seccomp=unconfined
-      env:
-        # Firefox refuses to launch when $HOME is not owned by the running
-        # user. Neither /root nor the runner-mounted HOME qualifies, so the
-        # job owns a fresh directory under /tmp.
-        HOME: /tmp/pw-home
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -185,10 +180,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare the browser home directory
-        run: mkdir -p /tmp/pw-home
-
       - name: Run local E2E suite
+        # Steps run as root while the runner pins HOME to /github/home
+        # (owned by pwuser); Firefox rejects that combination. /root is
+        # owned by the effective user.
+        env:
+          HOME: /root
         run: pnpm run test:e2e
 
       - name: Upload Playwright diagnostics
