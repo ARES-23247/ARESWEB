@@ -51,7 +51,7 @@ describe("finance manager", () => {
     expect(screen.getByText("Void")).toBeInTheDocument();
     expect(screen.getByText("Archived")).toBeInTheDocument();
         expect(
-      screen.getByText((_, element) => element?.textContent.includes("receipt attached") && element.tagName === "P"),
+      screen.getByText((_, element) => Boolean(element && element.textContent?.includes("receipt attached") && element.tagName === "P")),
     ).toBeInTheDocument();
     expect(screen.getByText("Restore")).toBeInTheDocument();
   });
