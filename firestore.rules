@@ -135,7 +135,11 @@ service cloud.firestore {
 
     // Public collections (blogs, calendar, knowledge base docs)
     match /posts/{postSlug} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if isAuthorized() || (
+        resource.data.status == "published" &&
+        resource.data.isDeleted == 0 &&
+        (!("approvalStatus" in resource.data) || resource.data.approvalStatus == "approved")
+      );
       allow create, update: if isAuthorized() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
@@ -186,7 +190,11 @@ service cloud.firestore {
     }
 
     match /docs/{docSlug} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if isAuthorized() || (
+        resource.data.status == "published" &&
+        resource.data.isDeleted == 0 &&
+        (!("approvalStatus" in resource.data) || resource.data.approvalStatus == "approved")
+      );
       allow create, update: if isAuthorized() && (
         request.resource.data.status != "published" ||
         hasRole('admin') || hasRole('coach') || hasRole('mentor')
@@ -392,15 +400,17 @@ service cloud.firestore {
 
     // docs_feedback
     match /docs_feedback/{feedbackId} {
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthorized() &&
                     request.resource.data.keys().hasAll(['slug', 'isHelpful', 'comment', 'isResolved', 'createdAt']) &&
                     request.resource.data.keys().hasOnly(['slug', 'isHelpful', 'comment', 'isResolved', 'createdAt']) &&
                     request.resource.data.slug is string &&
+                    request.resource.data.slug.size() <= 200 &&
                     (request.resource.data.isHelpful == 0 || request.resource.data.isHelpful == 1) &&
                     request.resource.data.comment is string &&
                     request.resource.data.comment.size() < 2000 &&
                     request.resource.data.isResolved == 0 &&
-                    request.resource.data.createdAt is string;
+                    request.resource.data.createdAt is string &&
+                    request.resource.data.createdAt.size() <= 40;
       allow read: if isAuthorized();
     }
 

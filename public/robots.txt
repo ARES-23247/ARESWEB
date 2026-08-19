@@ -7,5 +7,7 @@ Disallow: /tasks/*
 Disallow: /tournaments/
 Disallow: /api/
 Disallow: /api/*
+Disallow: /__deployment-health
+Disallow: /prerender
 
 Sitemap: https://aresfirst.org/sitemap.xml

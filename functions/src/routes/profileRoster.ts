@@ -54,8 +54,19 @@ function sanitizeAvatarUrl(value: unknown, sensitiveValues: unknown[]): string {
       sensitiveValue.trim().length > 0 &&
       comparableAvatar.includes(sensitiveValue.trim().toLowerCase()),
   );
+  if (exposesSensitiveSeed) return "";
 
-  return exposesSensitiveSeed ? "" : avatar;
+  // Public identity accepts only the sanctioned avatar host enforced on
+  // write, so legacy externally hosted avatars are dropped on read.
+  if (!avatar.startsWith("https://")) return "";
+  try {
+    const { hostname } = new URL(avatar);
+    return hostname === "dicebear.com" || hostname.endsWith(".dicebear.com")
+      ? avatar
+      : "";
+  } catch {
+    return "";
+  }
 }
 
 export function registerProfileRosterRoutes(router: Router): void {
@@ -65,9 +76,17 @@ export function registerProfileRosterRoutes(router: Router): void {
       const snapshot = await adminDb
         .collection("user_profiles")
         .where("showOnAbout", "in", [true, 1])
+        .orderBy("__name__")
         .limit(100)
         .get();
       const membersRaw = snapshot.docs
+        .filter((doc) => {
+          // The query cannot express a != filter alongside the IN clause, so
+          // archived profiles are excluded here as defense in depth before any
+          // public field is mapped.
+          const data = doc.data();
+          return data.isDeleted !== 1 && data.archived !== true;
+        })
         .map((doc) => {
           const data = doc.data();
           if (data.memberType === "parent") return null;

@@ -13,9 +13,10 @@ type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
 
 const REDACTED = "[REDACTED]";
 const SENSITIVE_KEYS = new Set([
-  "actoruid", "authorization", "body", "cookie", "email", "encrypted",
-  "firstname", "iv", "lastname", "name", "password", "phone", "requestbody",
-  "secret", "tag", "targetuid", "token", "uid", "userid",
+  "accessjwt", "actoruid", "apikey", "api_key", "authorization", "body",
+  "clientsecret", "cookie", "email", "encrypted", "firstname", "iv",
+  "lastname", "name", "password", "phone", "refreshtoken", "requestbody",
+  "secret", "sessionkey", "tag", "targetuid", "token", "uid", "userid",
 ]);
 
 function redactText(value: string): string {

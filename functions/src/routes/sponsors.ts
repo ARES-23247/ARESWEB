@@ -118,27 +118,37 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/sponsors/admin - Create or update sponsor (admin only)
+const SAFE_DOC_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{1,80}$/;
+
+function requireHttpsUrl(value: unknown, label: string): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || value.length > 2048 || !value.startsWith("https://")) {
+    throw new ApiError(400, `${label} must be an https:// URL.`);
+  }
+  return value;
+}
+
 router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   const { id, name, tier, logoUrl, websiteUrl, isActive } = req.body as SponsorWriteRequest;
 
-  if (!name || !name.trim()) {
-    throw new ApiError(400, "Sponsor name is required.");
+  if (!name || !name.trim() || name.trim().length > 120) {
+    throw new ApiError(400, "A sponsor name of 120 characters or fewer is required.");
   }
 
   if (!tier || !VALID_TIERS.includes(tier)) {
     throw new ApiError(400, `Invalid tier. Must be one of: ${VALID_TIERS.join(", ")}`);
   }
 
-  // Validate URLs if they are provided
-  if (logoUrl && !logoUrl.startsWith("http://") && !logoUrl.startsWith("https://")) {
-    throw new ApiError(400, "Invalid logo URL format.");
-  }
-  if (websiteUrl && !websiteUrl.startsWith("http://") && !websiteUrl.startsWith("https://")) {
-    throw new ApiError(400, "Invalid website URL format.");
-  }
+  // Validate URLs if they are provided (https only: http assets would be
+  // blocked or downgraded on the public site anyway)
+  const safeLogoUrl = requireHttpsUrl(logoUrl, "Logo URL");
+  const safeWebsiteUrl = requireHttpsUrl(websiteUrl, "Website URL");
 
   const activeVal = isActive !== false; // default to true
   const sponsorId = id && id.trim() ? id.trim() : `sp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  if (!SAFE_DOC_ID.test(sponsorId)) {
+    throw new ApiError(400, "Sponsor id may only contain letters, numbers, dashes, and underscores.");
+  }
 
   const docRef = adminDb.collection("sponsors").doc(sponsorId);
   const docSnap = await docRef.get();
@@ -150,8 +160,8 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
     await docRef.update({
       name: name.trim(),
       tier,
-      logoUrl: logoUrl || null,
-      websiteUrl: websiteUrl || null,
+      logoUrl: safeLogoUrl,
+      websiteUrl: safeWebsiteUrl,
       isActive: activeVal,
       updatedAt: timestamp,
     });
@@ -161,8 +171,8 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       id: sponsorId,
       name: name.trim(),
       tier,
-      logoUrl: logoUrl || null,
-      websiteUrl: websiteUrl || null,
+      logoUrl: safeLogoUrl,
+      websiteUrl: safeWebsiteUrl,
       isActive: activeVal,
       isDeleted: 0,
       createdAt: timestamp,
