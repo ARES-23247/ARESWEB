@@ -70,8 +70,14 @@ router.get(
       .limit(50)
       .get();
 
+    // Match the syndication gate: a published post must also be approved when
+    // approval metadata exists (legacy records predate the approval workflow).
+    const approvedDocs = snapshot.docs.filter((document) => {
+      const approval = (document.data() as Record<string, unknown>).approvalStatus;
+      return approval === undefined || approval === "approved";
+    });
     const itemDates: Date[] = [];
-    const itemsXml = snapshot.docs.map((document) => {
+    const itemsXml = approvedDocs.map((document) => {
       const data = document.data() as Record<string, unknown>;
       const title =
         typeof data.title === "string" && data.title.trim()

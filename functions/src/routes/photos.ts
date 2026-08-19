@@ -1,7 +1,7 @@
 import express from "express";
 import { pipeline } from "node:stream/promises";
 import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
-import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
+import { ensureAdmin, ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import photosAuthRouter from "./photosAuth";
@@ -297,7 +297,7 @@ router.use("/", photosImportRouter);
 router.use("/", photosUploadRouter);
 router.use("/", photosAuthRouter);
 
-router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req, res) => {
+router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const photoId = safeId(req.params.photoId, "photo ID");
   const input = req.body as { albumId?: unknown; caption?: unknown; labels?: unknown; altText?: unknown };
   const photoRef = adminDb.collection("imported_photos").doc(photoId);
@@ -314,6 +314,14 @@ router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req, res) => {
   if (albumId) {
     const album = await adminDb.collection("albums").doc(albumId).get();
     if (!album.exists || album.data()?.isDeleted === 1) throw new ApiError(400, "Choose an active album.");
+    // Placing media into a public album publishes it on the website, so it
+    // requires a publisher role rather than general membership.
+    const publisherRoles = new Set(["admin", "coach", "mentor"]);
+    const isAlbumPublic = album.data()?.isPublic === 1 || album.data()?.isPublic === true;
+    const changedAlbum = albumId !== (typeof current.albumId === "string" ? current.albumId : null);
+    if (isAlbumPublic && changedAlbum && !publisherRoles.has(req.authorizationRole || "")) {
+      throw new ApiError(403, "Only an admin, coach, or mentor can add photos to a public album.");
+    }
   }
   const labels = input.labels === undefined
     ? (Array.isArray(current.labels) ? current.labels : [])

@@ -221,6 +221,45 @@ describe("Zulip API integrity", () => {
     });
   });
 
+  it("rejects streams outside the team proxy allowlist", async () => {
+    req.body = { stream: "leadership", topic: "Private", content: "Hello" };
+    await handler("/message", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
+
+    req.body = { stream: "kanban", topic: "Task-1", content: "Hello" };
+    vi.mocked(sendZulipMessage).mockResolvedValueOnce(true);
+    await handler("/message", "post")(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects topic reads outside the team proxy allowlist", async () => {
+    req.query = { stream: "leadership", topic: "Private" };
+    await handler("/topic", "get")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
+  });
+
+  it("neutralizes mentions and wildcard pings in outbound member content", async () => {
+    req.body = {
+      stream: "announcements",
+      topic: "Welcome",
+      content: "@**Coach** please review @all silent ping @everyone",
+    };
+    vi.mocked(sendZulipMessage).mockResolvedValueOnce(true);
+
+    await handler("/message", "post")(req, res, next);
+
+    const sent = vi.mocked(sendZulipMessage).mock.calls[0][2];
+    expect(sent).toBe("please review silent ping");
+    expect(sent).not.toContain("@");
+  });
+
+  it("rejects content that is empty after mention removal", async () => {
+    req.body = { stream: "announcements", topic: "Welcome", content: "@**Coach** @all" };
+    await handler("/message", "post")(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+  });
+
   it("surfaces an upstream message failure", async () => {
     req.body = { stream: "announcements", topic: "Welcome", content: "Hello" };
     vi.mocked(sendZulipMessage).mockResolvedValueOnce(false);

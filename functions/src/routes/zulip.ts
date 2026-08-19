@@ -163,6 +163,20 @@ router.patch("/config", ensureAdmin, asyncHandler(async (req: AuthenticatedReque
   res.json({ success: true, workspace: { url: ZULIP_WORKSPACE_ORIGIN, inviteUrl } });
 }));
 
+// The proxy speaks only for streams the product itself uses. Members must not
+// be able to read or post to arbitrary streams (for example leadership) under
+// the workspace bot identity.
+function allowedProxyStreams(): Set<string> {
+  return new Set([
+    process.env.ZULIP_KANBAN_STREAM || "kanban",
+    "announcements",
+  ]);
+}
+
+function isAllowedProxyStream(stream: string): boolean {
+  return allowedProxyStreams().has(stream.trim().toLowerCase());
+}
+
 // GET /api/zulip/topic
 router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
   const stream = req.query.stream as string;
@@ -170,6 +184,12 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
 
   if (!stream || !topic) {
     throw new ApiError(400, "Missing stream or topic parameter.");
+  }
+  if (stream.length > 100 || topic.length > 200) {
+    throw new ApiError(400, "Stream or topic is too long.");
+  }
+  if (!isAllowedProxyStream(stream)) {
+    throw new ApiError(403, "This stream is not available through the team proxy.");
   }
 
   const { url, email, apiKey } = getZulipCredentials();
@@ -232,8 +252,18 @@ router.post("/message", ensureTeamMember, asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "Enter a valid stream, topic, and message.");
   }
+  if (!isAllowedProxyStream(stream)) {
+    throw new ApiError(403, "This stream is not available through the team proxy.");
+  }
 
-  const success = await sendZulipMessage(stream.trim(), topic.trim(), content.trim());
+  // Outbound member content must not be able to trigger @all/@everyone pings
+  // or user mentions under the bot identity.
+  const safeContent = content.replace(/@\*\*[^*]+\*\*/g, "").replace(/@all|@everyone/gi, "").replace(/\s+/g, " ").trim();
+  if (!safeContent) {
+    throw new ApiError(400, "Message content is empty after removing mentions.");
+  }
+
+  const success = await sendZulipMessage(stream.trim(), topic.trim(), safeContent);
   if (!success) {
     throw new ApiError(502, "Zulip did not accept the message.");
   }

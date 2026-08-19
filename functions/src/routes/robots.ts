@@ -123,7 +123,9 @@ function versionDto(value: unknown) {
     weightLbs: optionalNumber(data.weightLbs),
     drivetrainType: stringValue(data.drivetrainType),
     primaryMechanism: stringValue(data.primaryMechanism),
-    cadViewerUrl: isHttpsUrl(stringValue(data.cadViewerUrl)) ? stringValue(data.cadViewerUrl) : "",
+    // Legacy documents may carry arbitrary viewer URLs; the DTO exposes only
+    // the Onshape host the write schema trusts.
+    cadViewerUrl: isTrustedOnshapeUrl(stringValue(data.cadViewerUrl)) ? stringValue(data.cadViewerUrl) : "",
     printablesUrl: isTrustedPrintablesUrl(stringValue(data.printablesUrl)) ? stringValue(data.printablesUrl) : "",
   };
 }
@@ -139,7 +141,7 @@ export function robotDto(id: string, value: RobotDocument, includeArchiveState =
     programmingLanguage: stringValue(value.programmingLanguage),
     revealVideoId: /^[A-Za-z0-9_-]{11}$/.test(stringValue(value.revealVideoId)) ? stringValue(value.revealVideoId) : "",
     onshapeUrl: isTrustedOnshapeUrl(stringValue(value.onshapeUrl)) ? stringValue(value.onshapeUrl) : "",
-    cadViewerUrl: isHttpsUrl(stringValue(value.cadViewerUrl)) ? stringValue(value.cadViewerUrl) : "",
+    cadViewerUrl: isTrustedOnshapeUrl(stringValue(value.cadViewerUrl)) ? stringValue(value.cadViewerUrl) : "",
     printablesUrl: isTrustedPrintablesUrl(stringValue(value.printablesUrl)) ? stringValue(value.printablesUrl) : "",
     primaryMechanism: stringValue(value.primaryMechanism),
     content: stringValue(value.content),

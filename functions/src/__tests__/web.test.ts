@@ -10,7 +10,7 @@ vi.mock("../lib/logger", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-import { handleWebRequest } from "../web";
+import { handleWebRequest, resetShellCacheForTests } from "../web";
 
 const runWeb = handleWebRequest as unknown as (req: unknown, res: unknown) => Promise<void>;
 
@@ -31,6 +31,7 @@ function responseDouble() {
 describe("dynamic web function", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetShellCacheForTests();
   });
 
   it("returns an injected shell for a published record", async () => {

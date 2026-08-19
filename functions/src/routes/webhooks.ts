@@ -251,7 +251,9 @@ router.post(
 
     if (!taskSnap.exists) {
       logger.warn("webhooks", "The Zulip webhook referenced a missing task");
-      res.json({ content: "Task card not found." });
+      // Reply silently: echoing task existence into the stream would disclose
+      // card identifiers to anyone who can message the bot.
+      res.json({ content: "" });
       return;
     }
 
@@ -273,11 +275,6 @@ router.post(
       .slice(0, 24)}`;
 
     const commentRef = taskRef.collection("comments").doc(commentId);
-    const existingComment = await commentRef.get();
-    if (existingComment.exists) {
-      res.json({ content: "" });
-      return;
-    }
 
     const newComment = {
       id: commentId,
@@ -287,12 +284,22 @@ router.post(
       source: "zulip",
     };
 
-    const batch = adminDb.batch();
-    batch.set(commentRef, newComment);
-    batch.update(taskRef, {
-      commentsCount: adminFieldValue.increment(1),
+    // Transactional create semantics close the redelivery race: two concurrent
+    // deliveries of the same message cannot both pass the existence check, so
+    // the comment and its counter increment stay exactly-once.
+    const created = await adminDb.runTransaction(async (transaction) => {
+      const existing = await transaction.get(commentRef);
+      if (existing.exists) return false;
+      transaction.create(commentRef, newComment);
+      transaction.update(taskRef, {
+        commentsCount: adminFieldValue.increment(1),
+      });
+      return true;
     });
-    await batch.commit();
+    if (!created) {
+      res.json({ content: "" });
+      return;
+    }
 
     logger.info("webhooks", "Synced a verified Zulip comment to its task");
     res.json({ content: "" });
