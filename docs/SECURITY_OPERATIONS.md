@@ -15,6 +15,7 @@ firebase functions:secrets:set GITHUB_PAT
 firebase functions:secrets:set PROFILE_SYNC_SECRET
 firebase functions:secrets:set BLUESKY_APP_PASSWORD
 firebase functions:secrets:set BUFFER_API_KEY
+firebase functions:secrets:set ONSHAPE_WEBHOOK_TOKEN
 ```
 
 `GITHUB_PAT` should be a fine-grained token limited to the ARESWEB repository and
@@ -55,10 +56,12 @@ The API also records App Check results for mutation requests. Each event has a
 `valid`, `missing`, or `invalid` status. Logs include only the method and route
 group. They never include tokens, user IDs, query strings, or document IDs.
 
-Two server integrations do not use Firebase App Check:
+Three server integrations do not use Firebase App Check:
 
 - `POST /api/profiles/sync` uses `PROFILE_SYNC_SECRET`.
 - `POST /api/webhooks/zulip` uses `ZULIP_WEBHOOK_TOKEN`.
+- `POST /api/webhooks/onshape` uses `ONSHAPE_WEBHOOK_TOKEN`, carried in the
+  callback URL query because Onshape webhooks send no signature headers.
 
 The Zulip bot credential must come from `ZULIP_BOT_EMAIL` and `ZULIP_API_KEY`
 in Google Secret Manager. No source fallback is permitted. Rotate any key that
@@ -109,13 +112,20 @@ not inherit unrelated credentials:
 - `coreApi`: inquiry/profile routes, with encryption, reCAPTCHA, profile-sync,
   and Zulip bot secrets used for inquiry alerts and member provisioning.
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
-- `driveApi`: Drive preview and draft-import routes, with only the Drive credential and quota secret.
+- `driveApi`: Drive preview and draft-import routes, with encryption, the
+  OAuth client pair, and the dedicated Drive refresh token (four secrets).
 - `communicationsApi`: task, Zulip, webhook, simulation, and social
-  syndication routes, with only their six integration secrets.
+  syndication routes, with their seven integration secrets (GitHub, Zulip x3,
+  Bluesky, Buffer, Onshape webhook).
 
 The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
 GitHub, or Zulip secrets.
+
+`taskDueDigest` runs daily at 07:00 America/New_York on the communications
+identity, binds only the Zulip bot credentials, maps assignees to nicknames
+before posting, and must fail the invocation when Zulip rejects the digest so
+Cloud Scheduler retries it.
 
 `cleanupOldInquiries` runs daily and must throw when its Firestore work fails.
 The function uses a bounded three-attempt retry policy; never catch and convert
@@ -133,7 +143,8 @@ The production access baseline is:
 | `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync, Zulip bot credentials |
 | `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
 | `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
-| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub, Zulip, Bluesky, and Buffer credentials                     |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub, Zulip, Bluesky, Buffer, and Onshape webhook tokens         |
+| `taskDueDigest`          | Firestore user                                                                                        | Zulip bot credentials                                              |
 | `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                                         |
 | `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                                        |
 | `web`                    | Firestore user                                                                                        | none                                                               |

@@ -36,10 +36,13 @@ unverified authorization records are denied.
 
 ## Server integrations
 
-Two server-to-server endpoints cannot obtain browser App Check tokens:
+Three server-to-server endpoints cannot obtain browser App Check tokens:
 
 - `POST /api/profiles/sync` authenticates with `PROFILE_SYNC_SECRET`.
 - `POST /api/webhooks/zulip` authenticates with `ZULIP_WEBHOOK_TOKEN`.
+- `POST /api/webhooks/onshape` authenticates with `ONSHAPE_WEBHOOK_TOKEN`
+  (carried in the callback URL query because Onshape webhooks send no
+  signature headers).
 
 Keep those endpoints narrowly exempt from App Check and validate their own
 secrets before parsing or changing data.
