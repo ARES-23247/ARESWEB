@@ -158,6 +158,10 @@ jobs:
     # times today and burned entire job budgets in Ign lines.
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
+      env:
+        # Firefox refuses to launch when $HOME is not owned by the running
+        # user inside the container; the action runner mounts its own HOME.
+        HOME: /root
     timeout-minutes: 30
     steps:
       - name: Checkout
