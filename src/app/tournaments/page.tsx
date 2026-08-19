@@ -21,6 +21,7 @@ import {
 import { PublicDataState } from "@/components/PublicDataState";
 import { formatDateOnly } from "@/lib/dateOnly";
 import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
+import PublicResults from "./PublicResults";
 
 export default function TournamentsFeedPage() {
   const {
@@ -109,9 +110,9 @@ export default function TournamentsFeedPage() {
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble py-8 flex flex-col justify-center relative overflow-hidden">
         <SEO
-          title="Sign In | ARES Scouting Vault"
-          description="Authorized authentication required to access team scouting records."
-          noindex={true}
+          title="Tournaments & Competition History | ARES Scouting Vault"
+          description="Public competition history for ARES 23247 with the members-only scouting vault."
+          noindex={false}
         />
         <div className="absolute top-0 left-0 w-full z-10">
           <GreekMeander
@@ -120,7 +121,9 @@ export default function TournamentsFeedPage() {
             className="w-full"
           />
         </div>
-        <div className="w-full max-w-md mx-auto px-6 z-10">
+        <PublicResults />
+
+        <div className="mt-12 w-full max-w-md mx-auto px-6 z-10">
           <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
             <div className="relative w-20 h-20 bg-ares-red/15 border border-ares-red/45 ares-cut flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(192,0,0,0.2)]">
               <Lock
