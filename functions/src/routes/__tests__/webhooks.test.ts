@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   receiptSet: vi.fn(),
   transactionGet: vi.fn(),
   transactionSet: vi.fn(),
+  transactionCreate: vi.fn(),
+  transactionUpdate: vi.fn(),
   syndicate: vi.fn(),
   zulipSend: vi.fn(),
 }));
@@ -39,6 +41,8 @@ vi.mock("../../lib/firebase-admin", () => ({
       callback({
         get: mocks.transactionGet,
         set: mocks.transactionSet,
+        create: mocks.transactionCreate,
+        update: mocks.transactionUpdate,
       }),
     ),
   },
@@ -68,6 +72,7 @@ describe("Webhooks Router Backend Endpoints", () => {
     delete process.env.ONSHAPE_ZULIP_STREAM;
     delete process.env.ZULIP_BOT_EMAIL;
     mocks.commentGet.mockResolvedValue({ exists: false });
+    mocks.transactionGet.mockResolvedValue({ exists: false });
     mocks.zulipSend.mockResolvedValue(true);
     mocks.syndicate.mockResolvedValue({
       zulip: true,
@@ -144,9 +149,44 @@ describe("Webhooks Router Backend Endpoints", () => {
       mocks.taskGet.mockResolvedValue({ exists: true });
       await getHandler("/zulip", "post")(req, res, next);
 
-      expect(mocks.batchSet).toHaveBeenCalled();
-      expect(mocks.batchUpdate).toHaveBeenCalled();
+      expect(mocks.transactionCreate).toHaveBeenCalled();
+      expect(mocks.transactionUpdate).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ content: "" });
+    });
+
+    it("replies silently when the referenced task card does not exist", async () => {
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "message",
+        message: {
+          topic: "Task-does-not-exist",
+          content: "Checked code.",
+          sender_full_name: "Coach",
+        },
+      };
+      mocks.taskGet.mockResolvedValue({ exists: false });
+      await getHandler("/zulip", "post")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({ content: "" });
+      expect(mocks.transactionCreate).not.toHaveBeenCalled();
+    });
+
+    it("skips messages whose content is only an @mention", async () => {
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "message",
+        message: {
+          topic: "Task-123",
+          content: "@**Coach**",
+          sender_full_name: "Coach",
+        },
+      };
+      mocks.taskGet.mockResolvedValue({ exists: true });
+      await getHandler("/zulip", "post")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({ content: "" });
+      expect(mocks.transactionCreate).not.toHaveBeenCalled();
+      expect(mocks.transactionUpdate).not.toHaveBeenCalled();
     });
 
     it("accepts the current direct_message trigger", async () => {
@@ -162,7 +202,7 @@ describe("Webhooks Router Backend Endpoints", () => {
       mocks.taskGet.mockResolvedValue({ exists: true });
       await getHandler("/zulip", "post")(req, res, next);
 
-      expect(mocks.batchSet).toHaveBeenCalledWith(
+      expect(mocks.transactionCreate).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ content: "Direct update.", source: "zulip" }),
       );
@@ -186,8 +226,8 @@ describe("Webhooks Router Backend Endpoints", () => {
 
       expect(res.json).toHaveBeenCalledWith({ content: "" });
       expect(mocks.taskGet).not.toHaveBeenCalled();
-      expect(mocks.batchSet).not.toHaveBeenCalled();
-      expect(mocks.batchUpdate).not.toHaveBeenCalled();
+      expect(mocks.transactionCreate).not.toHaveBeenCalled();
+      expect(mocks.transactionUpdate).not.toHaveBeenCalled();
     });
 
     it("stores redelivered Zulip messages exactly once", async () => {
@@ -204,18 +244,18 @@ describe("Webhooks Router Backend Endpoints", () => {
       };
       mocks.taskGet.mockResolvedValue({ exists: true });
       await getHandler("/zulip", "post")(req, res, next);
-      expect(mocks.batchSet).toHaveBeenCalledTimes(1);
-      const storedRef = mocks.batchSet.mock.calls[0][0];
+      expect(mocks.transactionCreate).toHaveBeenCalledTimes(1);
+      const storedRef = mocks.transactionCreate.mock.calls[0][0];
       expect(storedRef.id).toMatch(/^comment_zulip_[0-9a-f]{24}$/);
-      expect(mocks.batchUpdate).toHaveBeenCalledTimes(1);
+      expect(mocks.transactionUpdate).toHaveBeenCalledTimes(1);
 
       vi.clearAllMocks();
       mocks.taskGet.mockResolvedValue({ exists: true });
-      mocks.commentGet.mockResolvedValue({ exists: true });
+      mocks.transactionGet.mockResolvedValue({ exists: true });
       await getHandler("/zulip", "post")(req, res, next);
       expect(res.json).toHaveBeenCalledWith({ content: "" });
-      expect(mocks.batchSet).not.toHaveBeenCalled();
-      expect(mocks.batchUpdate).not.toHaveBeenCalled();
+      expect(mocks.transactionCreate).not.toHaveBeenCalled();
+      expect(mocks.transactionUpdate).not.toHaveBeenCalled();
     });
 
     it("rejects malformed authenticated payloads", async () => {

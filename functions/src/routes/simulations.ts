@@ -199,8 +199,31 @@ router.delete("/:id", ensureTeamMember, asyncHandler(async (_req: AuthenticatedR
 // POST /api/simulations/gist - Create a new GitHub Gist for a simulation
 router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
   const { name, files } = req.body as { name?: string; files: Record<string, string> };
-  if (!files || Object.keys(files).length === 0) {
+  // Gists publish under the team account, so bounds are enforced before the
+  // GitHub call: bounded name, a small file set, safe filenames, sized content.
+  const gistName = typeof name === "string" && name.trim() ? name.trim().slice(0, 120) : "ARESWEB Simulation Gist";
+  if (!files || typeof files !== "object" || Array.isArray(files) || Object.keys(files).length === 0) {
     throw new ApiError(400, "No files provided");
+  }
+  const fileEntries = Object.entries(files);
+  if (fileEntries.length > 20) {
+    throw new ApiError(400, "A gist may contain at most 20 files");
+  }
+  let totalBytes = 0;
+  for (const [filename, content] of fileEntries) {
+    if (!/^[\w][\w.\- ]{0,99}$/.test(filename)) {
+      throw new ApiError(400, "Gist filenames may only contain letters, digits, dashes, dots, and spaces");
+    }
+    if (typeof content !== "string") {
+      throw new ApiError(400, "Every gist file must be text content");
+    }
+    totalBytes += content.length;
+    if (content.length > 100_000) {
+      throw new ApiError(400, "A gist file may not exceed 100,000 characters");
+    }
+  }
+  if (totalBytes > 300_000) {
+    throw new ApiError(400, "A gist may not exceed 300,000 characters in total");
   }
 
   const pat = await getGitHubPat();
@@ -224,7 +247,7 @@ router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
     method: "POST",
     headers,
     body: JSON.stringify({
-      description: name || "ARESWEB Simulation Gist",
+      description: gistName,
       public: true,
       files: gistFiles
     })

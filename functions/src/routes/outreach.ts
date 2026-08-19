@@ -117,15 +117,17 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/outreach/admin - Create or update outreach log (admin only)
+const SAFE_DOC_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{1,80}$/;
+
 router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   const { id, title, date, location, hours, peopleReached, impactSummary, eventId } = req.body as OutreachWriteRequest;
 
-  if (!title || typeof title !== "string" || !title.trim()) {
-    throw new ApiError(400, "Outreach title is required.");
+  if (!title || typeof title !== "string" || !title.trim() || title.trim().length > 200) {
+    throw new ApiError(400, "An outreach title of 200 characters or fewer is required.");
   }
 
-  if (!date || typeof date !== "string" || !date.trim()) {
-    throw new ApiError(400, "Outreach date is required.");
+  if (!date || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(date.trim())) {
+    throw new ApiError(400, "An outreach date starting with YYYY-MM-DD is required.");
   }
 
   const parsedHours = Number(hours);
@@ -138,11 +140,17 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
     throw new ApiError(400, "People reached must be a non-negative number.");
   }
 
-  const cleanLocation = typeof location === "string" && location.trim() ? location.trim() : null;
-  const cleanSummary = typeof impactSummary === "string" && impactSummary.trim() ? impactSummary.trim() : null;
+  const cleanLocation = typeof location === "string" && location.trim() ? location.trim().slice(0, 200) : null;
+  const cleanSummary = typeof impactSummary === "string" && impactSummary.trim() ? impactSummary.trim().slice(0, 2_000) : null;
   const cleanEventId = typeof eventId === "string" && eventId.trim() ? eventId.trim() : null;
+  if (cleanEventId && !SAFE_DOC_ID.test(cleanEventId)) {
+    throw new ApiError(400, "Linked event id is not a valid identifier.");
+  }
 
   const logId = id && typeof id === "string" && id.trim() ? id.trim() : `out_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  if (!SAFE_DOC_ID.test(logId)) {
+    throw new ApiError(400, "Outreach id may only contain letters, numbers, dashes, and underscores.");
+  }
 
   const docRef = adminDb.collection("outreach_logs").doc(logId);
   const docSnap = await docRef.get();

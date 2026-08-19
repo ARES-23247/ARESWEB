@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import profilesRouter from "../profiles";
 import { adminDb, adminAuth } from "../../lib/firebase-admin";
-import { createZulipUser, getZulipUsers } from "../../lib/zulip";
+import { getZulipUsers } from "../../lib/zulip";
 import { isEncryptedValue } from "../profileSelf";
 
 // Mock Firebase Admin
@@ -58,7 +58,6 @@ vi.mock("../../lib/firebase-admin", () => {
 // Mock Zulip API Helpers
 vi.mock("../../lib/zulip", () => ({
   getZulipUsers: vi.fn().mockResolvedValue([]),
-  createZulipUser: vi.fn().mockResolvedValue({ success: true, userId: 123 }),
 }));
 
 describe("Profiles Router Backend Endpoints", () => {
@@ -87,7 +86,7 @@ describe("Profiles Router Backend Endpoints", () => {
       body: {},
       query: {},
       headers: { "x-sync-secret": "dummy-secret-key-32-chars-long-!" },
-      user: { uid: "test_uid", email: "test@aresfirst.org" },
+      user: { uid: "test_uid", email: "test@aresfirst.org", email_verified: true },
     };
     res = {
       status: vi.fn().mockReturnThis(),
@@ -129,6 +128,7 @@ describe("Profiles Router Backend Endpoints", () => {
       const mockWhere = mockCollection().where;
       const queryMock = {
         get: vi.fn().mockResolvedValue({ docs: mockDocs }),
+        orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
       };
       mockWhere.mockReturnValue(queryMock);
@@ -177,6 +177,7 @@ describe("Profiles Router Backend Endpoints", () => {
             }),
           }],
         }),
+        orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
       };
       mockCollection().where.mockReturnValue(queryMock);
@@ -206,6 +207,7 @@ describe("Profiles Router Backend Endpoints", () => {
             { id: "short-id", data: () => ({ nickname: "Weak record", contactEmail }) },
           ],
         }),
+        orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
       };
       mockCollection().where.mockReturnValue(queryMock);
@@ -227,7 +229,7 @@ describe("Profiles Router Backend Endpoints", () => {
             nickname: "CoachDave",
             firstName: "David",
             email: "coach.david@gmail.com",
-            avatar: "avatar_url"
+            avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=coachdave"
           }),
         },
       ];
@@ -243,7 +245,7 @@ describe("Profiles Router Backend Endpoints", () => {
           members: [
             expect.objectContaining({
               nickname: "CoachDave",
-              avatar: "avatar_url"
+              avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=coachdave"
             })
           ]
         })
@@ -609,6 +611,18 @@ describe("Profiles Router Backend Endpoints", () => {
   });
 
   describe("POST /api/profiles/session - User claims confirmation", () => {
+    it("rejects unverified email claims before any legacy or bootstrap grant", async () => {
+      req.user = { uid: "attacker_uid", email: "invited.member@example.org", email_verified: false };
+      await getHandler("/session", "post")(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 403 }),
+      );
+      expect(res.json).not.toHaveBeenCalled();
+      const batch = vi.mocked(adminDb.batch).mock.results.at(-1)?.value;
+      if (batch) expect(batch.set).not.toHaveBeenCalled();
+    });
+
     it("should return the verified claims and registration status", async () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true, data: () => ({ role: "coach" }) } as any);
@@ -669,7 +683,7 @@ describe("Profiles Router Backend Endpoints", () => {
     });
 
     it("creates a visible unverified record for a new sign-in without exposing it publicly", async () => {
-      req.user = { uid: "new_uid", email: "new.member@example.org", name: "New Member" };
+      req.user = { uid: "new_uid", email: "new.member@example.org", name: "New Member", email_verified: true };
       const documentRef = adminDb.collection("").doc("");
       vi.mocked(documentRef.get)
         .mockResolvedValueOnce({ exists: false, data: () => undefined } as any)
@@ -714,7 +728,7 @@ describe("Profiles Router Backend Endpoints", () => {
         role: "member",
         memberType: "student",
       };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       const collectionRef = adminDb.collection("") as any;
       const queryRef = collectionRef.where();
       vi.mocked(queryRef.get).mockResolvedValue({ empty: true, docs: [] });
@@ -744,7 +758,7 @@ describe("Profiles Router Backend Endpoints", () => {
         role: "member",
         memberType: "student",
       };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       vi.mocked((adminDb.collection("") as any).where().get)
         .mockResolvedValueOnce({ empty: false, docs: [{ id: "existing_uid" }] } as any);
 
@@ -757,7 +771,7 @@ describe("Profiles Router Backend Endpoints", () => {
     it("updates authorization and profile membership in one audited batch", async () => {
       req.params = { userId: "member_uid" };
       req.body = { role: "mentor", memberType: "mentor" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({
         exists: true,
@@ -783,7 +797,7 @@ describe("Profiles Router Backend Endpoints", () => {
     it("prevents administrators from demoting themselves", async () => {
       req.params = { userId: "admin_uid" };
       req.body = { role: "member", memberType: "mentor" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
 
       await getHandler("/admin/users/:userId/permissions", "patch")(req, res, next);
 
@@ -792,7 +806,7 @@ describe("Profiles Router Backend Endpoints", () => {
     });
 
     it("rejects unsafe and missing authorization targets during permission updates", async () => {
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       req.body = { role: "member", memberType: "student" };
 
       req.params = { userId: "unsafe/id" };
@@ -809,7 +823,7 @@ describe("Profiles Router Backend Endpoints", () => {
 
     it("archives authorization and profile data instead of deleting it", async () => {
       req.params = { userId: "member_uid" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({
         exists: true,
@@ -830,7 +844,7 @@ describe("Profiles Router Backend Endpoints", () => {
     });
 
     it("blocks self-revocation and rejects a missing revoke target", async () => {
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       req.params = { userId: "admin_uid" };
       await getHandler("/admin/users/:userId", "delete")(req, res, next);
       expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400 }));
@@ -845,7 +859,7 @@ describe("Profiles Router Backend Endpoints", () => {
 
     it("restores an archived user's prior role", async () => {
       req.params = { userId: "member_uid" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({
         exists: true,
@@ -866,7 +880,7 @@ describe("Profiles Router Backend Endpoints", () => {
 
     it("rejects missing and already-active restore targets", async () => {
       req.params = { userId: "member_uid" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org" };
+      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
       const get = vi.mocked(adminDb.collection("").doc("").get);
 
       get.mockResolvedValue({ exists: false, data: () => undefined } as any);
