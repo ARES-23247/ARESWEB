@@ -39,6 +39,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/routes/seasons.ts": {
+          lines: 85,
+          functions: 100,
+        },
       },
     },
   },
