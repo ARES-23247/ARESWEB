@@ -4,6 +4,7 @@ import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  CalendarRange,
   LayoutDashboard,
   User,
   Globe,
@@ -346,6 +347,17 @@ export default function DashboardSidebar({
                   tab="sponsors"
                   icon={Heart}
                   label="Sponsors Manager"
+                  currentPath={pathname}
+                  onNavigate={onCloseMobile}
+                />
+              )}
+              {(userRole === "admin" ||
+                userRole === "coach" ||
+                userRole === "mentor") && (
+                <NavButton
+                  tab="seasons"
+                  icon={CalendarRange}
+                  label="Seasons & Awards"
                   currentPath={pathname}
                   onNavigate={onCloseMobile}
                 />

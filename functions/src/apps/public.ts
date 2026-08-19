@@ -6,6 +6,7 @@ import referenceRouter from "../routes/reference";
 import robotsRouter from "../routes/robots";
 import sitemapRouter from "../routes/sitemap";
 import sponsorsRouter from "../routes/sponsors";
+import seasonsRouter, { awardsRouter } from "../routes/seasons";
 import storeRouter from "../routes/store";
 import tournamentsRouter from "../routes/tournaments";
 import ogRouter from "../routes/og";
@@ -16,6 +17,8 @@ export const publicApp = createApiApp({ routes: [
   { path: "/api/announcements", router: announcementsRouter },
   { path: "/api/calendar", router: calendarRouter },
   { path: "/api/sponsors", router: sponsorsRouter },
+  { path: "/api/seasons", router: seasonsRouter },
+  { path: "/api/awards", router: awardsRouter },
   { path: "/api/outreach", router: outreachRouter },
   { path: "/api/tournaments", router: tournamentsRouter },
   { path: "/api/robots", router: robotsRouter },
