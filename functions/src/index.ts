@@ -160,10 +160,12 @@ export const taskDueDigest = onSchedule(
     maxInstances: 1,
     serviceAccount: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
     secrets: ["ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
+    retryCount: 3,
   },
   async (_event) => {
     try {
-      await sendTaskDueDigest();
+      const delivered = await sendTaskDueDigest();
+      if (!delivered) throw new Error("zulip_rejected_digest");
     } catch (error) {
       logger.error("taskDigest", "Scheduled due-date digest failed", {
         reason: error instanceof Error ? error.name : "unknown",
@@ -187,7 +189,8 @@ export const syncGoogleDriveChanges = onSchedule(
       "GOOGLE_CLIENT_SECRET",
       "GOOGLE_DRIVE_REFRESH_TOKEN",
     ],
-  },
+    retryCount: 3,
+},
   async (_event) => {
     try {
       await syncImportedDriveChanges();

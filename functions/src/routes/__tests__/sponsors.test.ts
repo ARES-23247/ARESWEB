@@ -241,7 +241,7 @@ describe("Sponsors Router Backend Endpoints", () => {
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Sponsor name is required.");
+      expect(err.message).toBe("A sponsor name of 120 characters or fewer is required.");
       expect(err.status).toBe(400);
     });
 
@@ -272,7 +272,7 @@ describe("Sponsors Router Backend Endpoints", () => {
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Invalid logo URL format.");
+      expect(err.message).toBe("Logo URL must be an https:// URL.");
       expect(err.status).toBe(400);
     });
   });
