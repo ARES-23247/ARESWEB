@@ -89,6 +89,19 @@ describe("Seasons and awards admin API", () => {
     expect(payload.awards[0]).toMatchObject({ isDeleted: 1, archivedAt: "2026-03-01" });
   });
 
+  it("lists public awards and admin seasons", async () => {
+    mocks.get.mockResolvedValue({
+      docs: [
+        { id: "award_pub", data: () => ({ title: "Win", eventName: "E", date: "2026-01-01", isDeleted: 0 }) },
+      ],
+    });
+    await handler(awardsRouter, "/", "get")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith({ awards: [expect.objectContaining({ id: "award_pub" })] });
+
+    await handler(seasonsRouter, "/admin", "get")(req, res, next);
+    expect(res.json).toHaveBeenLastCalledWith({ seasons: [expect.objectContaining({ id: "award_pub" })] });
+  });
+
   it("creates a season with bounded, validated fields", async () => {
     req.body = { startYear: 2026, endYear: 2027, challengeName: "DECODE", robotCadUrl: "https://cad.onshape.com/x", status: "draft" };
     await handler(seasonsRouter, "/admin", "post")(req, res, next);
@@ -131,6 +144,45 @@ describe("Seasons and awards admin API", () => {
     );
   });
 
+  it("updates an existing season instead of duplicating it", async () => {
+    mocks.docGet.mockResolvedValue({ exists: true });
+    req.body = { id: "season_2025", startYear: 2025, challengeName: "Into the Deep" };
+    await handler(seasonsRouter, "/admin", "post")(req, res, next);
+
+    expect(mocks.set).not.toHaveBeenCalled();
+    expect(mocks.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "season_2025", challengeName: "Into the Deep" }),
+    );
+  });
+
+  it("rejects years outside the supported range and unsafe award season links", async () => {
+    req.body = { startYear: 1999, challengeName: "X" };
+    await handler(seasonsRouter, "/admin", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 400, message: expect.stringContaining("between 2000 and 2100") }),
+    );
+
+    req.body = { title: "T", eventName: "E", date: "2026-01-01", seasonId: "a/b" };
+    await handler(awardsRouter, "/admin", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 400, message: expect.stringContaining("season id") }),
+    );
+  });
+
+  it("updates an existing award instead of duplicating it", async () => {
+    mocks.docGet.mockResolvedValue({ exists: true });
+    req.body = { id: "award_1", title: "Inspire Award", eventName: "WV States", date: "2026-02-01" };
+    await handler(awardsRouter, "/admin", "post")(req, res, next);
+
+    expect(mocks.set).not.toHaveBeenCalled();
+    expect(mocks.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "award_1", title: "Inspire Award" }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, id: "award_1" }),
+    );
+  });
+
   it("rejects awards with malformed dates", async () => {
     req.body = { title: "X", eventName: "Y", date: "02/01/2026" };
     await handler(awardsRouter, "/admin", "post")(req, res, next);
@@ -152,6 +204,12 @@ describe("Seasons and awards admin API", () => {
     expect(mocks.update).toHaveBeenLastCalledWith(
       expect.objectContaining({ isDeleted: 0, archivedAt: null }),
     );
+
+    req.params = { id: "award_1" };
+    await handler(awardsRouter, "/admin/:id", "delete")(req, res, next);
+    expect(res.json).toHaveBeenLastCalledWith({ success: true });
+    await handler(awardsRouter, "/admin/:id/restore", "patch")(req, res, next);
+    expect(res.json).toHaveBeenLastCalledWith({ success: true });
 
     req.params = { id: "../evil" };
     await handler(awardsRouter, "/admin/:id", "delete")(req, res, next);
