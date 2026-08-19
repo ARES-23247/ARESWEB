@@ -9,6 +9,7 @@ const authState = vi.hoisted(() => ({ user: { uid: "admin-1" } }));
 
 vi.mock("../context/AuthContext", () => ({
   useAuth: () => authState,
+  useOptionalAuth: () => undefined,
 }));
 
 vi.mock("../lib/api", () => ({

@@ -12,6 +12,7 @@ import type { User } from "firebase/auth";
 vi.mock("../context/AuthContext", () => {
   return {
     useAuth: vi.fn(),
+    useOptionalAuth: () => undefined,
     AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });
@@ -92,6 +93,8 @@ describe("DashboardProfilePage imports", () => {
       user: testUser("test-uid", "Test User", "test@example.com"),
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
 
@@ -142,6 +145,8 @@ describe("DashboardProfilePage imports", () => {
       user: testUser("new-uid", "Student Legal Name", "student@example.com"),
       authorizedUser: { email: "student@example.com", role: "member" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
     mockProfileApi({}, false);
@@ -160,6 +165,8 @@ describe("DashboardProfilePage imports", () => {
       user: testUser("student-uid", "Protected Student", "student@example.com"),
       authorizedUser: { email: "student@example.com", role: "member" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
     mockProfileApi({
@@ -199,6 +206,8 @@ describe("DashboardProfilePage imports", () => {
       user: testUser("member-uid", "Member", "member@example.com"),
       authorizedUser: { email: "member@example.com", role: "member" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
     mockProfileApi({ nickname: "Original", memberType: "student" });
@@ -220,6 +229,8 @@ describe("DashboardProfilePage imports", () => {
       user: testUser("test-uid", "Test User", "test@example.com"),
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
 

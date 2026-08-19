@@ -11,6 +11,7 @@ import type { User } from "firebase/auth";
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: () => undefined,
 }));
 
 // Mock Firestore functions
@@ -84,6 +85,8 @@ describe("useEventEditor custom hook", () => {
       user: testUser,
       authorizedUser: { email: "test@example.com", role: "admin" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
     });
 

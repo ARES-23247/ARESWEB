@@ -11,6 +11,7 @@ vi.mock("@/context/AuthContext", () => ({
     authorizedUser: { role: "admin" },
     loading: false,
   }),
+  useOptionalAuth: () => undefined,
 }));
 vi.mock("@/lib/api", () => ({ authenticatedFetch: vi.fn() }));
 vi.mock("@/lib/image", () => ({ resizeAndCompressImage: vi.fn() }));

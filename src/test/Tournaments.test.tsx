@@ -31,6 +31,7 @@ import type { User } from "firebase/auth";
 vi.mock("../context/AuthContext", () => {
   return {
     useAuth: vi.fn(),
+    useOptionalAuth: () => undefined,
     AuthProvider: ({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     ),
@@ -92,6 +93,8 @@ function mockAuth(value: AuthTestValue) {
     loginWithGoogle: vi.fn(),
     logout: vi.fn(),
     loginWithMockUser: vi.fn(),
+    authError: null,
+    clearAuthError: vi.fn(),
   });
 }
 

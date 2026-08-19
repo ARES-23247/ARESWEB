@@ -31,6 +31,7 @@ vi.mock("@/context/AuthContext", () => ({
     user: { uid: "member-1", email: "member@example.com" },
     authorizedUser: { role: "admin" },
   }),
+  useOptionalAuth: () => undefined,
 }));
 
 vi.mock("@/lib/api", () => ({

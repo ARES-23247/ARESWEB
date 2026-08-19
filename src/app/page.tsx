@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
 import { maskEmail } from "@/lib/utils";
 import SEO from "@/components/SEO";
+import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 export default function Home() {
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
@@ -131,12 +132,15 @@ export default function Home() {
               </div>
             ) : (
               <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:gap-6">
-                <button
-                  onClick={loginWithGoogle}
-                  className="clipped-button inline-flex min-h-11 items-center justify-center gap-2 bg-ares-red font-bold text-white shadow-xl transition-all hover:bg-ares-bronze"
-                >
-                  <LogIn size={16} /> Team Member Sign In
-                </button>
+                <div className="w-full sm:w-auto">
+                  <button
+                    onClick={loginWithGoogle}
+                    className="clipped-button inline-flex min-h-11 items-center justify-center gap-2 bg-ares-red font-bold text-white shadow-xl transition-all hover:bg-ares-bronze"
+                  >
+                    <LogIn size={16} /> Team Member Sign In
+                  </button>
+                  <AuthErrorNotice />
+                </div>
                 <Link
                   to="/calendar"
                   className="clipped-button inline-flex min-h-11 items-center justify-center bg-transparent border-2 border-ares-bronze text-ares-bronze hover:bg-ares-bronze hover:text-white transition-all"

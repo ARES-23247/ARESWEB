@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { CircleAlert, LayoutDashboard, LogIn, LogOut, User as UserIcon } from "lucide-react";
 import { maskEmail } from "@/lib/utils";
+import AuthErrorNotice from "./AuthErrorNotice";
 
 interface MenuUser {
   uid: string;
@@ -79,6 +80,7 @@ export function DesktopUserMenu({
         >
           <LogIn aria-hidden="true" size={14} /> Sign In
         </button>
+        <AuthErrorNotice />
       </div>
     );
   }

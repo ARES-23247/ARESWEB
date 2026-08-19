@@ -9,11 +9,6 @@ updates:
       timezone: America/New_York
     open-pull-requests-limit: 10
     ignore:
-      # jsdom 30 lockfile regeneration is not reproducible between the pinned
-      # local Node 24.15 and CI's Node 24.18 (PR #138). Test-only dependency;
-      # drop this ignore once the engine pin and runner Node line up.
-      - dependency-name: "jsdom"
-        update-types: ["version-update:semver-major"]
       # typescript-eslint 8.x peers typescript >=4.8.4 <6.1.0, so 6.1+ and the
       # native TS 7 line fail Dependabot's peer check and abort the whole
       # weekly npm update run. 6.0.x patches stay eligible.
