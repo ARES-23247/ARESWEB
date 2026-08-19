@@ -3,7 +3,7 @@
 import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   doc,
   collection,
@@ -38,6 +38,8 @@ import { resizeAndCompressImage } from "@/lib/image";
 export default function EventDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const [searchParams] = useSearchParams();
+  const occurrenceDate = searchParams.get("occurrence") ?? undefined;
   const { user, authorizedUser } = useAuth();
 
   const [event, setEvent] = useState<EventItem | null>(null);
@@ -86,7 +88,7 @@ export default function EventDetailPage() {
     setLoadingEvent(true);
     setEvent(null);
     try {
-      const result = await fetchPublicEvent(id);
+      const result = await fetchPublicEvent(id, occurrenceDate);
       setEvent(result as EventItem);
       setEventLoadError(null);
     } catch (error) {
@@ -101,7 +103,7 @@ export default function EventDetailPage() {
     } finally {
       setLoadingEvent(false);
     }
-  }, [id]);
+  }, [id, occurrenceDate]);
 
   useEffect(() => {
     void loadEvent();

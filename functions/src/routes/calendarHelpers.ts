@@ -104,13 +104,18 @@ export function occurrenceDates(
 
 /** Shift an ISO datetime by whole days, preserving its local wall-clock time. */
 function shiftIsoDays(value: string, days: number): string {
+  const floatingDateTime = value.match(/^(\d{4}-\d{2}-\d{2})(T.+)$/);
+  const hasExplicitTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  if (floatingDateTime && !hasExplicitTimezone) {
+    const date = new Date(`${floatingDateTime[1]}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return value;
+    date.setUTCDate(date.getUTCDate() + days);
+    return `${ymd(date)}${floatingDateTime[2]}`;
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  const shifted = new Date(date.getTime() + days * DAY_MS);
-  // Correct for whole-day shifts crossing DST by re-anchoring the clock.
-  const hourDelta = shifted.getUTCHours() - date.getUTCHours();
-  if (hourDelta !== 0) shifted.setUTCHours(date.getUTCHours(), date.getUTCMinutes());
-  return shifted.toISOString();
+  return new Date(date.getTime() + days * DAY_MS).toISOString();
 }
 
 export interface OccurrenceDtoOptions {

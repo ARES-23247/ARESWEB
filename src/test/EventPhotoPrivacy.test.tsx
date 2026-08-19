@@ -35,9 +35,9 @@ function jsonResponse(payload: unknown, status = 200, statusText = "OK") {
   });
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/events/practice-1") {
   return render(
-    <MemoryRouter initialEntries={["/events/practice-1"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/events/:id" element={<EventDetailPage />} />
       </Routes>
@@ -95,5 +95,19 @@ describe("public event photo privacy and failure states", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("HTTP 502: Bad Gateway");
     expect(screen.queryByText("No photos have been uploaded for this event.")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText("Loading event photos…")).not.toBeInTheDocument());
+  });
+
+  it("loads a recurring instance while keeping media on the parent event", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ photos: [] })));
+
+    renderPage("/events/practice-1?occurrence=2026-08-20");
+
+    await waitFor(() => {
+      expect(mocks.fetchPublicEvent).toHaveBeenCalledWith("practice-1", "2026-08-20");
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/calendar/events/practice-1/photos?limit=50",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 });

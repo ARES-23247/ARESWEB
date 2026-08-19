@@ -177,6 +177,25 @@ describe("calendar recurrence client", () => {
     expect(occurrence.occurrenceDate).toBe("2026-08-20");
   });
 
+  it("requests a recurring instance through its parent event", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(response({
+      success: true,
+      event: {
+        ...event,
+        id: "weekly-1_2026-08-20",
+        recurrenceOf: "weekly-1",
+        occurrenceDate: "2026-08-20",
+      },
+    }));
+
+    await fetchPublicEvent("weekly-1", "2026-08-20");
+
+    expect(authenticatedFetch).toHaveBeenCalledWith(
+      "/api/calendar/events/weekly-1?occurrence=2026-08-20",
+      undefined,
+    );
+  });
+
   it("drops malformed recurrence data instead of inventing a rule", async () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(
       response({
