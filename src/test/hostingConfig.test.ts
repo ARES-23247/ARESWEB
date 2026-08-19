@@ -247,9 +247,9 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(analyticsActive).toBe(true);
     // These assertions check that a CSP directive allows the analytics hosts;
     // no URL is being validated for security here.
-    // codeql[js/incomplete-url-substring-check]
+    // codeql[js/incomplete-url-substring-sanitization]
     expect(csp).toMatch(/script-src[^;]*https:\/\/www\.googletagmanager\.com/);
-    // codeql[js/incomplete-url-substring-check]
+    // codeql[js/incomplete-url-substring-sanitization]
     expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
   });
 
