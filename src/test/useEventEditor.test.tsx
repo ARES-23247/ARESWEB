@@ -5,7 +5,14 @@ import { useAuth } from "../context/AuthContext";
 import { setDoc, onSnapshot, getDocs } from "firebase/firestore";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "../lib/image";
-import { archiveEvent, createEvent, restoreEvent, updateEvent } from "@/app/calendar/api";
+import {
+  archiveEvent,
+  createEvent,
+  fetchEventOccurrences,
+  restoreEvent,
+  updateEvent,
+  updateEventOccurrence,
+} from "@/app/calendar/api";
 import type { User } from "firebase/auth";
 
 // Mock AuthContext
@@ -46,6 +53,10 @@ vi.mock("@/app/calendar/api", () => ({
   createEvent: vi.fn(),
   restoreEvent: vi.fn(),
   updateEvent: vi.fn(),
+  updateEventOccurrence: vi.fn(),
+  fetchEventOccurrences: vi.fn(),
+  cancelEventOccurrence: vi.fn(),
+  restoreEventOccurrence: vi.fn(),
 }));
 
 // Mock utils
@@ -68,18 +79,18 @@ vi.mock("../utils/logger", () => ({
 }));
 
 describe("useEventEditor custom hook", () => {
-  const testUser = { uid: "test-uid", displayName: "Test User", email: "test@example.com" } as unknown as User;
-  const mockLocations = [
-    { id: "mars-building", name: "Mars Building", address: "123 Mars Way" }
-  ];
+  const testUser = {
+    uid: "test-uid",
+    displayName: "Test User",
+    email: "test@example.com",
+  } as unknown as User;
+  const mockLocations = [{ id: "mars-building", name: "Mars Building", address: "123 Mars Way" }];
   const mockSetLocations = vi.fn();
-  const mockTeamMembers = [
-    { uid: "member-1", nickname: "Aariketh", avatar: "avatar1" }
-  ];
+  const mockTeamMembers = [{ uid: "member-1", nickname: "Aariketh", avatar: "avatar1" }];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Set Auth mock
     vi.mocked(useAuth).mockReturnValue({
       user: testUser,
@@ -87,7 +98,9 @@ describe("useEventEditor custom hook", () => {
       loading: false,
       authError: null,
       clearAuthError: vi.fn(),
-      loginWithGoogle: vi.fn(), logout: vi.fn(), loginWithMockUser: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+      loginWithMockUser: vi.fn(),
     });
 
     // Set Firestore mock implementations (avoids issues with vitest mockReset: true)
@@ -95,7 +108,7 @@ describe("useEventEditor custom hook", () => {
       if (typeof callback === "function") {
         setTimeout(() => {
           callback({
-            docs: []
+            docs: [],
           });
         }, 0);
       }
@@ -104,35 +117,61 @@ describe("useEventEditor custom hook", () => {
 
     vi.mocked(setDoc).mockResolvedValue(undefined);
     vi.mocked(archiveEvent).mockResolvedValue(undefined);
-    vi.mocked(createEvent).mockResolvedValue({ id: "new-event", title: "New Event", dateStart: "2026-01-01", category: "internal" });
+    vi.mocked(createEvent).mockResolvedValue({
+      id: "new-event",
+      title: "New Event",
+      dateStart: "2026-01-01",
+      category: "internal",
+    });
     vi.mocked(restoreEvent).mockResolvedValue(undefined);
-    vi.mocked(updateEvent).mockResolvedValue({ id: "event-123", title: "Updated Event", dateStart: "2026-01-01", category: "internal" });
-    
+    vi.mocked(updateEvent).mockResolvedValue({
+      id: "event-123",
+      title: "Updated Event",
+      dateStart: "2026-01-01",
+      category: "internal",
+    });
+    vi.mocked(updateEventOccurrence).mockResolvedValue({
+      id: "event-123_2026-07-07",
+      title: "Updated Session",
+      dateStart: "2026-07-07",
+      category: "internal",
+    });
+    vi.mocked(fetchEventOccurrences).mockResolvedValue([]);
+
     vi.mocked(getDocs).mockResolvedValue({
-      docs: []
+      docs: [],
     } as unknown as Awaited<ReturnType<typeof getDocs>>);
 
     // Set utility and fetch mock implementations
     vi.mocked(resizeAndCompressImage).mockResolvedValue({
       base64: "mockbase64",
-      mimeType: "image/jpeg"
+      mimeType: "image/jpeg",
     });
 
-    vi.mocked(authenticatedFetch).mockImplementation(async (path) => String(path) === "/api/profiles/me"
-      ? { ok: true, status: 200, statusText: "OK", json: async () => ({ profile: { nickname: "Member Nickname", avatar: "" } }) } as Response
-      : {
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        text: async () => "",
-        json: async () => ({
-          photo: {
-            id: "photo-1",
-            publicUrl: "photo.jpg",
-            googleMediaItemId: "g-1"
-          }
-        })
-      } as Response);
+    vi.mocked(authenticatedFetch).mockImplementation(async (path) =>
+      String(path) === "/api/profiles/me"
+        ? ({
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            json: async () => ({
+              profile: { nickname: "Member Nickname", avatar: "" },
+            }),
+          } as Response)
+        : ({
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            text: async () => "",
+            json: async () => ({
+              photo: {
+                id: "photo-1",
+                publicUrl: "photo.jpg",
+                googleMediaItemId: "g-1",
+              },
+            }),
+          } as Response),
+    );
   });
 
   it("initializes hook states for Create Mode when eventToEdit is null", () => {
@@ -144,7 +183,7 @@ describe("useEventEditor custom hook", () => {
         locations: mockLocations,
         setLocations: mockSetLocations,
         teamMembers: mockTeamMembers,
-      })
+      }),
     );
 
     expect(result.current.formTitle).toBe("");
@@ -176,7 +215,7 @@ describe("useEventEditor custom hook", () => {
         locations: mockLocations,
         setLocations: mockSetLocations,
         teamMembers: mockTeamMembers,
-      })
+      }),
     );
 
     expect(result.current.formTitle).toBe("Existing Event");
@@ -206,11 +245,13 @@ describe("useEventEditor custom hook", () => {
         locations: mockLocations,
         setLocations: mockSetLocations,
         teamMembers: mockTeamMembers,
-      })
+      }),
     );
 
     await act(async () => {
-      const e = { preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>;
+      const e = {
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent<HTMLFormElement>;
       await result.current.handleSaveEvent(e);
     });
 
@@ -242,7 +283,7 @@ describe("useEventEditor custom hook", () => {
         locations: mockLocations,
         setLocations: mockSetLocations,
         teamMembers: mockTeamMembers,
-      })
+      }),
     );
 
     await act(async () => {
@@ -251,6 +292,65 @@ describe("useEventEditor custom hook", () => {
 
     expect(restoreEvent).toHaveBeenCalledWith("event-123");
     expect(result.current).not.toHaveProperty("handlePermanentDeleteEvent");
+  });
+
+  it("edits one recurring session by default and restores parent values when scope changes", async () => {
+    const recurringOccurrence = {
+      id: "event-123_2026-07-07",
+      recurrenceOf: "event-123",
+      occurrenceDate: "2026-07-07",
+      title: "Drive Practice",
+      dateStart: "2026-07-07T19:00:00.000Z",
+      dateEnd: "2026-07-07T21:00:00.000Z",
+      locationId: "mars-building",
+      location: "Mars Building",
+      category: "internal" as const,
+      recurrence: { frequency: "weekly" as const, interval: 1, byDay: ["TU"] },
+      seriesDefaults: {
+        title: "Team Practice",
+        dateStart: "2026-06-30T18:00:00.000Z",
+        dateEnd: "2026-06-30T20:00:00.000Z",
+        locationId: "mars-building",
+        location: "Mars Building",
+        category: "internal" as const,
+        isPotluck: 0,
+        isVolunteer: 0,
+      },
+    };
+    const onClose = vi.fn();
+    const { result } = renderHook(() =>
+      useEventEditor({
+        isOpen: true,
+        onClose,
+        eventToEdit: recurringOccurrence,
+        locations: mockLocations,
+        setLocations: mockSetLocations,
+        teamMembers: mockTeamMembers,
+      }),
+    );
+
+    expect(result.current.editScope).toBe("occurrence");
+    expect(result.current.formTitle).toBe("Drive Practice");
+    await act(async () => result.current.handleEditScopeChange("series"));
+    expect(result.current.formTitle).toBe("Team Practice");
+    expect(result.current.formDateStart).toBe("2026-06-30T18:00");
+    await act(async () => result.current.handleEditScopeChange("occurrence"));
+    await act(async () => {
+      await result.current.handleSaveEvent({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent<HTMLFormElement>);
+    });
+
+    expect(updateEventOccurrence).toHaveBeenCalledWith(
+      "event-123",
+      "2026-07-07",
+      expect.objectContaining({
+        title: "Drive Practice",
+        dateStart: "2026-07-07T19:00",
+      }),
+    );
+    expect(updateEvent).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
   });
 
   it("fetches revisions list when activeTab shifts to revisions", async () => {
@@ -274,19 +374,16 @@ describe("useEventEditor custom hook", () => {
       ],
     } as unknown as Awaited<ReturnType<typeof getDocs>>);
 
-    const { result } = renderHook(
-      (props) => useEventEditor(props),
-      {
-        initialProps: {
-          isOpen: true,
-          onClose: vi.fn(),
-          eventToEdit: mockEvent,
-          locations: mockLocations,
-          setLocations: mockSetLocations,
-          teamMembers: mockTeamMembers,
-        },
-      }
-    );
+    const { result } = renderHook((props) => useEventEditor(props), {
+      initialProps: {
+        isOpen: true,
+        onClose: vi.fn(),
+        eventToEdit: mockEvent,
+        locations: mockLocations,
+        setLocations: mockSetLocations,
+        teamMembers: mockTeamMembers,
+      },
+    });
 
     // Initial tab is 'edit'
     expect(result.current.activeTab).toBe("edit");
@@ -317,14 +414,14 @@ describe("useEventEditor custom hook", () => {
         locations: mockLocations,
         setLocations: mockSetLocations,
         teamMembers: mockTeamMembers,
-      })
+      }),
     );
 
     const mockFile = new File(["dummy"], "test.jpg", { type: "image/jpeg" });
     const mockEventArg = {
       target: {
-        files: [mockFile]
-      }
+        files: [mockFile],
+      },
     } as unknown as React.ChangeEvent<HTMLInputElement>;
 
     await act(async () => {

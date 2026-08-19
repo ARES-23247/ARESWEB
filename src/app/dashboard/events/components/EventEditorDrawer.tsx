@@ -3,15 +3,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
-import { 
-  Trash2, 
-  X, 
-  Maximize2, 
-  Minimize2, 
-  Sparkles, 
-  AlertCircle, 
-  RotateCcw
-} from "lucide-react";
+import { Trash2, X, Maximize2, Minimize2, Sparkles, AlertCircle, RotateCcw } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import EventGalleryTab from "./EventGalleryTab";
@@ -34,7 +26,7 @@ interface EventEditorDrawerProps {
   eventToEdit: TeamEvent | null;
   locations: TeamLocation[];
   setLocations: React.Dispatch<React.SetStateAction<TeamLocation[]>>;
-  teamMembers: { uid: string; nickname: string; avatar: string; }[];
+  teamMembers: { uid: string; nickname: string; avatar: string }[];
 }
 
 export default function EventEditorDrawer({
@@ -43,7 +35,7 @@ export default function EventEditorDrawer({
   eventToEdit,
   locations,
   setLocations,
-  teamMembers
+  teamMembers,
 }: EventEditorDrawerProps) {
   const {
     formTitle,
@@ -78,6 +70,8 @@ export default function EventEditorDrawer({
     handleCancelOccurrence,
     handleRestoreOccurrence,
     occurrenceContextDate,
+    editScope,
+    handleEditScopeChange,
     isFullScreen,
     setIsFullScreen,
     activeTab,
@@ -119,11 +113,12 @@ export default function EventEditorDrawer({
     eventToEdit,
     locations,
     setLocations,
-    teamMembers
+    teamMembers,
   });
 
   const [pendingLifecycle, setPendingLifecycle] = useState<"archive" | "restore" | null>(null);
-  const hasNestedDialog = selectedPhoto !== null || isPhotoPickerOpen || isLocationModalOpen || pendingLifecycle !== null;
+  const hasNestedDialog =
+    selectedPhoto !== null || isPhotoPickerOpen || isLocationModalOpen || pendingLifecycle !== null;
   const editorRef = useFocusTrap(isOpen && !hasNestedDialog, onClose);
   const eventTabs = editId
     ? ([
@@ -139,7 +134,12 @@ export default function EventEditorDrawer({
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-end">
       {/* Backdrop */}
-      <button type="button" className="absolute inset-0 h-full w-full bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose} aria-label="Close event editor" />
+      <button
+        type="button"
+        className="absolute inset-0 h-full w-full bg-black/80 backdrop-blur-sm cursor-pointer"
+        onClick={onClose}
+        aria-label="Close event editor"
+      />
 
       {/* Editor Drawer */}
       <div
@@ -189,7 +189,9 @@ export default function EventEditorDrawer({
             activeTab={activeTab}
             onChange={setActiveTab}
             className="flex gap-4 overflow-x-auto"
-            tabClassName={(_value, active) => `py-3 border-b-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"}`}
+            tabClassName={(_value, active) =>
+              `py-3 border-b-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"}`
+            }
           />
 
           {activeTab === "edit" && isAdmin && (
@@ -235,13 +237,65 @@ export default function EventEditorDrawer({
         <div className="flex-1 overflow-hidden bg-black/10 p-6 flex flex-col">
           {/* Tab 1: EDIT FORM */}
           {activeTab === "edit" && (
-            <div id={tabPanelId("event-editor", "edit")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "edit")} tabIndex={0} className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <div
+              id={tabPanelId("event-editor", "edit")}
+              role="tabpanel"
+              aria-labelledby={tabElementId("event-editor", "edit")}
+              tabIndex={0}
+              className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
               <form
                 onSubmit={handleSaveEvent}
                 className={`space-y-6 flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 transition-all duration-300 ${
                   showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
                 }`}
               >
+                {occurrenceContextDate && (
+                  <fieldset className="rounded-xl border border-ares-gold/25 bg-ares-gold/5 p-4">
+                    <legend className="px-1 text-[10px] font-black uppercase tracking-widest text-ares-gold">
+                      Edit repeating event
+                    </legend>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label
+                        className={`cursor-pointer rounded-lg border p-3 transition-colors focus-within:ring-2 focus-within:ring-ares-cyan ${editScope === "occurrence" ? "border-ares-gold bg-ares-gold/10 text-white" : "border-white/10 text-marble/70"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="event-edit-scope"
+                          value="occurrence"
+                          checked={editScope === "occurrence"}
+                          onChange={() => handleEditScopeChange("occurrence")}
+                          className="mr-2 accent-ares-gold"
+                        />
+                        <span className="text-xs font-black uppercase">This session</span>
+                        <span className="mt-1 block pl-5 text-[10px] font-normal text-marble/70">
+                          {new Date(`${occurrenceContextDate}T12:00:00`).toLocaleDateString(undefined, {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </label>
+                      <label
+                        className={`cursor-pointer rounded-lg border p-3 transition-colors focus-within:ring-2 focus-within:ring-ares-cyan ${editScope === "series" ? "border-ares-gold bg-ares-gold/10 text-white" : "border-white/10 text-marble/70"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="event-edit-scope"
+                          value="series"
+                          checked={editScope === "series"}
+                          onChange={() => handleEditScopeChange("series")}
+                          className="mr-2 accent-ares-gold"
+                        />
+                        <span className="text-xs font-black uppercase">Entire series</span>
+                        <span className="mt-1 block pl-5 text-[10px] font-normal text-marble/70">
+                          Changes every session in the schedule.
+                        </span>
+                      </label>
+                    </div>
+                  </fieldset>
+                )}
+
                 <ShiftScheduleEditor
                   formTitle={formTitle}
                   setFormTitle={setFormTitle}
@@ -270,36 +324,40 @@ export default function EventEditorDrawer({
                   setIsPhotoPickerOpen={setIsPhotoPickerOpen}
                 />
 
-                <EventRecurrenceSection
-                  canEdit={canEdit}
-                  formDateStart={formDateStart}
-                  formRepeats={formRepeats}
-                  setFormRepeats={setFormRepeats}
-                  formInterval={formInterval}
-                  setFormInterval={setFormInterval}
-                  formByDay={formByDay}
-                  setFormByDay={setFormByDay}
-                  formUntil={formUntil}
-                  setFormUntil={setFormUntil}
-                  isEditingExistingRecurring={Boolean(editId && eventToEdit?.recurrence)}
-                  occurrenceExceptions={occurrenceExceptions}
-                  onCancelOccurrence={handleCancelOccurrence}
-                  onRestoreOccurrence={handleRestoreOccurrence}
-                  suggestedSkipDate={occurrenceContextDate}
-                />
+                {editScope === "series" && (
+                  <EventRecurrenceSection
+                    canEdit={canEdit}
+                    formDateStart={formDateStart}
+                    formRepeats={formRepeats}
+                    setFormRepeats={setFormRepeats}
+                    formInterval={formInterval}
+                    setFormInterval={setFormInterval}
+                    formByDay={formByDay}
+                    setFormByDay={setFormByDay}
+                    formUntil={formUntil}
+                    setFormUntil={setFormUntil}
+                    isEditingExistingRecurring={Boolean(editId && eventToEdit?.recurrence)}
+                    occurrenceExceptions={occurrenceExceptions}
+                    onCancelOccurrence={handleCancelOccurrence}
+                    onRestoreOccurrence={handleRestoreOccurrence}
+                    suggestedSkipDate={occurrenceContextDate}
+                  />
+                )}
 
                 <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">
                   <div className="flex flex-wrap gap-2">
-                    {editId && canPublishDirectly && (
-                      eventToEdit?.isDeleted === 1 ? (
+                    {editId &&
+                      canPublishDirectly &&
+                      editScope === "series" &&
+                      (eventToEdit?.isDeleted === 1 ? (
                         <button
-                            type="button"
-                            onClick={() => setPendingLifecycle("restore")}
-                            className="px-5 py-3 border border-ares-gold/35 hover:bg-ares-gold/10 text-ares-gold rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                          >
-                            <RotateCcw size={14} />
-                            Restore Event
-                          </button>
+                          type="button"
+                          onClick={() => setPendingLifecycle("restore")}
+                          className="px-5 py-3 border border-ares-gold/35 hover:bg-ares-gold/10 text-ares-gold rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                        >
+                          <RotateCcw size={14} />
+                          Restore Event
+                        </button>
                       ) : (
                         <button
                           type="button"
@@ -309,8 +367,7 @@ export default function EventEditorDrawer({
                           <Trash2 size={14} />
                           Archive Event
                         </button>
-                      )
-                    )}
+                      ))}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -326,7 +383,13 @@ export default function EventEditorDrawer({
                         disabled={isSaving || !formTitle.trim() || !formDateStart}
                         className="px-6 py-3 bg-ares-red text-white hover:bg-ares-bronze font-black uppercase tracking-widest text-xs rounded transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {isSaving ? "Saving…" : editId ? "Save Changes" : "Create Event"}
+                        {isSaving
+                          ? "Saving…"
+                          : editId
+                            ? editScope === "occurrence"
+                              ? "Save This Session"
+                              : "Save Series"
+                            : "Create Event"}
                       </button>
                     )}
                   </div>
@@ -349,7 +412,13 @@ export default function EventEditorDrawer({
 
           {/* Tab 2: ROSTER & RSVPS */}
           {activeTab === "roster" && editId && (
-            <div id={tabPanelId("event-editor", "roster")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "roster")} tabIndex={0} className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <div
+              id={tabPanelId("event-editor", "roster")}
+              role="tabpanel"
+              aria-labelledby={tabElementId("event-editor", "roster")}
+              tabIndex={0}
+              className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
               <EventFormRoster
                 editId={editId}
                 signups={signups}
@@ -367,7 +436,13 @@ export default function EventEditorDrawer({
 
           {/* Tab 3: GALLERY */}
           {activeTab === "photos" && editId && (
-            <div id={tabPanelId("event-editor", "photos")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "photos")} tabIndex={0} className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <div
+              id={tabPanelId("event-editor", "photos")}
+              role="tabpanel"
+              aria-labelledby={tabElementId("event-editor", "photos")}
+              tabIndex={0}
+              className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
               <EventGalleryTab
                 photos={photos}
                 canEdit={canEdit}
@@ -376,13 +451,20 @@ export default function EventEditorDrawer({
                 handleImageUpload={handleImageUpload}
                 handleDeletePhoto={handleDeletePhoto}
                 setSelectedPhoto={setSelectedPhoto}
+                occurrenceDate={occurrenceContextDate}
               />
             </div>
           )}
 
           {/* Tab 4: REVISIONS */}
           {activeTab === "revisions" && editId && (
-            <div id={tabPanelId("event-editor", "revisions")} role="tabpanel" aria-labelledby={tabElementId("event-editor", "revisions")} tabIndex={0} className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <div
+              id={tabPanelId("event-editor", "revisions")}
+              role="tabpanel"
+              aria-labelledby={tabElementId("event-editor", "revisions")}
+              tabIndex={0}
+              className="flex-1 overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
               <EventRevisionsTab
                 revisions={revisions}
                 loadingRevisions={loadingRevisions}
@@ -398,7 +480,10 @@ export default function EventEditorDrawer({
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[120] bg-black/95" />
           {selectedPhoto && (
-            <Dialog.Content aria-describedby={undefined} className="fixed left-1/2 top-1/2 z-[121] flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-lg border border-white/10 bg-black p-4 shadow-2xl focus:outline-none">
+            <Dialog.Content
+              aria-describedby={undefined}
+              className="fixed left-1/2 top-1/2 z-[121] flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-lg border border-white/10 bg-black p-4 shadow-2xl focus:outline-none"
+            >
               <Dialog.Title className="sr-only">Event photo: {selectedPhoto.filename}</Dialog.Title>
               <Dialog.Close asChild>
                 <button
@@ -456,7 +541,12 @@ export default function EventEditorDrawer({
             </Dialog.Description>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Dialog.Close asChild>
-                <button type="button" className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase text-marble/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+                <button
+                  type="button"
+                  className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase text-marble/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Cancel
+                </button>
               </Dialog.Close>
               <button
                 type="button"

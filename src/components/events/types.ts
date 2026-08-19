@@ -1,8 +1,16 @@
+import type { EventOccurrenceDefaults, EventRecurrence } from "@/types/event";
+
 export interface EventItem {
   id: string;
   title: string;
   dateStart: string;
   dateEnd?: string;
+  recurrence?: EventRecurrence;
+  recurrenceOf?: string;
+  occurrenceDate?: string;
+  seriesDateStart?: string;
+  seriesDateEnd?: string;
+  seriesDefaults?: EventOccurrenceDefaults;
   location?: string;
   locationId?: string;
   publicVenue?: {
@@ -36,4 +44,5 @@ export interface EventPhoto {
   uploadedBy?: string;
   uploadedAt?: string;
   filename: string;
+  occurrenceDate?: string | null;
 }

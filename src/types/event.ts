@@ -8,11 +8,24 @@ export interface EventRecurrence {
   until?: string;
 }
 
+export interface EventOccurrenceDefaults {
+  title: string;
+  dateStart: string;
+  dateEnd?: string;
+  locationId?: string;
+  location?: string;
+  description?: string;
+  category: "internal" | "outreach" | "competition";
+  coverImage?: string;
+  isPotluck: number;
+  isVolunteer: number;
+}
+
 export interface TeamEvent {
   id: string;
   title: string;
   dateStart: string; // ISO datetime
-  dateEnd?: string;   // ISO datetime
+  dateEnd?: string; // ISO datetime
   /** Present when this event repeats; dateStart/dateEnd describe the first session. */
   recurrence?: EventRecurrence;
   /** Present on expanded occurrences: the parent event id and this session's date. */
@@ -21,6 +34,8 @@ export interface TeamEvent {
   /** The parent series' first-session times (present on expanded occurrences). */
   seriesDateStart?: string;
   seriesDateEnd?: string;
+  /** Original parent values, allowing an occurrence editor to switch scope safely. */
+  seriesDefaults?: EventOccurrenceDefaults;
   locationId?: string;
   location?: string;
   publicVenue?: {

@@ -54,9 +54,15 @@ afterAll(async () => {
 
 describe("Firestore zero-trust rules", () => {
   it("allows only published, non-deleted posts to be read publicly", async () => {
-    await seedDocument("posts", "published", { status: "published", isDeleted: 0 });
+    await seedDocument("posts", "published", {
+      status: "published",
+      isDeleted: 0,
+    });
     await seedDocument("posts", "draft", { status: "draft", isDeleted: 0 });
-    await seedDocument("posts", "deleted", { status: "published", isDeleted: 1 });
+    await seedDocument("posts", "deleted", {
+      status: "published",
+      isDeleted: 1,
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     await assertSucceeds(getDoc(doc(publicDb, "posts", "published")));
@@ -65,9 +71,20 @@ describe("Firestore zero-trust rules", () => {
   });
 
   it("requires approval metadata before an explicitly reviewed post is public", async () => {
-    await seedDocument("posts", "approved", { status: "published", isDeleted: 0, approvalStatus: "approved" });
-    await seedDocument("posts", "pending", { status: "published", isDeleted: 0, approvalStatus: "pending_approval" });
-    await seedDocument("posts", "legacy", { status: "published", isDeleted: 0 });
+    await seedDocument("posts", "approved", {
+      status: "published",
+      isDeleted: 0,
+      approvalStatus: "approved",
+    });
+    await seedDocument("posts", "pending", {
+      status: "published",
+      isDeleted: 0,
+      approvalStatus: "pending_approval",
+    });
+    await seedDocument("posts", "legacy", {
+      status: "published",
+      isDeleted: 0,
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     await assertSucceeds(getDoc(doc(publicDb, "posts", "approved")));
@@ -92,16 +109,20 @@ describe("Firestore zero-trust rules", () => {
     await assertSucceeds(setDoc(doc(memberDb, "docs_feedback", "fb_member"), feedback));
     await assertFails(setDoc(doc(unverifiedDb, "docs_feedback", "fb_unverified"), feedback));
     await assertFails(setDoc(doc(publicDb, "docs_feedback", "fb_public"), feedback));
-    await assertFails(setDoc(doc(memberDb, "docs_feedback", "fb_oversize"), {
-      ...feedback,
-      slug: "x".repeat(201),
-    }));
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_oversize"), {
+        ...feedback,
+        slug: "x".repeat(201),
+      }),
+    );
   });
 
   it("keeps inquiry PII restricted to admin and coach roles", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("member-user", "member");
-    await seedDocument("inquiries", "private", { encryptedPayload: "ciphertext" });
+    await seedDocument("inquiries", "private", {
+      encryptedPayload: "ciphertext",
+    });
 
     const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
@@ -137,21 +158,29 @@ describe("Firestore zero-trust rules", () => {
       to: "in_progress",
     };
     await assertSucceeds(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), baseRevision));
-    await assertFails(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-bad-action"), {
-      ...baseRevision,
-      action: "exploded",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-foreign-actor"), {
-      ...baseRevision,
-      actorUid: "someone-else",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-secret"), {
-      ...baseRevision,
-      secret: true,
-    }));
-    await assertFails(updateDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), {
-      action: "deleted",
-    }));
+    await assertFails(
+      setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-bad-action"), {
+        ...baseRevision,
+        action: "exploded",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-foreign-actor"), {
+        ...baseRevision,
+        actorUid: "someone-else",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-secret"), {
+        ...baseRevision,
+        secret: true,
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), {
+        action: "deleted",
+      }),
+    );
     const unknownReader = testEnvironment.authenticatedContext("not-a-member").firestore();
     await assertFails(getDoc(doc(unknownReader, "tasks/team-task/revisions", "rev-1")));
   });
@@ -174,31 +203,45 @@ describe("Firestore zero-trust rules", () => {
     };
 
     await assertSucceeds(setDoc(doc(memberDb, "tasks", "canonical-task"), canonicalTask));
-    await assertFails(setDoc(doc(memberDb, "tasks", "invalid-priority"), {
-      ...canonicalTask,
-      id: "invalid-priority",
-      priority: "normal",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "oversized-title"), {
-      ...canonicalTask,
-      id: "oversized-title",
-      title: "T".repeat(241),
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "unknown-field"), {
-      ...canonicalTask,
-      id: "unknown-field",
-      internalOverride: true,
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "invalid-due-date"), {
-      ...canonicalTask,
-      id: "invalid-due-date",
-      dueDate: "August 20",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "oversized-list"), {
-      ...canonicalTask,
-      id: "oversized-list",
-      subtasks: Array.from({ length: 101 }, (_, index) => ({ id: `${index}`, title: "Task", done: false })),
-    }));
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "invalid-priority"), {
+        ...canonicalTask,
+        id: "invalid-priority",
+        priority: "normal",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "oversized-title"), {
+        ...canonicalTask,
+        id: "oversized-title",
+        title: "T".repeat(241),
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "unknown-field"), {
+        ...canonicalTask,
+        id: "unknown-field",
+        internalOverride: true,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "invalid-due-date"), {
+        ...canonicalTask,
+        id: "invalid-due-date",
+        dueDate: "August 20",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "oversized-list"), {
+        ...canonicalTask,
+        id: "oversized-list",
+        subtasks: Array.from({ length: 101 }, (_, index) => ({
+          id: `${index}`,
+          title: "Task",
+          done: false,
+        })),
+      }),
+    );
   });
 
   it("validates only changed fields on legacy tasks and blocks hard deletes", async () => {
@@ -229,34 +272,42 @@ describe("Firestore zero-trust rules", () => {
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
     const ownComment = doc(memberDb, "tasks", "team-task", "comments", "comment-1");
 
-    await assertSucceeds(setDoc(ownComment, {
-      authorUid: "member-user",
-      author: "Display label",
-      content: "Ready for review",
-      source: "web",
-      createdAt: "2026-08-12T12:00:00.000Z",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-2"), {
-      authorUid: "other-user",
-      author: "Spoofed label",
-      content: "Forged",
-      source: "web",
-      createdAt: "2026-08-12T12:00:00.000Z",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-3"), {
-      id: "different-id",
-      authorUid: "member-user",
-      content: "Forged metadata",
-      source: "web",
-      createdAt: "2026-08-12T12:00:00.000Z",
-    }));
-    await assertFails(setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-4"), {
-      authorUid: "member-user",
-      content: "Ready",
-      source: "web",
-      createdAt: "2026-08-12T12:00:00.000Z",
-      unexpected: "payload",
-    }));
+    await assertSucceeds(
+      setDoc(ownComment, {
+        authorUid: "member-user",
+        author: "Display label",
+        content: "Ready for review",
+        source: "web",
+        createdAt: "2026-08-12T12:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-2"), {
+        authorUid: "other-user",
+        author: "Spoofed label",
+        content: "Forged",
+        source: "web",
+        createdAt: "2026-08-12T12:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-3"), {
+        id: "different-id",
+        authorUid: "member-user",
+        content: "Forged metadata",
+        source: "web",
+        createdAt: "2026-08-12T12:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "team-task", "comments", "comment-4"), {
+        authorUid: "member-user",
+        content: "Ready",
+        source: "web",
+        createdAt: "2026-08-12T12:00:00.000Z",
+        unexpected: "payload",
+      }),
+    );
   });
 
   it("fails closed for unknown roles and archived authorization records", async () => {
@@ -268,24 +319,30 @@ describe("Firestore zero-trust rules", () => {
     for (const uid of ["unknown-role", "archived-boolean", "archived-number"]) {
       const context = testEnvironment.authenticatedContext(uid);
       await assertFails(getDoc(doc(context.firestore(), "tasks", "private-task")));
-      await assertFails(uploadBytes(
-        ref(context.storage(), `blog/${uid}.txt`),
-        new Blob(["private"], { type: "text/plain" }),
-      ));
+      await assertFails(
+        uploadBytes(ref(context.storage(), `blog/${uid}.txt`), new Blob(["private"], { type: "text/plain" })),
+      );
     }
   });
 
   it("routes public calendar reads and all event or venue writes through server DTO APIs", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("admin-user", "admin");
-    await seedDocument("events", "published-event", { status: "published", isDeleted: 0, title: "Practice" });
+    await seedDocument("events", "published-event", {
+      status: "published",
+      isDeleted: 0,
+      title: "Practice",
+    });
     await seedDocument("events/published-event/photos", "private-photo", {
       url: "https://images.example.test/practice.jpg",
       uploadedBy: "private-user-id",
       uploadedAt: "2026-08-10T12:00:00.000Z",
       isDeleted: 0,
     });
-    await seedDocument("locations", "team-venue", { name: "Team Venue", address: "Private team address" });
+    await seedDocument("locations", "team-venue", {
+      name: "Team Venue",
+      address: "Private team address",
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
@@ -297,15 +354,45 @@ describe("Firestore zero-trust rules", () => {
     await assertSucceeds(getDoc(doc(memberDb, "events", "published-event")));
     await assertSucceeds(getDoc(doc(memberDb, "locations", "team-venue")));
     await assertSucceeds(getDoc(doc(memberDb, "events", "published-event", "photos", "private-photo")));
-    await assertFails(updateDoc(doc(adminDb, "events", "published-event"), { title: "Forged client edit" }));
+    await assertSucceeds(
+      setDoc(doc(memberDb, "events", "published-event", "photos", "session-photo"), {
+        url: "https://images.example.test/session.jpg",
+        filename: "Session photo",
+        uploadedAt: "2026-08-20T20:00:00.000Z",
+        occurrenceDate: "2026-08-20",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "events", "published-event", "photos", "forged-session-photo"), {
+        url: "https://images.example.test/session.jpg",
+        filename: "Session photo",
+        uploadedAt: "2026-08-20T20:00:00.000Z",
+        occurrenceDate: "next-practice",
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(adminDb, "events", "published-event"), {
+        title: "Forged client edit",
+      }),
+    );
     await assertFails(deleteDoc(doc(adminDb, "events", "published-event")));
-    await assertFails(updateDoc(doc(adminDb, "locations", "team-venue"), { name: "Forged venue edit" }));
+    await assertFails(
+      updateDoc(doc(adminDb, "locations", "team-venue"), {
+        name: "Forged venue edit",
+      }),
+    );
   });
 
   it("blocks public raw sponsor and outreach reads while allowing administrators", async () => {
     await seedAuthorizedUser("admin-user", "admin");
-    await seedDocument("sponsors", "inactive", { name: "Private sponsor", isActive: false });
-    await seedDocument("outreach_logs", "draft", { title: "Draft visit", status: "draft" });
+    await seedDocument("sponsors", "inactive", {
+      name: "Private sponsor",
+      isActive: false,
+    });
+    await seedDocument("outreach_logs", "draft", {
+      title: "Draft visit",
+      status: "draft",
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
@@ -317,21 +404,27 @@ describe("Firestore zero-trust rules", () => {
   });
 
   it("does not allow a hard-coded email to bootstrap its own admin record", async () => {
-    const unprovisionedDb = testEnvironment.authenticatedContext("new-user", {
-      email: "coach.david@gmail.com",
-    }).firestore();
+    const unprovisionedDb = testEnvironment
+      .authenticatedContext("new-user", {
+        email: "coach.david@gmail.com",
+      })
+      .firestore();
 
-    await assertFails(setDoc(doc(unprovisionedDb, "authorized_users", "new-user"), {
-      email: "coach.david@gmail.com",
-      role: "admin",
-    }));
+    await assertFails(
+      setDoc(doc(unprovisionedDb, "authorized_users", "new-user"), {
+        email: "coach.david@gmail.com",
+        role: "admin",
+      }),
+    );
 
     await seedAuthorizedUser("admin-user", "admin");
     const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
-    await assertFails(setDoc(doc(adminDb, "authorized_users", "client-invite"), {
-      email: "invitee@example.test",
-      role: "member",
-    }));
+    await assertFails(
+      setDoc(doc(adminDb, "authorized_users", "client-invite"), {
+        email: "invitee@example.test",
+        role: "member",
+      }),
+    );
   });
 
   it("keeps administrative audit records server-written and admin-readable", async () => {
@@ -389,10 +482,18 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(getDoc(profileRef));
     await assertFails(getDoc(doc(adminDb, "user_profiles", "student-user")));
     await assertFails(getDoc(doc(publicDb, "user_profiles", "student-user")));
-    await assertFails(setDoc(doc(studentDb, "user_profiles", "new-profile"), { nickname: "Forged" }));
+    await assertFails(
+      setDoc(doc(studentDb, "user_profiles", "new-profile"), {
+        nickname: "Forged",
+      }),
+    );
     await assertFails(updateDoc(profileRef, { showEmail: false, showPhone: false }));
     await assertFails(updateDoc(profileRef, { showEmail: true }));
-    await assertFails(updateDoc(doc(adminDb, "user_profiles", "student-user"), { memberType: "mentor" }));
+    await assertFails(
+      updateDoc(doc(adminDb, "user_profiles", "student-user"), {
+        memberType: "mentor",
+      }),
+    );
     await assertFails(deleteDoc(doc(adminDb, "user_profiles", "student-user")));
   });
 
@@ -401,7 +502,10 @@ describe("Firestore zero-trust rules", () => {
     await seedAuthorizedUser("coach-user", "coach");
     await seedAuthorizedUser("mentor-user", "mentor");
     await seedAuthorizedUser("member-user", "member");
-    await seedDocument("tournaments", "states", { name: "States", isDeleted: 0 });
+    await seedDocument("tournaments", "states", {
+      name: "States",
+      isDeleted: 0,
+    });
     await seedDocument("tournament_matches", "qm1", {
       tournamentId: "states",
       matchNumber: "QM1",
@@ -415,10 +519,30 @@ describe("Firestore zero-trust rules", () => {
 
     await assertSucceeds(getDoc(doc(memberDb, "tournaments", "states")));
     await assertSucceeds(getDoc(doc(mentorDb, "tournament_matches", "qm1")));
-    await assertSucceeds(setDoc(doc(adminDb, "tournaments", "admin-event"), { name: "Admin event", isDeleted: 0 }));
-    await assertSucceeds(setDoc(doc(coachDb, "tournament_matches", "coach-match"), { tournamentId: "states", isDeleted: 0 }));
-    await assertFails(setDoc(doc(mentorDb, "tournaments", "mentor-event"), { name: "Mentor event", isDeleted: 0 }));
-    await assertFails(setDoc(doc(memberDb, "tournament_matches", "member-match"), { tournamentId: "states", isDeleted: 0 }));
+    await assertSucceeds(
+      setDoc(doc(adminDb, "tournaments", "admin-event"), {
+        name: "Admin event",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(coachDb, "tournament_matches", "coach-match"), {
+        tournamentId: "states",
+        isDeleted: 0,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(mentorDb, "tournaments", "mentor-event"), {
+        name: "Mentor event",
+        isDeleted: 0,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tournament_matches", "member-match"), {
+        tournamentId: "states",
+        isDeleted: 0,
+      }),
+    );
   });
 });
 
@@ -429,7 +553,10 @@ describe("Robot fleet rules", () => {
     await seedAuthorizedUser("mentor-user", "mentor");
     await seedAuthorizedUser("member-user", "member");
     await seedDocument("robots", "active", { name: "Active", isDeleted: 0 });
-    await seedDocument("robots", "archived", { name: "Archived", isDeleted: 1 });
+    await seedDocument("robots", "archived", {
+      name: "Archived",
+      isDeleted: 1,
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
@@ -441,10 +568,30 @@ describe("Robot fleet rules", () => {
     await assertFails(getDoc(doc(publicDb, "robots", "active")));
     await assertFails(getDoc(doc(publicDb, "robots", "archived")));
     await assertSucceeds(getDoc(doc(memberDb, "robots", "active")));
-    await assertSucceeds(setDoc(doc(adminDb, "robots", "admin-created"), { name: "Admin", isDeleted: 0 }));
-    await assertSucceeds(setDoc(doc(coachDb, "robots", "coach-created"), { name: "Coach", isDeleted: 0 }));
-    await assertSucceeds(setDoc(doc(mentorDb, "robots", "mentor-created"), { name: "Mentor", isDeleted: 0 }));
-    await assertFails(setDoc(doc(memberDb, "robots", "member-created"), { name: "Member", isDeleted: 0 }));
+    await assertSucceeds(
+      setDoc(doc(adminDb, "robots", "admin-created"), {
+        name: "Admin",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(coachDb, "robots", "coach-created"), {
+        name: "Coach",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(mentorDb, "robots", "mentor-created"), {
+        name: "Mentor",
+        isDeleted: 0,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "robots", "member-created"), {
+        name: "Member",
+        isDeleted: 0,
+      }),
+    );
     await assertSucceeds(updateDoc(doc(mentorDb, "robots", "active"), { isDeleted: 1 }));
     await assertSucceeds(updateDoc(doc(coachDb, "robots", "archived"), { isDeleted: 0 }));
     await assertFails(deleteDoc(doc(adminDb, "robots", "active")));
@@ -454,10 +601,23 @@ describe("Robot fleet rules", () => {
 describe("Media API boundary rules", () => {
   it("keeps photo, album, video, and runtime settings documents server-only", async () => {
     await seedAuthorizedUser("admin-user", "admin");
-    await seedDocument("imported_photos", "photo-1", { publicUrl: "https://storage.googleapis.com/photo.jpg", isDeleted: 0 });
-    await seedDocument("albums", "album-1", { title: "Competition", isPublic: true, isDeleted: 0 });
-    await seedDocument("videos", "video_abcdefghijk", { title: "Robot", status: "published", isDeleted: 0 });
-    await seedDocument("system_settings", "google_auth", { refreshToken: "encrypted-secret" });
+    await seedDocument("imported_photos", "photo-1", {
+      publicUrl: "https://storage.googleapis.com/photo.jpg",
+      isDeleted: 0,
+    });
+    await seedDocument("albums", "album-1", {
+      title: "Competition",
+      isPublic: true,
+      isDeleted: 0,
+    });
+    await seedDocument("videos", "video_abcdefghijk", {
+      title: "Robot",
+      status: "published",
+      isDeleted: 0,
+    });
+    await seedDocument("system_settings", "google_auth", {
+      refreshToken: "encrypted-secret",
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
@@ -492,13 +652,15 @@ describe("Media API boundary rules", () => {
     await assertSucceeds(updateDoc(existing, { title: "Reviewed Robot Guide" }));
     await assertFails(updateDoc(existing, { driveFileId: "1FORGED_FILE_123456789" }));
     await assertFails(updateDoc(existing, { driveSyncState: "changed" }));
-    await assertFails(setDoc(doc(adminDb, "documents", "forged_drive_record"), {
-      title: "Forged",
-      status: "draft",
-      isDeleted: 0,
-      source: "google_drive",
-      driveFileId: "1FORGED_FILE_123456789",
-    }));
+    await assertFails(
+      setDoc(doc(adminDb, "documents", "forged_drive_record"), {
+        title: "Forged",
+        status: "draft",
+        isDeleted: 0,
+        source: "google_drive",
+        driveFileId: "1FORGED_FILE_123456789",
+      }),
+    );
   });
 });
 

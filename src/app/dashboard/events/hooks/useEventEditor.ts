@@ -16,8 +16,10 @@ import {
   restoreEvent,
   restoreEventOccurrence,
   updateEvent,
+  updateEventOccurrence,
   type EventOccurrenceException,
   type EventWriteInput,
+  type OccurrenceWriteInput,
 } from "@/app/calendar/api";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { normalizeForMarkdownEditor } from "@/lib/contentFormatters";
@@ -60,7 +62,11 @@ export interface EventPhoto {
   filename: string;
   googleMediaItemId?: string;
   isDeleted?: number;
+  /** Null/absent photos belong to the full series; dated photos belong to one session. */
+  occurrenceDate?: string | null;
 }
+
+export type EventEditScope = "occurrence" | "series";
 
 interface EventEditorUserProfile {
   nickname?: string;
@@ -73,7 +79,7 @@ interface UseEventEditorProps {
   eventToEdit: TeamEvent | null;
   locations: TeamLocation[];
   setLocations: React.Dispatch<React.SetStateAction<TeamLocation[]>>;
-  teamMembers: { uid: string; nickname: string; avatar: string; }[];
+  teamMembers: { uid: string; nickname: string; avatar: string }[];
 }
 
 export function useEventEditor({
@@ -82,7 +88,7 @@ export function useEventEditor({
   eventToEdit,
   locations,
   setLocations: _setLocations,
-  teamMembers
+  teamMembers,
 }: UseEventEditorProps) {
   const { user, authorizedUser } = useAuth();
 
@@ -102,6 +108,7 @@ export function useEventEditor({
   const [formByDay, setFormByDay] = useState<string[]>([]);
   const [formUntil, setFormUntil] = useState("");
   const [occurrenceExceptions, setOccurrenceExceptions] = useState<EventOccurrenceException[]>([]);
+  const [editScope, setEditScope] = useState<EventEditScope>("series");
 
   // Modal display states
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -124,21 +131,25 @@ export function useEventEditor({
   const [operationError, setOperationError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Editing an expanded occurrence edits its parent series; the occurrence
-  // date is offered as a one-tap skip suggestion instead.
-  const editId = (eventToEdit?.recurrenceOf || eventToEdit?.id) || null;
-  const occurrenceContextDate = eventToEdit?.recurrenceOf ? (eventToEdit.occurrenceDate || null) : null;
+  // Expanded occurrences retain their parent id while allowing session-scoped
+  // edits. A non-recurring event always uses the series scope.
+  const editId = eventToEdit?.recurrenceOf || eventToEdit?.id || null;
+  const occurrenceContextDate = eventToEdit?.recurrenceOf ? eventToEdit.occurrenceDate || null : null;
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
   const profileQuery = useCurrentProfile(user?.uid);
-  const userProfile = useMemo<EventEditorUserProfile | null>(() => profileQuery.data
-    ? {
-        nickname: profileQuery.data.profile.nickname,
-        avatar: profileQuery.data.profile.avatar,
-      }
-    : null, [profileQuery.data]);
+  const userProfile = useMemo<EventEditorUserProfile | null>(
+    () =>
+      profileQuery.data
+        ? {
+            nickname: profileQuery.data.profile.nickname,
+            avatar: profileQuery.data.profile.avatar,
+          }
+        : null,
+    [profileQuery.data],
+  );
   const userNickname = userProfile?.nickname || "ARES Member";
-  
+
   const canPublishDirectly = useMemo(() => {
     return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
   }, [user, authorizedUser]);
@@ -147,26 +158,27 @@ export function useEventEditor({
   useEffect(() => {
     if (!profileQuery.error) return;
     logger.error("Failed to load user profile:", profileQuery.error);
-    setOperationError(`Profile details unavailable: ${profileQuery.error instanceof Error ? profileQuery.error.message : String(profileQuery.error)}`);
+    setOperationError(
+      `Profile details unavailable: ${profileQuery.error instanceof Error ? profileQuery.error.message : String(profileQuery.error)}`,
+    );
   }, [profileQuery.error]);
 
   // Sync state with eventToEdit when it changes
   useEffect(() => {
     if (isOpen) {
       if (eventToEdit) {
-        setFormTitle(eventToEdit.title);
-        const seriesStart = (eventToEdit as { seriesDateStart?: string }).seriesDateStart;
-        const seriesEnd = (eventToEdit as { seriesDateEnd?: string | null }).seriesDateEnd;
-        const firstSessionStart = seriesStart ?? eventToEdit.dateStart;
-        const firstSessionEnd = seriesEnd ?? eventToEdit.dateEnd;
-        setFormDateStart(firstSessionStart ? firstSessionStart.slice(0, 16) : "");
-        setFormDateEnd(firstSessionEnd ? firstSessionEnd.slice(0, 16) : "");
-        setFormLocationId(eventToEdit.locationId || "");
-        setFormDescription(normalizeForMarkdownEditor(eventToEdit.description));
-        setFormCategory(eventToEdit.category);
-        setFormCoverImage(eventToEdit.coverImage || "");
-        setFormIsPotluck(eventToEdit.isPotluck || 0);
-        setFormIsVolunteer(eventToEdit.isVolunteer || 0);
+        const occurrence = !!eventToEdit.recurrenceOf;
+        const source = occurrence ? eventToEdit : (eventToEdit.seriesDefaults ?? eventToEdit);
+        setEditScope(occurrence ? "occurrence" : "series");
+        setFormTitle(source.title);
+        setFormDateStart(source.dateStart ? source.dateStart.slice(0, 16) : "");
+        setFormDateEnd(source.dateEnd ? source.dateEnd.slice(0, 16) : "");
+        setFormLocationId(source.locationId || "");
+        setFormDescription(normalizeForMarkdownEditor(source.description));
+        setFormCategory(source.category);
+        setFormCoverImage(source.coverImage || "");
+        setFormIsPotluck(source.isPotluck || 0);
+        setFormIsVolunteer(source.isVolunteer || 0);
         setFormStatus(eventToEdit.status || "published");
         setFormRepeats(eventToEdit.recurrence ? "weekly" : "none");
         setFormInterval(eventToEdit.recurrence?.interval || 1);
@@ -188,6 +200,7 @@ export function useEventEditor({
         setFormInterval(1);
         setFormByDay([]);
         setFormUntil("");
+        setEditScope("series");
       }
       setOccurrenceExceptions([]);
 
@@ -212,14 +225,14 @@ export function useEventEditor({
       (snapshot) => {
         const list = snapshot.docs.map((docSnap) => ({
           userId: docSnap.id,
-          ...docSnap.data()
+          ...docSnap.data(),
         })) as EventSignup[];
         setSignups(list);
       },
       (err) => {
         logger.warn("Unable to fetch event signups:", err);
         setOperationError(`Sign-up list unavailable: ${err instanceof Error ? err.message : String(err)}`);
-      }
+      },
     );
     return () => unsubscribe();
   }, [editId, isOpen]);
@@ -234,17 +247,42 @@ export function useEventEditor({
       (snapshot) => {
         const list = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
-          ...docSnap.data()
+          ...docSnap.data(),
         })) as EventPhoto[];
-        setPhotos(list.filter((photo) => photo.isDeleted !== 1));
+        setPhotos(
+          list.filter(
+            (photo) =>
+              photo.isDeleted !== 1 &&
+              (!occurrenceContextDate || !photo.occurrenceDate || photo.occurrenceDate === occurrenceContextDate),
+          ),
+        );
       },
       (err) => {
         logger.warn("Unable to fetch event photos:", err);
         setOperationError(`Event gallery unavailable: ${err.message}`);
-      }
+      },
     );
     return () => unsubscribe();
-  }, [editId, isOpen]);
+  }, [editId, isOpen, occurrenceContextDate]);
+
+  const handleEditScopeChange = useCallback(
+    (scope: EventEditScope) => {
+      if (!eventToEdit?.recurrenceOf || !occurrenceContextDate) return;
+      const source = scope === "series" ? (eventToEdit.seriesDefaults ?? eventToEdit) : eventToEdit;
+      setEditScope(scope);
+      setFormTitle(source.title);
+      setFormDateStart(source.dateStart ? source.dateStart.slice(0, 16) : "");
+      setFormDateEnd(source.dateEnd ? source.dateEnd.slice(0, 16) : "");
+      setFormLocationId(source.locationId || "");
+      setFormDescription(normalizeForMarkdownEditor(source.description));
+      setFormCategory(source.category);
+      setFormCoverImage(source.coverImage || "");
+      setFormIsPotluck(source.isPotluck || 0);
+      setFormIsVolunteer(source.isVolunteer || 0);
+      setOperationError(null);
+    },
+    [eventToEdit, occurrenceContextDate],
+  );
 
   const fetchRevisionsList = useCallback(async () => {
     if (!editId) return;
@@ -254,7 +292,7 @@ export function useEventEditor({
       const snap = await getDocs(q);
       const list = snap.docs.map((docSnap) => ({
         id: docSnap.id,
-        ...docSnap.data()
+        ...docSnap.data(),
       })) as EventRevision[];
       setRevisions(list);
     } catch (err) {
@@ -278,7 +316,7 @@ export function useEventEditor({
       list.unshift({
         uid: user.uid,
         nickname: userNickname || "ARES Member",
-        avatar: userProfile?.avatar || ""
+        avatar: userProfile?.avatar || "",
       });
     }
     return list;
@@ -303,20 +341,35 @@ export function useEventEditor({
       isPotluck: formIsPotluck === 1 ? 1 : 0,
       isVolunteer: formIsVolunteer === 1 ? 1 : 0,
       status: canPublishDirectly ? formStatus : "pending",
-      recurrence: formRepeats === "weekly" && formByDay.length > 0
-        ? {
-            frequency: "weekly",
-            interval: Math.min(8, Math.max(1, Math.trunc(formInterval) || 1)),
-            byDay: formByDay,
-            ...(formUntil ? { until: formUntil } : {}),
-          }
-        : undefined,
+      recurrence:
+        formRepeats === "weekly" && formByDay.length > 0
+          ? {
+              frequency: "weekly",
+              interval: Math.min(8, Math.max(1, Math.trunc(formInterval) || 1)),
+              byDay: formByDay,
+              ...(formUntil ? { until: formUntil } : {}),
+            }
+          : undefined,
     };
 
     setIsSaving(true);
     setOperationError(null);
     try {
-      if (editId) await updateEvent(editId, newEvent);
+      if (editId && occurrenceContextDate && editScope === "occurrence") {
+        const occurrenceInput: OccurrenceWriteInput = {
+          title: newEvent.title,
+          dateStart: newEvent.dateStart,
+          dateEnd: newEvent.dateEnd ?? null,
+          locationId: newEvent.locationId ?? null,
+          location: newEvent.location ?? null,
+          description: newEvent.description ?? null,
+          category: newEvent.category,
+          coverImage: newEvent.coverImage ?? null,
+          isPotluck: newEvent.isPotluck ?? 0,
+          isVolunteer: newEvent.isVolunteer ?? 0,
+        };
+        await updateEventOccurrence(editId, occurrenceContextDate, occurrenceInput);
+      } else if (editId) await updateEvent(editId, newEvent);
       else await createEvent(newEvent);
       onClose();
     } catch (err: unknown) {
@@ -366,8 +419,8 @@ export function useEventEditor({
     setFormIsVolunteer(rev.isVolunteer || 0);
     setRevertAlert(
       `Reverted unsaved draft to revision from ${new Date(
-        rev.timestamp
-      ).toLocaleString()}. Save event to commit changes.`
+        rev.timestamp,
+      ).toLocaleString()}. Save event to commit changes.`,
     );
     setActiveTab("edit");
   };
@@ -394,8 +447,8 @@ export function useEventEditor({
           fileBase64: base64,
           filename: file.name,
           mimeType: mimeType || file.type || "image/jpeg",
-          runAiLabeling: false
-        })
+          runAiLabeling: false,
+        }),
       });
 
       if (!res.ok) {
@@ -414,11 +467,14 @@ export function useEventEditor({
         uploadedBy: userNickname || "ARES Member",
         uploadedAt: new Date().toISOString(),
         filename: file.name,
-        googleMediaItemId: data.photo.googleMediaItemId || undefined
+        googleMediaItemId: data.photo.googleMediaItemId || undefined,
+        occurrenceDate: occurrenceContextDate && editScope === "occurrence" ? occurrenceContextDate : null,
       };
 
       await setDoc(doc(db, "events", editId, "photos", photoId), cleanUndefined({ ...photoData }));
-      setRevertAlert("Photo uploaded to the event gallery. Google Photos sync runs when the team account is connected.");
+      setRevertAlert(
+        "Photo uploaded to the event gallery. Google Photos sync runs when the team account is connected.",
+      );
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -456,17 +512,23 @@ export function useEventEditor({
     if (isOpen && editId && eventToEdit?.recurrence) void refreshOccurrences();
   }, [isOpen, editId, eventToEdit?.recurrence, refreshOccurrences]);
 
-  const handleCancelOccurrence = useCallback(async (date: string) => {
-    if (!editId) return;
-    await cancelEventOccurrence(editId, date);
-    await refreshOccurrences();
-  }, [editId, refreshOccurrences]);
+  const handleCancelOccurrence = useCallback(
+    async (date: string) => {
+      if (!editId) return;
+      await cancelEventOccurrence(editId, date);
+      await refreshOccurrences();
+    },
+    [editId, refreshOccurrences],
+  );
 
-  const handleRestoreOccurrence = useCallback(async (date: string) => {
-    if (!editId) return;
-    await restoreEventOccurrence(editId, date);
-    await refreshOccurrences();
-  }, [editId, refreshOccurrences]);
+  const handleRestoreOccurrence = useCallback(
+    async (date: string) => {
+      if (!editId) return;
+      await restoreEventOccurrence(editId, date);
+      await refreshOccurrences();
+    },
+    [editId, refreshOccurrences],
+  );
 
   return {
     formTitle,
@@ -536,5 +598,7 @@ export function useEventEditor({
     handleCancelOccurrence,
     handleRestoreOccurrence,
     occurrenceContextDate,
+    editScope,
+    handleEditScopeChange,
   };
 }

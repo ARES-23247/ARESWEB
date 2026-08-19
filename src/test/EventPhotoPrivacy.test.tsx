@@ -17,8 +17,12 @@ vi.mock("@/app/calendar/api", () => ({
 }));
 vi.mock("@/components/SEO", () => ({ default: () => null }));
 vi.mock("@/components/ShareButtons", () => ({ default: () => null }));
-vi.mock("@/components/events/EventHero", () => ({ default: () => <div>Event hero</div> }));
-vi.mock("@/components/events/EventDescription", () => ({ default: () => null }));
+vi.mock("@/components/events/EventHero", () => ({
+  default: () => <div>Event hero</div>,
+}));
+vi.mock("@/components/events/EventDescription", () => ({
+  default: () => null,
+}));
 vi.mock("@/components/events/EventZulipLink", () => ({ default: () => null }));
 vi.mock("@/components/events/EventRsvps", () => ({ default: () => null }));
 vi.mock("@/components/events/EventVenueInfo", () => ({ default: () => null }));
@@ -58,22 +62,29 @@ describe("public event photo privacy and failure states", () => {
   });
 
   it("uses the bounded public DTO and retains safe photos after refresh failure", async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(jsonResponse({
-        photos: [{
-          id: "photo-1",
-          url: "https://images.example.test/practice.jpg",
-          filename: "Drive practice.jpg",
-          uploadedBy: "private-student-id",
-          uploadedAt: "2026-08-10T12:00:00.000Z",
-        }],
-      }))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          photos: [
+            {
+              id: "photo-1",
+              url: "https://images.example.test/practice.jpg",
+              filename: "Drive practice.jpg",
+              uploadedBy: "private-student-id",
+              uploadedAt: "2026-08-10T12:00:00.000Z",
+            },
+          ],
+        }),
+      )
       .mockResolvedValueOnce(jsonResponse({}, 503, "Service Unavailable"));
     vi.stubGlobal("fetch", fetchMock);
 
     renderPage();
 
-    const photoButton = await screen.findByRole("button", { name: "Open event photo: Drive practice.jpg" });
+    const photoButton = await screen.findByRole("button", {
+      name: "Open event photo: Drive practice.jpg",
+    });
     expect(photoButton).toBeInTheDocument();
     expect(screen.queryByText(/private-student-id/i)).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -106,7 +117,7 @@ describe("public event photo privacy and failure states", () => {
       expect(mocks.fetchPublicEvent).toHaveBeenCalledWith("practice-1", "2026-08-20");
     });
     expect(fetch).toHaveBeenCalledWith(
-      "/api/calendar/events/practice-1/photos?limit=50",
+      "/api/calendar/events/practice-1/photos?limit=50&occurrence=2026-08-20",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });

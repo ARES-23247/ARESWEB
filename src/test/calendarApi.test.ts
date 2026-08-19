@@ -9,6 +9,7 @@ import {
   createLocation,
   fetchEventOccurrences,
   fetchLocations,
+  fetchManagedEvent,
   fetchManagedEvents,
   fetchPublicEvent,
   fetchPublicEvents,
@@ -17,6 +18,7 @@ import {
   restoreEventOccurrence,
   restoreLocation,
   updateEvent,
+  updateEventOccurrence,
   updateLocation,
 } from "@/app/calendar/api";
 
@@ -73,17 +75,25 @@ describe("calendar API client", () => {
       .mockResolvedValueOnce(response({ events: [{ ...event, isDeleted: 1 }], nextCursor: null }));
 
     await expect(fetchPublicEvents(500, "cursor-1")).resolves.toEqual({
-      events: [expect.objectContaining({ id: "event-1", dateEnd: undefined, isVolunteer: 1 })],
+      events: [
+        expect.objectContaining({
+          id: "event-1",
+          dateEnd: undefined,
+          isVolunteer: 1,
+        }),
+      ],
       nextCursor: "event-1",
     });
     expect(authenticatedFetch).toHaveBeenNthCalledWith(1, "/api/calendar/events?limit=150&cursor=cursor-1", undefined);
-    await expect(fetchPublicEvent("event/1")).resolves.toEqual(expect.objectContaining({
-      id: "event-1",
-      publicVenue: {
-        name: "Public Library",
-        address: "321 Main Street, Morgantown, WV 26505, US",
-      },
-    }));
+    await expect(fetchPublicEvent("event/1")).resolves.toEqual(
+      expect.objectContaining({
+        id: "event-1",
+        publicVenue: {
+          name: "Public Library",
+          address: "321 Main Street, Morgantown, WV 26505, US",
+        },
+      }),
+    );
     expect(authenticatedFetch).toHaveBeenNthCalledWith(2, "/api/calendar/events/event%2F1", undefined);
     await expect(fetchManagedEvents()).resolves.toEqual({
       events: [expect.objectContaining({ isDeleted: 1, status: "published" })],
@@ -92,16 +102,17 @@ describe("calendar API client", () => {
   });
 
   it("exposes numeric HTTP diagnostics and server error codes", async () => {
-    vi.mocked(authenticatedFetch).mockResolvedValue(response(
-      { error: "Restore the event first.", code: "EVENT_ARCHIVED" },
-      false,
-      409,
-      "Conflict",
-    ));
+    vi.mocked(authenticatedFetch).mockResolvedValue(
+      response({ error: "Restore the event first.", code: "EVENT_ARCHIVED" }, false, 409, "Conflict"),
+    );
 
     const error = await fetchPublicEvents().catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(CalendarApiError);
-    expect(error).toMatchObject({ status: 409, statusText: "Conflict", code: "EVENT_ARCHIVED" });
+    expect(error).toMatchObject({
+      status: 409,
+      statusText: "Conflict",
+      code: "EVENT_ARCHIVED",
+    });
     expect((error as Error).message).toContain("HTTP 409: Conflict");
   });
 
@@ -122,7 +133,11 @@ describe("calendar API client", () => {
       if (url.includes("/manage/")) return response({ success: true, event });
       return response({ success: true });
     });
-    const eventInput = { title: "Practice", dateStart: event.dateStart, category: "internal" as const };
+    const eventInput = {
+      title: "Practice",
+      dateStart: event.dateStart,
+      category: "internal" as const,
+    };
     const venueInput = { name: "Team Lab", address: "Morgantown, WV" };
 
     await createEvent(eventInput);
@@ -130,9 +145,7 @@ describe("calendar API client", () => {
     await archiveEvent("event-1");
     await restoreEvent("event-1");
     await publishEvent("event-1");
-    await expect(fetchLocations()).resolves.toEqual([
-      expect.objectContaining({ id: "venue-1", isAddressPublic: 1 }),
-    ]);
+    await expect(fetchLocations()).resolves.toEqual([expect.objectContaining({ id: "venue-1", isAddressPublic: 1 })]);
     await createLocation(venueInput);
     await updateLocation("venue-1", venueInput);
     await archiveLocation("venue-1");
@@ -155,13 +168,28 @@ describe("calendar recurrence client", () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(
       response({
         success: true,
-        events: [{
-          ...event,
-          id: "weekly-1_2026-08-20",
-          recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"], until: "2026-12-31" },
-          recurrenceOf: "weekly-1",
-          occurrenceDate: "2026-08-20",
-        }],
+        events: [
+          {
+            ...event,
+            id: "weekly-1_2026-08-20",
+            recurrence: {
+              frequency: "weekly",
+              interval: 2,
+              byDay: ["TU", "TH"],
+              until: "2026-12-31",
+            },
+            recurrenceOf: "weekly-1",
+            occurrenceDate: "2026-08-20",
+            seriesDefaults: {
+              title: "Practice",
+              dateStart: "2026-08-13T18:00:00.000Z",
+              dateEnd: null,
+              category: "internal",
+              isPotluck: 0,
+              isVolunteer: 1,
+            },
+          },
+        ],
         nextCursor: null,
       }),
     );
@@ -175,23 +203,40 @@ describe("calendar recurrence client", () => {
     });
     expect(occurrence.recurrenceOf).toBe("weekly-1");
     expect(occurrence.occurrenceDate).toBe("2026-08-20");
+    expect(occurrence.seriesDefaults).toEqual(
+      expect.objectContaining({
+        title: "Practice",
+        dateStart: "2026-08-13T18:00:00.000Z",
+        dateEnd: undefined,
+      }),
+    );
   });
 
   it("requests a recurring instance through its parent event", async () => {
-    vi.mocked(authenticatedFetch).mockResolvedValue(response({
-      success: true,
-      event: {
-        ...event,
-        id: "weekly-1_2026-08-20",
-        recurrenceOf: "weekly-1",
-        occurrenceDate: "2026-08-20",
-      },
-    }));
+    vi.mocked(authenticatedFetch).mockResolvedValue(
+      response({
+        success: true,
+        event: {
+          ...event,
+          id: "weekly-1_2026-08-20",
+          recurrenceOf: "weekly-1",
+          occurrenceDate: "2026-08-20",
+        },
+      }),
+    );
 
     await fetchPublicEvent("weekly-1", "2026-08-20");
 
+    expect(authenticatedFetch).toHaveBeenCalledWith("/api/calendar/events/weekly-1?occurrence=2026-08-20", undefined);
+  });
+
+  it("requests an exact managed occurrence for the editor", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(response({ success: true, event }));
+
+    await fetchManagedEvent("weekly/1", "2026-08-20");
+
     expect(authenticatedFetch).toHaveBeenCalledWith(
-      "/api/calendar/events/weekly-1?occurrence=2026-08-20",
+      "/api/calendar/manage/weekly%2F1?occurrence=2026-08-20",
       undefined,
     );
   });
@@ -210,7 +255,13 @@ describe("calendar recurrence client", () => {
 
   it("sends the recurrence rule on create", async () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(
-      response({ success: true, event: { ...event, recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] } } }),
+      response({
+        success: true,
+        event: {
+          ...event,
+          recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] },
+        },
+      }),
     );
     await createEvent({
       title: "Practice",
@@ -219,17 +270,22 @@ describe("calendar recurrence client", () => {
       recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] },
     });
     const [, init] = vi.mocked(authenticatedFetch).mock.calls[0];
-    expect(JSON.parse(String(init!.body))).toEqual(expect.objectContaining({
-      recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] },
-    }));
+    expect(JSON.parse(String(init!.body))).toEqual(
+      expect.objectContaining({
+        recurrence: { frequency: "weekly", interval: 1, byDay: ["WE"] },
+      }),
+    );
   });
 
   it("lists, cancels, and restores occurrence exceptions", async () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(
-      response({ success: true, occurrences: [{ date: "2026-09-03", isCancelled: true }] }),
+      response({
+        success: true,
+        occurrences: [{ date: "2026-09-03", isCancelled: true, hasOverrides: true }],
+      }),
     );
     const exceptions = await fetchEventOccurrences("weekly-1");
-    expect(exceptions).toEqual([{ date: "2026-09-03", isCancelled: true }]);
+    expect(exceptions).toEqual([{ date: "2026-09-03", isCancelled: true, hasOverrides: true }]);
     expect(vi.mocked(authenticatedFetch).mock.calls[0][0]).toBe("/api/calendar/manage/weekly-1/occurrences");
 
     vi.mocked(authenticatedFetch).mockResolvedValue(response({ success: true }));
@@ -242,5 +298,26 @@ describe("calendar recurrence client", () => {
     const [restorePath, restoreInit] = vi.mocked(authenticatedFetch).mock.calls[2];
     expect(restorePath).toBe("/api/calendar/manage/weekly-1/occurrences/2026-09-03/restore");
     expect(restoreInit!.method).toBe("PATCH");
+  });
+
+  it("updates one occurrence through the dedicated endpoint", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(response({ success: true, event }));
+    const input = {
+      title: "Drive Practice",
+      dateStart: "2026-08-20T19:00:00.000Z",
+      dateEnd: null,
+      locationId: null,
+      location: null,
+      description: null,
+      category: "internal" as const,
+      coverImage: null,
+      isPotluck: 0 as const,
+      isVolunteer: 0 as const,
+    };
+    await updateEventOccurrence("weekly/1", "2026-08-20", input);
+    const [path, init] = vi.mocked(authenticatedFetch).mock.calls[0];
+    expect(path).toBe("/api/calendar/manage/weekly%2F1/occurrences/2026-08-20");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(String(init?.body))).toEqual(input);
   });
 });

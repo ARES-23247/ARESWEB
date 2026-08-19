@@ -19,9 +19,30 @@ const publicRoutes: Array<{ path: string; titlePart: string }> = [
   { path: "/accessibility", titlePart: "Accessibility" },
 ];
 
-test("public routes render with their titles and a main landmark", async ({
-  page,
-}) => {
+test("public routes render with their titles and a main landmark", async ({ page, context }) => {
+  // Vite preview has no Firebase Hosting /api rewrite. Keep this rendering
+  // smoke test deterministic and leave backend behavior to API integration
+  // tests instead of allowing WebKit to reject preview-server requests.
+  await page.route("**/api/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        events: [],
+        videos: [],
+        robots: [],
+        sponsors: [],
+        photos: [],
+        outreach: [],
+        logs: [],
+        seasons: [],
+        entries: [],
+        transactions: [],
+        nextCursor: null,
+      }),
+    });
+  });
+  await context.route("https://firestore.googleapis.com/**", (route) => route.abort("blockedbyclient"));
   for (const { path, titlePart } of publicRoutes) {
     await page.goto(path, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveTitle(new RegExp(titlePart), { timeout: 15_000 });

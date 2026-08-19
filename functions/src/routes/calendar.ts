@@ -11,6 +11,7 @@ import {
   canPublish,
   escapeIcalText,
   type EventDocument,
+  type EventOccurrence,
   eventDto,
   eventPhotoDto,
   type EventPhotoDocument,
@@ -22,11 +23,14 @@ import {
   locationDto,
   type LocationDocument,
   locationWriteSchema,
+  occurrenceOverridesForInput,
+  occurrenceUpdateSchema,
   parseBody,
   parseId,
   parseLimit,
   publicVenueDto,
   readRecurrence,
+  readOccurrenceOverrides,
   readString,
 } from "./calendarHelpers";
 
@@ -55,21 +59,30 @@ function futureYmd(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-/** Loads the cancelled occurrence dates for the recurring events on a page. */
-async function loadCancelledDates(parentIds: readonly string[]): Promise<Map<string, Set<string>>> {
-  const cancelled = new Map<string, Set<string>>();
+interface OccurrenceState {
+  cancelledDates: Set<string>;
+  overrides: Map<string, ReturnType<typeof readOccurrenceOverrides>>;
+}
+
+/** Loads bounded cancellation and override state for recurring events on a page. */
+async function loadOccurrenceStates(parentIds: readonly string[]): Promise<Map<string, OccurrenceState>> {
+  const states = new Map<string, OccurrenceState>();
   for (const id of parentIds) {
-    const snapshot = await adminDb
-      .collection("events")
-      .doc(id)
-      .collection("occurrences")
-      .where("isCancelled", "==", 1)
-      .limit(100)
-      .get();
-    const dates = new Set(snapshot.docs.map((doc) => doc.id).filter(isOccurrenceDate));
-    if (dates.size > 0) cancelled.set(id, dates);
+    const snapshot = await adminDb.collection("events").doc(id).collection("occurrences").limit(200).get();
+    const state: OccurrenceState = {
+      cancelledDates: new Set(),
+      overrides: new Map(),
+    };
+    for (const document of snapshot.docs) {
+      if (!isOccurrenceDate(document.id)) continue;
+      const data = document.data() as EventOccurrence;
+      if (data.isCancelled === 1) state.cancelledDates.add(document.id);
+      const overrides = readOccurrenceOverrides(data.overrides);
+      if (Object.keys(overrides).length > 0) state.overrides.set(document.id, overrides);
+    }
+    if (state.cancelledDates.size > 0 || state.overrides.size > 0) states.set(id, state);
   }
-  return cancelled;
+  return states;
 }
 
 /**
@@ -83,15 +96,13 @@ async function renderEventPage(
   includeLifecycle: boolean,
   windowDays: number,
 ) {
-  const dtos = documents.map((document) =>
-    eventDto(document.id, document.data() as EventDocument, includeLifecycle),
-  );
+  const dtos = documents.map((document) => eventDto(document.id, document.data() as EventDocument, includeLifecycle));
   const recurringIds = documents
     .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
     .map((document) => document.id);
   if (recurringIds.length === 0) return { events: dtos };
 
-  const cancelled = await loadCancelledDates(recurringIds);
+  const occurrenceStates = await loadOccurrenceStates(recurringIds);
   const cap = perEventCap(windowDays);
   const expanded: ReturnType<typeof eventDto>[] = [];
   for (const [index, dto] of dtos.entries()) {
@@ -104,7 +115,8 @@ async function renderEventPage(
     const occurrences = expandEventOccurrences(dto, data, {
       fromDate: todayYmd(),
       toDate: futureYmd(windowDays),
-      cancelledDates: cancelled.get(dto.id),
+      cancelledDates: occurrenceStates.get(dto.id)?.cancelledDates,
+      occurrenceOverrides: occurrenceStates.get(dto.id)?.overrides,
       maxPerEvent: Math.min(cap, OCCURRENCE_PAGE_MAX - expanded.length),
     });
     expanded.push(...(occurrences.length > 0 ? occurrences : []));
@@ -124,22 +136,13 @@ router.use(
   }),
 );
 
-export function ensureCalendarPublisher(
-  req: AuthenticatedRequest,
-  _res: Response,
-  next: NextFunction,
-) {
+export function ensureCalendarPublisher(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   if (!req.user) {
     next(new ApiError(401, "Unauthorized: User not authenticated"));
     return;
   }
   if (!canPublish(req.authorizationRole)) {
-    next(
-      new ApiError(
-        403,
-        "Forbidden: Calendar publishing requires admin, coach, or mentor access",
-      ),
-    );
+    next(new ApiError(403, "Forbidden: Calendar publishing requires admin, coach, or mentor access"));
     return;
   }
   next();
@@ -152,16 +155,9 @@ async function applyCursor(
 ): Promise<FirebaseFirestore.Query> {
   if (cursorValue === undefined) return query;
   const cursor = parseId(String(cursorValue), "cursor");
-  const cursorSnapshot = await adminDb
-    .collection(collectionName)
-    .doc(cursor)
-    .get();
+  const cursorSnapshot = await adminDb.collection(collectionName).doc(cursor).get();
   if (!cursorSnapshot.exists) {
-    throw new ApiError(
-      400,
-      "The calendar cursor is no longer valid.",
-      "INVALID_CURSOR",
-    );
+    throw new ApiError(400, "The calendar cursor is no longer valid.", "INVALID_CURSOR");
   }
   return query.startAfter(cursorSnapshot);
 }
@@ -171,11 +167,7 @@ async function getEvent(idValue: string | string[], includeArchived: boolean) {
   const ref = adminDb.collection("events").doc(id);
   const snapshot = await ref.get();
   const data = snapshot.data() as EventDocument | undefined;
-  if (
-    !snapshot.exists ||
-    (!includeArchived &&
-      (data?.status !== "published" || data?.isDeleted === 1))
-  ) {
+  if (!snapshot.exists || (!includeArchived && (data?.status !== "published" || data?.isDeleted === 1))) {
     throw new ApiError(404, "Event not found.", "EVENT_NOT_FOUND");
   }
   return { id, ref, snapshot, data: data ?? {} };
@@ -195,11 +187,7 @@ router.get(
     const snapshot = await query.limit(limitValue + 1).get();
     const hasMore = snapshot.docs.length > limitValue;
     const pageDocuments = snapshot.docs.slice(0, limitValue);
-    const { events } = await renderEventPage(
-      pageDocuments,
-      false,
-      occurrenceWindowDays(req.query.expandDays),
-    );
+    const { events } = await renderEventPage(pageDocuments, false, occurrenceWindowDays(req.query.expandDays));
 
     res.json({
       success: true,
@@ -215,35 +203,35 @@ router.get(
     const { id, ref, data } = await getEvent(req.params.id, false);
     const occurrenceValue = req.query.occurrence;
     let event = eventDto(id, data, false);
+    let occurrenceOverrides: ReturnType<typeof readOccurrenceOverrides> = {};
     if (occurrenceValue !== undefined) {
       if (!isOccurrenceDate(occurrenceValue)) {
         throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
       }
+      const exception = await ref.collection("occurrences").doc(occurrenceValue).get();
+      const exceptionData = exception.data() as EventOccurrence | undefined;
+      if (exception.exists && exceptionData?.isCancelled === 1) {
+        throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
+      }
+      occurrenceOverrides = readOccurrenceOverrides(exceptionData?.overrides);
       const occurrences = expandEventOccurrences(event, data, {
         fromDate: occurrenceValue,
         toDate: occurrenceValue,
+        occurrenceOverrides: new Map([[occurrenceValue, occurrenceOverrides]]),
         maxPerEvent: 1,
       });
       if (occurrences.length !== 1) {
         throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
       }
-      const exception = await ref.collection("occurrences").doc(occurrenceValue).get();
-      if (exception.exists && exception.data()?.isCancelled === 1) {
-        throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
-      }
       event = occurrences[0];
     }
-    const locationId = readString(data.locationId);
+    const locationId =
+      "locationId" in occurrenceOverrides ? occurrenceOverrides.locationId : readString(data.locationId);
     let publicVenue = null;
     if (locationId && /^[A-Za-z0-9_-]{1,128}$/.test(locationId)) {
-      const locationSnapshot = await adminDb
-        .collection("locations")
-        .doc(locationId)
-        .get();
+      const locationSnapshot = await adminDb.collection("locations").doc(locationId).get();
       if (locationSnapshot.exists) {
-        publicVenue = publicVenueDto(
-          locationSnapshot.data() as LocationDocument,
-        );
+        publicVenue = publicVenueDto(locationSnapshot.data() as LocationDocument);
       }
     }
     res.json({
@@ -259,17 +247,23 @@ router.get(
   "/events/:id/photos",
   asyncHandler(async (req, res) => {
     const { ref } = await getEvent(req.params.id, false);
+    const occurrenceValue = req.query.occurrence;
+    if (occurrenceValue !== undefined && !isOccurrenceDate(occurrenceValue)) {
+      throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+    }
     const limitValue = parseLimit(req.query.limit, 30, 50);
     const snapshot = await ref
       .collection("photos")
       .orderBy("uploadedAt", "desc")
-      .limit(limitValue * 2)
+      .limit(Math.min(200, limitValue * 4))
       .get();
     const photos = snapshot.docs
-      .map((document) =>
-        eventPhotoDto(document.id, document.data() as EventPhotoDocument),
-      )
+      .map((document) => eventPhotoDto(document.id, document.data() as EventPhotoDocument))
       .filter((photo): photo is NonNullable<typeof photo> => photo !== null)
+      .filter(
+        (photo) =>
+          occurrenceValue === undefined || photo.occurrenceDate === null || photo.occurrenceDate === occurrenceValue,
+      )
       .slice(0, limitValue);
 
     res.json({ success: true, photos });
@@ -281,18 +275,12 @@ router.get(
   ensureTeamMember,
   asyncHandler(async (req, res) => {
     const limitValue = parseLimit(req.query.limit, 100, 150);
-    let query: FirebaseFirestore.Query = adminDb
-      .collection("events")
-      .orderBy("dateStart", "asc");
+    let query: FirebaseFirestore.Query = adminDb.collection("events").orderBy("dateStart", "asc");
     query = await applyCursor(query, req.query.cursor, "events");
     const snapshot = await query.limit(limitValue + 1).get();
     const hasMore = snapshot.docs.length > limitValue;
     const pageDocuments = snapshot.docs.slice(0, limitValue);
-    const { events } = await renderEventPage(
-      pageDocuments,
-      true,
-      occurrenceWindowDays(req.query.expandDays),
-    );
+    const { events } = await renderEventPage(pageDocuments, true, occurrenceWindowDays(req.query.expandDays));
     res.json({
       success: true,
       events,
@@ -306,9 +294,7 @@ router.post(
   ensureTeamMember,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const input = parseBody(eventWriteSchema, req.body);
-    const status = canPublish(req.authorizationRole)
-      ? (input.status ?? "published")
-      : "pending";
+    const status = canPublish(req.authorizationRole) ? (input.status ?? "published") : "pending";
     const document = adminDb.collection("events").doc();
     const timestamp = new Date().toISOString();
     const data = {
@@ -335,9 +321,38 @@ router.post(
       createdAt: timestamp,
     });
     await batch.commit();
-    res
-      .status(201)
-      .json({ success: true, event: eventDto(document.id, data, true) });
+    res.status(201).json({ success: true, event: eventDto(document.id, data, true) });
+  }),
+);
+
+router.get(
+  "/manage/:id",
+  ensureTeamMember,
+  asyncHandler(async (req, res) => {
+    const { id, ref, data } = await getEvent(req.params.id, true);
+    const occurrenceValue = req.query.occurrence;
+    if (occurrenceValue === undefined) {
+      res.json({ success: true, event: eventDto(id, data, true) });
+      return;
+    }
+    if (!isOccurrenceDate(occurrenceValue)) {
+      throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+    }
+    const exception = await ref.collection("occurrences").doc(occurrenceValue).get();
+    const exceptionData = exception.data() as EventOccurrence | undefined;
+    if (exception.exists && exceptionData?.isCancelled === 1) {
+      throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
+    }
+    const [event] = expandEventOccurrences(eventDto(id, data, true), data, {
+      fromDate: occurrenceValue,
+      toDate: occurrenceValue,
+      occurrenceOverrides: new Map([[occurrenceValue, readOccurrenceOverrides(exceptionData?.overrides)]]),
+      maxPerEvent: 1,
+    });
+    if (!event) {
+      throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
+    }
+    res.json({ success: true, event });
   }),
 );
 
@@ -348,24 +363,12 @@ router.put(
     const input = parseBody(eventWriteSchema, req.body);
     const { id, ref, data: currentData } = await getEvent(req.params.id, true);
     if (currentData.isDeleted === 1) {
-      throw new ApiError(
-        409,
-        "Restore this event before editing it.",
-        "EVENT_ARCHIVED",
-      );
+      throw new ApiError(409, "Restore this event before editing it.", "EVENT_ARCHIVED");
     }
-    if (
-      !canPublish(req.authorizationRole) &&
-      currentData.status === "published"
-    ) {
-      throw new ApiError(
-        403,
-        "Published events can only be edited by an admin, coach, or mentor.",
-      );
+    if (!canPublish(req.authorizationRole) && currentData.status === "published") {
+      throw new ApiError(403, "Published events can only be edited by an admin, coach, or mentor.");
     }
-    const status = canPublish(req.authorizationRole)
-      ? (input.status ?? "draft")
-      : "pending";
+    const status = canPublish(req.authorizationRole) ? (input.status ?? "draft") : "pending";
     const timestamp = new Date().toISOString();
     const update = {
       ...eventWriteData(input, status),
@@ -478,11 +481,7 @@ router.patch(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const { ref, data } = await getEvent(req.params.id, true);
     if (data.isDeleted === 1) {
-      throw new ApiError(
-        409,
-        "Restore this event before publishing it.",
-        "EVENT_ARCHIVED",
-      );
+      throw new ApiError(409, "Restore this event before publishing it.", "EVENT_ARCHIVED");
     }
     const timestamp = new Date().toISOString();
     await ref.update({
@@ -509,12 +508,7 @@ router.get(
     if (!readRecurrence(data.recurrence)) {
       throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
     }
-    const snapshot = await adminDb
-      .collection("events")
-      .doc(id)
-      .collection("occurrences")
-      .limit(200)
-      .get();
+    const snapshot = await adminDb.collection("events").doc(id).collection("occurrences").limit(200).get();
     res.json({
       success: true,
       occurrences: snapshot.docs
@@ -522,8 +516,60 @@ router.get(
         .map((document) => ({
           date: document.id,
           isCancelled: document.data().isCancelled === 1,
+          hasOverrides: Object.keys(readOccurrenceOverrides(document.data().overrides)).length > 0,
         })),
     });
+  }),
+);
+
+router.put(
+  "/manage/:id/occurrences/:date",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, data } = await getEvent(req.params.id, true);
+    if (!readRecurrence(data.recurrence)) {
+      throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
+    }
+    const date = String(req.params.date ?? "");
+    if (!isOccurrenceDate(date)) {
+      throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+    }
+    const input = parseBody(occurrenceUpdateSchema, req.body);
+    const baseOccurrences = expandEventOccurrences(eventDto(id, data, true), data, {
+      fromDate: date,
+      toDate: date,
+      maxPerEvent: 1,
+    });
+    if (baseOccurrences.length !== 1) {
+      throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
+    }
+    const overrides = occurrenceOverridesForInput(input, baseOccurrences[0]);
+    const timestamp = new Date().toISOString();
+    const ref = adminDb.collection("events").doc(id).collection("occurrences").doc(date);
+    await ref.set(
+      {
+        date,
+        overrides,
+        updatedAt: timestamp,
+        updatedBy: req.user!.uid,
+      },
+      { merge: true },
+    );
+    await adminDb.collection("audit_logs").doc().set({
+      action: "calendar.occurrence.updated",
+      actorUid: req.user!.uid,
+      targetId: id,
+      occurrenceDate: date,
+      createdAt: timestamp,
+    });
+    const [event] = expandEventOccurrences(eventDto(id, data, true), data, {
+      fromDate: date,
+      toDate: date,
+      occurrenceOverrides: new Map([[date, overrides]]),
+      maxPerEvent: 1,
+    });
+    res.json({ success: true, event });
   }),
 );
 
@@ -581,7 +627,11 @@ router.patch(
     const ref = adminDb.collection("events").doc(id).collection("occurrences").doc(date);
     const snapshot = await ref.get();
     if (!snapshot.exists || snapshot.data()?.isCancelled !== 1) {
-      res.json({ success: true, restored: true, message: "Occurrence is already scheduled." });
+      res.json({
+        success: true,
+        restored: true,
+        message: "Occurrence is already scheduled.",
+      });
       return;
     }
     await ref.set(
@@ -608,16 +658,10 @@ router.get(
   "/locations",
   ensureTeamMember,
   asyncHandler(async (_req, res) => {
-    const snapshot = await adminDb
-      .collection("locations")
-      .orderBy("name", "asc")
-      .limit(150)
-      .get();
+    const snapshot = await adminDb.collection("locations").orderBy("name", "asc").limit(150).get();
     res.json({
       success: true,
-      locations: snapshot.docs.map((document) =>
-        locationDto(document.id, document.data() as LocationDocument),
-      ),
+      locations: snapshot.docs.map((document) => locationDto(document.id, document.data() as LocationDocument)),
     });
   }),
 );
@@ -638,9 +682,7 @@ router.post(
       updatedBy: req.user!.uid,
     };
     await document.set(data);
-    res
-      .status(201)
-      .json({ success: true, location: locationDto(document.id, data) });
+    res.status(201).json({ success: true, location: locationDto(document.id, data) });
   }),
 );
 
@@ -654,14 +696,8 @@ router.put(
     const ref = adminDb.collection("locations").doc(id);
     const snapshot = await ref.get();
     const current = snapshot.data() as LocationDocument | undefined;
-    if (!snapshot.exists)
-      throw new ApiError(404, "Venue not found.", "LOCATION_NOT_FOUND");
-    if (current?.isDeleted === 1)
-      throw new ApiError(
-        409,
-        "Restore this venue before editing it.",
-        "LOCATION_ARCHIVED",
-      );
+    if (!snapshot.exists) throw new ApiError(404, "Venue not found.", "LOCATION_NOT_FOUND");
+    if (current?.isDeleted === 1) throw new ApiError(409, "Restore this venue before editing it.", "LOCATION_ARCHIVED");
     const update = {
       ...input,
       updatedAt: new Date().toISOString(),
@@ -683,8 +719,7 @@ router.delete(
     const id = parseId(req.params.id, "location");
     const ref = adminDb.collection("locations").doc(id);
     const snapshot = await ref.get();
-    if (!snapshot.exists)
-      throw new ApiError(404, "Venue not found.", "LOCATION_NOT_FOUND");
+    if (!snapshot.exists) throw new ApiError(404, "Venue not found.", "LOCATION_NOT_FOUND");
     const timestamp = new Date().toISOString();
     await ref.update({
       isDeleted: 1,
@@ -708,8 +743,7 @@ router.patch(
     const id = parseId(req.params.id, "location");
     const ref = adminDb.collection("locations").doc(id);
     const snapshot = await ref.get();
-    if (!snapshot.exists)
-      throw new ApiError(404, "Venue not found.", "LOCATION_NOT_FOUND");
+    if (!snapshot.exists) throw new ApiError(404, "Venue not found.", "LOCATION_NOT_FOUND");
     const timestamp = new Date().toISOString();
     await ref.update({
       isDeleted: 0,
@@ -755,11 +789,11 @@ router.get(
       const dateStart = readString(data.dateStart);
       const start = formatIcalDate(dateStart);
       if (!start || !dateStart) continue;
-      const end =
-        formatIcalDate(readString(data.dateEnd)) ?? addHours(dateStart, 2);
+      const end = formatIcalDate(readString(data.dateEnd)) ?? addHours(dateStart, 2);
       if (!end) continue;
       const updated = formatIcalDate(readString(data.updatedAt)) ?? start;
       const recurrence = readRecurrence(data.recurrence);
+      let occurrenceState: OccurrenceState | undefined;
       lines.push("BEGIN:VEVENT");
       lines.push(`UID:${document.id}@aresfirst.org`);
       lines.push(`DTSTAMP:${updated}`);
@@ -769,40 +803,75 @@ router.get(
       if (recurrence) {
         // Calendar apps expand the rule natively; cancelled sessions become
         // EXDATEs so subscribed clients skip them.
-        const rule = [
-          "FREQ=WEEKLY",
-          `INTERVAL=${recurrence.interval}`,
-          `BYDAY=${recurrence.byDay.join(",")}`,
-        ];
+        const rule = ["FREQ=WEEKLY", `INTERVAL=${recurrence.interval}`, `BYDAY=${recurrence.byDay.join(",")}`];
         if (recurrence.until) rule.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
         lines.push(`RRULE:${rule.join(";")}`);
-        const exdates = await loadCancelledDates([document.id]);
-        const cancelled = exdates.get(document.id);
+        const occurrenceStates = await loadOccurrenceStates([document.id]);
+        occurrenceState = occurrenceStates.get(document.id);
+        const cancelled = occurrenceState?.cancelledDates;
         if (cancelled && cancelled.size > 0) {
-          lines.push(`EXDATE:${[...cancelled].sort().map((date) => `${date.replace(/-/g, "")}T${start.slice(9, 15)}Z`).join(",")}`);
+          lines.push(
+            `EXDATE:${[...cancelled]
+              .sort()
+              .map((date) => `${date.replace(/-/g, "")}T${start.slice(9, 15)}Z`)
+              .join(",")}`,
+          );
         }
       }
-      lines.push(
-        `SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`,
-      );
+      lines.push(`SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`);
       const cleanDescription = toPlainText(data.description);
-      if (cleanDescription)
-        lines.push(`DESCRIPTION:${escapeIcalText(cleanDescription)}`);
+      if (cleanDescription) lines.push(`DESCRIPTION:${escapeIcalText(cleanDescription)}`);
       const location = readString(data.location);
       if (location) lines.push(`LOCATION:${escapeIcalText(location)}`);
       lines.push("END:VEVENT");
+
+      // RFC 5545 recurrence exceptions keep the series UID and identify the
+      // original generated session with RECURRENCE-ID.
+      if (recurrence && occurrenceState?.overrides.size) {
+        const managedDto = eventDto(document.id, data, true);
+        for (const [date, overrides] of [...occurrenceState.overrides].sort(([a], [b]) => a.localeCompare(b))) {
+          if (occurrenceState.cancelledDates.has(date)) continue;
+          const [baseOccurrence] = expandEventOccurrences(managedDto, data, {
+            fromDate: date,
+            toDate: date,
+            maxPerEvent: 1,
+          });
+          const [effectiveOccurrence] = expandEventOccurrences(managedDto, data, {
+            fromDate: date,
+            toDate: date,
+            occurrenceOverrides: new Map([[date, overrides]]),
+            maxPerEvent: 1,
+          });
+          if (!baseOccurrence || !effectiveOccurrence) continue;
+          const recurrenceId = formatIcalDate(baseOccurrence.dateStart);
+          const occurrenceStart = formatIcalDate(effectiveOccurrence.dateStart);
+          const occurrenceEnd =
+            formatIcalDate(effectiveOccurrence.dateEnd) ?? addHours(effectiveOccurrence.dateStart, 2);
+          if (!recurrenceId || !occurrenceStart || !occurrenceEnd) continue;
+          lines.push("BEGIN:VEVENT");
+          lines.push(`UID:${document.id}@aresfirst.org`);
+          lines.push(`RECURRENCE-ID:${recurrenceId}`);
+          lines.push(`DTSTAMP:${updated}`);
+          lines.push(`LAST-MODIFIED:${updated}`);
+          lines.push(`DTSTART:${occurrenceStart}`);
+          lines.push(`DTEND:${occurrenceEnd}`);
+          lines.push(`SUMMARY:${escapeIcalText(effectiveOccurrence.title)}`);
+          const occurrenceDescription = toPlainText(effectiveOccurrence.description);
+          if (occurrenceDescription) {
+            lines.push(`DESCRIPTION:${escapeIcalText(occurrenceDescription)}`);
+          }
+          if ("location" in effectiveOccurrence && typeof effectiveOccurrence.location === "string") {
+            lines.push(`LOCATION:${escapeIcalText(effectiveOccurrence.location)}`);
+          }
+          lines.push("END:VEVENT");
+        }
+      }
     }
     lines.push("END:VCALENDAR");
 
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="ares_calendar.ics"',
-    );
-    res.setHeader(
-      "Cache-Control",
-      "no-cache, no-store, must-revalidate, max-age=0",
-    );
+    res.setHeader("Content-Disposition", 'attachment; filename="ares_calendar.ics"');
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
     res.send(lines.join("\r\n"));
