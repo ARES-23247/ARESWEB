@@ -158,6 +158,9 @@ jobs:
     # times today and burned entire job budgets in Ign lines.
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
+      # Firefox's sandbox needs user namespaces (clone), which the default
+      # container seccomp profile denies with EPERM.
+      options: --security-opt seccomp=unconfined
       env:
         # Firefox refuses to launch when $HOME is not owned by the running
         # user. Neither /root nor the runner-mounted HOME qualifies, so the
