@@ -245,8 +245,8 @@ describe("Firebase Hosting crawl configuration", () => {
 
     // GA is either fully allowed by the CSP or fully removed from the build.
     expect(analyticsActive).toBe(true);
-    expect(csp).toContain("https://www.googletagmanager.com");
-    expect(csp).toContain("https://*.google-analytics.com");
+    expect(csp).toMatch(/script-src[^;]*https:\/\/www\.googletagmanager\.com/);
+    expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
   });
 
   it("blocks tournaments routes from indexing at the hosting layer", () => {
