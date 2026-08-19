@@ -121,6 +121,7 @@ describe("calendar API", () => {
     batch.commit.mockResolvedValue(undefined);
     documentRef.collection("photos").get.mockResolvedValue({ docs: [] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
+    (adminDb as any).__occurrences.docGet.mockResolvedValue({ exists: false, data: () => undefined });
     (adminDb as any).__occurrences.docSet.mockReset();
     (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
   });
@@ -696,6 +697,7 @@ describe("calendar recurrence", () => {
     documentRef.update.mockResolvedValue(undefined);
     batch.commit.mockResolvedValue(undefined);
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
+    (adminDb as any).__occurrences.docGet.mockResolvedValue({ exists: false, data: () => undefined });
     (adminDb as any).__occurrences.docSet.mockReset();
     (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
   });
@@ -714,6 +716,62 @@ describe("calendar recurrence", () => {
     expect(occurrence.occurrenceDate).toBe(todayYmdStr);
     expect(occurrence.seriesDateStart).toContain("T18:00:00.000Z");
     expect(occurrence.recurrence).toEqual(weeklyRule);
+  });
+
+  it("preserves floating local times while expanding recurring events", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [eventDocument("weekly-local", {
+      dateStart: `${todayYmdStr}T18:00`,
+      dateEnd: `${todayYmdStr}T20:00`,
+      recurrence: weeklyRule,
+    })] });
+
+    await handler("/events", "get")(req, res, next);
+
+    const occurrence = res.json.mock.calls[0][0].events[0];
+    expect(occurrence.dateStart).toBe(`${todayYmdStr}T18:00`);
+    expect(occurrence.dateEnd).toBe(`${todayYmdStr}T20:00`);
+  });
+
+  it("resolves a published recurring instance through the parent detail route", async () => {
+    req.params = { id: "weekly-1" };
+    req.query = { occurrence: todayYmdStr };
+
+    await handler("/events/:id", "get")(req, res, next);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      event: expect.objectContaining({
+        id: `weekly-1_${todayYmdStr}`,
+        recurrenceOf: "weekly-1",
+        occurrenceDate: todayYmdStr,
+        dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      }),
+    }));
+  });
+
+  it("rejects invalid, unscheduled, and cancelled public occurrence details", async () => {
+    req.params = { id: "weekly-1" };
+    req.query = { occurrence: "not-a-date" };
+    await handler("/events/:id", "get")(req, res, next);
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400, code: "INVALID_DATE" }));
+
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    req.query = { occurrence: tomorrow };
+    await handler("/events/:id", "get")(req, res, next);
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 404,
+      code: "EVENT_OCCURRENCE_NOT_FOUND",
+    }));
+
+    req.query = { occurrence: todayYmdStr };
+    (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ isCancelled: 1 }),
+    });
+    await handler("/events/:id", "get")(req, res, next);
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 404,
+      code: "EVENT_OCCURRENCE_NOT_FOUND",
+    }));
   });
 
   it("extends occurrence visibility with the bounded expandDays window", async () => {

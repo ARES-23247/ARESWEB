@@ -60,6 +60,33 @@ describe("accessible navigation and calendar controls", () => {
     expect(handleEdit).toHaveBeenCalledWith("event-1");
   });
 
+  it("uses the parent event for recurring-instance details and edits", () => {
+    const handleEdit = vi.fn();
+    renderInRouter(
+      <SelectedEventPanel
+        selectedDate={new Date("2026-08-17T12:00:00")}
+        selectedDayEvents={[{
+          id: "weekly-1_2026-08-17",
+          recurrenceOf: "weekly-1",
+          occurrenceDate: "2026-08-17",
+          title: "Recurring Practice",
+          dateStart: "2026-08-17T18:00:00",
+          category: "internal",
+        }]}
+        canEdit
+        formatFullDate={() => "Monday, August 17, 2026"}
+        formatEventTime={() => "6:00 PM"}
+        handleOpenInlineCreate={vi.fn()}
+        handleOpenInlineEdit={handleEdit}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "View event details for Recurring Practice" }))
+      .toHaveAttribute("href", "/events/weekly-1?occurrence=2026-08-17");
+    fireEvent.click(screen.getByRole("button", { name: "Edit Recurring Practice" }));
+    expect(handleEdit).toHaveBeenCalledWith("weekly-1");
+  });
+
   it("announces when the calendar feed URL has been copied", () => {
     render(
       <SyncSubscriptionPanel

@@ -1,6 +1,16 @@
+import type { TeamEvent } from "@/types/event";
+
 export interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
+}
+
+export function eventDetailHref(event: TeamEvent): string {
+  const parentId = event.recurrenceOf ?? event.id;
+  const path = `/events/${encodeURIComponent(parentId)}`;
+  if (!event.recurrenceOf || !event.occurrenceDate) return path;
+  const params = new URLSearchParams({ occurrence: event.occurrenceDate });
+  return `${path}?${params.toString()}`;
 }
 
 export function buildCalendarDays(year: number, month: number): CalendarDay[] {

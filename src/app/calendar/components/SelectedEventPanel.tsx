@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Calendar as CalendarIcon, Info, Pencil, Clock, MapPin, Plus } from "lucide-react";
 import type { TeamEvent } from "@/types/event";
 import { toPlainText } from "@/lib/contentFormatters";
+import { eventDetailHref } from "../calendarView";
 
 interface SelectedEventPanelProps {
   selectedDate: Date;
@@ -74,7 +75,7 @@ export function SelectedEventPanel({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpenInlineEdit(event.id);
+                        handleOpenInlineEdit(event.recurrenceOf ?? event.id);
                       }}
                       aria-label={`Edit ${event.title}`}
                       className="p-1 bg-white/5 hover:bg-ares-gold/25 border border-white/10 rounded transition-colors text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -89,7 +90,7 @@ export function SelectedEventPanel({
                 </div>
               </div>
               <Link
-                to={`/events/${event.id}`}
+                to={eventDetailHref(event)}
                 aria-label={`View event details for ${event.title}`}
                 className="block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >

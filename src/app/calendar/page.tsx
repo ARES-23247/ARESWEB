@@ -22,7 +22,7 @@ import { SyncSubscriptionPanel } from "./components/SyncSubscriptionPanel";
 import { PublicDataState } from "@/components/PublicDataState";
 import { fetchPublicEvents } from "./api";
 import { CalendarHeader, type CalendarFilter } from "./components/CalendarHeader";
-import { buildCalendarDays, formatEventTime, formatFullDate, isSameDay } from "./calendarView";
+import { buildCalendarDays, eventDetailHref, formatEventTime, formatFullDate, isSameDay } from "./calendarView";
 import { toPlainText } from "@/lib/contentFormatters";
 
 export default function CalendarPage() {
@@ -350,7 +350,7 @@ export default function CalendarPage() {
               <div className="space-y-6">
                 {upcomingEvents.map((event) => (
                   <Link 
-                    to={`/events/${event.id}`}
+                    to={eventDetailHref(event)}
                     key={event.id} 
                     className={`block bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/40 hover:-translate-y-0.5 p-6 ares-cut-lg ${
                       event.category === "outreach"
@@ -434,7 +434,7 @@ export default function CalendarPage() {
                               : "border-ares-red/50"
                         }`} />
                         
-                        <Link to={`/events/${event.id}`} className="block space-y-1 cursor-pointer">
+                        <Link to={eventDetailHref(event)} className="block space-y-1 cursor-pointer">
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] font-mono text-marble/40">
                               {new Date(event.dateStart).toLocaleDateString("en-US", {

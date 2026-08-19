@@ -197,8 +197,12 @@ export async function fetchPublicEvents(limit = 50, cursor?: string | null, expa
   };
 }
 
-export async function fetchPublicEvent(eventId: string): Promise<TeamEvent> {
-  const payload = await requestJson<EventPayload>(`/api/calendar/events/${encodeURIComponent(eventId)}`);
+export async function fetchPublicEvent(eventId: string, occurrenceDate?: string): Promise<TeamEvent> {
+  const path = `/api/calendar/events/${encodeURIComponent(eventId)}`;
+  const query = occurrenceDate
+    ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}`
+    : "";
+  const payload = await requestJson<EventPayload>(`${path}${query}`);
   return normalizeEvent(payload.event);
 }
 

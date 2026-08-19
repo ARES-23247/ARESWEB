@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarDays, formatEventTime, formatFullDate, isSameDay } from "@/app/calendar/calendarView";
+import {
+  buildCalendarDays,
+  eventDetailHref,
+  formatEventTime,
+  formatFullDate,
+  isSameDay,
+} from "@/app/calendar/calendarView";
 
 describe("calendar view utilities", () => {
   it("builds a stable six-week calendar grid", () => {
@@ -22,5 +28,16 @@ describe("calendar view utilities", () => {
 
   it("formats a full accessible date label", () => {
     expect(formatFullDate(new Date(2026, 7, 10))).toBe("Monday, August 10, 2026");
+  });
+
+  it("links recurring instances to the parent event with an occurrence date", () => {
+    expect(eventDetailHref({
+      id: "weekly-1_2026-08-20",
+      recurrenceOf: "weekly-1",
+      occurrenceDate: "2026-08-20",
+      title: "Drive Practice",
+      dateStart: "2026-08-20T18:00",
+      category: "internal",
+    })).toBe("/events/weekly-1?occurrence=2026-08-20");
   });
 });

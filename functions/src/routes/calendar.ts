@@ -212,7 +212,27 @@ router.get(
 router.get(
   "/events/:id",
   asyncHandler(async (req, res) => {
-    const { id, data } = await getEvent(req.params.id, false);
+    const { id, ref, data } = await getEvent(req.params.id, false);
+    const occurrenceValue = req.query.occurrence;
+    let event = eventDto(id, data, false);
+    if (occurrenceValue !== undefined) {
+      if (!isOccurrenceDate(occurrenceValue)) {
+        throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+      }
+      const occurrences = expandEventOccurrences(event, data, {
+        fromDate: occurrenceValue,
+        toDate: occurrenceValue,
+        maxPerEvent: 1,
+      });
+      if (occurrences.length !== 1) {
+        throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
+      }
+      const exception = await ref.collection("occurrences").doc(occurrenceValue).get();
+      if (exception.exists && exception.data()?.isCancelled === 1) {
+        throw new ApiError(404, "Event occurrence not found.", "EVENT_OCCURRENCE_NOT_FOUND");
+      }
+      event = occurrences[0];
+    }
     const locationId = readString(data.locationId);
     let publicVenue = null;
     if (locationId && /^[A-Za-z0-9_-]{1,128}$/.test(locationId)) {
@@ -228,7 +248,7 @@ router.get(
     }
     res.json({
       success: true,
-      event: { ...eventDto(id, data, false), publicVenue },
+      event: { ...event, publicVenue },
     });
   }),
 );

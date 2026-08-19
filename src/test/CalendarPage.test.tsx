@@ -88,6 +88,31 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
     expect(screen.getByText("Subscribe to Feed")).toBeInTheDocument();
   });
 
+  it("links an expanded recurring instance through its parent event", async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValue(jsonResponse({
+      events: [{
+        ...mockEvents[0],
+        id: "weekly-1_2026-08-20",
+        title: "Recurring Drive Practice",
+        dateStart: "2026-08-20T18:00",
+        recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+        recurrenceOf: "weekly-1",
+        occurrenceDate: "2026-08-20",
+      }],
+      nextCursor: null,
+    }));
+
+    render(
+      <MemoryRouter>
+        <CalendarPage />
+      </MemoryRouter>,
+    );
+
+    const links = await screen.findAllByRole("link", { name: /Recurring Drive Practice/i });
+    expect(links.some((link) => link.getAttribute("href") === "/events/weekly-1?occurrence=2026-08-20"))
+      .toBe(true);
+  });
+
   it("filters events when selecting category tabs", async () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(jsonResponse({ events: mockEvents, nextCursor: null }));
 
