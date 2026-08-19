@@ -4,6 +4,7 @@ import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  DollarSign,
   CalendarRange,
   LayoutDashboard,
   User,
@@ -359,6 +360,15 @@ export default function DashboardSidebar({
                   tab="seasons"
                   icon={CalendarRange}
                   label="Seasons & Awards"
+                  currentPath={pathname}
+                  onNavigate={onCloseMobile}
+                />
+              )}
+              {(userRole === "admin" || userRole === "coach") && (
+                <NavButton
+                  tab="finance"
+                  icon={DollarSign}
+                  label="Finance Ledger"
                   currentPath={pathname}
                   onNavigate={onCloseMobile}
                 />
