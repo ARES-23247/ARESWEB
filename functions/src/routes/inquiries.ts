@@ -38,7 +38,7 @@ const inquiryMetadataSchema = z.record(z.string(), z.unknown()).refine(
 );
 
 const createInquirySchema = z.object({
-  type: z.enum(["student", "mentor", "sponsor", "demo"]),
+  type: z.enum(["student", "mentor", "sponsor", "demo", "general"]),
   name: z.string().trim().min(1, "Name is required.").max(120),
   email: z.string().email("Invalid email address."),
   metadata: inquiryMetadataSchema.optional().default({}),

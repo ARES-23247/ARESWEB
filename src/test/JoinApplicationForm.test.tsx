@@ -87,6 +87,33 @@ describe("JoinPage Recruitment & Form Verification", () => {
     });
   });
 
+  it("sends a general contact message with name, email, and question only", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<JoinPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Just a Question/i }));
+
+    // No application-specific fields for general messages.
+    expect(screen.queryByLabelText(/School \*/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Current Occupation \/ Company \*/i)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/Full Name \*/i), { target: { value: "Curious Visitor" } });
+    fireEvent.change(screen.getByLabelText(/Email Address \*/i), { target: { value: "visitor@example.com" } });
+    fireEvent.change(screen.getByLabelText(/Additional Information/i), { target: { value: "Can ARES demo robots at our summer camp?" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Send Message/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Message sent!/i)).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/inquiries", expect.objectContaining({
+      method: "POST",
+      body: expect.stringContaining('"type":"general"'),
+    }));
+  });
+
   it("handles backend error responses gracefully without crashing", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: false, error: "Too many submissions from this IP." }, 429));
     vi.stubGlobal("fetch", fetchMock);
