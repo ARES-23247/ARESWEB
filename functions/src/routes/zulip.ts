@@ -179,12 +179,14 @@ function isAllowedProxyStream(stream: string): boolean {
 
 // GET /api/zulip/topic
 router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
-  const stream = req.query.stream as string;
-  const topic = req.query.topic as string;
-
-  if (!stream || !topic) {
+  // Express repeats query keys as arrays; narrow to single strings first.
+  const streamParam = req.query.stream;
+  const topicParam = req.query.topic;
+  if (typeof streamParam !== "string" || typeof topicParam !== "string" || !streamParam || !topicParam) {
     throw new ApiError(400, "Missing stream or topic parameter.");
   }
+  const stream = streamParam;
+  const topic = topicParam;
   if (stream.length > 100 || topic.length > 200) {
     throw new ApiError(400, "Stream or topic is too long.");
   }
