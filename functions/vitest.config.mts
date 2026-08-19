@@ -43,6 +43,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/routes/finance.ts": {
+          lines: 85,
+          functions: 100,
+        },
       },
     },
   },

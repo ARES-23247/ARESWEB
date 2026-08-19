@@ -34,7 +34,6 @@ const LEGACY_EXEMPT = new Set<string>([
   "src/routes/calendar.ts",
   "src/routes/calendarHelpers.ts",
   "src/routes/drive.ts",
-  "src/routes/finance.ts",
   "src/routes/inquiries.ts",
   "src/routes/og.ts",
   "src/routes/outreach.ts",
