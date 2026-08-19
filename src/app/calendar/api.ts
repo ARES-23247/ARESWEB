@@ -1,5 +1,5 @@
 import { authenticatedFetch } from "@/lib/api";
-import type { TeamEvent } from "@/types/event";
+import type { EventOccurrenceDefaults, TeamEvent } from "@/types/event";
 import type { TeamLocation } from "@/types/location";
 
 interface ApiErrorPayload {
@@ -45,6 +45,19 @@ export interface EventWriteInput {
   status?: "published" | "pending" | "draft";
 }
 
+export interface OccurrenceWriteInput {
+  title: string;
+  dateStart: string;
+  dateEnd: string | null;
+  locationId: string | null;
+  location: string | null;
+  description: string | null;
+  category: "internal" | "outreach" | "competition";
+  coverImage: string | null;
+  isPotluck: 0 | 1;
+  isVolunteer: 0 | 1;
+}
+
 export interface LocationWriteInput {
   name: string;
   address: string;
@@ -76,36 +89,56 @@ function optionalString(record: Record<string, unknown>, key: string): string | 
   return typeof value === "string" ? value : undefined;
 }
 
+function normalizeOccurrenceDefaults(value: unknown): EventOccurrenceDefaults | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const title = optionalString(record, "title");
+  const dateStart = optionalString(record, "dateStart");
+  if (!title || !dateStart) return undefined;
+  return {
+    title,
+    dateStart,
+    dateEnd: optionalString(record, "dateEnd"),
+    locationId: optionalString(record, "locationId"),
+    location: optionalString(record, "location"),
+    description: optionalString(record, "description"),
+    category:
+      record.category === "outreach" ? "outreach" : record.category === "competition" ? "competition" : "internal",
+    coverImage: optionalString(record, "coverImage"),
+    isPotluck: record.isPotluck === 1 ? 1 : 0,
+    isVolunteer: record.isVolunteer === 1 ? 1 : 0,
+  };
+}
+
 function normalizeEvent(value: unknown): TeamEvent {
   if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid event.");
   const record = value as Record<string, unknown>;
-  const category = record.category === "outreach"
-    ? "outreach"
-    : record.category === "competition"
-      ? "competition"
-      : "internal";
-  const status = record.status === "published" || record.status === "pending" || record.status === "draft"
-    ? record.status
-    : undefined;
-  const publicVenueRecord = record.publicVenue && typeof record.publicVenue === "object"
-    ? record.publicVenue as Record<string, unknown>
-    : null;
+  const category =
+    record.category === "outreach" ? "outreach" : record.category === "competition" ? "competition" : "internal";
+  const status =
+    record.status === "published" || record.status === "pending" || record.status === "draft"
+      ? record.status
+      : undefined;
+  const publicVenueRecord =
+    record.publicVenue && typeof record.publicVenue === "object"
+      ? (record.publicVenue as Record<string, unknown>)
+      : null;
   const publicVenueName = publicVenueRecord ? optionalString(publicVenueRecord, "name") : undefined;
   const publicVenueAddress = publicVenueRecord ? optionalString(publicVenueRecord, "address") : undefined;
-  const recurrenceRecord = record.recurrence && typeof record.recurrence === "object"
-    ? record.recurrence as Record<string, unknown>
-    : null;
+  const recurrenceRecord =
+    record.recurrence && typeof record.recurrence === "object" ? (record.recurrence as Record<string, unknown>) : null;
   const byDay = Array.isArray(recurrenceRecord?.byDay)
     ? recurrenceRecord.byDay.filter((code): code is string => typeof code === "string")
     : [];
-  const recurrence = recurrenceRecord && recurrenceRecord.frequency === "weekly" && byDay.length > 0
-    ? {
-        frequency: "weekly" as const,
-        interval: typeof recurrenceRecord.interval === "number" ? recurrenceRecord.interval : 1,
-        byDay,
-        until: typeof recurrenceRecord.until === "string" ? recurrenceRecord.until : undefined,
-      }
-    : undefined;
+  const recurrence =
+    recurrenceRecord && recurrenceRecord.frequency === "weekly" && byDay.length > 0
+      ? {
+          frequency: "weekly" as const,
+          interval: typeof recurrenceRecord.interval === "number" ? recurrenceRecord.interval : 1,
+          byDay,
+          until: typeof recurrenceRecord.until === "string" ? recurrenceRecord.until : undefined,
+        }
+      : undefined;
   return {
     id: requiredString(record, "id"),
     title: requiredString(record, "title"),
@@ -116,11 +149,11 @@ function normalizeEvent(value: unknown): TeamEvent {
     occurrenceDate: optionalString(record, "occurrenceDate"),
     seriesDateStart: optionalString(record, "seriesDateStart"),
     seriesDateEnd: optionalString(record, "seriesDateEnd"),
+    seriesDefaults: normalizeOccurrenceDefaults(record.seriesDefaults),
     locationId: optionalString(record, "locationId"),
     location: optionalString(record, "location"),
-    publicVenue: publicVenueName && publicVenueAddress
-      ? { name: publicVenueName, address: publicVenueAddress }
-      : undefined,
+    publicVenue:
+      publicVenueName && publicVenueAddress ? { name: publicVenueName, address: publicVenueAddress } : undefined,
     description: optionalString(record, "description"),
     category,
     coverImage: optionalString(record, "coverImage"),
@@ -156,7 +189,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     let payload: ApiErrorPayload = {};
     try {
-      payload = await response.json() as ApiErrorPayload;
+      payload = (await response.json()) as ApiErrorPayload;
     } catch {
       // The HTTP status remains useful when the response body is not JSON.
     }
@@ -170,7 +203,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       `HTTP ${response.status}: ${statusText}${serverMessage ? ` — ${serverMessage}` : ""}`,
     );
   }
-  return await response.json() as T;
+  return (await response.json()) as T;
 }
 
 function jsonRequest(method: "POST" | "PUT", body: unknown): RequestInit {
@@ -182,13 +215,19 @@ function jsonRequest(method: "POST" | "PUT", body: unknown): RequestInit {
 }
 
 function withPage(path: string, limit: number, cursor?: string | null, expandDays?: number): string {
-  const params = new URLSearchParams({ limit: String(Math.min(150, Math.max(1, Math.trunc(limit)))) });
+  const params = new URLSearchParams({
+    limit: String(Math.min(150, Math.max(1, Math.trunc(limit)))),
+  });
   if (cursor) params.set("cursor", cursor);
   if (expandDays) params.set("expandDays", String(Math.trunc(expandDays)));
   return `${path}?${params.toString()}`;
 }
 
-export async function fetchPublicEvents(limit = 50, cursor?: string | null, expandDays?: number): Promise<CalendarPageResult> {
+export async function fetchPublicEvents(
+  limit = 50,
+  cursor?: string | null,
+  expandDays?: number,
+): Promise<CalendarPageResult> {
   const payload = await requestJson<EventsPayload>(withPage("/api/calendar/events", limit, cursor, expandDays));
   if (!Array.isArray(payload.events)) throw new Error("Calendar response does not contain an event list.");
   return {
@@ -199,20 +238,28 @@ export async function fetchPublicEvents(limit = 50, cursor?: string | null, expa
 
 export async function fetchPublicEvent(eventId: string, occurrenceDate?: string): Promise<TeamEvent> {
   const path = `/api/calendar/events/${encodeURIComponent(eventId)}`;
-  const query = occurrenceDate
-    ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}`
-    : "";
+  const query = occurrenceDate ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}` : "";
   const payload = await requestJson<EventPayload>(`${path}${query}`);
   return normalizeEvent(payload.event);
 }
 
-export async function fetchManagedEvents(limit = 100, cursor?: string | null, expandDays?: number): Promise<CalendarPageResult> {
+export async function fetchManagedEvents(
+  limit = 100,
+  cursor?: string | null,
+  expandDays?: number,
+): Promise<CalendarPageResult> {
   const payload = await requestJson<EventsPayload>(withPage("/api/calendar/manage", limit, cursor, expandDays));
   if (!Array.isArray(payload.events)) throw new Error("Calendar response does not contain an event list.");
   return {
     events: payload.events.map(normalizeEvent),
     nextCursor: typeof payload.nextCursor === "string" ? payload.nextCursor : null,
   };
+}
+
+export async function fetchManagedEvent(eventId: string, occurrenceDate?: string): Promise<TeamEvent> {
+  const params = occurrenceDate ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}` : "";
+  const payload = await requestJson<EventPayload>(`/api/calendar/manage/${encodeURIComponent(eventId)}${params}`);
+  return normalizeEvent(payload.event);
 }
 
 export async function createEvent(input: EventWriteInput): Promise<TeamEvent> {
@@ -228,8 +275,22 @@ export async function updateEvent(eventId: string, input: EventWriteInput): Prom
   return normalizeEvent(payload.event);
 }
 
+export async function updateEventOccurrence(
+  eventId: string,
+  date: string,
+  input: OccurrenceWriteInput,
+): Promise<TeamEvent> {
+  const payload = await requestJson<EventPayload>(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}`,
+    jsonRequest("PUT", input),
+  );
+  return normalizeEvent(payload.event);
+}
+
 export async function archiveEvent(eventId: string): Promise<void> {
-  await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}`, { method: "DELETE" });
+  await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function restoreEvent(eventId: string): Promise<void> {
@@ -243,6 +304,7 @@ export async function publishEvent(eventId: string): Promise<void> {
 export interface EventOccurrenceException {
   date: string;
   isCancelled: boolean;
+  hasOverrides: boolean;
 }
 
 export async function fetchEventOccurrences(eventId: string): Promise<EventOccurrenceException[]> {
@@ -254,15 +316,20 @@ export async function fetchEventOccurrences(eventId: string): Promise<EventOccur
     if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid occurrence.");
     const record = value as Record<string, unknown>;
     if (typeof record.date !== "string") throw new Error("Calendar response contains an invalid occurrence date.");
-    return { date: record.date, isCancelled: record.isCancelled === true };
+    return {
+      date: record.date,
+      isCancelled: record.isCancelled === true,
+      hasOverrides: record.hasOverrides === true,
+    };
   });
 }
 
 export async function cancelEventOccurrence(eventId: string, date: string): Promise<void> {
-  await requestJson(
-    `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}`,
-    { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cancelled: true }) },
-  );
+  await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cancelled: true }),
+  });
 }
 
 export async function restoreEventOccurrence(eventId: string, date: string): Promise<void> {
@@ -279,10 +346,7 @@ export async function fetchLocations(): Promise<TeamLocation[]> {
 }
 
 export async function createLocation(input: LocationWriteInput): Promise<TeamLocation> {
-  const payload = await requestJson<{ location: unknown }>(
-    "/api/calendar/locations",
-    jsonRequest("POST", input),
-  );
+  const payload = await requestJson<{ location: unknown }>("/api/calendar/locations", jsonRequest("POST", input));
   return normalizeLocation(payload.location);
 }
 

@@ -1,21 +1,15 @@
 "use client";
 
 import { logger } from "@/utils/logger";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Plus, 
-  Shield, 
-  Activity, 
-  MapPin,
-  X,
-  Loader2,
-} from "lucide-react";
+import { Plus, Shield, Activity, MapPin, X, Loader2 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import {
   archiveEvent,
   fetchLocations,
+  fetchManagedEvent,
   fetchManagedEvents,
   publishEvent,
   restoreEvent,
@@ -32,25 +26,33 @@ export default function EventsManagementPage({
   onEditorClose,
   prefilledDate,
   prefilledAction,
-  prefilledEventId
+  prefilledEventId,
+  prefilledOccurrenceDate,
 }: {
   editorOnly?: boolean;
   onEditorClose?: () => void;
   prefilledDate?: Date;
   prefilledAction?: "create" | "edit" | null;
   prefilledEventId?: string | null;
+  prefilledOccurrenceDate?: string | null;
 } = {}) {
   const { user, authorizedUser } = useAuth();
-  
+
   // Real-time Collections States
   const [events, setEvents] = useState<TeamEvent[]>([]);
   const [locations, setLocations] = useState<TeamLocation[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [operationStatus, setOperationStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [operationStatus, setOperationStatus] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [pendingLifecycle, setPendingLifecycle] = useState<{ action: "archive" | "restore"; event: TeamEvent } | null>(null);
+  const [pendingLifecycle, setPendingLifecycle] = useState<{
+    action: "archive" | "restore";
+    event: TeamEvent;
+  } | null>(null);
   const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
 
   // Modal control states
@@ -58,6 +60,7 @@ export default function EventsManagementPage({
   const [selectedEvent, setSelectedEvent] = useState<TeamEvent | null>(null);
   const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
+  const openedPrefillRef = useRef<string | null>(null);
 
   // Filter States
   const [filterSearch, setFilterSearch] = useState("");
@@ -67,7 +70,7 @@ export default function EventsManagementPage({
   const [filterYear, setFilterYear] = useState<string>("all");
 
   // Team Roster (for editor checking in members)
-  const [teamMembers, setTeamMembers] = useState<{ uid: string; nickname: string; avatar: string; }[]>([]);
+  const [teamMembers, setTeamMembers] = useState<{ uid: string; nickname: string; avatar: string }[]>([]);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const canPublishDirectly = useMemo(() => {
@@ -79,9 +82,14 @@ export default function EventsManagementPage({
     const fetchRoster = async () => {
       try {
         const res = await authenticatedFetch("/api/profiles/team-roster");
-        const data = await res.json().catch(() => ({})) as { members?: typeof teamMembers; error?: string };
+        const data = (await res.json().catch(() => ({}))) as {
+          members?: typeof teamMembers;
+          error?: string;
+        };
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText || "Request failed"}${data.error ? ` — ${data.error}` : ""}`);
+          throw new Error(
+            `HTTP ${res.status}: ${res.statusText || "Request failed"}${data.error ? ` — ${data.error}` : ""}`,
+          );
         }
         setTeamMembers(Array.isArray(data.members) ? data.members : []);
       } catch (err: unknown) {
@@ -136,9 +144,15 @@ export default function EventsManagementPage({
           // Note: dates are initialized inside drawer useEffect based on eventToEdit
         }
       } else if (prefilledAction === "edit" && prefilledEventId) {
-        const evt = events.find((e) => e.id === prefilledEventId);
-        if (evt) {
-          handleOpenEdit(evt);
+        const key = `${prefilledEventId}:${prefilledOccurrenceDate ?? "series"}`;
+        if (openedPrefillRef.current !== key) {
+          openedPrefillRef.current = key;
+          void fetchManagedEvent(prefilledEventId, prefilledOccurrenceDate ?? undefined)
+            .then(handleOpenEdit)
+            .catch((error: unknown) => {
+              openedPrefillRef.current = null;
+              setLoadError(error instanceof Error ? error.message : String(error));
+            });
         }
       }
       return;
@@ -148,7 +162,7 @@ export default function EventsManagementPage({
       handleOpenCreate();
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [editorOnly, prefilledAction, prefilledDate, prefilledEventId, events]);
+  }, [editorOnly, prefilledAction, prefilledDate, prefilledEventId, prefilledOccurrenceDate]);
 
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
@@ -187,15 +201,19 @@ export default function EventsManagementPage({
       else await restoreEvent(pendingLifecycle.event.id);
       setOperationStatus({
         kind: "success",
-        message: pendingLifecycle.action === "archive"
-          ? `“${pendingLifecycle.event.title}” was archived.`
-          : `“${pendingLifecycle.event.title}” was restored as a draft.`,
+        message:
+          pendingLifecycle.action === "archive"
+            ? `“${pendingLifecycle.event.title}” was archived.`
+            : `“${pendingLifecycle.event.title}” was restored as a draft.`,
       });
       setPendingLifecycle(null);
       await loadManagementData();
     } catch (error) {
       logger.error("Unable to update event lifecycle:", error);
-      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
+      setOperationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       setIsApplyingLifecycle(false);
     }
@@ -206,11 +224,17 @@ export default function EventsManagementPage({
     setOperationStatus(null);
     try {
       await publishEvent(evt.id);
-      setOperationStatus({ kind: "success", message: `“${evt.title}” is now published.` });
+      setOperationStatus({
+        kind: "success",
+        message: `“${evt.title}” is now published.`,
+      });
       await loadManagementData();
     } catch (error) {
       logger.error("Error approving event:", error);
-      setOperationStatus({ kind: "error", message: error instanceof Error ? error.message : String(error) });
+      setOperationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -332,18 +356,21 @@ export default function EventsManagementPage({
                 )}
               </h1>
               <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-                Schedule upcoming driver practices, outreach events, machine shop slots, and scrimmages to keep the roster aligned.
+                Schedule upcoming driver practices, outreach events, machine shop slots, and scrimmages to keep the
+                roster aligned.
               </p>
             </div>
 
             {canEdit && (
               <div className="flex gap-3">
-                {canPublishDirectly && <button
-                  onClick={() => setIsLocationManagerOpen(true)}
-                  className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                >
-                  <MapPin size={16} className="text-ares-gold" /> Locations
-                </button>}
+                {canPublishDirectly && (
+                  <button
+                    onClick={() => setIsLocationManagerOpen(true)}
+                    className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                  >
+                    <MapPin size={16} className="text-ares-gold" /> Locations
+                  </button>
+                )}
                 <button
                   onClick={handleOpenCreate}
                   className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
@@ -366,11 +393,15 @@ export default function EventsManagementPage({
           {operationStatus && (
             <div
               role={operationStatus.kind === "error" ? "alert" : "status"}
-              className={operationStatus.kind === "error"
-                ? "rounded border border-ares-red/40 bg-ares-red/15 p-4 text-white"
-                : "rounded border border-ares-gold/35 bg-ares-gold/10 p-4 text-ares-gold"}
+              className={
+                operationStatus.kind === "error"
+                  ? "rounded border border-ares-red/40 bg-ares-red/15 p-4 text-white"
+                  : "rounded border border-ares-gold/35 bg-ares-gold/10 p-4 text-ares-gold"
+              }
             >
-              <p className="text-xs font-bold">{operationStatus.kind === "error" ? "The calendar change was not completed." : operationStatus.message}</p>
+              <p className="text-xs font-bold">
+                {operationStatus.kind === "error" ? "The calendar change was not completed." : operationStatus.message}
+              </p>
               {operationStatus.kind === "error" && (
                 <p className="mt-1 break-words font-mono text-[10px] text-white/80">{operationStatus.message}</p>
               )}
@@ -415,7 +446,13 @@ export default function EventsManagementPage({
             onDelete={handleDeleteEvent}
             onClearFilters={handleClearFilters}
             hasActiveFilters={
-              !!(filterSearch || filterStatus !== "all" || filterCategory !== "all" || filterMonth !== "all" || filterYear !== "all")
+              !!(
+                filterSearch ||
+                filterStatus !== "all" ||
+                filterCategory !== "all" ||
+                filterMonth !== "all" ||
+                filterYear !== "all"
+              )
             }
           />
 
@@ -454,7 +491,10 @@ export default function EventsManagementPage({
         setFormLocationId={setFormLocationId}
       />
 
-      <Dialog.Root open={pendingLifecycle !== null} onOpenChange={(open) => !open && !isApplyingLifecycle && setPendingLifecycle(null)}>
+      <Dialog.Root
+        open={pendingLifecycle !== null}
+        onOpenChange={(open) => !open && !isApplyingLifecycle && setPendingLifecycle(null)}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[130] bg-black/80 backdrop-blur-sm" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-[131] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 text-left shadow-2xl focus:outline-none">
@@ -470,16 +510,32 @@ export default function EventsManagementPage({
                 </Dialog.Description>
               </div>
               <Dialog.Close asChild>
-                <button type="button" disabled={isApplyingLifecycle} aria-label="Close confirmation" className="rounded p-2 text-marble/60 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                <button
+                  type="button"
+                  disabled={isApplyingLifecycle}
+                  aria-label="Close confirmation"
+                  className="rounded p-2 text-marble/60 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
                   <X aria-hidden="true" size={16} />
                 </button>
               </Dialog.Close>
             </div>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Dialog.Close asChild>
-                <button type="button" disabled={isApplyingLifecycle} className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase tracking-wider text-marble/75 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+                <button
+                  type="button"
+                  disabled={isApplyingLifecycle}
+                  className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase tracking-wider text-marble/75 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Cancel
+                </button>
               </Dialog.Close>
-              <button type="button" onClick={() => void applyLifecycleAction()} disabled={isApplyingLifecycle} className="inline-flex items-center justify-center gap-2 rounded bg-ares-red px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
+              <button
+                type="button"
+                onClick={() => void applyLifecycleAction()}
+                disabled={isApplyingLifecycle}
+                className="inline-flex items-center justify-center gap-2 rounded bg-ares-red px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+              >
                 {isApplyingLifecycle && <Loader2 aria-hidden="true" size={14} className="motion-safe:animate-spin" />}
                 {pendingLifecycle?.action === "archive" ? "Archive event" : "Restore as draft"}
               </button>

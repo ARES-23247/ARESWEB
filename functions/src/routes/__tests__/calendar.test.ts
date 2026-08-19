@@ -23,7 +23,11 @@ vi.mock("../../lib/firebase-admin", () => {
   };
   const occurrenceGet = vi.fn();
   const occurrenceSet = vi.fn();
-  const occurrenceRef = { id: "2026-08-20", get: occurrenceGet, set: occurrenceSet };
+  const occurrenceRef = {
+    id: "2026-08-20",
+    get: occurrenceGet,
+    set: occurrenceSet,
+  };
   const documentRef = {
     id: "generated-1",
     get: vi.fn(),
@@ -34,9 +38,7 @@ vi.mock("../../lib/firebase-admin", () => {
       if (name === "occurrences") {
         return {
           ...occurrencesQuery,
-          doc: vi.fn((date?: string) => date
-            ? { id: date, get: occurrenceGet, set: occurrenceSet }
-            : occurrenceRef),
+          doc: vi.fn((date?: string) => (date ? { id: date, get: occurrenceGet, set: occurrenceSet } : occurrenceRef)),
         };
       }
       return { doc: vi.fn(() => revisionRef) };
@@ -55,7 +57,11 @@ vi.mock("../../lib/firebase-admin", () => {
     adminDb: {
       collection: vi.fn(() => collectionRef),
       batch: vi.fn(() => batch),
-      __occurrences: { queryGet: occurrencesQuery.get, docGet: occurrenceGet, docSet: occurrenceSet },
+      __occurrences: {
+        queryGet: occurrencesQuery.get,
+        docGet: occurrenceGet,
+        docSet: occurrenceSet,
+      },
     },
   };
 });
@@ -63,9 +69,9 @@ vi.mock("../../lib/firebase-admin", () => {
 type Method = "get" | "post" | "put" | "patch" | "delete";
 
 function handler(path: string, method: Method) {
-  const layer = calendarRouter.stack.find((candidate) => (
-    candidate.route?.path === path && candidate.route.methods[method]
-  ));
+  const layer = calendarRouter.stack.find(
+    (candidate) => candidate.route?.path === path && candidate.route.methods[method],
+  );
   if (!layer?.route) throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
   return layer.route.stack.at(-1)!.handle;
 }
@@ -103,7 +109,13 @@ describe("calendar API", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    req = { query: {}, params: {}, body: {}, user: { uid: "member-1" }, authorizationRole: "member" };
+    req = {
+      query: {},
+      params: {},
+      body: {},
+      user: { uid: "member-1" },
+      authorizationRole: "member",
+    };
     res = {
       json: vi.fn(),
       send: vi.fn(),
@@ -115,23 +127,25 @@ describe("calendar API", () => {
     documentRef = collectionRef.doc("event-1");
     batch = adminDb.batch();
     collectionRef.get.mockResolvedValue({ docs: [] });
-    documentRef.get.mockResolvedValue({ exists: true, id: "event-1", data: () => eventDocument("event-1").data() });
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      id: "event-1",
+      data: () => eventDocument("event-1").data(),
+    });
     documentRef.set.mockResolvedValue(undefined);
     documentRef.update.mockResolvedValue(undefined);
     batch.commit.mockResolvedValue(undefined);
     documentRef.collection("photos").get.mockResolvedValue({ docs: [] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
-    (adminDb as any).__occurrences.docGet.mockResolvedValue({ exists: false, data: () => undefined });
+    (adminDb as any).__occurrences.docGet.mockResolvedValue({
+      exists: false,
+      data: () => undefined,
+    });
     (adminDb as any).__occurrences.docSet.mockReset();
     (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
   });
 
-  async function expectApiError(
-    path: string,
-    method: Method,
-    status: number,
-    code?: string,
-  ) {
+  async function expectApiError(path: string, method: Method, status: number, code?: string) {
     await handler(path, method)(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status, ...(code ? { code } : {}) }));
     expect(res.json).not.toHaveBeenCalled();
@@ -148,13 +162,13 @@ describe("calendar API", () => {
     expect(collectionRef.where).toHaveBeenCalledWith("isDeleted", "==", 0);
     expect(collectionRef.where).toHaveBeenCalledWith("status", "==", "published");
     expect(collectionRef.limit).toHaveBeenCalledWith(3);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      success: true,
-      nextCursor: "event-2",
-      events: expect.arrayContaining([
-        expect.objectContaining({ id: "event-1", title: "Team Practice" }),
-      ]),
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        nextCursor: "event-2",
+        events: expect.arrayContaining([expect.objectContaining({ id: "event-1", title: "Team Practice" })]),
+      }),
+    );
     const payload = res.json.mock.calls[0][0];
     expect(payload.events[0]).not.toHaveProperty("createdBy");
     expect(payload.events[0]).not.toHaveProperty("internalNotes");
@@ -167,9 +181,14 @@ describe("calendar API", () => {
   it("returns one published event and hides archived or draft records", async () => {
     req.params = { id: "event-1" };
     await handler("/events/:id", "get")(req, res, next);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      event: expect.objectContaining({ id: "event-1", title: "Team Practice" }),
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          id: "event-1",
+          title: "Team Practice",
+        }),
+      }),
+    );
 
     documentRef.get.mockResolvedValueOnce({
       exists: true,
@@ -184,7 +203,11 @@ describe("calendar API", () => {
     documentRef.get
       .mockResolvedValueOnce({
         exists: true,
-        data: () => eventDocument("event-1", { locationId: "public-library", category: "outreach" }).data(),
+        data: () =>
+          eventDocument("event-1", {
+            locationId: "public-library",
+            category: "outreach",
+          }).data(),
       })
       .mockResolvedValueOnce({
         exists: true,
@@ -233,9 +256,58 @@ describe("calendar API", () => {
     expect(res.json.mock.calls[0][0].event).not.toHaveProperty("locationId");
   });
 
+  it("returns only series and matching occurrence photos for a dated session", async () => {
+    req.params = { id: "event-1" };
+    req.query = { occurrence: "2026-08-20", limit: "20" };
+    documentRef.collection("photos").get.mockResolvedValue({
+      docs: [
+        {
+          id: "series",
+          data: () => ({
+            url: "https://images.example.test/series.jpg",
+            filename: "Series",
+            uploadedBy: "private",
+          }),
+        },
+        {
+          id: "matching",
+          data: () => ({
+            url: "https://images.example.test/session.jpg",
+            filename: "Session",
+            occurrenceDate: "2026-08-20",
+          }),
+        },
+        {
+          id: "other",
+          data: () => ({
+            url: "https://images.example.test/other.jpg",
+            filename: "Other",
+            occurrenceDate: "2026-08-27",
+          }),
+        },
+      ],
+    });
+
+    await handler("/events/:id/photos", "get")(req, res, next);
+
+    const photos = res.json.mock.calls[0][0].photos;
+    expect(photos.map((photo: { id: string }) => photo.id)).toEqual(["series", "matching"]);
+    expect(photos[0]).not.toHaveProperty("uploadedBy");
+    expect(photos[1].occurrenceDate).toBe("2026-08-20");
+  });
+
+  it("rejects malformed occurrence photo filters", async () => {
+    req.params = { id: "event-1" };
+    req.query = { occurrence: "tomorrow" };
+    await expectApiError("/events/:id/photos", "get", 400, "INVALID_DATE");
+  });
+
   it("rejects missing, archived, and malformed public event IDs", async () => {
     req.params = { id: "missing" };
-    documentRef.get.mockResolvedValueOnce({ exists: false, data: () => undefined });
+    documentRef.get.mockResolvedValueOnce({
+      exists: false,
+      data: () => undefined,
+    });
     await expectApiError("/events/:id", "get", 404, "EVENT_NOT_FOUND");
 
     next.mockClear();
@@ -272,11 +344,17 @@ describe("calendar API", () => {
         },
         {
           id: "photo-deleted",
-          data: () => ({ url: "https://images.example.test/deleted.jpg", isDeleted: 1 }),
+          data: () => ({
+            url: "https://images.example.test/deleted.jpg",
+            isDeleted: 1,
+          }),
         },
         {
           id: "photo-unsafe",
-          data: () => ({ url: "http://images.example.test/unsafe.jpg", isDeleted: 0 }),
+          data: () => ({
+            url: "http://images.example.test/unsafe.jpg",
+            isDeleted: 0,
+          }),
         },
       ],
     });
@@ -284,16 +362,19 @@ describe("calendar API", () => {
     await handler("/events/:id/photos", "get")(req, res, next);
 
     expect(photoCollection.orderBy).toHaveBeenCalledWith("uploadedAt", "desc");
-    expect(photoCollection.limit).toHaveBeenCalledWith(4);
+    expect(photoCollection.limit).toHaveBeenCalledWith(8);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      photos: [{
-        id: "photo-safe",
-        url: "https://images.example.test/practice.jpg",
-        thumbnailUrl: "https://images.example.test/practice-thumb.webp",
-        mediumUrl: null,
-        filename: "Drive practice.jpg",
-      }],
+      photos: [
+        {
+          id: "photo-safe",
+          url: "https://images.example.test/practice.jpg",
+          thumbnailUrl: "https://images.example.test/practice-thumb.webp",
+          mediumUrl: null,
+          filename: "Drive practice.jpg",
+          occurrenceDate: null,
+        },
+      ],
     });
     const payload = res.json.mock.calls[0][0];
     expect(payload.photos[0]).not.toHaveProperty("uploadedBy");
@@ -324,7 +405,11 @@ describe("calendar API", () => {
   });
 
   it("applies a valid cursor and rejects stale or malformed cursors", async () => {
-    const cursorSnapshot = { exists: true, id: "event-2", data: () => eventDocument("event-2").data() };
+    const cursorSnapshot = {
+      exists: true,
+      id: "event-2",
+      data: () => eventDocument("event-2").data(),
+    };
     req.query = { cursor: "event-2" };
     documentRef.get.mockResolvedValueOnce(cursorSnapshot);
     collectionRef.get.mockResolvedValueOnce({ docs: [] });
@@ -355,7 +440,13 @@ describe("calendar API", () => {
     expect(collectionRef.limit).toHaveBeenCalledWith(2);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      events: [expect.objectContaining({ id: "event-1", status: "draft", isDeleted: 1 })],
+      events: [
+        expect.objectContaining({
+          id: "event-1",
+          status: "draft",
+          isDeleted: 1,
+        }),
+      ],
       nextCursor: "event-1",
     });
   });
@@ -386,11 +477,14 @@ describe("calendar API", () => {
 
     await handler("/manage", "post")(req, res, next);
 
-    expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({
-      status: "pending",
-      isDeleted: 0,
-      createdBy: "member-1",
-    }));
+    expect(batch.set).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({
+        status: "pending",
+        isDeleted: 0,
+        createdBy: "member-1",
+      }),
+    );
     expect(batch.set).toHaveBeenCalledTimes(3);
     expect(batch.commit).toHaveBeenCalledOnce();
     expect(res.status).toHaveBeenCalledWith(201);
@@ -408,7 +502,7 @@ describe("calendar API", () => {
 
     vi.clearAllMocks();
     batch.commit.mockResolvedValue(undefined);
-    req.body = { ...req.body as object, status: "draft" };
+    req.body = { ...(req.body as object), status: "draft" };
     await handler("/manage", "post")(req, res, next);
     expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "draft" }));
   });
@@ -427,7 +521,10 @@ describe("calendar API", () => {
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 401 }));
 
     next.mockClear();
-    const middlewareReq = { user: { uid: "member-1" }, authorizationRole: "member" } as any;
+    const middlewareReq = {
+      user: { uid: "member-1" },
+      authorizationRole: "member",
+    } as any;
     ensureCalendarPublisher(middlewareReq, res as any, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
 
@@ -450,10 +547,16 @@ describe("calendar API", () => {
       data: () => eventDocument("event-1", { status: "draft" }).data(),
     });
     await handler("/manage/:id", "put")(req, res, next);
-    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "pending", updatedBy: "member-1" }));
+    expect(batch.update).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({ status: "pending", updatedBy: "member-1" }),
+    );
     expect(batch.set).toHaveBeenCalledTimes(2);
     expect(batch.commit).toHaveBeenCalledOnce();
-    expect(res.json).toHaveBeenCalledWith({ success: true, event: expect.objectContaining({ id: "event-1", status: "pending" }) });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      event: expect.objectContaining({ id: "event-1", status: "pending" }),
+    });
   });
 
   it("lets a publisher update an event with a safe default draft status", async () => {
@@ -474,7 +577,11 @@ describe("calendar API", () => {
 
   it("rejects edits to archived events and member edits to published events", async () => {
     req.params = { id: "event-1" };
-    req.body = { title: "Edit", dateStart: "2026-09-10T18:00:00.000Z", category: "internal" };
+    req.body = {
+      title: "Edit",
+      dateStart: "2026-09-10T18:00:00.000Z",
+      category: "internal",
+    };
     documentRef.get.mockResolvedValueOnce({
       exists: true,
       data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
@@ -503,11 +610,14 @@ describe("calendar API", () => {
     });
     batch.commit.mockResolvedValue(undefined);
     await handler("/manage/:id/restore", "patch")(req, res, next);
-    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({
-      isDeleted: 0,
-      status: "draft",
-      archivedAt: null,
-    }));
+    expect(batch.update).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({
+        isDeleted: 0,
+        status: "draft",
+        archivedAt: null,
+      }),
+    );
   });
 
   it("keeps repeated event lifecycle operations idempotent", async () => {
@@ -518,7 +628,11 @@ describe("calendar API", () => {
       data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
     });
     await handler("/manage/:id", "delete")(req, res, next);
-    expect(res.json).toHaveBeenCalledWith({ success: true, archived: true, message: "Event is already archived." });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      archived: true,
+      message: "Event is already archived.",
+    });
     expect(batch.commit).not.toHaveBeenCalled();
 
     vi.clearAllMocks();
@@ -527,7 +641,11 @@ describe("calendar API", () => {
       data: () => eventDocument("event-1", { isDeleted: 0 }).data(),
     });
     await handler("/manage/:id/restore", "patch")(req, res, next);
-    expect(res.json).toHaveBeenCalledWith({ success: true, restored: true, message: "Event is already active." });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      restored: true,
+      message: "Event is already active.",
+    });
     expect(batch.commit).not.toHaveBeenCalled();
   });
 
@@ -539,8 +657,14 @@ describe("calendar API", () => {
       data: () => eventDocument("event-1", { status: "draft" }).data(),
     });
     await handler("/manage/:id/publish", "patch")(req, res, next);
-    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ status: "published", publishedBy: "member-1" }));
-    expect(res.json).toHaveBeenCalledWith({ success: true, published: true, message: "Event published successfully." });
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "published", publishedBy: "member-1" }),
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      published: true,
+      message: "Event published successfully.",
+    });
 
     vi.clearAllMocks();
     documentRef.get.mockResolvedValueOnce({
@@ -554,23 +678,38 @@ describe("calendar API", () => {
     req.authorizationRole = "admin";
     req.body = { name: "Community Center", address: "Morgantown, WV" };
     await handler("/locations", "post")(req, res, next);
-    expect(documentRef.set).toHaveBeenCalledWith(expect.objectContaining({
-      name: "Community Center",
-      isDeleted: 0,
-    }));
+    expect(documentRef.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Community Center",
+        isDeleted: 0,
+      }),
+    );
     expect(res.status).toHaveBeenCalledWith(201);
 
     req.params = { id: "venue-1" };
-    documentRef.get.mockResolvedValue({ exists: true, data: () => ({ name: "Community Center" }) });
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      data: () => ({ name: "Community Center" }),
+    });
     await handler("/locations/:id", "delete")(req, res, next);
     expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 1 }));
   });
 
   it("lists explicit venue DTOs in name order", async () => {
-    collectionRef.get.mockResolvedValueOnce({ docs: [
-      { id: "venue-1", data: () => ({ name: "Team Lab", address: "Morgantown, WV", isDeleted: 0, ownerUid: "private" }) },
-      { id: "venue-2", data: () => ({ name: "Old Lab", isDeleted: 1 }) },
-    ] });
+    collectionRef.get.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "venue-1",
+          data: () => ({
+            name: "Team Lab",
+            address: "Morgantown, WV",
+            isDeleted: 0,
+            ownerUid: "private",
+          }),
+        },
+        { id: "venue-2", data: () => ({ name: "Old Lab", isDeleted: 1 }) },
+      ],
+    });
     await handler("/locations", "get")(req, res, next);
     expect(collectionRef.orderBy).toHaveBeenCalledWith("name", "asc");
     expect(collectionRef.limit).toHaveBeenCalledWith(150);
@@ -585,18 +724,36 @@ describe("calendar API", () => {
   it("updates an active venue and rejects missing or archived venues", async () => {
     req.authorizationRole = "admin";
     req.params = { id: "venue-1" };
-    req.body = { name: "Updated Lab", address: "Morgantown, WV", gmapsUrl: "https://maps.google.com/example" };
-    documentRef.get.mockResolvedValueOnce({ exists: true, data: () => ({ name: "Old Lab", isDeleted: 0 }) });
+    req.body = {
+      name: "Updated Lab",
+      address: "Morgantown, WV",
+      gmapsUrl: "https://maps.google.com/example",
+    };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ name: "Old Lab", isDeleted: 0 }),
+    });
     await handler("/locations/:id", "put")(req, res, next);
-    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ name: "Updated Lab", updatedBy: "member-1" }));
-    expect(res.json).toHaveBeenCalledWith({ success: true, location: expect.objectContaining({ id: "venue-1", name: "Updated Lab" }) });
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Updated Lab", updatedBy: "member-1" }),
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      location: expect.objectContaining({ id: "venue-1", name: "Updated Lab" }),
+    });
 
     vi.clearAllMocks();
-    documentRef.get.mockResolvedValueOnce({ exists: false, data: () => undefined });
+    documentRef.get.mockResolvedValueOnce({
+      exists: false,
+      data: () => undefined,
+    });
     await expectApiError("/locations/:id", "put", 404, "LOCATION_NOT_FOUND");
 
     next.mockClear();
-    documentRef.get.mockResolvedValueOnce({ exists: true, data: () => ({ name: "Old", isDeleted: 1 }) });
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ name: "Old", isDeleted: 1 }),
+    });
     await expectApiError("/locations/:id", "put", 409, "LOCATION_ARCHIVED");
   });
 
@@ -607,10 +764,23 @@ describe("calendar API", () => {
     await expectApiError("/locations/:id", "delete", 404, "LOCATION_NOT_FOUND");
 
     next.mockClear();
-    documentRef.get.mockResolvedValueOnce({ exists: true, data: () => ({ name: "Team Lab", isDeleted: 1 }) });
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ name: "Team Lab", isDeleted: 1 }),
+    });
     await handler("/locations/:id/restore", "patch")(req, res, next);
-    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 0, archivedAt: null, restoredBy: "member-1" }));
-    expect(res.json).toHaveBeenCalledWith({ success: true, restored: true, message: "Venue restored successfully." });
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isDeleted: 0,
+        archivedAt: null,
+        restoredBy: "member-1",
+      }),
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      restored: true,
+      message: "Venue restored successfully.",
+    });
 
     vi.clearAllMocks();
     documentRef.get.mockResolvedValueOnce({ exists: false });
@@ -620,7 +790,10 @@ describe("calendar API", () => {
   it("builds a truthful feed, escapes text, and skips malformed dates", async () => {
     collectionRef.get.mockResolvedValue({
       docs: [
-        eventDocument("event-1", { title: "Practice, Build; Test", description: "Line one\nLine two" }),
+        eventDocument("event-1", {
+          title: "Practice, Build; Test",
+          description: "Line one\nLine two",
+        }),
         eventDocument("bad-date", { dateStart: "not-a-date" }),
       ],
     });
@@ -636,13 +809,17 @@ describe("calendar API", () => {
   });
 
   it("uses truthful feed fallbacks for missing end, update, title, and optional fields", async () => {
-    collectionRef.get.mockResolvedValueOnce({ docs: [eventDocument("fallback", {
-      title: undefined,
-      dateEnd: undefined,
-      updatedAt: undefined,
-      description: undefined,
-      location: undefined,
-    })] });
+    collectionRef.get.mockResolvedValueOnce({
+      docs: [
+        eventDocument("fallback", {
+          title: undefined,
+          dateEnd: undefined,
+          updatedAt: undefined,
+          description: undefined,
+          location: undefined,
+        }),
+      ],
+    });
     await handler("/feed", "get")(req, res, next);
     const feed = res.send.mock.calls[0][0] as string;
     expect(feed).toContain("UID:fallback@aresfirst.org");
@@ -677,7 +854,12 @@ describe("calendar recurrence", () => {
   }
 
   let req: Record<string, unknown>;
-  let res: { json: ReturnType<typeof vi.fn>; send: ReturnType<typeof vi.fn>; setHeader: ReturnType<typeof vi.fn>; status: ReturnType<typeof vi.fn> };
+  let res: {
+    json: ReturnType<typeof vi.fn>;
+    send: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+    status: ReturnType<typeof vi.fn>;
+  };
   let next: ReturnType<typeof vi.fn>;
   let collectionRef: any;
   let documentRef: any;
@@ -685,19 +867,37 @@ describe("calendar recurrence", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    req = { query: {}, params: {}, body: {}, user: { uid: "member-1" }, authorizationRole: "mentor" };
-    res = { json: vi.fn(), send: vi.fn(), setHeader: vi.fn(), status: vi.fn().mockReturnThis() };
+    req = {
+      query: {},
+      params: {},
+      body: {},
+      user: { uid: "member-1" },
+      authorizationRole: "mentor",
+    };
+    res = {
+      json: vi.fn(),
+      send: vi.fn(),
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+    };
     next = vi.fn();
     collectionRef = adminDb.collection("events") as any;
     documentRef = collectionRef.doc("weekly-1");
     batch = adminDb.batch();
     collectionRef.get.mockResolvedValue({ docs: [] });
-    documentRef.get.mockResolvedValue({ exists: true, id: "weekly-1", data: () => recurringDocument().data() });
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      id: "weekly-1",
+      data: () => recurringDocument().data(),
+    });
     documentRef.set.mockResolvedValue(undefined);
     documentRef.update.mockResolvedValue(undefined);
     batch.commit.mockResolvedValue(undefined);
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
-    (adminDb as any).__occurrences.docGet.mockResolvedValue({ exists: false, data: () => undefined });
+    (adminDb as any).__occurrences.docGet.mockResolvedValue({
+      exists: false,
+      data: () => undefined,
+    });
     (adminDb as any).__occurrences.docSet.mockReset();
     (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
   });
@@ -719,11 +919,15 @@ describe("calendar recurrence", () => {
   });
 
   it("preserves floating local times while expanding recurring events", async () => {
-    collectionRef.get.mockResolvedValue({ docs: [eventDocument("weekly-local", {
-      dateStart: `${todayYmdStr}T18:00`,
-      dateEnd: `${todayYmdStr}T20:00`,
-      recurrence: weeklyRule,
-    })] });
+    collectionRef.get.mockResolvedValue({
+      docs: [
+        eventDocument("weekly-local", {
+          dateStart: `${todayYmdStr}T18:00`,
+          dateEnd: `${todayYmdStr}T20:00`,
+          recurrence: weeklyRule,
+        }),
+      ],
+    });
 
     await handler("/events", "get")(req, res, next);
 
@@ -738,14 +942,68 @@ describe("calendar recurrence", () => {
 
     await handler("/events/:id", "get")(req, res, next);
 
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      event: expect.objectContaining({
-        id: `weekly-1_${todayYmdStr}`,
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          id: `weekly-1_${todayYmdStr}`,
+          recurrenceOf: "weekly-1",
+          occurrenceDate: todayYmdStr,
+          dateStart: `${todayYmdStr}T18:00:00.000Z`,
+        }),
+      }),
+    );
+  });
+
+  it("merges validated occurrence overrides while retaining immutable series defaults", async () => {
+    req.params = { id: "weekly-1" };
+    req.query = { occurrence: todayYmdStr };
+    (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        overrides: {
+          title: "Drive Practice",
+          dateStart: `${todayYmdStr}T19:00:00.000Z`,
+          internalNotes: "must not leak",
+        },
+      }),
+    });
+
+    await handler("/events/:id", "get")(req, res, next);
+
+    const occurrence = res.json.mock.calls[0][0].event;
+    expect(occurrence).toEqual(
+      expect.objectContaining({
+        title: "Drive Practice",
+        dateStart: `${todayYmdStr}T19:00:00.000Z`,
+        seriesDefaults: expect.objectContaining({
+          title: "Team Practice",
+          dateStart: `${todayYmdStr}T18:00:00.000Z`,
+        }),
+      }),
+    );
+    expect(occurrence).not.toHaveProperty("internalNotes");
+    expect(occurrence.seriesDefaults).not.toHaveProperty("internalNotes");
+  });
+
+  it("loads an exact managed occurrence independently of the forward list window", async () => {
+    req.params = { id: "weekly-1" };
+    req.query = { occurrence: todayYmdStr };
+    (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ overrides: { title: "Documented Session" } }),
+    });
+
+    await handler("/manage/:id", "get")(req, res, next);
+
+    expect(res.json.mock.calls[0][0].event).toEqual(
+      expect.objectContaining({
+        title: "Documented Session",
         recurrenceOf: "weekly-1",
         occurrenceDate: todayYmdStr,
-        dateStart: `${todayYmdStr}T18:00:00.000Z`,
+        status: "published",
+        location: "Team Lab",
       }),
-    }));
+    );
   });
 
   it("rejects invalid, unscheduled, and cancelled public occurrence details", async () => {
@@ -757,10 +1015,12 @@ describe("calendar recurrence", () => {
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     req.query = { occurrence: tomorrow };
     await handler("/events/:id", "get")(req, res, next);
-    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({
-      status: 404,
-      code: "EVENT_OCCURRENCE_NOT_FOUND",
-    }));
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: 404,
+        code: "EVENT_OCCURRENCE_NOT_FOUND",
+      }),
+    );
 
     req.query = { occurrence: todayYmdStr };
     (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
@@ -768,10 +1028,12 @@ describe("calendar recurrence", () => {
       data: () => ({ isCancelled: 1 }),
     });
     await handler("/events/:id", "get")(req, res, next);
-    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({
-      status: 404,
-      code: "EVENT_OCCURRENCE_NOT_FOUND",
-    }));
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: 404,
+        code: "EVENT_OCCURRENCE_NOT_FOUND",
+      }),
+    );
   });
 
   it("extends occurrence visibility with the bounded expandDays window", async () => {
@@ -826,7 +1088,12 @@ describe("calendar recurrence", () => {
       title: "Weekly Practice",
       dateStart: `${todayYmdStr}T18:00:00.000Z`,
       category: "internal",
-      recurrence: { frequency: "weekly", interval: 1, byDay: ["MO"], until: "2000-01-01" },
+      recurrence: {
+        frequency: "weekly",
+        interval: 1,
+        byDay: ["MO"],
+        until: "2000-01-01",
+      },
     };
     await handler("/manage", "post")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
@@ -841,26 +1108,81 @@ describe("calendar recurrence", () => {
       recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"] },
     };
     await handler("/manage", "post")(req, res, next);
-    expect(batch.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"] },
-    }));
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        recurrence: { frequency: "weekly", interval: 2, byDay: ["TU", "TH"] },
+      }),
+    );
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json.mock.calls[0][0].event.recurrence).toEqual({ frequency: "weekly", interval: 2, byDay: ["TU", "TH"] });
+    expect(res.json.mock.calls[0][0].event.recurrence).toEqual({
+      frequency: "weekly",
+      interval: 2,
+      byDay: ["TU", "TH"],
+    });
   });
 
   it("guards occurrence endpoints behind the publisher role and validates dates", async () => {
-    const cancelLayer = calendarRouter.stack.find((entry) => (
-      entry.route?.path === "/manage/:id/occurrences/:date" && entry.route.methods.patch
-    ));
+    const cancelLayer = calendarRouter.stack.find(
+      (entry) => entry.route?.path === "/manage/:id/occurrences/:date" && entry.route.methods.patch,
+    );
     expect(cancelLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
       "ensureTeamMember",
       "ensureCalendarPublisher",
+      expect.any(String),
+    ]);
+    const updateLayer = calendarRouter.stack.find(
+      (entry) => entry.route?.path === "/manage/:id/occurrences/:date" && entry.route.methods.put,
+    );
+    expect(updateLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
+      "ensureTeamMember",
+      "ensureCalendarPublisher",
+      expect.any(String),
+    ]);
+    const detailLayer = calendarRouter.stack.find(
+      (entry) => entry.route?.path === "/manage/:id" && entry.route.methods.get,
+    );
+    expect(detailLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
+      "ensureTeamMember",
       expect.any(String),
     ]);
 
     req.params = { id: "weekly-1", date: "not-a-date" };
     await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "INVALID_DATE" }));
+  });
+
+  it("stores only fields changed for one scheduled occurrence", async () => {
+    req.params = { id: "weekly-1", date: todayYmdStr };
+    req.body = {
+      title: "Drive Practice",
+      dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      dateEnd: `${todayYmdStr}T20:00:00.000Z`,
+      locationId: null,
+      location: "Team Lab",
+      description: null,
+      category: "internal",
+      coverImage: null,
+      isPotluck: 0,
+      isVolunteer: 0,
+    };
+
+    await handler("/manage/:id/occurrences/:date", "put")(req, res, next);
+
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        date: todayYmdStr,
+        overrides: { title: "Drive Practice" },
+        updatedBy: "member-1",
+      }),
+      { merge: true },
+    );
+    expect(res.json.mock.calls[0][0].event).toEqual(
+      expect.objectContaining({
+        title: "Drive Practice",
+        occurrenceDate: todayYmdStr,
+      }),
+    );
   });
 
   it("cancels and restores a single occurrence with audit trail", async () => {
@@ -872,16 +1194,22 @@ describe("calendar recurrence", () => {
       { merge: true },
     );
 
-    (adminDb as any).__occurrences.docGet.mockResolvedValue({ exists: true, data: () => ({ isCancelled: 1 }) });
+    (adminDb as any).__occurrences.docGet.mockResolvedValue({
+      exists: true,
+      data: () => ({ isCancelled: 1 }),
+    });
     await handler("/manage/:id/occurrences/:date/restore", "patch")(req, res, next);
-    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(
-      expect.objectContaining({ isCancelled: 0 }),
-      { merge: true },
-    );
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(expect.objectContaining({ isCancelled: 0 }), {
+      merge: true,
+    });
   });
 
   it("refuses occurrence operations on non-recurring events", async () => {
-    documentRef.get.mockResolvedValue({ exists: true, id: "plain-1", data: () => eventDocument("plain-1").data() });
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      id: "plain-1",
+      data: () => eventDocument("plain-1").data(),
+    });
     req.params = { id: "plain-1", date: "2026-09-03" };
     req.body = { cancelled: true };
     await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
@@ -896,7 +1224,7 @@ describe("calendar recurrence", () => {
     await handler("/manage/:id/occurrences", "get")(req, res, next);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      occurrences: [{ date: "2026-09-03", isCancelled: true }],
+      occurrences: [{ date: "2026-09-03", isCancelled: true, hasOverrides: false }],
     });
   });
 
@@ -904,7 +1232,12 @@ describe("calendar recurrence", () => {
     const thursday = eventDocument("weekly-1", {
       dateStart: "2026-08-20T18:00:00.000Z",
       dateEnd: "2026-08-20T20:00:00.000Z",
-      recurrence: { frequency: "weekly", interval: 2, byDay: ["TH"], until: "2026-12-31" },
+      recurrence: {
+        frequency: "weekly",
+        interval: 2,
+        byDay: ["TH"],
+        until: "2026-12-31",
+      },
     });
     collectionRef.get.mockResolvedValue({ docs: [thursday] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({
@@ -915,5 +1248,35 @@ describe("calendar recurrence", () => {
     expect(body).toContain("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20261231T235959Z");
     expect(body).toContain("EXDATE:20260903T180000Z");
     expect(body).toContain("UID:weekly-1@aresfirst.org");
+  });
+
+  it("emits RFC recurrence exceptions for individually edited sessions", async () => {
+    const thursday = eventDocument("weekly-1", {
+      dateStart: "2026-08-20T18:00:00.000Z",
+      dateEnd: "2026-08-20T20:00:00.000Z",
+      recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+    });
+    collectionRef.get.mockResolvedValue({ docs: [thursday] });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({
+      docs: [
+        {
+          id: "2026-09-03",
+          data: () => ({
+            overrides: {
+              title: "Scrimmage Practice",
+              dateStart: "2026-09-03T19:00:00.000Z",
+              dateEnd: "2026-09-03T21:00:00.000Z",
+            },
+          }),
+        },
+      ],
+    });
+
+    await handler("/feed", "get")(req, res, next);
+
+    const body = res.send.mock.calls[0][0] as string;
+    expect(body).toContain("RECURRENCE-ID:20260903T180000Z");
+    expect(body).toContain("DTSTART:20260903T190000Z");
+    expect(body).toContain("SUMMARY:Scrimmage Practice");
   });
 });

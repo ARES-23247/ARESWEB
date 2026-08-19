@@ -4,13 +4,7 @@ import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import {
-  doc,
-  collection,
-  onSnapshot,
-  setDoc,
-  deleteDoc
-} from "firebase/firestore";
+import { doc, collection, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
@@ -112,16 +106,18 @@ export default function EventDetailPage() {
   // Fetch Locations list
   useEffect(() => {
     if (!isVerified) return;
-    void fetchLocations().then(setLocations).catch((error: unknown) => {
-      logger.error("Unable to fetch event locations:", error);
-    });
+    void fetchLocations()
+      .then(setLocations)
+      .catch((error: unknown) => {
+        logger.error("Unable to fetch event locations:", error);
+      });
   }, [isVerified]);
 
   useEffect(() => {
     if (!isVerified) return;
     void authenticatedFetch("/api/profiles/me")
       .then(async (response) => {
-        const payload = await response.json().catch(() => ({})) as {
+        const payload = (await response.json().catch(() => ({}))) as {
           profile?: { nickname?: unknown };
           nickname?: unknown;
           error?: unknown;
@@ -147,54 +143,69 @@ export default function EventDetailPage() {
       (snapshot) => {
         const list = snapshot.docs.map((docSnap) => ({
           userId: docSnap.id,
-          ...docSnap.data()
+          ...docSnap.data(),
         })) as EventSignup[];
         setSignups(list);
       },
       (err) => {
         logger.warn("Unable to fetch event signups:", err);
         setSignupsError("The sign-up list is unavailable right now. Please try again.");
-      }
+      },
     );
     return () => unsubscribe();
   }, [id, isVerified]);
 
-  const loadPhotos = useCallback(async (signal?: AbortSignal) => {
-    if (!id) return;
-    setLoadingPhotos(true);
-    try {
-      const response = await fetch(`/api/calendar/events/${encodeURIComponent(id)}/photos?limit=50`, { signal });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
-      }
-      const payload = await response.json() as { photos?: unknown };
-      if (!Array.isArray(payload.photos)) {
-        throw new Error("Event photo response does not contain a photo list.");
-      }
-      const safePhotos = payload.photos.map((value): EventPhoto => {
-        if (!value || typeof value !== "object") throw new Error("Event photo response contains an invalid photo.");
-        const record = value as Record<string, unknown>;
-        if (typeof record.id !== "string" || typeof record.url !== "string" || typeof record.filename !== "string") {
-          throw new Error("Event photo response contains invalid fields.");
+  const loadPhotos = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!id) return;
+      setLoadingPhotos(true);
+      try {
+        const photoParams = new URLSearchParams({ limit: "50" });
+        if (occurrenceDate) photoParams.set("occurrence", occurrenceDate);
+        const response = await fetch(
+          `/api/calendar/events/${encodeURIComponent(id)}/photos?${photoParams.toString()}`,
+          { signal },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
         }
-        const thumbnailUrl = typeof record.thumbnailUrl === "string" && record.thumbnailUrl.startsWith("https://")
-          ? record.thumbnailUrl
-          : null;
-        const mediumUrl = typeof record.mediumUrl === "string" && record.mediumUrl.startsWith("https://")
-          ? record.mediumUrl
-          : null;
-        return { id: record.id, url: record.url, thumbnailUrl, mediumUrl, filename: record.filename };
-      });
-      setPhotos(safePhotos);
-      setPhotoLoadError(null);
-    } catch (error) {
-      if (signal?.aborted) return;
-      logger.error("Unable to fetch public event photos:", error);
-      setPhotoLoadError(error instanceof Error ? error.message : String(error));
-    } finally {
-      if (!signal?.aborted) setLoadingPhotos(false);
-    }
-  }, [id]);
+        const payload = (await response.json()) as { photos?: unknown };
+        if (!Array.isArray(payload.photos)) {
+          throw new Error("Event photo response does not contain a photo list.");
+        }
+        const safePhotos = payload.photos.map((value): EventPhoto => {
+          if (!value || typeof value !== "object") throw new Error("Event photo response contains an invalid photo.");
+          const record = value as Record<string, unknown>;
+          if (typeof record.id !== "string" || typeof record.url !== "string" || typeof record.filename !== "string") {
+            throw new Error("Event photo response contains invalid fields.");
+          }
+          const thumbnailUrl =
+            typeof record.thumbnailUrl === "string" && record.thumbnailUrl.startsWith("https://")
+              ? record.thumbnailUrl
+              : null;
+          const mediumUrl =
+            typeof record.mediumUrl === "string" && record.mediumUrl.startsWith("https://") ? record.mediumUrl : null;
+          return {
+            id: record.id,
+            url: record.url,
+            thumbnailUrl,
+            mediumUrl,
+            filename: record.filename,
+            occurrenceDate: typeof record.occurrenceDate === "string" ? record.occurrenceDate : null,
+          };
+        });
+        setPhotos(safePhotos);
+        setPhotoLoadError(null);
+      } catch (error) {
+        if (signal?.aborted) return;
+        logger.error("Unable to fetch public event photos:", error);
+        setPhotoLoadError(error instanceof Error ? error.message : String(error));
+      } finally {
+        if (!signal?.aborted) setLoadingPhotos(false);
+      }
+    },
+    [id, occurrenceDate],
+  );
 
   // 3. Fetch bounded public event-photo DTOs without exposing uploader metadata.
   useEffect(() => {
@@ -235,7 +246,7 @@ export default function EventDetailPage() {
     const rsvpDoc: EventSignup = {
       userId: user.uid,
       nickname: profileNickname,
-      attended: mySignup?.attended ?? false
+      attended: mySignup?.attended ?? false,
     };
 
     if (event?.isPotluck && bringing.trim()) {
@@ -305,7 +316,7 @@ export default function EventDetailPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id || !user || !isVerified) return;
-    
+
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setUploadError("Upload a JPEG, PNG, or WebP image.");
       return;
@@ -332,10 +343,17 @@ export default function EventDetailPage() {
       });
       if (!response.ok) {
         const detail = await response.text();
-        throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}${detail ? ` — ${detail}` : ""}`);
+        throw new Error(
+          `HTTP ${response.status}: ${response.statusText || "Request failed"}${detail ? ` — ${detail}` : ""}`,
+        );
       }
-      const payload = await response.json() as {
-        photo?: { id?: string; publicUrl?: string; thumbnailUrl?: string | null; mediumUrl?: string | null };
+      const payload = (await response.json()) as {
+        photo?: {
+          id?: string;
+          publicUrl?: string;
+          thumbnailUrl?: string | null;
+          mediumUrl?: string | null;
+        };
       };
       if (!payload.photo?.id || !payload.photo.publicUrl) throw new Error("Upload response did not contain a photo.");
 
@@ -348,6 +366,7 @@ export default function EventDetailPage() {
         uploadedAt: new Date().toISOString(),
         filename: file.name,
         isDeleted: 0,
+        occurrenceDate: occurrenceDate ?? null,
       });
       await loadPhotos();
     } catch (err: unknown) {
@@ -378,11 +397,9 @@ export default function EventDetailPage() {
       `DTSTART:${startStr}`,
       `DTEND:${endStr}`,
       `SUMMARY:${event.title}`,
-      ...(event.publicVenue
-        ? [`LOCATION:${event.publicVenue.name}, ${event.publicVenue.address}`]
-        : []),
+      ...(event.publicVenue ? [`LOCATION:${event.publicVenue.name}, ${event.publicVenue.address}`] : []),
       "END:VEVENT",
-      "END:VCALENDAR"
+      "END:VCALENDAR",
     ].join("\r\n");
 
     const blob = new Blob([icsData], { type: "text/calendar;charset=utf-8" });
@@ -413,11 +430,9 @@ export default function EventDetailPage() {
         end.setHours(end.getHours() + 2);
         endStr = end.toISOString().replace(/-|:|\.\d+/g, "");
       }
-      
+
       const plainTextDescription = toPlainText(event.description);
-      const publicLocation = event.publicVenue
-        ? `${event.publicVenue.name}, ${event.publicVenue.address}`
-        : "";
+      const publicLocation = event.publicVenue ? `${event.publicVenue.name}, ${event.publicVenue.address}` : "";
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(plainTextDescription)}&location=${encodeURIComponent(publicLocation)}`;
     } catch {
       return "";
@@ -449,10 +464,19 @@ export default function EventDetailPage() {
     }
     return (
       <div className="w-full min-h-screen bg-obsidian text-marble flex flex-col items-center justify-center p-6 text-center">
-        <SEO title="Event Not Found" description="This ARES 23247 calendar event does not exist or is no longer published." noindex />
+        <SEO
+          title="Event Not Found"
+          description="This ARES 23247 calendar event does not exist or is no longer published."
+          noindex
+        />
         <h1 className="text-3xl font-black font-heading text-white uppercase mb-4">Event Record Lost</h1>
-        <p className="text-marble/60 text-sm max-w-sm mb-6">This schedule item does not exist or has been removed from the calendar system.</p>
-        <Link to="/calendar" className="clipped-button bg-ares-red text-white py-3 px-6 text-xs font-black uppercase tracking-widest">
+        <p className="text-marble/60 text-sm max-w-sm mb-6">
+          This schedule item does not exist or has been removed from the calendar system.
+        </p>
+        <Link
+          to="/calendar"
+          className="clipped-button bg-ares-red text-white py-3 px-6 text-xs font-black uppercase tracking-widest"
+        >
           ← Return to Calendar
         </Link>
       </div>
@@ -464,9 +488,12 @@ export default function EventDetailPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
-      <SEO 
-        title={event.title} 
-        description={event.description || `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`}
+      <SEO
+        title={event.title}
+        description={
+          event.description ||
+          `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`
+        }
         image={event.coverImage}
         type={event.category === "outreach" && event.publicVenue ? "event" : "website"}
         schemaData={{
@@ -510,6 +537,7 @@ export default function EventDetailPage() {
             handleImageUpload={handleImageUpload}
             onRetryPhotos={() => void loadPhotos()}
             setSelectedPhoto={setSelectedPhoto}
+            occurrenceDate={occurrenceDate}
           />
         </article>
 
@@ -542,15 +570,35 @@ export default function EventDetailPage() {
 
       <PhotoLightbox selectedPhoto={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
 
-      <Dialog.Root open={confirmRsvpCancel} onOpenChange={(open) => !open && !submittingRsvp && setConfirmRsvpCancel(false)}>
+      <Dialog.Root
+        open={confirmRsvpCancel}
+        onOpenChange={(open) => !open && !submittingRsvp && setConfirmRsvpCancel(false)}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[140] bg-black/80" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-[141] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
             <Dialog.Title className="text-lg font-black uppercase text-white">Cancel your RSVP?</Dialog.Title>
-            <Dialog.Description className="mt-2 text-sm text-marble/75">Your attendance record will be removed. You can RSVP again later.</Dialog.Description>
+            <Dialog.Description className="mt-2 text-sm text-marble/75">
+              Your attendance record will be removed. You can RSVP again later.
+            </Dialog.Description>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Dialog.Close asChild><button type="button" disabled={submittingRsvp} className="rounded border border-white/15 px-4 py-2 text-xs font-bold text-marble/75 focus-visible:ring-2 focus-visible:ring-ares-cyan">Keep RSVP</button></Dialog.Close>
-              <button type="button" onClick={() => void executeRsvpCancel()} disabled={submittingRsvp} className="rounded bg-ares-red px-4 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{submittingRsvp ? "Removing…" : "Remove RSVP"}</button>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  disabled={submittingRsvp}
+                  className="rounded border border-white/15 px-4 py-2 text-xs font-bold text-marble/75 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Keep RSVP
+                </button>
+              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => void executeRsvpCancel()}
+                disabled={submittingRsvp}
+                className="rounded bg-ares-red px-4 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+              >
+                {submittingRsvp ? "Removing…" : "Remove RSVP"}
+              </button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -562,6 +610,7 @@ export default function EventDetailPage() {
           editorOnly={true}
           prefilledAction={editorAction}
           prefilledEventId={editorEventId}
+          prefilledOccurrenceDate={occurrenceDate}
           onEditorClose={() => {
             setIsEditorOpen(false);
             setEditorAction(null);

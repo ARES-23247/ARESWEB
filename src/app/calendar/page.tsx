@@ -4,15 +4,15 @@ import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Calendar as CalendarIcon, 
-  MapPin, 
-  Info, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  Calendar as CalendarIcon,
+  MapPin,
+  Info,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Sparkles,
-  Award
+  Award,
 } from "lucide-react";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
@@ -60,18 +60,21 @@ export default function CalendarPage() {
   const [editorAction, setEditorAction] = useState<"create" | "edit" | null>(null);
   const [editorDate, setEditorDate] = useState<Date | undefined>(undefined);
   const [editorEventId, setEditorEventId] = useState<string | null>(null);
+  const [editorOccurrenceDate, setEditorOccurrenceDate] = useState<string | null>(null);
 
   const handleOpenInlineCreate = (date?: Date) => {
     setEditorAction("create");
     setEditorDate(date || selectedDate || new Date());
     setEditorEventId(null);
+    setEditorOccurrenceDate(null);
     setIsEditorOpen(true);
   };
 
-  const handleOpenInlineEdit = (eventId: string) => {
+  const handleOpenInlineEdit = (eventId: string, occurrenceDate?: string) => {
     setEditorAction("edit");
     setEditorDate(undefined);
     setEditorEventId(eventId);
+    setEditorOccurrenceDate(occurrenceDate ?? null);
     setIsEditorOpen(true);
   };
 
@@ -106,8 +109,18 @@ export default function CalendarPage() {
   const calendarDays = buildCalendarDays(activeYear, activeMonth);
 
   const monthsList = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const handlePrevMonth = () => {
@@ -130,9 +143,7 @@ export default function CalendarPage() {
   };
 
   // All events filtered by selected tab (for the summary view)
-  const filteredEvents = events.filter(
-    (e) => filter === "all" || e.category === filter
-  );
+  const filteredEvents = events.filter((e) => filter === "all" || e.category === filter);
 
   const selectedDayEvents = getEventsForDay(selectedDate);
 
@@ -157,9 +168,11 @@ export default function CalendarPage() {
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
-      <SEO title="Team Calendar" description="Stay up to date with ARES 23247 schedules, lab practice times, outreach programs, and FTC competition events." />
+      <SEO
+        title="Team Calendar"
+        description="Stay up to date with ARES 23247 schedules, lab practice times, outreach programs, and FTC competition events."
+      />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
-        
         <CalendarHeader
           canEdit={canEdit}
           filter={filter}
@@ -183,11 +196,9 @@ export default function CalendarPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-          
           {/* LEFT: MONTH VIEW CALENDAR GRID (8 Columns) */}
           <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
             <div className="bg-black/20 border border-white/10 ares-cut-lg overflow-hidden flex-1 shadow-2xl flex flex-col min-h-[480px]">
-              
               {/* Calendar Grid Controller Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/30">
                 <h2 className="text-xl font-black text-white font-heading uppercase tracking-widest">
@@ -234,19 +245,21 @@ export default function CalendarPage() {
                       className={`relative min-h-[70px] sm:min-h-[85px] p-2 flex flex-col items-start justify-between text-left group transition-all duration-300 cursor-pointer ${
                         dayCell.isCurrentMonth ? "bg-black/10 text-marble" : "bg-black/40 text-marble/25"
                       } ${
-                        isSelected 
-                          ? "bg-ares-red/10 border-2 border-ares-red ring-1 ring-ares-red/20 z-10" 
+                        isSelected
+                          ? "bg-ares-red/10 border-2 border-ares-red ring-1 ring-ares-red/20 z-10"
                           : "hover:bg-white/5"
                       }`}
                     >
                       {/* Day Number */}
-                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                        isToday 
-                          ? "bg-ares-red text-white font-black" 
-                          : isSelected 
-                            ? "text-ares-gold" 
-                            : "text-marble/80"
-                      }`}>
+                      <span
+                        className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                          isToday
+                            ? "bg-ares-red text-white font-black"
+                            : isSelected
+                              ? "text-ares-gold"
+                              : "text-marble/80"
+                        }`}
+                      >
                         {dayCell.date.getDate()}
                       </span>
 
@@ -264,7 +277,11 @@ export default function CalendarPage() {
                             }`}
                           >
                             {event.title}
-                            {event.recurrence && (<span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">Repeats weekly</span>)}
+                            {event.recurrence && (
+                              <span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">
+                                Repeats weekly
+                              </span>
+                            )}
                           </div>
                         ))}
                         {dayEvents.length > 2 && (
@@ -277,13 +294,11 @@ export default function CalendarPage() {
                   );
                 })}
               </div>
-
             </div>
           </div>
 
           {/* RIGHT: SELECTED DATE DETAIL SUMMARY & EVENT LOGS (4 Columns) */}
           <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
-            
             {/* Selected Date Summary Panel */}
             <SelectedEventPanel
               selectedDate={selectedDate}
@@ -302,9 +317,7 @@ export default function CalendarPage() {
               copyStatus={copyStatus}
               handleCopyFeedUrl={handleCopyFeedUrl}
             />
-
           </div>
-
         </div>
 
         {nextCursor && (
@@ -331,14 +344,13 @@ export default function CalendarPage() {
 
         {/* ─── CHRONOLOGICAL EVENT LOGS & ARCHIVE (Bottom Timeline Section) ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
           {/* LEFT COLUMN: UPCOMING EVENTS (8 Columns) */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6">
             <h2 className="text-xl font-black text-white font-heading uppercase tracking-widest flex items-center gap-2 mb-4">
               <CalendarIcon size={16} className="text-ares-red" />
               Upcoming Schedule
             </h2>
-            
+
             {upcomingEvents.length === 0 ? (
               <div className="bg-black/20 border border-white/10 ares-cut-lg p-12 text-center text-marble/50 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                 <Info size={16} className="text-ares-bronze" />
@@ -349,9 +361,9 @@ export default function CalendarPage() {
             ) : (
               <div className="space-y-6">
                 {upcomingEvents.map((event) => (
-                  <Link 
+                  <Link
                     to={eventDetailHref(event)}
-                    key={event.id} 
+                    key={event.id}
                     className={`block bg-black/25 border transition-all duration-300 relative overflow-hidden group hover:bg-black/45 hover:border-white/40 hover:-translate-y-0.5 p-6 ares-cut-lg ${
                       event.category === "outreach"
                         ? "border-ares-gold/20 hover:shadow-[0_15px_30px_rgba(212,175,55,0.08)]"
@@ -362,13 +374,15 @@ export default function CalendarPage() {
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4 mb-4 relative z-10">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                          event.category === "outreach"
-                            ? "bg-ares-gold text-black"
-                            : event.category === "competition"
-                              ? "bg-ares-cyan text-black"
-                              : "bg-ares-red text-white"
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                            event.category === "outreach"
+                              ? "bg-ares-gold text-black"
+                              : event.category === "competition"
+                                ? "bg-ares-cyan text-black"
+                                : "bg-ares-red text-white"
+                          }`}
+                        >
                           {event.category}
                         </span>
                         <span className="text-[10px] font-mono text-ares-bronze font-bold flex items-center gap-1">
@@ -376,7 +390,7 @@ export default function CalendarPage() {
                           {new Date(event.dateStart).toLocaleDateString("en-US", {
                             month: "long",
                             day: "numeric",
-                            year: "numeric"
+                            year: "numeric",
                           })}
                         </span>
                       </div>
@@ -387,12 +401,20 @@ export default function CalendarPage() {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-black text-white leading-tight uppercase font-heading relative z-10 group-hover:text-ares-gold transition-colors">{event.title}</h3>
-                    {event.recurrence && (<span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">Repeats weekly</span>)}
-                    {toPlainText(event.description) && (
-                      <p className="text-xs text-marble/85 leading-relaxed mt-2 max-w-3xl relative z-10">{toPlainText(event.description)}</p>
+                    <h3 className="text-lg font-black text-white leading-tight uppercase font-heading relative z-10 group-hover:text-ares-gold transition-colors">
+                      {event.title}
+                    </h3>
+                    {event.recurrence && (
+                      <span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">
+                        Repeats weekly
+                      </span>
                     )}
-                    
+                    {toPlainText(event.description) && (
+                      <p className="text-xs text-marble/85 leading-relaxed mt-2 max-w-3xl relative z-10">
+                        {toPlainText(event.description)}
+                      </p>
+                    )}
+
                     {event.location && (
                       <div className="flex items-center gap-1.5 mt-4 text-[10px] font-bold text-ares-bronze bg-white/5 w-fit px-3 py-1 rounded border border-white/5 relative z-10">
                         <MapPin size={10} className="text-ares-red" />
@@ -426,39 +448,43 @@ export default function CalendarPage() {
                     return (
                       <div key={event.id} className="relative group animate-fadeIn">
                         {/* Timeline Dot */}
-                        <div className={`absolute -left-[21px] top-1 w-2 h-2 rounded-full border bg-obsidian transition-colors group-hover:bg-white ${
-                          event.category === "outreach"
-                            ? "border-ares-gold/50"
-                            : event.category === "competition"
-                              ? "border-ares-cyan/50"
-                              : "border-ares-red/50"
-                        }`} />
-                        
+                        <div
+                          className={`absolute -left-[21px] top-1 w-2 h-2 rounded-full border bg-obsidian transition-colors group-hover:bg-white ${
+                            event.category === "outreach"
+                              ? "border-ares-gold/50"
+                              : event.category === "competition"
+                                ? "border-ares-cyan/50"
+                                : "border-ares-red/50"
+                          }`}
+                        />
+
                         <Link to={eventDetailHref(event)} className="block space-y-1 cursor-pointer">
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] font-mono text-marble/40">
                               {new Date(event.dateStart).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
-                                year: "numeric"
+                                year: "numeric",
                               })}
                             </span>
-                            <span className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
-                              event.category === "outreach"
-                                ? "bg-ares-gold/20 text-ares-gold"
-                                : event.category === "competition"
-                                  ? "bg-ares-cyan/20 text-ares-cyan"
-                                  : "bg-ares-red/20 text-white"
-                            }`}>
+                            <span
+                              className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
+                                event.category === "outreach"
+                                  ? "bg-ares-gold/20 text-ares-gold"
+                                  : event.category === "competition"
+                                    ? "bg-ares-cyan/20 text-ares-cyan"
+                                    : "bg-ares-red/20 text-white"
+                              }`}
+                            >
                               {event.category}
                             </span>
                           </div>
-                          
-                          <h4 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">{event.title}</h4>
-                          {cleanDesc && (
-                            <p className="text-[10px] text-marble/55 leading-relaxed">{cleanDesc}</p>
-                          )}
-                          
+
+                          <h4 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">
+                            {event.title}
+                          </h4>
+                          {cleanDesc && <p className="text-[10px] text-marble/55 leading-relaxed">{cleanDesc}</p>}
+
                           {event.location && (
                             <p className="text-[8px] text-ares-bronze flex items-center gap-1 mt-1">
                               <MapPin size={8} className="text-ares-red" /> {event.location}
@@ -472,9 +498,7 @@ export default function CalendarPage() {
               )}
             </div>
           </div>
-
         </div>
-
       </div>
 
       {/* ─── UPGRADED FULL EVENT EDITOR DRAWER ─── */}
@@ -484,16 +508,17 @@ export default function CalendarPage() {
           prefilledAction={editorAction}
           prefilledDate={editorDate}
           prefilledEventId={editorEventId}
+          prefilledOccurrenceDate={editorOccurrenceDate}
           onEditorClose={() => {
             setIsEditorOpen(false);
             setEditorAction(null);
             setEditorDate(undefined);
             setEditorEventId(null);
+            setEditorOccurrenceDate(null);
             void loadEvents();
           }}
         />
       )}
-
     </div>
   );
 }

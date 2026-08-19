@@ -12,6 +12,7 @@ interface EventGalleryProps {
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRetryPhotos: () => void;
   setSelectedPhoto: (photo: EventPhoto) => void;
+  occurrenceDate?: string;
 }
 
 export default function EventGallery({
@@ -23,38 +24,43 @@ export default function EventGallery({
   photos,
   handleImageUpload,
   onRetryPhotos,
-  setSelectedPhoto
+  setSelectedPhoto,
+  occurrenceDate,
 }: EventGalleryProps) {
   return (
     <div className="space-y-6 pt-6 border-t border-white/5">
       <header className="flex justify-between items-center">
         <div>
-          <h3 className="text-xl font-black text-white uppercase tracking-tight font-heading">Event Gallery</h3>
-          <p className="text-[10px] text-marble/50 uppercase font-bold mt-0.5">Media captured from this operation</p>
+          <h3 className="text-xl font-black text-white uppercase tracking-tight font-heading">
+            {occurrenceDate ? "Session Gallery" : "Event Gallery"}
+          </h3>
+          <p className="text-[10px] text-marble/50 uppercase font-bold mt-0.5">
+            {occurrenceDate ? "Photos from this session and the full series" : "Media captured from this event"}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           {isVerified && (
             <div className="relative">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              id="photo-upload-input"
-              className="sr-only"
-              onChange={handleImageUpload}
-              disabled={uploadingImage}
-            />
-            <label
-              htmlFor="photo-upload-input"
-              className="px-3 py-1.5 border border-white/10 hover:border-ares-gold bg-white/5 hover:bg-white/10 text-marble hover:text-ares-gold text-[9px] font-black uppercase tracking-widest ares-cut-sm inline-flex items-center gap-1.5 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ares-cyan"
-            >
-              {uploadingImage ? (
-                <span className="w-3 h-3 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
-              ) : (
-                <Upload size={12} />
-              )}
-              Upload Photo
-            </label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                id="photo-upload-input"
+                className="sr-only"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+              />
+              <label
+                htmlFor="photo-upload-input"
+                className="px-3 py-1.5 border border-white/10 hover:border-ares-gold bg-white/5 hover:bg-white/10 text-marble hover:text-ares-gold text-[9px] font-black uppercase tracking-widest ares-cut-sm inline-flex items-center gap-1.5 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ares-cyan"
+              >
+                {uploadingImage ? (
+                  <span className="w-3 h-3 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <Upload size={12} />
+                )}
+                Upload Photo
+              </label>
             </div>
           )}
           <button
@@ -71,7 +77,10 @@ export default function EventGallery({
       </header>
 
       {uploadError && (
-        <div role="alert" className="flex items-center gap-2 rounded-lg border border-ares-red/40 bg-ares-red/15 p-3.5 text-xs text-white">
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-ares-red/40 bg-ares-red/15 p-3.5 text-xs text-white"
+        >
           <AlertCircle aria-hidden="true" size={14} /> {uploadError}
         </div>
       )}
@@ -103,7 +112,9 @@ export default function EventGallery({
       ) : photos.length === 0 && !photoLoadError ? (
         <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl bg-black/10 text-marble/30 text-xs font-mono">
           <ImageIcon aria-hidden="true" size={32} className="mx-auto mb-3 opacity-25" />
-          No photos have been uploaded for this event.
+          {occurrenceDate
+            ? "No photos have been uploaded for this session or series."
+            : "No photos have been uploaded for this event."}
         </div>
       ) : photos.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -133,6 +144,11 @@ export default function EventGallery({
               <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center border border-white/15 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Maximize2 size={10} className="text-white" />
               </div>
+              {occurrenceDate && (
+                <span className="absolute bottom-2 left-2 rounded bg-black/80 px-2 py-1 text-[7px] font-black uppercase tracking-wide text-ares-gold">
+                  {item.occurrenceDate === occurrenceDate ? "This session" : "Series"}
+                </span>
+              )}
             </button>
           ))}
         </div>

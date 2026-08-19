@@ -49,6 +49,13 @@ service cloud.firestore {
       ]);
     }
 
+    function hasValidEventPhotoOccurrenceDate() {
+      return !request.resource.data.keys().hasAny(['occurrenceDate']) ||
+        request.resource.data.occurrenceDate == null ||
+        (request.resource.data.occurrenceDate is string &&
+          request.resource.data.occurrenceDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
+    }
+
     function isCanonicalTaskCreate(taskId) {
       let data = request.resource.data;
       return taskId.size() > 0 && taskId.size() <= 160 &&
@@ -167,7 +174,7 @@ service cloud.firestore {
       match /photos/{photoId} {
         // Public consumers receive a bounded, metadata-stripped Calendar API DTO.
         allow read: if isAuthorized();
-        allow write: if isAuthorized();
+        allow write: if isAuthorized() && hasValidEventPhotoOccurrenceDate();
       }
 
       match /revisions/{revisionId} {

@@ -5,14 +5,17 @@ export const eventStatusSchema = z.enum(["published", "pending", "draft"]);
 const eventCategorySchema = z.enum(["internal", "outreach", "competition"]);
 const boundedText = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) => boundedText(max).optional();
-const optionalHttpsUrl = z.string().trim().url().refine(
-  (value) => value.startsWith("https://"),
-  "URL must use HTTPS",
-).optional();
-const dateTimeSchema = z.string().trim().max(40).refine(
-  (value) => !Number.isNaN(new Date(value).getTime()),
-  "Date must be valid",
-);
+const optionalHttpsUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine((value) => value.startsWith("https://"), "URL must use HTTPS")
+  .optional();
+const dateTimeSchema = z
+  .string()
+  .trim()
+  .max(40)
+  .refine((value) => !Number.isNaN(new Date(value).getTime()), "Date must be valid");
 
 export const WEEKDAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
 export type WeekdayCode = (typeof WEEKDAY_CODES)[number];
@@ -25,16 +28,26 @@ export const weekdaySet = new Set<string>(WEEKDAY_CODES);
  * (an inclusive YYYY-MM-DD). The event's dateStart/dateEnd always describe
  * the FIRST occurrence; later sessions are derived server-side.
  */
-export const recurrenceSchema = z.object({
-  frequency: z.literal("weekly"),
-  interval: z.number().int().min(1).max(8),
-  byDay: z.array(z.enum(WEEKDAY_CODES)).min(1).max(7),
-  until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Recurrence end date must be YYYY-MM-DD").optional(),
-}).strict().superRefine((value, context) => {
-  if (value.until && new Date(`${value.until}T23:59:59Z`).getTime() < new Date("2000-01-01T00:00:00Z").getTime()) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["until"], message: "Recurrence end date is not a valid date" });
-  }
-});
+export const recurrenceSchema = z
+  .object({
+    frequency: z.literal("weekly"),
+    interval: z.number().int().min(1).max(8),
+    byDay: z.array(z.enum(WEEKDAY_CODES)).min(1).max(7),
+    until: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Recurrence end date must be YYYY-MM-DD")
+      .optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.until && new Date(`${value.until}T23:59:59Z`).getTime() < new Date("2000-01-01T00:00:00Z").getTime()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["until"],
+        message: "Recurrence end date is not a valid date",
+      });
+    }
+  });
 
 export type RecurrenceRule = z.infer<typeof recurrenceSchema>;
 
@@ -47,8 +60,54 @@ export function readRecurrence(value: unknown): RecurrenceRule | null {
 export interface EventOccurrence {
   date: string; // YYYY-MM-DD
   isCancelled?: unknown;
+  overrides?: unknown;
   cancelledAt?: unknown;
   cancelledBy?: unknown;
+}
+
+export const occurrenceUpdateSchema = z
+  .object({
+    title: boundedText(180).min(1, "Title is required"),
+    dateStart: dateTimeSchema,
+    dateEnd: dateTimeSchema.nullable(),
+    locationId: boundedText(128).nullable(),
+    location: boundedText(180).nullable(),
+    description: boundedText(5000).nullable(),
+    category: eventCategorySchema,
+    coverImage: z
+      .string()
+      .trim()
+      .url()
+      .refine((value) => value.startsWith("https://"), "URL must use HTTPS")
+      .nullable(),
+    isPotluck: z.union([z.literal(0), z.literal(1)]),
+    isVolunteer: z.union([z.literal(0), z.literal(1)]),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.dateEnd && new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dateEnd"],
+        message: "End time must be after the start time",
+      });
+    }
+  });
+
+export type OccurrenceUpdateInput = z.infer<typeof occurrenceUpdateSchema>;
+export type EventOccurrenceOverrides = Partial<OccurrenceUpdateInput>;
+
+export function readOccurrenceOverrides(value: unknown): EventOccurrenceOverrides {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const input = value as Record<string, unknown>;
+  const parsed: EventOccurrenceOverrides = {};
+  for (const key of Object.keys(occurrenceUpdateSchema.shape) as (keyof OccurrenceUpdateInput)[]) {
+    if (!(key in input)) continue;
+    const field = occurrenceUpdateSchema.shape[key];
+    const result = field.safeParse(input[key]);
+    if (result.success) Object.assign(parsed, { [key]: result.data });
+  }
+  return parsed;
 }
 
 /** Firestore-safe occurrence ids are plain dates: events/{id}/occurrences/{YYYY-MM-DD}. */
@@ -90,7 +149,11 @@ export function occurrenceDates(
   const anchorWeekStart = first.getTime() - first.getUTCDay() * DAY_MS;
   const dates: string[] = [];
   const cursor = new Date(from);
-  for (let guard = 0; guard < 400 && cursor.getTime() <= to.getTime(); guard += 1, cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+  for (
+    let guard = 0;
+    guard < 400 && cursor.getTime() <= to.getTime();
+    guard += 1, cursor.setUTCDate(cursor.getUTCDate() + 1)
+  ) {
     const iso = ymd(cursor);
     if (rule.until && iso > rule.until) break;
     if (!byDay.has(weekdayCode(cursor))) continue;
@@ -122,7 +185,52 @@ export interface OccurrenceDtoOptions {
   fromDate: string;
   toDate: string;
   cancelledDates?: ReadonlySet<string>;
+  occurrenceOverrides?: ReadonlyMap<string, EventOccurrenceOverrides>;
   maxPerEvent?: number;
+}
+
+function applyOccurrenceOverrides<T extends ReturnType<typeof eventDto>>(
+  dto: T,
+  overrides: EventOccurrenceOverrides | undefined,
+): T {
+  if (!overrides || Object.keys(overrides).length === 0) return dto;
+  const result: Record<string, unknown> = { ...dto };
+  const publicKeys: (keyof OccurrenceUpdateInput)[] = [
+    "title",
+    "dateStart",
+    "dateEnd",
+    "description",
+    "category",
+    "coverImage",
+    "isPotluck",
+    "isVolunteer",
+  ];
+  for (const key of publicKeys) {
+    if (key in overrides) result[key] = overrides[key];
+  }
+  if ("locationId" in dto) {
+    if ("locationId" in overrides) result.locationId = overrides.locationId;
+    if ("location" in overrides) result.location = overrides.location;
+  }
+  return result as T;
+}
+
+function seriesDefaultsForOccurrence<T extends ReturnType<typeof eventDto>>(dto: T) {
+  const defaults: Record<string, unknown> = {
+    title: dto.title,
+    dateStart: dto.dateStart,
+    dateEnd: dto.dateEnd,
+    description: dto.description,
+    category: dto.category,
+    coverImage: dto.coverImage,
+    isPotluck: dto.isPotluck,
+    isVolunteer: dto.isVolunteer,
+  };
+  if ("locationId" in dto) {
+    defaults.locationId = dto.locationId;
+    defaults.location = dto.location;
+  }
+  return defaults;
 }
 
 /**
@@ -142,58 +250,85 @@ export function expandEventOccurrences(
     .filter((date) => !options.cancelledDates?.has(date))
     .slice(0, options.maxPerEvent ?? 4);
   const dayShift = (date: string) =>
-    Math.round((new Date(`${date}T00:00:00Z`).getTime() - new Date(`${dateStart.slice(0, 10)}T00:00:00Z`).getTime()) / DAY_MS);
-  return dates.map((date) => ({
-    ...dto,
-    id: `${dto.id}_${date}`,
-    recurrenceOf: dto.id,
-    dateStart: shiftIsoDays(dateStart, dayShift(date)),
-    dateEnd: readString(data.dateEnd) ? shiftIsoDays(readString(data.dateEnd)!, dayShift(date)) : dto.dateEnd,
-    // The parent series' first-session times, so editors opened from an
-    // occurrence can seed the form with the series definition.
-    seriesDateStart: dateStart,
-    seriesDateEnd: readString(data.dateEnd) ?? null,
-    occurrenceDate: date,
-  }));
+    Math.round(
+      (new Date(`${date}T00:00:00Z`).getTime() - new Date(`${dateStart.slice(0, 10)}T00:00:00Z`).getTime()) / DAY_MS,
+    );
+  const seriesDefaults = seriesDefaultsForOccurrence(dto);
+  return dates.map((date) =>
+    applyOccurrenceOverrides(
+      {
+        ...dto,
+        id: `${dto.id}_${date}`,
+        recurrenceOf: dto.id,
+        dateStart: shiftIsoDays(dateStart, dayShift(date)),
+        dateEnd: readString(data.dateEnd) ? shiftIsoDays(readString(data.dateEnd)!, dayShift(date)) : dto.dateEnd,
+        // The parent series' first-session times, so editors can switch between
+        // editing this session and editing the full series.
+        seriesDateStart: dateStart,
+        seriesDateEnd: readString(data.dateEnd) ?? null,
+        seriesDefaults,
+        occurrenceDate: date,
+      },
+      options.occurrenceOverrides?.get(date),
+    ),
+  );
 }
 
-export const eventWriteSchema = z.object({
-  title: boundedText(180).min(1, "Title is required"),
-  dateStart: dateTimeSchema,
-  dateEnd: dateTimeSchema.optional(),
-  locationId: optionalText(128),
-  location: optionalText(180),
-  description: optionalText(5000),
-  category: eventCategorySchema,
-  coverImage: optionalHttpsUrl,
-  isPotluck: z.union([z.literal(0), z.literal(1)]).optional(),
-  isVolunteer: z.union([z.literal(0), z.literal(1)]).optional(),
-  status: eventStatusSchema.optional(),
-  recurrence: recurrenceSchema.optional(),
-}).strict().superRefine((value, context) => {
-  if (value.dateEnd && new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["dateEnd"],
-      message: "End time must be after the start time",
-    });
+export function occurrenceOverridesForInput(
+  input: OccurrenceUpdateInput,
+  baseOccurrence: ReturnType<typeof eventDto>,
+): EventOccurrenceOverrides {
+  const base = baseOccurrence as Record<string, unknown>;
+  const overrides: EventOccurrenceOverrides = {};
+  for (const key of Object.keys(occurrenceUpdateSchema.shape) as (keyof OccurrenceUpdateInput)[]) {
+    const baseValue = base[key] ?? null;
+    if (input[key] !== baseValue) Object.assign(overrides, { [key]: input[key] });
   }
-  if (value.recurrence?.until && value.recurrence.until < value.dateStart.slice(0, 10)) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["recurrence.until"],
-      message: "Recurrence must end on or after the first session",
-    });
-  }
-});
+  return overrides;
+}
 
-export const locationWriteSchema = z.object({
-  name: boundedText(160).min(1, "Venue name is required"),
-  address: boundedText(300).min(1, "Venue address is required"),
-  description: optionalText(1000),
-  gmapsUrl: optionalHttpsUrl,
-  isAddressPublic: z.union([z.literal(0), z.literal(1)]).optional(),
-}).strict();
+export const eventWriteSchema = z
+  .object({
+    title: boundedText(180).min(1, "Title is required"),
+    dateStart: dateTimeSchema,
+    dateEnd: dateTimeSchema.optional(),
+    locationId: optionalText(128),
+    location: optionalText(180),
+    description: optionalText(5000),
+    category: eventCategorySchema,
+    coverImage: optionalHttpsUrl,
+    isPotluck: z.union([z.literal(0), z.literal(1)]).optional(),
+    isVolunteer: z.union([z.literal(0), z.literal(1)]).optional(),
+    status: eventStatusSchema.optional(),
+    recurrence: recurrenceSchema.optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.dateEnd && new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["dateEnd"],
+        message: "End time must be after the start time",
+      });
+    }
+    if (value.recurrence?.until && value.recurrence.until < value.dateStart.slice(0, 10)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["recurrence.until"],
+        message: "Recurrence must end on or after the first session",
+      });
+    }
+  });
+
+export const locationWriteSchema = z
+  .object({
+    name: boundedText(160).min(1, "Venue name is required"),
+    address: boundedText(300).min(1, "Venue address is required"),
+    description: optionalText(1000),
+    gmapsUrl: optionalHttpsUrl,
+    isAddressPublic: z.union([z.literal(0), z.literal(1)]).optional(),
+  })
+  .strict();
 
 export type EventWriteInput = z.infer<typeof eventWriteSchema>;
 
@@ -236,6 +371,7 @@ export interface EventPhotoDocument {
   isDeleted?: unknown;
   uploadedBy?: unknown;
   uploadedAt?: unknown;
+  occurrenceDate?: unknown;
 }
 
 export function readString(value: unknown): string | null {
@@ -254,11 +390,12 @@ export function eventDto(id: string, data: EventDocument, includeLifecycle: bool
     dateStart: readString(data.dateStart) ?? "",
     dateEnd: readString(data.dateEnd),
     description: readString(data.description),
-    category: data.category === "outreach"
-      ? "outreach" as const
-      : data.category === "competition"
-        ? "competition" as const
-        : "internal" as const,
+    category:
+      data.category === "outreach"
+        ? ("outreach" as const)
+        : data.category === "competition"
+          ? ("competition" as const)
+          : ("internal" as const),
     coverImage: readString(data.coverImage),
     isPotluck: readFlag(data.isPotluck),
     isVolunteer: readFlag(data.isVolunteer),
@@ -271,8 +408,8 @@ export function eventDto(id: string, data: EventDocument, includeLifecycle: bool
     locationId: readString(data.locationId),
     location: readString(data.location),
     status: eventStatusSchema.safeParse(data.status).success
-      ? data.status as z.infer<typeof eventStatusSchema>
-      : "draft" as const,
+      ? (data.status as z.infer<typeof eventStatusSchema>)
+      : ("draft" as const),
     isDeleted: readFlag(data.isDeleted),
     createdAt: readString(data.createdAt),
     updatedAt: readString(data.updatedAt),
@@ -314,6 +451,7 @@ export function eventPhotoDto(id: string, data: EventPhotoDocument) {
     thumbnailUrl: thumbnailUrl?.startsWith("https://") ? thumbnailUrl : null,
     mediumUrl: mediumUrl?.startsWith("https://") ? mediumUrl : null,
     filename: readString(data.filename) ?? "Event photo",
+    occurrenceDate: isOccurrenceDate(data.occurrenceDate) ? data.occurrenceDate : null,
   };
 }
 

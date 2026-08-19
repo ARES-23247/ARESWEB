@@ -12,7 +12,7 @@ interface SelectedEventPanelProps {
   formatFullDate: (date: Date) => string;
   formatEventTime: (isoString: string) => string;
   handleOpenInlineCreate: (date?: Date) => void;
-  handleOpenInlineEdit: (eventId: string) => void;
+  handleOpenInlineEdit: (eventId: string, occurrenceDate?: string) => void;
 }
 
 export function SelectedEventPanel({
@@ -22,7 +22,7 @@ export function SelectedEventPanel({
   formatFullDate,
   formatEventTime,
   handleOpenInlineCreate,
-  handleOpenInlineEdit
+  handleOpenInlineEdit,
 }: SelectedEventPanelProps) {
   return (
     <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-2xl flex flex-col justify-between min-h-[220px]">
@@ -34,10 +34,9 @@ export function SelectedEventPanel({
           {formatFullDate(selectedDate)}
         </h3>
         <p className="text-[10px] text-marble/60 font-mono mt-2 border-t border-white/5 pt-2">
-          {selectedDayEvents.length === 0 
-            ? "No events or practices scheduled for this day." 
-            : `Active Operational Targets: ${selectedDayEvents.length} Event${selectedDayEvents.length === 1 ? "" : "s"}`
-          }
+          {selectedDayEvents.length === 0
+            ? "No events or practices scheduled for this day."
+            : `Active Operational Targets: ${selectedDayEvents.length} Event${selectedDayEvents.length === 1 ? "" : "s"}`}
         </p>
       </div>
 
@@ -59,13 +58,15 @@ export function SelectedEventPanel({
               }`}
             >
               <div className="flex justify-between items-center relative z-10">
-                <span className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${
-                  event.category === "outreach"
-                    ? "bg-ares-gold text-black"
-                    : event.category === "competition"
-                      ? "bg-ares-cyan text-black"
-                      : "bg-ares-red text-white"
-                }`}>
+                <span
+                  className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${
+                    event.category === "outreach"
+                      ? "bg-ares-gold text-black"
+                      : event.category === "competition"
+                        ? "bg-ares-cyan text-black"
+                        : "bg-ares-red text-white"
+                  }`}
+                >
                   {event.category}
                 </span>
 
@@ -75,7 +76,7 @@ export function SelectedEventPanel({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpenInlineEdit(event.recurrenceOf ?? event.id);
+                        handleOpenInlineEdit(event.recurrenceOf ?? event.id, event.occurrenceDate);
                       }}
                       aria-label={`Edit ${event.title}`}
                       className="p-1 bg-white/5 hover:bg-ares-gold/25 border border-white/10 rounded transition-colors text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -109,7 +110,7 @@ export function SelectedEventPanel({
           ))
         )}
       </div>
-      
+
       {canEdit && (
         <div className="mt-4 pt-4 border-t border-white/5">
           <button

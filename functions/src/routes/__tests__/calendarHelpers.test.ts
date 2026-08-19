@@ -101,6 +101,7 @@ describe("calendar route helpers", () => {
       filename: "Practice.jpg",
       thumbnailUrl: null,
       mediumUrl: null,
+      occurrenceDate: null,
     });
     expect(eventPhotoDto("photo-fallback", {
       url: "https://images.example.test/photo.jpg",

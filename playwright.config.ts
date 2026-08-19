@@ -14,6 +14,9 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://127.0.0.1:3000',
+    // The preview smoke suite validates the freshly built app. A previously
+    // installed PWA worker can bypass Playwright routing and serve stale assets.
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

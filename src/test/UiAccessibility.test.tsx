@@ -24,7 +24,7 @@ describe("accessible navigation and calendar controls", () => {
         hasPendingInquiries={false}
         logout={vi.fn()}
         loginWithGoogle={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByRole("dialog", { name: "Mobile navigation menu" })).toHaveAttribute("aria-modal", "true");
@@ -35,29 +35,35 @@ describe("accessible navigation and calendar controls", () => {
     renderInRouter(
       <SelectedEventPanel
         selectedDate={new Date("2026-08-10T12:00:00")}
-        selectedDayEvents={[{
-          id: "event-1",
-          title: "Drive Practice",
-          dateStart: "2026-08-10T18:00:00",
-          dateEnd: "2026-08-10T20:00:00",
-          location: "MARS Laboratory",
-          description: "Practice autonomous routes.",
-          category: "internal",
-        }]}
+        selectedDayEvents={[
+          {
+            id: "event-1",
+            title: "Drive Practice",
+            dateStart: "2026-08-10T18:00:00",
+            dateEnd: "2026-08-10T20:00:00",
+            location: "MARS Laboratory",
+            description: "Practice autonomous routes.",
+            category: "internal",
+          },
+        ]}
         canEdit
         formatFullDate={() => "Monday, August 10, 2026"}
         formatEventTime={() => "6:00 PM"}
         handleOpenInlineCreate={vi.fn()}
         handleOpenInlineEdit={handleEdit}
-      />
+      />,
     );
 
-    const detailsLink = screen.getByRole("link", { name: "View event details for Drive Practice" });
-    const editButton = screen.getByRole("button", { name: "Edit Drive Practice" });
+    const detailsLink = screen.getByRole("link", {
+      name: "View event details for Drive Practice",
+    });
+    const editButton = screen.getByRole("button", {
+      name: "Edit Drive Practice",
+    });
     expect(detailsLink).not.toContainElement(editButton);
 
     fireEvent.click(editButton);
-    expect(handleEdit).toHaveBeenCalledWith("event-1");
+    expect(handleEdit).toHaveBeenCalledWith("event-1", undefined);
   });
 
   it("uses the parent event for recurring-instance details and edits", () => {
@@ -65,26 +71,31 @@ describe("accessible navigation and calendar controls", () => {
     renderInRouter(
       <SelectedEventPanel
         selectedDate={new Date("2026-08-17T12:00:00")}
-        selectedDayEvents={[{
-          id: "weekly-1_2026-08-17",
-          recurrenceOf: "weekly-1",
-          occurrenceDate: "2026-08-17",
-          title: "Recurring Practice",
-          dateStart: "2026-08-17T18:00:00",
-          category: "internal",
-        }]}
+        selectedDayEvents={[
+          {
+            id: "weekly-1_2026-08-17",
+            recurrenceOf: "weekly-1",
+            occurrenceDate: "2026-08-17",
+            title: "Recurring Practice",
+            dateStart: "2026-08-17T18:00:00",
+            category: "internal",
+          },
+        ]}
         canEdit
         formatFullDate={() => "Monday, August 17, 2026"}
         formatEventTime={() => "6:00 PM"}
         handleOpenInlineCreate={vi.fn()}
         handleOpenInlineEdit={handleEdit}
-      />
+      />,
     );
 
-    expect(screen.getByRole("link", { name: "View event details for Recurring Practice" }))
-      .toHaveAttribute("href", "/events/weekly-1?occurrence=2026-08-17");
+    expect(
+      screen.getByRole("link", {
+        name: "View event details for Recurring Practice",
+      }),
+    ).toHaveAttribute("href", "/events/weekly-1?occurrence=2026-08-17");
     fireEvent.click(screen.getByRole("button", { name: "Edit Recurring Practice" }));
-    expect(handleEdit).toHaveBeenCalledWith("weekly-1");
+    expect(handleEdit).toHaveBeenCalledWith("weekly-1", "2026-08-17");
   });
 
   it("announces when the calendar feed URL has been copied", () => {
@@ -94,7 +105,7 @@ describe("accessible navigation and calendar controls", () => {
         gcalUrl="https://calendar.google.com/calendar/render"
         copyStatus="copied"
         handleCopyFeedUrl={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Calendar feed URL copied to clipboard.");
@@ -129,15 +140,25 @@ describe("accessible roster form controls", () => {
         onMemberTypeChange={vi.fn()}
         onSaveRole={vi.fn()}
         onRemoveUser={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByLabelText("Member Type")).toHaveValue("student");
     expect(screen.getByLabelText("Portal Role")).toHaveValue("mentor");
-    expect(screen.getByRole("button", { name: "Save role and member type changes for Alex Member" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Revoke roster access for Alex Member" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Save role and member type changes for Alex Member",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Revoke roster access for Alex Member",
+      }),
+    ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Portal Role"), { target: { value: "admin" } });
+    fireEvent.change(screen.getByLabelText("Portal Role"), {
+      target: { value: "admin" },
+    });
     expect(onRoleChange).toHaveBeenCalledWith("member-1", "admin");
   });
 });
@@ -145,7 +166,10 @@ describe("accessible roster form controls", () => {
 describe("responsive and landmark regressions", () => {
   it("uses responsive simulation layouts and a reduced-motion fallback", () => {
     const neuralPlayground = readFileSync(resolve(process.cwd(), "src/sims/nn-playground/index.tsx"), "utf8");
-    const simulationPlayground = readFileSync(resolve(process.cwd(), "src/components/SimulationPlayground.tsx"), "utf8");
+    const simulationPlayground = readFileSync(
+      resolve(process.cwd(), "src/components/SimulationPlayground.tsx"),
+      "utf8",
+    );
     const globalStyles = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
     expect(neuralPlayground).toContain("grid grid-cols-1 xl:grid-cols-12");

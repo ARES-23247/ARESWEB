@@ -1,9 +1,16 @@
-import { getDoc, getDocs, initializeFirestore } from "firebase/firestore";
+import { disableNetwork, getDoc, getDocs, initializeFirestore } from "firebase/firestore";
 import type { DocumentReference, Query } from "firebase/firestore";
 import { app } from "./firebaseCore";
 import { getLocalFirebaseEmulatorHost } from "./firebaseEnvironment";
 
 export const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
+
+// Browser E2E runs against a static Vite preview with deterministic API
+// fixtures, not a Firebase project. Keeping Firestore offline prevents the SDK
+// from opening cross-origin listeners that WebKit reports as page errors.
+if (import.meta.env.MODE === "e2e") {
+  void disableNetwork(db);
+}
 
 const emulatorHost = import.meta.env.DEV ? getLocalFirebaseEmulatorHost() : null;
 if (emulatorHost) {
