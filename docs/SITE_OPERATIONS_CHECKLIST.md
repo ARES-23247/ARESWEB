@@ -89,7 +89,7 @@ logs, or source code.
 
 App Check fails closed for protected production browser mutations. Confirm valid
 tokens for inquiry, task, admin editing, photo, simulation, and checkout flows.
-The two secret-authenticated server integrations remain narrowly exempt.
+The three secret-authenticated server integrations (profiles/sync, Zulip webhook, Onshape webhook) remain narrowly exempt.
 
 Use `ENFORCE_APP_CHECK=false` only as a time-limited incident response override.
 Record why it was needed, monitor affected traffic, fix the client path, and
