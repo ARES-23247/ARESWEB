@@ -180,9 +180,12 @@ jobs:
           key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Playwright system dependencies
-        # The package-mirror fetch is the flakiest step on hosted runners;
-        # retry the index refresh once before giving up.
+        # The azure package mirror on hosted runners intermittently ignores
+        # requests outright (hangs, no failure to retry). Point apt at the
+        # primary archive — which responds even during those stalls — before
+        # refreshing the index.
         run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           (sudo apt-get update -y || (sleep 15 && sudo apt-get update -y))
           pnpm exec playwright install-deps chromium firefox webkit
 
