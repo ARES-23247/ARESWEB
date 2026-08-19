@@ -23,7 +23,7 @@ import {
   type TaskSortMode,
 } from "./taskRecord";
 
-const MOCK_TASKS: TaskItem[] = [
+const E2E_TASK_FIXTURES: TaskItem[] = [
   {
     id: "task_1",
     title: "Calibrate Mecanum kS Friction Feedforward",
@@ -90,6 +90,7 @@ export default function KanbanPage() {
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [overflowCount, setOverflowCount] = useState(0);
+  const [overflowUnknown, setOverflowUnknown] = useState(false);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
@@ -163,7 +164,7 @@ export default function KanbanPage() {
 
   useEffect(() => {
     if (import.meta.env.MODE === "e2e") {
-      setTasks(MOCK_TASKS);
+      setTasks(E2E_TASK_FIXTURES);
       setIsLive(false);
       return;
     }
@@ -222,7 +223,10 @@ export default function KanbanPage() {
     if (import.meta.env.MODE === "e2e") return;
     getCountFromServer(query(collection(db, "tasks"), limit(501)))
       .then((snap) => setOverflowCount(Math.max(0, snap.data().count - 500)))
-      .catch(() => setOverflowCount(0));
+      .catch((err: unknown) => {
+          logger.error("Unable to verify the task truncation count:", err);
+          setOverflowUnknown(true);
+        });
   }, []);
 
   useEffect(() => {
@@ -532,6 +536,11 @@ export default function KanbanPage() {
         </p>
       )}
 
+      {overflowUnknown && (
+        <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-3 text-sm text-marble">
+          Truncation status unknown: the total task count could not be verified. Cards beyond the first 500 may exist.
+        </p>
+      )}
       {overflowCount > 0 && (
         <p role="status" className="rounded-lg border border-ares-gold/30 bg-ares-gold/10 px-4 py-3 text-sm text-ares-gold">
           Showing the first 500 task cards; {overflowCount} more {overflowCount === 1 ? "card is" : "cards are"} hidden. Archive completed tasks to see older work.

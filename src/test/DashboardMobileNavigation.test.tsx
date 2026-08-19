@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: () => undefined,
 }));
 
 vi.mock("@/components/GreekMeander", () => ({
@@ -35,6 +36,8 @@ describe("Dashboard mobile navigation", () => {
       user: { uid: "admin-user" } as never,
       authorizedUser: { role: "admin" } as never,
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(),
       logout: vi.fn(),
       loginWithMockUser: vi.fn(),

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ user: null, authorizedUser: null }),
+  useOptionalAuth: () => undefined,
 }));
 vi.mock("@/app/calendar/api", () => ({
   fetchPublicEvent: mocks.fetchPublicEvent,

@@ -31,6 +31,7 @@ vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     user: { uid: "member-1", displayName: "Member", photoURL: null },
   }),
+  useOptionalAuth: () => undefined,
 }));
 
 interface SnapshotShape {

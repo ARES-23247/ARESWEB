@@ -15,6 +15,7 @@ vi.mock("@/lib/firebaseFirestore", () => ({ db: {} }));
 const mockUseAuth = vi.fn();
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
+  useOptionalAuth: () => undefined,
 }));
 
 vi.mock("firebase/firestore", () => ({

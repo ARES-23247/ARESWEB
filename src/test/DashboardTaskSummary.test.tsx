@@ -29,6 +29,7 @@ vi.mock("@/context/AuthContext", () => ({
     },
     authorizedUser: { role: "admin" },
   }),
+  useOptionalAuth: () => undefined,
 }));
 
 import DashboardHome from "@/app/dashboard/page";

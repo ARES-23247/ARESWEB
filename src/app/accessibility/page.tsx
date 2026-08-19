@@ -60,11 +60,11 @@ export default function AccessibilityPage() {
           >
             <div className="bg-white/5 border border-white/10 p-8 hero-card h-full">
               <div className="bg-ares-gold/10 w-12 h-12 ares-cut-sm flex items-center justify-center mb-6 text-ares-gold">
-                <span className="font-bold font-mono">10.0</span>
+                <span className="font-bold" aria-hidden="true">AA</span>
               </div>
-              <h2 className="text-2xl font-bold mb-3 text-white">WAVE AA Compliance</h2>
+              <h2 className="text-2xl font-bold mb-3 text-white">WCAG 2.2 AA, continuously reviewed</h2>
               <p className="text-marble leading-relaxed">
-                We work toward WCAG 2.2 AA with keyboard review, screen-reader checks, automated tests, and accessible design tokens. Accessibility is ongoing work, and reported barriers are treated as high-priority defects.
+                We work toward WCAG 2.2 AA with keyboard review, screen-reader checks, automated tests, and accessible design tokens. We do not publish a single conformance score: accessibility here is ongoing, evidence-based work, and reported barriers are treated as high-priority defects.
               </p>
             </div>
           </motion.div>

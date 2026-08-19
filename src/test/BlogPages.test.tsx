@@ -15,6 +15,7 @@ vi.mock("@/context/AuthContext", () => ({
     authorizedUser: { role: "admin" },
     loading: false,
   }),
+  useOptionalAuth: () => undefined,
 }));
 vi.mock("@/lib/firebaseFirestore", () => ({
   db: {},

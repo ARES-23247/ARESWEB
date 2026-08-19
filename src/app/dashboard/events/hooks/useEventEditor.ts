@@ -218,6 +218,7 @@ export function useEventEditor({
       },
       (err) => {
         logger.warn("Unable to fetch event signups:", err);
+        setOperationError(`Sign-up list unavailable: ${err instanceof Error ? err.message : String(err)}`);
       }
     );
     return () => unsubscribe();

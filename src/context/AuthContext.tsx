@@ -2,6 +2,7 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -31,6 +32,9 @@ interface AuthContextType {
   user: User | null;
   authorizedUser: AuthorizedUser | null;
   loading: boolean;
+  /** Human-readable failure from the last sign-in/sign-out attempt. */
+  authError: string | null;
+  clearAuthError: () => void;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   loginWithMockUser: (email: string, role: string, name?: string) => void;
@@ -45,6 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     null,
   );
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const clearAuthError = useCallback(() => setAuthError(null), []);
   const isMockRef = useRef(false);
 
   useEffect(() => {
@@ -55,11 +61,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       void getOrInitializeAppCheck();
     }
 
-    // Safety timeout: if Auth takes more than 1.5 seconds to initialize (e.g., emulators are offline/refused),
-    // automatically force loading to false so the developer bypass lockscreen is visible.
-    const safetyTimeout = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
+    // Safety timeout for the developer/E2E bypass lockscreen: if Auth takes
+    // more than 1.5 seconds to initialize (e.g., emulators are offline),
+    // force loading to false. Production keeps loading until Auth resolves so
+    // slow connections never flash the signed-out gate at a signed-in member.
+    const safetyTimeout = mockAuthEnabled
+      ? setTimeout(() => {
+          setLoading(false);
+        }, 1500)
+      : null;
 
     // Check if we have a saved mock session in sessionStorage (development/E2E testing)
     if (mockAuthEnabled && typeof window !== "undefined") {
@@ -68,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const parsed = JSON.parse(savedMock);
           loginWithMockUser(parsed.email, parsed.role, parsed.name);
-          clearTimeout(safetyTimeout);
+          if (safetyTimeout !== null) clearTimeout(safetyTimeout);
           return;
         } catch {
           logger.error("Failed to restore the local mock user session.");
@@ -77,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      clearTimeout(safetyTimeout);
+      if (safetyTimeout !== null) clearTimeout(safetyTimeout);
       if (isMockRef.current) {
         setLoading(false);
         return;
@@ -126,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      clearTimeout(safetyTimeout);
+      if (safetyTimeout !== null) clearTimeout(safetyTimeout);
       unsubscribe();
     };
   }, []);
@@ -179,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch {
       logger.error("Google SSO login failed.");
 
       if (isLocalEnv) {
@@ -195,7 +205,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLoading(false);
-      throw error;
+      // Buttons hand this directly to onClick, so failures resolve into the
+      // shared authError state instead of an unhandled promise rejection.
+      setAuthError(
+        "Sign-in could not be completed. Check popup permissions and your connection, then try again.",
+      );
     }
   };
 
@@ -299,10 +313,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       await signOut(auth);
-    } catch (error) {
+    } catch {
       logger.error("Logout failed.");
       setLoading(false);
-      throw error;
+      setAuthError("Sign-out failed. Please try again.");
     }
   };
 
@@ -312,6 +326,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         authorizedUser,
         loading,
+        authError,
+        clearAuthError,
         loginWithGoogle,
         loginWithMockUser,
         logout,
@@ -322,8 +338,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Reads auth state without requiring a provider (optional consumers only). */
+export function useOptionalAuth(): AuthContextType | undefined {
+  return useContext(AuthContext);
+}
+
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context = useOptionalAuth();
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
