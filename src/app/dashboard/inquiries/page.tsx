@@ -230,6 +230,7 @@ export default function InquiriesPage() {
       mentor: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
       sponsor: "bg-ares-cyan/15 text-ares-cyan border-ares-cyan/20",
       demo: "bg-ares-gold/15 text-ares-gold border-ares-gold/20",
+      general: "bg-white/10 text-white border-white/20",
     };
     const cls = colors[type] || "bg-white/5 text-marble/60 border-white/10";
     return <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${cls}`}>{type}</span>;
@@ -261,7 +262,7 @@ export default function InquiriesPage() {
             Inquiries Hub
           </h1>
           <p className="text-marble/70 text-sm mt-2 font-medium">
-            Review and manage student enrollments, mentor applications, and general sponsorship inquiries.
+            Review and manage student enrollments, mentor applications, sponsorship interests, demo requests, and general messages.
           </p>
         </div>
         <button 
@@ -297,6 +298,7 @@ export default function InquiriesPage() {
             <option value="student">Students</option>
             <option value="mentor">Mentors</option>
             <option value="sponsor">Sponsors</option>
+            <option value="general">General</option>
           </select>
           <select
             value={statusFilter}

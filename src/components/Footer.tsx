@@ -124,6 +124,9 @@ export default function Footer() {
               <a href={`mailto:${siteConfig.contact.email}`} className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider">
                 {siteConfig.contact.email}
               </a>
+              <Link to="/join" className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider">
+                Contact Form
+              </Link>
             </div>
             <div>
               <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">Location</p>

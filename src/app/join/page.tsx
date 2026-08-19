@@ -2,7 +2,8 @@
 
 import { logger } from "@/utils/logger";
 import { useState } from "react";
-import { Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck } from "lucide-react";
+import {
+  MessageCircle, Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
 import { getRecaptchaToken } from "@/lib/recaptcha";
 
@@ -12,7 +13,7 @@ const GRADE_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"] as const;
 import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 
 export default function JoinPage() {
-  const [role, setRole] = useState<"student" | "mentor">("student");
+  const [role, setRole] = useState<"student" | "mentor" | "general">("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -46,7 +47,7 @@ export default function JoinPage() {
       setErrorMessage("Please fill in your current occupation/company.");
       return;
     }
-    if (selectedInterests.length === 0) {
+    if (role !== "general" && selectedInterests.length === 0) {
       setSubmitStatus("error");
       setErrorMessage("Please select at least one interest or area of expertise.");
       return;
@@ -68,7 +69,9 @@ export default function JoinPage() {
     try {
       const metadata = role === "student"
         ? { school: school.trim(), grade, interests: selectedInterests, additional: additional.trim(), phone: phone || undefined }
-        : { occupation: occupation.trim(), interests: selectedInterests, additional: additional.trim(), phone: phone || undefined };
+        : role === "mentor"
+          ? { occupation: occupation.trim(), interests: selectedInterests, additional: additional.trim(), phone: phone || undefined }
+          : { additional: additional.trim(), phone: phone || undefined };
 
       let appCheckHeaders = (await getAppCheckHeader()) || {};
       if (!appCheckHeaders["X-Firebase-AppCheck"]) {
@@ -224,12 +227,24 @@ export default function JoinPage() {
               >
                 <GraduationCap size={16} /> Mentor Application
               </button>
+              <button
+                type="button"
+                onClick={() => { setRole("general"); setSubmitStatus("idle"); }}
+                aria-pressed={role === "general"}
+                className={`flex-1 min-w-[150px] flex items-center justify-center gap-3 px-6 py-4 ares-cut-sm font-black uppercase tracking-widest text-xs transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                  role === "general"
+                    ? "bg-ares-gold text-obsidian shadow-lg scale-100"
+                    : "bg-obsidian/5 text-obsidian/80 hover:bg-obsidian/10 scale-95"
+                }`}
+              >
+                <MessageCircle size={16} /> Just a Question
+              </button>
             </div>
 
             {submitStatus === "success" && (
               <div role="status" aria-live="polite" className="bg-ares-gold/15 border border-ares-gold/30 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-xs font-bold items-center">
                 <CheckCircle aria-hidden="true" size={16} className="text-ares-gold shrink-0" />
-                <span>Application submitted successfully! We&apos;ll be in touch soon.</span>
+                <span>{role === "general" ? "Message sent! We will get back to you soon." : "Application submitted successfully! We will be in touch soon."}</span>
               </div>
             )}
             
@@ -281,7 +296,7 @@ export default function JoinPage() {
                 />
               </div>
 
-              {role === "student" ? (
+              {role === "general" ? null : role === "student" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="join-school" className="block text-[10px] font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">School *</label>
@@ -331,7 +346,7 @@ export default function JoinPage() {
                 </div>
               )}
 
-              <fieldset className="border-none p-0 m-0">
+              <fieldset className={`border-none p-0 m-0 ${role === "general" ? "hidden" : ""}`}>
                 <legend id="join-interests-label" className="block text-[10px] font-bold text-obsidian uppercase tracking-widest mb-1.5 ml-1">Interests / Expertise *</legend>
                 <p className="text-[11px] text-obsidian/70 mb-4 ml-1 leading-relaxed font-semibold">Select all areas you are most interested in pursuing with ARES:</p>
                 
@@ -354,11 +369,12 @@ export default function JoinPage() {
                 <label htmlFor="join-additional" className="block text-[10px] font-bold text-obsidian uppercase tracking-widest mb-2 ml-1">Additional Information</label>
                 <textarea
                   id="join-additional"
+                  required={role === "general"}
                   value={additional}
                   onChange={(e) => setAdditional(e.target.value)}
                   rows={4}
                   className="w-full bg-white border border-obsidian/20 ares-cut-sm px-4 py-3 text-xs text-obsidian placeholder-obsidian/30 focus:outline-none focus:border-ares-red focus:ring-2 focus:ring-ares-red transition-all resize-none shadow-sm"
-                  placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : "How would you like to support the team?"}
+                  placeholder={role === "student" ? "Why do you want to join ARES? Any prior experience? (None required!)" : role === "mentor" ? "How would you like to support the team?" : "Ask us anything — media, events, partnerships, or general questions."}
                 />
               </div>
 
@@ -373,7 +389,7 @@ export default function JoinPage() {
                       : "bg-obsidian hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]"
                   }`}
                 >
-                  {submitStatus === "sending" ? "Submitting..." : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
+                  {submitStatus === "sending" ? "Submitting..." : role === "general" ? "Send Message" : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                 </button>
                 <p className="text-center text-[9px] text-obsidian/50 font-bold uppercase tracking-widest mt-4 leading-relaxed max-w-md mx-auto">
                   Your personal information is protected under the <i>FIRST</i>® Youth Protection Program (YPP) guidelines.
