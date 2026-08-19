@@ -223,8 +223,63 @@ describe("Firebase Hosting crawl configuration", () => {
     );
   });
 
-  it("keeps known static routes synchronized with the prerender build", () => {
+  it("keeps the analytics loader and the CSP in sync", () => {
     const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const csp = config.hosting.headers
+      .find((rule) => rule.source === "/!(assets){,/**}")
+      ?.headers.find((header) => header.key === "Content-Security-Policy")
+      ?.value;
+    const envProduction = readFileSync(
+      resolve(process.cwd(), ".env.production"),
+      "utf8",
+    );
+    const analyticsTracker = readFileSync(
+      resolve(process.cwd(), "src/components/AnalyticsTracker.tsx"),
+      "utf8",
+    );
+    const analyticsActive =
+      /NEXT_PUBLIC_GA_MEASUREMENT_ID=G-[A-Z0-9]+/.test(envProduction) &&
+      /googletagmanager\.com/.test(analyticsTracker);
+
+    // GA is either fully allowed by the CSP or fully removed from the build.
+    expect(analyticsActive).toBe(true);
+    // These assertions check that a CSP directive allows the analytics hosts;
+    // no URL is being validated for security here.
+    expect(csp).toMatch(/script-src[^;]*https:\/\/www\.googletagmanager\.com/);
+    expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
+  });
+
+  it("blocks tournaments routes from indexing at the hosting layer", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const tournamentsRule = config.hosting.headers.find(
+      (rule) => rule.source === "/tournaments{,/**}",
+    );
+
+    expect(tournamentsRule?.headers).toContainEqual({
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow",
+    });
+  });
+
+  it("replaces rather than duplicates the source canonical in prerendered shells", () => {
+    const prerenderSource = readFileSync(
+      resolve(process.cwd(), "scripts/prerender-static-routes.mjs"),
+      "utf8",
+    );
+
+    // The source canonical must be stripped before the route canonical is
+    // injected, and the build must fail on any shell emitting two canonicals.
+    expect(prerenderSource).toContain(
+      'rel=["\']canonical["\'][^>]*>/i, ""',
+    );
+    expect(prerenderSource).toContain("canonical tags");
+  });
+
+  it("keeps known static routes synchronized with the prerender build", () => {    const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { rewrites: HostingRewrite[] } };
     const prerenderSource = readFileSync(

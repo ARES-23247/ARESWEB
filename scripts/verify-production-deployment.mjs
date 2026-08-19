@@ -276,6 +276,10 @@ export function validateDeploymentContract(contract, roleSpec) {
       if (typeof value !== "string" || value.length === 0)
         throw new Error(`${check.name} has an invalid body marker`);
     }
+    for (const value of check.bodyExcludes ?? []) {
+      if (typeof value !== "string" || value.length === 0)
+        throw new Error(`${check.name} has an invalid forbidden body marker`);
+    }
     for (const [header, values] of Object.entries(check.headerIncludes ?? {})) {
       if (
         !/^[a-z0-9-]+$/.test(header) ||
