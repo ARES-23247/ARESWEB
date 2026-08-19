@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: () => undefined,
 }));
 
 describe("Home page branding & OAuth truthfulness", () => {
@@ -15,6 +16,8 @@ describe("Home page branding & OAuth truthfulness", () => {
       user: null,
       authorizedUser: null,
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(),
       logout: vi.fn(),
       loginWithMockUser: vi.fn(),

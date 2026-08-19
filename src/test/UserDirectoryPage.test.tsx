@@ -8,7 +8,8 @@ const authState = {
   authorizedUser: { role: "admin" },
 };
 
-vi.mock("../context/AuthContext", () => ({ useAuth: () => authState }));
+vi.mock("../context/AuthContext", () => ({ useAuth: () => authState, useOptionalAuth: () => undefined,
+}));
 vi.mock("../lib/api", () => ({ authenticatedFetch: vi.fn() }));
 
 vi.mock("../app/dashboard/users/components/UserRosterTable", () => ({

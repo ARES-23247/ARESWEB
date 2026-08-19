@@ -26,7 +26,7 @@ const uploadUnifiedLimiter = rateLimit({
 });
 
 // POST /api/photos/upload-unified
-// Accepts base64 encoded photo and metadata, performs storage upload, optional Google Photos upload, and optional AI labeling
+// Accepts base64 encoded photo and metadata, performs storage upload and optional AI labeling (uploads do not push to Google Photos; imports use the picker route)
 router.post("/upload-unified", ensureTeamMember, uploadUnifiedLimiter, asyncHandler(async (req, res) => {
   const { fileBase64, filename, mimeType, albumId, runAiLabeling } = req.body as {
     fileBase64: string;

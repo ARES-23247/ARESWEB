@@ -10,6 +10,7 @@ import {
 import { TEAM_LINKS, RESOURCE_LINKS } from "./navItems";
 import { NavLinkItem } from "./NavLinkItem";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import AuthErrorNotice from "./AuthErrorNotice";
 
 interface MenuUser {
   uid: string;
@@ -253,16 +254,19 @@ export function MobileNavDrawer({
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => {
-              loginWithGoogle();
-              onClose();
-            }}
-            className="min-h-11 w-full rounded border border-ares-bronze/30 bg-ares-red px-3 py-3 text-center text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-          >
-            Sign In with Google
-          </button>
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                loginWithGoogle();
+                onClose();
+              }}
+              className="min-h-11 w-full rounded border border-ares-bronze/30 bg-ares-red px-3 py-3 text-center text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Sign In with Google
+            </button>
+            <AuthErrorNotice />
+          </div>
         )}
       </div>
     </div>,

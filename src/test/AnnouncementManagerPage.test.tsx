@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({ authenticatedFetch: mocks.authenticatedFetch }));
-vi.mock("@/context/AuthContext", () => ({ useAuth: mocks.useAuth }));
+vi.mock("@/context/AuthContext", () => ({ useAuth: mocks.useAuth, useOptionalAuth: () => undefined,
+}));
 vi.mock("@/utils/logger", () => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));

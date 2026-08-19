@@ -18,6 +18,7 @@ vi.mock("@/context/AuthContext", () => ({
     user: { uid: "member_uid", displayName: "CircuitFox", photoURL: "https://avatars.example.org/member.png" },
     authorizedUser: { role: "mentor", name: "CircuitFox" },
   }),
+  useOptionalAuth: () => undefined,
 }));
 
 vi.mock("@/hooks/useDocumentSync", () => ({

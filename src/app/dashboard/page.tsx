@@ -202,7 +202,7 @@ export default function DashboardHome() {
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Active Tasks</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{activeTasks} / {taskCount}</p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : `${activeTasks} / ${taskCount}`}</p>
           </div>
           <div className="w-12 h-12 bg-ares-cyan/15 rounded-xl flex items-center justify-center border border-ares-cyan/30">
             <ClipboardList size={20} className="text-ares-cyan" />
@@ -213,7 +213,7 @@ export default function DashboardHome() {
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Published Blogs</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{blogCount}</p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : blogCount}</p>
           </div>
           <div className="w-12 h-12 bg-ares-red/15 rounded-xl flex items-center justify-center border border-ares-red/30">
             <PenTool size={20} className="text-ares-red" />
@@ -224,7 +224,7 @@ export default function DashboardHome() {
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Academy Lessons</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{docCount}</p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : docCount}</p>
           </div>
           <div className="w-12 h-12 bg-ares-success/15 rounded-xl flex items-center justify-center border border-ares-success/30">
             <GraduationCap size={20} className="text-ares-success" />

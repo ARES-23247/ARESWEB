@@ -9,13 +9,16 @@ const mocks = vi.hoisted(() => ({
     user: { uid: "member-1", displayName: "ARES Member", email: "member@example.com", photoURL: null },
     authorizedUser: { email: "member@example.com", role: "admin", name: "ARES Member" },
     loading: false,
+    authError: null,
+    clearAuthError: vi.fn(),
     loginWithGoogle: vi.fn(),
     logout: vi.fn(),
     loginWithMockUser: vi.fn(),
   },
 }));
 
-vi.mock("@/context/AuthContext", () => ({ useAuth: () => mocks.authState }));
+vi.mock("@/context/AuthContext", () => ({ useAuth: () => mocks.authState, useOptionalAuth: () => undefined,
+}));
 vi.mock("@/lib/api", () => ({ authenticatedFetch: mocks.authenticatedFetch }));
 
 function renderNavbar() {

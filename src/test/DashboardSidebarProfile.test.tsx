@@ -7,7 +7,8 @@ import { useAuth } from "../context/AuthContext";
 import { authenticatedFetch } from "../lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn(), useOptionalAuth: () => undefined,
+}));
 vi.mock("../lib/api", () => ({ authenticatedFetch: vi.fn() }));
 vi.mock("../lib/firebaseFirestore", () => ({ db: {} }));
 vi.mock("firebase/firestore", () => ({
@@ -32,6 +33,8 @@ describe("DashboardSidebar profile DTO", () => {
       user: { uid: "private_uid", displayName: "OAuth Legal Name", photoURL: null },
       authorizedUser: { role: "member" },
       loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(),
       logout: vi.fn(),
       loginWithMockUser: vi.fn(),

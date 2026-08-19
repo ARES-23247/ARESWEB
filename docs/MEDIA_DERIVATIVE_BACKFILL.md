@@ -8,7 +8,7 @@ derivatives:
 
 The full-resolution image remains available for lightboxes and downloads, but
 new ingestion normalizes orientation and strips EXIF, XMP, ICC, and related
-source metadata before Storage, AI labeling, or optional Google Photos sync.
+source metadata before Storage and AI labeling (uploads no longer sync to Google Photos; imports use the picker route).
 Public and team photo DTOs expose derivative URLs and dimensions, but return
 `null` for legacy records that have not been processed. Clients must fall back
 to `publicUrl` when a derivative is absent.

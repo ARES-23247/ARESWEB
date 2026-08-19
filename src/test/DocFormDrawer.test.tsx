@@ -13,6 +13,7 @@ vi.mock("@/context/AuthContext", () => ({
     user: { uid: "member-1", displayName: "Member" },
     authorizedUser: { name: "Member", role: "mentor" },
   }),
+  useOptionalAuth: () => undefined,
 }));
 
 vi.mock("@/components/dashboard/DocFormMainFields", () => ({

@@ -55,6 +55,8 @@ export default function EventDetailPage() {
   const [prepHours, setPrepHours] = useState(0);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [submittingRsvp, setSubmittingRsvp] = useState(false);
+  const [updatingAttendance, setUpdatingAttendance] = useState<Set<string>>(new Set());
+  const [signupsError, setSignupsError] = useState<string | null>(null);
   const [profileNickname, setProfileNickname] = useState("ARES Member");
   const [confirmRsvpCancel, setConfirmRsvpCancel] = useState(false);
 
@@ -149,6 +151,7 @@ export default function EventDetailPage() {
       },
       (err) => {
         logger.warn("Unable to fetch event signups:", err);
+        setSignupsError("The sign-up list is unavailable right now. Please try again.");
       }
     );
     return () => unsubscribe();
@@ -279,12 +282,20 @@ export default function EventDetailPage() {
     if (!id || !isVerified) return;
     const isSelf = user?.uid === userId;
     if (!isSelf && !isAdmin) return;
+    if (updatingAttendance.has(userId)) return;
+    setUpdatingAttendance((current) => new Set(current).add(userId));
 
     try {
       await setDoc(doc(db, "events", id, "signups", userId), { attended: !currentStatus }, { merge: true });
     } catch (err: unknown) {
       logger.error("Error updating attendance:", err);
       setSignupError(`Attendance update failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUpdatingAttendance((current) => {
+        const next = new Set(current);
+        next.delete(userId);
+        return next;
+      });
     }
   };
 
@@ -507,6 +518,7 @@ export default function EventDetailPage() {
             isVerified={isVerified}
             isAdmin={isAdmin}
             signups={signups}
+            signupsError={signupsError}
             mySignup={mySignup}
             userId={user?.uid}
             bringing={bringing}

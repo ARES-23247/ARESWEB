@@ -8,6 +8,7 @@ interface EventRsvpsProps {
   isVerified: boolean;
   isAdmin: boolean;
   signups: EventSignup[];
+  signupsError?: string | null;
   mySignup: EventSignup | null;
   userId?: string;
   bringing: string;
@@ -28,6 +29,7 @@ export default function EventRsvps({
   isVerified,
   isAdmin,
   signups,
+  signupsError,
   mySignup,
   userId,
   bringing,
@@ -165,7 +167,9 @@ export default function EventRsvps({
           {/* RSVP List Table */}
           <div className="space-y-3 pt-4 border-t border-white/5">
             <h4 className="text-[10px] font-black uppercase text-marble/55 tracking-wider">RSVP List</h4>
-            {signups.length === 0 ? (
+            {signupsError ? (
+              <p role="alert" className="text-[10px] text-ares-gold font-mono">{signupsError}</p>
+            ) : signups.length === 0 ? (
               <p className="text-[10px] text-marble/40 font-mono">No sign-ups registered yet.</p>
             ) : (
               <div className="divide-y divide-white/5">
@@ -175,8 +179,14 @@ export default function EventRsvps({
                       {isAdmin ? (
                         <button
                           type="button"
+                          aria-pressed={entry.attended ? "true" : "false"}
+                          aria-label={
+                            entry.attended
+                              ? `Undo check-in for ${entry.nickname?.includes("@") ? "this member" : entry.nickname || "this member"}`
+                              : `Check in ${entry.nickname?.includes("@") ? "this member" : entry.nickname || "this member"}`
+                          }
                           onClick={() => handleToggleAttendance(entry.userId, entry.attended)}
-                          className={`shrink-0 transition-colors ${
+                          className={`shrink-0 transition-colors focus-visible:ring-2 focus-visible:ring-ares-cyan ${
                             entry.attended ? "text-ares-gold" : "text-white/10 hover:text-white/30"
                           }`}
                         >

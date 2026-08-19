@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PublicDataState } from "@/components/PublicDataState";
 import { formatDateOnly } from "@/lib/dateOnly";
+import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 export default function TournamentsFeedPage() {
   const {
@@ -148,6 +149,7 @@ export default function TournamentsFeedPage() {
             >
               Sign In with Google
             </button>
+            <AuthErrorNotice />
 
             {user && authorizedUser?.role === "unverified" && (
               <div className="mt-6 p-4 bg-ares-red/10 border border-ares-red/30 rounded-lg flex items-start gap-2.5 text-left">
@@ -250,6 +252,18 @@ export default function TournamentsFeedPage() {
               {stats.peakOpr > 0 ? stats.peakOpr : "N/A"}
             </span>
             <div className="absolute right-3 bottom-3 text-ares-gold/10">
+              <TrendingUp size={48} />
+            </div>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 ares-cut p-5 relative overflow-hidden backdrop-blur-sm flex flex-col justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
+              Average Team OPR
+            </span>
+            <span className="text-3xl md:text-4xl font-extrabold text-white mt-2 font-heading">
+              {stats.avgOpr > 0 ? stats.avgOpr : "N/A"}
+            </span>
+            <div className="absolute right-3 bottom-3 text-ares-cyan/10">
               <TrendingUp size={48} />
             </div>
           </div>

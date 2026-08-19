@@ -30,6 +30,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebaseFirestore";
 import { onSnapshot, collection, query, where } from "firebase/firestore";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 interface NavButtonProps {
   tab: string;
@@ -441,6 +442,7 @@ export default function DashboardSidebar({
           >
             <LogOut size={14} /> Sign Out
           </button>
+          <AuthErrorNotice />
         </div>
       </div>
     </aside>

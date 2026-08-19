@@ -11,6 +11,7 @@ import type { RobotItem } from "../app/robots/types";
 vi.mock("@/components/SEO", () => ({ default: () => null }));
 vi.mock("@/context/AuthContext", () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: () => undefined,
 }));
 vi.mock("@/lib/api", () => ({
   authenticatedFetch: vi.fn(),
