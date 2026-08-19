@@ -6,7 +6,6 @@ const projectRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const distDirectory = join(projectRoot, "dist");
 const outputDirectory = join(distDirectory, "prerender");
 const baseUrl = "https://aresfirst.org";
-const defaultImage = `${baseUrl}/favicon.webp`;
 
 /**
  * Prerendered route metadata.
@@ -135,11 +134,17 @@ export function renderStaticShell(shell, [route, pageTitle, description, noindex
     ? "ARES 23247 | West Virginia Robotics Team (Morgantown, WV)"
     : `${pageTitle} | ARES 23247`;
   const canonical = `${baseUrl}${route}`;
+  // Branded 1200x630 card from the CDN-cached OG renderer (keyed by title),
+  // replacing the old favicon fallback.
+  const ogImage = `${baseUrl}/api/og?title=${encodeURIComponent(title)}`;
   let html = shell
     .replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`)
     .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${escapeHtml(description)}">`)
     .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${escapeHtml(title)}">`)
-    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${escapeHtml(description)}">`);
+    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${escapeHtml(description)}">`)
+    // The Vite source shell carries the homepage canonical as its fallback;
+    // every prerendered route must REPLACE it, never duplicate it.
+    .replace(/<link\s+rel=["']canonical["'][^>]*>/i, "");
   // The home shell keeps the rich homepage fallback body; every other route
   // swaps in unique crawlable content so shells are not duplicates of "/".
   if (route !== "/") {
@@ -151,11 +156,34 @@ export function renderStaticShell(shell, [route, pageTitle, description, noindex
   const tags = [
     `<link rel="canonical" href="${canonical}">`,
     `<meta property="og:url" content="${canonical}">`,
-    `<meta property="og:image" content="${defaultImage}">`,
+    `<meta property="og:image" content="${ogImage}">`,
+    `<meta property="og:image:width" content="1200">`,
+    `<meta property="og:image:height" content="630">`,
+    `<meta property="og:image:alt" content="${escapeHtml(title)}">`,
     `<meta name="twitter:card" content="summary_large_image">`,
+    `<meta name="twitter:title" content="${escapeHtml(title)}">`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}">`,
+    `<meta name="twitter:image" content="${ogImage}">`,
+    // Keep in sync with ORGANIZATION_SCHEMA in src/components/SEO.tsx; the
+    // static copy serves crawlers and platforms that never execute the SPA.
+    `<script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "ARES 23247",
+      url: baseUrl,
+      logo: `${baseUrl}/favicon.webp`,
+      description: "ARES 23247 is a FIRST Tech Challenge robotics team based in Morgantown, West Virginia.",
+    })}</script>`,
     noindex ? `<meta name="robots" content="noindex, nofollow">` : "",
   ].filter(Boolean).join("\n    ");
-  return html.replace("</head>", `    ${tags}\n  </head>`);
+  const rendered = html.replace("</head>", `    ${tags}\n  </head>`);
+  // A second canonical (for example from a future index.html edit) would let
+  // Google consolidate every route onto "/" — fail the build instead.
+  const canonicalCount = rendered.match(/<link\s+rel=["']canonical["']/gi)?.length ?? 0;
+  if (canonicalCount !== 1) {
+    throw new Error(`Prerender route ${route} emitted ${canonicalCount} canonical tags.`);
+  }
+  return rendered;
 }
 
 export function prerenderStaticRoutes() {
