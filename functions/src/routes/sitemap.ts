@@ -22,6 +22,7 @@ const STATIC_URLS = [
   { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/academy`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/accessibility`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/brand`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/blog`, changefreq: "daily", priority: "0.80" },
   { loc: `${BASE_URL}/calendar`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/docs`, changefreq: "weekly", priority: "0.70" },
