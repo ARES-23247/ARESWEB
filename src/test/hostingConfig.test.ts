@@ -241,15 +241,13 @@ describe("Firebase Hosting crawl configuration", () => {
     );
     const analyticsActive =
       /NEXT_PUBLIC_GA_MEASUREMENT_ID=G-[A-Z0-9]+/.test(envProduction) &&
-      analyticsTracker.includes("googletagmanager.com");
+      /googletagmanager\.com/.test(analyticsTracker);
 
     // GA is either fully allowed by the CSP or fully removed from the build.
     expect(analyticsActive).toBe(true);
     // These assertions check that a CSP directive allows the analytics hosts;
     // no URL is being validated for security here.
-    // codeql[js/incomplete-url-substring-sanitization]
     expect(csp).toMatch(/script-src[^;]*https:\/\/www\.googletagmanager\.com/);
-    // codeql[js/incomplete-url-substring-sanitization]
     expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
   });
 
