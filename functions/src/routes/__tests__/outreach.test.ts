@@ -229,7 +229,7 @@ describe("Outreach Router Backend Endpoints", () => {
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Outreach title is required.");
+      expect(err.message).toBe("An outreach title of 200 characters or fewer is required.");
       expect(err.status).toBe(400);
     });
 
@@ -245,7 +245,7 @@ describe("Outreach Router Backend Endpoints", () => {
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
-      expect(err.message).toBe("Outreach date is required.");
+      expect(err.message).toBe("An outreach date starting with YYYY-MM-DD is required.");
       expect(err.status).toBe(400);
     });
 

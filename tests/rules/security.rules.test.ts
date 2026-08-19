@@ -64,6 +64,40 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(getDoc(doc(publicDb, "posts", "deleted")));
   });
 
+  it("requires approval metadata before an explicitly reviewed post is public", async () => {
+    await seedDocument("posts", "approved", { status: "published", isDeleted: 0, approvalStatus: "approved" });
+    await seedDocument("posts", "pending", { status: "published", isDeleted: 0, approvalStatus: "pending_approval" });
+    await seedDocument("posts", "legacy", { status: "published", isDeleted: 0 });
+
+    const publicDb = testEnvironment.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(publicDb, "posts", "approved")));
+    await assertFails(getDoc(doc(publicDb, "posts", "pending")));
+    await assertSucceeds(getDoc(doc(publicDb, "posts", "legacy")));
+  });
+
+  it("limits docs_feedback writes to authorized team members", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("unverified-user", "unverified");
+    const feedback = {
+      slug: "areslib-fundamentals",
+      isHelpful: 1,
+      comment: "Clear examples",
+      isResolved: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const unverifiedDb = testEnvironment.authenticatedContext("unverified-user").firestore();
+    const publicDb = testEnvironment.unauthenticatedContext().firestore();
+    await assertSucceeds(setDoc(doc(memberDb, "docs_feedback", "fb_member"), feedback));
+    await assertFails(setDoc(doc(unverifiedDb, "docs_feedback", "fb_unverified"), feedback));
+    await assertFails(setDoc(doc(publicDb, "docs_feedback", "fb_public"), feedback));
+    await assertFails(setDoc(doc(memberDb, "docs_feedback", "fb_oversize"), {
+      ...feedback,
+      slug: "x".repeat(201),
+    }));
+  });
+
   it("keeps inquiry PII restricted to admin and coach roles", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("member-user", "member");

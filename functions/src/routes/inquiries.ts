@@ -66,11 +66,12 @@ async function decryptMetadata(value: unknown, secret: string): Promise<Record<s
 router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
   const { type, name, email, metadata, recaptchaToken } = req.body;
 
-  // Preserve the existing invalid-token rejection while missing-token traffic
-  // is measured during the staged App Check rollout and checked by reCAPTCHA.
+  // App Check enforcement is on at the middleware layer; this in-route check
+  // fails closed for both missing and invalid tokens so the staged-rollout
+  // fallback can never silently reduce inquiry protection to reCAPTCHA alone.
   const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
   const appCheckObservation = (req as AppCheckObservedRequest).appCheckObservation;
-  if (isProd && appCheckObservation?.status === "invalid") {
+  if (isProd && appCheckObservation && appCheckObservation.status !== "valid") {
     throw new ApiError(400, "App integrity check failed. Please refresh and try again.");
   }
 

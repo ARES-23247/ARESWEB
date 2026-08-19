@@ -62,6 +62,10 @@ export function validateHealthResponse(check, response, body) {
     if (!body.includes(required))
       failures.push(`response body is missing required marker: ${required}`);
   }
+  for (const forbidden of check.bodyExcludes ?? []) {
+    if (body.includes(forbidden))
+      failures.push(`response body contains forbidden marker: ${forbidden}`);
+  }
   if (check.validJson) {
     try {
       JSON.parse(body);

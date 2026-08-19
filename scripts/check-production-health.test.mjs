@@ -64,6 +64,24 @@ describe("production response validation", () => {
       /HTTP 404[\s\S]*Content-Type[\s\S]*missing-marker[\s\S]*not valid JSON[\s\S]*nosniff/,
     );
   });
+
+  it("fails when a forbidden body marker is present", () => {
+    const check = {
+      status: 200,
+      contentType: "text/html",
+      bodyExcludes: ['rel="canonical" href="https://aresfirst.org/"'],
+    };
+    const duplicateBody =
+      '<link rel="canonical" href="https://aresfirst.org/">\n<link rel="canonical" href="https://aresfirst.org/about">';
+    expect(() =>
+      validateHealthResponse(check, response(duplicateBody), duplicateBody),
+    ).toThrow(/forbidden marker/);
+
+    const singleBody = '<link rel="canonical" href="https://aresfirst.org/about">';
+    expect(
+      validateHealthResponse(check, response(singleBody), singleBody),
+    ).toBe(true);
+  });
 });
 
 describe("production health runner", () => {

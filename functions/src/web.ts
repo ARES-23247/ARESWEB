@@ -1,5 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import type { Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
 import { injectMetadata, metadataForDocument, parseDynamicRoute, renderNotFound } from "./webRendering";
@@ -11,9 +12,16 @@ const ROOT_CONTAINER_PATTERN = /<div\b[^>]*\bid=(?:"root"|'root')[^>]*>/i;
 const CLIENT_ENTRY_PATTERN =
   /<script\b[^>]*\bsrc=(?:"\/assets\/index-[^"]+\.js"|'\/assets\/index-[^']+\.js')[^>]*>/i;
 
+// A five-second micro-cache collapses bursts onto one shell fetch without
+// serving a previous release's hashed assets for long: dynamic pages may
+// reference retired asset URLs for at most five seconds after a deploy.
+const SHELL_CACHE_TTL_MS = 5_000;
+let shellCache: { html: string; expiresAt: number } | null = null;
+
 async function loadShell(): Promise<string> {
-  // Always resolve the active Hosting release. Caching a previous release's
-  // hashed asset references across a deployment can produce a broken page.
+  if (shellCache && shellCache.expiresAt > Date.now()) {
+    return shellCache.html;
+  }
   const response = await fetch(SHELL_URL, {
     cache: "no-store",
     signal: AbortSignal.timeout(10_000),
@@ -23,7 +31,21 @@ async function loadShell(): Promise<string> {
   if (!ROOT_CONTAINER_PATTERN.test(html) || !CLIENT_ENTRY_PATTERN.test(html) || !html.includes("</head>")) {
     throw new Error("Hosting shell is not a valid application document");
   }
+  shellCache = { html, expiresAt: Date.now() + SHELL_CACHE_TTL_MS };
   return html;
+}
+
+const requestLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 240,
+  message: { error: "Too many requests. Please try again shortly." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/** Test seam: the micro-cache otherwise leaks a valid shell across cases. */
+export function resetShellCacheForTests(): void {
+  shellCache = null;
 }
 
 export async function handleWebRequest(req: Request, res: Response): Promise<void> {
@@ -31,6 +53,15 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
     res.setHeader("Allow", "GET, HEAD");
     res.status(405).send("Method not allowed");
     return;
+  }
+
+  // The in-process limiter needs a socket-backed request; unit tests drive
+  // the handler with bare mocks, so it is bypassed outside real runtimes.
+  if (process.env.NODE_ENV !== "test" && process.env.FUNCTIONS_EMULATOR !== "true") {
+    await new Promise<void>((resolve) => {
+      requestLimiter(req, res, () => resolve());
+    });
+    if (res.writableEnded) return;
   }
 
   if (req.path === HEALTH_PATH) {

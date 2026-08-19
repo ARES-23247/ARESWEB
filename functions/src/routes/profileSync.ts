@@ -237,6 +237,15 @@ export function registerProfileSyncRoutes(router: Router): void {
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const { uid, email } = req.user!;
       if (!email) throw new ApiError(400, "Email not found in auth token.");
+      // Legacy claims and bootstrap grants transfer roles on an email match,
+      // so they must never run for an address the caller has not verified
+      // with Firebase Auth (mirrors lib/linkAuthorizedUser.ts).
+      if (req.user!.email_verified !== true) {
+        throw new ApiError(
+          403,
+          "Verify your email address before this account can be linked.",
+        );
+      }
 
       const cleanEmail = email.trim().toLowerCase();
       const userRef = adminDb.collection("authorized_users").doc(uid);

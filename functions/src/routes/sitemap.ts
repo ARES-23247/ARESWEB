@@ -182,6 +182,9 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
   postsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
     if (!isSitemapRecordIndexable(doc.id, data)) return;
+    // Match the syndication gate: posts with explicit approval metadata must
+    // be approved to be sitemap-visible (legacy records predate approvals).
+    if (data.approvalStatus !== undefined && data.approvalStatus !== "approved") return;
     addEntry({
       loc: `${BASE_URL}/blog/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
