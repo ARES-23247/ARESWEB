@@ -167,6 +167,10 @@ export default function Footer() {
             Accessibility
           </Link>
 
+          <Link to="/brand" className="hover:text-ares-gold transition-colors flex items-center gap-2">
+            Brand &amp; Press
+          </Link>
+
           <Link to="/privacy" className="hover:text-ares-gold transition-colors flex items-center gap-2">
             <ShieldCheck size={12} className="text-ares-cyan" /> Privacy
           </Link>
