@@ -26,7 +26,7 @@ describe("calendar route helpers", () => {
       category: "internal",
       coverImage: "https://aresfirst.org/practice.webp",
     });
-    expect(eventWriteData(event, "pending")).toMatchObject({ status: "pending", isPotluck: 0 });
+    expect(eventWriteData(event, "pending")).toMatchObject({ status: "pending", isPotluck: 0, });
     expect(() => parseBody(eventWriteSchema, {
       title: "Backwards event",
       dateStart: "2026-08-20T20:00:00.000Z",
@@ -66,13 +66,13 @@ describe("calendar route helpers", () => {
       dateStart: "2026-11-15T08:00:00.000Z",
       category: "competition",
     } as never, false);
-    expect(competitionDto).toMatchObject({ id: "event-comp", category: "competition" });
+    expect(competitionDto).toMatchObject({ id: "event-comp", category: "competition", });
 
     expect(eventDto("event-2", { status: "invalid", isDeleted: 1 }, true)).toMatchObject({
       status: "draft",
       isDeleted: 1,
     });
-    expect(locationDto("venue-1", { name: 123, address: "WV", isDeleted: 1, isAddressPublic: 1 })).toMatchObject({
+    expect(locationDto("venue-1", { name: 123, address: "WV", isDeleted: 1, isAddressPublic: 1, })).toMatchObject({
       name: "Unnamed venue",
       isDeleted: 1,
       isAddressPublic: 1,
@@ -86,8 +86,8 @@ describe("calendar route helpers", () => {
       name: "Public Library",
       address: "321 Main Street, Morgantown, WV 26505, US",
     });
-    expect(publicVenueDto({ name: "Private home", address: "private", isAddressPublic: 0 })).toBeNull();
-    expect(publicVenueDto({ name: "Archived", address: "public", isAddressPublic: 1, isDeleted: 1 })).toBeNull();
+    expect(publicVenueDto({ name: "Private home", address: "private", isAddressPublic: 0, })).toBeNull();
+    expect(publicVenueDto({ name: "Archived", address: "public", isAddressPublic: 1, isDeleted: 1, })).toBeNull();
 
     expect(eventPhotoDto("photo-1", {
       url: "https://images.example.test/practice.jpg",
@@ -95,6 +95,7 @@ describe("calendar route helpers", () => {
       uploadedBy: "private-user-id",
       uploadedAt: "2026-08-10T12:00:00.000Z",
       isDeleted: 0,
+        publicationStatus: "published",
     })).toEqual({
       id: "photo-1",
       url: "https://images.example.test/practice.jpg",
@@ -105,12 +106,19 @@ describe("calendar route helpers", () => {
     });
     expect(eventPhotoDto("photo-fallback", {
       url: "https://images.example.test/photo.jpg",
+        publicationStatus: "published",
     })).toEqual(expect.objectContaining({ filename: "Event photo" }));
     expect(eventPhotoDto("photo-deleted", {
       url: "https://images.example.test/deleted.jpg",
       isDeleted: 1,
     })).toBeNull();
-    expect(eventPhotoDto("photo-http", { url: "http://images.example.test/photo.jpg" })).toBeNull();
+    expect(eventPhotoDto("photo-http", { url: "http://images.example.test/photo.jpg", })).toBeNull();
+    expect(
+      eventPhotoDto("photo-pending", {
+        url: "https://images.example.test/photo.jpg",
+        publicationStatus: "pending",
+  }),
+    ).toBeNull();
   });
 
   it("bounds queries, validates identifiers, roles, and formats iCal values", () => {

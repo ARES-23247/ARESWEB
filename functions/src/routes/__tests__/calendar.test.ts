@@ -15,7 +15,17 @@ vi.mock("../../lib/firebase-admin", () => {
     orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     get: vi.fn(),
+    doc: vi.fn(),
   };
+  const photoGet = vi.fn();
+  const photoSet = vi.fn();
+  const photoUpdate = vi.fn();
+  const photoRef = {
+    get: photoGet,
+    set: photoSet,
+    update: photoUpdate,
+  };
+  nestedQuery.doc.mockReturnValue(photoRef);
   const occurrencesQuery = {
     where: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
@@ -38,7 +48,7 @@ vi.mock("../../lib/firebase-admin", () => {
       if (name === "occurrences") {
         return {
           ...occurrencesQuery,
-          doc: vi.fn((date?: string) => (date ? { id: date, get: occurrenceGet, set: occurrenceSet } : occurrenceRef)),
+          doc: vi.fn((date?: string) =>date ? { id: date, get: occurrenceGet, set: occurrenceSet } : occurrenceRef),
         };
       }
       return { doc: vi.fn(() => revisionRef) };
@@ -53,16 +63,30 @@ vi.mock("../../lib/firebase-admin", () => {
     update: vi.fn(),
     commit: vi.fn(),
   };
+  const transaction = {
+    get: vi.fn(),
+    set: vi.fn(),
+  };
   return {
     adminDb: {
       collection: vi.fn(() => collectionRef),
       batch: vi.fn(() => batch),
+      runTransaction: vi.fn(
+        async (operation: (value: typeof transaction) => Promise<unknown>) =>
+          operation(transaction),
+      ),
       __occurrences: {
         queryGet: occurrencesQuery.get,
         docGet: occurrenceGet,
         docSet: occurrenceSet,
       },
+      __photo: {
+        get: photoGet,
+        set: photoSet,
+        update: photoUpdate,
     },
+      __transaction: transaction,
+  },
   };
 });
 
@@ -143,30 +167,57 @@ describe("calendar API", () => {
     });
     (adminDb as any).__occurrences.docSet.mockReset();
     (adminDb as any).__occurrences.docSet.mockResolvedValue(undefined);
+    (adminDb as any).__photo.get.mockResolvedValue({
+      exists: false,
+      data: () => undefined,
+    });
+    (adminDb as any).__photo.set.mockResolvedValue(undefined);
+    (adminDb as any).__photo.update.mockResolvedValue(undefined);
+    (adminDb as any).__transaction.get.mockResolvedValue({
+      exists: false,
+      data: () => undefined,
+    });
   });
 
-  async function expectApiError(path: string, method: Method, status: number, code?: string) {
+  async function expectApiError(
+    path: string,
+    method: Method,
+    status: number,
+    code?: string,
+  ) {
     await handler(path, method)(req, res, next);
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status, ...(code ? { code } : {}) }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status, ...(code ? { code } : {}) }),
+    );
     expect(res.json).not.toHaveBeenCalled();
   }
 
   it("returns only bounded public DTO fields and a cursor", async () => {
     req.query = { limit: "2" };
     collectionRef.get.mockResolvedValue({
-      docs: [eventDocument("event-1"), eventDocument("event-2"), eventDocument("event-3")],
+      docs: [
+        eventDocument("event-1"),
+        eventDocument("event-2"),
+        eventDocument("event-3"),
+      ],
     });
 
     await handler("/events", "get")(req, res, next);
 
     expect(collectionRef.where).toHaveBeenCalledWith("isDeleted", "==", 0);
-    expect(collectionRef.where).toHaveBeenCalledWith("status", "==", "published");
+    expect(collectionRef.where).toHaveBeenCalledWith(
+      "status",
+      "==",
+      "published",
+    );
     expect(collectionRef.limit).toHaveBeenCalledWith(3);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
         nextCursor: "event-2",
-        events: expect.arrayContaining([expect.objectContaining({ id: "event-1", title: "Team Practice" })]),
+        events: expect.arrayContaining([
+          expect.objectContaining({ id: "event-1", title: "Team Practice" }),
+        ]),
       }),
     );
     const payload = res.json.mock.calls[0][0];
@@ -195,7 +246,9 @@ describe("calendar API", () => {
       data: () => eventDocument("event-1", { status: "draft" }).data(),
     });
     await handler("/events/:id", "get")(req, res, next);
-    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404, code: "EVENT_NOT_FOUND" }));
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 404, code: "EVENT_NOT_FOUND" }),
+    );
   });
 
   it("returns a venue address only after an explicit publication opt-in", async () => {
@@ -232,13 +285,16 @@ describe("calendar API", () => {
         },
       }),
     });
-    expect(res.json.mock.calls[0][0].event.publicVenue).not.toHaveProperty("privateContact");
+    expect(res.json.mock.calls[0][0].event.publicVenue).not.toHaveProperty(
+      "privateContact",
+    );
 
     res.json.mockClear();
     documentRef.get
       .mockResolvedValueOnce({
         exists: true,
-        data: () => eventDocument("event-1", { locationId: "team-home" }).data(),
+        data: () =>
+          eventDocument("event-1", { locationId: "team-home" }).data(),
       })
       .mockResolvedValueOnce({
         exists: true,
@@ -267,6 +323,7 @@ describe("calendar API", () => {
             url: "https://images.example.test/series.jpg",
             filename: "Series",
             uploadedBy: "private",
+            publicationStatus: "published",
           }),
         },
         {
@@ -275,6 +332,7 @@ describe("calendar API", () => {
             url: "https://images.example.test/session.jpg",
             filename: "Session",
             occurrenceDate: "2026-08-20",
+            publicationStatus: "published",
           }),
         },
         {
@@ -283,6 +341,7 @@ describe("calendar API", () => {
             url: "https://images.example.test/other.jpg",
             filename: "Other",
             occurrenceDate: "2026-08-27",
+            publicationStatus: "published",
           }),
         },
       ],
@@ -291,7 +350,10 @@ describe("calendar API", () => {
     await handler("/events/:id/photos", "get")(req, res, next);
 
     const photos = res.json.mock.calls[0][0].photos;
-    expect(photos.map((photo: { id: string }) => photo.id)).toEqual(["series", "matching"]);
+    expect(photos.map((photo: { id: string }) => photo.id)).toEqual([
+      "series",
+      "matching",
+    ]);
     expect(photos[0]).not.toHaveProperty("uploadedBy");
     expect(photos[1].occurrenceDate).toBe("2026-08-20");
   });
@@ -340,6 +402,7 @@ describe("calendar API", () => {
             uploadedAt: "2026-08-10T12:00:00.000Z",
             storagePath: "private/path",
             isDeleted: 0,
+            publicationStatus: "published",
           }),
         },
         {
@@ -382,6 +445,120 @@ describe("calendar API", () => {
     expect(payload.photos[0]).not.toHaveProperty("storagePath");
   });
 
+  it("associates only a trusted imported photo and leaves member submissions pending", async () => {
+    req.params = { id: "event-1" };
+    req.body = { photoId: "photo-1", occurrenceDate: "2026-08-20" };
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1").data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          publicUrl: "https://storage.googleapis.com/event.jpg",
+          thumbnailUrl: "https://storage.googleapis.com/event-thumb.webp",
+          mediumUrl: "javascript:alert(1)",
+          originalFilename: "Progress.jpg",
+          isDeleted: 0,
+        }),
+      });
+
+    await handler("/manage/:id/photos", "post")(req, res, next);
+
+    expect((adminDb as any).__transaction.set).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sourcePhotoId: "photo-1",
+        url: "https://storage.googleapis.com/event.jpg",
+        mediumUrl: null,
+        publicationStatus: "pending",
+        uploadedByUid: "member-1",
+      }),
+      { merge: false },
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        photo: expect.objectContaining({ publicationStatus: "pending" }),
+      }),
+    );
+  });
+
+  it("does not overwrite an active event-photo association", async () => {
+    req.params = { id: "event-1" };
+    req.body = { photoId: "photo-1" };
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1").data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          publicUrl: "https://storage.googleapis.com/event.jpg",
+          originalFilename: "Progress.jpg",
+          isDeleted: 0,
+        }),
+      });
+    (adminDb as any).__transaction.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ publicationStatus: "published", isDeleted: 0 }),
+    });
+
+    await expectApiError(
+      "/manage/:id/photos",
+      "post",
+      409,
+      "PHOTO_ALREADY_ATTACHED",
+    );
+    expect((adminDb as any).__transaction.set).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing imported photos and restricts approval middleware to publishers", async () => {
+    const approvalLayer = calendarRouter.stack.find(
+      (entry) => entry.route?.path === "/manage/:id/photos/:photoId/approve",
+    );
+    expect(approvalLayer?.route?.stack.map((entry) => entry.name)).toEqual([
+      "ensureTeamMember",
+      "ensureCalendarPublisher",
+      expect.any(String),
+    ]);
+
+    req.params = { id: "event-1" };
+    req.body = { photoId: "missing" };
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1").data(),
+      })
+      .mockResolvedValueOnce({ exists: false, data: () => undefined });
+
+    await expectApiError("/manage/:id/photos", "post", 404, "PHOTO_NOT_FOUND");
+
+    next.mockClear();
+    req.body = { photoId: "x".repeat(129) };
+    await expectApiError("/manage/:id/photos", "post", 400, "VALIDATION_ERROR");
+  });
+
+  it("allows an owner or publisher to archive and denies another member", async () => {
+    req.params = { id: "event-1", photoId: "photo-1" };
+    (adminDb as any).__photo.get.mockResolvedValue({
+      exists: true,
+      data: () => ({ uploadedByUid: "different-member", isDeleted: 0 }),
+    });
+    await expectApiError("/manage/:id/photos/:photoId", "delete", 403);
+
+    next.mockClear();
+    req.authorizationRole = "mentor";
+    await handler("/manage/:id/photos/:photoId", "delete")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ isDeleted: 1 }),
+    );
+    expect(res.json).toHaveBeenCalledWith({ success: true, archived: true });
+  });
+
   it("does not query photos for a non-public event and forwards photo query failures", async () => {
     req.params = { id: "event-1" };
     const photoCollection = documentRef.collection("photos");
@@ -398,9 +575,13 @@ describe("calendar API", () => {
       exists: true,
       data: () => eventDocument("event-1").data(),
     });
-    photoCollection.get.mockRejectedValueOnce(new Error("photo query unavailable"));
+    photoCollection.get.mockRejectedValueOnce(
+      new Error("photo query unavailable"),
+    );
     await handler("/events/:id/photos", "get")(req, res, next);
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "photo query unavailable" }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "photo query unavailable" }),
+    );
     expect(res.json).not.toHaveBeenCalled();
   });
 
@@ -462,9 +643,13 @@ describe("calendar API", () => {
 
     vi.clearAllMocks();
     req.query = {};
-    collectionRef.get.mockRejectedValueOnce(new Error("manager query unavailable"));
+    collectionRef.get.mockRejectedValueOnce(
+      new Error("manager query unavailable"),
+    );
     await handler("/manage", "get")(req, res, next);
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "manager query unavailable" }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "manager query unavailable" }),
+    );
   });
 
   it("forces member-created events to pending and writes revision and audit records atomically", async () => {
@@ -498,19 +683,27 @@ describe("calendar API", () => {
       category: "internal",
     };
     await handler("/manage", "post")(req, res, next);
-    expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "published" }));
+    expect(batch.set).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({ status: "published" }),
+    );
 
     vi.clearAllMocks();
     batch.commit.mockResolvedValue(undefined);
     req.body = { ...(req.body as object), status: "draft" };
     await handler("/manage", "post")(req, res, next);
-    expect(batch.set).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "draft" }));
+    expect(batch.set).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({ status: "draft" }),
+    );
   });
 
   it("rejects invalid event bodies without writing fake success", async () => {
     req.body = { title: "", dateStart: "not-a-date", category: "internal" };
     await handler("/manage", "post")(req, res, next);
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "VALIDATION_ERROR" }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 400, code: "VALIDATION_ERROR" }),
+    );
     expect(batch.commit).not.toHaveBeenCalled();
     expect(res.json).not.toHaveBeenCalled();
   });
@@ -572,7 +765,10 @@ describe("calendar API", () => {
       data: () => eventDocument("event-1", { status: "published" }).data(),
     });
     await handler("/manage/:id", "put")(req, res, next);
-    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({ status: "draft" }));
+    expect(batch.update).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({ status: "draft" }),
+    );
   });
 
   it("rejects edits to archived events and member edits to published events", async () => {
@@ -600,7 +796,10 @@ describe("calendar API", () => {
     req.authorizationRole = "coach";
     req.params = { id: "event-1" };
     await handler("/manage/:id", "delete")(req, res, next);
-    expect(batch.update).toHaveBeenCalledWith(documentRef, expect.objectContaining({ isDeleted: 1 }));
+    expect(batch.update).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({ isDeleted: 1 }),
+    );
     expect(batch.commit).toHaveBeenCalledOnce();
 
     vi.clearAllMocks();
@@ -692,7 +891,9 @@ describe("calendar API", () => {
       data: () => ({ name: "Community Center" }),
     });
     await handler("/locations/:id", "delete")(req, res, next);
-    expect(documentRef.update).toHaveBeenCalledWith(expect.objectContaining({ isDeleted: 1 }));
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({ isDeleted: 1 }),
+    );
   });
 
   it("lists explicit venue DTOs in name order", async () => {
@@ -784,7 +985,12 @@ describe("calendar API", () => {
 
     vi.clearAllMocks();
     documentRef.get.mockResolvedValueOnce({ exists: false });
-    await expectApiError("/locations/:id/restore", "patch", 404, "LOCATION_NOT_FOUND");
+    await expectApiError(
+      "/locations/:id/restore",
+      "patch",
+      404,
+      "LOCATION_NOT_FOUND",
+    );
   });
 
   it("builds a truthful feed, escapes text, and skips malformed dates", async () => {
@@ -805,7 +1011,10 @@ describe("calendar API", () => {
     expect(feed).toContain("SUMMARY:Practice\\, Build\\; Test");
     expect(feed).toContain("DESCRIPTION:Line one\\nLine two");
     expect(feed).not.toContain("bad-date@aresfirst.org");
-    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/calendar; charset=utf-8");
+    expect(res.setHeader).toHaveBeenCalledWith(
+      "Content-Type",
+      "text/calendar; charset=utf-8",
+    );
   });
 
   it("uses truthful feed fallbacks for missing end, update, title, and optional fields", async () => {
@@ -1010,9 +1219,13 @@ describe("calendar recurrence", () => {
     req.params = { id: "weekly-1" };
     req.query = { occurrence: "not-a-date" };
     await handler("/events/:id", "get")(req, res, next);
-    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400, code: "INVALID_DATE" }));
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 400, code: "INVALID_DATE" }),
+    );
 
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
     req.query = { occurrence: tomorrow };
     await handler("/events/:id", "get")(req, res, next);
     expect(next).toHaveBeenLastCalledWith(
@@ -1059,7 +1272,9 @@ describe("calendar recurrence", () => {
     const payload = res.json.mock.calls[0][0];
     // One cancelled date simply drops that session from the expansion.
     expect(payload.events).toHaveLength(8);
-    expect(payload.events.map((event: any) => event.occurrenceDate)).not.toContain(todayYmdStr);
+    expect(
+      payload.events.map((event: any) => event.occurrenceDate),
+    ).not.toContain(todayYmdStr);
   });
 
   it("keeps plain events untouched by expansion", async () => {
@@ -1124,7 +1339,9 @@ describe("calendar recurrence", () => {
 
   it("guards occurrence endpoints behind the publisher role and validates dates", async () => {
     const cancelLayer = calendarRouter.stack.find(
-      (entry) => entry.route?.path === "/manage/:id/occurrences/:date" && entry.route.methods.patch,
+      (entry) =>
+        entry.route?.path === "/manage/:id/occurrences/:date" &&
+        entry.route.methods.patch,
     );
     expect(cancelLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
       "ensureTeamMember",
@@ -1132,7 +1349,9 @@ describe("calendar recurrence", () => {
       expect.any(String),
     ]);
     const updateLayer = calendarRouter.stack.find(
-      (entry) => entry.route?.path === "/manage/:id/occurrences/:date" && entry.route.methods.put,
+      (entry) =>
+        entry.route?.path === "/manage/:id/occurrences/:date" &&
+        entry.route.methods.put,
     );
     expect(updateLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
       "ensureTeamMember",
@@ -1149,7 +1368,9 @@ describe("calendar recurrence", () => {
 
     req.params = { id: "weekly-1", date: "not-a-date" };
     await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "INVALID_DATE" }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 400, code: "INVALID_DATE" }),
+    );
   });
 
   it("stores only fields changed for one scheduled occurrence", async () => {
@@ -1198,10 +1419,17 @@ describe("calendar recurrence", () => {
       exists: true,
       data: () => ({ isCancelled: 1 }),
     });
-    await handler("/manage/:id/occurrences/:date/restore", "patch")(req, res, next);
-    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(expect.objectContaining({ isCancelled: 0 }), {
-      merge: true,
-    });
+    await handler("/manage/:id/occurrences/:date/restore", "patch")(
+      req,
+      res,
+      next,
+    );
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isCancelled: 0 }),
+      {
+        merge: true,
+      },
+    );
   });
 
   it("refuses occurrence operations on non-recurring events", async () => {
@@ -1213,7 +1441,9 @@ describe("calendar recurrence", () => {
     req.params = { id: "plain-1", date: "2026-09-03" };
     req.body = { cancelled: true };
     await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 409, code: "NOT_RECURRING" }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 409, code: "NOT_RECURRING" }),
+    );
   });
 
   it("lists stored occurrence exceptions", async () => {
@@ -1224,7 +1454,9 @@ describe("calendar recurrence", () => {
     await handler("/manage/:id/occurrences", "get")(req, res, next);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      occurrences: [{ date: "2026-09-03", isCancelled: true, hasOverrides: false }],
+      occurrences: [
+        { date: "2026-09-03", isCancelled: true, hasOverrides: false },
+      ],
     });
   });
 
@@ -1245,7 +1477,9 @@ describe("calendar recurrence", () => {
     });
     await handler("/feed", "get")(req, res, next);
     const body = res.send.mock.calls[0][0] as string;
-    expect(body).toContain("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20261231T235959Z");
+    expect(body).toContain(
+      "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20261231T235959Z",
+    );
     expect(body).toContain("EXDATE:20260903T180000Z");
     expect(body).toContain("UID:weekly-1@aresfirst.org");
   });

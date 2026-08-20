@@ -51,7 +51,7 @@ vi.mock("../../lib/firebase-admin", () => {
       setCustomUserClaims: vi.fn().mockResolvedValue(undefined),
       getUserByEmail: vi.fn(),
       listUsers: vi.fn(),
-    }
+    },
   };
 });
 
@@ -86,7 +86,7 @@ describe("Profiles Router Backend Endpoints", () => {
       body: {},
       query: {},
       headers: { "x-sync-secret": "dummy-secret-key-32-chars-long-!" },
-      user: { uid: "test_uid", email: "test@aresfirst.org", email_verified: true },
+      user: { uid: "test_uid", email: "test@aresfirst.org", email_verified: true, },
     };
     res = {
       status: vi.fn().mockReturnThis(),
@@ -144,8 +144,8 @@ describe("Profiles Router Backend Endpoints", () => {
             expect.objectContaining({
               nickname: "RobotBuilder",
               memberType: "student",
-            })
-          ]
+            }),
+          ],
         })
       );
       const members = res.json.mock.calls[0][0].members;
@@ -175,7 +175,7 @@ describe("Profiles Router Backend Endpoints", () => {
               showOnAbout: true,
               avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=legal.student%40example.org",
             }),
-          }],
+          },],
         }),
         orderBy: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
@@ -188,7 +188,7 @@ describe("Profiles Router Backend Endpoints", () => {
         members: [expect.objectContaining({
           nickname: "ARES Member",
           avatar: "",
-        })],
+        }),],
       });
       const publicMember = res.json.mock.calls[0][0].members[0];
       expect(JSON.stringify(publicMember)).not.toContain("Legal");
@@ -201,10 +201,10 @@ describe("Profiles Router Backend Endpoints", () => {
       const queryMock = {
         get: vi.fn().mockResolvedValue({
           docs: [
-            { id: contactEmail, data: () => ({ nickname: "Email record", contactEmail }) },
-            { id: "a".repeat(32), data: () => ({ nickname: "Legacy UUID", contactEmail }) },
-            { id: "b".repeat(28), data: () => ({ nickname: "Firebase UID", contactEmail }) },
-            { id: "short-id", data: () => ({ nickname: "Weak record", contactEmail }) },
+            { id: contactEmail, data: () => ({ nickname: "Email record", contactEmail }), },
+            { id: "a".repeat(32), data: () => ({ nickname: "Legacy UUID", contactEmail }), },
+            { id: "b".repeat(28), data: () => ({ nickname: "Firebase UID", contactEmail }), },
+            { id: "short-id", data: () => ({ nickname: "Weak record", contactEmail }), },
           ],
         }),
         orderBy: vi.fn().mockReturnThis(),
@@ -229,13 +229,16 @@ describe("Profiles Router Backend Endpoints", () => {
             nickname: "CoachDave",
             firstName: "David",
             email: "coach.david@gmail.com",
-            avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=coachdave"
+            avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=coachdave",
           }),
         },
       ];
 
       const mockCollection = adminDb.collection as any;
-      mockCollection().get.mockResolvedValue({ docs: mockDocs });
+      mockCollection().get.mockResolvedValueOnce({ docs: mockDocs })
+        .mockResolvedValueOnce({
+          docs: [{ id: "m1", data: () => ({ role: "coach", isDeleted: 0 }) }],
+        });
 
       const handler = getHandler("/team-roster", "get");
       await handler(req, res, next);
@@ -245,9 +248,9 @@ describe("Profiles Router Backend Endpoints", () => {
           members: [
             expect.objectContaining({
               nickname: "CoachDave",
-              avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=coachdave"
-            })
-          ]
+              avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=coachdave",
+            }),
+          ],
         })
       );
     });
@@ -266,7 +269,10 @@ describe("Profiles Router Backend Endpoints", () => {
       ];
 
       const mockCollection = adminDb.collection as any;
-      mockCollection().get.mockResolvedValue({ docs: mockDocs });
+      mockCollection().get.mockResolvedValueOnce({ docs: mockDocs })
+        .mockResolvedValueOnce({
+          docs: [{ id: "m2", data: () => ({ role: "member", isDeleted: 0 }) }],
+        });
 
       await getHandler("/team-roster", "get")(req, res, next);
 
@@ -275,10 +281,42 @@ describe("Profiles Router Backend Endpoints", () => {
           uid: "m2",
           nickname: "ARES Member",
           avatar: "",
-        }],
+        },],
       });
       expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("PrivateLegalName");
       expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("student@aresfirst.org");
+    });
+
+    it("excludes archived profiles and deauthorized former members", async () => {
+      const mockCollection = adminDb.collection as any;
+      mockCollection()
+        .get.mockResolvedValueOnce({
+          docs: [
+            { id: "active", data: () => ({ nickname: "Active Member"
+  }) },
+            {
+              id: "archived-profile",
+              data: () => ({ nickname: "Archived", isDeleted: 1 }),
+            },
+            { id: "former", data: () => ({ nickname: "Former Member" }) },
+          ],
+        })
+        .mockResolvedValueOnce({
+          docs: [
+            { id: "active", data: () => ({ role: "member", isDeleted: 0 }) },
+            {
+              id: "archived-profile",
+              data: () => ({ role: "member", isDeleted: 0 }),
+            },
+            { id: "former", data: () => ({ role: "member", isDeleted: 1 }) },
+          ],
+        });
+
+      await getHandler("/team-roster", "get")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        members: [{ uid: "active", nickname: "Active Member", avatar: "" }],
+      });
     });
   });
 
@@ -296,7 +334,9 @@ describe("Profiles Router Backend Endpoints", () => {
           pageToken: "next-auth-page",
         } as any)
         .mockResolvedValueOnce({
-          users: Array.from({ length: 101 }, (_, index) => makeAuthUser(index + 300)),
+          users: Array.from({ length: 101 }, (_, index) =>
+            makeAuthUser(index + 300),
+          ),
           pageToken: undefined,
         } as any);
 
@@ -313,7 +353,11 @@ describe("Profiles Router Backend Endpoints", () => {
       await getHandler("/admin/users", "post")(req, res, next);
 
       expect(adminAuth.listUsers).toHaveBeenNthCalledWith(1, 1000, undefined);
-      expect(adminAuth.listUsers).toHaveBeenNthCalledWith(2, 1000, "next-auth-page");
+      expect(adminAuth.listUsers).toHaveBeenNthCalledWith(
+        2,
+        1000,
+        "next-auth-page",
+      );
       expect(query.startAfter).toHaveBeenCalledWith(existingDocs[399]);
       expect(adminDb.batch).toHaveBeenCalledTimes(2);
       const firstBatch = vi.mocked(adminDb.batch).mock.results[0].value;
@@ -322,18 +366,26 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(secondBatch.set).toHaveBeenCalledTimes(1);
       expect(firstBatch.commit).toHaveBeenCalledTimes(1);
       expect(secondBatch.commit).toHaveBeenCalledTimes(1);
-      expect(res.json).toHaveBeenCalledWith({ success: true, provisionedCount: 401 });
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        provisionedCount: 401,
+      });
     });
 
     it("should return an error instead of fake success when Auth listing fails", async () => {
-      vi.mocked(adminAuth.listUsers).mockRejectedValue(new Error("upstream unavailable"));
+      vi.mocked(adminAuth.listUsers).mockRejectedValue(
+        new Error("upstream unavailable"),
+      );
 
       await getHandler("/admin/users", "post")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        status: 502,
-        message: "Could not synchronize Firebase Auth users. Please try again.",
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 502,
+          message:
+            "Could not synchronize Firebase Auth users. Please try again.",
+        }),
+      );
       expect(res.json).not.toHaveBeenCalled();
       expect(adminDb.batch).not.toHaveBeenCalled();
     });
@@ -360,7 +412,9 @@ describe("Profiles Router Backend Endpoints", () => {
       };
       const sharedGet = vi.mocked((adminDb.collection("") as any).doc("").get);
       sharedGet
-        .mockResolvedValueOnce({ docs: [firstAuthorizationDoc, extraAuthorizationDoc] } as any)
+        .mockResolvedValueOnce({
+          docs: [firstAuthorizationDoc, extraAuthorizationDoc],
+        } as any)
         .mockResolvedValueOnce({
           exists: true,
           data: () => ({
@@ -371,35 +425,40 @@ describe("Profiles Router Backend Endpoints", () => {
             contactEmail: "student@example.org",
             memberType: "student",
             subteams: ["Programming"],
-            avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=student_uid_1",
+            avatar:
+              "https://api.dicebear.com/9.x/bottts/svg?seed=student_uid_1",
           }),
         } as any);
-      vi.mocked(getZulipUsers).mockResolvedValueOnce([{
-        email: "student@example.org",
-        delivery_email: "private-delivery@example.org",
-        full_name: "Private Zulip Name",
-        user_id: 42,
-      }]);
+      vi.mocked(getZulipUsers).mockResolvedValueOnce([
+        {
+          email: "student@example.org",
+          delivery_email: "private-delivery@example.org",
+          full_name: "Private Zulip Name",
+          user_id: 42,
+        },
+      ]);
 
       await getHandler("/admin/users/list", "get")(req, res, next);
 
       const query = (adminDb.collection as any)().orderBy();
       expect(query.limit).toHaveBeenCalledWith(2);
       expect(res.json).toHaveBeenCalledWith({
-        users: [{
-          id: "student_uid_1",
-          email: "student@example.org",
-          role: "member",
-          name: "CircuitFox",
-          isRegistered: true,
-          avatar: "",
-          subteams: ["Programming"],
-          memberType: "student",
-          profileExists: true,
-          zulipLinked: true,
-          createdAt: "2026-01-01T00:00:00.000Z",
-          isDeleted: false,
-        }],
+        users: [
+          {
+            id: "student_uid_1",
+            email: "student@example.org",
+            role: "member",
+            name: "CircuitFox",
+            isRegistered: true,
+            avatar: "",
+            subteams: ["Programming"],
+            memberType: "student",
+            profileExists: true,
+            zulipLinked: true,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            isDeleted: false,
+          },
+        ],
         nextCursor: Buffer.from("student_uid_1", "utf8").toString("base64url"),
         integrations: { zulip: { available: true, diagnostic: null } },
       });
@@ -419,7 +478,11 @@ describe("Profiles Router Backend Endpoints", () => {
       };
       const authorizationDoc = {
         id: "next_uid",
-        data: () => ({ email: "adult@example.org", name: "Mentor A", role: "mentor" }),
+        data: () => ({
+          email: "adult@example.org",
+          name: "Mentor A",
+          role: "mentor",
+        }),
       };
       const sharedGet = vi.mocked((adminDb.collection("") as any).doc("").get);
       sharedGet
@@ -431,29 +494,37 @@ describe("Profiles Router Backend Endpoints", () => {
 
       const query = (adminDb.collection as any)().orderBy();
       expect(query.startAfter).toHaveBeenCalledWith("prior_uid");
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        users: [expect.objectContaining({ id: "next_uid", zulipLinked: false })],
-        nextCursor: null,
-        integrations: {
-          zulip: {
-            available: false,
-            diagnostic: "HTTP 503: Zulip integration is inactive or configured incorrectly.",
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          users: [
+            expect.objectContaining({ id: "next_uid", zulipLinked: false }),
+          ],
+          nextCursor: null,
+          integrations: {
+            zulip: {
+              available: false,
+              diagnostic:
+                "HTTP 503: Zulip integration is inactive or configured incorrectly.",
+            },
           },
-        },
-      }));
+        }),
+      );
     });
 
     it("surfaces database failures instead of returning an empty successful page", async () => {
       req.query = {};
-      vi.mocked((adminDb.collection("") as any).doc("").get)
-        .mockRejectedValueOnce(new Error("firestore unavailable"));
+      vi.mocked(
+        (adminDb.collection("") as any).doc("").get,
+      ).mockRejectedValueOnce(new Error("firestore unavailable"));
 
       await getHandler("/admin/users/list", "get")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        status: 500,
-        message: "Could not load the user directory. Please try again.",
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 500,
+          message: "Could not load the user directory. Please try again.",
+        }),
+      );
       expect(res.json).not.toHaveBeenCalled();
     });
 
@@ -462,25 +533,38 @@ describe("Profiles Router Backend Endpoints", () => {
 
       await getHandler("/admin/users/list", "get")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400 }),
+      );
       expect(res.json).not.toHaveBeenCalled();
     });
 
     it("rejects a syntactically valid cursor that decodes to an unsafe document path", async () => {
-      req.query = { cursor: Buffer.from("unsafe/document", "utf8").toString("base64url") };
+      req.query = {
+        cursor: Buffer.from("unsafe/document", "utf8").toString("base64url"),
+      };
 
       await getHandler("/admin/users/list", "get")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        status: 400,
-        message: "Invalid pagination cursor.",
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 400,
+          message: "Invalid pagination cursor.",
+        }),
+      );
       expect(res.json).not.toHaveBeenCalled();
     });
 
     it("normalizes legacy roles, member types, arrays, names, and Firestore timestamps", async () => {
       req.query = { limit: "10" };
-      const roles = ["coach", "parent", "lead", "admin", "unverified", "unexpected"];
+      const roles = [
+        "coach",
+        "parent",
+        "lead",
+        "admin",
+        "unverified",
+        "unexpected",
+      ];
       const authorizationDocs = roles.map((role, index) => ({
         id: `user_${index}`,
         data: () => ({
@@ -488,9 +572,10 @@ describe("Profiles Router Backend Endpoints", () => {
           name: `Adult Name ${index}`,
           role,
           memberType: index === 4 ? "sponsor" : undefined,
-          createdAt: index === 0
-            ? { toDate: () => new Date("2026-02-01T00:00:00.000Z") }
-            : { toDate: () => new Date("invalid") },
+          createdAt:
+            index === 0
+              ? { toDate: () => new Date("2026-02-01T00:00:00.000Z") }
+              : { toDate: () => new Date("invalid") },
         }),
       }));
       const sharedGet = vi.mocked((adminDb.collection("") as any).doc("").get);
@@ -501,8 +586,10 @@ describe("Profiles Router Backend Endpoints", () => {
           data: () => ({
             nickname: index === 2 ? "  Lead Nickname  " : "",
             memberType: index === 5 ? "invalid-type" : undefined,
-            subteams: index === 1 ? [" Build ", 10, "", "Programming"] : "not-an-array",
-            avatar: index === 3 ? "https://avatars.example.org/safe.png" : undefined,
+            subteams:
+              index === 1 ? [" Build ", 10, "", "Programming"] : "not-an-array",
+            avatar:
+              index === 3 ? "https://avatars.example.org/safe.png" : undefined,
           }),
         } as any);
       }
@@ -511,7 +598,9 @@ describe("Profiles Router Backend Endpoints", () => {
       await getHandler("/admin/users/list", "get")(req, res, next);
 
       const payload = res.json.mock.calls[0][0];
-      expect(payload.users.map((user: any) => [user.role, user.memberType])).toEqual([
+      expect(
+        payload.users.map((user: any) => [user.role, user.memberType]),
+      ).toEqual([
         ["admin", "mentor"],
         ["member", "parent"],
         ["mentor", "mentor"],
@@ -534,19 +623,25 @@ describe("Profiles Router Backend Endpoints", () => {
         profile: {
           nickname: "NewNickname",
           firstName: "TestName",
-          subteams: ["Software"]
-        }
+          subteams: ["Software"],
+        },
       };
 
       const mockDocRef = adminDb.collection("").doc("");
-      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true, data: () => ({ role: "student" }) } as any);
+      vi.mocked(mockDocRef.get).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "student" }),
+      } as any);
 
       const handler = getHandler("/sync", "post");
       await handler(req, res, next);
 
       expect(mockDocRef.set).toHaveBeenCalledWith(
-        expect.objectContaining({ nickname: "NewNickname", subteams: ["Software"] }),
-        expect.objectContaining({ merge: true })
+        expect.objectContaining({
+          nickname: "NewNickname",
+          subteams: ["Software"],
+        }),
+        expect.objectContaining({ merge: true }),
       );
       const storedProfile = vi.mocked(mockDocRef.set).mock.calls[0][0];
       expect(isEncryptedValue(storedProfile.firstName)).toBe(true);
@@ -560,16 +655,28 @@ describe("Profiles Router Backend Endpoints", () => {
 
       delete process.env.PROFILE_SYNC_SECRET;
       await handler(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 503 }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 503 }),
+      );
 
       process.env.PROFILE_SYNC_SECRET = "expected-secret";
       req.headers = {};
       await handler(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 401, message: expect.stringContaining("Missing") }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          status: 401,
+          message: expect.stringContaining("Missing"),
+        }),
+      );
 
       req.headers = { "x-sync-secret": "incorrect-secret" };
       await handler(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 401, message: expect.stringContaining("Invalid") }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          status: 401,
+          message: expect.stringContaining("Invalid"),
+        }),
+      );
       expect(res.json).not.toHaveBeenCalled();
     });
 
@@ -581,10 +688,12 @@ describe("Profiles Router Backend Endpoints", () => {
 
       await getHandler("/sync", "post")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({
-        status: 400,
-        message: expect.stringContaining("Invalid profile payload"),
-      }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 400,
+          message: expect.stringContaining("Invalid profile payload"),
+        }),
+      );
     });
 
     it("routes an email sync to Firebase Auth and cleans up legacy identifiers", async () => {
@@ -593,16 +702,28 @@ describe("Profiles Router Backend Endpoints", () => {
         email: "MEMBER@EXAMPLE.ORG",
         role: "mentor",
         name: "Mentor Member",
-        profile: { nickname: "Mentor Member", memberType: "mentor", showEmail: true },
+        profile: {
+          nickname: "Mentor Member",
+          memberType: "mentor",
+          showEmail: true,
+        },
       };
-      vi.mocked(adminAuth.getUserByEmail).mockResolvedValueOnce({ uid: "firebase_uid" } as any);
+      vi.mocked(adminAuth.getUserByEmail).mockResolvedValueOnce({
+        uid: "firebase_uid",
+      } as any);
       const documentRef = adminDb.collection("").doc("");
 
       await getHandler("/sync", "post")(req, res, next);
 
-      expect(adminAuth.getUserByEmail).toHaveBeenCalledWith("member@example.org");
+      expect(adminAuth.getUserByEmail).toHaveBeenCalledWith(
+        "member@example.org",
+      );
       expect(documentRef.set).toHaveBeenCalledWith(
-        expect.objectContaining({ email: "member@example.org", role: "mentor", name: "Mentor Member" }),
+        expect.objectContaining({
+          email: "member@example.org",
+          role: "mentor",
+          name: "Mentor Member",
+        }),
         { merge: true },
       );
       expect(documentRef.delete).toHaveBeenCalledTimes(4);
@@ -612,7 +733,11 @@ describe("Profiles Router Backend Endpoints", () => {
 
   describe("POST /api/profiles/session - User claims confirmation", () => {
     it("rejects unverified email claims before any legacy or bootstrap grant", async () => {
-      req.user = { uid: "attacker_uid", email: "invited.member@example.org", email_verified: false };
+      req.user = {
+        uid: "attacker_uid",
+        email: "invited.member@example.org",
+        email_verified: false,
+      };
       await getHandler("/session", "post")(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
@@ -625,13 +750,19 @@ describe("Profiles Router Backend Endpoints", () => {
 
     it("should return the verified claims and registration status", async () => {
       const mockDocRef = adminDb.collection("").doc("");
-      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true, data: () => ({ role: "coach" }) } as any);
+      vi.mocked(mockDocRef.get).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "coach" }),
+      } as any);
 
       const handler = getHandler("/session", "post");
       await handler(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
-        authorizedUser: expect.objectContaining({ role: "admin", memberType: "mentor" })
+        authorizedUser: expect.objectContaining({
+          role: "admin",
+          memberType: "mentor",
+        }),
       });
     });
 
@@ -641,15 +772,20 @@ describe("Profiles Router Backend Endpoints", () => {
         .mockResolvedValueOnce({ exists: false, data: () => undefined } as any)
         .mockResolvedValueOnce({
           empty: false,
-          docs: [{
-            id: "legacy_uid",
-            ref: { id: "legacy_uid" },
-            data: () => ({ email: "test@aresfirst.org", role: "student" }),
-          }],
+          docs: [
+            {
+              id: "legacy_uid",
+              ref: { id: "legacy_uid" },
+              data: () => ({ email: "test@aresfirst.org", role: "student" }),
+            },
+          ],
         } as any)
         .mockResolvedValueOnce({
           exists: true,
-          data: () => ({ nickname: "CircuitFox", firstName: "encrypted-private-value" }),
+          data: () => ({
+            nickname: "CircuitFox",
+            firstName: "encrypted-private-value",
+          }),
         } as any);
 
       await getHandler("/session", "post")(req, res, next);
@@ -683,7 +819,12 @@ describe("Profiles Router Backend Endpoints", () => {
     });
 
     it("creates a visible unverified record for a new sign-in without exposing it publicly", async () => {
-      req.user = { uid: "new_uid", email: "new.member@example.org", name: "New Member", email_verified: true };
+      req.user = {
+        uid: "new_uid",
+        email: "new.member@example.org",
+        name: "New Member",
+        email_verified: true,
+      };
       const documentRef = adminDb.collection("").doc("");
       vi.mocked(documentRef.get)
         .mockResolvedValueOnce({ exists: false, data: () => undefined } as any)
@@ -691,11 +832,13 @@ describe("Profiles Router Backend Endpoints", () => {
 
       await getHandler("/session", "post")(req, res, next);
 
-      expect(documentRef.set).toHaveBeenCalledWith(expect.objectContaining({
-        email: "new.member@example.org",
-        role: "unverified",
-        name: "New Member",
-      }));
+      expect(documentRef.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "new.member@example.org",
+          role: "unverified",
+          name: "New Member",
+        }),
+      );
       expect(res.json).toHaveBeenCalledWith({
         authorizedUser: expect.objectContaining({ role: "unverified" }),
       });
@@ -711,11 +854,15 @@ describe("Profiles Router Backend Endpoints", () => {
         memberType: "student",
       };
       const routeLayer = profilesRouter.stack.find(
-        (layer) => layer.route?.path === "/admin/users/invite" && layer.route.methods.post,
+        (layer) =>
+          layer.route?.path === "/admin/users/invite" &&
+          layer.route.methods.post,
       );
       const validationMiddleware = routeLayer!.route!.stack.at(-2)!.handle;
       await new Promise<void>((resolve, reject) => {
-        validationMiddleware(req, res, (error?: unknown) => error ? reject(error) : resolve());
+        validationMiddleware(req, res, (error?: unknown) =>
+          error ? reject(error) : resolve(),
+        );
       });
 
       expect(req.body.email).toBe("new.member@example.org");
@@ -728,7 +875,11 @@ describe("Profiles Router Backend Endpoints", () => {
         role: "member",
         memberType: "student",
       };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       const collectionRef = adminDb.collection("") as any;
       const queryRef = collectionRef.where();
       vi.mocked(queryRef.get).mockResolvedValue({ empty: true, docs: [] });
@@ -758,27 +909,45 @@ describe("Profiles Router Backend Endpoints", () => {
         role: "member",
         memberType: "student",
       };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
-      vi.mocked((adminDb.collection("") as any).where().get)
-        .mockResolvedValueOnce({ empty: false, docs: [{ id: "existing_uid" }] } as any);
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
+      vi.mocked(
+        (adminDb.collection("") as any).where().get,
+      ).mockResolvedValueOnce({
+        empty: false,
+        docs: [{ id: "existing_uid" }],
+      } as any);
 
       await getHandler("/admin/users/invite", "post")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 409 }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 409 }),
+      );
       expect(adminDb.batch).not.toHaveBeenCalled();
     });
 
     it("updates authorization and profile membership in one audited batch", async () => {
       req.params = { userId: "member_uid" };
       req.body = { role: "mentor", memberType: "mentor" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({
         exists: true,
         data: () => ({ role: "member", memberType: "student" }),
       } as any);
 
-      await getHandler("/admin/users/:userId/permissions", "patch")(req, res, next);
+      await getHandler("/admin/users/:userId/permissions", "patch")(
+        req,
+        res,
+        next,
+      );
 
       const batch = vi.mocked(adminDb.batch).mock.results[0].value;
       expect(batch.set).toHaveBeenCalledTimes(3);
@@ -797,33 +966,65 @@ describe("Profiles Router Backend Endpoints", () => {
     it("prevents administrators from demoting themselves", async () => {
       req.params = { userId: "admin_uid" };
       req.body = { role: "member", memberType: "mentor" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
 
-      await getHandler("/admin/users/:userId/permissions", "patch")(req, res, next);
+      await getHandler("/admin/users/:userId/permissions", "patch")(
+        req,
+        res,
+        next,
+      );
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400 }),
+      );
       expect(adminDb.batch).not.toHaveBeenCalled();
     });
 
     it("rejects unsafe and missing authorization targets during permission updates", async () => {
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       req.body = { role: "member", memberType: "student" };
 
       req.params = { userId: "unsafe/id" };
-      await getHandler("/admin/users/:userId/permissions", "patch")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400 }));
+      await getHandler("/admin/users/:userId/permissions", "patch")(
+        req,
+        res,
+        next,
+      );
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 400 }),
+      );
 
       req.params = { userId: "missing_uid" };
-      vi.mocked(adminDb.collection("").doc("").get)
-        .mockResolvedValue({ exists: false, data: () => undefined } as any);
-      await getHandler("/admin/users/:userId/permissions", "patch")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404 }));
+      vi.mocked(adminDb.collection("").doc("").get).mockResolvedValue({
+        exists: false,
+        data: () => undefined,
+      } as any);
+      await getHandler("/admin/users/:userId/permissions", "patch")(
+        req,
+        res,
+        next,
+      );
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 404 }),
+      );
       expect(adminDb.batch).not.toHaveBeenCalled();
     });
 
     it("archives authorization and profile data instead of deleting it", async () => {
       req.params = { userId: "member_uid" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({
         exists: true,
@@ -836,7 +1037,11 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(batch.delete).not.toHaveBeenCalled();
       expect(batch.set).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ role: "unverified", isDeleted: 1, archivedRole: "member" }),
+        expect.objectContaining({
+          role: "unverified",
+          isDeleted: 1,
+          archivedRole: "member",
+        }),
         { merge: true },
       );
       expect(batch.commit).toHaveBeenCalledOnce();
@@ -844,26 +1049,44 @@ describe("Profiles Router Backend Endpoints", () => {
     });
 
     it("blocks self-revocation and rejects a missing revoke target", async () => {
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       req.params = { userId: "admin_uid" };
       await getHandler("/admin/users/:userId", "delete")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400 }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 400 }),
+      );
 
       req.params = { userId: "missing_uid" };
-      vi.mocked(adminDb.collection("").doc("").get)
-        .mockResolvedValue({ exists: false, data: () => undefined } as any);
+      vi.mocked(adminDb.collection("").doc("").get).mockResolvedValue({
+        exists: false,
+        data: () => undefined,
+      } as any);
       await getHandler("/admin/users/:userId", "delete")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404 }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 404 }),
+      );
       expect(adminDb.batch).not.toHaveBeenCalled();
     });
 
     it("restores an archived user's prior role", async () => {
       req.params = { userId: "member_uid" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({
         exists: true,
-        data: () => ({ role: "unverified", archivedRole: "mentor", isDeleted: 1 }),
+        data: () => ({
+          role: "unverified",
+          archivedRole: "mentor",
+          isDeleted: 1,
+        }),
       } as any);
 
       await getHandler("/admin/users/:userId/restore", "patch")(req, res, next);
@@ -875,32 +1098,49 @@ describe("Profiles Router Backend Endpoints", () => {
         { merge: true },
       );
       expect(batch.commit).toHaveBeenCalledOnce();
-      expect(res.json).toHaveBeenCalledWith({ success: true, restored: true, role: "mentor" });
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        restored: true,
+        role: "mentor",
+      });
     });
 
     it("rejects missing and already-active restore targets", async () => {
       req.params = { userId: "member_uid" };
-      req.user = { uid: "admin_uid", email: "admin@aresfirst.org", email_verified: true };
+      req.user = {
+        uid: "admin_uid",
+        email: "admin@aresfirst.org",
+        email_verified: true,
+      };
       const get = vi.mocked(adminDb.collection("").doc("").get);
 
       get.mockResolvedValue({ exists: false, data: () => undefined } as any);
       await getHandler("/admin/users/:userId/restore", "patch")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404 }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 404 }),
+      );
 
-      get.mockResolvedValue({ exists: true, data: () => ({ role: "member", isDeleted: 0 }) } as any);
+      get.mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "member", isDeleted: 0 }),
+      } as any);
       await getHandler("/admin/users/:userId/restore", "patch")(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 409 }));
+      expect(next).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 409 }),
+      );
       expect(adminDb.batch).not.toHaveBeenCalled();
     });
   });
 
   describe("GET /api/profiles/zulip/users - Legacy subject status", () => {
     it("returns only whether the signed-in subject is linked", async () => {
-      vi.mocked(getZulipUsers).mockResolvedValueOnce([{
-        email: "test@aresfirst.org",
-        delivery_email: "private-delivery@example.org",
-        full_name: "Private Zulip Name",
-      }]);
+      vi.mocked(getZulipUsers).mockResolvedValueOnce([
+        {
+          email: "test@aresfirst.org",
+          delivery_email: "private-delivery@example.org",
+          full_name: "Private Zulip Name",
+        },
+      ]);
       const handler = getHandler("/zulip/users", "get");
       await handler(req, res, next);
 
@@ -919,16 +1159,20 @@ describe("Profiles Router Backend Endpoints", () => {
 
       await getHandler("/zulip/users", "get")(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 503 }));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 503 }),
+      );
       expect(res.json).not.toHaveBeenCalled();
     });
 
     it("returns an unlinked boolean without exposing candidate accounts", async () => {
       req.user = { uid: "member_uid" };
-      vi.mocked(getZulipUsers).mockResolvedValueOnce([{
-        email: "someone.else@example.org",
-        delivery_email: "private@example.org",
-      }]);
+      vi.mocked(getZulipUsers).mockResolvedValueOnce([
+        {
+          email: "someone.else@example.org",
+          delivery_email: "private@example.org",
+        },
+      ]);
 
       await getHandler("/zulip/users", "get")(req, res, next);
 
@@ -936,16 +1180,23 @@ describe("Profiles Router Backend Endpoints", () => {
     });
   });
 
-
   describe("POST /api/profiles/sync - Synchronize validation", () => {
-    const runStack = async (path: string, method: string, req: any, res: any) => {
+    const runStack = async (
+      path: string,
+      method: string,
+      req: any,
+      res: any,
+    ) => {
       const routeLayer = profilesRouter.stack.find(
-        (layer) => layer.route && layer.route.path === path && (layer.route as any).methods[method]
+        (layer) =>
+          layer.route &&
+          layer.route.path === path &&
+          (layer.route as any).methods[method],
       );
       expect(routeLayer).toBeDefined();
       const stack = routeLayer!.route!.stack;
       let errorThrown: any = null;
-      
+
       // Run middlewares (all except the last handler)
       for (let i = 0; i < stack.length - 1; i++) {
         const middleware = stack[i];
@@ -970,7 +1221,7 @@ describe("Profiles Router Backend Endpoints", () => {
         };
         await handler.handle(req, res, nextMock);
       }
-      
+
       return errorThrown;
     };
 
@@ -980,12 +1231,15 @@ describe("Profiles Router Backend Endpoints", () => {
         profile: {
           nickname: "NewNickname",
           firstName: "TestName",
-          subteams: ["Software"]
-        }
+          subteams: ["Software"],
+        },
       };
 
       const mockDocRef = adminDb.collection("").doc("");
-      vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true, data: () => ({ role: "student" }) } as any);
+      vi.mocked(mockDocRef.get).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "student" }),
+      } as any);
 
       const err = await runStack("/sync", "post", req, res);
       expect(err).toBeNull();
@@ -996,8 +1250,8 @@ describe("Profiles Router Backend Endpoints", () => {
       req.body = {
         userId: "invalid uid with spaces",
         profile: {
-          nickname: "NewNickname"
-        }
+          nickname: "NewNickname",
+        },
       };
 
       const err = await runStack("/sync", "post", req, res);
@@ -1008,7 +1262,7 @@ describe("Profiles Router Backend Endpoints", () => {
 
     it("should fail validation with missing profile", async () => {
       req.body = {
-        userId: "valid_uid"
+        userId: "valid_uid",
       };
 
       const err = await runStack("/sync", "post", req, res);

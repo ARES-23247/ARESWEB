@@ -150,6 +150,9 @@ jobs:
       - name: Test Firestore and Storage rules
         run: pnpm run test:rules
 
+      - name: Test authorization against the Firestore emulator
+        run: pnpm run test:functions-emulator
+
   e2e-tests:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest

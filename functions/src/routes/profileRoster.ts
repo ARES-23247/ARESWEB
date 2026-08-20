@@ -9,6 +9,21 @@ interface DeduplicatedRosterMember {
   contactEmail: string;
 }
 
+function hasActiveAuthorization(
+  data: Record<string, unknown> | undefined,
+): boolean {
+  if (!data || data.isDeleted === true || data.isDeleted === 1) return false;
+  return [
+    "admin",
+    "coach",
+    "mentor",
+    "member",
+    "student",
+    "parent",
+    "lead",
+  ].includes(String(data.role ?? ""));
+}
+
 function deduplicateRoster<T extends DeduplicatedRosterMember>(
   membersRaw: T[],
 ): T[] {
@@ -120,12 +135,14 @@ export function registerProfileRosterRoutes(router: Router): void {
         nickname: member.nickname,
         memberType: member.memberType,
         avatar: member.avatar,
-        ...(member.memberType === "student" ? {} : {
-          pronouns: member.pronouns,
-          subteams: member.subteams,
-          bio: member.bio,
-          colleges: member.colleges,
-        }),
+        ...(member.memberType === "student"
+          ? {}
+          : {
+              pronouns: member.pronouns,
+              subteams: member.subteams,
+              bio: member.bio,
+              colleges: member.colleges,
+            }),
       }));
       res.json({ members });
     }),
@@ -135,26 +152,40 @@ export function registerProfileRosterRoutes(router: Router): void {
     "/team-roster",
     ensureTeamMember,
     asyncHandler(async (_req, res) => {
-      const snapshot = await adminDb
-        .collection("user_profiles")
-        .limit(300)
-        .get();
-      const membersRaw = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          identifier: doc.id,
-          nickname:
-            typeof data.nickname === "string" && data.nickname.trim()
-              ? data.nickname.trim()
-              : "ARES Member",
-          avatar: sanitizeAvatarUrl(data.avatar, [
-            doc.id,
-            data.contactEmail,
-            data.email,
-          ]),
-          contactEmail: data.contactEmail || "",
-        };
-      });
+      const [snapshot, authorizationSnapshot] = await Promise.all([
+        adminDb.collection("user_profiles").limit(300).get(),
+        adminDb.collection("authorized_users").limit(500).get(),
+      ]);
+      const activeUids = new Set(
+        authorizationSnapshot.docs
+          .filter((document) => hasActiveAuthorization(document.data()))
+          .map((document) => document.id),
+      );
+      const membersRaw = snapshot.docs
+        .filter((document) => {
+          const data = document.data();
+          return (
+            activeUids.has(document.id) &&
+            data.isDeleted !== 1 &&
+            data.archived !== true
+          );
+        })
+        .map((doc) => {
+          const data = doc.data();
+          return {
+            identifier: doc.id,
+            nickname:
+              typeof data.nickname === "string" && data.nickname.trim()
+                ? data.nickname.trim()
+                : "ARES Member",
+            avatar: sanitizeAvatarUrl(data.avatar, [
+              doc.id,
+              data.contactEmail,
+              data.email,
+            ]),
+            contactEmail: data.contactEmail || "",
+          };
+        });
 
       const members = deduplicateRoster(membersRaw).map((member) => ({
         uid: member.identifier,

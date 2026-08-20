@@ -38,7 +38,7 @@ vi.mock("../../lib/firebase-admin", () => ({
   adminFieldValue: { increment: (value: number) => ({ increment: value }) },
   adminDb: {
     collection: mockCollection,
-    batch: vi.fn(() => ({ update: mockBatchUpdate, set: mockBatchSet, delete: mockBatchDelete, commit: mockBatchCommit })),
+    batch: vi.fn(() => ({ update: mockBatchUpdate, set: mockBatchSet, delete: mockBatchDelete, commit: mockBatchCommit, })),
   },
   adminStorage: {
     bucket: vi.fn(() => ({
@@ -72,13 +72,16 @@ vi.mock("../../lib/photoDerivatives", () => ({
 
 import { validateImageMagicBytes } from "../../lib/imageImport";
 import { generatePhotoCaptionAndLabels } from "../../lib/vertex";
-import { deleteStoredPhotoAssets, generatePhotoDerivatives, storePhotoAssets } from "../../lib/photoDerivatives";
+import { deleteStoredPhotoAssets, generatePhotoDerivatives, storePhotoAssets, } from "../../lib/photoDerivatives";
 import router from "../photosUpload";
 
 function handler() {
   const layer = router.stack.find((entry) => entry.route?.path === "/upload-unified" && entry.route.methods.post);
   expect(layer).toBeDefined();
-  return layer!.route!.stack.at(-1)!.handle;
+  const routeHandler = layer!.route!.stack.at(-1)!.handle;
+  return (req: Record<string, unknown>, res: unknown, next?: unknown) =>
+    routeHandler({ user: { uid: "member-1"
+}, ...req }, res, next);
 }
 
 function imageBody(overrides: Record<string, unknown> = {}) {
@@ -104,14 +107,14 @@ describe("Photos upload route", () => {
     mockSubDelete.mockResolvedValue(undefined);
     mockBatchCommit.mockResolvedValue(undefined);
     mockSave.mockResolvedValue(undefined);
-    vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true, format: "jpg" });
-    vi.mocked(generatePhotoCaptionAndLabels).mockResolvedValue({ caption: "AI caption", labels: ["robot"] });
+    vi.mocked(validateImageMagicBytes).mockReturnValue({ valid: true, format: "jpg", });
+    vi.mocked(generatePhotoCaptionAndLabels).mockResolvedValue({ caption: "AI caption", labels: ["robot"], });
     vi.mocked(generatePhotoDerivatives).mockResolvedValue({
       width: 1600,
       height: 900,
-      original: { buffer: Buffer.from("sanitized"), width: 1600, height: 900, fileSize: 7 },
-      thumbnail: { buffer: Buffer.from("thumb"), width: 480, height: 270, fileSize: 5 },
-      medium: { buffer: Buffer.from("medium"), width: 1280, height: 720, fileSize: 6 },
+      original: { buffer: Buffer.from("sanitized"), width: 1600, height: 900, fileSize: 7, },
+      thumbnail: { buffer: Buffer.from("thumb"), width: 480, height: 270, fileSize: 5, },
+      medium: { buffer: Buffer.from("medium"), width: 1280, height: 720, fileSize: 6, },
     });
     vi.mocked(storePhotoAssets).mockResolvedValue({
       storagePath: "gallery/original.jpg",
@@ -148,7 +151,7 @@ describe("Photos upload route", () => {
     [imageBody({ albumId: "bad/album" }), 400, "Invalid album ID"],
     [imageBody({ fileBase64: "" }), 400, "Missing required fields"],
   ])("rejects invalid upload %#", async (body, status, message) => {
-    await expect(handler()({ body }, response())).rejects.toMatchObject({ status, message: expect.stringContaining(message) });
+    await expect(handler()({ body }, response())).rejects.toMatchObject({ status, message: expect.stringContaining(message), });
   });
 
   it("rejects missing or archived albums", async () => {
@@ -156,21 +159,21 @@ describe("Photos upload route", () => {
     await expect(handler()({ body: imageBody({ albumId: "album-1" }) }, response())).rejects.toMatchObject({ status: 400 });
 
     vi.clearAllMocks();
-    mockGet.mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 1 }) });
+    mockGet.mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 1 }), });
     await expect(handler()({ body: imageBody({ albumId: "album-1" }) }, response())).rejects.toMatchObject({ status: 400 });
   });
 
   it("rejects empty, oversized, and magic-byte-invalid images", async () => {
     await expect(handler()({ body: imageBody({ fileBase64: "=" }) }, response())).rejects.toMatchObject({ status: 413 });
 
-    await expect(handler()({ body: imageBody({ fileBase64: Buffer.alloc(8 * 1024 * 1024 + 1).toString("base64") }) }, response())).rejects.toMatchObject({ status: 413 });
+    await expect(handler()({ body: imageBody({ fileBase64: Buffer.alloc(8 * 1024 * 1024 + 1).toString("base64"), }), }, response())).rejects.toMatchObject({ status: 413 });
 
-    vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: false, error: "Signature mismatch" });
+    vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: false, error: "Signature mismatch", });
     await expect(handler()({ body: imageBody() }, response())).rejects.toMatchObject({ status: 400, message: "Signature mismatch" });
   });
 
   it("rejects a declared MIME type that does not match the file signature", async () => {
-    vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: true, format: "png" });
+    vi.mocked(validateImageMagicBytes).mockReturnValueOnce({ valid: true, format: "png", });
     await expect(handler()({ body: imageBody({ mimeType: "image/jpeg" }) }, response())).rejects.toMatchObject({
       status: 400,
       message: "The declared image type does not match the file contents.",
@@ -183,20 +186,20 @@ describe("Photos upload route", () => {
       docs: [{
         id: "existing-photo",
         ref: { id: "existing-photo" },
-        data: () => ({ publicUrl: "https://storage.test/photo.jpg", labels: "legacy", googleMediaItemId: "internal", fileSize: 25 }),
-      }],
+        data: () => ({ publicUrl: "https://storage.test/photo.jpg", labels: "legacy", googleMediaItemId: "internal", fileSize: 25, }),
+      },],
     });
     const res = response();
     await handler()({ body: imageBody() }, res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       cached: true,
-      photo: expect.objectContaining({ id: "existing-photo", labels: [], isSynced: true, isArchived: false }),
+      photo: expect.objectContaining({ id: "existing-photo", labels: [], isSynced: true, isArchived: false, }),
     }));
     expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("googleMediaItemId");
   });
 
   it("rejects a duplicate archived image", async () => {
-    mockGet.mockResolvedValueOnce({ empty: false, docs: [{ id: "archived", data: () => ({ isDeleted: 1 }) }] });
+    mockGet.mockResolvedValueOnce({ empty: false, docs: [{ id: "archived", data: () => ({ isDeleted: 1 }) }], });
     await expect(handler()({ body: imageBody() }, response())).rejects.toMatchObject({ status: 409 });
   });
 
@@ -205,7 +208,7 @@ describe("Photos upload route", () => {
       .mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 0 }) })
       .mockResolvedValueOnce({
         empty: false,
-        docs: [{ id: "photo-1", ref: { path: "imported_photos/photo-1" }, data: () => ({ publicUrl: "https://storage.test/photo.jpg", albumId: "old-album" }) }],
+        docs: [{ id: "photo-1", ref: { path: "imported_photos/photo-1" }, data: () => ({ publicUrl: "https://storage.test/photo.jpg", albumId: "old-album", }), },],
       });
     const res = response();
     await handler()({ body: imageBody({ albumId: "new-album" }) }, res);
@@ -217,7 +220,7 @@ describe("Photos upload route", () => {
     expect(mockBatchCommit).toHaveBeenCalledTimes(1);
     expect(mockUpdate).not.toHaveBeenCalled();
     expect(mockSubDelete).not.toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ cached: true, photo: expect.objectContaining({ albumId: "new-album" }) }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ cached: true, photo: expect.objectContaining({ albumId: "new-album" }), }));
   });
 
   it("uploads, labels, stores, and links a new image to an album", async () => {
@@ -228,7 +231,7 @@ describe("Photos upload route", () => {
     await handler()({ body: imageBody({ albumId: "album-1", runAiLabeling: true }) }, res);
     expect(storePhotoAssets).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mimeType: "image/jpeg" }), expect.stringContaining("gallery/derivatives/"), expect.anything());
     expect(generatePhotoCaptionAndLabels).toHaveBeenCalledWith(Buffer.from("sanitized"), "image/jpeg");
-    expect(mockBatchSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0, fileSize: 7, thumbnailUrl: "https://storage.test/thumbnail.webp" }));
+    expect(mockBatchSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0, fileSize: 7, thumbnailUrl: "https://storage.test/thumbnail.webp", }));
     expect(mockBatchUpdate).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mediaCount: expect.anything() }));
     expect(mockBatchCommit).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
@@ -261,7 +264,7 @@ describe("Photos upload route", () => {
     vi.mocked(generatePhotoCaptionAndLabels).mockRejectedValueOnce(new Error("AI unavailable"));
     const res = response();
     await handler()({ body: imageBody({ runAiLabeling: true }) }, res);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ photo: expect.objectContaining({ caption: "", labels: [] }) }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ photo: expect.objectContaining({ caption: "", labels: [] }), }));
   });
 
 });

@@ -159,7 +159,7 @@ export default function ShiftScheduleEditor({
           </div>
           <select
             id="event-location-select"
-            value={formLocationId || "mars-building"}
+            value={formLocationId}
             onChange={(e) => {
               const val = e.target.value;
               setFormLocationId(val);
@@ -167,6 +167,9 @@ export default function ShiftScheduleEditor({
             disabled={!canEdit}
             className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2.5 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan"
           >
+            <option value="" className="bg-ares-gray-deep text-white">
+              No venue selected
+            </option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id} className="bg-ares-gray-deep text-white">
                 {loc.name}
@@ -183,7 +186,9 @@ export default function ShiftScheduleEditor({
           <div className="p-4 bg-white/5 border border-white/5 rounded-lg flex flex-col justify-between min-h-[100px] hover:border-white/10 transition-colors">
             {(() => {
               const selected = locations.find((l) => l.id === formLocationId);
-              if (!selected) return <p className="text-[10px] text-marble/40">MARS Building Default</p>;
+              if (!selected) return ( <p className="text-[10px] text-marble/40">
+                    Selected venue is unavailable.</p>
+                );
               return (
                 <>
                   <div>
@@ -376,13 +381,32 @@ export default function ShiftScheduleEditor({
           {canPublishDirectly ? (
             <select
               value={formStatus}
-              onChange={(e) => setFormStatus(e.target.value as "published" | "pending" | "draft")}
+              onChange={(e) =>
+                setFormStatus(
+                  e.target.value as "published" | "pending" | "draft",
+                )
+              }
               disabled={!canEdit}
               className="w-full bg-black/60 border border-white/10 text-xs text-white rounded px-3 py-2 focus:outline-none focus:border-ares-red cursor-pointer focus:ring-2 focus:ring-ares-cyan font-bold"
             >
-              <option value="published" className="bg-obsidian text-white font-bold">Published</option>
-              <option value="pending" className="bg-obsidian text-white font-bold">Pending Review</option>
-              <option value="draft" className="bg-obsidian text-white font-bold">Draft</option>
+              <option
+                value="published"
+                className="bg-obsidian text-white font-bold"
+              >
+                Published
+              </option>
+              <option
+                value="pending"
+                className="bg-obsidian text-white font-bold"
+              >
+                Pending Review
+              </option>
+              <option
+                value="draft"
+                className="bg-obsidian text-white font-bold"
+              >
+                Draft
+              </option>
             </select>
           ) : (
             <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30">

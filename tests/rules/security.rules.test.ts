@@ -5,7 +5,8 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc,
+  runTransaction, setDoc, updateDoc, } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -22,7 +23,11 @@ async function seedAuthorizedUser(uid: string, role: string, isDeleted?: boolean
   });
 }
 
-async function seedDocument(collection: string, id: string, data: Record<string, unknown>) {
+async function seedDocument(
+  collection: string,
+  id: string,
+  data: Record<string, unknown>,
+) {
   await testEnvironment.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), collection, id), data);
   });
@@ -92,6 +97,82 @@ describe("Firestore zero-trust rules", () => {
     await assertSucceeds(getDoc(doc(publicDb, "posts", "legacy")));
   });
 
+  it("binds member drafts to a private owner and protects published content", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("other-member", "member");
+    await seedAuthorizedUser("mentor-user", "mentor");
+    await seedDocument("posts", "published-post", {
+      title: "Approved",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    const otherDb = testEnvironment
+      .authenticatedContext("other-member")
+      .firestore();
+    const mentorDb = testEnvironment
+      .authenticatedContext("mentor-user")
+      .firestore();
+    const draftRef = doc(memberDb, "posts", "member-draft");
+
+    await assertSucceeds(
+      runTransaction(memberDb, async (transaction) => {
+        transaction.set(draftRef, {
+          title: "Member draft",
+          status: "pending_approval",
+          approvalStatus: "pending_approval",
+          isDeleted: 0,
+        });
+        transaction.set(
+          doc(memberDb, "content_owners", "posts__member-draft"),
+          {
+            collectionName: "posts",
+            contentId: "member-draft",
+            ownerUid: "member-user",
+            createdAt: "2026-08-20T12:00:00.000Z",
+          },
+        );
+        transaction.set(
+          doc(memberDb, "posts", "member-draft", "revisions", "rev-1"),
+          {
+            editedBy: "member-user",
+            timestamp: "2026-08-20T12:00:00.000Z",
+          },
+        );
+      }),
+    );
+    await assertSucceeds(updateDoc(draftRef, { title: "Revised by owner" }));
+    await assertFails(
+      updateDoc(doc(otherDb, "posts", "member-draft"), { title: "Hijacked" }),
+    );
+    await assertFails(
+      getDoc(doc(memberDb, "content_owners", "posts__member-draft")),
+    );
+
+    await assertFails(
+      updateDoc(doc(memberDb, "posts", "published-post"), {
+        title: "Replaced",
+        status: "pending_approval",
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(mentorDb, "posts", "published-post"), {
+        title: "Reviewed update",
+        status: "published",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "seasons", "member-season"), {
+        status: "draft",
+        isDeleted: 0,
+      }),
+    );
+  });
+
   it("limits docs_feedback writes to authorized team members", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("unverified-user", "unverified");
@@ -103,12 +184,22 @@ describe("Firestore zero-trust rules", () => {
       createdAt: new Date().toISOString(),
     };
 
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
-    const unverifiedDb = testEnvironment.authenticatedContext("unverified-user").firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    const unverifiedDb = testEnvironment
+      .authenticatedContext("unverified-user")
+      .firestore();
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    await assertSucceeds(setDoc(doc(memberDb, "docs_feedback", "fb_member"), feedback));
-    await assertFails(setDoc(doc(unverifiedDb, "docs_feedback", "fb_unverified"), feedback));
-    await assertFails(setDoc(doc(publicDb, "docs_feedback", "fb_public"), feedback));
+    await assertSucceeds(
+      setDoc(doc(memberDb, "docs_feedback", "fb_member"), feedback),
+    );
+    await assertFails(
+      setDoc(doc(unverifiedDb, "docs_feedback", "fb_unverified"), feedback),
+    );
+    await assertFails(
+      setDoc(doc(publicDb, "docs_feedback", "fb_public"), feedback),
+    );
     await assertFails(
       setDoc(doc(memberDb, "docs_feedback", "fb_oversize"), {
         ...feedback,
@@ -124,8 +215,12 @@ describe("Firestore zero-trust rules", () => {
       encryptedPayload: "ciphertext",
     });
 
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
 
     await assertSucceeds(getDoc(doc(adminDb, "inquiries", "private")));
@@ -137,8 +232,12 @@ describe("Firestore zero-trust rules", () => {
     await seedAuthorizedUser("member-user", "member");
     await seedDocument("tasks", "team-task", { title: "Build robot" });
 
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
-    const unknownDb = testEnvironment.authenticatedContext("unknown-user").firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    const unknownDb = testEnvironment
+      .authenticatedContext("unknown-user")
+      .firestore();
 
     await assertSucceeds(getDoc(doc(memberDb, "tasks", "team-task")));
     await assertFails(getDoc(doc(unknownDb, "tasks", "team-task")));
@@ -146,7 +245,9 @@ describe("Firestore zero-trust rules", () => {
 
   it("accepts bounded task revision entries and rejects malformed or edited ones", async () => {
     await seedAuthorizedUser("member-user", "member");
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
     await seedAuthorizedUser("other-user", "member");
 
     const baseRevision = {
@@ -157,7 +258,9 @@ describe("Firestore zero-trust rules", () => {
       from: "todo",
       to: "in_progress",
     };
-    await assertSucceeds(setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), baseRevision));
+    await assertSucceeds(
+      setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-1"), baseRevision),
+    );
     await assertFails(
       setDoc(doc(memberDb, "tasks/team-task/revisions", "rev-bad-action"), {
         ...baseRevision,
@@ -181,13 +284,19 @@ describe("Firestore zero-trust rules", () => {
         action: "deleted",
       }),
     );
-    const unknownReader = testEnvironment.authenticatedContext("not-a-member").firestore();
-    await assertFails(getDoc(doc(unknownReader, "tasks/team-task/revisions", "rev-1")));
+    const unknownReader = testEnvironment
+      .authenticatedContext("not-a-member")
+      .firestore();
+    await assertFails(
+      getDoc(doc(unknownReader, "tasks/team-task/revisions", "rev-1")),
+    );
   });
 
   it("accepts canonical task creates and bounds untrusted task fields", async () => {
     await seedAuthorizedUser("member-user", "member");
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
     const canonicalTask = {
       id: "canonical-task",
       title: "Build robot",
@@ -202,7 +311,9 @@ describe("Firestore zero-trust rules", () => {
       createdAt: "2026-08-14T00:00:00.000Z",
     };
 
-    await assertSucceeds(setDoc(doc(memberDb, "tasks", "canonical-task"), canonicalTask));
+    await assertSucceeds(
+      setDoc(doc(memberDb, "tasks", "canonical-task"), canonicalTask),
+    );
     await assertFails(
       setDoc(doc(memberDb, "tasks", "invalid-priority"), {
         ...canonicalTask,
@@ -252,11 +363,15 @@ describe("Firestore zero-trust rules", () => {
       subteam: "Mechanical",
       legacyMetadata: "preserve without trusting",
     });
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
     const legacyTask = doc(memberDb, "tasks", "legacy-task");
 
     await assertSucceeds(updateDoc(legacyTask, { title: "Canonical title" }));
-    await assertSucceeds(updateDoc(legacyTask, { priority: "medium", subteam: "hardware" }));
+    await assertSucceeds(
+      updateDoc(legacyTask, { priority: "medium", subteam: "hardware" }),
+    );
     await assertSucceeds(updateDoc(legacyTask, { dueDate: "2026-08-20" }));
     await assertSucceeds(updateDoc(legacyTask, { dueDate: null }));
     await assertFails(updateDoc(legacyTask, { priority: "normal" }));
@@ -269,8 +384,16 @@ describe("Firestore zero-trust rules", () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("other-user", "member");
     await seedDocument("tasks", "team-task", { title: "Build robot" });
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
-    const ownComment = doc(memberDb, "tasks", "team-task", "comments", "comment-1");
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    const ownComment = doc(
+      memberDb,
+      "tasks",
+      "team-task",
+      "comments",
+      "comment-1",
+    );
 
     await assertSucceeds(
       setDoc(ownComment, {
@@ -318,9 +441,14 @@ describe("Firestore zero-trust rules", () => {
 
     for (const uid of ["unknown-role", "archived-boolean", "archived-number"]) {
       const context = testEnvironment.authenticatedContext(uid);
-      await assertFails(getDoc(doc(context.firestore(), "tasks", "private-task")));
       await assertFails(
-        uploadBytes(ref(context.storage(), `blog/${uid}.txt`), new Blob(["private"], { type: "text/plain" })),
+        getDoc(doc(context.firestore(), "tasks", "private-task")),
+      );
+      await assertFails(
+        uploadBytes(
+          ref(context.storage(), `blog/${uid}.txt`),
+          new Blob(["private"], { type: "text/plain" }),
+        ),
       );
     }
   });
@@ -345,30 +473,54 @@ describe("Firestore zero-trust rules", () => {
     });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
 
     await assertFails(getDoc(doc(publicDb, "events", "published-event")));
     await assertFails(getDoc(doc(publicDb, "locations", "team-venue")));
-    await assertFails(getDoc(doc(publicDb, "events", "published-event", "photos", "private-photo")));
+    await assertFails(
+      getDoc(
+        doc(publicDb, "events", "published-event", "photos", "private-photo"),
+      ),
+    );
     await assertSucceeds(getDoc(doc(memberDb, "events", "published-event")));
     await assertSucceeds(getDoc(doc(memberDb, "locations", "team-venue")));
-    await assertSucceeds(getDoc(doc(memberDb, "events", "published-event", "photos", "private-photo")));
     await assertSucceeds(
-      setDoc(doc(memberDb, "events", "published-event", "photos", "session-photo"), {
-        url: "https://images.example.test/session.jpg",
-        filename: "Session photo",
-        uploadedAt: "2026-08-20T20:00:00.000Z",
-        occurrenceDate: "2026-08-20",
-      }),
+      getDoc(
+        doc(memberDb, "events", "published-event", "photos", "private-photo"),
+      ),
     );
     await assertFails(
-      setDoc(doc(memberDb, "events", "published-event", "photos", "forged-session-photo"), {
-        url: "https://images.example.test/session.jpg",
-        filename: "Session photo",
-        uploadedAt: "2026-08-20T20:00:00.000Z",
-        occurrenceDate: "next-practice",
-      }),
+      setDoc(
+        doc(memberDb, "events", "published-event", "photos", "session-photo"),
+        {
+          url: "https://images.example.test/session.jpg",
+          filename: "Session photo",
+          uploadedAt: "2026-08-20T20:00:00.000Z",
+          occurrenceDate: "2026-08-20",
+        },
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(
+          memberDb,
+          "events",
+          "published-event",
+          "photos",
+          "forged-session-photo",
+        ),
+        {
+          url: "https://images.example.test/session.jpg",
+          filename: "Session photo",
+          uploadedAt: "2026-08-20T20:00:00.000Z",
+          occurrenceDate: "next-practice",
+        },
+      ),
     );
     await assertFails(
       updateDoc(doc(adminDb, "events", "published-event"), {
@@ -395,7 +547,9 @@ describe("Firestore zero-trust rules", () => {
     });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
 
     await assertFails(getDoc(doc(publicDb, "sponsors", "inactive")));
     await assertFails(getDoc(doc(publicDb, "outreach_logs", "draft")));
@@ -418,7 +572,9 @@ describe("Firestore zero-trust rules", () => {
     );
 
     await seedAuthorizedUser("admin-user", "admin");
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
     await assertFails(
       setDoc(doc(adminDb, "authorized_users", "client-invite"), {
         email: "invitee@example.test",
@@ -436,11 +592,19 @@ describe("Firestore zero-trust rules", () => {
       targetUid: "member-user",
     });
 
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
-    await assertSucceeds(getDoc(doc(adminDb, "audit_logs", "permission-change")));
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    await assertSucceeds(
+      getDoc(doc(adminDb, "audit_logs", "permission-change")),
+    );
     await assertFails(getDoc(doc(memberDb, "audit_logs", "permission-change")));
-    await assertFails(setDoc(doc(adminDb, "audit_logs", "client-write"), { action: "forged" }));
+    await assertFails(
+      setDoc(doc(adminDb, "audit_logs", "client-write"), { action: "forged" }),
+    );
   });
 
   it("keeps Zulip invitation settings behind the audited API", async () => {
@@ -451,15 +615,23 @@ describe("Firestore zero-trust rules", () => {
       updatedBy: "admin-user",
     });
 
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
 
     await assertFails(getDoc(doc(publicDb, "settings", "zulip")));
     await assertFails(getDoc(doc(memberDb, "settings", "zulip")));
     await assertFails(getDoc(doc(adminDb, "settings", "zulip")));
-    await assertFails(setDoc(doc(adminDb, "settings", "zulip"), { inviteUrl: "forged" }));
-    await assertFails(updateDoc(doc(adminDb, "settings", "zulip"), { inviteUrl: "forged" }));
+    await assertFails(
+      setDoc(doc(adminDb, "settings", "zulip"), { inviteUrl: "forged" }),
+    );
+    await assertFails(
+      updateDoc(doc(adminDb, "settings", "zulip"), { inviteUrl: "forged" }),
+    );
     await assertFails(deleteDoc(doc(adminDb, "settings", "zulip")));
   });
 
@@ -474,8 +646,12 @@ describe("Firestore zero-trust rules", () => {
       showPhone: false,
     });
 
-    const studentDb = testEnvironment.authenticatedContext("student-user").firestore();
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const studentDb = testEnvironment
+      .authenticatedContext("student-user")
+      .firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     const profileRef = doc(studentDb, "user_profiles", "student-user");
 
@@ -487,7 +663,9 @@ describe("Firestore zero-trust rules", () => {
         nickname: "Forged",
       }),
     );
-    await assertFails(updateDoc(profileRef, { showEmail: false, showPhone: false }));
+    await assertFails(
+      updateDoc(profileRef, { showEmail: false, showPhone: false }),
+    );
     await assertFails(updateDoc(profileRef, { showEmail: true }));
     await assertFails(
       updateDoc(doc(adminDb, "user_profiles", "student-user"), {
@@ -512,10 +690,18 @@ describe("Firestore zero-trust rules", () => {
       isDeleted: 0,
     });
 
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
-    const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
-    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
+    const coachDb = testEnvironment
+      .authenticatedContext("coach-user")
+      .firestore();
+    const mentorDb = testEnvironment
+      .authenticatedContext("mentor-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
 
     await assertSucceeds(getDoc(doc(memberDb, "tournaments", "states")));
     await assertSucceeds(getDoc(doc(mentorDb, "tournament_matches", "qm1")));
@@ -559,10 +745,18 @@ describe("Robot fleet rules", () => {
     });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
-    const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
-    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
-    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
+    const coachDb = testEnvironment
+      .authenticatedContext("coach-user")
+      .firestore();
+    const mentorDb = testEnvironment
+      .authenticatedContext("mentor-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
 
     // Raw documents are team-only; the public website uses the robots DTO API.
     await assertFails(getDoc(doc(publicDb, "robots", "active")));
@@ -592,8 +786,12 @@ describe("Robot fleet rules", () => {
         isDeleted: 0,
       }),
     );
-    await assertSucceeds(updateDoc(doc(mentorDb, "robots", "active"), { isDeleted: 1 }));
-    await assertSucceeds(updateDoc(doc(coachDb, "robots", "archived"), { isDeleted: 0 }));
+    await assertSucceeds(
+      updateDoc(doc(mentorDb, "robots", "active"), { isDeleted: 1 }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(coachDb, "robots", "archived"), { isDeleted: 0 }),
+    );
     await assertFails(deleteDoc(doc(adminDb, "robots", "active")));
   });
 });
@@ -620,7 +818,9 @@ describe("Media API boundary rules", () => {
     });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
 
     for (const [collectionName, id] of [
       ["imported_photos", "photo-1"],
@@ -630,8 +830,12 @@ describe("Media API boundary rules", () => {
     ] as const) {
       await assertFails(getDoc(doc(publicDb, collectionName, id)));
       await assertFails(getDoc(doc(adminDb, collectionName, id)));
-      await assertFails(setDoc(doc(adminDb, collectionName, `${id}-forged`), { isDeleted: 0 }));
-      await assertFails(updateDoc(doc(adminDb, collectionName, id), { isDeleted: 1 }));
+      await assertFails(
+        setDoc(doc(adminDb, collectionName, `${id}-forged`), { isDeleted: 0 }),
+      );
+      await assertFails(
+        updateDoc(doc(adminDb, collectionName, id), { isDeleted: 1 }),
+      );
       await assertFails(deleteDoc(doc(adminDb, collectionName, id)));
     }
   });
@@ -646,11 +850,17 @@ describe("Media API boundary rules", () => {
       driveFileId: "1DRIVE_FILE_123456789",
       driveSyncState: "current",
     });
-    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
     const existing = doc(adminDb, "documents", "drive_record");
 
-    await assertSucceeds(updateDoc(existing, { title: "Reviewed Robot Guide" }));
-    await assertFails(updateDoc(existing, { driveFileId: "1FORGED_FILE_123456789" }));
+    await assertSucceeds(
+      updateDoc(existing, { title: "Reviewed Robot Guide" }),
+    );
+    await assertFails(
+      updateDoc(existing, { driveFileId: "1FORGED_FILE_123456789" }),
+    );
     await assertFails(updateDoc(existing, { driveSyncState: "changed" }));
     await assertFails(
       setDoc(doc(adminDb, "documents", "forged_drive_record"), {
@@ -678,7 +888,9 @@ describe("Storage zero-trust rules", () => {
 
   it("requires gallery uploads to use the validated server route", async () => {
     await seedAuthorizedUser("member-user", "member");
-    const memberStorage = testEnvironment.authenticatedContext("member-user").storage();
+    const memberStorage = testEnvironment
+      .authenticatedContext("member-user")
+      .storage();
     const image = new Uint8Array([137, 80, 78, 71]);
 
     await assertFails(
@@ -696,11 +908,19 @@ describe("Storage zero-trust rules", () => {
   it("rejects retired direct CAD uploads for every role", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("mentor-user", "mentor");
-    const memberStorage = testEnvironment.authenticatedContext("member-user").storage();
-    const mentorStorage = testEnvironment.authenticatedContext("mentor-user").storage();
+    const memberStorage = testEnvironment
+      .authenticatedContext("member-user")
+      .storage();
+    const mentorStorage = testEnvironment
+      .authenticatedContext("mentor-user")
+      .storage();
     const cadBytes = new Uint8Array([1, 2, 3, 4]);
 
-    await assertFails(uploadBytes(ref(memberStorage, "cad/member.step"), cadBytes));
-    await assertFails(uploadBytes(ref(mentorStorage, "cad/mentor.step"), cadBytes));
+    await assertFails(
+      uploadBytes(ref(memberStorage, "cad/member.step"), cadBytes),
+    );
+    await assertFails(
+      uploadBytes(ref(mentorStorage, "cad/mentor.step"), cadBytes),
+    );
   });
 });

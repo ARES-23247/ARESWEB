@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authenticatedFetch } from "@/lib/api";
 import {
   archiveEvent,
+  archiveEventPhoto,
   archiveLocation,
   CalendarApiError,
   cancelEventOccurrence,
   createEvent,
   createLocation,
+  approveEventPhoto,
+  associateEventPhoto,
   fetchEventOccurrences,
   fetchLocations,
   fetchManagedEvent,
@@ -145,7 +148,7 @@ describe("calendar API client", () => {
     await archiveEvent("event-1");
     await restoreEvent("event-1");
     await publishEvent("event-1");
-    await expect(fetchLocations()).resolves.toEqual([expect.objectContaining({ id: "venue-1", isAddressPublic: 1 })]);
+    await expect(fetchLocations()).resolves.toEqual([expect.objectContaining({ id: "venue-1", isAddressPublic: 1 }),]);
     await createLocation(venueInput);
     await updateLocation("venue-1", venueInput);
     await archiveLocation("venue-1");
@@ -281,11 +284,11 @@ describe("calendar recurrence client", () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(
       response({
         success: true,
-        occurrences: [{ date: "2026-09-03", isCancelled: true, hasOverrides: true }],
+        occurrences: [{ date: "2026-09-03", isCancelled: true, hasOverrides: true },],
       }),
     );
     const exceptions = await fetchEventOccurrences("weekly-1");
-    expect(exceptions).toEqual([{ date: "2026-09-03", isCancelled: true, hasOverrides: true }]);
+    expect(exceptions).toEqual([{ date: "2026-09-03", isCancelled: true, hasOverrides: true },]);
     expect(vi.mocked(authenticatedFetch).mock.calls[0][0]).toBe("/api/calendar/manage/weekly-1/occurrences");
 
     vi.mocked(authenticatedFetch).mockResolvedValue(response({ success: true }));
@@ -319,5 +322,49 @@ describe("calendar recurrence client", () => {
     expect(path).toBe("/api/calendar/manage/weekly%2F1/occurrences/2026-08-20");
     expect(init?.method).toBe("PUT");
     expect(JSON.parse(String(init?.body))).toEqual(input);
+  });
+
+  it("associates, approves, and archives event photos through the Calendar API", async () => {
+    vi.mocked(authenticatedFetch)
+      .mockResolvedValueOnce(
+        response({
+          success: true,
+          photo: {
+            id: "photo-1",
+            url: "https://storage.googleapis.com/photo.jpg",
+            thumbnailUrl: null,
+            mediumUrl: null,
+            filename: "Progress.jpg",
+            occurrenceDate: "2026-08-20",
+            publicationStatus: "pending",
+},
+        }),
+      )
+      .mockResolvedValue(response({ success: true }));
+
+    await expect(
+      associateEventPhoto("event/1", "photo-1", "2026-08-20"),
+    ).resolves.toMatchObject({
+      id: "photo-1",
+      publicationStatus: "pending",
+    });
+    expect(vi.mocked(authenticatedFetch).mock.calls[0][0]).toBe(
+      "/api/calendar/manage/event%2F1/photos",
+    );
+    expect(
+      JSON.parse(String(vi.mocked(authenticatedFetch).mock.calls[0][1]?.body)),
+    ).toEqual({
+      photoId: "photo-1",
+      occurrenceDate: "2026-08-20",
+    });
+
+    await approveEventPhoto("event-1", "photo-1");
+    expect(vi.mocked(authenticatedFetch).mock.calls[1][0]).toBe(
+      "/api/calendar/manage/event-1/photos/photo-1/approve",
+    );
+    await archiveEventPhoto("event-1", "photo-1");
+    expect(vi.mocked(authenticatedFetch).mock.calls[2][1]?.method).toBe(
+      "DELETE",
+    );
   });
 });

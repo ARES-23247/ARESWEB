@@ -17,7 +17,7 @@ const dateTimeSchema = z
   .max(40)
   .refine((value) => !Number.isNaN(new Date(value).getTime()), "Date must be valid");
 
-export const WEEKDAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
+export const WEEKDAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU",] as const;
 export type WeekdayCode = (typeof WEEKDAY_CODES)[number];
 
 export const weekdaySet = new Set<string>(WEEKDAY_CODES);
@@ -40,7 +40,9 @@ export const recurrenceSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.until && new Date(`${value.until}T23:59:59Z`).getTime() < new Date("2000-01-01T00:00:00Z").getTime()) {
+    if (value.until && new Date(`${value.until}T23:59:59Z`).getTime() <
+        new Date("2000-01-01T00:00:00Z").getTime()
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["until"],
@@ -85,7 +87,10 @@ export const occurrenceUpdateSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.dateEnd && new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()) {
+    if (
+      value.dateEnd &&
+      new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["dateEnd"],
@@ -97,11 +102,15 @@ export const occurrenceUpdateSchema = z
 export type OccurrenceUpdateInput = z.infer<typeof occurrenceUpdateSchema>;
 export type EventOccurrenceOverrides = Partial<OccurrenceUpdateInput>;
 
-export function readOccurrenceOverrides(value: unknown): EventOccurrenceOverrides {
+export function readOccurrenceOverrides(
+  value: unknown,
+): EventOccurrenceOverrides {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const input = value as Record<string, unknown>;
   const parsed: EventOccurrenceOverrides = {};
-  for (const key of Object.keys(occurrenceUpdateSchema.shape) as (keyof OccurrenceUpdateInput)[]) {
+  for (const key of Object.keys(
+    occurrenceUpdateSchema.shape,
+  ) as (keyof OccurrenceUpdateInput)[]) {
     if (!(key in input)) continue;
     const field = occurrenceUpdateSchema.shape[key];
     const result = field.safeParse(input[key]);
@@ -141,7 +150,8 @@ export function occurrenceDates(
   const first = new Date(`${firstDateStart.slice(0, 10)}T00:00:00Z`);
   const from = new Date(`${fromDate}T00:00:00Z`);
   const to = new Date(`${toDate}T00:00:00Z`);
-  if ([first, from, to].some((value) => Number.isNaN(value.getTime()))) return [];
+  if ([first, from, to].some((value) => Number.isNaN(value.getTime())))
+    return [];
   if (to.getTime() < from.getTime()) return [];
   if (rule.until && rule.until < fromDate) return [];
 
@@ -215,7 +225,9 @@ function applyOccurrenceOverrides<T extends ReturnType<typeof eventDto>>(
   return result as T;
 }
 
-function seriesDefaultsForOccurrence<T extends ReturnType<typeof eventDto>>(dto: T) {
+function seriesDefaultsForOccurrence<T extends ReturnType<typeof eventDto>>(
+  dto: T,
+) {
   const defaults: Record<string, unknown> = {
     title: dto.title,
     dateStart: dto.dateStart,
@@ -246,12 +258,19 @@ export function expandEventOccurrences(
   const rule = readRecurrence(data.recurrence);
   const dateStart = readString(data.dateStart);
   if (!rule || !dateStart) return [];
-  const dates = occurrenceDates(rule, dateStart, options.fromDate, options.toDate)
+  const dates = occurrenceDates(
+    rule,
+    dateStart,
+    options.fromDate,
+    options.toDate,
+  )
     .filter((date) => !options.cancelledDates?.has(date))
     .slice(0, options.maxPerEvent ?? 4);
   const dayShift = (date: string) =>
     Math.round(
-      (new Date(`${date}T00:00:00Z`).getTime() - new Date(`${dateStart.slice(0, 10)}T00:00:00Z`).getTime()) / DAY_MS,
+      (new Date(`${date}T00:00:00Z`).getTime() -
+        new Date(`${dateStart.slice(0, 10)}T00:00:00Z`).getTime()) /
+        DAY_MS,
     );
   const seriesDefaults = seriesDefaultsForOccurrence(dto);
   return dates.map((date) =>
@@ -261,7 +280,9 @@ export function expandEventOccurrences(
         id: `${dto.id}_${date}`,
         recurrenceOf: dto.id,
         dateStart: shiftIsoDays(dateStart, dayShift(date)),
-        dateEnd: readString(data.dateEnd) ? shiftIsoDays(readString(data.dateEnd)!, dayShift(date)) : dto.dateEnd,
+        dateEnd: readString(data.dateEnd)
+          ? shiftIsoDays(readString(data.dateEnd)!, dayShift(date))
+          : dto.dateEnd,
         // The parent series' first-session times, so editors can switch between
         // editing this session and editing the full series.
         seriesDateStart: dateStart,
@@ -280,9 +301,12 @@ export function occurrenceOverridesForInput(
 ): EventOccurrenceOverrides {
   const base = baseOccurrence as Record<string, unknown>;
   const overrides: EventOccurrenceOverrides = {};
-  for (const key of Object.keys(occurrenceUpdateSchema.shape) as (keyof OccurrenceUpdateInput)[]) {
+  for (const key of Object.keys(
+    occurrenceUpdateSchema.shape,
+  ) as (keyof OccurrenceUpdateInput)[]) {
     const baseValue = base[key] ?? null;
-    if (input[key] !== baseValue) Object.assign(overrides, { [key]: input[key] });
+    if (input[key] !== baseValue)
+      Object.assign(overrides, { [key]: input[key] });
   }
   return overrides;
 }
@@ -304,14 +328,20 @@ export const eventWriteSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.dateEnd && new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()) {
+    if (
+      value.dateEnd &&
+      new Date(value.dateEnd).getTime() < new Date(value.dateStart).getTime()
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["dateEnd"],
         message: "End time must be after the start time",
       });
     }
-    if (value.recurrence?.until && value.recurrence.until < value.dateStart.slice(0, 10)) {
+    if (
+      value.recurrence?.until &&
+      value.recurrence.until < value.dateStart.slice(0, 10)
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["recurrence.until"],
@@ -364,14 +394,17 @@ export interface LocationDocument {
 }
 
 export interface EventPhotoDocument {
+  sourcePhotoId?: unknown;
   url?: unknown;
   thumbnailUrl?: unknown;
   mediumUrl?: unknown;
   filename?: unknown;
   isDeleted?: unknown;
   uploadedBy?: unknown;
+  uploadedByUid?: unknown;
   uploadedAt?: unknown;
   occurrenceDate?: unknown;
+  publicationStatus?: unknown;
 }
 
 export function readString(value: unknown): string | null {
@@ -382,7 +415,11 @@ function readFlag(value: unknown): 0 | 1 {
   return value === 1 ? 1 : 0;
 }
 
-export function eventDto(id: string, data: EventDocument, includeLifecycle: boolean) {
+export function eventDto(
+  id: string,
+  data: EventDocument,
+  includeLifecycle: boolean,
+) {
   const recurrence = readRecurrence(data.recurrence);
   const base = {
     id,
@@ -442,7 +479,12 @@ export function publicVenueDto(data: LocationDocument) {
 
 export function eventPhotoDto(id: string, data: EventPhotoDocument) {
   const url = readString(data.url);
-  if (!url?.startsWith("https://") || data.isDeleted === 1) return null;
+  if (
+    !url?.startsWith("https://") ||
+    data.isDeleted === 1 ||
+    data.publicationStatus !== "published"
+  )
+    return null;
   const thumbnailUrl = readString(data.thumbnailUrl);
   const mediumUrl = readString(data.mediumUrl);
   return {
@@ -451,13 +493,22 @@ export function eventPhotoDto(id: string, data: EventPhotoDocument) {
     thumbnailUrl: thumbnailUrl?.startsWith("https://") ? thumbnailUrl : null,
     mediumUrl: mediumUrl?.startsWith("https://") ? mediumUrl : null,
     filename: readString(data.filename) ?? "Event photo",
-    occurrenceDate: isOccurrenceDate(data.occurrenceDate) ? data.occurrenceDate : null,
+    occurrenceDate: isOccurrenceDate(data.occurrenceDate)
+      ? data.occurrenceDate
+      : null,
   };
 }
 
-export function parseLimit(value: unknown, fallback: number, maximum: number): number {
+export function parseLimit(
+  value: unknown,
+  fallback: number,
+  maximum: number,
+): number {
   const requested = Number.parseInt(String(value ?? fallback), 10);
-  return Math.min(maximum, Math.max(1, Number.isFinite(requested) ? requested : fallback));
+  return Math.min(
+    maximum,
+    Math.max(1, Number.isFinite(requested) ? requested : fallback),
+  );
 }
 
 export function parseId(value: string | string[], label = "record"): string {
@@ -470,7 +521,11 @@ export function parseId(value: string | string[], label = "record"): string {
 export function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
   if (!result.success) {
-    throw new ApiError(400, result.error.issues[0]?.message ?? "Invalid request body.", "VALIDATION_ERROR");
+    throw new ApiError(
+      400,
+      result.error.issues[0]?.message ?? "Invalid request body.",
+      "VALIDATION_ERROR",
+    );
   }
   return result.data;
 }
@@ -479,7 +534,10 @@ export function canPublish(role: string | undefined): boolean {
   return role === "admin" || role === "coach" || role === "mentor";
 }
 
-export function eventWriteData(input: EventWriteInput, status: z.infer<typeof eventStatusSchema>) {
+export function eventWriteData(
+  input: EventWriteInput,
+  status: z.infer<typeof eventStatusSchema>,
+) {
   return {
     title: input.title,
     dateStart: input.dateStart,
@@ -497,7 +555,11 @@ export function eventWriteData(input: EventWriteInput, status: z.infer<typeof ev
 }
 
 export function escapeIcalText(text: string): string {
-  return text.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\r?\n/g, "\\n");
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;")
+    .replace(/\r?\n/g, "\\n");
 }
 
 export function formatIcalDate(value: string | null): string | null {

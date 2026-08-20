@@ -2,11 +2,12 @@
 
 import { logger } from "@/utils/logger";
 import { useEffect, useMemo, useState } from "react";
-import { collection, doc, onSnapshot, query, limit, runTransaction, writeBatch, getCountFromServer } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, limit, runTransaction, writeBatch, getCountFromServer, } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
+import { canUseMemberAi } from "@/lib/authorization";
 import TaskDetailsModal from "./components/TaskDetailsModal";
 import TaskFilters from "./components/TaskFilters";
 import TaskBoardColumn from "./components/TaskBoardColumn";
@@ -14,7 +15,7 @@ import { TaskItem, MemberProfile, SubTask } from "@/types/task";
 import { PublicDataState } from "@/components/PublicDataState";
 import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
 import { describeTaskError, TaskOperationError } from "./taskErrors";
-import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask } from "./taskSubtasks";
+import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask, } from "./taskSubtasks";
 import {
   buildDuplicateTaskCounts,
   normalizeTaskRecord,
@@ -34,9 +35,9 @@ const E2E_TASK_FIXTURES: TaskItem[] = [
     assignees: ["lead_programmer"],
     subtasks: [
       { id: "sub_1", title: "Run friction sweep script", done: true },
-      { id: "sub_2", title: "Apply 0.05 kS compensation in FtcMecanumRobot.kt", done: false }
+      { id: "sub_2", title: "Apply 0.05 kS compensation in FtcMecanumRobot.kt", done: false, },
     ],
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
     id: "task_2",
@@ -48,9 +49,9 @@ const E2E_TASK_FIXTURES: TaskItem[] = [
     assignees: ["mechanic_lead"],
     subtasks: [
       { id: "sub_3", title: "3D print TPU compliant wheels", done: true },
-      { id: "sub_4", title: "Mount hex shaft to side plates", done: false }
+      { id: "sub_4", title: "Mount hex shaft to side plates", done: false },
     ],
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   },
   {
     id: "task_3",
@@ -61,11 +62,11 @@ const E2E_TASK_FIXTURES: TaskItem[] = [
     subteam: "business",
     assignees: ["coach_david"],
     subtasks: [
-      { id: "sub_5", title: "Compile World Championship recap data", done: true },
-      { id: "sub_6", title: "Review pamphlet layouts with advisors", done: false }
+      { id: "sub_5", title: "Compile World Championship recap data", done: true, },
+      { id: "sub_6", title: "Review pamphlet layouts with advisors", done: false, },
     ],
-    createdAt: new Date().toISOString()
-  }
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 export default function KanbanPage() {
@@ -95,7 +96,7 @@ export default function KanbanPage() {
   const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-  const canUseAi = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
+  const canUseAi = canUseMemberAi( authorizedUser?.role);
 
   const executeTaskOperation = async (
     action: string,
@@ -124,12 +125,24 @@ export default function KanbanPage() {
   // Activity trail: one immutable revision entry per board operation, written
   // in the same batch as the change it describes (rules-bounded).
   const taskRevisionRef = (taskId: string) =>
-    doc(db, "tasks", taskId, "revisions", `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+    doc(
+      db,
+      "tasks",
+      taskId,
+      "revisions",
+      `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    );
 
   const writeTaskRevision = (
     batch: ReturnType<typeof writeBatch>,
     taskId: string,
-    entry: { action: "created" | "updated" | "moved" | "archived" | "restored" | "deleted"; from?: string; to?: string; fields?: string[] }
+    entry: {
+      action:
+        "created" | "updated" | "moved" | "archived" | "restored" | "deleted";
+      from?: string;
+      to?: string;
+      fields?: string[];
+    },
   ) => {
     batch.set(taskRevisionRef(taskId), {
       action: entry.action,
@@ -154,7 +167,8 @@ export default function KanbanPage() {
       const notificationError = describeTaskError("notify Zulip", err);
       setOperationError({
         ...notificationError,
-        message: "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
+        message:
+          "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
       });
       setRetryOperation(null);
       setSyncState("error");
@@ -181,7 +195,9 @@ export default function KanbanPage() {
             setLoadError(null);
             return;
           }
-          const list = snapshot.docs.map((docSnap) => normalizeTaskRecord(docSnap.id, docSnap.data()));
+          const list = snapshot.docs.map((docSnap) =>
+            normalizeTaskRecord(docSnap.id, docSnap.data()),
+          );
           setTasks(list.filter((task) => task.isDeleted !== 1));
           setIsLive(true);
           setLoadError(null);
@@ -191,7 +207,7 @@ export default function KanbanPage() {
           setTasks([]);
           setIsLive(false);
           setLoadError(err.message);
-        }
+        },
       );
       return () => unsubscribe();
     } catch (e) {
@@ -206,7 +222,7 @@ export default function KanbanPage() {
   // full page loads, so the parameter is read from the location once and then
   // cleared without a router dependency.
   const [deepLinkId, setDeepLinkId] = useState<string | null>(() =>
-    new URLSearchParams(window.location.search).get("task")
+    new URLSearchParams(window.location.search).get("task"),
   );
   useEffect(() => {
     if (!deepLinkId) return;
@@ -224,16 +240,17 @@ export default function KanbanPage() {
     getCountFromServer(query(collection(db, "tasks"), limit(501)))
       .then((snap) => setOverflowCount(Math.max(0, snap.data().count - 500)))
       .catch((err: unknown) => {
-          logger.error("Unable to verify the task truncation count:", err);
-          setOverflowUnknown(true);
-        });
+        logger.error("Unable to verify the task truncation count:", err);
+        setOverflowUnknown(true);
+      });
   }, []);
 
   useEffect(() => {
     const fetchTeamRoster = async () => {
       try {
         const response = await authenticatedFetch("/api/profiles/team-roster");
-        if (!response.ok) throw new Error(`Failed to fetch team roster: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Failed to fetch team roster: ${response.status}`);
         const data = await response.json();
         setTeamProfiles(data.members || []);
       } catch (e) {
@@ -245,20 +262,31 @@ export default function KanbanPage() {
 
   const handleMoveStatus = async (
     taskId: string,
-    newStatus: TaskItem["status"]
+    newStatus: TaskItem["status"],
   ): Promise<TaskOperationError | null> => {
     if (!canEdit) return null;
     const task = tasks.find((t) => t.id === taskId);
     if (import.meta.env.MODE === "e2e") {
-      setTasks((current) => current.map((item) => (item.id === taskId ? { ...item, status: newStatus } : item)));
-      setMoveAnnouncement(`${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`);
+      setTasks((current) =>
+        current.map((item) =>
+          item.id === taskId ? { ...item, status: newStatus } : item,
+        ),
+      );
+      setMoveAnnouncement(
+        `${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`,
+      );
       return null;
     }
     const performMove = async () => {
       const taskRef = doc(db, "tasks", taskId);
       const batch = writeBatch(db);
       batch.update(taskRef, { status: newStatus });
-      if (task) writeTaskRevision(batch, taskId, { action: "moved", from: task.status, to: newStatus });
+      if (task)
+        writeTaskRevision(batch, taskId, {
+          action: "moved",
+          from: task.status,
+          to: newStatus,
+        });
       await batch.commit();
 
       if (task) {
@@ -276,115 +304,134 @@ export default function KanbanPage() {
         runZulipSync(syncPromise);
       }
     };
-    const error = await executeTaskOperation("move task", performMove, () => handleMoveStatus(taskId, newStatus));
-    if (!error) setMoveAnnouncement(`${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`);
+    const error = await executeTaskOperation("move task", performMove, () =>
+      handleMoveStatus(taskId, newStatus),
+    );
+    if (!error)
+      setMoveAnnouncement(
+        `${task?.title || "Task"} moved to ${newStatus.replaceAll("_", " ")}.`,
+      );
     return error;
   };
 
   const handleArchiveTask = async (
     taskId: string,
-    isArchived: boolean
+    isArchived: boolean,
   ): Promise<TaskOperationError | null> => {
     if (!canEdit) return null;
     const performArchive = async () => {
       const taskRef = doc(db, "tasks", taskId);
       const batch = writeBatch(db);
       batch.update(taskRef, { archived: isArchived });
-      writeTaskRevision(batch, taskId, { action: isArchived ? "archived" : "restored" });
+      writeTaskRevision(batch, taskId, {
+        action: isArchived ? "archived" : "restored",
+      });
       await batch.commit();
     };
     return executeTaskOperation(
       isArchived ? "archive task" : "restore task",
       performArchive,
-      () => handleArchiveTask(taskId, isArchived)
+      () => handleArchiveTask(taskId, isArchived),
     );
   };
 
-  const handleArchiveAllCompleted = async (): Promise<TaskOperationError | null> => {
-    if (!canEdit) return null;
-    const completedTasks = tasks.filter((t) => t.status === "completed" && !t.archived);
-    const performArchiveAll = async () => {
-      const batch = writeBatch(db);
-      completedTasks.forEach((task) => batch.update(doc(db, "tasks", task.id), { archived: true }));
-      await batch.commit();
+  const handleArchiveAllCompleted =
+    async (): Promise<TaskOperationError | null> => {
+      if (!canEdit) return null;
+      const completedTasks = tasks.filter(
+        (t) => t.status === "completed" && !t.archived,
+      );
+      const performArchiveAll = async () => {
+        const batch = writeBatch(db);
+        completedTasks.forEach((task) =>
+          batch.update(doc(db, "tasks", task.id), { archived: true }),
+        );
+        await batch.commit();
+      };
+      return executeTaskOperation(
+        "archive completed tasks",
+        performArchiveAll,
+        handleArchiveAllCompleted,
+      );
     };
-    return executeTaskOperation(
-      "archive completed tasks",
-      performArchiveAll,
-      handleArchiveAllCompleted
-    );
-  };
 
   const handleToggleSubtask = async (
     taskId: string,
-    subtaskId: string
+    subtaskId: string,
   ): Promise<TaskOperationError | null> => {
     if (!canEdit) return null;
     const performToggle = async () => {
       const taskRef = doc(db, "tasks", taskId);
       await runTransaction(db, async (transaction) => {
         const snapshot = await transaction.get(taskRef);
-        if (!snapshot.exists()) throw new Error("not-found: Task no longer exists");
+        if (!snapshot.exists())
+          throw new Error("not-found: Task no longer exists");
         const currentSubtasks = readSubtasks(snapshot.data().subtasks);
-        transaction.update(taskRef, { subtasks: toggleSubtask(currentSubtasks, subtaskId) });
+        transaction.update(taskRef, {
+          subtasks: toggleSubtask(currentSubtasks, subtaskId),
+        });
       });
     };
-    return executeTaskOperation(
-      "update subtask",
-      performToggle,
-      () => handleToggleSubtask(taskId, subtaskId)
+    return executeTaskOperation("update subtask", performToggle, () =>
+      handleToggleSubtask(taskId, subtaskId),
     );
   };
 
   const handleDeleteSubtask = async (
     taskId: string,
-    subtaskId: string
+    subtaskId: string,
   ): Promise<TaskOperationError | null> => {
     if (!canEdit) return null;
     const performDeleteSubtask = async () => {
       const taskRef = doc(db, "tasks", taskId);
       await runTransaction(db, async (transaction) => {
         const snapshot = await transaction.get(taskRef);
-        if (!snapshot.exists()) throw new Error("not-found: Task no longer exists");
+        if (!snapshot.exists())
+          throw new Error("not-found: Task no longer exists");
         const currentSubtasks = readSubtasks(snapshot.data().subtasks);
-        transaction.update(taskRef, { subtasks: removeSubtask(currentSubtasks, subtaskId) });
+        transaction.update(taskRef, {
+          subtasks: removeSubtask(currentSubtasks, subtaskId),
+        });
       });
     };
-    return executeTaskOperation(
-      "delete subtask",
-      performDeleteSubtask,
-      () => handleDeleteSubtask(taskId, subtaskId)
+    return executeTaskOperation("delete subtask", performDeleteSubtask, () =>
+      handleDeleteSubtask(taskId, subtaskId),
     );
   };
 
   const handleAddSubtaskDirect = async (
     taskId: string,
-    title: string
+    title: string,
   ): Promise<TaskOperationError | null> => {
     if (!title.trim() || !canEdit) return null;
-    const randomId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const randomId =
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const newSub: SubTask = {
       id: `sub_${randomId}`,
       title: title.trim(),
-      done: false
+      done: false,
     };
     const performAddSubtask = async () => {
       const taskRef = doc(db, "tasks", taskId);
       await runTransaction(db, async (transaction) => {
         const snapshot = await transaction.get(taskRef);
-        if (!snapshot.exists()) throw new Error("not-found: Task no longer exists");
+        if (!snapshot.exists())
+          throw new Error("not-found: Task no longer exists");
         const currentSubtasks = readSubtasks(snapshot.data().subtasks);
-        transaction.update(taskRef, { subtasks: appendSubtask(currentSubtasks, newSub) });
+        transaction.update(taskRef, {
+          subtasks: appendSubtask(currentSubtasks, newSub),
+        });
       });
     };
-    return executeTaskOperation(
-      "add subtask",
-      performAddSubtask,
-      () => handleAddSubtaskDirect(taskId, title)
+    return executeTaskOperation("add subtask", performAddSubtask, () =>
+      handleAddSubtaskDirect(taskId, title),
     );
   };
 
-  const handleDeleteTask = async (taskId: string): Promise<TaskOperationError | null> => {
+  const handleDeleteTask = async (
+    taskId: string,
+  ): Promise<TaskOperationError | null> => {
     if (!canEdit) return null;
     const performDelete = async () => {
       const taskRef = doc(db, "tasks", taskId);
@@ -393,10 +440,14 @@ export default function KanbanPage() {
       writeTaskRevision(batch, taskId, { action: "deleted" });
       await batch.commit();
     };
-    return executeTaskOperation("delete task", performDelete, () => handleDeleteTask(taskId));
+    return executeTaskOperation("delete task", performDelete, () =>
+      handleDeleteTask(taskId),
+    );
   };
 
-  const handleCreateTask = async (newTask: TaskItem): Promise<TaskOperationError | null> => {
+  const handleCreateTask = async (
+    newTask: TaskItem,
+  ): Promise<TaskOperationError | null> => {
     if (import.meta.env.MODE === "e2e") {
       setTasks((current) => [newTask, ...current]);
       return null;
@@ -408,7 +459,9 @@ export default function KanbanPage() {
       writeTaskRevision(batch, newTask.id, { action: "created" });
       await batch.commit();
     };
-    return executeTaskOperation("create task", performCreate, () => handleCreateTask(newTask));
+    return executeTaskOperation("create task", performCreate, () =>
+      handleCreateTask(newTask),
+    );
   };
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -421,7 +474,10 @@ export default function KanbanPage() {
     setDraggedOverCol(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, newStatus: TaskItem["status"]) => {
+  const handleDrop = async (
+    e: React.DragEvent,
+    newStatus: TaskItem["status"],
+  ) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData("text/plain") || draggingTaskId;
     setDraggedOverCol(null);
@@ -446,7 +502,7 @@ export default function KanbanPage() {
     { id: "todo", title: "To Do", emoji: "📋" },
     { id: "in_progress", title: "In Progress", emoji: "⚙️" },
     { id: "review", title: "In Review", emoji: "👀" },
-    { id: "completed", title: "Completed", emoji: "✅" }
+    { id: "completed", title: "Completed", emoji: "✅" },
   ];
 
   return (
@@ -455,7 +511,8 @@ export default function KanbanPage() {
       <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
           <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-            <Activity size={12} className="animate-pulse" /> Operational Workspace
+            <Activity size={12} className="animate-pulse" /> Operational
+            Workspace
           </p>
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
             Kanban Tasks
@@ -468,7 +525,6 @@ export default function KanbanPage() {
                 Data unavailable
               </span>
             )}
-            
             {/* Zulip synchronization states */}
             {syncState === "syncing" && (
               <span className="inline-flex items-center rounded-full bg-ares-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ares-gold ring-1 ring-inset ring-ares-gold/30 ml-2 animate-pulse">
@@ -487,7 +543,8 @@ export default function KanbanPage() {
             )}
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-            Collaborative subteam Kanban dashboard. Create cards, assign responsibilities, and update status blocks in real-time.
+            Collaborative subteam Kanban dashboard. Create cards, assign
+            responsibilities, and update status blocks in real-time.
           </p>
         </div>
 
@@ -524,26 +581,44 @@ export default function KanbanPage() {
             setOperationError(null);
             setRetryOperation(null);
           }}
-          onRetry={retryOperation ? () => void retryOperation().catch(() => undefined) : undefined}
+          onRetry={
+            retryOperation
+              ? () => void retryOperation().catch(() => undefined)
+              : undefined
+          }
         />
       )}
 
-      <p role="status" aria-live="polite" className="sr-only">{moveAnnouncement}</p>
+      <p role="status" aria-live="polite" className="sr-only">
+        {moveAnnouncement}
+      </p>
 
       {!loadError && tasks.length > 0 && filteredTasks.length === 0 && (
-        <p role="status" className="rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-sm text-marble/75">
+        <p
+          role="status"
+          className="rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-sm text-marble/75"
+        >
           No tasks match the current search and filters.
         </p>
       )}
 
       {overflowUnknown && (
-        <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-3 text-sm text-marble">
-          Truncation status unknown: the total task count could not be verified. Cards beyond the first 500 may exist.
+        <p
+          role="status"
+          className="border border-ares-gold/30 bg-ares-gold/10 p-3 text-sm text-marble"
+        >
+          Truncation status unknown: the total task count could not be verified.
+          Cards beyond the first 500 may exist.
         </p>
       )}
       {overflowCount > 0 && (
-        <p role="status" className="rounded-lg border border-ares-gold/30 bg-ares-gold/10 px-4 py-3 text-sm text-ares-gold">
-          Showing the first 500 task cards; {overflowCount} more {overflowCount === 1 ? "card is" : "cards are"} hidden. Archive completed tasks to see older work.
+        <p
+          role="status"
+          className="rounded-lg border border-ares-gold/30 bg-ares-gold/10 px-4 py-3 text-sm text-ares-gold"
+        >
+          Showing the first 500 task cards; {overflowCount} more{" "}
+          {overflowCount === 1 ? "card is" : "cards are"} hidden. Archive
+          completed tasks to see older work.
         </p>
       )}
 

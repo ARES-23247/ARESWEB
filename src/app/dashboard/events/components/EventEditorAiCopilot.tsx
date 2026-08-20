@@ -60,17 +60,20 @@ export default function EventEditorAiCopilot({
           prompt: presetName ? `${presetName}: ${prompt}` : prompt,
           text: formDescription,
           context: `Event Title: ${formTitle}\nLocation: ${
-            locations.find((l) => l.id === formLocationId)?.name || "MARS Building"
-          }`
-        })
+            locations.find((l) => l.id === formLocationId)?.name ||
+            "Not selected"
+          }`,
+        }),
       });
 
       if (!res.ok) throw new Error("AI Assistant service error.");
-      const data = await res.json() as AssistantResponse;
+      const data = (await res.json()) as AssistantResponse;
       setAiResponse(data.response || "");
     } catch (err: unknown) {
       logger.warn("Gemini assistant request failed", err);
-      setAiError("Gemini is temporarily unavailable. Your event description was not changed.");
+      setAiError(
+        "Gemini is temporarily unavailable. Your event description was not changed.",
+      );
     } finally {
       setAiLoading(false);
     }
@@ -87,16 +90,18 @@ export default function EventEditorAiCopilot({
       const res = await authenticatedFetch("/api/ai/grammar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: formDescription })
+        body: JSON.stringify({ text: formDescription }),
       });
 
       if (!res.ok) throw new Error("AI Grammar check service error.");
-      const data = await res.json() as GrammarResponse;
+      const data = (await res.json()) as GrammarResponse;
       setSuggestedCorrection(data.correctedText || "");
       setGrammarEdits(data.edits || []);
     } catch (err: unknown) {
       logger.warn("Gemini grammar request failed", err);
-      setAiError("Grammar checking is temporarily unavailable. Your event description was not changed.");
+      setAiError(
+        "Grammar checking is temporarily unavailable. Your event description was not changed.",
+      );
     } finally {
       setAiLoading(false);
     }
@@ -107,11 +112,16 @@ export default function EventEditorAiCopilot({
       <div className="space-y-5">
         <div className="flex items-center gap-1.5">
           <Sparkles size={16} className="text-ares-gold" />
-          <h4 className="text-xs font-black uppercase tracking-widest text-white">Gemini Operation Copilot</h4>
+          <h4 className="text-xs font-black uppercase tracking-widest text-white">
+            Gemini Operation Copilot
+          </h4>
         </div>
 
         {aiError && (
-          <p role="alert" className="rounded border border-ares-danger-soft/40 bg-ares-red/10 p-2 text-[10px] text-ares-danger-soft">
+          <p
+            role="alert"
+            className="rounded border border-ares-danger-soft/40 bg-ares-red/10 p-2 text-[10px] text-ares-danger-soft"
+          >
             {aiError}
           </p>
         )}
@@ -126,7 +136,7 @@ export default function EventEditorAiCopilot({
               onClick={() =>
                 handleAiAssistant(
                   "Write a catchy announcement for our team newsletter introducing this event.",
-                  "Outreach Copywriter"
+                  "Outreach Copywriter",
                 )
               }
               className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[8px] uppercase tracking-wider text-marble/80 hover:text-white transition-all cursor-pointer"
@@ -138,7 +148,7 @@ export default function EventEditorAiCopilot({
               onClick={() =>
                 handleAiAssistant(
                   "Suggest a list of safety guidelines and materials needed for this event.",
-                  "Mechanical Safety"
+                  "Mechanical Safety",
                 )
               }
               className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[8px] uppercase tracking-wider text-marble/80 hover:text-white transition-all cursor-pointer"
@@ -150,7 +160,7 @@ export default function EventEditorAiCopilot({
               onClick={() =>
                 handleAiAssistant(
                   "Refactor this explanation to be highly professional and engaging for FLL team parents.",
-                  "Youth Coordinator"
+                  "Youth Coordinator",
                 )
               }
               className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[8px] uppercase tracking-wider text-marble/80 hover:text-white transition-all cursor-pointer"
@@ -225,10 +235,21 @@ export default function EventEditorAiCopilot({
               {grammarEdits.length > 0 && (
                 <div className="space-y-1.5">
                   {grammarEdits.map((ed, idx) => (
-                    <div key={idx} className="p-2 bg-ares-red/10 border border-ares-red/25 rounded text-[9px] text-marble/85 font-mono">
-                      <span className="text-ares-red line-through block">-{ed.original}</span>
-                      <span className="text-ares-gold font-bold block">+{ed.corrected}</span>
-                      {ed.explanation && <p className="text-[8px] text-marble/45 mt-1 italic">{ed.explanation}</p>}
+                    <div
+                      key={idx}
+                      className="p-2 bg-ares-red/10 border border-ares-red/25 rounded text-[9px] text-marble/85 font-mono"
+                    >
+                      <span className="text-ares-red line-through block">
+                        -{ed.original}
+                      </span>
+                      <span className="text-ares-gold font-bold block">
+                        +{ed.corrected}
+                      </span>
+                      {ed.explanation && (
+                        <p className="text-[8px] text-marble/45 mt-1 italic">
+                          {ed.explanation}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -251,7 +272,8 @@ export default function EventEditorAiCopilot({
       </div>
 
       <p className="text-[8.5px] font-mono text-marble/35 uppercase leading-normal tracking-wide mt-5">
-        Powered by Google Gemini. Generated content should be reviewed before publishing.
+        Powered by Google Gemini. Generated content should be reviewed before
+        publishing.
       </p>
     </div>
   );

@@ -13,7 +13,7 @@ export default function BlogManagementPage({
   editorOnly = false,
   onEditorClose,
   prefilledAction,
-  prefilledSlug
+  prefilledSlug,
 }: {
   editorOnly?: boolean;
   onEditorClose?: () => void;
@@ -52,6 +52,10 @@ export default function BlogManagementPage({
     pendingArchiveSlug,
     isArchiving,
     archiveError,
+    syndicationNotice,
+    isRetryingSyndication,
+    handleRetrySyndication,
+    dismissSyndicationNotice,
   } = useDashboardDocController(
     "posts",
     (d) => d.isDeleted !== 1,
@@ -166,6 +170,37 @@ export default function BlogManagementPage({
       </div>
 
       {/* List Grid View */}
+      {syndicationNotice && (
+        <div
+          role={syndicationNotice.kind === "error" ? "alert" : "status"}
+          className={`mb-5 rounded-xl border p-4 text-sm ${
+            syndicationNotice.kind === "error"
+              ? "border-ares-red/40 bg-ares-red/10 text-white"
+              : "border-ares-gold/35 bg-ares-gold/10 text-white"
+          }`}
+        >
+          <p>{syndicationNotice.message}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {syndicationNotice.kind === "error" && (
+              <button
+                type="button"
+                onClick={() => void handleRetrySyndication()}
+                disabled={isRetryingSyndication}
+                className="rounded bg-ares-red px-3 py-2 text-xs font-black uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-60"
+              >
+                {isRetryingSyndication ? "Retrying…" : "Retry social delivery"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={dismissSyndicationNotice}
+              className="rounded border border-white/15 px-3 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <DocListGrid
         items={displayItems}
         loadingList={loadingList}

@@ -4,7 +4,7 @@ import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { doc, collection, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, collection, onSnapshot, setDoc, deleteDoc, } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
@@ -25,7 +25,8 @@ import PhotoLightbox from "@/components/events/PhotoLightbox";
 import { EventItem, EventSignup, EventPhoto } from "@/components/events/types";
 
 import { TeamLocation } from "@/types/location";
-import { CalendarApiError, fetchLocations, fetchPublicEvent } from "@/app/calendar/api";
+import {
+  associateEventPhoto, CalendarApiError, fetchLocations, fetchPublicEvent, } from "@/app/calendar/api";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "@/lib/image";
 
@@ -59,6 +60,7 @@ export default function EventDetailPage() {
   // Upload state
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
 
   // Lightbox state
   const [selectedPhoto, setSelectedPhoto] = useState<EventPhoto | null>(null);
@@ -123,14 +125,21 @@ export default function EventDetailPage() {
           error?: unknown;
         };
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+          );
         }
         const nickname = payload.profile?.nickname ?? payload.nickname;
-        setProfileNickname(typeof nickname === "string" && nickname.trim() ? nickname : "ARES Member");
+        setProfileNickname(
+          typeof nickname === "string" && nickname.trim()
+            ? nickname
+            : "ARES Member",
+        );
       })
       .catch((error: unknown) => {
         logger.error("Unable to load the RSVP nickname:", error);
-        setSignupError(`Profile details unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        setSignupError(
+          `Profile details unavailable: ${error instanceof Error ? error.message : String(error)}`,
+        );
       });
   }, [isVerified]);
 
@@ -149,7 +158,9 @@ export default function EventDetailPage() {
       },
       (err) => {
         logger.warn("Unable to fetch event signups:", err);
-        setSignupsError("The sign-up list is unavailable right now. Please try again.");
+        setSignupsError(
+          "The sign-up list is unavailable right now. Please try again.",
+        );
       },
     );
     return () => unsubscribe();
@@ -167,31 +178,47 @@ export default function EventDetailPage() {
           { signal },
         );
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText || "Request failed"}`);
+          throw new Error(
+            `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+          );
         }
         const payload = (await response.json()) as { photos?: unknown };
         if (!Array.isArray(payload.photos)) {
-          throw new Error("Event photo response does not contain a photo list.");
+          throw new Error(
+            "Event photo response does not contain a photo list.",
+          );
         }
         const safePhotos = payload.photos.map((value): EventPhoto => {
-          if (!value || typeof value !== "object") throw new Error("Event photo response contains an invalid photo.");
+          if (!value || typeof value !== "object")
+            throw new Error("Event photo response contains an invalid photo.");
           const record = value as Record<string, unknown>;
-          if (typeof record.id !== "string" || typeof record.url !== "string" || typeof record.filename !== "string") {
+          if (
+            typeof record.id !== "string" ||
+            typeof record.url !== "string" ||
+            typeof record.filename !== "string"
+          ) {
             throw new Error("Event photo response contains invalid fields.");
           }
           const thumbnailUrl =
-            typeof record.thumbnailUrl === "string" && record.thumbnailUrl.startsWith("https://")
+            typeof record.thumbnailUrl === "string" &&
+            record.thumbnailUrl.startsWith("https://")
               ? record.thumbnailUrl
               : null;
           const mediumUrl =
-            typeof record.mediumUrl === "string" && record.mediumUrl.startsWith("https://") ? record.mediumUrl : null;
+            typeof record.mediumUrl === "string" &&
+            record.mediumUrl.startsWith("https://")
+              ? record.mediumUrl
+              : null;
           return {
             id: record.id,
             url: record.url,
             thumbnailUrl,
             mediumUrl,
             filename: record.filename,
-            occurrenceDate: typeof record.occurrenceDate === "string" ? record.occurrenceDate : null,
+            occurrenceDate:
+              typeof record.occurrenceDate === "string"
+                ? record.occurrenceDate
+                : null,
           };
         });
         setPhotos(safePhotos);
@@ -199,7 +226,9 @@ export default function EventDetailPage() {
       } catch (error) {
         if (signal?.aborted) return;
         logger.error("Unable to fetch public event photos:", error);
-        setPhotoLoadError(error instanceof Error ? error.message : String(error));
+        setPhotoLoadError(
+          error instanceof Error ? error.message : String(error),
+        );
       } finally {
         if (!signal?.aborted) setLoadingPhotos(false);
       }
@@ -263,7 +292,9 @@ export default function EventDetailPage() {
       await setDoc(doc(db, "events", id, "signups", user.uid), rsvpDoc);
     } catch (err: unknown) {
       logger.error("Error submitting RSVP:", err);
-      setSignupError(`RSVP failed: ${err instanceof Error ? err.message : String(err)}`);
+      setSignupError(
+        `RSVP failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       setSubmittingRsvp(false);
     }
@@ -284,14 +315,19 @@ export default function EventDetailPage() {
       setConfirmRsvpCancel(false);
     } catch (err: unknown) {
       logger.error("Error deleting RSVP:", err);
-      setSignupError(`RSVP removal failed: ${err instanceof Error ? err.message : String(err)}`);
+      setSignupError(
+        `RSVP removal failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       setSubmittingRsvp(false);
     }
   };
 
   // Toggle RSVP attendance (for Admins or Self Check-in)
-  const handleToggleAttendance = async (userId: string, currentStatus?: boolean) => {
+  const handleToggleAttendance = async (
+    userId: string,
+    currentStatus?: boolean,
+  ) => {
     if (!id || !isVerified) return;
     const isSelf = user?.uid === userId;
     if (!isSelf && !isAdmin) return;
@@ -299,10 +335,16 @@ export default function EventDetailPage() {
     setUpdatingAttendance((current) => new Set(current).add(userId));
 
     try {
-      await setDoc(doc(db, "events", id, "signups", userId), { attended: !currentStatus }, { merge: true });
+      await setDoc(
+        doc(db, "events", id, "signups", userId),
+        { attended: !currentStatus },
+        { merge: true },
+      );
     } catch (err: unknown) {
       logger.error("Error updating attendance:", err);
-      setSignupError(`Attendance update failed: ${err instanceof Error ? err.message : String(err)}`);
+      setSignupError(
+        `Attendance update failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       setUpdatingAttendance((current) => {
         const next = new Set(current);
@@ -327,6 +369,7 @@ export default function EventDetailPage() {
     }
 
     setUploadError(null);
+    setUploadNotice(null);
     setUploadingImage(true);
 
     try {
@@ -358,16 +401,12 @@ export default function EventDetailPage() {
       if (!payload.photo?.id || !payload.photo.publicUrl) throw new Error("Upload response did not contain a photo.");
 
       const photoId = payload.photo.id;
-      await setDoc(doc(db, "events", id, "photos", photoId), {
-        url: payload.photo.publicUrl,
-        thumbnailUrl: payload.photo.thumbnailUrl ?? null,
-        mediumUrl: payload.photo.mediumUrl ?? null,
-        uploadedBy: profileNickname,
-        uploadedAt: new Date().toISOString(),
-        filename: file.name,
-        isDeleted: 0,
-        occurrenceDate: occurrenceDate ?? null,
-      });
+      const association =
+      await associateEventPhoto( id, photoId,
+        occurrenceDate ?? null,);
+      setUploadNotice(
+        association.publicationStatus === "published"
+          ? "Photo uploaded and published.": "Photo uploaded and sent to a calendar publisher for review.",);
       await loadPhotos();
     } catch (err: unknown) {
       logger.error("Image upload failed:", err);
@@ -397,7 +436,9 @@ export default function EventDetailPage() {
       `DTSTART:${startStr}`,
       `DTEND:${endStr}`,
       `SUMMARY:${event.title}`,
-      ...(event.publicVenue ? [`LOCATION:${event.publicVenue.name}, ${event.publicVenue.address}`] : []),
+      ...(event.publicVenue
+        ? [`LOCATION:${event.publicVenue.name}, ${event.publicVenue.address}`]
+        : []),
       "END:VEVENT",
       "END:VCALENDAR",
     ].join("\r\n");
@@ -421,10 +462,14 @@ export default function EventDetailPage() {
   const gcalSingleUrl = useMemo(() => {
     if (!event) return "";
     try {
-      const startStr = new Date(event.dateStart).toISOString().replace(/-|:|\.\d+/g, "");
+      const startStr = new Date(event.dateStart)
+        .toISOString()
+        .replace(/-|:|\.\d+/g, "");
       let endStr = "";
       if (event.dateEnd) {
-        endStr = new Date(event.dateEnd).toISOString().replace(/-|:|\.\d+/g, "");
+        endStr = new Date(event.dateEnd)
+          .toISOString()
+          .replace(/-|:|\.\d+/g, "");
       } else {
         const end = new Date(event.dateStart);
         end.setHours(end.getHours() + 2);
@@ -432,7 +477,9 @@ export default function EventDetailPage() {
       }
 
       const plainTextDescription = toPlainText(event.description);
-      const publicLocation = event.publicVenue ? `${event.publicVenue.name}, ${event.publicVenue.address}` : "";
+      const publicLocation = event.publicVenue
+        ? `${event.publicVenue.name}, ${event.publicVenue.address}`
+        : "";
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(plainTextDescription)}&location=${encodeURIComponent(publicLocation)}`;
     } catch {
       return "";
@@ -495,7 +542,11 @@ export default function EventDetailPage() {
           `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`
         }
         image={event.coverImage}
-        type={event.category === "outreach" && event.publicVenue ? "event" : "website"}
+        type={
+          event.category === "outreach" && event.publicVenue
+            ? "event"
+            : "website"
+        }
         schemaData={{
           startDate: event.dateStart,
           endDate: event.dateEnd,
@@ -531,6 +582,7 @@ export default function EventDetailPage() {
             isVerified={isVerified}
             uploadingImage={uploadingImage}
             uploadError={uploadError}
+            uploadNotice={uploadNotice}
             loadingPhotos={loadingPhotos}
             photoLoadError={photoLoadError}
             photos={photos}
@@ -568,16 +620,23 @@ export default function EventDetailPage() {
         </aside>
       </section>
 
-      <PhotoLightbox selectedPhoto={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
+      <PhotoLightbox
+        selectedPhoto={selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+      />
 
       <Dialog.Root
         open={confirmRsvpCancel}
-        onOpenChange={(open) => !open && !submittingRsvp && setConfirmRsvpCancel(false)}
+        onOpenChange={(open) =>
+          !open && !submittingRsvp && setConfirmRsvpCancel(false)
+        }
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[140] bg-black/80" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-[141] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
-            <Dialog.Title className="text-lg font-black uppercase text-white">Cancel your RSVP?</Dialog.Title>
+            <Dialog.Title className="text-lg font-black uppercase text-white">
+              Cancel your RSVP?
+            </Dialog.Title>
             <Dialog.Description className="mt-2 text-sm text-marble/75">
               Your attendance record will be removed. You can RSVP again later.
             </Dialog.Description>

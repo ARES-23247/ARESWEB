@@ -1,7 +1,7 @@
 import { useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { GripVertical } from "lucide-react";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle, } from "react-resizable-panels";
 import { SIM_TEMPLATES } from "./editor/SimTemplates";
 import { SimFileExplorer } from "./editor/SimFileExplorer";
 import { LogEntry, TestResult } from "./editor/SimConsole";
@@ -14,6 +14,7 @@ import { useSimulationShortcuts } from "../hooks/useSimulationShortcuts";
 import { useSimulationTelemetry } from "../hooks/useSimulationTelemetry";
 import { useSimulationActions } from "../hooks/useSimulationActions";
 import { useAuth } from "../context/AuthContext";
+import { canUseMemberAi } from "../lib/authorization";
 
 // Sub-components
 import { PlaygroundHeaderBar } from "./simulation/PlaygroundHeaderBar";
@@ -23,8 +24,8 @@ import SimulationPlaygroundPreview from "./SimulationPlaygroundPreview";
 import SimulationPlaygroundConsoleTabs from "./SimulationPlaygroundConsoleTabs";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
-const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then(mod => ({ default: mod.default })));
-const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then(mod => ({ default: mod.DiffEditor })));
+const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then((mod) => ({ default: mod.default })));
+const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then((mod) => ({ default: mod.DiffEditor })));
 
 // Real production templates for AI context
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";
@@ -32,7 +33,7 @@ import ElevatorPidSimRaw from "../sims/elevatorpid/index.tsx?raw";
 
 export default function SimulationPlayground() {
   const { authorizedUser } = useAuth();
-  const canUseAi = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
+  const canUseAi = canUseMemberAi( authorizedUser?.role);
   // Local editor state must exist before URL/library loading is initialized.
   const [files, setFiles] = useState<Record<string, string>>(SIM_TEMPLATES["Blank Canvas"]);
   const [activeFile, setActiveFile] = useState("SimComponent.tsx");
@@ -42,7 +43,7 @@ export default function SimulationPlayground() {
     compiledFiles,
     compileError,
     compileCode,
-    scheduleCompile,
+    scheduleCompile
   } = useCodeCompiler();
 
   // File Management Hook
@@ -65,7 +66,7 @@ export default function SimulationPlayground() {
   const {
     isWordWrap,
     isMinimap,
-    handleEditorDidMount,
+    handleEditorDidMount
   } = useMonacoEditor();
 
   // Local state
@@ -79,7 +80,8 @@ export default function SimulationPlayground() {
   const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [fps, setFps] = useState<number | null>(null);  // fps used in JSX
-  const [bottomRightTab, setBottomRightTab] = useState<'console' | 'ai'>('console');
+  const [bottomRightTab, setBottomRightTab] = useState<"console" | "ai">(
+    "console",);
   const [isNarrowLayout, setIsNarrowLayout] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
   );
@@ -100,14 +102,14 @@ export default function SimulationPlayground() {
     handleSave,
     handleShareGist,
     handleFormatCode,
-    handleDownloadZip
+    handleDownloadZip,
   } = useSimulationActions({
     files,
     activeFile,
     simName,
     simId,
     setFiles,
-    setSimId
+    setSimId,
   });
 
   // AI Chat Logic
@@ -123,7 +125,7 @@ export default function SimulationPlayground() {
     handleChatSend,
     handleFixWithAI,
     handleChatKeyDown,
-    resetChat
+    resetChat,
   } = useSimulationChat({
     simId,
     files,
@@ -133,10 +135,10 @@ export default function SimulationPlayground() {
     setPendingAiChanges,
     examples: {
       arm: ArmKgSimRaw,
-      elevator: ElevatorPidSimRaw
+      elevator: ElevatorPidSimRaw,
     },
     consoleLogs,
-    compileError
+    compileError,
   });
 
   // Snapshot History Hook
@@ -152,7 +154,7 @@ export default function SimulationPlayground() {
     setSimName,
     setSimId,
     compileCode,
-    setShowHistory
+    setShowHistory,
   });
 
   const handleReset = useCallback(() => {
@@ -187,7 +189,7 @@ export default function SimulationPlayground() {
   }, [files, compileCode]);
 
   const handleTestResult = useCallback((result: TestResult) => {
-    setTestResults(prev => [...prev, result]);
+    setTestResults((prev) => [...prev, result]);
   }, []);
 
   const handleAcceptAiChanges = useCallback(() => {
@@ -196,12 +198,12 @@ export default function SimulationPlayground() {
     setFiles(updatedFiles);
     setPendingAiChanges(null);
     compileCode(updatedFiles);
-    setChatMessages(prev => [...prev, { role: "assistant", content: "✅ Changes accepted and compiled successfully!" }]);
+    setChatMessages((prev) => [...prev, { role: "assistant", content: "✅ Changes accepted and compiled successfully!", },]);
   }, [pendingAiChanges, files, compileCode, setChatMessages]);
 
   const handleRejectAiChanges = useCallback(() => {
     setPendingAiChanges(null);
-    setChatMessages(prev => [...prev, { role: "assistant", content: "❌ Changes rejected. The original code has been restored." }]);
+    setChatMessages((prev) => [...prev, { role: "assistant", content: "❌ Changes rejected. The original code has been restored.", },]);
   }, [setChatMessages]);
 
   const handleToggleLibrary = useCallback(() => {
@@ -209,7 +211,7 @@ export default function SimulationPlayground() {
       fetchSavedSims();
       fetchGithubSims();
     }
-    setShowLibrary(prev => !prev);
+    setShowLibrary((prev) => !prev);
   }, [showLibrary, fetchSavedSims, fetchGithubSims]);
 
   const handleCopy = useCallback(async () => {
@@ -220,7 +222,7 @@ export default function SimulationPlayground() {
 
   const handleCodeChange = useCallback((value: string | undefined) => {
     const newCode = value || "";
-    setFiles(prev => {
+    setFiles((prev) => {
       const newFiles = { ...prev, [activeFile]: newCode };
       scheduleCompile(newFiles);
       return newFiles;
@@ -233,7 +235,7 @@ export default function SimulationPlayground() {
     setIsFullscreen,
     handleRun,
     handleFormatCode,
-    handleSave
+    handleSave,
   });
 
   // Telemetry Hook
@@ -241,7 +243,7 @@ export default function SimulationPlayground() {
     setTelemetry,
     setAttachedImage,
     setConsoleLogs,
-    setFps
+    setFps,
   });
 
   const content = (
@@ -258,13 +260,13 @@ export default function SimulationPlayground() {
           if (!items || items.length === 0) return;
           const newFiles: Record<string, string> = {};
           for (const file of Array.from(items)) {
-            if (file.name.endsWith('.zip')) {
+            if (file.name.endsWith(".zip")) {
               try {
                 const JSZip = (await import("jszip")).default;
                 const zip = await JSZip.loadAsync(file);
                 for (const [path, zipFile] of Object.entries(zip.files)) {
                   if (!zipFile.dir && /\.(tsx?|jsx?|css|json)$/.test(path)) {
-                    newFiles[path.split('/').pop() || path] = await zipFile.async('string');
+                    newFiles[path.split("/").pop() || path] = await zipFile.async("string");
                   }
                 }
               } catch { /* ignore malformed zips */ }
@@ -273,14 +275,17 @@ export default function SimulationPlayground() {
             }
           }
           if (Object.keys(newFiles).length > 0) {
-            setFiles(prev => ({ ...prev, ...newFiles }));
+            setFiles((prev) => ({ ...prev, ...newFiles }));
             setActiveFile(Object.keys(newFiles)[0]);
             const { toast } = await import("sonner");
             toast.success(`Imported ${Object.keys(newFiles).length} file(s)`);
           }
         }}
       >
-        <div className="shrink-0 overflow-x-auto" aria-label="Simulation editor toolbar">
+        <div
+          className="shrink-0 overflow-x-auto"
+          aria-label="Simulation editor toolbar"
+        >
           <div className="min-w-max">
             <PlaygroundHeaderBar
               simName={simName}
@@ -322,8 +327,14 @@ export default function SimulationPlayground() {
         {/* Main content panels */}
         <PanelGroup orientation="vertical" id="playground-main-v2">
           <Panel defaultSize={60} minSize={20}>
-            <PanelGroup orientation={isNarrowLayout ? "vertical" : "horizontal"} id="playground-top-v2">
-              <Panel defaultSize={isNarrowLayout ? 28 : 15} minSize={isNarrowLayout ? 20 : 10}>
+            <PanelGroup
+              orientation={isNarrowLayout ? "vertical" : "horizontal"}
+              id="playground-top-v2"
+            >
+              <Panel
+                defaultSize={isNarrowLayout ? 28 : 15}
+                minSize={isNarrowLayout ? 20 : 10}
+              >
                 <SimFileExplorer
                   files={files}
                   activeFile={activeFile}
@@ -337,7 +348,10 @@ export default function SimulationPlayground() {
                 aria-label="Resize file explorer and code editor"
                 className={`${isNarrowLayout ? "h-1.5 w-full" : "w-1.5 h-full"} bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan`}
               >
-                <GripVertical aria-hidden="true" className={`w-3 h-3 text-white/20 group-hover:text-ares-gold/60 ${isNarrowLayout ? "rotate-90" : ""}`} />
+                <GripVertical
+                  aria-hidden="true"
+                  className={`w-3 h-3 text-white/20 group-hover:text-ares-gold/60 ${isNarrowLayout ? "rotate-90" : ""}`}
+                />
               </PanelResizeHandle>
 
               <Panel defaultSize={60} minSize={25}>
@@ -348,20 +362,35 @@ export default function SimulationPlayground() {
                     handleAcceptAiChanges={handleAcceptAiChanges}
                     handleRejectAiChanges={handleRejectAiChanges}
                   />
-                  <Suspense fallback={<textarea aria-label="Simulation source code loading preview" className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none" value={files[activeFile] || ''} readOnly />}>
+                  <Suspense
+                    fallback={
+                      <textarea
+                        aria-label="Simulation source code loading preview"
+                        className="w-full h-full bg-obsidian-surface text-white/80 text-sm font-mono p-4 resize-none border-0 outline-none"
+                        value={files[activeFile] || ""}
+                        readOnly
+                      />
+                    }
+                  >
                     {pendingAiChanges && pendingAiChanges[activeFile] ? (
                       <MonacoDiffEditor
                         height="100%"
-                        language={activeFile.endsWith('.ts') || activeFile.endsWith('.tsx') ? 'typescript' : 'javascript'}
+                        language={
+                          activeFile.endsWith(".ts") ||
+                          activeFile.endsWith(".tsx")
+                            ? "typescript"
+                            : "javascript"
+                        }
                         theme="vs-dark"
-                        original={files[activeFile] || ''}
+                        original={files[activeFile] || ""}
                         modified={pendingAiChanges[activeFile]}
                         options={{
                           readOnly: true,
                           renderSideBySide: true,
                           minimap: { enabled: false },
                           fontSize: 13,
-                          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                          fontFamily:
+                            "'JetBrains Mono', 'Fira Code', monospace",
                           padding: { top: 12 },
                           scrollBeyondLastLine: false,
                           automaticLayout: true,
@@ -370,10 +399,15 @@ export default function SimulationPlayground() {
                     ) : (
                       <MonacoEditor
                         height="100%"
-                        language={activeFile.endsWith('.ts') || activeFile.endsWith('.tsx') ? 'typescript' : 'javascript'}
+                        language={
+                          activeFile.endsWith(".ts") ||
+                          activeFile.endsWith(".tsx")
+                            ? "typescript"
+                            : "javascript"
+                        }
                         theme="vs-dark"
                         path={`file:///${activeFile}`}
-                        value={files[activeFile] || ''}
+                        value={files[activeFile] || ""}
                         onChange={handleCodeChange}
                         onMount={handleEditorDidMount}
                         options={{
@@ -414,7 +448,10 @@ export default function SimulationPlayground() {
                 aria-label="Resize simulation preview and console"
                 className={`${isNarrowLayout ? "h-1.5 w-full" : "w-1.5 h-full"} bg-white/5 hover:bg-ares-gold/30 flex items-center justify-center transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan`}
               >
-                <GripVertical aria-hidden="true" className={`w-3 h-3 text-white/20 group-hover:text-ares-gold/60 ${isNarrowLayout ? "rotate-90" : ""}`} />
+                <GripVertical
+                  aria-hidden="true"
+                  className={`w-3 h-3 text-white/20 group-hover:text-ares-gold/60 ${isNarrowLayout ? "rotate-90" : ""}`}
+                />
               </PanelResizeHandle>
 
               <Panel defaultSize={40} minSize={20}>
@@ -441,11 +478,8 @@ export default function SimulationPlayground() {
           </Panel>
         </PanelGroup>
       </div>
-
-
     </div>
   );
 
   return isFullscreen ? createPortal(content, document.body) : content;
 }
-

@@ -25,6 +25,13 @@ export function useDashboardDocController(
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
 
+  const [syndicationNotice, setSyndicationNotice] = useState<{
+    kind: "success" | "error";
+    message: string;
+    slug: string;
+  } | null>(null);
+  const [isRetryingSyndication, setIsRetryingSyndication] = useState(false);
+
   const isApprover = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "mentor" || authorizedUser.role === "coach"));
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
@@ -57,7 +64,8 @@ export function useDashboardDocController(
   useEffect(() => {
     if (!user) return;
     setUserNickname(authorizedUser?.name || user.displayName || "Anonymous Member");
-    setUserAvatar(user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`);
+    setUserAvatar(user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`,
+    );
   }, [user, authorizedUser]);
 
   useEffect(() => {
@@ -65,7 +73,11 @@ export function useDashboardDocController(
       if (prefilledAction === "create") {
         setSelectedDoc(null);
         setIsEditorOpen(true);
-      } else if (prefilledAction === "edit" && prefilledSlug && docs.length > 0) {
+      } else if (
+        prefilledAction === "edit" &&
+        prefilledSlug &&
+        docs.length > 0
+      ) {
         const found = docs.find((d) => d.slug === prefilledSlug);
         if (found) {
           setSelectedDoc(found);
@@ -81,7 +93,14 @@ export function useDashboardDocController(
         }
       }
     }
-  }, [editSlugQuery, docs, editorOnly, isEditorOpen, prefilledAction, prefilledSlug]);
+  }, [
+    editSlugQuery,
+    docs,
+    editorOnly,
+    isEditorOpen,
+    prefilledAction,
+    prefilledSlug,
+  ]);
 
   const handleOpenEdit = (docItem: DocRecord) => {
     setSelectedDoc(docItem);
@@ -111,13 +130,64 @@ export function useDashboardDocController(
     const isMemberRole = !isApprover;
     const finalPayload = {
       ...payload,
-      original_authorNickname: selectedDoc ? selectedDoc.original_authorNickname || userNickname : userNickname,
-      original_authorAvatar: selectedDoc ? selectedDoc.original_authorAvatar || userAvatar : userAvatar,
+      original_authorNickname: selectedDoc
+        ? selectedDoc.original_authorNickname || userNickname
+        : userNickname,
+      original_authorAvatar: selectedDoc
+        ? selectedDoc.original_authorAvatar || userAvatar
+        : userAvatar,
       // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published
-      status: isMemberRole ? "pending_approval" : (payload.status || "published"),
-      approvalStatus: isMemberRole ? "pending_approval" : (payload.approvalStatus || "approved")
+      status: isMemberRole ? "pending_approval" : payload.status || "published",
+      approvalStatus: isMemberRole
+        ? "pending_approval"
+        : payload.approvalStatus || "approved",
     };
-    await saveDoc(slug, finalPayload, userNickname, userAvatar, { isCreate: !selectedDoc });
+    await saveDoc(slug, finalPayload, userNickname, userAvatar, {
+      isCreate: !selectedDoc,
+    });
+  };
+
+  const deliverSocialAnnouncement = async (slug: string) => {
+    setSyndicationNotice(null);
+    try {
+      const { authenticatedFetch } = await import("@/lib/api");
+      const response = await authenticatedFetch(
+        "/api/webhooks/syndicate-post",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug }),
+        },
+      );
+      if (!response.ok)
+        throw new Error(
+          `HTTP ${response.status}: announcement delivery failed`,
+        );
+      const payload = (await response.json()) as {
+        pending?: unknown;
+        alreadySyndicated?: unknown;
+      };
+      setSyndicationNotice({
+        kind: "success",
+        slug,
+        message:
+          payload.pending === true
+            ? "Post published. Social delivery is already in progress."
+            : payload.alreadySyndicated === true
+              ? "Post published. Social channels were already up to date."
+              : "Post published and delivered to all configured social channels.",
+      });
+      return true;
+    } catch (err) {
+      logger.warn("Social syndication failed after website publication", err);
+      setSyndicationNotice({
+        kind: "error",
+        slug,
+        message:
+          "Post published on the website, but one or more social channels failed. Retry without republishing the post.",
+      });
+      return false;
+    }
   };
 
   const handleApproveAndPublish = async (docItem: DocRecord) => {
@@ -128,22 +198,22 @@ export function useDashboardDocController(
       status: "published",
       approvalStatus: "approved",
       approvedBy: userNickname,
-      approvedAt: new Date().toISOString()
+      approvedAt: new Date().toISOString(),
     };
     await saveDoc(slug, finalPayload, userNickname, userAvatar);
 
     if (collectionName === "posts") {
-      try {
-        const { authenticatedFetch } = await import("@/lib/api");
-        const response = await authenticatedFetch("/api/webhooks/syndicate-post", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug }),
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}: announcement delivery failed`);
-      } catch (err) {
-        logger.warn("Social syndication background notification skipped or failed:", err);
-      }
+      await deliverSocialAnnouncement(slug);
+    }
+  };
+
+  const handleRetrySyndication = async () => {
+    if (!syndicationNotice?.slug || isRetryingSyndication) return;
+    setIsRetryingSyndication(true);
+    try {
+      await deliverSocialAnnouncement(syndicationNotice.slug);
+    } finally {
+      setIsRetryingSyndication(false);
     }
   };
 
@@ -215,7 +285,11 @@ export function useDashboardDocController(
     pendingArchiveSlug,
     isArchiving,
     archiveError,
+    syndicationNotice,
+    isRetryingSyndication,
+    handleRetrySyndication,
+    dismissSyndicationNotice: () => setSyndicationNotice(null),
     userNickname,
-    userAvatar
+    userAvatar,
   };
 }
