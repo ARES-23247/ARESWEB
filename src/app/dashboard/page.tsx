@@ -3,9 +3,10 @@
 import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { and, collection, onSnapshot, getCountFromServer, or, query, where, limit } from "firebase/firestore";
+import { and, collection, onSnapshot, getCountFromServer, or, query, where, limit, } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { maskEmail } from "@/lib/utils";
+import { canUseMemberAi } from "@/lib/authorization";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -24,7 +25,7 @@ import {
   XCircle,
   AlertCircle,
   Database,
-  UploadCloud
+  UploadCloud,
 } from "lucide-react";
 
 import { TaskItem } from "@/types/task";
@@ -49,7 +50,7 @@ export default function DashboardHome() {
 
   const userRole = authorizedUser?.role || "Pending Verification";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
-  const canUseAi = userRole === "admin" || userRole === "coach";
+  const canUseAi = canUseMemberAi( userRole);
 
   // Fetch content counts once and keep the bounded task summary synchronized.
   useEffect(() => {
@@ -70,7 +71,7 @@ export default function DashboardHome() {
               where("isDeleted", "==", 0),
               or(where("displayInMathCorner", "==", 1), where("displayInScienceCorner", "==", 1))
             )
-          ))
+          )),
         ]);
 
         setBlogCount(blogsSnap.data().count);
@@ -89,10 +90,11 @@ export default function DashboardHome() {
       const unsubTasks = onSnapshot(qTasks, (snapshot) => {
         setDatabaseState("connected");
         const visibleTasks = snapshot.docs
-          .map(d => normalizeTaskRecord(d.id, d.data()))
-          .filter(task => task.isDeleted !== 1);
+          .map((d) => normalizeTaskRecord(d.id, d.data()))
+          .filter((task) => task.isDeleted !== 1);
         setTaskCount(visibleTasks.length);
-        setActiveTasks(visibleTasks.filter(task => !task.archived && task.status !== "completed").length);
+        setActiveTasks(visibleTasks.filter(
+              (task) => !task.archived && task.status !== "completed").length);
         setRecentTasks(selectPriorityTasks(visibleTasks));
       }, (err) => {
         logger.error("Tasks listener error:", err);
@@ -174,7 +176,7 @@ export default function DashboardHome() {
                 Pending Developer Verification
               </h3>
               <p className="text-marble/75 text-xs mt-1 max-w-xl">
-                Your account is currently registered as <strong className="text-white">Unverified Guest</strong>. You have read-only permissions across task managers and system controls. Please contact a team administrator to request access.
+                Your account is currently registered as{" "} <strong className="text-white">Unverified Guest</strong>. You have read-only permissions across task managers and system controls. Please contact a team administrator to request access.
               </p>
             </div>
           </div>
@@ -202,7 +204,8 @@ export default function DashboardHome() {
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Active Tasks</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : `${activeTasks} / ${taskCount}`}</p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : `${activeTasks} / ${taskCount}`}
+            </p>
           </div>
           <div className="w-12 h-12 bg-ares-cyan/15 rounded-xl flex items-center justify-center border border-ares-cyan/30">
             <ClipboardList size={20} className="text-ares-cyan" />
@@ -212,8 +215,12 @@ export default function DashboardHome() {
         {/* Card 3: Published Blogs */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Published Blogs</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : blogCount}</p>
+            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">
+              Published Blogs
+            </p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">
+              {databaseState === "error" ? "—" : blogCount}
+            </p>
           </div>
           <div className="w-12 h-12 bg-ares-red/15 rounded-xl flex items-center justify-center border border-ares-red/30">
             <PenTool size={20} className="text-ares-red" />
@@ -223,29 +230,34 @@ export default function DashboardHome() {
         {/* Card 4: Academy Articles */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Academy Lessons</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : docCount}</p>
+            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">
+              Academy Lessons
+            </p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">
+              {databaseState === "error" ? "—" : docCount}
+            </p>
           </div>
           <div className="w-12 h-12 bg-ares-success/15 rounded-xl flex items-center justify-center border border-ares-success/30">
             <GraduationCap size={20} className="text-ares-success" />
           </div>
         </div>
-
       </section>
 
       {/* ─── MAIN WORKSPACE GRID ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         {/* Profile Card & Info */}
         <div className="glass-card p-8 border border-white/10 flex flex-col gap-6 lg:col-span-1">
           <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
             <User size={16} /> User Terminal Session
           </h3>
-          
+
           <div className="flex flex-col items-center text-center py-4 gap-4">
             <div className="w-24 h-24 rounded-full border-2 border-ares-bronze overflow-hidden shrink-0 shadow-lg relative">
               <img
-                src={user?.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user?.uid}`}
+                src={
+                  user?.photoURL ||
+                  `https://api.dicebear.com/9.x/bottts/svg?seed=${user?.uid}`
+                }
                 alt="Profile Avatar"
                 className="w-full h-full object-cover"
               />
@@ -263,15 +275,15 @@ export default function DashboardHome() {
             <ul className="text-xs text-marble/85 space-y-2 font-medium">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
-                <span>Access internal workspace: <strong className="text-white">Granted</strong></span>
+                <span>Access internal workspace:{" "} <strong className="text-white">Granted</strong></span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
-                <span>Read tasks & documents: <strong className="text-white">Granted</strong></span>
+                <span>Read tasks & documents:{" "} <strong className="text-white">Granted</strong></span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
-                <span>Write task changes: <strong className="text-white">{isUnverified ? "Restricted" : "Granted"}</strong></span>
+                <span>Write task changes:{" "} <strong className="text-white">{isUnverified ? "Restricted" : "Granted"}</strong></span>
               </li>
             </ul>
           </div>
@@ -297,7 +309,7 @@ export default function DashboardHome() {
                   const dueLabel = describeTaskDueDate(task);
                   const dueState = getTaskDueState(task);
                   const descriptionSummary = summarizeTaskDescription(task.description);
-                  return <Link
+                  return ( <Link
                     key={task.id}
                     to="/dashboard/tasks"
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/25 border border-white/5 hover:border-white/15 rounded-xl gap-3 transition-all cursor-pointer group"
@@ -318,32 +330,42 @@ export default function DashboardHome() {
                               : dueState === "today"
                                 ? "text-ares-gold"
                                 : "text-marble/60"
-                          }`}>
-                            <CalendarClock aria-hidden="true" size={10} /> {dueLabel}
-                          </p>
-                        )}
+                          }`}
+                            >
+                              <CalendarClock aria-hidden="true" size={10} />{" "}
+                              {dueLabel}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded-md tracking-wider ${getSubteamStyle(task.subteam)}`}>
-                        {task.subteam}
-                      </span>
-                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded-md tracking-wider ${getPriorityStyle(task.priority)}`}>
-                        {task.priority}
-                      </span>
-                      <span className="text-[9px] font-bold text-marble/70 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
-                        {getStatusLabel(task.status)}
-                      </span>
-                    </div>
-                  </Link>;
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                        <span
+                          className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded-md tracking-wider ${getSubteamStyle(task.subteam)}`}
+                        >
+                          {task.subteam}
+                        </span>
+                        <span
+                          className={`text-[8px] font-black uppercase px-2 py-0.5 border rounded-md tracking-wider ${getPriorityStyle(task.priority)}`}
+                        >
+                          {task.priority}
+                        </span>
+                        <span className="text-[9px] font-bold text-marble/70 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+                          {getStatusLabel(task.status)}
+                        </span>
+                      </div>
+                    </Link>
+                  );
                 })
               )}
             </div>
 
             <div className="border-t border-white/5 pt-4 mt-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-marble/50">
               <span>Real-Time Firestore Sync</span>
-              <Link to="/dashboard/tasks" className="text-ares-cyan hover:text-white transition-all inline-flex items-center gap-1">
+              <Link
+                to="/dashboard/tasks"
+                className="text-ares-cyan hover:text-white transition-all inline-flex items-center gap-1"
+              >
                 View Kanban Board <ArrowUpRight size={12} />
               </Link>
             </div>
@@ -354,38 +376,58 @@ export default function DashboardHome() {
             <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
               <Zap size={16} /> Quick Operations
             </h3>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Link
                 to="/dashboard/blog"
                 className="p-3 bg-white/3 border border-white/5 hover:border-ares-red/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
               >
-                <PenTool size={16} className="text-ares-red group-hover:scale-110 transition-transform" />
-                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">New Blog</span>
+                <PenTool
+                  size={16}
+                  className="text-ares-red group-hover:scale-110 transition-transform"
+                />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">
+                  New Blog
+                </span>
               </Link>
 
               <Link
                 to="/dashboard/events"
                 className="p-3 bg-white/3 border border-white/5 hover:border-ares-gold/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
               >
-                <Calendar size={16} className="text-ares-gold group-hover:scale-110 transition-transform" />
-                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">Add Event</span>
+                <Calendar
+                  size={16}
+                  className="text-ares-gold group-hover:scale-110 transition-transform"
+                />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">
+                  Add Event
+                </span>
               </Link>
 
               <Link
                 to="/dashboard/academy"
                 className="p-3 bg-white/3 border border-white/5 hover:border-ares-success/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
               >
-                <GraduationCap size={16} className="text-ares-success group-hover:scale-110 transition-transform" />
-                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">Academy Lesson</span>
+                <GraduationCap
+                  size={16}
+                  className="text-ares-success group-hover:scale-110 transition-transform"
+                />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">
+                  Academy Lesson
+                </span>
               </Link>
 
               <Link
                 to="/dashboard/simulations"
                 className="p-3 bg-white/3 border border-white/5 hover:border-ares-cyan/30 hover:bg-white/5 rounded-xl text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer group"
               >
-                <TerminalSquare size={16} className="text-ares-cyan group-hover:scale-110 transition-transform" />
-                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">Sim IDE</span>
+                <TerminalSquare
+                  size={16}
+                  className="text-ares-cyan group-hover:scale-110 transition-transform"
+                />
+                <span className="text-[9px] font-black uppercase tracking-wider text-marble/90 group-hover:text-white">
+                  Sim IDE
+                </span>
               </Link>
             </div>
           </div>
@@ -400,7 +442,9 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <Database size={14} className="text-ares-cyan" />
-                  <span className="font-semibold text-marble">Firestore Synchronization</span>
+                  <span className="font-semibold text-marble">
+                    Firestore Synchronization
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
                   {databaseState === "connected" ? (
@@ -415,7 +459,10 @@ export default function DashboardHome() {
                     </>
                   ) : (
                     <>
-                      <AlertCircle size={12} className="text-ares-gold animate-pulse" />
+                      <AlertCircle
+                        size={12}
+                        className="text-ares-gold animate-pulse"
+                      />
                       <span className="text-ares-gold">Syncing...</span>
                     </>
                   )}
@@ -425,7 +472,9 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <Zap size={14} className="text-ares-gold" />
-                  <span className="font-semibold text-marble">Gemini AI Copilot</span>
+                  <span className="font-semibold text-marble">
+                    Gemini AI Copilot
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
                   {canUseAi ? (
@@ -445,7 +494,9 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <Shield size={14} className="text-ares-red" />
-                  <span className="font-semibold text-marble">Spam reCAPTCHA</span>
+                  <span className="font-semibold text-marble">
+                    Spam reCAPTCHA
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
                   {recaptchaActive ? (
@@ -455,7 +506,10 @@ export default function DashboardHome() {
                     </>
                   ) : (
                     <>
-                      <AlertCircle size={12} className="text-ares-gold animate-pulse" />
+                      <AlertCircle
+                        size={12}
+                        className="text-ares-gold animate-pulse"
+                      />
                       <span className="text-ares-gold">Not configured</span>
                     </>
                   )}
@@ -465,7 +519,9 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <UploadCloud size={14} className="text-ares-success" />
-                  <span className="font-semibold text-marble">Authenticated Session</span>
+                  <span className="font-semibold text-marble">
+                    Authenticated Session
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
                   {user ? (
@@ -483,11 +539,8 @@ export default function DashboardHome() {
               </div>
             </div>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

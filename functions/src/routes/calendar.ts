@@ -39,6 +39,16 @@ const OCCURRENCE_WINDOW_DAYS = 56;
 const OCCURRENCE_WINDOW_MAX_DAYS = 190;
 /** Hard ceiling on expanded occurrences per page regardless of inputs. */
 const OCCURRENCE_PAGE_MAX = 300;
+const eventPhotoAssociationSchema = z
+  .object({
+    photoId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/, "Photo ID is invalid."),
+    occurrenceDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+  })
+  .strict();
 
 function occurrenceWindowDays(requested: unknown): number {
   const parsed = Number.parseInt(String(requested ?? ""), 10);
@@ -270,6 +280,174 @@ router.get(
   }),
 );
 
+// Members may document progress, but their submissions remain pending until a
+// calendar publisher approves them. URL and derivative metadata is copied from
+// the server-owned imported_photos record; clients never choose public URLs.
+
+router.post(
+  "/manage/:id/photos",
+  ensureTeamMember,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, ref, data: eventData } = await getEvent(req.params.id, true);
+    if (eventData.isDeleted === 1) {
+      throw new ApiError(
+        409,
+        "Restore this event before adding photos.",
+        "EVENT_ARCHIVED",
+      );
+    }
+    const input = parseBody(eventPhotoAssociationSchema, req.body);
+    const sourceSnapshot = await adminDb
+      .collection("imported_photos")
+      .doc(input.photoId)
+      .get();
+    const source = sourceSnapshot.data() as Record<string, unknown> | undefined;
+    const url = readString(source?.publicUrl);
+    if (
+      !sourceSnapshot.exists ||
+      source?.isDeleted === 1 ||
+      !url?.startsWith("https://")
+    ) {
+      throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+    }
+    const thumbnailUrl = readString(source?.thumbnailUrl);
+    const mediumUrl = readString(source?.mediumUrl);
+    const originalFilename = readString(source?.originalFilename)?.trim();
+    const timestamp = new Date().toISOString();
+    const publicationStatus = canPublish(req.authorizationRole)
+      ? "published"
+      : "pending";
+    const photoRef = ref.collection("photos").doc(input.photoId);
+    const photoData = {
+      sourcePhotoId: input.photoId,
+      url,
+      thumbnailUrl: thumbnailUrl?.startsWith("https://") ? thumbnailUrl : null,
+      mediumUrl: mediumUrl?.startsWith("https://") ? mediumUrl : null,
+      filename: originalFilename?.slice(0, 180) || "Event photo",
+      occurrenceDate: input.occurrenceDate ?? null,
+      uploadedBy: "ARES Member",
+      uploadedByUid: req.user!.uid,
+      uploadedAt: timestamp,
+      publicationStatus,
+      approvedAt: publicationStatus === "published" ? timestamp : null,
+      approvedByUid: publicationStatus === "published" ? req.user!.uid : null,
+      isDeleted: 0,
+      updatedAt: timestamp,
+    };
+    await adminDb.runTransaction(async (transaction) => {
+      const existing = await transaction.get(photoRef);
+      if (existing.exists && existing.data()?.isDeleted !== 1) {
+        throw new ApiError(
+          409,
+          "This photo is already attached to the event.",
+          "PHOTO_ALREADY_ATTACHED",
+        );
+      }
+      transaction.set(photoRef, photoData, { merge: false });
+      transaction.set(adminDb.collection("audit_logs").doc(), {
+        action: "calendar.photo.associated",
+        actorUid: req.user!.uid,
+        targetId: id,
+        photoId: input.photoId,
+        publicationStatus,
+        createdAt: timestamp,
+      });
+    });
+    res.status(201).json({
+      success: true,
+      photo: {
+        id: input.photoId,
+        url,
+        thumbnailUrl: photoData.thumbnailUrl,
+        mediumUrl: photoData.mediumUrl,
+        filename: photoData.filename,
+        occurrenceDate: photoData.occurrenceDate,
+        publicationStatus,
+      },
+    });
+  }),
+);
+
+router.patch(
+  "/manage/:id/photos/:photoId/approve",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, ref, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(
+        409,
+        "Restore this event before approving photos.",
+        "EVENT_ARCHIVED",
+      );
+    }
+    const photoId = parseId(req.params.photoId, "photo");
+    const photoRef = ref.collection("photos").doc(photoId);
+    const photoSnapshot = await photoRef.get();
+    if (!photoSnapshot.exists || photoSnapshot.data()?.isDeleted === 1) {
+      throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+    }
+    const timestamp = new Date().toISOString();
+    const batch = adminDb.batch();
+    batch.update(photoRef, {
+      publicationStatus: "published",
+      approvedAt: timestamp,
+      approvedByUid: req.user!.uid,
+      updatedAt: timestamp,
+    });
+    batch.set(adminDb.collection("audit_logs").doc(), {
+      action: "calendar.photo.approved",
+      actorUid: req.user!.uid,
+      targetId: id,
+      photoId,
+      createdAt: timestamp,
+    });
+    await batch.commit();
+    res.json({ success: true, approved: true });
+  }),
+);
+
+router.delete(
+  "/manage/:id/photos/:photoId",
+  ensureTeamMember,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, ref } = await getEvent(req.params.id, true);
+    const photoId = parseId(req.params.photoId, "photo");
+    const photoRef = ref.collection("photos").doc(photoId);
+    const photoSnapshot = await photoRef.get();
+    const photo = photoSnapshot.data() as EventPhotoDocument | undefined;
+    if (!photoSnapshot.exists || photo?.isDeleted === 1) {
+      throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+    }
+    if (
+      !canPublish(req.authorizationRole) &&
+      photo?.uploadedByUid !== req.user!.uid
+    ) {
+      throw new ApiError(
+        403,
+        "You can only archive photos that you submitted.",
+      );
+    }
+    const timestamp = new Date().toISOString();
+    const batch = adminDb.batch();
+    batch.update(photoRef, {
+      isDeleted: 1,
+      archivedAt: timestamp,
+      archivedByUid: req.user!.uid,
+      updatedAt: timestamp,
+    });
+    batch.set(adminDb.collection("audit_logs").doc(), {
+      action: "calendar.photo.archived",
+      actorUid: req.user!.uid,
+      targetId: id,
+      photoId,
+      createdAt: timestamp,
+    });
+    await batch.commit();
+    res.json({ success: true, archived: true });
+  }),
+);
+
 router.get(
   "/manage",
   ensureTeamMember,
@@ -346,7 +524,7 @@ router.get(
     const [event] = expandEventOccurrences(eventDto(id, data, true), data, {
       fromDate: occurrenceValue,
       toDate: occurrenceValue,
-      occurrenceOverrides: new Map([[occurrenceValue, readOccurrenceOverrides(exceptionData?.overrides)]]),
+      occurrenceOverrides: new Map([[occurrenceValue, readOccurrenceOverrides(exceptionData?.overrides)],]),
       maxPerEvent: 1,
     });
     if (!event) {
@@ -803,8 +981,13 @@ router.get(
       if (recurrence) {
         // Calendar apps expand the rule natively; cancelled sessions become
         // EXDATEs so subscribed clients skip them.
-        const rule = ["FREQ=WEEKLY", `INTERVAL=${recurrence.interval}`, `BYDAY=${recurrence.byDay.join(",")}`];
-        if (recurrence.until) rule.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
+        const rule = [
+          "FREQ=WEEKLY",
+          `INTERVAL=${recurrence.interval}`,
+          `BYDAY=${recurrence.byDay.join(",")}`,
+        ];
+        if (recurrence.until)
+          rule.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
         lines.push(`RRULE:${rule.join(";")}`);
         const occurrenceStates = await loadOccurrenceStates([document.id]);
         occurrenceState = occurrenceStates.get(document.id);
@@ -818,9 +1001,11 @@ router.get(
           );
         }
       }
-      lines.push(`SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`);
+      lines.push(`SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`,
+      );
       const cleanDescription = toPlainText(data.description);
-      if (cleanDescription) lines.push(`DESCRIPTION:${escapeIcalText(cleanDescription)}`);
+      if (cleanDescription)
+        lines.push(`DESCRIPTION:${escapeIcalText(cleanDescription)}`);
       const location = readString(data.location);
       if (location) lines.push(`LOCATION:${escapeIcalText(location)}`);
       lines.push("END:VEVENT");
@@ -829,24 +1014,31 @@ router.get(
       // original generated session with RECURRENCE-ID.
       if (recurrence && occurrenceState?.overrides.size) {
         const managedDto = eventDto(document.id, data, true);
-        for (const [date, overrides] of [...occurrenceState.overrides].sort(([a], [b]) => a.localeCompare(b))) {
+        for (const [date, overrides] of [...occurrenceState.overrides].sort(
+          ([a], [b]) => a.localeCompare(b),
+        )) {
           if (occurrenceState.cancelledDates.has(date)) continue;
           const [baseOccurrence] = expandEventOccurrences(managedDto, data, {
             fromDate: date,
             toDate: date,
             maxPerEvent: 1,
           });
-          const [effectiveOccurrence] = expandEventOccurrences(managedDto, data, {
-            fromDate: date,
-            toDate: date,
-            occurrenceOverrides: new Map([[date, overrides]]),
-            maxPerEvent: 1,
-          });
+          const [effectiveOccurrence] = expandEventOccurrences(
+            managedDto,
+            data,
+            {
+              fromDate: date,
+              toDate: date,
+              occurrenceOverrides: new Map([[date, overrides]]),
+              maxPerEvent: 1,
+            },
+          );
           if (!baseOccurrence || !effectiveOccurrence) continue;
           const recurrenceId = formatIcalDate(baseOccurrence.dateStart);
           const occurrenceStart = formatIcalDate(effectiveOccurrence.dateStart);
           const occurrenceEnd =
-            formatIcalDate(effectiveOccurrence.dateEnd) ?? addHours(effectiveOccurrence.dateStart, 2);
+            formatIcalDate(effectiveOccurrence.dateEnd) ??
+            addHours(effectiveOccurrence.dateStart, 2);
           if (!recurrenceId || !occurrenceStart || !occurrenceEnd) continue;
           lines.push("BEGIN:VEVENT");
           lines.push(`UID:${document.id}@aresfirst.org`);
@@ -856,12 +1048,19 @@ router.get(
           lines.push(`DTSTART:${occurrenceStart}`);
           lines.push(`DTEND:${occurrenceEnd}`);
           lines.push(`SUMMARY:${escapeIcalText(effectiveOccurrence.title)}`);
-          const occurrenceDescription = toPlainText(effectiveOccurrence.description);
+          const occurrenceDescription = toPlainText(
+            effectiveOccurrence.description,
+          );
           if (occurrenceDescription) {
             lines.push(`DESCRIPTION:${escapeIcalText(occurrenceDescription)}`);
           }
-          if ("location" in effectiveOccurrence && typeof effectiveOccurrence.location === "string") {
-            lines.push(`LOCATION:${escapeIcalText(effectiveOccurrence.location)}`);
+          if (
+            "location" in effectiveOccurrence &&
+            typeof effectiveOccurrence.location === "string"
+          ) {
+            lines.push(
+              `LOCATION:${escapeIcalText(effectiveOccurrence.location)}`,
+            );
           }
           lines.push("END:VEVENT");
         }
@@ -870,8 +1069,14 @@ router.get(
     lines.push("END:VCALENDAR");
 
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
-    res.setHeader("Content-Disposition", 'attachment; filename="ares_calendar.ics"');
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="ares_calendar.ics"',
+    );
+    res.setHeader(
+      "Cache-Control",
+      "no-cache, no-store, must-revalidate, max-age=0",
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
     res.send(lines.join("\r\n"));

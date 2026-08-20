@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Upload, Trash2 } from "lucide-react";
+import { Check, Upload, Trash2 } from "lucide-react";
 import { EventPhoto } from "./EventEditorDrawer";
 
 interface EventGalleryTabProps {
@@ -9,6 +9,9 @@ interface EventGalleryTabProps {
   uploadError: string | null;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleDeletePhoto: (photoId: string) => void;
+  handleApprovePhoto: (photoId: string) => void;
+  canApprove: boolean;
+  currentUserId: string | null;
   setSelectedPhoto: (photo: EventPhoto | null) => void;
   occurrenceDate?: string | null;
 }
@@ -20,6 +23,9 @@ export default function EventGalleryTab({
   uploadError,
   handleImageUpload,
   handleDeletePhoto,
+  handleApprovePhoto,
+  canApprove,
+  currentUserId,
   setSelectedPhoto,
   occurrenceDate,
 }: EventGalleryTabProps) {
@@ -30,7 +36,7 @@ export default function EventGalleryTab({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="text-[10px] font-bold uppercase tracking-wider text-marble/60">
-            {occurrenceDate ? "Session & Series Photo Gallery" : "Event Photo Gallery"} ({photos.length})
+            {occurrenceDate ? "Session & Series Photo Gallery" : "Event Photo Gallery"}{" "} ({photos.length})
           </h4>
 
           {canEdit && (
@@ -89,24 +95,49 @@ export default function EventGalleryTab({
                   <span className="truncate">{p.filename}</span>
                   {occurrenceDate && (
                     <span className="w-fit rounded bg-black/80 px-1.5 py-0.5 text-[7px] font-black uppercase text-ares-gold">
-                      {p.occurrenceDate === occurrenceDate ? "This session" : "Series"}
+                      {p.occurrenceDate === occurrenceDate
+                        ? "This session"
+                        : "Series"}
+                    </span>
+                  )}
+                  {p.publicationStatus === "pending" && (
+                    <span className="w-fit rounded bg-ares-gold/20 px-1.5 py-0.5 text-[7px] font-black uppercase text-ares-gold">
+                      Pending review
                     </span>
                   )}
                   <div className="flex justify-between items-center pointer-events-auto">
-                    <span className="text-[7.5px] text-marble/50">By {p.uploadedBy}</span>
-                    {canEdit && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPendingPhotoId(p.id);
-                        }}
-                        className="p-1 bg-black/80 hover:bg-ares-red/25 rounded border border-white/10 hover:border-ares-red/20 text-white cursor-pointer"
-                        aria-label={`Archive ${p.filename || "event photo"}`}
-                        title="Archive photo"
-                      >
-                        <Trash2 size={9} />
-                      </button>
-                    )}
+                    <span className="text-[7.5px] text-marble/50">
+                      By {p.uploadedBy}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {canApprove && p.publicationStatus === "pending" && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleApprovePhoto(p.id);
+                          }}
+                          className="p-1 bg-black/80 hover:bg-ares-gold/20 rounded border border-white/10 hover:border-ares-gold/30 text-white cursor-pointer"
+                          aria-label={`Approve ${p.filename || "event photo"} for public display`}
+                          title="Approve for public display"
+                        >
+                          <Check size={9} />
+                        </button>
+                      )}
+                      {(canApprove || p.uploadedByUid === currentUserId) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingPhotoId(p.id);
+                          }}
+                          className="p-1 bg-black/80 hover:bg-ares-red/25 rounded border border-white/10 hover:border-ares-red/20 text-white cursor-pointer"
+                          aria-label={`Archive ${p.filename || "event photo"}`}
+                          title="Archive photo"
+                        >
+                          <Trash2 size={9} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -121,9 +152,12 @@ export default function EventGalleryTab({
             className="rounded border border-ares-red/35 bg-ares-red/10 p-4 text-sm text-white"
           >
             <p>
-              Archive <strong>{pendingPhoto.filename || "this photo"}</strong> from the event gallery?
+              Archive <strong>{pendingPhoto.filename || "this photo"}</strong>{" "}
+              from the event gallery?
             </p>
-            <p className="mt-1 text-xs text-marble/70">This keeps the record available for recovery.</p>
+            <p className="mt-1 text-xs text-marble/70">
+              This keeps the record available for recovery.
+            </p>
             <div className="mt-3 flex gap-2">
               <button
                 type="button"

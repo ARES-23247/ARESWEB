@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Trash2, X, Maximize2, Minimize2, Sparkles, AlertCircle, RotateCcw } from "lucide-react";
+import { Trash2, X, Maximize2, Minimize2, Sparkles, AlertCircle, RotateCcw, } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import EventGalleryTab from "./EventGalleryTab";
@@ -13,10 +13,10 @@ import ShiftScheduleEditor from "./ShiftScheduleEditor";
 import EventRecurrenceSection from "./EventRecurrenceSection";
 import EventFormRoster from "./EventFormRoster";
 import EventEditorAiCopilot from "./EventEditorAiCopilot";
-import AccessibleTabs, { tabElementId, tabPanelId } from "@/components/AccessibleTabs";
+import AccessibleTabs, { tabElementId, tabPanelId, } from "@/components/AccessibleTabs";
 
 import { TeamEvent } from "@/types/event";
-import { useEventEditor, EventRevision, EventSignup, EventPhoto } from "../hooks/useEventEditor";
+import { useEventEditor, EventRevision, EventSignup, EventPhoto, } from "../hooks/useEventEditor";
 
 export type { TeamEvent, EventRevision, EventSignup, EventPhoto };
 
@@ -107,6 +107,7 @@ export default function EventEditorDrawer({
     handleRevertToRevision,
     handleImageUpload,
     handleDeletePhoto,
+    handleApprovePhoto,
   } = useEventEditor({
     isOpen,
     onClose,
@@ -147,7 +148,8 @@ export default function EventEditorDrawer({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-label={editId ? `Edit Event: ${formTitle}` : "Schedule Team Operation"}
+        aria-label={editId ? `Edit Event: ${formTitle}` : "Schedule Team Operation"
+        }
         className={`relative z-10 h-full bg-obsidian border-l border-white/10 flex flex-col justify-between shadow-2xl focus:outline-none transition-all duration-300 motion-reduce:transition-none ${
           isFullScreen ? "w-full max-w-full" : "w-full max-w-5xl"
         }`}
@@ -194,7 +196,7 @@ export default function EventEditorDrawer({
             }
           />
 
-          {activeTab === "edit" && isAdmin && (
+          {activeTab === "edit" && canEdit && (
             <button
               type="button"
               onClick={() => setShowAiSidebar(!showAiSidebar)}
@@ -227,9 +229,16 @@ export default function EventEditorDrawer({
         )}
 
         {operationError && (
-          <div role="alert" className="border-b border-ares-red/45 bg-ares-red/15 px-6 py-3 text-white">
-            <p className="text-[10px] font-bold">The calendar operation was not completed.</p>
-            <p className="mt-1 break-words font-mono text-[9px] text-white/80">{operationError}</p>
+          <div
+            role="alert"
+            className="border-b border-ares-red/45 bg-ares-red/15 px-6 py-3 text-white"
+          >
+            <p className="text-[10px] font-bold">
+              The calendar operation was not completed.
+            </p>
+            <p className="mt-1 break-words font-mono text-[9px] text-white/80">
+              {operationError}
+            </p>
           </div>
         )}
 
@@ -267,9 +276,13 @@ export default function EventEditorDrawer({
                           onChange={() => handleEditScopeChange("occurrence")}
                           className="mr-2 accent-ares-gold"
                         />
-                        <span className="text-xs font-black uppercase">This session</span>
+                        <span className="text-xs font-black uppercase">
+                          This session
+                        </span>
                         <span className="mt-1 block pl-5 text-[10px] font-normal text-marble/70">
-                          {new Date(`${occurrenceContextDate}T12:00:00`).toLocaleDateString(undefined, {
+                          {new Date(
+                            `${occurrenceContextDate}T12:00:00`,
+                          ).toLocaleDateString(undefined, {
                             month: "long",
                             day: "numeric",
                             year: "numeric",
@@ -287,7 +300,9 @@ export default function EventEditorDrawer({
                           onChange={() => handleEditScopeChange("series")}
                           className="mr-2 accent-ares-gold"
                         />
-                        <span className="text-xs font-black uppercase">Entire series</span>
+                        <span className="text-xs font-black uppercase">
+                          Entire series
+                        </span>
                         <span className="mt-1 block pl-5 text-[10px] font-normal text-marble/70">
                           Changes every session in the schedule.
                         </span>
@@ -336,7 +351,9 @@ export default function EventEditorDrawer({
                     setFormByDay={setFormByDay}
                     formUntil={formUntil}
                     setFormUntil={setFormUntil}
-                    isEditingExistingRecurring={Boolean(editId && eventToEdit?.recurrence)}
+                    isEditingExistingRecurring={Boolean(
+                      editId && eventToEdit?.recurrence,
+                    )}
                     occurrenceExceptions={occurrenceExceptions}
                     onCancelOccurrence={handleCancelOccurrence}
                     onRestoreOccurrence={handleRestoreOccurrence}
@@ -380,7 +397,9 @@ export default function EventEditorDrawer({
                     {canEdit && (
                       <button
                         type="submit"
-                        disabled={isSaving || !formTitle.trim() || !formDateStart}
+                        disabled={
+                          isSaving || !formTitle.trim() || !formDateStart
+                        }
                         className="px-6 py-3 bg-ares-red text-white hover:bg-ares-bronze font-black uppercase tracking-widest text-xs rounded transition-all shadow-md focus:ring-2 focus:ring-ares-cyan cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isSaving
@@ -397,7 +416,7 @@ export default function EventEditorDrawer({
               </form>
 
               {/* SIDE AI PANEL */}
-              {showAiSidebar && isAdmin && (
+              {showAiSidebar && canEdit && (
                 <EventEditorAiCopilot
                   formTitle={formTitle}
                   formDescription={formDescription}
@@ -450,6 +469,9 @@ export default function EventEditorDrawer({
                 uploadError={uploadError}
                 handleImageUpload={handleImageUpload}
                 handleDeletePhoto={handleDeletePhoto}
+                handleApprovePhoto={handleApprovePhoto}
+                canApprove={canPublishDirectly}
+                currentUserId={currentUser?.uid ?? null}
                 setSelectedPhoto={setSelectedPhoto}
                 occurrenceDate={occurrenceContextDate}
               />
@@ -476,7 +498,10 @@ export default function EventEditorDrawer({
       </div>
 
       {/* Lightbox / Selected Photo Modal overlay */}
-      <Dialog.Root open={selectedPhoto !== null} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+      <Dialog.Root
+        open={selectedPhoto !== null}
+        onOpenChange={(open) => !open && setSelectedPhoto(null)}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[120] bg-black/95" />
           {selectedPhoto && (
@@ -484,7 +509,9 @@ export default function EventEditorDrawer({
               aria-describedby={undefined}
               className="fixed left-1/2 top-1/2 z-[121] flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-lg border border-white/10 bg-black p-4 shadow-2xl focus:outline-none"
             >
-              <Dialog.Title className="sr-only">Event photo: {selectedPhoto.filename}</Dialog.Title>
+              <Dialog.Title className="sr-only">
+                Event photo: {selectedPhoto.filename}
+              </Dialog.Title>
               <Dialog.Close asChild>
                 <button
                   type="button"
@@ -502,7 +529,8 @@ export default function EventEditorDrawer({
               <div className="flex flex-wrap justify-between gap-2 text-[9px] font-mono text-marble/65 uppercase">
                 <span>{selectedPhoto.filename}</span>
                 <span>
-                  By {selectedPhoto.uploadedBy} ● {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
+                  By {selectedPhoto.uploadedBy} ●{" "}
+                  {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
                 </span>
               </div>
             </Dialog.Content>
@@ -527,12 +555,17 @@ export default function EventEditorDrawer({
         setFormLocationId={setFormLocationId}
       />
 
-      <Dialog.Root open={pendingLifecycle !== null} onOpenChange={(open) => !open && setPendingLifecycle(null)}>
+      <Dialog.Root
+        open={pendingLifecycle !== null}
+        onOpenChange={(open) => !open && setPendingLifecycle(null)}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[150] bg-black/85" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-[151] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
             <Dialog.Title className="text-lg font-black uppercase text-white">
-              {pendingLifecycle === "archive" ? "Archive this event?" : "Restore this event?"}
+              {pendingLifecycle === "archive"
+                ? "Archive this event?"
+                : "Restore this event?"}
             </Dialog.Title>
             <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/75">
               {pendingLifecycle === "archive"
@@ -551,13 +584,18 @@ export default function EventEditorDrawer({
               <button
                 type="button"
                 onClick={() => {
-                  const action = pendingLifecycle === "archive" ? handleDeleteEvent : handleRestoreEvent;
+                  const action =
+                    pendingLifecycle === "archive"
+                      ? handleDeleteEvent
+                      : handleRestoreEvent;
                   setPendingLifecycle(null);
                   void action();
                 }}
                 className="rounded bg-ares-red px-4 py-2 text-xs font-black uppercase text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
-                {pendingLifecycle === "archive" ? "Archive event" : "Restore as draft"}
+                {pendingLifecycle === "archive"
+                  ? "Archive event"
+                  : "Restore as draft"}
               </button>
             </div>
           </Dialog.Content>

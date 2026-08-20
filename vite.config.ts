@@ -155,8 +155,10 @@ export default defineConfig({
         "src/lib/api.ts",
         "src/lib/contentFormatters.ts",
         "src/lib/contentUrls.ts",
+        "src/lib/authorization.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
+        "src/lib/localDateTime.ts",
         "src/lib/outreachExport.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
@@ -168,6 +170,7 @@ export default defineConfig({
         "src/components/SiteAnnouncementBanner.tsx",
         "src/components/SEO.tsx",
         "src/app/dashboard/photos/*.{ts,tsx}",
+        "src/app/calendar/api.ts",
         "src/app/dashboard/profile/page.tsx",
         "src/app/dashboard/tasks/taskRecord.ts",
         "src/app/dashboard/tasks/taskSubtasks.ts",
@@ -227,6 +230,14 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/localDateTime.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/authorization.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/outreachExport.ts": {
           lines: 85,
           functions: 100,
@@ -248,6 +259,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/app/robots/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/calendar/api.ts": {
           lines: 85,
           functions: 100,
         },

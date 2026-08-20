@@ -80,16 +80,22 @@ export class CalendarApiError extends Error {
 
 function requiredString(record: Record<string, unknown>, key: string): string {
   const value = record[key];
-  if (typeof value !== "string") throw new Error(`Calendar response has an invalid ${key}.`);
+  if (typeof value !== "string")
+    throw new Error(`Calendar response has an invalid ${key}.`);
   return value;
 }
 
-function optionalString(record: Record<string, unknown>, key: string): string | undefined {
+function optionalString(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const value = record[key];
   return typeof value === "string" ? value : undefined;
 }
 
-function normalizeOccurrenceDefaults(value: unknown): EventOccurrenceDefaults | undefined {
+function normalizeOccurrenceDefaults(
+  value: unknown,
+): EventOccurrenceDefaults | undefined {
   if (!value || typeof value !== "object") return undefined;
   const record = value as Record<string, unknown>;
   const title = optionalString(record, "title");
@@ -103,7 +109,11 @@ function normalizeOccurrenceDefaults(value: unknown): EventOccurrenceDefaults | 
     location: optionalString(record, "location"),
     description: optionalString(record, "description"),
     category:
-      record.category === "outreach" ? "outreach" : record.category === "competition" ? "competition" : "internal",
+      record.category === "outreach"
+        ? "outreach"
+        : record.category === "competition"
+          ? "competition"
+          : "internal",
     coverImage: optionalString(record, "coverImage"),
     isPotluck: record.isPotluck === 1 ? 1 : 0,
     isVolunteer: record.isVolunteer === 1 ? 1 : 0,
@@ -111,32 +121,55 @@ function normalizeOccurrenceDefaults(value: unknown): EventOccurrenceDefaults | 
 }
 
 function normalizeEvent(value: unknown): TeamEvent {
-  if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid event.");
+  if (!value || typeof value !== "object")
+    throw new Error("Calendar response contains an invalid event.");
   const record = value as Record<string, unknown>;
   const category =
-    record.category === "outreach" ? "outreach" : record.category === "competition" ? "competition" : "internal";
+    record.category === "outreach"
+      ? "outreach"
+      : record.category === "competition"
+        ? "competition"
+        : "internal";
   const status =
-    record.status === "published" || record.status === "pending" || record.status === "draft"
+    record.status === "published" ||
+    record.status === "pending" ||
+    record.status === "draft"
       ? record.status
       : undefined;
   const publicVenueRecord =
     record.publicVenue && typeof record.publicVenue === "object"
       ? (record.publicVenue as Record<string, unknown>)
       : null;
-  const publicVenueName = publicVenueRecord ? optionalString(publicVenueRecord, "name") : undefined;
-  const publicVenueAddress = publicVenueRecord ? optionalString(publicVenueRecord, "address") : undefined;
+  const publicVenueName = publicVenueRecord
+    ? optionalString(publicVenueRecord, "name")
+    : undefined;
+  const publicVenueAddress = publicVenueRecord
+    ? optionalString(publicVenueRecord, "address")
+    : undefined;
   const recurrenceRecord =
-    record.recurrence && typeof record.recurrence === "object" ? (record.recurrence as Record<string, unknown>) : null;
+    record.recurrence && typeof record.recurrence === "object"
+      ? (record.recurrence as Record<string, unknown>)
+      : null;
   const byDay = Array.isArray(recurrenceRecord?.byDay)
-    ? recurrenceRecord.byDay.filter((code): code is string => typeof code === "string")
+    ? recurrenceRecord.byDay.filter(
+        (code): code is string => typeof code === "string",
+      )
     : [];
   const recurrence =
-    recurrenceRecord && recurrenceRecord.frequency === "weekly" && byDay.length > 0
+    recurrenceRecord &&
+    recurrenceRecord.frequency === "weekly" &&
+    byDay.length > 0
       ? {
           frequency: "weekly" as const,
-          interval: typeof recurrenceRecord.interval === "number" ? recurrenceRecord.interval : 1,
+          interval:
+            typeof recurrenceRecord.interval === "number"
+              ? recurrenceRecord.interval
+              : 1,
           byDay,
-          until: typeof recurrenceRecord.until === "string" ? recurrenceRecord.until : undefined,
+          until:
+            typeof recurrenceRecord.until === "string"
+              ? recurrenceRecord.until
+              : undefined,
         }
       : undefined;
   return {
@@ -153,7 +186,9 @@ function normalizeEvent(value: unknown): TeamEvent {
     locationId: optionalString(record, "locationId"),
     location: optionalString(record, "location"),
     publicVenue:
-      publicVenueName && publicVenueAddress ? { name: publicVenueName, address: publicVenueAddress } : undefined,
+      publicVenueName && publicVenueAddress
+        ? { name: publicVenueName, address: publicVenueAddress }
+        : undefined,
     description: optionalString(record, "description"),
     category,
     coverImage: optionalString(record, "coverImage"),
@@ -168,7 +203,8 @@ function normalizeEvent(value: unknown): TeamEvent {
 }
 
 function normalizeLocation(value: unknown): TeamLocation {
-  if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid venue.");
+  if (!value || typeof value !== "object")
+    throw new Error("Calendar response contains an invalid venue.");
   const record = value as Record<string, unknown>;
   return {
     id: requiredString(record, "id"),
@@ -193,7 +229,8 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // The HTTP status remains useful when the response body is not JSON.
     }
-    const serverMessage = typeof payload.error === "string" ? payload.error : undefined;
+    const serverMessage =
+      typeof payload.error === "string" ? payload.error : undefined;
     const code = typeof payload.code === "string" ? payload.code : undefined;
     const statusText = response.statusText || "Request failed";
     throw new CalendarApiError(
@@ -228,17 +265,26 @@ export async function fetchPublicEvents(
   cursor?: string | null,
   expandDays?: number,
 ): Promise<CalendarPageResult> {
-  const payload = await requestJson<EventsPayload>(withPage("/api/calendar/events", limit, cursor, expandDays));
-  if (!Array.isArray(payload.events)) throw new Error("Calendar response does not contain an event list.");
+  const payload = await requestJson<EventsPayload>(
+    withPage("/api/calendar/events", limit, cursor, expandDays),
+  );
+  if (!Array.isArray(payload.events))
+    throw new Error("Calendar response does not contain an event list.");
   return {
     events: payload.events.map(normalizeEvent),
-    nextCursor: typeof payload.nextCursor === "string" ? payload.nextCursor : null,
+    nextCursor:
+      typeof payload.nextCursor === "string" ? payload.nextCursor : null,
   };
 }
 
-export async function fetchPublicEvent(eventId: string, occurrenceDate?: string): Promise<TeamEvent> {
+export async function fetchPublicEvent(
+  eventId: string,
+  occurrenceDate?: string,
+): Promise<TeamEvent> {
   const path = `/api/calendar/events/${encodeURIComponent(eventId)}`;
-  const query = occurrenceDate ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}` : "";
+  const query = occurrenceDate
+    ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}`
+    : "";
   const payload = await requestJson<EventPayload>(`${path}${query}`);
   return normalizeEvent(payload.event);
 }
@@ -248,26 +294,43 @@ export async function fetchManagedEvents(
   cursor?: string | null,
   expandDays?: number,
 ): Promise<CalendarPageResult> {
-  const payload = await requestJson<EventsPayload>(withPage("/api/calendar/manage", limit, cursor, expandDays));
-  if (!Array.isArray(payload.events)) throw new Error("Calendar response does not contain an event list.");
+  const payload = await requestJson<EventsPayload>(
+    withPage("/api/calendar/manage", limit, cursor, expandDays),
+  );
+  if (!Array.isArray(payload.events))
+    throw new Error("Calendar response does not contain an event list.");
   return {
     events: payload.events.map(normalizeEvent),
-    nextCursor: typeof payload.nextCursor === "string" ? payload.nextCursor : null,
+    nextCursor:
+      typeof payload.nextCursor === "string" ? payload.nextCursor : null,
   };
 }
 
-export async function fetchManagedEvent(eventId: string, occurrenceDate?: string): Promise<TeamEvent> {
-  const params = occurrenceDate ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}` : "";
-  const payload = await requestJson<EventPayload>(`/api/calendar/manage/${encodeURIComponent(eventId)}${params}`);
+export async function fetchManagedEvent(
+  eventId: string,
+  occurrenceDate?: string,
+): Promise<TeamEvent> {
+  const params = occurrenceDate
+    ? `?${new URLSearchParams({ occurrence: occurrenceDate }).toString()}`
+    : "";
+  const payload = await requestJson<EventPayload>(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}${params}`,
+  );
   return normalizeEvent(payload.event);
 }
 
 export async function createEvent(input: EventWriteInput): Promise<TeamEvent> {
-  const payload = await requestJson<EventPayload>("/api/calendar/manage", jsonRequest("POST", input));
+  const payload = await requestJson<EventPayload>(
+    "/api/calendar/manage",
+    jsonRequest("POST", input),
+  );
   return normalizeEvent(payload.event);
 }
 
-export async function updateEvent(eventId: string, input: EventWriteInput): Promise<TeamEvent> {
+export async function updateEvent(
+  eventId: string,
+  input: EventWriteInput,
+): Promise<TeamEvent> {
   const payload = await requestJson<EventPayload>(
     `/api/calendar/manage/${encodeURIComponent(eventId)}`,
     jsonRequest("PUT", input),
@@ -294,11 +357,17 @@ export async function archiveEvent(eventId: string): Promise<void> {
 }
 
 export async function restoreEvent(eventId: string): Promise<void> {
-  await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}/restore`, { method: "PATCH" });
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/restore`,
+    { method: "PATCH" },
+  );
 }
 
 export async function publishEvent(eventId: string): Promise<void> {
-  await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}/publish`, { method: "PATCH" });
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/publish`,
+    { method: "PATCH" },
+  );
 }
 
 export interface EventOccurrenceException {
@@ -307,15 +376,20 @@ export interface EventOccurrenceException {
   hasOverrides: boolean;
 }
 
-export async function fetchEventOccurrences(eventId: string): Promise<EventOccurrenceException[]> {
+export async function fetchEventOccurrences(
+  eventId: string,
+): Promise<EventOccurrenceException[]> {
   const payload = await requestJson<{ occurrences?: unknown }>(
     `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences`,
   );
-  if (!Array.isArray(payload.occurrences)) throw new Error("Calendar response does not contain an occurrence list.");
+  if (!Array.isArray(payload.occurrences))
+    throw new Error("Calendar response does not contain an occurrence list.");
   return payload.occurrences.map((value) => {
-    if (!value || typeof value !== "object") throw new Error("Calendar response contains an invalid occurrence.");
+    if (!value || typeof value !== "object")
+      throw new Error("Calendar response contains an invalid occurrence.");
     const record = value as Record<string, unknown>;
-    if (typeof record.date !== "string") throw new Error("Calendar response contains an invalid occurrence date.");
+    if (typeof record.date !== "string")
+      throw new Error("Calendar response contains an invalid occurrence date.");
     return {
       date: record.date,
       isCancelled: record.isCancelled === true,
@@ -324,33 +398,113 @@ export async function fetchEventOccurrences(eventId: string): Promise<EventOccur
   });
 }
 
-export async function cancelEventOccurrence(eventId: string, date: string): Promise<void> {
-  await requestJson(`/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cancelled: true }),
-  });
+export async function cancelEventOccurrence(
+  eventId: string,
+  date: string,
+): Promise<void> {
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cancelled: true }),
+    },
+  );
 }
 
-export async function restoreEventOccurrence(eventId: string, date: string): Promise<void> {
+export async function restoreEventOccurrence(
+  eventId: string,
+  date: string,
+): Promise<void> {
   await requestJson(
     `/api/calendar/manage/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(date)}/restore`,
     { method: "PATCH" },
   );
 }
 
+export interface EventPhotoAssociation {
+  id: string;
+  url: string;
+  thumbnailUrl?: string | null;
+  mediumUrl?: string | null;
+  filename: string;
+  occurrenceDate?: string | null;
+  publicationStatus: "pending" | "published";
+}
+
+function normalizeEventPhotoAssociation(value: unknown): EventPhotoAssociation {
+  if (!value || typeof value !== "object")
+    throw new Error("Calendar response contains an invalid photo.");
+  const record = value as Record<string, unknown>;
+  return {
+    id: requiredString(record, "id"),
+    url: requiredString(record, "url"),
+    thumbnailUrl:
+      typeof record.thumbnailUrl === "string" ? record.thumbnailUrl : null,
+    mediumUrl: typeof record.mediumUrl === "string" ? record.mediumUrl : null,
+    filename: requiredString(record, "filename"),
+    occurrenceDate:
+      typeof record.occurrenceDate === "string" ? record.occurrenceDate : null,
+    publicationStatus:
+      record.publicationStatus === "published" ? "published" : "pending",
+  };
+}
+
+export async function associateEventPhoto(
+  eventId: string,
+  photoId: string,
+  occurrenceDate?: string | null,
+): Promise<EventPhotoAssociation> {
+  const payload = await requestJson<{ photo: unknown }>(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/photos`,
+    jsonRequest("POST", { photoId, occurrenceDate: occurrenceDate ?? null }),
+  );
+  return normalizeEventPhotoAssociation(payload.photo);
+}
+
+export async function approveEventPhoto(
+  eventId: string,
+  photoId: string,
+): Promise<void> {
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/photos/${encodeURIComponent(photoId)}/approve`,
+    { method: "PATCH" },
+  );
+}
+
+export async function archiveEventPhoto(
+  eventId: string,
+  photoId: string,
+): Promise<void> {
+  await requestJson(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/photos/${encodeURIComponent(photoId)}`,
+    { method: "DELETE" },
+  );
+}
+
 export async function fetchLocations(): Promise<TeamLocation[]> {
-  const payload = await requestJson<LocationsPayload>("/api/calendar/locations");
-  if (!Array.isArray(payload.locations)) throw new Error("Calendar response does not contain a venue list.");
+  const payload = await requestJson<LocationsPayload>(
+    "/api/calendar/locations",
+  );
+  if (!Array.isArray(payload.locations))
+    throw new Error("Calendar response does not contain a venue list.");
   return payload.locations.map(normalizeLocation);
 }
 
-export async function createLocation(input: LocationWriteInput): Promise<TeamLocation> {
-  const payload = await requestJson<{ location: unknown }>("/api/calendar/locations", jsonRequest("POST", input));
+export async function createLocation(
+  input: LocationWriteInput,
+): Promise<TeamLocation> {
+  const payload = await requestJson<{ location: unknown }>(
+    "/api/calendar/locations",
+    jsonRequest("POST", input),
+  );
   return normalizeLocation(payload.location);
 }
 
-export async function updateLocation(locationId: string, input: LocationWriteInput): Promise<TeamLocation> {
+export async function updateLocation(
+  locationId: string,
+  input: LocationWriteInput,
+): Promise<TeamLocation> {
   const payload = await requestJson<{ location: unknown }>(
     `/api/calendar/locations/${encodeURIComponent(locationId)}`,
     jsonRequest("PUT", input),
@@ -359,9 +513,15 @@ export async function updateLocation(locationId: string, input: LocationWriteInp
 }
 
 export async function archiveLocation(locationId: string): Promise<void> {
-  await requestJson(`/api/calendar/locations/${encodeURIComponent(locationId)}`, { method: "DELETE" });
+  await requestJson(
+    `/api/calendar/locations/${encodeURIComponent(locationId)}`,
+    { method: "DELETE" },
+  );
 }
 
 export async function restoreLocation(locationId: string): Promise<void> {
-  await requestJson(`/api/calendar/locations/${encodeURIComponent(locationId)}/restore`, { method: "PATCH" });
+  await requestJson(
+    `/api/calendar/locations/${encodeURIComponent(locationId)}/restore`,
+    { method: "PATCH" },
+  );
 }

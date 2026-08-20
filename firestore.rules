@@ -33,6 +33,54 @@ service cloud.firestore {
         authorizationData().role == role;
     }
 
+    function isContentPublisher() {
+      return hasRole('admin') || hasRole('coach') || hasRole('mentor');
+    }
+
+    function isPendingContent(data) {
+      return data.status in ['draft', 'pending', 'pending_approval'];
+    }
+
+    function contentOwnerId(collectionName, contentId) {
+      return collectionName + '__' + contentId;
+    }
+
+    function isContentOwner(collectionName, contentId) {
+      let ownerId = contentOwnerId(collectionName, contentId);
+      return exists(/databases/$(database)/documents/content_owners/$(ownerId)) &&
+        get(/databases/$(database)/documents/content_owners/$(ownerId)).data.ownerUid == request.auth.uid;
+    }
+
+    function isContentOwnerAfter(collectionName, contentId) {
+      let ownerId = contentOwnerId(collectionName, contentId);
+      return existsAfter(/databases/$(database)/documents/content_owners/$(ownerId)) &&
+        getAfter(/databases/$(database)/documents/content_owners/$(ownerId)).data.ownerUid == request.auth.uid;
+    }
+
+    function canCreateContent(collectionName, contentId) {
+      return isContentPublisher() || (
+        isAuthorized() &&
+        isPendingContent(request.resource.data) &&
+        request.resource.data.get('isDeleted', 0) == 0 &&
+        isContentOwnerAfter(collectionName, contentId)
+      );
+    }
+
+    function canUpdateContent(collectionName, contentId) {
+      return isContentPublisher() || (
+        isAuthorized() &&
+        isPendingContent(resource.data) &&
+        isPendingContent(request.resource.data) &&
+        isContentOwner(collectionName, contentId)
+      );
+    }
+
+    function canCreateRevision(collectionName, contentId) {
+      return isAuthorized() &&
+        request.resource.data.editedBy == request.auth.uid &&
+        (isContentPublisher() || isContentOwnerAfter(collectionName, contentId));
+    }
+
     function hasNoServerDriveFields() {
       return !request.resource.data.keys().hasAny([
         'source', 'driveFileId', 'driveName', 'driveMimeType',
@@ -47,13 +95,6 @@ service cloud.firestore {
         'driveModifiedTime', 'driveMd5Checksum', 'driveSyncState',
         'driveCheckedAt', 'driveImportedAt'
       ]);
-    }
-
-    function hasValidEventPhotoOccurrenceDate() {
-      return !request.resource.data.keys().hasAny(['occurrenceDate']) ||
-        request.resource.data.occurrenceDate == null ||
-        (request.resource.data.occurrenceDate is string &&
-          request.resource.data.occurrenceDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
     }
 
     function isCanonicalTaskCreate(taskId) {
@@ -140,6 +181,25 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Private ownership records let rules enforce draft ownership without
+    // placing stable Firebase UIDs in publicly readable content documents.
+    match /content_owners/{ownerId} {
+      allow read: if false;
+      allow create: if isAuthorized() &&
+        request.resource.data.keys().hasOnly(['collectionName', 'contentId', 'ownerUid', 'createdAt']) &&
+        request.resource.data.keys().hasAll(['collectionName', 'contentId', 'ownerUid', 'createdAt']) &&
+        request.resource.data.collectionName in ['posts', 'docs', 'documents'] &&
+        request.resource.data.contentId is string &&
+        request.resource.data.contentId.size() > 0 &&
+        request.resource.data.contentId.size() <= 200 &&
+        ownerId == contentOwnerId(request.resource.data.collectionName, request.resource.data.contentId) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.createdAt is string &&
+        request.resource.data.createdAt.size() <= 40 &&
+        existsAfter(/databases/$(database)/documents/$(request.resource.data.collectionName)/$(request.resource.data.contentId));
+      allow update, delete: if false;
+    }
+
     // Public collections (blogs, calendar, knowledge base docs)
     match /posts/{postSlug} {
       allow read: if isAuthorized() || (
@@ -147,15 +207,14 @@ service cloud.firestore {
         resource.data.isDeleted == 0 &&
         (!("approvalStatus" in resource.data) || resource.data.approvalStatus == "approved")
       );
-      allow create, update: if isAuthorized() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow create: if canCreateContent('posts', postSlug);
+      allow update: if canUpdateContent('posts', postSlug);
+      allow delete: if isContentPublisher();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
-        allow write: if isAuthorized();
+        allow create: if canCreateRevision('posts', postSlug);
+        allow update, delete: if false;
       }
     }
 
@@ -174,7 +233,8 @@ service cloud.firestore {
       match /photos/{photoId} {
         // Public consumers receive a bounded, metadata-stripped Calendar API DTO.
         allow read: if isAuthorized();
-        allow write: if isAuthorized() && hasValidEventPhotoOccurrenceDate();
+        // Association, approval, and archival use the audited Calendar API.
+        allow write: if false;
       }
 
       match /revisions/{revisionId} {
@@ -202,15 +262,14 @@ service cloud.firestore {
         resource.data.isDeleted == 0 &&
         (!("approvalStatus" in resource.data) || resource.data.approvalStatus == "approved")
       );
-      allow create, update: if isAuthorized() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow create: if canCreateContent('docs', docSlug);
+      allow update: if canUpdateContent('docs', docSlug);
+      allow delete: if isContentPublisher();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
-        allow write: if isAuthorized();
+        allow create: if canCreateRevision('docs', docSlug);
+        allow update, delete: if false;
       }
     }
 
@@ -345,19 +404,14 @@ service cloud.firestore {
     // documents
     match /documents/{docId} {
       allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
-      allow create: if isAuthorized() && hasNoServerDriveFields() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow update: if isAuthorized() && preservesServerDriveFields() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow create: if hasNoServerDriveFields() && canCreateContent('documents', docId);
+      allow update: if preservesServerDriveFields() && canUpdateContent('documents', docId);
+      allow delete: if isContentPublisher();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
-        allow write: if isAuthorized();
+        allow create: if canCreateRevision('documents', docId);
+        allow update, delete: if false;
       }
     }
 
@@ -369,21 +423,13 @@ service cloud.firestore {
     // seasons
     match /seasons/{seasonId} {
       allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
-      allow create, update: if isAuthorized() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow create, update, delete: if isContentPublisher();
     }
 
     // awards
     match /awards/{awardId} {
       allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
-      allow create, update: if isAuthorized() && (
-        request.resource.data.status != "published" ||
-        hasRole('admin') || hasRole('coach') || hasRole('mentor')
-      );
-      allow delete: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      allow create, update, delete: if isContentPublisher();
     }
 
 

@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 
 const { authenticatedFetchMock, deleteDocMock, restoreDocMock, saveDocMock } = vi.hoisted(() => ({
-  authenticatedFetchMock: vi.fn(() => Promise.resolve(new Response(null, { status: 200 }))),
+  authenticatedFetchMock: vi.fn(() => Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200,
+          headers: { "Content-Type": "application/json" },
+        }))),
   deleteDocMock: vi.fn(() => Promise.resolve()),
   restoreDocMock: vi.fn(() => Promise.resolve()),
   saveDocMock: vi.fn(() => Promise.resolve()),
@@ -15,7 +17,7 @@ vi.mock("@/lib/api", () => ({ authenticatedFetch: authenticatedFetchMock }));
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
-    user: { uid: "member_uid", displayName: "CircuitFox", photoURL: "https://avatars.example.org/member.png" },
+    user: { uid: "member_uid", displayName: "CircuitFox", photoURL: "https://avatars.example.org/member.png", },
     authorizedUser: { role: "mentor", name: "CircuitFox" },
   }),
   useOptionalAuth: () => undefined,
@@ -51,7 +53,9 @@ describe("useDashboardDocController archive workflow", () => {
     vi.clearAllMocks();
     deleteDocMock.mockResolvedValue(undefined);
     restoreDocMock.mockResolvedValue(undefined);
-    authenticatedFetchMock.mockResolvedValue(new Response(null, { status: 200 }));
+    authenticatedFetchMock.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200,
+        headers: { "Content-Type": "application/json" },
+      }));
   });
 
   it("requests confirmation without archiving, supports cancel, then archives only after confirmation", async () => {
@@ -118,7 +122,54 @@ describe("useDashboardDocController archive workflow", () => {
     expect(saveDocMock).toHaveBeenCalled();
     expect(authenticatedFetchMock).toHaveBeenCalledWith(
       "/api/webhooks/syndicate-post",
-      expect.objectContaining({ body: JSON.stringify({ slug: "state-finals" }) }),
+      expect.objectContaining({ body: JSON.stringify({ slug: "state-finals" }), }),
     );
+    expect(result.current.syndicationNotice).toMatchObject({
+      kind: "success",
+      slug: "state-finals",
+  });
+});
+
+  it("reports partial publication failure and retries social delivery without saving again", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    authenticatedFetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "upstream unavailable" }), {
+          status: 502,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    await act(async () =>
+      result.current.handleApproveAndPublish({
+        slug: "robot-reveal",
+        title: "Robot Reveal",
+        category: "Build",
+      } as never),
+    );
+
+    expect(result.current.syndicationNotice).toMatchObject({
+      kind: "error",
+      slug: "robot-reveal",
+    });
+    expect(saveDocMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => result.current.handleRetrySyndication());
+
+    expect(saveDocMock).toHaveBeenCalledTimes(1);
+    expect(authenticatedFetchMock).toHaveBeenCalledTimes(2);
+    expect(result.current.syndicationNotice).toMatchObject({
+      kind: "success",
+      slug: "robot-reveal",
+    });
   });
 });

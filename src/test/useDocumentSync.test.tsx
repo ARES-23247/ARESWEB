@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DocumentSlugConflictError, DOCUMENT_PAGE_SIZE, useDocumentSync } from "@/hooks/useDocumentSync";
+import { DocumentSlugConflictError, DOCUMENT_PAGE_SIZE, useDocumentSync, } from "@/hooks/useDocumentSync";
 
 const firestoreMocks = vi.hoisted(() => ({
   collection: vi.fn(() => ({ kind: "collection" })),
@@ -70,11 +70,11 @@ const payload = {
 describe("useDocumentSync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true, });
   });
 
   it("treats an empty server snapshot as connected rather than sandbox data", async () => {
-    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false } });
+    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false }, });
     const { result } = renderHook(() => useDocumentSync("documents", (record) => record.isDeleted !== 1));
 
     await waitFor(() => expect(result.current.loadingList).toBe(false));
@@ -84,20 +84,20 @@ describe("useDocumentSync", () => {
   });
 
   it("distinguishes offline cache and listener errors", async () => {
-    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
-    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: true } });
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false, });
+    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: true }, });
     const offlineHook = renderHook(() => useDocumentSync("documents", () => true));
     await waitFor(() => expect(offlineHook.result.current.connectionState).toBe("offline"));
     offlineHook.unmount();
 
-    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true, });
     firestoreMocks.onSnapshot.mockImplementation((
       _query: unknown,
       _options: unknown,
       _next: unknown,
       error: (value: Error & { code?: string }) => void,
     ) => {
-      const failure = Object.assign(new Error("permission denied"), { code: "permission-denied" });
+      const failure = Object.assign(new Error("permission denied"), { code: "permission-denied", });
       error(failure);
       return vi.fn();
     });
@@ -111,47 +111,153 @@ describe("useDocumentSync", () => {
       id: `doc-${index}`,
       data: () => ({ ...payload, title: `Document ${index}` }),
     }));
-    subscribeWith({ docs, empty: false, size: docs.length, metadata: { fromCache: false } });
-    const { result } = renderHook(() => useDocumentSync("documents", () => true));
+    subscribeWith({
+      docs,
+      empty: false,
+      size: docs.length,
+      metadata: { fromCache: false },
+    });
+    const { result } = renderHook(() =>
+      useDocumentSync("documents", () => true),
+    );
 
-    await waitFor(() => expect(result.current.docs).toHaveLength(DOCUMENT_PAGE_SIZE));
+    await waitFor(() =>
+      expect(result.current.docs).toHaveLength(DOCUMENT_PAGE_SIZE),
+    );
     expect(firestoreMocks.limit).toHaveBeenCalledWith(DOCUMENT_PAGE_SIZE);
     expect(result.current.hasMore).toBe(true);
 
     act(() => result.current.loadMore());
-    expect(firestoreMocks.limit).toHaveBeenLastCalledWith(DOCUMENT_PAGE_SIZE * 2);
+    expect(firestoreMocks.limit).toHaveBeenLastCalledWith(
+      DOCUMENT_PAGE_SIZE * 2,
+    );
   });
 
   it("atomically rejects a create that would overwrite an existing slug", async () => {
-    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false } });
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
     const transactionSet = vi.fn();
-    firestoreMocks.runTransaction.mockImplementation(async (
-      _db: unknown,
-      callback: (transaction: { get: () => Promise<{ exists: () => boolean }>; set: typeof transactionSet }) => Promise<void>,
-    ) => callback({ get: async () => ({ exists: () => true }), set: transactionSet }));
-    const { result } = renderHook(() => useDocumentSync("documents", () => true));
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => true }),
+          set: transactionSet,
+        }),
+    );
+    const { result } = renderHook(() =>
+      useDocumentSync("documents", () => true),
+    );
 
-    await expect(result.current.saveDoc("safety", payload, "Member", "", { isCreate: true }))
-      .rejects.toBeInstanceOf(DocumentSlugConflictError);
+    await expect(
+      result.current.saveDoc("safety", payload, "Member", "", {
+        isCreate: true,
+      }),
+    ).rejects.toBeInstanceOf(DocumentSlugConflictError);
     expect(transactionSet).not.toHaveBeenCalled();
   });
 
   it("merges website edits so server-owned Drive metadata is preserved", async () => {
-    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false } });
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
     const transactionSet = vi.fn();
-    firestoreMocks.runTransaction.mockImplementation(async (
-      _db: unknown,
-      callback: (transaction: { get: () => Promise<{ exists: () => boolean }>; set: typeof transactionSet }) => Promise<void>,
-    ) => callback({ get: async () => ({ exists: () => false }), set: transactionSet }));
-    const { result } = renderHook(() => useDocumentSync("documents", () => true));
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => false }),
+          set: transactionSet,
+        }),
+    );
+    const { result } = renderHook(() =>
+      useDocumentSync("documents", () => true),
+    );
 
-    await act(() => result.current.saveDoc("drive-file", payload, "Member", ""));
-    expect(transactionSet).toHaveBeenNthCalledWith(1, expect.anything(), payload, { merge: true });
+    await act(() =>
+      result.current.saveDoc("drive-file", payload, "Member", ""),
+    );
+    expect(transactionSet).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      payload,
+      { merge: true },
+    );
+  });
+
+  it("creates a private ownership record in the same transaction as a member draft", async () => {
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
+    const transactionSet = vi.fn();
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => false }),
+          set: transactionSet,
+        }),
+    );
+    const { result } = renderHook(() =>
+      useDocumentSync("documents", () => true),
+    );
+
+    await act(() =>
+      result.current.saveDoc("member-draft", payload, "Member", "", {
+        isCreate: true,
+      }),
+    );
+
+    expect(firestoreMocks.doc).toHaveBeenCalledWith(
+      expect.anything(),
+      "content_owners",
+      "documents__member-draft",
+    );
+    expect(transactionSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        collectionName: "documents",
+        contentId: "member-draft",
+        ownerUid: "member-1",
+      }),
+    );
   });
 
   it("archives and restores content without deleting it", async () => {
-    subscribeWith({ docs: [], empty: true, size: 0, metadata: { fromCache: false } });
-    const { result } = renderHook(() => useDocumentSync("documents", () => true));
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
+    const { result } = renderHook(() =>
+      useDocumentSync("documents", () => true),
+    );
 
     await act(() => result.current.deleteDoc("safety"));
     expect(firestoreMocks.updateDoc).toHaveBeenLastCalledWith(

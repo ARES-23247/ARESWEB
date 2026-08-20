@@ -1,5 +1,5 @@
 import express from "express";
-import { ensureAdmin } from "../middleware/auth";
+import { ensureTeamMember } from "../middleware/auth";
 import { checkGrammarAndSpelling, getAIAssistance, getSimulationPlaygroundStream } from "../lib/vertex";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -23,7 +23,7 @@ const generationQuota = distributedQuota({
 });
 
 // POST /api/ai/grammar - Check spelling & grammar
-router.post("/grammar", ensureAdmin, generationQuota, asyncHandler(async (req, res) => {
+router.post("/grammar", ensureTeamMember, generationQuota, asyncHandler(async (req, res) => {
   const { text } = req.body as { text: string };
   if (typeof text !== "string") {
     throw new ApiError(400, "Missing required 'text' field.");
@@ -37,7 +37,7 @@ router.post("/grammar", ensureAdmin, generationQuota, asyncHandler(async (req, r
 }));
 
 // POST /api/ai/assistant - Get general AI assistant help
-router.post("/assistant", ensureAdmin, generationQuota, asyncHandler(async (req, res) => {
+router.post("/assistant", ensureTeamMember, generationQuota, asyncHandler(async (req, res) => {
   const { prompt, text, context } = req.body as {
     prompt: string;
     text?: string;
@@ -62,7 +62,7 @@ router.post("/assistant", ensureAdmin, generationQuota, asyncHandler(async (req,
 }));
 
 // POST /api/ai/sim-playground - Stream simulation playground responses
-router.post("/sim-playground", ensureAdmin, generationQuota, asyncHandler(async (req, res) => {
+router.post("/sim-playground", ensureTeamMember, generationQuota, asyncHandler(async (req, res) => {
   const { systemPrompt, messages, imageUrl } = req.body as {
     systemPrompt: string;
     messages: Array<{ role: string; content: string }>;

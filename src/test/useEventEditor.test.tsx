@@ -2,11 +2,14 @@ import { renderHook, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useEventEditor } from "../app/dashboard/events/hooks/useEventEditor";
 import { useAuth } from "../context/AuthContext";
-import { setDoc, onSnapshot, getDocs } from "firebase/firestore";
+import { onSnapshot, getDocs } from "firebase/firestore";
 import { authenticatedFetch } from "@/lib/api";
 import { resizeAndCompressImage } from "../lib/image";
 import {
   archiveEvent,
+  archiveEventPhoto,
+  approveEventPhoto,
+  associateEventPhoto,
   createEvent,
   fetchEventOccurrences,
   restoreEvent,
@@ -14,6 +17,7 @@ import {
   updateEventOccurrence,
 } from "@/app/calendar/api";
 import type { User } from "firebase/auth";
+import { storedDateTimeToLocalInput } from "@/lib/localDateTime";
 
 // Mock AuthContext
 vi.mock("../context/AuthContext", () => ({
@@ -50,6 +54,9 @@ vi.mock("@/hooks/useCurrentProfile", () => ({
 
 vi.mock("@/app/calendar/api", () => ({
   archiveEvent: vi.fn(),
+  archiveEventPhoto: vi.fn(),
+  approveEventPhoto: vi.fn(),
+  associateEventPhoto: vi.fn(),
   createEvent: vi.fn(),
   restoreEvent: vi.fn(),
   updateEvent: vi.fn(),
@@ -84,9 +91,9 @@ describe("useEventEditor custom hook", () => {
     displayName: "Test User",
     email: "test@example.com",
   } as unknown as User;
-  const mockLocations = [{ id: "mars-building", name: "Mars Building", address: "123 Mars Way" }];
+  const mockLocations = [{ id: "mars-building", name: "Mars Building", address: "123 Mars Way" },];
   const mockSetLocations = vi.fn();
-  const mockTeamMembers = [{ uid: "member-1", nickname: "Aariketh", avatar: "avatar1" }];
+  const mockTeamMembers = [{ uid: "member-1", nickname: "Aariketh", avatar: "avatar1" },];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -115,8 +122,15 @@ describe("useEventEditor custom hook", () => {
       return () => {}; // return unsub function
     });
 
-    vi.mocked(setDoc).mockResolvedValue(undefined);
     vi.mocked(archiveEvent).mockResolvedValue(undefined);
+    vi.mocked(archiveEventPhoto).mockResolvedValue(undefined);
+    vi.mocked(approveEventPhoto).mockResolvedValue(undefined);
+    vi.mocked(associateEventPhoto).mockResolvedValue({
+      id: "photo-1",
+      url: "https://images.example.test/photo.jpg",
+      filename: "test.jpg",
+      publicationStatus: "pending",
+    });
     vi.mocked(createEvent).mockResolvedValue({
       id: "new-event",
       title: "New Event",
@@ -333,7 +347,9 @@ describe("useEventEditor custom hook", () => {
     expect(result.current.formTitle).toBe("Drive Practice");
     await act(async () => result.current.handleEditScopeChange("series"));
     expect(result.current.formTitle).toBe("Team Practice");
-    expect(result.current.formDateStart).toBe("2026-06-30T18:00");
+    expect(result.current.formDateStart).toBe(
+      storedDateTimeToLocalInput("2026-06-30T18:00:00.000Z"),
+    );
     await act(async () => result.current.handleEditScopeChange("occurrence"));
     await act(async () => {
       await result.current.handleSaveEvent({
@@ -346,7 +362,7 @@ describe("useEventEditor custom hook", () => {
       "2026-07-07",
       expect.objectContaining({
         title: "Drive Practice",
-        dateStart: "2026-07-07T19:00",
+        dateStart: "2026-07-07T19:00:00.000Z",
       }),
     );
     expect(updateEvent).not.toHaveBeenCalled();
@@ -428,14 +444,13 @@ describe("useEventEditor custom hook", () => {
       await result.current.handleImageUpload(mockEventArg);
     });
 
-    expect(setDoc).toHaveBeenCalled();
+    expect(associateEventPhoto).toHaveBeenCalledWith(
+      "event-123",
+      "photo-1",
+      null,);
 
     await act(async () => {
       await result.current.handleDeletePhoto("photo-1");
     });
-
-    const lastWrite = vi.mocked(setDoc).mock.calls.at(-1);
-    expect(lastWrite?.[1]).toEqual(expect.objectContaining({ isDeleted: 1 }));
-    expect(lastWrite?.[2]).toEqual({ merge: true });
+    expect(archiveEventPhoto).toHaveBeenCalledWith("event-123", "photo-1"); });
   });
-});

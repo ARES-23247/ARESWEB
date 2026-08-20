@@ -5,14 +5,14 @@ import aiRouter from "../ai";
 vi.mock("../../lib/vertex", () => ({
   checkGrammarAndSpelling: vi.fn().mockResolvedValue({
     correctedText: "This is correct.",
-    edits: []
+    edits: [],
   }),
   getAIAssistance: vi.fn().mockResolvedValue("This is help response."),
   getSimulationPlaygroundStream: vi.fn().mockImplementation((sysPrompt, msgs, imgUrl, onChunk) => {
     onChunk("chunk1");
     onChunk("chunk2");
     return Promise.resolve();
-  })
+  }),
 }));
 
 describe("AI Router Backend Endpoints", () => {
@@ -35,7 +35,7 @@ describe("AI Router Backend Endpoints", () => {
       setHeader: vi.fn(),
       flushHeaders: vi.fn(),
       write: vi.fn(),
-      end: vi.fn()
+      end: vi.fn(),
     };
     next = vi.fn();
   });
@@ -54,7 +54,7 @@ describe("AI Router Backend Endpoints", () => {
     (path) => {
       const layer = aiRouter.stack.find((entry) => entry.route?.path === path);
       expect(layer?.route?.stack.map((entry) => entry.name)).toEqual([
-        "ensureAdmin",
+        "ensureTeamMember",
         "enforceDistributedQuota",
         expect.any(String),
       ]);
@@ -139,7 +139,7 @@ describe("AI Router Backend Endpoints", () => {
     it("should stream playground chunks successfully", async () => {
       req.body = {
         systemPrompt: "You are a path planner",
-        messages: [{ role: "user", content: "Hello" }]
+        messages: [{ role: "user", content: "Hello" }],
       };
 
       const handler = getHandler("/sim-playground", "post");
@@ -152,7 +152,7 @@ describe("AI Router Backend Endpoints", () => {
 
     it("should fail validation if messages is missing", async () => {
       req.body = {
-        systemPrompt: "You are a path planner"
+        systemPrompt: "You are a path planner",
       };
 
       const handler = getHandler("/sim-playground", "post");
@@ -199,7 +199,7 @@ describe("AI Router Backend Endpoints", () => {
       req.body = {
         systemPrompt: "You are a path planner",
         messages: [{ role: "user", content: "Hello" }],
-        imageUrl: { url: "http://attacker.com" }
+        imageUrl: { url: "http://attacker.com" },
       };
 
       const handler = getHandler("/sim-playground", "post");
@@ -215,7 +215,7 @@ describe("AI Router Backend Endpoints", () => {
       req.body = {
         systemPrompt: "You are a path planner",
         messages: [{ role: "user", content: "Hello" }],
-        imageUrl: "data:image/png;base64," + "a".repeat(5 * 1024 * 1024 + 1)
+        imageUrl: "data:image/png;base64," + "a".repeat(5 * 1024 * 1024 + 1),
       };
 
       const handler = getHandler("/sim-playground", "post");

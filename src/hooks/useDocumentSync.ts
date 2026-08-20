@@ -86,22 +86,41 @@ export interface SaveDocumentOptions {
   isCreate?: boolean;
 }
 
+export
+
+function contentOwnerDocumentId(
+  collectionName: string,
+  slug: string): string {
+  return `${collectionName}__${slug}`;
+}
+
 function describeFirestoreError(error: unknown, operation: string): string {
-  const code = typeof error === "object" && error && "code" in error
-    ? String(error.code)
-    : "unknown";
+  const code =
+    typeof error === "object" && error && "code" in error
+      ? String(error.code)
+      : "unknown";
   const message = error instanceof Error ? error.message : String(error);
   return `${operation} failed [${code}]: ${message}`;
 }
 
-export function mapDocumentSnapshot(docSnap: QueryDocumentSnapshot<DocumentData>): DocRecord {
+export function mapDocumentSnapshot(
+  docSnap: QueryDocumentSnapshot<DocumentData>,
+): DocRecord {
   const data = docSnap.data();
   return {
     slug: docSnap.id,
-    title: typeof data.title === "string" && data.title.trim() ? data.title : "Untitled Record",
+    title:
+      typeof data.title === "string" && data.title.trim()
+        ? data.title
+        : "Untitled Record",
     category: typeof data.category === "string" ? data.category : "General",
     sortOrder: typeof data.sortOrder === "number" ? data.sortOrder : 0,
-    description: typeof data.description === "string" ? data.description : typeof data.snippet === "string" ? data.snippet : "",
+    description:
+      typeof data.description === "string"
+        ? data.description
+        : typeof data.snippet === "string"
+          ? data.snippet
+          : "",
     content: typeof data.content === "string" ? data.content : "",
     status: typeof data.status === "string" ? data.status : "draft",
     isDeleted: data.isDeleted === 1 ? 1 : 0,
@@ -116,11 +135,20 @@ export function mapDocumentSnapshot(docSnap: QueryDocumentSnapshot<DocumentData>
     date: typeof data.date === "string" ? data.date : "",
     thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : "",
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : "",
-    original_authorNickname: typeof data.original_authorNickname === "string" ? data.original_authorNickname : "",
-    original_authorAvatar: typeof data.original_authorAvatar === "string" ? data.original_authorAvatar : "",
-    approvalStatus: typeof data.approvalStatus === "string" ? data.approvalStatus : undefined,
-    approvedBy: typeof data.approvedBy === "string" ? data.approvedBy : undefined,
-    approvedAt: typeof data.approvedAt === "string" ? data.approvedAt : undefined,
+    original_authorNickname:
+      typeof data.original_authorNickname === "string"
+        ? data.original_authorNickname
+        : "",
+    original_authorAvatar:
+      typeof data.original_authorAvatar === "string"
+        ? data.original_authorAvatar
+        : "",
+    approvalStatus:
+      typeof data.approvalStatus === "string" ? data.approvalStatus : undefined,
+    approvedBy:
+      typeof data.approvedBy === "string" ? data.approvedBy : undefined,
+    approvedAt:
+      typeof data.approvedAt === "string" ? data.approvedAt : undefined,
   };
 }
 
@@ -134,7 +162,12 @@ async function getDocsWithTimeout(
       getDocs(queryRef),
       new Promise<never>((_, reject) => {
         timeoutId = window.setTimeout(
-          () => reject(new Error(`Firestore request timed out after ${timeoutMs} milliseconds.`)),
+          () =>
+            reject(
+              new Error(
+                `Firestore request timed out after ${timeoutMs} milliseconds.`,
+              ),
+            ),
           timeoutMs,
         );
       }),
@@ -150,7 +183,8 @@ export const useDocumentSync = (
 ) => {
   const { user } = useAuth();
   const [allDocs, setAllDocs] = useState<DocRecord[]>([]);
-  const [connectionState, setConnectionState] = useState<DocumentConnectionState>("loading");
+  const [connectionState, setConnectionState] =
+    useState<DocumentConnectionState>("loading");
   const [listError, setListError] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [listLimit, setListLimit] = useState(DOCUMENT_PAGE_SIZE);
@@ -164,20 +198,32 @@ export const useDocumentSync = (
     setConnectionState("loading");
     setListError(null);
 
-    const docsQuery = query(collection(db, collectionName), firestoreLimit(listLimit));
+    const docsQuery = query(
+      collection(db, collectionName),
+      firestoreLimit(listLimit),
+    );
     const unsubscribe = onSnapshot(
       docsQuery,
       { includeMetadataChanges: true },
       (snapshot) => {
         const list = snapshot.docs.map(mapDocumentSnapshot);
         setAllDocs(list);
-        setHasMore(snapshot.size === listLimit && listLimit < MAX_DOCUMENTS_LOADED);
-        setConnectionState(snapshot.metadata.fromCache && !navigator.onLine ? "offline" : "connected");
+        setHasMore(
+          snapshot.size === listLimit && listLimit < MAX_DOCUMENTS_LOADED,
+        );
+        setConnectionState(
+          snapshot.metadata.fromCache && !navigator.onLine
+            ? "offline"
+            : "connected",
+        );
         setListError(null);
         setLoadingList(false);
       },
       (error) => {
-        const diagnostic = describeFirestoreError(error, `Loading ${collectionName}`);
+        const diagnostic = describeFirestoreError(
+          error,
+          `Loading ${collectionName}`,
+        );
         logger.error(diagnostic, error);
         setListError(diagnostic);
         setConnectionState(navigator.onLine ? "error" : "offline");
@@ -188,31 +234,37 @@ export const useDocumentSync = (
     return unsubscribe;
   }, [collectionName, listLimit]);
 
-  const fetchRevisions = useCallback(async (slug: string) => {
-    if (!slug) return;
-    setLoadingRevisions(true);
-    setRevisionError(null);
-    try {
-      const revisionsQuery = query(
-        collection(db, collectionName, slug, "revisions"),
-        orderBy("timestamp", "desc"),
-        firestoreLimit(REVISION_PAGE_SIZE),
-      );
-      const snapshot = await getDocsWithTimeout(revisionsQuery);
-      const list = snapshot.docs.map((revisionSnapshot) => ({
-        id: revisionSnapshot.id,
-        ...revisionSnapshot.data(),
-      })) as DocRevision[];
-      setRevisions(list);
-    } catch (error) {
-      const diagnostic = describeFirestoreError(error, "Loading revision history");
-      logger.error(diagnostic, error);
-      setRevisionError(diagnostic);
-      setRevisions([]);
-    } finally {
-      setLoadingRevisions(false);
-    }
-  }, [collectionName]);
+  const fetchRevisions = useCallback(
+    async (slug: string) => {
+      if (!slug) return;
+      setLoadingRevisions(true);
+      setRevisionError(null);
+      try {
+        const revisionsQuery = query(
+          collection(db, collectionName, slug, "revisions"),
+          orderBy("timestamp", "desc"),
+          firestoreLimit(REVISION_PAGE_SIZE),
+        );
+        const snapshot = await getDocsWithTimeout(revisionsQuery);
+        const list = snapshot.docs.map((revisionSnapshot) => ({
+          id: revisionSnapshot.id,
+          ...revisionSnapshot.data(),
+        })) as DocRevision[];
+        setRevisions(list);
+      } catch (error) {
+        const diagnostic = describeFirestoreError(
+          error,
+          "Loading revision history",
+        );
+        logger.error(diagnostic, error);
+        setRevisionError(diagnostic);
+        setRevisions([]);
+      } finally {
+        setLoadingRevisions(false);
+      }
+    },
+    [collectionName],
+  );
 
   const saveDoc = async (
     slug: string,
@@ -224,27 +276,31 @@ export const useDocumentSync = (
     const documentRef = doc(db, collectionName, slug);
     const now = new Date().toISOString();
     const revId = `rev_${Date.now()}`;
-    const revisionData: DocRevision | null = user ? {
-      id: revId,
-      title: payload.title,
-      description: payload.description,
-      content: payload.content,
-      category: payload.category || "",
-      sortOrder: payload.sortOrder || 0,
-      status: payload.status,
-      displayInAreslib: payload.displayInAreslib || 0,
-      displayInMathCorner: payload.displayInMathCorner || 0,
-      displayInScienceCorner: payload.displayInScienceCorner || 0,
-      isPortfolio: payload.isPortfolio || 0,
-      isExecutiveSummary: payload.isExecutiveSummary || 0,
-      fileUrl: payload.fileUrl || "",
-      createdAt: payload.createdAt || "",
-      author: payload.author || "",
-      date: payload.date || "",
-      thumbnail: payload.thumbnail || "",
-      editedBy: user.uid,
-      editedByName: userNickname || user.displayName || "Anonymous Member",
-      editedByAvatar: userProfileAvatar || user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`,
+    const revisionData: DocRevision | null = user
+      ? {
+          id: revId,
+          title: payload.title,
+          description: payload.description,
+          content: payload.content,
+          category: payload.category || "",
+          sortOrder: payload.sortOrder || 0,
+          status: payload.status,
+          displayInAreslib: payload.displayInAreslib || 0,
+          displayInMathCorner: payload.displayInMathCorner || 0,
+          displayInScienceCorner: payload.displayInScienceCorner || 0,
+          isPortfolio: payload.isPortfolio || 0,
+          isExecutiveSummary: payload.isExecutiveSummary || 0,
+          fileUrl: payload.fileUrl || "",
+          createdAt: payload.createdAt || "",
+          author: payload.author || "",
+          date: payload.date || "",
+          thumbnail: payload.thumbnail || "",
+          editedBy: user.uid,
+          editedByName: userNickname || user.displayName || "Anonymous Member",
+          editedByAvatar:
+            userProfileAvatar ||
+            user.photoURL ||
+            `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`,
       timestamp: now,
     } : null;
 
@@ -256,6 +312,21 @@ export const useDocumentSync = (
       // Preserve server-owned integration metadata (for example Drive source
       // identity and sync state) when a member edits the website fields.
       transaction.set(documentRef, payload, { merge: true });
+      if (options.isCreate && user) {
+        transaction.set(
+          doc(
+            db,
+            "content_owners",
+            contentOwnerDocumentId(collectionName, slug),
+          ),
+          {
+            collectionName,
+            contentId: slug,
+            ownerUid: user.uid,
+            createdAt: now,
+          },
+        );
+      }
       if (revisionData) {
         transaction.set(doc(db, collectionName, slug, "revisions", revId), revisionData);
       }

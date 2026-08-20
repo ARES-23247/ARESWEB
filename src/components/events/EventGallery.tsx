@@ -1,11 +1,12 @@
 import React from "react";
-import { Upload, AlertCircle, Image as ImageIcon, Maximize2, RefreshCw } from "lucide-react";
+import { Upload, AlertCircle, Image as ImageIcon, Maximize2, RefreshCw, } from "lucide-react";
 import { EventPhoto } from "./types";
 
 interface EventGalleryProps {
   isVerified: boolean;
   uploadingImage: boolean;
   uploadError: string | null;
+  uploadNotice: string | null;
   loadingPhotos: boolean;
   photoLoadError: string | null;
   photos: EventPhoto[];
@@ -19,6 +20,7 @@ export default function EventGallery({
   isVerified,
   uploadingImage,
   uploadError,
+  uploadNotice,
   loadingPhotos,
   photoLoadError,
   photos,
@@ -85,6 +87,15 @@ export default function EventGallery({
         </div>
       )}
 
+      {uploadNotice && (
+        <div
+          role="status"
+          className="rounded-lg border border-ares-gold/35 bg-ares-gold/10 p-3.5 text-xs text-white"
+        >
+          {uploadNotice}
+        </div>
+      )}
+
       {photoLoadError && (
         <div role="alert" className="rounded-lg border border-ares-red/40 bg-ares-red/15 p-4 text-white">
           <div className="flex items-start gap-2">
@@ -134,7 +145,9 @@ export default function EventGallery({
                 decoding="async"
               />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 text-left">
-                <span className="text-[7px] text-white/55 font-bold uppercase truncate">{item.filename}</span>
+                <span className="text-[7px] text-white/55 font-bold uppercase truncate">
+                  {item.filename}
+                </span>
                 {item.uploadedBy && !item.uploadedBy.includes("@") && (
                   <span className="text-[8px] text-ares-gold font-black uppercase tracking-wide truncate">
                     By {item.uploadedBy}
@@ -146,7 +159,9 @@ export default function EventGallery({
               </div>
               {occurrenceDate && (
                 <span className="absolute bottom-2 left-2 rounded bg-black/80 px-2 py-1 text-[7px] font-black uppercase tracking-wide text-ares-gold">
-                  {item.occurrenceDate === occurrenceDate ? "This session" : "Series"}
+                  {item.occurrenceDate === occurrenceDate
+                    ? "This session"
+                    : "Series"}
                 </span>
               )}
             </button>
