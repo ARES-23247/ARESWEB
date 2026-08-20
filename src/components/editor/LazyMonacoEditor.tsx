@@ -7,15 +7,16 @@
  * Monaco is bundled from the lockfile rather than fetched from a runtime CDN.
  */
 
-import { lazy, Suspense, useState, useEffect, ReactNode } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle, RotateCw } from "lucide-react";
 import "./monacoRuntime";
-import type { Monaco } from "@monaco-editor/react";
+import MonacoEditor, {
+  DiffEditor as MonacoDiffEditor,
+  type DiffEditorProps,
+  type Monaco,
+} from "@monaco-editor/react";
 import { logger } from "../../utils/logger";
 import EditorSkeleton from "./EditorSkeleton";
-
-// Lazy import Monaco Editor
-const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
 import type { editor } from "monaco-editor";
 
@@ -31,12 +32,20 @@ interface LazyMonacoEditorProps {
 }
 
 // Error display with retry
-function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }) {
+function ErrorDisplay({
+  error,
+  onRetry,
+}: {
+  error: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 gap-4 text-center">
       <AlertCircle className="w-12 h-12 text-ares-red" aria-hidden="true" />
       <div>
-        <h3 className="text-lg font-bold text-white mb-2">Editor Load Failed</h3>
+        <h3 className="text-lg font-bold text-white mb-2">
+          Editor Load Failed
+        </h3>
         <p className="text-sm text-white/60 max-w-md">{error}</p>
       </div>
       <button
@@ -53,25 +62,10 @@ function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }
   );
 }
 
-// Loading wrapper with timeout detection
-function LoadingWrapper({ children, timedOut }: { children: ReactNode; timedOut: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <Suspense fallback={<EditorSkeleton />}>
-        {children}
-      </Suspense>
-      {timedOut && (
-        <div className="absolute bottom-4 left-0 right-0 text-center">
-          <p className="text-sm text-ares-gold bg-black/60 px-4 py-2 rounded inline-block">
-            Loading the code editor and language tools…
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function LazyMonacoEditor({ onMount: originalOnMount, ...restProps }: LazyMonacoEditorProps) {
+export default function LazyMonacoEditor({
+  onMount: originalOnMount,
+  ...restProps
+}: LazyMonacoEditorProps) {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
@@ -108,23 +102,46 @@ export default function LazyMonacoEditor({ onMount: originalOnMount, ...restProp
 
   return (
     <div className="h-full w-full relative">
-      <LoadingWrapper timedOut={timedOut}>
-        <MonacoEditor
-          {...restProps}
-          onMount={(editor, monaco) => {
-            // Clear timeout on successful mount
-            setTimedOut(false);
-            originalOnMount?.(editor, monaco);
-          }}
-          // Handle Monaco worker initialization failures
-          beforeMount={(_monaco) => {
-            // Monaco pre-mount hook — reserved for future worker config
-          }}
-        />
-      </LoadingWrapper>
+      <MonacoEditor
+        {...restProps}
+        loading={<EditorSkeleton />}
+        onMount={(editor, monaco) => {
+          // Clear timeout on successful mount
+          setTimedOut(false);
+          originalOnMount?.(editor, monaco);
+        }}
+        // Handle Monaco worker initialization failures
+        beforeMount={(_monaco) => {
+          // Monaco pre-mount hook — reserved for future worker config
+        }}
+      />
+      {timedOut && (
+        <div className="absolute bottom-4 left-0 right-0 text-center">
+          <p className="text-sm text-ares-gold bg-black/60 px-4 py-2 rounded inline-block">
+            Loading the code editor and language tools…
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Keeps the diff editor behind the same bundled Monaco worker configuration as
+ * the standard editor. This matters when AI changes are the first editor view
+ * opened in a session: importing DiffEditor directly would bypass
+ * monacoRuntime's local-worker setup.
+ */
+export function LazyMonacoDiffEditor(props: DiffEditorProps) {
+  return (
+    <div className="h-full w-full relative">
+      <MonacoDiffEditor {...props} loading={<EditorSkeleton />} />
     </div>
   );
 }
 
 // Export types for consumers
-export type { LazyMonacoEditorProps };
+export type {
+  DiffEditorProps as LazyMonacoDiffEditorProps,
+  LazyMonacoEditorProps,
+};

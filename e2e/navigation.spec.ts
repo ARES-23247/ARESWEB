@@ -3,7 +3,9 @@ import { test, expect } from "./fixtures";
 test.describe("Navigation & Accessibility E2E tests", () => {
   test("should navigate to homepage and verify branding", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle("ARES 23247 | West Virginia Robotics Team (Morgantown, WV)");
+    await expect(page).toHaveTitle(
+      "ARES 23247 | West Virginia Robotics Team (Morgantown, WV)",
+    );
     // The team—not one of its software projects—is the primary homepage identity.
     const heroHeading = page.getByRole("heading", {
       name: "ARES 23247 — Engineered To Inspire",
@@ -192,5 +194,59 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     await drawer.getByRole("link", { name: "Manage Users" }).click();
     await expect(page).toHaveURL(/\/dashboard\/users$/);
     await expect(drawer).toBeHidden();
+  });
+
+  test.describe("opaque simulation frame", () => {
+    // Playwright's global service-worker blocking shim probes
+    // navigator.serviceWorker inside every frame. That getter intentionally
+    // throws in our allow-scripts-only opaque iframe, so this isolated context
+    // permits service workers and validates the application rather than the shim.
+    test.use({ serviceWorkers: "allow" });
+
+    test("simulation playground remains usable at a 320px mobile viewport", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 320, height: 568 });
+      await page.goto("/academy/playground");
+
+      await expect(
+        page.getByRole("heading", { name: "Simulation Playground" }),
+      ).toBeVisible();
+
+      const toolbar = page.getByLabel("Simulation editor toolbar");
+      await expect(toolbar).toBeVisible();
+      await expect(page.getByRole("button", { name: "Run" })).toBeVisible();
+      await expect(page.getByLabel("Simulation name")).toBeVisible();
+
+      const measurements = await toolbar.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const controls = Array.from(
+          element.querySelectorAll<HTMLElement>("button, input"),
+        );
+        return {
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: document.documentElement.clientWidth,
+          toolbarLeft: rect.left,
+          toolbarRight: rect.right,
+          targetSizes: controls.map((control) => {
+            const bounds = control.getBoundingClientRect();
+            return { width: bounds.width, height: bounds.height };
+          }),
+        };
+      });
+
+      expect(measurements.documentWidth).toBeLessThanOrEqual(
+        measurements.viewportWidth,
+      );
+      expect(measurements.toolbarLeft).toBeGreaterThanOrEqual(0);
+      expect(measurements.toolbarRight).toBeLessThanOrEqual(
+        measurements.viewportWidth + 1,
+      );
+      expect(
+        measurements.targetSizes.every(
+          ({ width, height }) => width >= 44 && height >= 44,
+        ),
+      ).toBe(true);
+    });
   });
 });
