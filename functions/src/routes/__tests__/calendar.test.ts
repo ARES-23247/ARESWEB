@@ -67,9 +67,11 @@ vi.mock("../../lib/firebase-admin", () => {
     get: vi.fn(),
     set: vi.fn(),
   };
+  const getAll = vi.fn();
   return {
     adminDb: {
       collection: vi.fn(() => collectionRef),
+      getAll,
       batch: vi.fn(() => batch),
       runTransaction: vi.fn(
         async (operation: (value: typeof transaction) => Promise<unknown>) =>
@@ -86,6 +88,7 @@ vi.mock("../../lib/firebase-admin", () => {
         update: photoUpdate,
     },
       __transaction: transaction,
+      __getAll: getAll,
   },
   };
 });
@@ -177,6 +180,7 @@ describe("calendar API", () => {
       exists: false,
       data: () => undefined,
     });
+    (adminDb as any).__getAll.mockResolvedValue([]);
   });
 
   async function expectApiError(
@@ -998,7 +1002,8 @@ describe("calendar API", () => {
       docs: [
         eventDocument("event-1", {
           title: "Practice, Build; Test",
-          description: "Line one\nLine two",
+          description:
+            'Line one\nLine two --- Meeting Notes --- {"type":"doc","content":[{"type":"text","text":"private"}]}',
         }),
         eventDocument("bad-date", { dateStart: "not-a-date" }),
       ],
@@ -1010,6 +1015,10 @@ describe("calendar API", () => {
     expect(feed).toContain("UID:event-1@aresfirst.org");
     expect(feed).toContain("SUMMARY:Practice\\, Build\\; Test");
     expect(feed).toContain("DESCRIPTION:Line one\\nLine two");
+    expect(feed).not.toContain("Meeting Notes");
+    expect(feed).not.toContain("private");
+    expect(feed).not.toContain("LOCATION:");
+    expect(feed).not.toContain("Team Lab");
     expect(feed).not.toContain("bad-date@aresfirst.org");
     expect(res.setHeader).toHaveBeenCalledWith(
       "Content-Type",
@@ -1037,6 +1046,57 @@ describe("calendar API", () => {
     expect(feed).not.toContain("DESCRIPTION:");
     expect(feed).not.toContain("LOCATION:");
     expect(res.setHeader).toHaveBeenCalledTimes(5);
+  });
+
+  it("includes only explicitly public venue DTOs in the feed", async () => {
+    collectionRef.get.mockResolvedValue({
+      docs: [
+        eventDocument("public-venue", {
+          locationId: "public-library",
+          location: "legacy private address",
+        }),
+      ],
+    });
+    (adminDb as any).__getAll.mockResolvedValue([
+      {
+        id: "public-library",
+        exists: true,
+        data: () => ({
+          name: "Team Library",
+          address: "123 Public Street",
+          isAddressPublic: 1,
+          isDeleted: 0,
+        }),
+      },
+    ]);
+
+    await handler("/feed", "get")(req, res, next);
+
+    const feed = res.send.mock.calls[0][0] as string;
+    expect(feed).toContain("LOCATION:Team Library\\, 123 Public Street");
+    expect(feed).not.toContain("legacy private address");
+
+    vi.clearAllMocks();
+    collectionRef.get.mockResolvedValue({
+      docs: [eventDocument("private-venue", { locationId: "team-home" })],
+    });
+    (adminDb as any).__getAll.mockResolvedValue([
+      {
+        id: "team-home",
+        exists: true,
+        data: () => ({
+          name: "Team Home",
+          address: "private address",
+          isAddressPublic: 0,
+          isDeleted: 0,
+        }),
+      },
+    ]);
+
+    await handler("/feed", "get")(req, res, next);
+    const privateFeed = res.send.mock.calls[0][0] as string;
+    expect(privateFeed).not.toContain("LOCATION:");
+    expect(privateFeed).not.toContain("private address");
   });
 
   it("forwards Firestore failures instead of returning an empty success", async () => {
@@ -1500,11 +1560,27 @@ describe("calendar recurrence", () => {
               title: "Scrimmage Practice",
               dateStart: "2026-09-03T19:00:00.000Z",
               dateEnd: "2026-09-03T21:00:00.000Z",
+              description:
+                "Public update --- Meeting Notes --- private recurrence notes",
+              locationId: "public-library",
+              location: "Private home address",
             },
           }),
         },
       ],
     });
+    (adminDb as any).__getAll.mockResolvedValue([
+      {
+        id: "public-library",
+        exists: true,
+        data: () => ({
+          name: "Team Library",
+          address: "123 Public Street",
+          isAddressPublic: 1,
+          isDeleted: 0,
+        }),
+      },
+    ]);
 
     await handler("/feed", "get")(req, res, next);
 
@@ -1512,5 +1588,9 @@ describe("calendar recurrence", () => {
     expect(body).toContain("RECURRENCE-ID:20260903T180000Z");
     expect(body).toContain("DTSTART:20260903T190000Z");
     expect(body).toContain("SUMMARY:Scrimmage Practice");
+    expect(body).toContain("DESCRIPTION:Public update");
+    expect(body).not.toContain("private recurrence notes");
+    expect(body).not.toContain("Private home address");
+    expect(body).toContain("LOCATION:Team Library\\, 123 Public Street");
   });
 });

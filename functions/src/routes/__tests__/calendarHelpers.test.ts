@@ -13,6 +13,7 @@ import {
   parseBody,
   parseId,
   parseLimit,
+  publicEventDescription,
   publicVenueDto,
   readString,
 } from "../calendarHelpers";
@@ -60,6 +61,16 @@ describe("calendar route helpers", () => {
     expect(publicDto).not.toHaveProperty("createdBy");
     expect(publicDto).not.toHaveProperty("location");
     expect(publicDto).not.toHaveProperty("locationId");
+
+    const legacyDescription =
+      'Public practice recap. --- Meeting Notes --- {"type":"doc","content":[]}';
+    expect(eventDto("legacy-event", {
+      description: legacyDescription,
+    }, false).description).toBe("Public practice recap.");
+    expect(eventDto("legacy-event", {
+      description: legacyDescription,
+    }, true).description).toBe(legacyDescription);
+    expect(publicEventDescription("--- Meeting Notes --- private")).toBeNull();
 
     const competitionDto = eventDto("event-comp", {
       title: "WV State Championship",

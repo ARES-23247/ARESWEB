@@ -56,6 +56,7 @@ export default function PwaUpdatePrompt({
   const activationTimeout = useRef<number | undefined>(undefined);
   const controllerChangeHandler = useRef<(() => void) | null>(null);
   const reloadStarted = useRef(false);
+  const updateDismissed = useRef(updateDismissedForSession());
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -82,6 +83,7 @@ export default function PwaUpdatePrompt({
     if (reloadStarted.current) return;
     reloadStarted.current = true;
     clearActivationWait();
+    updateDismissed.current = false;
     clearDismissedUpdate();
     performReload();
   }, [clearActivationWait, performReload]);
@@ -90,6 +92,7 @@ export default function PwaUpdatePrompt({
     if (reloadStarted.current) return;
     reloadStarted.current = true;
     clearActivationWait();
+    updateDismissed.current = true;
     rememberDismissedUpdate();
     setUpdateAvailable(false);
     setError(null);
@@ -99,6 +102,7 @@ export default function PwaUpdatePrompt({
 
   const dismissUpdate = useCallback(() => {
     clearActivationWait();
+    updateDismissed.current = true;
     rememberDismissedUpdate();
     reloadStarted.current = false;
     setUpdateAvailable(false);
@@ -160,7 +164,7 @@ export default function PwaUpdatePrompt({
       },
       onNeedRefresh: () => {
         if (isDisposed) return;
-        if (updateDismissedForSession()) return;
+        if (updateDismissed.current || updateDismissedForSession()) return;
         setError(null);
         setIsUpdating(false);
         setUpdateAvailable(true);
@@ -228,6 +232,7 @@ export default function PwaUpdatePrompt({
   const installUpdate = async () => {
     if (!updateServiceWorker.current) return;
     clearActivationWait();
+    updateDismissed.current = false;
     clearDismissedUpdate();
     reloadStarted.current = false;
     setIsUpdating(true);

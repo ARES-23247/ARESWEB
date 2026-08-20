@@ -29,6 +29,7 @@ describe("PwaUpdatePrompt", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -105,6 +106,22 @@ describe("PwaUpdatePrompt", () => {
     render(<PwaUpdatePrompt enabled />);
     const remountedCallbacks = registerSWMock.mock.calls[1][0];
     act(() => remountedCallbacks.onNeedRefresh());
+
+    expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
+  });
+
+  it("keeps a dismissed update hidden in memory when session storage is unavailable", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    render(<PwaUpdatePrompt enabled />);
+    const callbacks = registerSWMock.mock.calls[0][0];
+
+    act(() => callbacks.onNeedRefresh());
+    fireEvent.click(
+      screen.getByRole("button", { name: "Dismiss notification" }),
+    );
+    act(() => callbacks.onNeedRefresh());
 
     expect(screen.queryByText("Portal update ready")).not.toBeInTheDocument();
   });

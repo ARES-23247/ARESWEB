@@ -411,6 +411,18 @@ export function readString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+const LEGACY_PRIVATE_NOTES_MARKER = /\s*-{3,}\s*meeting notes\s*-{3,}\s*/i;
+
+export function publicEventDescription(value: unknown): string | null {
+  const description = readString(value);
+  if (!description) return null;
+  const markerIndex = description.search(LEGACY_PRIVATE_NOTES_MARKER);
+  const publicDescription = markerIndex >= 0
+    ? description.slice(0, markerIndex)
+    : description;
+  return publicDescription.trim() || null;
+}
+
 function readFlag(value: unknown): 0 | 1 {
   return value === 1 ? 1 : 0;
 }
@@ -426,7 +438,9 @@ export function eventDto(
     title: readString(data.title) ?? "Untitled event",
     dateStart: readString(data.dateStart) ?? "",
     dateEnd: readString(data.dateEnd),
-    description: readString(data.description),
+    description: includeLifecycle
+      ? readString(data.description)
+      : publicEventDescription(data.description),
     category:
       data.category === "outreach"
         ? ("outreach" as const)
