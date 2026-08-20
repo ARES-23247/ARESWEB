@@ -28,6 +28,7 @@ import {
   parseBody,
   parseId,
   parseLimit,
+  publicEventDescription,
   publicVenueDto,
   readRecurrence,
   readOccurrenceOverrides,
@@ -93,6 +94,37 @@ async function loadOccurrenceStates(parentIds: readonly string[]): Promise<Map<s
     if (state.cancelledDates.size > 0 || state.overrides.size > 0) states.set(id, state);
   }
   return states;
+}
+
+function feedLocationIds(
+  documents: readonly FirebaseFirestore.QueryDocumentSnapshot[],
+  occurrenceStates: ReadonlyMap<string, OccurrenceState>,
+): string[] {
+  const ids = new Set<string>();
+  for (const document of documents) {
+    const id = readString((document.data() as EventDocument).locationId);
+    if (id && /^[A-Za-z0-9_-]{1,128}$/.test(id)) ids.add(id);
+    for (const overrides of occurrenceStates.get(document.id)?.overrides.values() ?? []) {
+      const overrideId = readString(overrides.locationId);
+      if (overrideId && /^[A-Za-z0-9_-]{1,128}$/.test(overrideId)) ids.add(overrideId);
+    }
+  }
+  return [...ids];
+}
+
+async function loadPublicVenueLabels(ids: readonly string[]): Promise<Map<string, string>> {
+  const labels = new Map<string, string>();
+  for (let index = 0; index < ids.length; index += 100) {
+    const page = ids.slice(index, index + 100);
+    const refs = page.map((id) => adminDb.collection("locations").doc(id));
+    const snapshots = await adminDb.getAll(...refs);
+    for (const snapshot of snapshots) {
+      if (!snapshot.exists) continue;
+      const venue = publicVenueDto(snapshot.data() as LocationDocument);
+      if (venue) labels.set(snapshot.id, `${venue.name}, ${venue.address}`);
+    }
+  }
+  return labels;
 }
 
 /**
@@ -962,6 +994,14 @@ router.get(
       "X-PUBLISHED-TTL:PT1H",
     ];
 
+    const recurringIds = snapshot.docs
+      .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
+      .map((document) => document.id);
+    const occurrenceStates = await loadOccurrenceStates(recurringIds);
+    const publicVenueLabels = await loadPublicVenueLabels(
+      feedLocationIds(snapshot.docs, occurrenceStates),
+    );
+
     for (const document of snapshot.docs) {
       const data = document.data() as EventDocument;
       const dateStart = readString(data.dateStart);
@@ -971,7 +1011,7 @@ router.get(
       if (!end) continue;
       const updated = formatIcalDate(readString(data.updatedAt)) ?? start;
       const recurrence = readRecurrence(data.recurrence);
-      let occurrenceState: OccurrenceState | undefined;
+      const occurrenceState = occurrenceStates.get(document.id);
       lines.push("BEGIN:VEVENT");
       lines.push(`UID:${document.id}@aresfirst.org`);
       lines.push(`DTSTAMP:${updated}`);
@@ -989,8 +1029,6 @@ router.get(
         if (recurrence.until)
           rule.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
         lines.push(`RRULE:${rule.join(";")}`);
-        const occurrenceStates = await loadOccurrenceStates([document.id]);
-        occurrenceState = occurrenceStates.get(document.id);
         const cancelled = occurrenceState?.cancelledDates;
         if (cancelled && cancelled.size > 0) {
           lines.push(
@@ -1003,11 +1041,15 @@ router.get(
       }
       lines.push(`SUMMARY:${escapeIcalText(readString(data.title) ?? "Untitled event")}`,
       );
-      const cleanDescription = toPlainText(data.description);
+      const cleanDescription = toPlainText(
+        publicEventDescription(data.description),
+      );
       if (cleanDescription)
         lines.push(`DESCRIPTION:${escapeIcalText(cleanDescription)}`);
-      const location = readString(data.location);
-      if (location) lines.push(`LOCATION:${escapeIcalText(location)}`);
+      const publicLocation = publicVenueLabels.get(readString(data.locationId) ?? "");
+      if (publicLocation) {
+        lines.push(`LOCATION:${escapeIcalText(publicLocation)}`);
+      }
       lines.push("END:VEVENT");
 
       // RFC 5545 recurrence exceptions keep the series UID and identify the
@@ -1049,18 +1091,20 @@ router.get(
           lines.push(`DTEND:${occurrenceEnd}`);
           lines.push(`SUMMARY:${escapeIcalText(effectiveOccurrence.title)}`);
           const occurrenceDescription = toPlainText(
-            effectiveOccurrence.description,
+            publicEventDescription(effectiveOccurrence.description),
           );
           if (occurrenceDescription) {
             lines.push(`DESCRIPTION:${escapeIcalText(occurrenceDescription)}`);
           }
-          if (
-            "location" in effectiveOccurrence &&
-            typeof effectiveOccurrence.location === "string"
-          ) {
-            lines.push(
-              `LOCATION:${escapeIcalText(effectiveOccurrence.location)}`,
-            );
+          const occurrenceLocation = publicVenueLabels.get(
+            readString(
+              "locationId" in effectiveOccurrence
+                ? effectiveOccurrence.locationId
+                : null,
+            ) ?? "",
+          );
+          if (occurrenceLocation) {
+            lines.push(`LOCATION:${escapeIcalText(occurrenceLocation)}`);
           }
           lines.push("END:VEVENT");
         }
