@@ -1223,6 +1223,24 @@ describe("calendar recurrence", () => {
     );
   });
 
+  it("resolves recurring event occurrence by compound id without query param", async () => {
+    req.params = { id: `weekly-1_${todayYmdStr}` };
+    req.query = {};
+
+    await handler("/events/:id", "get")(req, res, next);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          id: `weekly-1_${todayYmdStr}`,
+          recurrenceOf: "weekly-1",
+          occurrenceDate: todayYmdStr,
+          dateStart: `${todayYmdStr}T18:00:00.000Z`,
+        }),
+      }),
+    );
+  });
+
   it("merges validated occurrence overrides while retaining immutable series defaults", async () => {
     req.params = { id: "weekly-1" };
     req.query = { occurrence: todayYmdStr };

@@ -32,9 +32,13 @@ import { resizeAndCompressImage } from "@/lib/image";
 
 export default function EventDetailPage() {
   const params = useParams();
-  const id = params?.id as string;
+  const rawId = (params?.id as string) || "";
   const [searchParams] = useSearchParams();
-  const occurrenceDate = searchParams.get("occurrence") ?? undefined;
+  const rawOccurrence = searchParams.get("occurrence") ?? undefined;
+
+  const compoundMatch = rawId.match(/^([A-Za-z0-9_-]+)_(\d{4}-\d{2}-\d{2})$/);
+  const id = compoundMatch ? compoundMatch[1] : rawId;
+  const occurrenceDate = rawOccurrence || (compoundMatch ? compoundMatch[2] : undefined);
   const { user, authorizedUser } = useAuth();
 
   const [event, setEvent] = useState<EventItem | null>(null);
