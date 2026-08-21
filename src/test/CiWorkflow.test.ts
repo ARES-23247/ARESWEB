@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const workflow = readFileSync(resolve(".github/workflows/ci.yml"), "utf8");
+const workflow = readFileSync(resolve(".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
 
 function workflowStep(name: string): string {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

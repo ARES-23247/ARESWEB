@@ -205,14 +205,34 @@ async function applyCursor(
 }
 
 async function getEvent(idValue: string | string[], includeArchived: boolean) {
-  const id = parseId(idValue, "event");
-  const ref = adminDb.collection("events").doc(id);
+  const rawId = parseId(idValue, "event");
+  const compoundMatch = rawId.match(/^([A-Za-z0-9_-]+)_(\d{4}-\d{2}-\d{2})$/);
+
+  if (compoundMatch) {
+    const parentRef = adminDb.collection("events").doc(compoundMatch[1]);
+    const parentSnap = await parentRef.get();
+    const parentData = parentSnap.data() as EventDocument | undefined;
+    if (parentSnap.exists && readRecurrence(parentData?.recurrence)) {
+      if (!includeArchived && (parentData?.status !== "published" || parentData?.isDeleted === 1)) {
+        throw new ApiError(404, "Event not found.", "EVENT_NOT_FOUND");
+      }
+      return {
+        id: compoundMatch[1],
+        ref: parentRef,
+        snapshot: parentSnap,
+        data: parentData ?? {},
+        derivedOccurrence: compoundMatch[2],
+      };
+    }
+  }
+
+  const ref = adminDb.collection("events").doc(rawId);
   const snapshot = await ref.get();
   const data = snapshot.data() as EventDocument | undefined;
   if (!snapshot.exists || (!includeArchived && (data?.status !== "published" || data?.isDeleted === 1))) {
     throw new ApiError(404, "Event not found.", "EVENT_NOT_FOUND");
   }
-  return { id, ref, snapshot, data: data ?? {} };
+  return { id: rawId, ref, snapshot, data: data ?? {}, derivedOccurrence: undefined };
 }
 
 // Public calendar data is an explicit DTO. It never returns raw Firestore documents.
@@ -242,8 +262,8 @@ router.get(
 router.get(
   "/events/:id",
   asyncHandler(async (req, res) => {
-    const { id, ref, data } = await getEvent(req.params.id, false);
-    const occurrenceValue = req.query.occurrence;
+    const { id, ref, data, derivedOccurrence } = await getEvent(req.params.id, false);
+    const occurrenceValue = req.query.occurrence ?? derivedOccurrence;
     let event = eventDto(id, data, false);
     let occurrenceOverrides: ReturnType<typeof readOccurrenceOverrides> = {};
     if (occurrenceValue !== undefined) {
@@ -288,8 +308,8 @@ router.get(
 router.get(
   "/events/:id/photos",
   asyncHandler(async (req, res) => {
-    const { ref } = await getEvent(req.params.id, false);
-    const occurrenceValue = req.query.occurrence;
+    const { ref, derivedOccurrence } = await getEvent(req.params.id, false);
+    const occurrenceValue = req.query.occurrence ?? derivedOccurrence;
     if (occurrenceValue !== undefined && !isOccurrenceDate(occurrenceValue)) {
       throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
     }
@@ -539,8 +559,8 @@ router.get(
   "/manage/:id",
   ensureTeamMember,
   asyncHandler(async (req, res) => {
-    const { id, ref, data } = await getEvent(req.params.id, true);
-    const occurrenceValue = req.query.occurrence;
+    const { id, ref, data, derivedOccurrence } = await getEvent(req.params.id, true);
+    const occurrenceValue = req.query.occurrence ?? derivedOccurrence;
     if (occurrenceValue === undefined) {
       res.json({ success: true, event: eventDto(id, data, true) });
       return;

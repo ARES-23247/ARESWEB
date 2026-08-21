@@ -242,6 +242,7 @@ export default function CalendarPage() {
                     <button
                       key={idx}
                       onClick={() => setSelectedDate(dayCell.date)}
+                      aria-label={`${formatFullDate(dayCell.date)}: ${dayEvents.length === 0 ? "No scheduled events" : `${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"} scheduled`}`}
                       className={`relative min-h-[70px] sm:min-h-[85px] p-2 flex flex-col items-start justify-between text-left group transition-all duration-300 cursor-pointer ${
                         dayCell.isCurrentMonth ? "bg-black/10 text-marble" : "bg-black/40 text-marble/25"
                       } ${

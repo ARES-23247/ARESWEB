@@ -197,8 +197,9 @@ export default function EventsManagementPage({
     setIsApplyingLifecycle(true);
     setOperationStatus(null);
     try {
-      if (pendingLifecycle.action === "archive") await archiveEvent(pendingLifecycle.event.id);
-      else await restoreEvent(pendingLifecycle.event.id);
+      const targetId = pendingLifecycle.event.recurrenceOf || pendingLifecycle.event.id;
+      if (pendingLifecycle.action === "archive") await archiveEvent(targetId);
+      else await restoreEvent(targetId);
       setOperationStatus({
         kind: "success",
         message:
@@ -223,7 +224,8 @@ export default function EventsManagementPage({
     if (!canPublishDirectly) return;
     setOperationStatus(null);
     try {
-      await publishEvent(evt.id);
+      const targetId = evt.recurrenceOf || evt.id;
+      await publishEvent(targetId);
       setOperationStatus({
         kind: "success",
         message: `“${evt.title}” is now published.`,
