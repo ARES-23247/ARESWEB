@@ -12,7 +12,7 @@ const DEFAULT_KEYWORDS = [
   "youth robotics",
   "robotics team",
   "engineering",
-  "FIRST® Tech Challenge"
+  "FIRST® Tech Challenge",
 ].join(", ");
 
 const DEFAULT_IMAGE = `${siteConfig.urls.base}/favicon.webp`;
@@ -45,21 +45,32 @@ interface SEOProps {
 }
 
 export function getCanonicalUrl(url?: string): string {
-  const requestedPath = url ?? (typeof window !== "undefined" ? window.location.pathname : "/");
+  const requestedPath =
+    url ?? (typeof window !== "undefined" ? window.location.pathname : "/");
 
   try {
     const parsed = new URL(requestedPath, siteConfig.urls.base);
-    const normalizedPath = parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/+$/, "");
+    const normalizedPath =
+      parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/+$/, "");
     return new URL(normalizedPath || "/", siteConfig.urls.base).toString();
   } catch {
     return `${siteConfig.urls.base}/`;
   }
 }
 
-export function getOgImageUrl(title: string, options?: { category?: string; author?: string; date?: string; theme?: "gold" | "cyan" | "red" }): string {
+export function getOgImageUrl(
+  title: string,
+  options?: {
+    category?: string;
+    author?: string;
+    date?: string;
+    theme?: "gold" | "cyan" | "red";
+  },
+): string {
   const params = new URLSearchParams();
   params.set("title", title.trim().slice(0, 100) || "ARES 23247 Robotics");
-  if (options?.category) params.set("category", options.category.trim().slice(0, 30));
+  if (options?.category)
+    params.set("category", options.category.trim().slice(0, 30));
   if (options?.author) params.set("author", options.author.trim().slice(0, 40));
   if (options?.date) params.set("date", options.date.trim().slice(0, 30));
   if (options?.theme) params.set("theme", options.theme);
@@ -68,63 +79,69 @@ export function getOgImageUrl(title: string, options?: { category?: string; auth
 
 function compactObject<T extends Record<string, unknown>>(value: T): T {
   return Object.fromEntries(
-    Object.entries(value).filter(([, item]) => item !== undefined && item !== "")
+    Object.entries(value).filter(
+      ([, item]) => item !== undefined && item !== "",
+    ),
   ) as T;
 }
 
 export const ORGANIZATION_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "ARES 23247",
-  "alternateName": "Appalachian Robotics & Engineering Society",
-  "url": siteConfig.urls.base,
-  "logo": DEFAULT_IMAGE,
-  "image": DEFAULT_IMAGE,
-  "description": "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
-  "address": {
+  name: "ARES 23247",
+  alternateName: "Appalachian Robotics & Engineering Society",
+  url: siteConfig.urls.base,
+  logo: DEFAULT_IMAGE,
+  image: DEFAULT_IMAGE,
+  description:
+    "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
+  address: {
     "@type": "PostalAddress",
-    "addressLocality": "Morgantown",
-    "addressRegion": "WV",
-    "addressCountry": "US"
+    addressLocality: "Morgantown",
+    addressRegion: "WV",
+    addressCountry: "US",
   },
-  "contactPoint": {
+  contactPoint: {
     "@type": "ContactPoint",
-    "contactType": "general inquiries",
-    "email": siteConfig.contact.email,
-    "url": `${siteConfig.urls.base}/join`
+    contactType: "general inquiries",
+    email: siteConfig.contact.email,
+    url: `${siteConfig.urls.base}/join`,
   },
-  "areaServed": {
+  areaServed: {
     "@type": "State",
-    "name": "West Virginia"
+    name: "West Virginia",
   },
-  "knowsAbout": [
+  knowsAbout: [
     "FIRST Tech Challenge",
     "competitive robotics",
     "robotics engineering",
     "STEM education",
     "CAD design",
-    "robot programming"
+    "robot programming",
   ],
-  "sameAs": [
-    `https://github.com/${siteConfig.urls.githubOrg}`,
+  sameAs: [
+    siteConfig.social.github,
     siteConfig.urls.toa,
-    `https://bsky.app/profile/${siteConfig.urls.bluesky}`,
-    `https://x.com/${siteConfig.urls.twitter}`,
-    `https://www.instagram.com/${siteConfig.urls.instagram}/`
-  ]
+    siteConfig.social.bluesky,
+    siteConfig.social.x,
+    siteConfig.social.instagram,
+    siteConfig.social.youtube,
+    siteConfig.social.facebook,
+  ],
 };
 
 export const WEBSITE_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "ARES 23247",
-  "url": siteConfig.urls.base,
-  "description": "The official website for ARES 23247, a FIRST® Tech Challenge team in Morgantown, West Virginia.",
-  "publisher": {
+  name: "ARES 23247",
+  url: siteConfig.urls.base,
+  description:
+    "The official website for ARES 23247, a FIRST® Tech Challenge team in Morgantown, West Virginia.",
+  publisher: {
     "@type": "Organization",
-    "name": "ARES 23247",
-    "url": siteConfig.urls.base
-  }
+    name: "ARES 23247",
+    url: siteConfig.urls.base,
+  },
 };
 
 interface AdditionalSchemaOptions {
@@ -144,32 +161,36 @@ export function createAdditionalSchema({
   keywords,
   image,
   canonicalUrl,
-  schemaData
+  schemaData,
 }: AdditionalSchemaOptions): Record<string, unknown> | null {
   if (type === "article" && schemaData) {
     const author = schemaData.authorName
-      ? { "@type": "Person", "name": schemaData.authorName }
-      : { "@type": "Organization", "name": "ARES 23247", "url": siteConfig.urls.base };
+      ? { "@type": "Person", name: schemaData.authorName }
+      : {
+          "@type": "Organization",
+          name: "ARES 23247",
+          url: siteConfig.urls.base,
+        };
 
     return compactObject({
       "@context": "https://schema.org",
       "@type": "BlogPosting",
-      "headline": title,
-      "image": image,
-      "author": author,
-      "publisher": {
+      headline: title,
+      image: image,
+      author: author,
+      publisher: {
         "@type": "Organization",
-        "name": "ARES 23247",
-        "logo": { "@type": "ImageObject", "url": DEFAULT_IMAGE }
+        name: "ARES 23247",
+        logo: { "@type": "ImageObject", url: DEFAULT_IMAGE },
       },
-      "datePublished": schemaData.datePublished,
-      "dateModified": schemaData.dateModified,
-      "description": description,
-      "keywords": keywords,
-      "inLanguage": "en-US",
-      "wordCount": schemaData.wordCount,
-      "timeRequired": schemaData.readingTime,
-      "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
+      datePublished: schemaData.datePublished,
+      dateModified: schemaData.dateModified,
+      description: description,
+      keywords: keywords,
+      inLanguage: "en-US",
+      wordCount: schemaData.wordCount,
+      timeRequired: schemaData.readingTime,
+      mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
     });
   }
 
@@ -181,29 +202,29 @@ export function createAdditionalSchema({
   ) {
     const location = {
       "@type": "Place",
-      "name": schemaData.locationName,
-      "address": {
+      name: schemaData.locationName,
+      address: {
         "@type": "PostalAddress",
-        "streetAddress": schemaData.locationAddress,
+        streetAddress: schemaData.locationAddress,
       },
     };
 
     return compactObject({
       "@context": "https://schema.org",
       "@type": "Event",
-      "name": title,
-      "startDate": schemaData.startDate,
-      "endDate": schemaData.endDate,
-      "eventAttendanceMode": schemaData.eventAttendanceMode,
-      "location": location,
-      "url": canonicalUrl,
-      "image": image,
-      "description": description,
-      "organizer": {
+      name: title,
+      startDate: schemaData.startDate,
+      endDate: schemaData.endDate,
+      eventAttendanceMode: schemaData.eventAttendanceMode,
+      location: location,
+      url: canonicalUrl,
+      image: image,
+      description: description,
+      organizer: {
         "@type": "Organization",
-        "name": "ARES 23247",
-        "url": siteConfig.urls.base
-      }
+        name: "ARES 23247",
+        url: siteConfig.urls.base,
+      },
     });
   }
 
@@ -220,15 +241,19 @@ export default function SEO({
   url,
   type = "website",
   noindex = false,
-  schemaData
+  schemaData,
 }: SEOProps) {
-  const siteTitle = exactTitle || title.endsWith("ARES 23247") ? title : `${title} | ARES 23247`;
+  const siteTitle =
+    exactTitle || title.endsWith("ARES 23247")
+      ? title
+      : `${title} | ARES 23247`;
   const currentUrl = getCanonicalUrl(url);
   const socialImage = image || DEFAULT_IMAGE;
   const socialImageAlt = imageAlt || `${title} — ARES 23247`;
-  const hasSearchQuery = (
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("q")
-  ) || Boolean(url && /[?&]q=/.test(url));
+  const hasSearchQuery =
+    (typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("q")) ||
+    Boolean(url && /[?&]q=/.test(url));
 
   const additionalSchema = createAdditionalSchema({
     type,
@@ -237,7 +262,7 @@ export default function SEO({
     keywords,
     image: socialImage,
     canonicalUrl: currentUrl,
-    schemaData
+    schemaData,
   });
 
   const openGraphType = type === "article" ? "article" : "website";
@@ -248,7 +273,12 @@ export default function SEO({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="theme-color" content="#C00000" />
-      <meta name="robots" content={(noindex || hasSearchQuery) ? "noindex, follow" : "index, follow"} />
+      <meta
+        name="robots"
+        content={
+          noindex || hasSearchQuery ? "noindex, follow" : "index, follow"
+        }
+      />
       <link rel="canonical" href={currentUrl} />
 
       <meta property="og:type" content={openGraphType} />
@@ -260,17 +290,26 @@ export default function SEO({
       <meta property="og:site_name" content="ARES 23247" />
       <meta property="og:locale" content="en_US" />
 
-      <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+      <meta
+        name="twitter:card"
+        content={image ? "summary_large_image" : "summary"}
+      />
       <meta name="twitter:url" content={currentUrl} />
       <meta name="twitter:title" content={siteTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={socialImage} />
       <meta name="twitter:image:alt" content={socialImageAlt} />
 
-      <script type="application/ld+json">{JSON.stringify(ORGANIZATION_SCHEMA)}</script>
-      <script type="application/ld+json">{JSON.stringify(WEBSITE_SCHEMA)}</script>
+      <script type="application/ld+json">
+        {JSON.stringify(ORGANIZATION_SCHEMA)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(WEBSITE_SCHEMA)}
+      </script>
       {additionalSchema && (
-        <script type="application/ld+json">{JSON.stringify(additionalSchema)}</script>
+        <script type="application/ld+json">
+          {JSON.stringify(additionalSchema)}
+        </script>
       )}
     </Helmet>
   );

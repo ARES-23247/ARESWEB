@@ -5,7 +5,7 @@ import SEO, {
   createAdditionalSchema,
   getCanonicalUrl,
   getOgImageUrl,
-  ORGANIZATION_SCHEMA
+  ORGANIZATION_SCHEMA,
 } from "@/components/SEO";
 import EducationalCredentialSchema from "@/components/EducationalCredentialSchema";
 
@@ -14,8 +14,12 @@ function renderWithHelmet(node: React.ReactNode) {
 }
 
 function structuredData(): Array<Record<string, unknown>> {
-  return Array.from(document.head.querySelectorAll('script[type="application/ld+json"]'))
-    .map((script) => JSON.parse(script.textContent || "{}") as Record<string, unknown>);
+  return Array.from(
+    document.head.querySelectorAll('script[type="application/ld+json"]'),
+  ).map(
+    (script) =>
+      JSON.parse(script.textContent || "{}") as Record<string, unknown>,
+  );
 }
 
 describe("SEO", () => {
@@ -25,7 +29,9 @@ describe("SEO", () => {
 
   afterEach(() => {
     cleanup();
-    document.head.querySelectorAll("[data-rh]").forEach((element) => element.remove());
+    document.head
+      .querySelectorAll("[data-rh]")
+      .forEach((element) => element.remove());
   });
 
   it("uses the production canonical path without query data and valid default image metadata", async () => {
@@ -33,28 +39,24 @@ describe("SEO", () => {
       <SEO
         title="Team Blog"
         url="https://untrusted.example/blog/post-one?ref=share#comments"
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute(
-        "href",
-        "https://aresfirst.org/blog/post-one"
-      );
+      expect(
+        document.head.querySelector('link[rel="canonical"]'),
+      ).toHaveAttribute("href", "https://aresfirst.org/blog/post-one");
     });
 
-    expect(document.head.querySelector('meta[property="og:image"]')).toHaveAttribute(
-      "content",
-      "https://aresfirst.org/favicon.webp"
-    );
-    expect(document.head.querySelector('meta[property="og:image:alt"]')).toHaveAttribute(
-      "content",
-      "Team Blog — ARES 23247"
-    );
-    expect(document.head.querySelector('meta[name="twitter:image:alt"]')).toHaveAttribute(
-      "content",
-      "Team Blog — ARES 23247"
-    );
+    expect(
+      document.head.querySelector('meta[property="og:image"]'),
+    ).toHaveAttribute("content", "https://aresfirst.org/favicon.webp");
+    expect(
+      document.head.querySelector('meta[property="og:image:alt"]'),
+    ).toHaveAttribute("content", "Team Blog — ARES 23247");
+    expect(
+      document.head.querySelector('meta[name="twitter:image:alt"]'),
+    ).toHaveAttribute("content", "Team Blog — ARES 23247");
 
     const json = JSON.stringify(ORGANIZATION_SCHEMA);
     expect(json).toContain("https://github.com/ARES-23247");
@@ -69,6 +71,10 @@ describe("SEO", () => {
     expect(json).toContain("https://bsky.app/profile/ares23247.bsky.social");
     expect(json).toContain("https://x.com/ARES23247");
     expect(json).toContain("https://www.instagram.com/aresftc23247/");
+    expect(json).toContain("https://www.youtube.com/@ARESFTC");
+    expect(json).toContain(
+      "https://www.facebook.com/profile.php?id=61582749275287",
+    );
   });
 
   it("marks search results noindex while keeping a clean canonical URL", async () => {
@@ -76,15 +82,13 @@ describe("SEO", () => {
     renderWithHelmet(<SEO title="Academy Search" />);
 
     await waitFor(() => {
-      expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
-        "content",
-        "noindex, follow"
-      );
+      expect(
+        document.head.querySelector('meta[name="robots"]'),
+      ).toHaveAttribute("content", "noindex, follow");
     });
-    expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute(
-      "href",
-      "https://aresfirst.org/academy"
-    );
+    expect(
+      document.head.querySelector('link[rel="canonical"]'),
+    ).toHaveAttribute("href", "https://aresfirst.org/academy");
   });
 
   it("preserves a verified application name when an exact title is required", async () => {
@@ -93,25 +97,28 @@ describe("SEO", () => {
     await waitFor(() => {
       expect(document.title).toBe("ARES Analytics");
     });
-    expect(document.head.querySelector('meta[property="og:title"]')).toHaveAttribute(
-      "content",
-      "ARES Analytics"
-    );
+    expect(
+      document.head.querySelector('meta[property="og:title"]'),
+    ).toHaveAttribute("content", "ARES Analytics");
   });
 
   it("normalizes trailing slashes and uses a large social card for supplied media", async () => {
-    renderWithHelmet(<SEO title="Event" url="/events/demo///" image="https://aresfirst.org/event-card.webp" />);
+    renderWithHelmet(
+      <SEO
+        title="Event"
+        url="/events/demo///"
+        image="https://aresfirst.org/event-card.webp"
+      />,
+    );
 
     await waitFor(() => {
-      expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute(
-        "href",
-        "https://aresfirst.org/events/demo"
-      );
+      expect(
+        document.head.querySelector('link[rel="canonical"]'),
+      ).toHaveAttribute("href", "https://aresfirst.org/events/demo");
     });
-    expect(document.head.querySelector('meta[name="twitter:card"]')).toHaveAttribute(
-      "content",
-      "summary_large_image"
-    );
+    expect(
+      document.head.querySelector('meta[name="twitter:card"]'),
+    ).toHaveAttribute("content", "summary_large_image");
   });
 
   it("does not invent article publication or modification dates", async () => {
@@ -122,13 +129,13 @@ describe("SEO", () => {
       keywords: "robotics",
       image: "https://aresfirst.org/favicon.webp",
       canonicalUrl: "https://aresfirst.org/blog/build-notes",
-      schemaData: { authorName: "Team Writer" }
+      schemaData: { authorName: "Team Writer" },
     });
 
     expect(article).not.toHaveProperty("datePublished");
     expect(article).not.toHaveProperty("dateModified");
     expect(article).toMatchObject({
-      author: { "@type": "Person", name: "Team Writer" }
+      author: { "@type": "Person", name: "Team Writer" },
     });
   });
 
@@ -140,7 +147,7 @@ describe("SEO", () => {
       keywords: "robotics",
       image: "https://aresfirst.org/favicon.webp",
       canonicalUrl: "https://aresfirst.org/events/demo",
-      schemaData: { startDate: "2026-09-12T14:00:00.000Z" }
+      schemaData: { startDate: "2026-09-12T14:00:00.000Z" },
     });
 
     expect(event).toBeNull();
@@ -163,13 +170,13 @@ describe("SEO", () => {
 
     expect(event).toMatchObject({
       "@type": "Event",
-      "url": "https://aresfirst.org/events/demo",
-      "location": {
+      url: "https://aresfirst.org/events/demo",
+      location: {
         "@type": "Place",
-        "name": "Public Library",
-        "address": {
+        name: "Public Library",
+        address: {
           "@type": "PostalAddress",
-          "streetAddress": "321 Main Street, Morgantown, WV 26505, US",
+          streetAddress: "321 Main Street, Morgantown, WV 26505, US",
         },
       },
     });
@@ -181,19 +188,29 @@ describe("SEO", () => {
       description: "Page description",
       keywords: "robotics",
       image: "https://aresfirst.org/favicon.webp",
-      canonicalUrl: "https://aresfirst.org/page"
+      canonicalUrl: "https://aresfirst.org/page",
     };
 
-    expect(createAdditionalSchema({ ...baseOptions, type: "website" })).toBeNull();
-    expect(createAdditionalSchema({ ...baseOptions, type: "event", schemaData: {} })).toBeNull();
+    expect(
+      createAdditionalSchema({ ...baseOptions, type: "website" }),
+    ).toBeNull();
+    expect(
+      createAdditionalSchema({ ...baseOptions, type: "event", schemaData: {} }),
+    ).toBeNull();
   });
 
   it("does not publish credential or course claims without verified records", () => {
-    const { container } = renderWithHelmet(<EducationalCredentialSchema credentials={[]} />);
+    const { container } = renderWithHelmet(
+      <EducationalCredentialSchema credentials={[]} />,
+    );
     expect(container).toBeEmptyDOMElement();
-    expect(structuredData().some((schema) => (
-      schema["@type"] === "Course" || schema["@type"] === "EducationalOccupationalCredential"
-    ))).toBe(false);
+    expect(
+      structuredData().some(
+        (schema) =>
+          schema["@type"] === "Course" ||
+          schema["@type"] === "EducationalOccupationalCredential",
+      ),
+    ).toBe(false);
   });
 });
 
@@ -205,12 +222,14 @@ describe("getCanonicalUrl", () => {
 
 describe("getOgImageUrl", () => {
   it("bounds dynamic card query values before constructing a public URL", () => {
-    const url = new URL(getOgImageUrl(`  ${"x".repeat(150)}  `, {
-      category: "c".repeat(60),
-      author: "a".repeat(80),
-      date: "d".repeat(60),
-      theme: "gold",
-    }));
+    const url = new URL(
+      getOgImageUrl(`  ${"x".repeat(150)}  `, {
+        category: "c".repeat(60),
+        author: "a".repeat(80),
+        date: "d".repeat(60),
+        theme: "gold",
+      }),
+    );
 
     expect(url.origin + url.pathname).toBe("https://aresfirst.org/api/og");
     expect(url.searchParams.get("title")).toHaveLength(100);

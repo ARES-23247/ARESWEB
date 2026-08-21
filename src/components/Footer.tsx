@@ -4,7 +4,16 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { GreekMeander } from "./GreekMeander";
 import { siteConfig } from "@/lib/site-config";
-import { Mail, Users, Calendar, BookOpen, ShoppingBag, Globe, ShieldCheck, Heart } from "lucide-react";
+import {
+  Mail,
+  Users,
+  Calendar,
+  BookOpen,
+  ShoppingBag,
+  Globe,
+  ShieldCheck,
+  Heart,
+} from "lucide-react";
 
 export default function Footer() {
   const [mounted, setMounted] = useState(false);
@@ -14,31 +23,79 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer role="contentinfo" aria-label="Site Footer" className="w-full bg-obsidian text-marble border-t border-ares-bronze/20 pt-16 pb-8 overflow-hidden relative">
+    <footer
+      role="contentinfo"
+      aria-label="Site Footer"
+      className="w-full bg-obsidian text-marble border-t border-ares-bronze/20 pt-16 pb-8 overflow-hidden relative"
+    >
       {/* Meander accent for footer bottom */}
-      <GreekMeander variant="thin" opacity="opacity-40" className="absolute bottom-0 left-0" />
+      <GreekMeander
+        variant="thin"
+        opacity="opacity-40"
+        className="absolute bottom-0 left-0"
+      />
 
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative z-10">
         {/* Brand & Mission */}
         <div className="lg:col-span-1">
           <div className="mb-6">
-            <Link to="/" className="block text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1 w-fit">
-              <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-gold transition-colors">ARES</h3>
-              <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">Appalachian Robotics & Engineering Society</p>
+            <Link
+              to="/"
+              className="block text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1 w-fit"
+            >
+              <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-gold transition-colors">
+                ARES
+              </h3>
+              <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">
+                Appalachian Robotics & Engineering Society
+              </p>
             </Link>
             <p className="text-marble text-[10px] font-medium uppercase tracking-[0.2em] mt-2 px-1">
-              <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors underline decoration-ares-gold/30 underline-offset-4">
+              <a
+                href="https://www.firstinspires.org/programs/ftc/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-ares-gold transition-colors underline decoration-ares-gold/30 underline-offset-4"
+              >
                 <em>FIRST</em>® Tech Challenge
-              </a> 
-              {" "}Team #23247
+              </a>{" "}
+              Team #23247
             </p>
           </div>
           <p className="text-marble/90 text-sm leading-relaxed max-w-sm border-l-2 border-ares-bronze/30 pl-6 mb-8 italic">
-            Based in Morgantown, WV, we are engineering the next generation of Mountaineer innovators through the mission of <a href="https://www.firstinspires.org/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-ares-gold transition-colors underline decoration-ares-gold/30 underline-offset-4 font-bold"><em>FIRST</em>®</a>.
+            Based in Morgantown, WV, we are engineering the next generation of
+            Mountaineer innovators through the mission of{" "}
+            <a
+              href="https://www.firstinspires.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:text-ares-gold transition-colors underline decoration-ares-gold/30 underline-offset-4 font-bold"
+            >
+              <em>FIRST</em>®
+            </a>
+            .
           </p>
-          
-          <a href={`https://github.com/${siteConfig.urls.githubOrg}/ARESWEB/issues/new`} target="_blank" rel="noopener noreferrer" className="bg-white/5 hover:bg-ares-red text-marble hover:text-white px-4 py-2 ares-cut-sm transition-all font-bold uppercase tracking-widest text-[9px] inline-flex items-center gap-2 border border-white/10 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
-            <svg aria-hidden="true" className="w-3.5 h-3.5 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+
+          <a
+            href={`https://github.com/${siteConfig.urls.githubOrg}/ARESWEB/issues/new`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white/5 hover:bg-ares-red text-marble hover:text-white px-4 py-2 ares-cut-sm transition-all font-bold uppercase tracking-widest text-[9px] inline-flex items-center gap-2 border border-white/10 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <svg
+              aria-hidden="true"
+              className="w-3.5 h-3.5 group-hover:animate-pulse"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
             Report Technical Issue
           </a>
         </div>
@@ -49,18 +106,91 @@ export default function Footer() {
             <Users size={12} className="text-ares-cyan" /> Organization
           </h4>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
-            <li><Link to="/about" className="hover:text-ares-gold transition-colors flex items-center gap-2">Who We Are</Link></li>
-            <li><Link to="/seasons" className="hover:text-ares-gold transition-colors flex items-center gap-2">Seasons & Legacy</Link></li>
-            <li><Link to="/outreach" className="hover:text-ares-gold transition-colors flex items-center gap-2">Outreach & Impact</Link></li>
-            <li><Link to="/robotics-west-virginia" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robotics in West Virginia</Link></li>
-            <li><Link to="/location-morgantown" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robotics in Morgantown</Link></li>
-            <li><Link to="/gallery" className="hover:text-ares-gold transition-colors flex items-center gap-2">Photo Gallery</Link></li>
-            <li><Link to="/videos" className="hover:text-ares-gold transition-colors flex items-center gap-2">Video Gallery</Link></li>
-            <li><Link to="/blog" className="hover:text-ares-gold transition-colors flex items-center gap-2">Team Blog</Link></li>
-            <li><Link to="/join" className="hover:text-ares-cyan transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">Join the Team</Link></li>
-            <li><Link to="/calendar" className="hover:text-ares-gold transition-colors flex items-center gap-2">
-              <Calendar aria-hidden="true" size={12} className="text-ares-gold" /> Team Calendar
-            </Link></li>
+            <li>
+              <Link
+                to="/about"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Who We Are
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/seasons"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Seasons & Legacy
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/outreach"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Outreach & Impact
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/robotics-west-virginia"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Robotics in West Virginia
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/location-morgantown"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Robotics in Morgantown
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/gallery"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Photo Gallery
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/videos"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Video Gallery
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/blog"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Team Blog
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/join"
+                className="hover:text-ares-cyan transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5"
+              >
+                Join the Team
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/calendar"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                <Calendar
+                  aria-hidden="true"
+                  size={12}
+                  className="text-ares-gold"
+                />{" "}
+                Team Calendar
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -70,20 +200,74 @@ export default function Footer() {
             <BookOpen size={12} className="text-ares-gold" /> Resources
           </h4>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
-            <li><Link to="/tech-stack" className="hover:text-ares-gold transition-colors flex items-center gap-2">Tech Stack</Link></li>
-            <li><Link to="/robots" className="hover:text-ares-gold transition-colors flex items-center gap-2">Robots Fleet</Link></li>
-            <li><a href="https://www.printables.com/@ARESFTC_3784306" target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">3D Models Archive</a></li>
-            <li><a href={siteConfig.urls.onshape} target="_blank" rel="noopener noreferrer" className="hover:text-ares-gold transition-colors flex items-center gap-2">CAD Workspace</a></li>
-            <li><Link to="/academy" className="hover:text-ares-gold transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5">ARES Academy</Link></li>
-            <li><Link to="/docs" className="hover:opacity-80 transition-colors flex items-center gap-2 group">
-              <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden border border-white/10">
-                <span className="bg-ares-red px-2 py-0.5 text-[9px] font-heading font-black uppercase text-white tracking-wider">ARES</span>
-                <span className="bg-white/10 text-white font-heading font-bold px-2 py-0.5 text-[9px] uppercase tracking-widest group-hover:bg-white/20 transition-colors">Lib</span>
-              </span>
-            </Link></li>
-            <li><Link to="/store" className="hover:text-ares-gold transition-colors flex items-center gap-2">
-              <ShoppingBag size={12} className="text-ares-gold" /> Official Store
-            </Link></li>
+            <li>
+              <Link
+                to="/tech-stack"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Tech Stack
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/robots"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Robots Fleet
+              </Link>
+            </li>
+            <li>
+              <a
+                href="https://www.printables.com/@ARESFTC_3784306"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                3D Models Archive
+              </a>
+            </li>
+            <li>
+              <a
+                href={siteConfig.urls.onshape}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                CAD Workspace
+              </a>
+            </li>
+            <li>
+              <Link
+                to="/academy"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5"
+              >
+                ARES Academy
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/docs"
+                className="hover:opacity-80 transition-colors flex items-center gap-2 group"
+              >
+                <span className="flex items-center shadow-lg ares-cut-sm overflow-hidden border border-white/10">
+                  <span className="bg-ares-red px-2 py-0.5 text-[9px] font-heading font-black uppercase text-white tracking-wider">
+                    ARES
+                  </span>
+                  <span className="bg-white/10 text-white font-heading font-bold px-2 py-0.5 text-[9px] uppercase tracking-widest group-hover:bg-white/20 transition-colors">
+                    Lib
+                  </span>
+                </span>
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/store"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                <ShoppingBag size={12} className="text-ares-gold" /> Official
+                Store
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -93,43 +277,141 @@ export default function Footer() {
             <Globe size={12} className="text-ares-cyan" /> Social Media
           </h4>
           <div className="flex flex-wrap gap-2 mb-8">
-            <a href={`https://www.instagram.com/${siteConfig.urls.instagram}/`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-red transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="Instagram">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0 3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <a
+              href={siteConfig.social.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-red transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="Instagram"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0 3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
             </a>
-            <a href={`https://www.youtube.com/${siteConfig.urls.youtube}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-red transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="YouTube">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.498 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.5 12 20.5 12 20.5s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122 2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <a
+              href={siteConfig.social.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-red transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="YouTube"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+              >
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.498 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.5 12 20.5 12 20.5s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122 2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+              </svg>
             </a>
-            <a href={`https://www.facebook.com/${siteConfig.urls.facebook}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-red transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="Facebook">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <a
+              href={siteConfig.social.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-red transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="Facebook"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+              >
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+              </svg>
             </a>
-            <a href={`https://github.com/${siteConfig.urls.githubOrg}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="GitHub Organization">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <a
+              href={siteConfig.social.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="GitHub Organization"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+              </svg>
             </a>
-            <a href={`https://x.com/${siteConfig.urls.twitter}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-black transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="X (Twitter)">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.79L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-10.378L1.326 1.153h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+            <a
+              href={siteConfig.social.x}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-black transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="X (Twitter)"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+              >
+                <path d="M18.901 1.153h3.68l-8.04 9.79L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-10.378L1.326 1.153h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+              </svg>
             </a>
-            <a href={siteConfig.urls.zulip} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-cyan transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="Zulip Team Chat">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M22.767 3.589c0 1.209-.543 2.283-1.37 2.934l-8.034 7.174c-.149.128-.343-.078-.235-.25l2.946-5.9c.083-.165-.024-.368-.194-.368H4.452c-1.77 0-3.219-1.615-3.219-3.59C1.233 1.616 2.682 0 4.452 0h15.096c1.77-.001 3.219 1.614 3.219 3.589zM4.452 24h15.096c1.77 0 3.219-1.616 3.219-3.59 0-1.974-1.449-3.59-3.219-3.59H8.12c-.17 0-.277-.202-.194-.367l2.946-5.9c.108-.172-.086-.378-.235-.25l-8.033 7.173c-.828.65-1.37 1.725-1.37 2.934 0 1.974 1.448 3.59 3.218 3.59z"/></svg>
+            <a
+              href={siteConfig.social.zulip}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-cyan transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="Zulip Team Chat"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+              >
+                <path d="M22.767 3.589c0 1.209-.543 2.283-1.37 2.934l-8.034 7.174c-.149.128-.343-.078-.235-.25l2.946-5.9c.083-.165-.024-.368-.194-.368H4.452c-1.77 0-3.219-1.615-3.219-3.59C1.233 1.616 2.682 0 4.452 0h15.096c1.77-.001 3.219 1.614 3.219 3.589zM4.452 24h15.096c1.77 0 3.219-1.616 3.219-3.59 0-1.974-1.449-3.59-3.219-3.59H8.12c-.17 0-.277-.202-.194-.367l2.946-5.9c.108-.172-.086-.378-.235-.25l-8.033 7.173c-.828.65-1.37 1.725-1.37 2.934 0 1.974 1.448 3.59 3.218 3.59z" />
+              </svg>
             </a>
-            <a href={`https://bsky.app/profile/${siteConfig.urls.bluesky}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-gold hover:text-black transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="Bluesky">
-              <svg aria-hidden="true" className="w-5 h-5 fill-current" viewBox="0 0 600 530"><path d="m135.72 44.03c66.496 0 120.38 53.888 120.38 120.38 0 33.661-13.873 64.091-36.199 85.867l156.37 225.96H175.55l-54.757-95.419c-35.395 34.012-83.334 54.905-136.07 54.905v-76.919c64.042 0 116.07-52.03 116.07-116.07 0-64.042-52.03-116.07-116.07-116.07V44.03h135.72zM464.28 485.96c-66.496 0-120.38-53.888-120.38-120.38 0-33.661 13.873-64.091 36.199-85.867L223.73 53.748h200.72l54.757 95.419c35.395-34.012 83.334-54.905 136.07-54.905v76.919c-64.042 0-116.07 52.03-116.07 116.07 0 64.042 52.03 116.07 116.07 116.07v76.636H464.28z"/></svg>
+            <a
+              href={siteConfig.social.bluesky}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-gold hover:text-black transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="Bluesky"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 600 530"
+              >
+                <path d="m135.72 44.03c66.496 0 120.38 53.888 120.38 120.38 0 33.661-13.873 64.091-36.199 85.867l156.37 225.96H175.55l-54.757-95.419c-35.395 34.012-83.334 54.905-136.07 54.905v-76.919c64.042 0 116.07-52.03 116.07-116.07 0-64.042-52.03-116.07-116.07-116.07V44.03h135.72zM464.28 485.96c-66.496 0-120.38-53.888-120.38-120.38 0-33.661 13.873-64.091 36.199-85.867L223.73 53.748h200.72l54.757 95.419c35.395-34.012 83.334-54.905 136.07-54.905v76.919c-64.042 0-116.07 52.03-116.07 116.07 0 64.042 52.03 116.07 116.07 116.07v76.636H464.28z" />
+              </svg>
             </a>
-            <a href={`mailto:${siteConfig.contact.email}`} className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-gold transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" aria-label="Email Us">
+            <a
+              href={`mailto:${siteConfig.contact.email}`}
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-gold transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="Email Us"
+            >
               <Mail className="w-5 h-5" />
             </a>
           </div>
           <div className="space-y-4">
             <div>
-              <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">Direct Contact</p>
-              <a href={`mailto:${siteConfig.contact.email}`} className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider">
+              <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">
+                Direct Contact
+              </p>
+              <a
+                href={`mailto:${siteConfig.contact.email}`}
+                className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider"
+              >
                 {siteConfig.contact.email}
               </a>
-              <Link to="/join" className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider">
+              <Link
+                to="/join"
+                className="text-marble/60 hover:text-ares-gold text-xs transition-colors block tracking-wider"
+              >
                 Contact Form
               </Link>
             </div>
             <div>
-              <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">Location</p>
+              <p className="text-white font-bold text-[10px] uppercase tracking-widest mb-1">
+                Location
+              </p>
               <p className="text-marble/60 text-xs tracking-wider">
                 Morgantown, West Virginia 26501
               </p>
@@ -140,7 +422,8 @@ export default function Footer() {
             <div className="pt-4 flex items-center gap-3">
               <ShieldCheck size={24} className="text-ares-cyan opacity-40" />
               <p className="text-[9px] text-marble/60 leading-tight uppercase font-medium">
-                Official ARES Portal. All student data is protected under <em>FIRST</em>® YPP.
+                Official ARES Portal. All student data is protected under{" "}
+                <em>FIRST</em>® YPP.
               </p>
             </div>
           </div>
@@ -150,42 +433,80 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col xl:flex-row justify-between items-center gap-10">
         <div className="flex flex-col items-center xl:items-start gap-2">
           <p className="text-marble text-[10px] font-bold uppercase tracking-[0.25em]">
-            <span className="opacity-80">© {mounted ? new Date().getFullYear() : "2026"} </span>
-            <span className="bg-ares-red text-white px-1.5 py-0.5 rounded-sm font-black mx-1 inline-block shadow-sm">ARES</span> 
+            <span className="opacity-80">
+              © {mounted ? new Date().getFullYear() : "2026"}{" "}
+            </span>
+            <span className="bg-ares-red text-white px-1.5 py-0.5 rounded-sm font-black mx-1 inline-block shadow-sm">
+              ARES
+            </span>
             <span className="opacity-80">23247. All Rights Reserved.</span>
           </p>
           <p className="text-marble/60 text-[8px] uppercase tracking-widest">
-            Made with <span className="text-white">♥</span> in Morgantown, West Virginia
+            Made with <span className="text-white">♥</span> in Morgantown, West
+            Virginia
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[9px] font-bold uppercase tracking-[0.2em] text-marble">
-          <Link to="/accessibility" className="hover:text-ares-gold transition-colors flex items-center gap-2 group">
+          <Link
+            to="/accessibility"
+            className="hover:text-ares-gold transition-colors flex items-center gap-2 group"
+          >
             <div className="w-5 h-5 rounded-full border border-ares-red/30 flex items-center justify-center group-hover:border-ares-red transition-colors bg-white/5">
-              <svg aria-hidden="true" className="w-2.5 h-2.5 text-ares-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              <svg
+                aria-hidden="true"
+                className="w-2.5 h-2.5 text-ares-cyan"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
               </svg>
             </div>
             Accessibility
           </Link>
 
-          <Link to="/brand" className="hover:text-ares-gold transition-colors flex items-center gap-2">
+          <Link
+            to="/brand"
+            className="hover:text-ares-gold transition-colors flex items-center gap-2"
+          >
             Brand &amp; Press
           </Link>
 
-          <Link to="/privacy" className="hover:text-ares-gold transition-colors flex items-center gap-2">
+          <Link
+            to="/privacy"
+            className="hover:text-ares-gold transition-colors flex items-center gap-2"
+          >
             <ShieldCheck size={12} className="text-ares-cyan" /> Privacy
           </Link>
-          <Link to="/terms" className="hover:text-ares-gold transition-colors flex items-center gap-2">
+          <Link
+            to="/terms"
+            className="hover:text-ares-gold transition-colors flex items-center gap-2"
+          >
             <BookOpen size={12} className="text-ares-cyan" /> Terms
           </Link>
-          
+
           <div className="h-4 w-px bg-white/10 hidden md:block"></div>
 
-          <Link to="/tech-stack" className="hover:text-ares-gold transition-colors mr-2">Tech Stack</Link>
-          <Link 
-            to="/sponsors" 
+          <Link
+            to="/tech-stack"
+            className="hover:text-ares-gold transition-colors mr-2"
+          >
+            Tech Stack
+          </Link>
+          <Link
+            to="/sponsors"
             className="bg-ares-red hover:bg-ares-bronze text-white px-4 py-2 font-black tracking-widest transition-all shadow-lg shadow-ares-red/20 flex items-center gap-2 ares-cut-sm hover:-translate-y-0.5 mx-2 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
           >
             <Heart size={12} className="fill-current" />
