@@ -310,8 +310,21 @@ jobs:
       # the strict Firebase deployment gate above. Google Cloud Monitoring is
       # the authoritative continuous check for the canonical public domain.
       - name: Report canonical domain reachability from GitHub runner
-        continue-on-error: true
-        run: curl --fail --silent --show-error --max-time 20 https://aresfirst.org/ > /dev/null
+        shell: bash
+        run: |
+          set +e
+          canonical_status="$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --max-time 20 https://aresfirst.org/)"
+          canonical_exit=$?
+          set -e
+
+          if [[ "$canonical_exit" -eq 0 && "$canonical_status" =~ ^[23][0-9]{2}$ ]]; then
+            canonical_result="reachable from this GitHub runner (HTTP $canonical_status)"
+          else
+            canonical_result="non-authoritative runner probe returned HTTP ${canonical_status:-000} (curl exit $canonical_exit); Google Cloud Monitoring remains authoritative"
+          fi
+
+          echo "Canonical domain: $canonical_result"
+          echo "- Canonical runner probe: $canonical_result" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record deployment summary
         run: |
