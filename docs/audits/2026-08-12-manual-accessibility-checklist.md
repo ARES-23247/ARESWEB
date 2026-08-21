@@ -1,6 +1,7 @@
 # Manual Accessibility Verification Checklist
 
 **Prepared:** 2026-08-12
+**Last automated review:** 2026-08-20
 **Status:** Pending manual execution
 **Scope:** Post-audit contrast, focus containment, route announcements, and
 simulation keyboard alternatives
@@ -10,6 +11,15 @@ top-layer Escape behavior, trigger restoration, semantic contrast ratios, and
 the simulation interaction contract. They do not establish WCAG conformance or
 replace the following checks with actual assistive technologies and browser
 layout engines.
+
+The 2026-08-20 automated browser matrix passed 95 tests across desktop
+Chromium, Firefox, and WebKit plus Pixel 7 Chromium and iPhone 15 WebKit. It
+includes 320 CSS-pixel homepage, public-navigation, dashboard-navigation, and
+simulation-playground checks. The simulation check verifies that the editor
+does not create document-level horizontal overflow, the toolbar remains inside
+the viewport, and its input/buttons remain at least 44 by 44 CSS pixels. This
+evidence narrows the manual work below; it does not replace NVDA, VoiceOver,
+forced-colors, browser zoom, or physical touch-device testing.
 
 ## Test environments
 

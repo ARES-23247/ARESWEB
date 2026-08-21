@@ -105,8 +105,8 @@ export default defineConfig({
             ) {
               return "vendor-xyflow";
             }
-            if (normalizedId.includes("@babel")) {
-              return "vendor-babel";
+            if (normalizedId.includes("sucrase")) {
+              return "vendor-sucrase";
             }
             if (normalizedId.includes("three")) {
               return "vendor-three";
@@ -164,6 +164,7 @@ export default defineConfig({
         "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",
         "src/lib/tournamentStats.ts",
+        "src/utils/lazySucrase.ts",
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/PwaUpdatePrompt.tsx",

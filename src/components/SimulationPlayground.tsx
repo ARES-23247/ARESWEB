@@ -25,7 +25,11 @@ import SimulationPlaygroundConsoleTabs from "./SimulationPlaygroundConsoleTabs";
 
 // Lazy-loaded Monaco Editor with ARES-branded loading UX
 const MonacoEditor = lazy(() => import("./editor/LazyMonacoEditor").then((mod) => ({ default: mod.default })));
-const MonacoDiffEditor = lazy(() => import("@monaco-editor/react").then((mod) => ({ default: mod.DiffEditor })));
+const MonacoDiffEditor = lazy(() =>
+  import("./editor/LazyMonacoEditor").then((mod) => ({
+    default: mod.LazyMonacoDiffEditor,
+  })),
+);
 
 // Real production templates for AI context
 import ArmKgSimRaw from "../sims/armkg/index.tsx?raw";

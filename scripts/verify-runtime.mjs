@@ -10,10 +10,14 @@ function fail(message) {
 }
 
 function runVersion(command, args) {
-  const usesWindowsPnpmShim = process.platform === "win32" && command === "pnpm";
-  const executable = usesWindowsPnpmShim ? (process.env.ComSpec ?? "cmd.exe") : command;
-  const executableArgs = usesWindowsPnpmShim
-    ? ["/d", "/s", "/c", "pnpm.cmd --version"]
+  const usesWindowsCommandShim =
+    process.platform === "win32" &&
+    (command === "pnpm" || command === "corepack");
+  const executable = usesWindowsCommandShim
+    ? (process.env.ComSpec ?? "cmd.exe")
+    : command;
+  const executableArgs = usesWindowsCommandShim
+    ? ["/d", "/s", "/c", `${command}.cmd ${args.join(" ")}`]
     : args;
   const result = spawnSync(executable, executableArgs, {
     encoding: "utf8",
@@ -24,19 +28,27 @@ function runVersion(command, args) {
 
 const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
 if (nodeMajor !== REQUIRED_NODE.major || nodeMinor < REQUIRED_NODE.minor) {
-  fail(`Unsupported Node.js ${process.versions.node}; use Node 24.15 or newer in the Node 24 line.`);
+  fail(
+    `Unsupported Node.js ${process.versions.node}; use Node 24.15 or newer in the Node 24 line.`,
+  );
 }
 
-const pnpmVersion = runVersion("pnpm", ["--version"]);
+// Resolve pnpm through Corepack so this check honors packageManager instead of
+// whichever global pnpm shim happens to appear first on PATH.
+const pnpmVersion = runVersion("corepack", ["pnpm", "--version"]);
 if (pnpmVersion !== REQUIRED_PNPM) {
-  fail(`Unsupported pnpm ${pnpmVersion ?? "(not found)"}; use pnpm ${REQUIRED_PNPM}.`);
+  fail(
+    `Unsupported pnpm ${pnpmVersion ?? "(not found)"}; use pnpm ${REQUIRED_PNPM}.`,
+  );
 }
 
 const javaVersionOutput = runVersion("java", ["-version"]);
 const javaMatch = javaVersionOutput?.match(/version\s+"(\d+)(?:\.|")/u);
 const javaMajor = javaMatch ? Number(javaMatch[1]) : null;
 if (javaMajor === null || javaMajor < MINIMUM_JAVA_MAJOR) {
-  fail(`Unsupported Java ${javaMajor ?? "(not found)"}; use Java ${MINIMUM_JAVA_MAJOR} or newer.`);
+  fail(
+    `Unsupported Java ${javaMajor ?? "(not found)"}; use Java ${MINIMUM_JAVA_MAJOR} or newer.`,
+  );
 }
 
 if (process.exitCode !== 1) {

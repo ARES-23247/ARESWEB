@@ -240,6 +240,14 @@
         "validJson": true
       },
       {
+        "name": "public tournament results API",
+        "origin": "primary",
+        "path": "/api/tournaments/public/results",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true
+      },
+      {
         "name": "raster social card",
         "origin": "primary",
         "path": "/api/og?title=Deployment%20Health",

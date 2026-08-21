@@ -1,5 +1,20 @@
-import { Sparkles, FolderOpen, Play, Check, Copy, Save, Loader2, Download, Share2, Minimize, Maximize } from "lucide-react";
+import {
+  Sparkles,
+  FolderOpen,
+  Play,
+  Check,
+  Copy,
+  Save,
+  Loader2,
+  Download,
+  Share2,
+  Minimize,
+  Maximize,
+} from "lucide-react";
 import { SnapshotHistoryDropdown, Snapshot } from "./SnapshotHistoryDropdown";
+
+const toolbarButtonClass =
+  "flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-md border px-3 text-xs font-bold uppercase tracking-wider transition-colors";
 
 interface PlaygroundHeaderBarProps {
   simName: string;
@@ -47,49 +62,91 @@ export function PlaygroundHeaderBar({
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-obsidian shrink-0">
       <div className="flex items-center gap-2 flex-1">
-        <span className="text-ares-gold font-black text-xs uppercase tracking-[0.2em]">⚡ Sim Playground</span>
+        <span className="text-ares-gold font-black text-xs uppercase tracking-[0.2em]">
+          ⚡ Sim Playground
+        </span>
         <input
           type="text"
           value={simName}
-          onChange={e => setSimName(e.target.value)}
-          className="bg-transparent border border-white/10 text-white text-sm px-3 py-1.5 rounded-md focus:border-ares-gold/50 focus:outline-none transition-colors max-w-[250px]"
+          onChange={(e) => setSimName(e.target.value)}
+          aria-label="Simulation name"
+          className="min-h-11 max-w-[250px] rounded-md border border-white/10 bg-transparent px-3 text-sm text-white transition-colors focus:border-ares-gold/50 focus:outline-none"
           placeholder="Simulation name..."
         />
-        {simId && <span className="text-white/20 text-[10px] font-mono">#{simId}</span>}
+        {simId && (
+          <span className="text-white/20 text-[10px] font-mono">#{simId}</span>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors">
+        <button
+          onClick={handleReset}
+          className={`${toolbarButtonClass} border-ares-gold/30 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold/30`}
+        >
           <Sparkles className="w-3.5 h-3.5" />
           New Sim
         </button>
 
-        <button onClick={handleToggleLibrary} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors">
+        <button
+          onClick={handleToggleLibrary}
+          className={`${toolbarButtonClass} border-ares-gold/30 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold/30`}
+        >
           <FolderOpen className="w-3.5 h-3.5" />
           Open Library
         </button>
 
-        <button onClick={handleRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-cyan/30 transition-colors">
+        <button
+          onClick={handleRun}
+          className={`${toolbarButtonClass} border-ares-cyan/30 bg-ares-cyan/20 text-ares-cyan hover:bg-ares-cyan/30`}
+        >
           <Play className="w-3.5 h-3.5" /> Run
         </button>
 
-        <button onClick={handleCopy} aria-label="Copy code" className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gray-dark text-marble/60 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:text-white transition-colors">
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        <button
+          onClick={handleCopy}
+          aria-label="Copy code"
+          className={`${toolbarButtonClass} border-white/10 bg-ares-gray-dark text-marble/60 hover:text-white`}
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
         </button>
 
-        <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gold/20 text-ares-gold border border-ares-gold/30 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-ares-gold/30 transition-colors disabled:opacity-50">
-          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-          {simId ? 'Update' : 'Save'}
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={`${toolbarButtonClass} border-ares-gold/30 bg-ares-gold/20 text-ares-gold hover:bg-ares-gold/30 disabled:opacity-50`}
+        >
+          {isSaving ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Save className="w-3.5 h-3.5" />
+          )}
+          {simId ? "Update" : "Save"}
         </button>
 
-        <button onClick={handleDownloadZip} aria-label="Download as ZIP" className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gray-dark text-marble/60 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:text-white transition-colors">
+        <button
+          onClick={handleDownloadZip}
+          aria-label="Download as ZIP"
+          className={`${toolbarButtonClass} border-white/10 bg-ares-gray-dark text-marble/60 hover:text-white`}
+        >
           <Download className="w-3.5 h-3.5" />
         </button>
 
-        <button onClick={handleShareGist} disabled={isSharingGist} aria-label="Share as Gist" className="flex items-center gap-1.5 px-3 py-1.5 bg-ares-gray-dark text-marble/60 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:text-white transition-colors disabled:opacity-50">
-          {isSharingGist ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+        <button
+          onClick={handleShareGist}
+          disabled={isSharingGist}
+          aria-label="Share as Gist"
+          className={`${toolbarButtonClass} border-white/10 bg-ares-gray-dark text-marble/60 hover:text-white disabled:opacity-50`}
+        >
+          {isSharingGist ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Share2 className="w-3.5 h-3.5" />
+          )}
         </button>
-
 
         <SnapshotHistoryDropdown
           showHistory={showHistory}
@@ -98,8 +155,16 @@ export function PlaygroundHeaderBar({
           restoreSnapshot={restoreSnapshot}
         />
 
-        <button onClick={() => setIsFullscreen(!isFullscreen)} aria-label={isFullscreen ? "Exit full screen" : "Enter full screen"} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-white/80 border border-white/10 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-white/10 transition-colors">
-          {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+        <button
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          aria-label={isFullscreen ? "Exit full screen" : "Enter full screen"}
+          className={`${toolbarButtonClass} border-white/10 bg-white/5 text-white/80 hover:bg-white/10`}
+        >
+          {isFullscreen ? (
+            <Minimize className="w-3.5 h-3.5" />
+          ) : (
+            <Maximize className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
     </div>

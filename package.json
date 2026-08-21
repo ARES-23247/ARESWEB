@@ -23,7 +23,6 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@babel/standalone": "^8.0.4",
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-dialog": "^1.1.23",
     "@tanstack/react-query": "^5.101.4",
@@ -49,6 +48,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
+    "sucrase": "3.35.1",
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
     "zustand": "^5.0.14"

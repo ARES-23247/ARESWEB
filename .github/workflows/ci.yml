@@ -321,5 +321,5 @@ jobs:
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Drift contract: build identity, 9 Functions, and 9 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Live health: 13 strict Firebase surface checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Live health: 14 strict Firebase surface checks" >> "$GITHUB_STEP_SUMMARY"
           echo "- Canonical domain: continuously checked by Google Cloud Monitoring" >> "$GITHUB_STEP_SUMMARY"

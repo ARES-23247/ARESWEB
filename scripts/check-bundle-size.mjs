@@ -40,7 +40,7 @@ try {
   // Rolldown appends a numeric suffix when the Monaco entry name collides in
   // some modes (for example `editor.api2-*` in the E2E build). Keep every
   // disambiguated editor API chunk in the optional-editor budget.
-  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|babel|prettier)-/;
+  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|prettier|sucrase)-/;
   const routeLazyJs = lazyJs.filter((file) => !editorRuntimePattern.test(file));
   const editorRuntimeJs = lazyJs.filter((file) => editorRuntimePattern.test(file));
   const largestEditor = editorRuntimeJs
