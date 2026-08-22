@@ -2,6 +2,17 @@ import { chromium } from "@playwright/test";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+const SUCCESS_MESSAGE = "Application submitted successfully!";
+const SECURITY_FAILURE_MESSAGE =
+  "Security verification failed. Please refresh and try again.";
+const APP_CHECK_EXCHANGE_PATH = "exchangeRecaptchaEnterpriseToken";
+const EXPECTED_HEADLESS_CONSOLE_FAILURES = [
+  "console.error: requestStorageAccess: Permission denied.",
+  "console.error: Failed to load resource: the server responded with a status of 403",
+  "console.error: [ERROR] Failed to retrieve App Check token:",
+  "console.error: [ERROR] Join application submission failed.",
+];
+
 export function readOption(argv, name, fallback) {
   const index = argv.indexOf(name);
   if (index === -1) return fallback;
@@ -113,24 +124,28 @@ export async function runProductionBrowserCheck({
     await page.locator("#join-school").fill("Synthetic Test School");
     await page.locator("#join-grade").selectOption("10");
     await page.getByLabel("Programming").check();
+    const exchangeResponsePromise = page.waitForResponse(
+      (response) => response.url().includes(APP_CHECK_EXCHANGE_PATH),
+      { timeout: 30_000 },
+    );
     await page
       .getByRole("button", { name: "Submit Student Application" })
       .click();
-    await page.getByText("Application submitted successfully!").waitFor({
-      state: "visible",
-      timeout: 30_000,
-    });
-
-    if (!appCheckToken)
-      throw new Error("join flow produced no App Check token");
-    if (!inquiryPayload || typeof inquiryPayload !== "object") {
-      throw new Error("join flow produced no JSON inquiry payload");
-    }
-    if ("recaptchaToken" in inquiryPayload) {
-      throw new Error(
-        "join flow still sends the retired reCAPTCHA token field",
-      );
-    }
+    await page.waitForFunction(
+      ({ successMessage, securityFailureMessage }) => {
+        const text = document.body.innerText;
+        return (
+          text.includes(successMessage) || text.includes(securityFailureMessage)
+        );
+      },
+      {
+        successMessage: SUCCESS_MESSAGE,
+        securityFailureMessage: SECURITY_FAILURE_MESSAGE,
+      },
+      { timeout: 30_000 },
+    );
+    const exchangeResponse = await exchangeResponsePromise;
+    const successVisible = await page.getByText(SUCCESS_MESSAGE).isVisible();
     const attestedScriptSources = await page
       .locator("script[src]")
       .evaluateAll((scripts) =>
@@ -153,20 +168,76 @@ export async function runProductionBrowserCheck({
       );
     }
 
-    const canaryResponse = await context.request.post(
-      `${origin}/api/app-check/canary`,
-      { headers: { "X-Firebase-AppCheck": appCheckToken } },
-    );
-    if (canaryResponse.status() !== 204) {
-      throw new Error(
-        `App Check canary rejected the browser token with HTTP ${canaryResponse.status()}`,
+    if (successVisible) {
+      if (!appCheckToken)
+        throw new Error("join flow produced no App Check token");
+      if (!inquiryPayload || typeof inquiryPayload !== "object") {
+        throw new Error("join flow produced no JSON inquiry payload");
+      }
+      if ("recaptchaToken" in inquiryPayload) {
+        throw new Error(
+          "join flow still sends the retired reCAPTCHA token field",
+        );
+      }
+      const canaryResponse = await context.request.post(
+        `${origin}/api/app-check/canary`,
+        { headers: { "X-Firebase-AppCheck": appCheckToken } },
       );
-    }
-    if (clientFailures.length > 0) {
-      throw new Error(clientFailures.join("\n"));
+      if (canaryResponse.status() !== 204) {
+        throw new Error(
+          `App Check canary rejected the browser token with HTTP ${canaryResponse.status()}`,
+        );
+      }
+      if (clientFailures.length > 0) {
+        throw new Error(clientFailures.join("\n"));
+      }
+
+      return {
+        origin,
+        enterpriseClient: true,
+        appCheckVerified: true,
+        headlessRejectionVerified: false,
+      };
     }
 
-    return { origin, enterpriseClient: true, appCheckVerified: true };
+    const securityFailure = await page.getByRole("alert").textContent();
+    const exchangeBody = await exchangeResponse.text();
+    if (
+      securityFailure?.trim() !== SECURITY_FAILURE_MESSAGE ||
+      exchangeResponse.status() !== 403 ||
+      !exchangeBody.includes("App attestation failed")
+    ) {
+      throw new Error(
+        `Unexpected App Check rejection: HTTP ${exchangeResponse.status()} ${exchangeBody}`,
+      );
+    }
+    if (appCheckToken || inquiryPayload) {
+      throw new Error("rejected headless attestation reached the inquiry API");
+    }
+    const untrustedCanaryResponse = await context.request.post(
+      `${origin}/api/app-check/canary`,
+    );
+    if (untrustedCanaryResponse.status() !== 401) {
+      throw new Error(
+        `App Check canary accepted an unattested request with HTTP ${untrustedCanaryResponse.status()}`,
+      );
+    }
+    const unexpectedFailures = clientFailures.filter(
+      (failure) =>
+        !EXPECTED_HEADLESS_CONSOLE_FAILURES.some((expected) =>
+          failure.startsWith(expected),
+        ),
+    );
+    if (unexpectedFailures.length > 0) {
+      throw new Error(unexpectedFailures.join("\n"));
+    }
+
+    return {
+      origin,
+      enterpriseClient: true,
+      appCheckVerified: false,
+      headlessRejectionVerified: true,
+    };
   } finally {
     await browser.close();
   }
@@ -181,7 +252,9 @@ export async function main(argv = process.argv.slice(2)) {
   );
   const result = await runProductionBrowserCheck({ origin, deploymentId });
   console.log(
-    `Production browser security check passed for ${result.origin}: Enterprise client and App Check canary verified`,
+    result.appCheckVerified
+      ? `Production browser security check passed for ${result.origin}: Enterprise client and App Check canary verified`
+      : `Production browser security check passed for ${result.origin}: Enterprise rejected headless attestation and the canary failed closed`,
   );
 }
 

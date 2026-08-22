@@ -10,6 +10,10 @@ function createBrowserHarness({
   scripts = ["https://www.google.com/recaptcha/enterprise.js?render=test"],
   canaryStatus = 204,
   pageUrl = "https://aresfirst-portal.web.app/join",
+  appCheckToken = "verified-token",
+  attestationStatus = 200,
+  attestationBody = "",
+  securityAlert = "",
 } = {}) {
   let inquiryHandler;
   const close = vi.fn();
@@ -21,6 +25,11 @@ function createBrowserHarness({
       inquiryHandler = handler;
     }),
     goto: vi.fn(),
+    waitForFunction: vi.fn(),
+    waitForResponse: vi.fn(async () => ({
+      status: () => attestationStatus,
+      text: async () => attestationBody,
+    })),
     locator: vi.fn((selector) => {
       if (selector === "script[src]") {
         return {
@@ -31,21 +40,28 @@ function createBrowserHarness({
       return { fill: vi.fn(), selectOption: vi.fn(), waitFor: vi.fn() };
     }),
     getByLabel: vi.fn(() => ({ check: vi.fn() })),
-    getByRole: vi.fn(() => ({
-      click: async () => {
-        await inquiryHandler({
-          request: () => ({
-            method: () => "POST",
-            url: () => "https://aresfirst-portal.web.app/api/inquiries",
-            headers: () => ({ "x-firebase-appcheck": "verified-token" }),
-            postData: () => JSON.stringify({ type: "student" }),
-          }),
-          fulfill: vi.fn(),
-          continue: vi.fn(),
-        });
-      },
-    })),
-    getByText: vi.fn(() => ({ waitFor: vi.fn() })),
+    getByRole: vi.fn((role) =>
+      role === "alert"
+        ? { textContent: async () => securityAlert }
+        : {
+            click: async () => {
+              if (!appCheckToken) return;
+              await inquiryHandler({
+                request: () => ({
+                  method: () => "POST",
+                  url: () => "https://aresfirst-portal.web.app/api/inquiries",
+                  headers: () => ({
+                    "x-firebase-appcheck": appCheckToken,
+                  }),
+                  postData: () => JSON.stringify({ type: "student" }),
+                }),
+                fulfill: vi.fn(),
+                continue: vi.fn(),
+              });
+            },
+          },
+    ),
+    getByText: vi.fn(() => ({ isVisible: async () => Boolean(appCheckToken) })),
   };
   const context = { newPage: async () => page, request: { post } };
   const newContext = vi.fn(async () => context);
@@ -87,6 +103,7 @@ describe("production browser security check", () => {
       origin: "https://aresfirst-portal.web.app",
       enterpriseClient: true,
       appCheckVerified: true,
+      headlessRejectionVerified: false,
     });
     expect(harness.post).toHaveBeenCalledWith(
       "https://aresfirst-portal.web.app/api/app-check/canary",
@@ -123,6 +140,36 @@ describe("production browser security check", () => {
         launch: harness.launch,
       }),
     ).rejects.toThrow("Deployment probe left the direct Hosting origin");
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts only the precise fail-closed outcome for a rejected headless attestation", async () => {
+    const harness = createBrowserHarness({
+      appCheckToken: "",
+      attestationStatus: 403,
+      attestationBody: JSON.stringify({
+        error: { code: 403, message: "App attestation failed." },
+      }),
+      securityAlert:
+        "Security verification failed. Please refresh and try again.",
+      canaryStatus: 401,
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).resolves.toEqual({
+      origin: "https://aresfirst-portal.web.app",
+      enterpriseClient: true,
+      appCheckVerified: false,
+      headlessRejectionVerified: true,
+    });
+    expect(harness.post).toHaveBeenCalledWith(
+      "https://aresfirst-portal.web.app/api/app-check/canary",
+    );
     expect(harness.close).toHaveBeenCalledTimes(1);
   });
 
