@@ -512,8 +512,7 @@ describe("Inquiries Router Backend Endpoints", () => {
         type: "student",
         name: "Security Test",
         email: "security.test@example.com",
-        metadata: { message: "Hello ARES" },
-        recaptchaToken: "test-bypass-token"
+        metadata: { message: "Hello ARES" }
       };
 
       const err = await runStack("/", "post", req, res);
@@ -546,7 +545,6 @@ describe("Inquiries Router Backend Endpoints", () => {
         name: "Playwright E2E Test",
         email: "playwright.test@aresfirst.org",
         metadata: { message: "This must not bypass persistence." },
-        recaptchaToken: "test-bypass-token",
       };
 
       const err = await runStack("/", "post", req, res);
@@ -570,7 +568,6 @@ describe("Inquiries Router Backend Endpoints", () => {
         type: "",
         name: "Test",
         email: "not-an-email",
-        recaptchaToken: ""
       };
 
       const err = await runStack("/", "post", req, res);
@@ -585,7 +582,6 @@ describe("Inquiries Router Backend Endpoints", () => {
         name: "Security Test",
         email: "security.test@example.com",
         metadata: {},
-        recaptchaToken: "recaptcha-token",
       };
       req.appCheckObservation = {
         status: "invalid",
@@ -599,34 +595,20 @@ describe("Inquiries Router Backend Endpoints", () => {
       expect(err.message).toBe("App integrity check failed. Please refresh and try again.");
     });
 
-    it("rejects low-score reCAPTCHA results before storing PII", async () => {
+    it("rejects missing App Check observations in production before storing PII", async () => {
       const originalEmulator = process.env.FUNCTIONS_EMULATOR;
-      const originalSecret = process.env.RECAPTCHA_SECRET_KEY;
       delete process.env.FUNCTIONS_EMULATOR;
-      process.env.RECAPTCHA_SECRET_KEY = "recaptcha-test-secret";
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
-          success: true,
-          score: 0.2,
-          action: "submit",
-          hostname: "aresfirst.org",
-        }),
-      }));
       req.body = {
         type: "student",
         name: "Protected Student",
         email: "student@example.com",
         metadata: {},
-        recaptchaToken: "recaptcha-token",
       };
 
       const err = await runStack("/", "post", req, res);
 
-      vi.unstubAllGlobals();
       if (originalEmulator === undefined) delete process.env.FUNCTIONS_EMULATOR;
       else process.env.FUNCTIONS_EMULATOR = originalEmulator;
-      if (originalSecret === undefined) delete process.env.RECAPTCHA_SECRET_KEY;
-      else process.env.RECAPTCHA_SECRET_KEY = originalSecret;
       expect(err).toEqual(expect.objectContaining({ status: 400 }));
       expect(adminDb.collection("inquiries").doc().set).not.toHaveBeenCalled();
     });

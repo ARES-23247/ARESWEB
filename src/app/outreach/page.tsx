@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AlertCircle, Check, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
-import { getRecaptchaToken } from "@/lib/recaptcha";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import {
   OutreachHero,
@@ -98,7 +97,6 @@ export default function OutreachPage() {
   const modalRef = useFocusTrap(isModalOpen, closeModal);
 
   const submitInquiry = async (
-    recaptchaToken: string,
     inquiryName = name.trim(),
     inquiryEmail = email.trim(),
     inquiryDescription = description.trim(),
@@ -109,6 +107,9 @@ export default function OutreachPage() {
       let appCheckHeaders = (await getAppCheckHeader()) || {};
       if (!appCheckHeaders["X-Firebase-AppCheck"]) {
         appCheckHeaders = (await getAppCheckHeader(true)) || {};
+      }
+      if (!appCheckHeaders["X-Firebase-AppCheck"]) {
+        throw new Error("Security verification failed. Please refresh and try again.");
       }
 
       const response = await fetch("/api/inquiries", {
@@ -124,7 +125,6 @@ export default function OutreachPage() {
             message: inquiryDescription,
             additional: inquiryDescription,
           },
-          recaptchaToken,
         }),
       });
 
@@ -157,14 +157,7 @@ export default function OutreachPage() {
 
     setSubmitStatus("sending");
     setErrorMessage("");
-    try {
-      const token = await getRecaptchaToken();
-      await submitInquiry(token, trimmedName, trimmedEmail, trimmedDescription, organization.trim(), phone.trim());
-    } catch (error) {
-      logger.error("Outreach inquiry verification failed.");
-      setSubmitStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "Verification check failed. Please refresh and try again.");
-    }
+    await submitInquiry(trimmedName, trimmedEmail, trimmedDescription, organization.trim(), phone.trim());
   };
 
   const totals = logs.reduce((current, log) => ({

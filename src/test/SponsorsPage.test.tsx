@@ -2,13 +2,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SponsorsPage from "../app/sponsors/page";
+import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
-vi.mock("@/lib/recaptcha", () => ({
-  getRecaptchaToken: () => Promise.resolve("mock-recaptcha-token"),
-}));
 vi.mock("@/lib/firebaseAppCheck", () => ({
-  getAppCheckHeader: vi.fn().mockImplementation(() => Promise.resolve({ "X-Firebase-AppCheck": "mock-app-check" })),
+  getAppCheckHeader: vi.fn(),
 }));
 
 function response(body: unknown, status = 200, statusText = "OK"): Response {
@@ -31,6 +29,7 @@ function renderPage() {
 describe("SponsorsPage partner directory and inquiry form", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getAppCheckHeader).mockResolvedValue({ "X-Firebase-AppCheck": "mock-app-check" });
   });
 
   it("offers interest categories without publishing unapproved prices or benefits", async () => {

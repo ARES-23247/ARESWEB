@@ -25,10 +25,9 @@ operations handbook, not in this repository.
 Confirm these GitHub repository variables before the release:
 
 - `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY`
-- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
 - `NEXT_PUBLIC_GOOGLE_PICKER_API_KEY`
 
-All three are public browser keys. Keep the Google integration secrets in Secret
+Both are public browser identifiers. Keep the Google integration secrets in Secret
 Manager. Never copy those secret values into GitHub variables.
 
 Follow `docs/GOOGLE_DRIVE_INTEGRATION.md` for the separate Drive token, Picker

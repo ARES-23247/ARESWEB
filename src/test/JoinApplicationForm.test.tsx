@@ -2,12 +2,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import JoinPage from "../app/join/page";
 import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
-import { getRecaptchaToken } from "@/lib/recaptcha";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
-vi.mock("@/lib/recaptcha", () => ({
-  getRecaptchaToken: vi.fn(),
-}));
 vi.mock("@/lib/firebaseAppCheck", () => ({
   getAppCheckHeader: vi.fn(),
 }));
@@ -24,7 +20,6 @@ function jsonResponse(body: unknown, status = 200, statusText = "OK"): Response 
 describe("JoinPage Recruitment & Form Verification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getRecaptchaToken).mockResolvedValue("mock-recaptcha-token");
     vi.mocked(getAppCheckHeader).mockResolvedValue({ "X-Firebase-AppCheck": "mock-appcheck-token" });
   });
 
@@ -58,6 +53,8 @@ describe("JoinPage Recruitment & Form Verification", () => {
       }),
       body: expect.stringContaining("Alex Student"),
     }));
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body as string) as Record<string, unknown>;
+    expect(requestBody).not.toHaveProperty("recaptchaToken");
   });
 
   it("switches to mentor form, validates occupation, and submits mentor application", async () => {
@@ -131,5 +128,25 @@ describe("JoinPage Recruitment & Form Verification", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Too many submissions from this IP.");
     });
+  });
+
+  it("does not transmit applicant data when App Check cannot attest the browser", async () => {
+    vi.mocked(getAppCheckHeader).mockResolvedValue({});
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<JoinPage />);
+    fireEvent.change(screen.getByLabelText(/Full Name \*/i), { target: { value: "Protected Applicant" } });
+    fireEvent.change(screen.getByLabelText(/Email Address \*/i), { target: { value: "protected@example.test" } });
+    fireEvent.change(screen.getByLabelText(/School \*/i), { target: { value: "Protected School" } });
+    fireEvent.change(screen.getByLabelText(/Current Grade \*/i), { target: { value: "10" } });
+    fireEvent.click(screen.getByLabelText(/Programming/i));
+    fireEvent.click(screen.getByRole("button", { name: /Submit Student Application/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Security verification failed/i);
+    });
+    expect(getAppCheckHeader).toHaveBeenCalledTimes(2);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

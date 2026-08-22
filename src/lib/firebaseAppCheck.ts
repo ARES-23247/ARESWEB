@@ -43,6 +43,11 @@ export async function getOrInitializeAppCheck(): Promise<AppCheckInstance | unde
 }
 
 export async function getAppCheckHeader(forceRefresh = false): Promise<Record<string, string>> {
+  const isIsolatedTestMode = import.meta.env.MODE === "e2e" || import.meta.env.MODE === "test";
+  if (typeof window !== "undefined" && isIsolatedTestMode && window.ARES_E2E_BYPASS === true) {
+    return { "X-Firebase-AppCheck": "test-app-check-token" };
+  }
+
   const currentAppCheck = await getOrInitializeAppCheck();
   if (!currentAppCheck) return {};
 

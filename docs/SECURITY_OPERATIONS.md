@@ -29,22 +29,24 @@ Set a dedicated App Check reCAPTCHA Enterprise site key in the frontend build:
 NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY=your_site_key
 ```
 
-Store both browser security keys as GitHub repository variables:
+Store the browser security key as a GitHub repository variable:
 
 - `NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY`
-- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
 
-These keys are public site identifiers. They are not secret credentials. The CI
-build stops when either variable is empty. Never use this rule for server keys,
+This key is a public site identifier, not a secret credential. The CI build
+stops when the variable is empty. Never use this rule for server keys,
 OAuth client secrets, refresh tokens, or bot tokens.
 
 The web client must initialize this key with `ReCaptchaEnterpriseProvider`, and
 the same site key must be registered on the Firebase web app's reCAPTCHA
 Enterprise App Check configuration.
 
-Keep the public inquiry form's reCAPTCHA key separate. Confirm the App Check key,
-allowed web origins, and Firebase App Check registration agree before enabling
-enforcement; otherwise legitimate clients will receive 403 responses.
+Public inquiry forms use the same enforced App Check reCAPTCHA Enterprise
+attestation as other browser mutations. Do not load a second legacy reCAPTCHA
+v3 client on the page; the Google clients share a global namespace and can
+interfere with each other. Confirm the App Check key, allowed web origins, and
+Firebase App Check registration agree before enabling enforcement; otherwise
+legitimate clients will receive 403 responses.
 
 ## App Check monitoring and enforcement
 

@@ -112,7 +112,6 @@ describe("production deployment contract", () => {
     ).toEqual([
       "ENCRYPTION_SECRET",
       "PROFILE_SYNC_SECRET",
-      "RECAPTCHA_SECRET_KEY",
       "ZULIP_API_KEY",
       "ZULIP_BOT_EMAIL",
     ]);

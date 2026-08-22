@@ -2,13 +2,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import OutreachPage from "../app/outreach/page";
+import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
-vi.mock("@/lib/recaptcha", () => ({
-  getRecaptchaToken: () => Promise.resolve("mock-recaptcha-token"),
-}));
 vi.mock("@/lib/firebaseAppCheck", () => ({
-  getAppCheckHeader: vi.fn().mockImplementation(() => Promise.resolve({ "X-Firebase-AppCheck": "mock-app-check" })),
+  getAppCheckHeader: vi.fn(),
 }));
 
 function response(body: unknown, status = 200, statusText = "OK"): Response {
@@ -31,6 +29,7 @@ function renderPage() {
 describe("OutreachPage public community impact and STEM requests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getAppCheckHeader).mockResolvedValue({ "X-Firebase-AppCheck": "mock-app-check" });
   });
 
   it("renders published outreach records and computes summary impact metrics", async () => {

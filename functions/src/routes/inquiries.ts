@@ -42,7 +42,6 @@ const createInquirySchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(120),
   email: z.string().email("Invalid email address."),
   metadata: inquiryMetadataSchema.optional().default({}),
-  recaptchaToken: z.string().min(1, "Recaptcha token is required."),
 });
 
 async function decryptMetadata(value: unknown, secret: string): Promise<Record<string, unknown>> {
@@ -64,44 +63,14 @@ async function decryptMetadata(value: unknown, secret: string): Promise<Record<s
 
 // POST /api/inquiries
 router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(async (req, res) => {
-  const { type, name, email, metadata, recaptchaToken } = req.body;
+  const { type, name, email, metadata } = req.body;
 
-  // App Check enforcement is on at the middleware layer; this in-route check
-  // fails closed for both missing and invalid tokens so the staged-rollout
-  // fallback can never silently reduce inquiry protection to reCAPTCHA alone.
+  // App Check uses reCAPTCHA Enterprise and is enforced at the middleware
+  // layer. This in-route check also fails closed before inquiry PII is stored.
   const isProd = process.env.NODE_ENV === "production" || !process.env.FUNCTIONS_EMULATOR;
   const appCheckObservation = (req as AppCheckObservedRequest).appCheckObservation;
-  if (isProd && appCheckObservation && appCheckObservation.status !== "valid") {
+  if (isProd && appCheckObservation?.status !== "valid") {
     throw new ApiError(400, "App integrity check failed. Please refresh and try again.");
-  }
-
-  // Disable reCAPTCHA bypass token in production environment
-  const isBypass = recaptchaToken === "test-bypass-token" && !isProd;
-
-  if (!isBypass) {
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-    if (!secretKey) {
-      if (isProd) {
-        throw new ApiError(500, "Spam protection configuration error. Please contact administrators.");
-      }
-      logger.warn("inquiries", "RECAPTCHA_SECRET_KEY is missing, bypassing verification in emulator");
-    } else {
-      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(recaptchaToken)}`,
-      });
-
-      const verifyData = (await verifyRes.json()) as { success: boolean; score?: number; action?: string; hostname?: string };
-      const allowedHostname = verifyData.hostname === "aresfirst.org" ||
-        verifyData.hostname === "aresfirst-portal.web.app" ||
-        verifyData.hostname === "aresfirst-portal.firebaseapp.com" ||
-        Boolean(verifyData.hostname?.match(/^aresfirst-portal--[a-z0-9-]+\.web\.app$/));
-      if (!verifyData.success || verifyData.action !== "submit" || !allowedHostname ||
-          (verifyData.score !== undefined && verifyData.score < 0.5)) {
-        throw new ApiError(400, "Spam check verification failed. Please try again.");
-      }
-    }
   }
 
   const secret = getEncryptionSecret();

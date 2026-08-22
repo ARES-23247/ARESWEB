@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   MessageCircle, Rocket, GraduationCap, CheckCircle, Wrench, Code, PenTool, ShieldCheck } from "lucide-react";
 import SEO from "@/components/SEO";
-import { getRecaptchaToken } from "@/lib/recaptcha";
 
 const INTEREST_OPTIONS = ["Mechanical / CAD", "Programming", "Electrical", "Business", "Outreach", "Media / Video"] as const;
 const GRADE_OPTIONS = ["6", "7", "8", "9", "10", "11", "12"] as const;
@@ -55,17 +54,10 @@ export default function JoinPage() {
 
     setSubmitStatus("sending");
 
-    try {
-      const token = await getRecaptchaToken();
-      await submitApplication(token);
-    } catch (err: unknown) {
-      logger.error("Join form verification failed.");
-      setSubmitStatus("error");
-      setErrorMessage(err instanceof Error ? err.message : "Verification check failed. Please refresh and try again.");
-    }
+    await submitApplication();
   };
 
-  const submitApplication = async (recaptchaToken: string) => {
+  const submitApplication = async () => {
     try {
       const metadata = role === "student"
         ? { school: school.trim(), grade, interests: selectedInterests, additional: additional.trim(), phone: phone || undefined }
@@ -76,6 +68,9 @@ export default function JoinPage() {
       let appCheckHeaders = (await getAppCheckHeader()) || {};
       if (!appCheckHeaders["X-Firebase-AppCheck"]) {
         appCheckHeaders = (await getAppCheckHeader(true)) || {};
+      }
+      if (!appCheckHeaders["X-Firebase-AppCheck"]) {
+        throw new Error("Security verification failed. Please refresh and try again.");
       }
 
       const res = await fetch("/api/inquiries", {
@@ -88,8 +83,7 @@ export default function JoinPage() {
           type: role,
           name,
           email,
-          metadata,
-          recaptchaToken
+          metadata
         })
       });
 
