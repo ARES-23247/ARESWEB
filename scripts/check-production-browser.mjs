@@ -28,8 +28,8 @@ export function validateOrigin(value) {
 }
 
 export function validateDeploymentId(value) {
-  if (!/^[A-Za-z0-9._-]{1,128}$/.test(value)) {
-    throw new Error("--deployment-id contains unsupported characters");
+  if (!/^[a-f0-9]{40}$/.test(value)) {
+    throw new Error("--deployment-id must be a full lowercase Git commit SHA");
   }
   return value;
 }
@@ -40,7 +40,7 @@ export async function runProductionBrowserCheck({
   launch = () => chromium.launch({ headless: true }),
 }) {
   const browser = await launch();
-  const context = await browser.newContext({ serviceWorkers: "block" });
+  const context = await browser.newContext({ serviceWorkers: "allow" });
   const page = await context.newPage();
   const clientFailures = [];
   let appCheckToken = "";
@@ -73,14 +73,38 @@ export async function runProductionBrowserCheck({
   });
 
   try {
-    await page.goto(`${origin}/join?deployment=${encodeURIComponent(deploymentId)}`, {
-      waitUntil: "networkidle",
-      timeout: 45_000,
-    });
-    const initialScriptSources = await page.locator("script[src]").evaluateAll((scripts) =>
-      scripts.map((script) => script.getAttribute("src") ?? ""),
+    await page.goto(
+      `${origin}/join?deployment=${encodeURIComponent(deploymentId)}`,
+      {
+        waitUntil: "domcontentloaded",
+        timeout: 45_000,
+      },
     );
-    if (initialScriptSources.some((source) => source.includes("recaptcha/api.js"))) {
+    try {
+      await page
+        .locator("#join-name")
+        .waitFor({ state: "visible", timeout: 45_000 });
+    } catch {
+      const currentUrl = page.url();
+      const diagnostics =
+        clientFailures.length > 0 ? `\n${clientFailures.join("\n")}` : "";
+      throw new Error(
+        `Join form did not become ready at ${currentUrl}${diagnostics}`,
+      );
+    }
+    if (new URL(page.url()).origin !== origin) {
+      throw new Error(
+        `Deployment probe left the direct Hosting origin for ${page.url()}`,
+      );
+    }
+    const initialScriptSources = await page
+      .locator("script[src]")
+      .evaluateAll((scripts) =>
+        scripts.map((script) => script.getAttribute("src") ?? ""),
+      );
+    if (
+      initialScriptSources.some((source) => source.includes("recaptcha/api.js"))
+    ) {
       throw new Error("legacy standard reCAPTCHA client is present");
     }
 
@@ -89,27 +113,44 @@ export async function runProductionBrowserCheck({
     await page.locator("#join-school").fill("Synthetic Test School");
     await page.locator("#join-grade").selectOption("10");
     await page.getByLabel("Programming").check();
-    await page.getByRole("button", { name: "Submit Student Application" }).click();
+    await page
+      .getByRole("button", { name: "Submit Student Application" })
+      .click();
     await page.getByText("Application submitted successfully!").waitFor({
       state: "visible",
       timeout: 30_000,
     });
 
-    if (!appCheckToken) throw new Error("join flow produced no App Check token");
+    if (!appCheckToken)
+      throw new Error("join flow produced no App Check token");
     if (!inquiryPayload || typeof inquiryPayload !== "object") {
       throw new Error("join flow produced no JSON inquiry payload");
     }
     if ("recaptchaToken" in inquiryPayload) {
-      throw new Error("join flow still sends the retired reCAPTCHA token field");
+      throw new Error(
+        "join flow still sends the retired reCAPTCHA token field",
+      );
     }
-    const attestedScriptSources = await page.locator("script[src]").evaluateAll((scripts) =>
-      scripts.map((script) => script.getAttribute("src") ?? ""),
-    );
-    if (attestedScriptSources.some((source) => source.includes("recaptcha/api.js"))) {
+    const attestedScriptSources = await page
+      .locator("script[src]")
+      .evaluateAll((scripts) =>
+        scripts.map((script) => script.getAttribute("src") ?? ""),
+      );
+    if (
+      attestedScriptSources.some((source) =>
+        source.includes("recaptcha/api.js"),
+      )
+    ) {
       throw new Error("legacy standard reCAPTCHA client is present");
     }
-    if (!attestedScriptSources.some((source) => source.includes("recaptcha/enterprise.js"))) {
-      throw new Error("reCAPTCHA Enterprise client is missing after attestation");
+    if (
+      !attestedScriptSources.some((source) =>
+        source.includes("recaptcha/enterprise.js"),
+      )
+    ) {
+      throw new Error(
+        "reCAPTCHA Enterprise client is missing after attestation",
+      );
     }
 
     const canaryResponse = await context.request.post(

@@ -251,6 +251,22 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
   });
 
+  it("allows reCAPTCHA Enterprise verification requests without weakening scripts", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const csp = config.hosting.headers
+      .find((rule) => rule.source === "/!(assets){,/**}")
+      ?.headers.find(
+        (header) => header.key === "Content-Security-Policy",
+      )?.value;
+
+    expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.google\.com/);
+    expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.recaptcha\.net/);
+    expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    expect(csp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
+  });
+
   it("blocks tournaments routes from indexing at the hosting layer", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
