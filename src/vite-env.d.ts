@@ -16,7 +16,9 @@ interface GooglePickerBuilder {
   setDeveloperKey: (value: string) => GooglePickerBuilder;
   setOAuthToken: (value: string) => GooglePickerBuilder;
   addView: (view: GooglePickerDocsView) => GooglePickerBuilder;
-  setCallback: (callback: (data: GooglePickerResult) => void) => GooglePickerBuilder;
+  setCallback: (
+    callback: (data: GooglePickerResult) => void,
+  ) => GooglePickerBuilder;
   build: () => { setVisible: (visible: boolean) => void };
 }
 
@@ -24,16 +26,29 @@ interface Window {
   ARES_E2E_BYPASS?: boolean;
   FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string;
   grecaptcha?: {
-    ready: (callback: () => void) => void;
-    execute: (siteKey: string, options: { action: "submit" }) => Promise<string>;
+    ready?: (callback: () => void) => void;
+    execute?: (
+      siteKey: string,
+      options: { action: "submit" },
+    ) => Promise<string>;
+    enterprise?: {
+      ready: (callback: () => void) => void;
+      execute: (
+        siteKey: string,
+        options: { action: string },
+      ) => Promise<string>;
+    };
   };
   gapi?: {
-    load: (name: "picker", options: {
-      callback: () => void;
-      onerror: () => void;
-      timeout: number;
-      ontimeout: () => void;
-    }) => void;
+    load: (
+      name: "picker",
+      options: {
+        callback: () => void;
+        onerror: () => void;
+        timeout: number;
+        ontimeout: () => void;
+      },
+    ) => void;
   };
   google?: {
     accounts?: {
@@ -41,9 +56,14 @@ interface Window {
         initTokenClient: (configuration: {
           client_id: string;
           scope: string;
-          callback: (response: { access_token?: string; error?: string }) => void;
+          callback: (response: {
+            access_token?: string;
+            error?: string;
+          }) => void;
           error_callback: () => void;
-        }) => { requestAccessToken: (options: { prompt: "select_account" }) => void };
+        }) => {
+          requestAccessToken: (options: { prompt: "select_account" }) => void;
+        };
       };
     };
     picker?: {

@@ -24,7 +24,6 @@ const LEGACY_EXEMPT_LIB = new Set([
   "googleDrivePicker.ts",
   "image.ts",
   "media.ts",
-  "recaptcha.ts",
   "site-config.ts",
   "tournamentMatchCsv.ts",
   "tournamentScoutingCsv.ts",
@@ -38,8 +37,13 @@ function globToRegExp(pattern: string): RegExp {
     .replace(/\*\*\/\*/g, "[^/]+/[^/]+")
     .replace(/\*\*/g, ".*")
     .replace(/\*/g, "[^/]*")
-    .replace(/\{([^}]+)\}/g, (_match, group: string) =>
-      `(?:${group.split(",").map((part) => part.trim()).join("|")})`,
+    .replace(
+      /\{([^}]+)\}/g,
+      (_match, group: string) =>
+        `(?:${group
+          .split(",")
+          .map((part) => part.trim())
+          .join("|")})`,
     );
   return new RegExp(`^${escaped}$`);
 }
@@ -48,15 +52,17 @@ function coverageIncludeList(): string[] {
   const config = readFileSync(resolve(process.cwd(), "vite.config.ts"), "utf8");
   const includeBlock =
     config.match(/coverage:\s*\{[\s\S]*?include:\s*\[([\s\S]*?)\]/)?.[1] ?? "";
-  if (!includeBlock) throw new Error("vite.config.ts coverage include list not found");
+  if (!includeBlock)
+    throw new Error("vite.config.ts coverage include list not found");
   return [...includeBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
 }
 
 describe("coverage ratchet inventory", () => {
   it("requires every src/lib module to be covered or deliberately exempt", () => {
     const includes = coverageIncludeList();
-    const libFiles = readdirSync(resolve(process.cwd(), "src/lib"))
-      .filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"));
+    const libFiles = readdirSync(resolve(process.cwd(), "src/lib")).filter(
+      (file) => file.endsWith(".ts") && !file.endsWith(".test.ts"),
+    );
 
     expect(libFiles.length).toBeGreaterThan(10);
     const violations: string[] = [];
