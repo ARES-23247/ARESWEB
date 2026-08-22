@@ -194,6 +194,12 @@ Before deployment, run the full gate in `AGENTS.md`. After deployment, verify:
 6. App Check succeeds from production without repeated 403/throttle warnings.
 7. The Robots page loads through `/api/robots` without an index error.
 8. The Video Hub loads through `/api/videos/public` without an index error.
+9. The post-deployment browser check passes against the Firebase Hosting origin.
+   It loads the real Join page, confirms that only the Enterprise reCAPTCHA
+   client is present, intercepts the synthetic inquiry before it reaches the
+   API, and verifies the browser's App Check token against the mutation-free
+   `/api/app-check/canary` endpoint. Never log the captured token or replace the
+   intercepted synthetic submission with real applicant data.
 
 ## Google Cloud preventive controls
 

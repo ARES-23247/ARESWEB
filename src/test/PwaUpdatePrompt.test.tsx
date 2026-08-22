@@ -33,6 +33,11 @@ describe("PwaUpdatePrompt", () => {
     vi.clearAllMocks();
   });
 
+  it("does not register when offline support is explicitly disabled", () => {
+    render(<PwaUpdatePrompt enabled={false} />);
+    expect(registerSWMock).not.toHaveBeenCalled();
+  });
+
   it("offers a controlled reload when a new service worker is ready", async () => {
     const reloadPage = vi.fn();
     render(<PwaUpdatePrompt enabled reloadPage={reloadPage} />);

@@ -140,6 +140,10 @@
     "trailingSlash": false,
     "rewrites": [
       {
+        "source": "/api/app-check{,/**}",
+        "function": "publicApi"
+      },
+      {
         "source": "/sitemap.xml",
         "function": "publicApi"
       },

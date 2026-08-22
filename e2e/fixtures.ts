@@ -1,4 +1,9 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import {
+  test as base,
+  expect,
+  type ConsoleMessage,
+  type Page,
+} from "@playwright/test";
 
 type MockRole = "admin" | "coach" | "mentor" | "member";
 
@@ -8,34 +13,90 @@ interface AresFixtures {
 
 export const test = base.extend<AresFixtures>({
   page: async ({ page }, use) => {
-    const pageErrors: Error[] = [];
+    const clientFailures: string[] = [];
 
-    await page.addInitScript(() => {
-      window.ARES_E2E_BYPASS = true;
-    });
+    // Incidental shared-layout and public-page requests get explicit truthful
+    // empty responses. Individual tests can register later routes to override
+    // these defaults when the response itself is under test.
+    await page.route("**/api/profiles/about-roster", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ members: [] }),
+      }),
+    );
+    await page.route("**/api/inquiries/pending-exists", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ hasPending: false }),
+      }),
+    );
+    // The isolated role fixture intentionally does not start Firebase Auth's
+    // emulator. WebKit still requests its helper iframe during SDK startup;
+    // satisfy only that loopback origin so a missing, unused emulator does not
+    // masquerade as an application console failure.
+    await page.route("http://127.0.0.1:9099/**", (route) =>
+      route.fulfill({ status: 204, body: "" }),
+    );
 
     await page.addInitScript(() => {
       window.ARES_E2E_BYPASS = true;
     });
 
     const errorHandler = (err: Error) => {
-      pageErrors.push(err);
+      clientFailures.push(`${err.name || "Error"}: ${err.message}\n${err.stack || ""}`);
+    };
+    const consoleHandler = (message: ConsoleMessage) => {
+      if (message.type() === "error") {
+        const sourceUrl = message.location().url;
+        clientFailures.push(
+          `console.error${sourceUrl ? ` (${sourceUrl})` : ""}: ${message.text()}`,
+        );
+      }
+    };
+    const requestFailedHandler = (request: {
+      url(): string;
+      failure(): { errorText?: string } | null;
+    }) => {
+      const errorText = request.failure()?.errorText ?? "unknown network failure";
+      if (/ERR_ABORTED|NS_BINDING_ABORTED/i.test(errorText)) return;
+      try {
+        const currentOrigin = new URL(page.url()).origin;
+        if (new URL(request.url()).origin === currentOrigin) {
+          clientFailures.push(`same-origin request failed: ${request.url()} (${errorText})`);
+        }
+      } catch {
+        // Ignore failures before the first real document establishes an origin.
+      }
+    };
+    const responseHandler = (response: { status(): number; url(): string }) => {
+      if (response.status() < 500) return;
+      try {
+        const currentOrigin = new URL(page.url()).origin;
+        if (new URL(response.url()).origin === currentOrigin) {
+          clientFailures.push(`same-origin HTTP ${response.status()}: ${response.url()}`);
+        }
+      } catch {
+        // Ignore responses before the first real document establishes an origin.
+      }
     };
 
     page.on("pageerror", errorHandler);
+    page.on("console", consoleHandler);
+    page.on("requestfailed", requestFailedHandler);
+    page.on("response", responseHandler);
 
     await use(page);
 
     page.removeListener("pageerror", errorHandler);
+    page.removeListener("console", consoleHandler);
+    page.removeListener("requestfailed", requestFailedHandler);
+    page.removeListener("response", responseHandler);
 
-    if (pageErrors.length > 0) {
-      const errorDetails = pageErrors
-        .map(
-          (err) => `${err.name || "Error"}: ${err.message}\n${err.stack || ""}`,
-        )
-        .join("\n\n");
+    if (clientFailures.length > 0) {
       throw new Error(
-        `Client-side page error(s) detected during test execution:\n\n${errorDetails}`,
+        `Client-side failure(s) detected during test execution:\n\n${clientFailures.join("\n\n")}`,
       );
     }
   },

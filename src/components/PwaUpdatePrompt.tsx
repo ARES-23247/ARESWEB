@@ -45,7 +45,13 @@ function clearDismissedUpdate(): void {
 }
 
 export default function PwaUpdatePrompt({
-  enabled = import.meta.env.PROD,
+  enabled =
+    import.meta.env.PROD &&
+    !(
+      import.meta.env.MODE === "e2e" &&
+      typeof window !== "undefined" &&
+      window.ARES_E2E_BYPASS === true
+    ),
   reloadPage,
 }: PwaUpdatePromptProps) {
   const performReload = useMemo(

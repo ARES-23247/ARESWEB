@@ -90,11 +90,13 @@ describe("OutreachPage public community impact and STEM requests", () => {
     const nameInput = screen.getByLabelText(/your name \*/i);
     const emailInput = screen.getByLabelText(/email address \*/i);
     const orgInput = screen.getByLabelText(/organization/i);
+    const phoneInput = screen.getByLabelText(/phone/i);
     const detailsInput = screen.getByLabelText(/details & dates \*/i);
 
     fireEvent.change(nameInput, { target: { value: "Dr. Jane Smith" } });
     fireEvent.change(emailInput, { target: { value: "jsmith@wvstem.org" } });
     fireEvent.change(orgInput, { target: { value: "Morgantown Middle School" } });
+    fireEvent.change(phoneInput, { target: { value: "304-555-0101" } });
     fireEvent.change(detailsInput, { target: { value: "We would love a robotics demonstration for 6th grade classes." } });
 
     await waitFor(() => expect(nameInput).toHaveValue("Dr. Jane Smith"));
@@ -107,5 +109,20 @@ describe("OutreachPage public community impact and STEM requests", () => {
       method: "POST",
       body: expect.stringContaining("Dr. Jane Smith"),
     }));
+  });
+
+  it("retries a failed public impact request", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce(response({ logs: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+
+    expect(await screen.findByText("Unable to load outreach impact")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("No outreach events are published yet")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

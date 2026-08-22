@@ -90,6 +90,14 @@ App Check fails closed for protected production browser mutations. Confirm valid
 tokens for inquiry, task, admin editing, photo, simulation, and checkout flows.
 The three secret-authenticated server integrations (profiles/sync, Zulip webhook, Onshape webhook) remain narrowly exempt.
 
+The production workflow automatically runs `scripts/check-production-browser.mjs`
+after a successful deploy. The check uses a synthetic Join application that is
+intercepted in the browser, so it must never create an inquiry record or contain
+student PII. It then presents the generated token to the read/write-free
+`/api/app-check/canary` endpoint. Treat a failed check as a release incident even
+though deployment has already completed, and roll back Hosting if the browser
+client itself is broken.
+
 Use `ENFORCE_APP_CHECK=false` only as a time-limited incident response override.
 Record why it was needed, monitor affected traffic, fix the client path, and
 remove the override before closing the incident.

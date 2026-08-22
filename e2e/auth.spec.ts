@@ -25,8 +25,12 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
 
 test.describe('Public Forms E2E tests', () => {
   test('should successfully validate and submit the join recruitment form', async ({ page }) => {
+    let submittedBody: Record<string, unknown> | undefined;
+    let submittedAppCheck = "";
     // Intercept and mock the recruitment API post request to avoid failing if backend/DB is offline
     await page.route('**/api/inquiries', async (route) => {
+      submittedBody = JSON.parse(route.request().postData() ?? "{}") as Record<string, unknown>;
+      submittedAppCheck = route.request().headers()['x-firebase-appcheck'] ?? "";
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -35,6 +39,7 @@ test.describe('Public Forms E2E tests', () => {
     });
 
     await page.goto('/join');
+    await expect(page.getByRole('alert')).toHaveCount(0);
     
     // Fill out student inquiry form
     await page.locator('#join-name').fill('Playwright Test Runner');
@@ -55,6 +60,9 @@ test.describe('Public Forms E2E tests', () => {
     
     // Verify success banner is shown
     await expect(page.locator('body')).toContainText('Application submitted successfully', { timeout: 15000 });
+    expect(submittedAppCheck).toBe('test-app-check-token');
+    expect(submittedBody).toBeDefined();
+    expect(submittedBody).not.toHaveProperty('recaptchaToken');
   });
 });
 
