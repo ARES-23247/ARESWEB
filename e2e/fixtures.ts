@@ -14,6 +14,10 @@ export const test = base.extend<AresFixtures>({
       window.ARES_E2E_BYPASS = true;
     });
 
+    await page.addInitScript(() => {
+      window.ARES_E2E_BYPASS = true;
+    });
+
     const errorHandler = (err: Error) => {
       pageErrors.push(err);
     };

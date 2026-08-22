@@ -7,7 +7,6 @@ import { siteConfig } from "@/lib/site-config";
 import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight, RefreshCw } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
-import { getRecaptchaToken } from "@/lib/recaptcha";
 
 type SponsorTier = "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
 
@@ -143,21 +142,17 @@ export default function SponsorsPage() {
 
     setSubmitStatus("sending");
 
-    try {
-      const token = await getRecaptchaToken();
-      await submitInquiry(token, trimmedName, trimmedEmail);
-    } catch (err: unknown) {
-      logger.error("Sponsor inquiry verification failed.");
-      setSubmitStatus("error");
-      setErrorMessage(err instanceof Error ? err.message : "Verification check failed. Please refresh and try again.");
-    }
+    await submitInquiry(trimmedName, trimmedEmail);
   };
 
-  const submitInquiry = async (recaptchaToken: string, sponsorName = name.trim(), sponsorEmail = email.trim()) => {
+  const submitInquiry = async (sponsorName = name.trim(), sponsorEmail = email.trim()) => {
     try {
       let appCheckHeaders = (await getAppCheckHeader()) || {};
       if (!appCheckHeaders["X-Firebase-AppCheck"]) {
         appCheckHeaders = (await getAppCheckHeader(true)) || {};
+      }
+      if (!appCheckHeaders["X-Firebase-AppCheck"]) {
+        throw new Error("Security verification failed. Please refresh and try again.");
       }
 
       const res = await fetch("/api/inquiries", {
@@ -170,8 +165,7 @@ export default function SponsorsPage() {
           type: "sponsor",
           name: sponsorName,
           email: sponsorEmail,
-          metadata: { level, message, phone: phone || undefined },
-          recaptchaToken
+          metadata: { level, message, phone: phone || undefined }
         })
       });
 

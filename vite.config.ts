@@ -160,7 +160,6 @@ export default defineConfig({
         "src/lib/dateOnly.ts",
         "src/lib/localDateTime.ts",
         "src/lib/outreachExport.ts",
-        "src/lib/recaptcha.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",

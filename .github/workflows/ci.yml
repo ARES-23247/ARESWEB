@@ -77,17 +77,14 @@ jobs:
       - name: Verify public security configuration
         env:
           NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
-          NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
           NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
         run: |
           test -n "$NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY"
-          test -n "$NEXT_PUBLIC_RECAPTCHA_SITE_KEY"
           test -n "$NEXT_PUBLIC_GOOGLE_PICKER_API_KEY"
 
       - name: Build frontend
         env:
           NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
-          NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
           NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
         run: pnpm run build
 

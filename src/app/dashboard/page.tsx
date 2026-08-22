@@ -146,7 +146,7 @@ export default function DashboardHome() {
     }
   };
 
-  const recaptchaActive = !!import.meta.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const appCheckActive = !!import.meta.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
 
   return (
     <div className="space-y-10 text-left">
@@ -495,11 +495,11 @@ export default function DashboardHome() {
                 <div className="flex items-center gap-2.5">
                   <Shield size={14} className="text-ares-red" />
                   <span className="font-semibold text-marble">
-                    Spam reCAPTCHA
+                    App Check Protection
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {recaptchaActive ? (
+                  {appCheckActive ? (
                     <>
                       <CheckCircle2 size={12} className="text-ares-success" />
                       <span className="text-ares-success">Configured</span>
