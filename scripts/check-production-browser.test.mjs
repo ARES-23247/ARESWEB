@@ -9,12 +9,14 @@ import {
 function createBrowserHarness({
   scripts = ["https://www.google.com/recaptcha/enterprise.js?render=test"],
   canaryStatus = 204,
+  pageUrl = "https://aresfirst-portal.web.app/join",
 } = {}) {
   let inquiryHandler;
   const close = vi.fn();
   const post = vi.fn().mockResolvedValue({ status: () => canaryStatus });
   const page = {
     on: vi.fn(),
+    url: vi.fn(() => pageUrl),
     route: vi.fn(async (_pattern, handler) => {
       inquiryHandler = handler;
     }),
@@ -26,7 +28,7 @@ function createBrowserHarness({
             callback(scripts.map((src) => ({ getAttribute: () => src }))),
         };
       }
-      return { fill: vi.fn(), selectOption: vi.fn() };
+      return { fill: vi.fn(), selectOption: vi.fn(), waitFor: vi.fn() };
     }),
     getByLabel: vi.fn(() => ({ check: vi.fn() })),
     getByRole: vi.fn(() => ({
@@ -46,11 +48,12 @@ function createBrowserHarness({
     getByText: vi.fn(() => ({ waitFor: vi.fn() })),
   };
   const context = { newPage: async () => page, request: { post } };
+  const newContext = vi.fn(async () => context);
   const launch = vi.fn(async () => ({
-    newContext: async () => context,
+    newContext,
     close,
   }));
-  return { launch, close, post };
+  return { launch, close, newContext, post };
 }
 
 describe("production browser security check", () => {
@@ -62,12 +65,13 @@ describe("production browser security check", () => {
     expect(validateOrigin("https://aresfirst-portal.web.app")).toBe(
       "https://aresfirst-portal.web.app",
     );
-    expect(() => validateOrigin("http://aresfirst.org")).toThrow("HTTPS origin");
-    expect(validateDeploymentId("release_2026-08-22.1")).toBe(
-      "release_2026-08-22.1",
+    expect(() => validateOrigin("http://aresfirst.org")).toThrow(
+      "HTTPS origin",
     );
-    expect(() => validateDeploymentId("not allowed/value")).toThrow(
-      "unsupported characters",
+    const deploymentId = "a".repeat(40);
+    expect(validateDeploymentId(deploymentId)).toBe(deploymentId);
+    expect(() => validateDeploymentId("release_2026-08-22.1")).toThrow(
+      "full lowercase Git commit SHA",
     );
   });
 
@@ -76,7 +80,7 @@ describe("production browser security check", () => {
     await expect(
       runProductionBrowserCheck({
         origin: "https://aresfirst-portal.web.app",
-        deploymentId: "test-deployment",
+        deploymentId: "a".repeat(40),
         launch: harness.launch,
       }),
     ).resolves.toEqual({
@@ -88,6 +92,9 @@ describe("production browser security check", () => {
       "https://aresfirst-portal.web.app/api/app-check/canary",
       { headers: { "X-Firebase-AppCheck": "verified-token" } },
     );
+    expect(harness.newContext).toHaveBeenCalledWith({
+      serviceWorkers: "allow",
+    });
     expect(harness.close).toHaveBeenCalledTimes(1);
   });
 
@@ -98,10 +105,49 @@ describe("production browser security check", () => {
     await expect(
       runProductionBrowserCheck({
         origin: "https://aresfirst-portal.web.app",
-        deploymentId: "test-deployment",
+        deploymentId: "a".repeat(40),
         launch: harness.launch,
       }),
     ).rejects.toThrow("legacy standard reCAPTCHA client");
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a deployment probe that crosses the canonical CDN boundary", async () => {
+    const harness = createBrowserHarness({
+      pageUrl: "https://aresfirst.org/join",
+    });
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow("Deployment probe left the direct Hosting origin");
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the final URL and captured browser errors when hydration fails", async () => {
+    const harness = createBrowserHarness();
+    const browser = await harness.launch();
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    page.locator = vi.fn(() => ({
+      waitFor: vi.fn().mockRejectedValue(new Error("timeout")),
+    }));
+    page.on.mockImplementation((event, handler) => {
+      if (event === "pageerror") handler(new Error("boot failed"));
+    });
+    const launch = vi.fn(async () => browser);
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch,
+      }),
+    ).rejects.toThrow(
+      "Join form did not become ready at https://aresfirst-portal.web.app/join\npageerror: boot failed",
+    );
     expect(harness.close).toHaveBeenCalledTimes(1);
   });
 });

@@ -156,6 +156,7 @@ export default defineConfig({
         "src/lib/contentFormatters.ts",
         "src/lib/contentUrls.ts",
         "src/lib/authorization.ts",
+        "src/lib/canonicalHost.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
@@ -242,6 +243,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/authorization.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/canonicalHost.ts": {
           lines: 85,
           functions: 100,
         },
