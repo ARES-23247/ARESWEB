@@ -5,8 +5,18 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { deleteDoc, doc, getDoc,
-  runTransaction, setDoc, updateDoc, } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  runTransaction,
+  setDoc,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -95,6 +105,55 @@ describe("Firestore zero-trust rules", () => {
     await assertSucceeds(getDoc(doc(publicDb, "posts", "approved")));
     await assertFails(getDoc(doc(publicDb, "posts", "pending")));
     await assertSucceeds(getDoc(doc(publicDb, "posts", "legacy")));
+  });
+
+  it("requires public collection queries to carry every publication constraint", async () => {
+    await seedDocument("posts", "approved", {
+      status: "published",
+      isDeleted: 0,
+      approvalStatus: "approved",
+    });
+    await seedDocument("posts", "pending", {
+      status: "published",
+      isDeleted: 0,
+      approvalStatus: "pending_approval",
+    });
+    const publicDb = testEnvironment.unauthenticatedContext().firestore();
+    const posts = collection(publicDb, "posts");
+
+    await assertSucceeds(
+      getDocs(
+        query(
+          posts,
+          where("status", "==", "published"),
+          where("isDeleted", "==", 0),
+          where("approvalStatus", "==", "approved"),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(query(posts, where("status", "==", "published"))),
+    );
+  });
+
+  it("enforces role checks for private collection queries, not only document reads", async () => {
+    await seedAuthorizedUser("admin-user", "admin");
+    await seedAuthorizedUser("member-user", "member");
+    await seedDocument("inquiries", "private", { status: "pending" });
+    await seedDocument("tasks", "team-task", { title: "Build robot" });
+
+    const adminDb = testEnvironment
+      .authenticatedContext("admin-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+    const publicDb = testEnvironment.unauthenticatedContext().firestore();
+
+    await assertSucceeds(getDocs(collection(adminDb, "inquiries")));
+    await assertFails(getDocs(collection(memberDb, "inquiries")));
+    await assertSucceeds(getDocs(collection(memberDb, "tasks")));
+    await assertFails(getDocs(collection(publicDb, "tasks")));
   });
 
   it("binds member drafts to a private owner and protects published content", async () => {

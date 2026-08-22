@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const firestoreRules = readFileSync("firestore.rules", "utf8");
@@ -11,6 +11,11 @@ const firebaseAppCheck = readFileSync("src/lib/firebaseAppCheck.ts", "utf8");
 const firebaseEnvironment = readFileSync("src/lib/firebaseEnvironment.ts", "utf8");
 const authContext = readFileSync("src/context/AuthContext.tsx", "utf8");
 const dashboardLayout = readFileSync("src/app/dashboard/layout.tsx", "utf8");
+const productionFrontendSource = globSync("src/**/*.{ts,tsx}", {
+  exclude: ["src/test/**", "src/**/*.test.{ts,tsx}"],
+})
+  .map((file) => `${file}\n${readFileSync(file, "utf8")}`)
+  .join("\n");
 
 describe("security-rule invariants", () => {
   it("does not expose inquiry or finance records publicly", () => {
@@ -33,6 +38,13 @@ describe("security-rule invariants", () => {
     expect(firebaseAppCheck).not.toContain("ReCaptchaV3Provider");
     expect(firebaseAppCheck).toContain('"X-Firebase-AppCheck"');
     expect(firebaseAppCheck).toContain("isTokenAutoRefreshEnabled: true");
+  });
+
+  it("prevents a second legacy reCAPTCHA client from colliding with App Check", () => {
+    expect(productionFrontendSource).not.toContain("recaptcha/api.js");
+    expect(productionFrontendSource).not.toContain("ReCaptchaV3Provider");
+    expect(productionFrontendSource).not.toContain("NEXT_PUBLIC_RECAPTCHA_SITE_KEY");
+    expect(productionFrontendSource).not.toContain("getRecaptchaToken");
   });
 
   it("keeps Firebase product initialization behind narrow module boundaries", () => {

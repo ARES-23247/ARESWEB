@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { adminDb, adminAuth } from "../../lib/firebase-admin";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { adminDb, adminAuth, adminAppCheck } from "../../lib/firebase-admin";
 import { decrypt } from "../../lib/crypto";
+import { createApiApp } from "../../apiApp";
 
 // Mock express-rate-limit
 vi.mock("express-rate-limit", () => {
@@ -66,6 +69,9 @@ vi.mock("../../lib/firebase-admin", () => {
     },
     adminAuth: {
       getUserByEmail: mockGetUserByEmail,
+    },
+    adminAppCheck: {
+      verifyToken: vi.fn(),
     },
   };
 });
@@ -612,5 +618,112 @@ describe("Inquiries Router Backend Endpoints", () => {
       expect(err).toEqual(expect.objectContaining({ status: 400 }));
       expect(adminDb.collection("inquiries").doc().set).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("Inquiry submission complete Express chain", () => {
+  const originalEnforcement = process.env.ENFORCE_APP_CHECK;
+  const originalEmulator = process.env.FUNCTIONS_EMULATOR;
+
+  async function postInquiry(
+    body: Record<string, unknown>,
+    appCheckToken?: string,
+  ) {
+    const app = createApiApp({
+      routes: [{ path: "/api/inquiries", router: inquiriesRouter }],
+    });
+    const server = createServer(app);
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
+    const { port } = server.address() as AddressInfo;
+
+    try {
+      return await fetch(`http://127.0.0.1:${port}/api/inquiries`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(appCheckToken
+            ? { "X-Firebase-AppCheck": appCheckToken }
+            : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.ENFORCE_APP_CHECK = "true";
+    delete process.env.FUNCTIONS_EMULATOR;
+    vi.mocked(adminAppCheck.verifyToken).mockReset();
+  });
+
+  afterEach(() => {
+    if (originalEnforcement === undefined) delete process.env.ENFORCE_APP_CHECK;
+    else process.env.ENFORCE_APP_CHECK = originalEnforcement;
+    if (originalEmulator === undefined) delete process.env.FUNCTIONS_EMULATOR;
+    else process.env.FUNCTIONS_EMULATOR = originalEmulator;
+  });
+
+  it("rejects missing App Check before parsing or storing inquiry PII", async () => {
+    const response = await postInquiry({
+      type: "student",
+      name: "Protected Applicant",
+      email: "protected@example.test",
+      metadata: {},
+    });
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "APP_CHECK_REQUIRED",
+    });
+    expect(adminDb.collection("inquiries").doc().set).not.toHaveBeenCalled();
+  });
+
+  it("runs App Check, JSON parsing, validation, encryption, and storage in order", async () => {
+    vi.mocked(adminAppCheck.verifyToken).mockResolvedValueOnce({
+      appId: "1:205869391101:web:ca1bb24da790e4904ff294",
+    } as never);
+
+    const response = await postInquiry(
+      {
+        type: "general",
+        name: "Chain Test",
+        email: "chain@example.test",
+        metadata: { message: "Middleware composition" },
+      },
+      "valid-app-check-token",
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ success: true });
+    expect(adminAppCheck.verifyToken).toHaveBeenCalledWith(
+      "valid-app-check-token",
+    );
+    expect(adminDb.collection("inquiries").doc().set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "encrypted:Chain Test",
+        email: "encrypted:chain@example.test",
+      }),
+    );
+  });
+
+  it("rejects an invalid body after App Check and before storage", async () => {
+    vi.mocked(adminAppCheck.verifyToken).mockResolvedValueOnce({
+      appId: "1:205869391101:web:ca1bb24da790e4904ff294",
+    } as never);
+
+    const response = await postInquiry(
+      { type: "student", name: "", email: "not-an-email" },
+      "valid-app-check-token",
+    );
+
+    expect(response.status).toBe(400);
+    expect(adminDb.collection("inquiries").doc().set).not.toHaveBeenCalled();
   });
 });

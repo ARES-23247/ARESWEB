@@ -158,6 +158,7 @@ export default defineConfig({
         "src/lib/authorization.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
+        "src/lib/firebaseAppCheck.ts",
         "src/lib/localDateTime.ts",
         "src/lib/outreachExport.ts",
         "src/lib/security.ts",
@@ -173,6 +174,7 @@ export default defineConfig({
         "src/app/dashboard/photos/*.{ts,tsx}",
         "src/app/calendar/api.ts",
         "src/app/dashboard/profile/page.tsx",
+        "src/app/join/page.tsx",
         "src/app/dashboard/tasks/taskRecord.ts",
         "src/app/dashboard/tasks/taskSubtasks.ts",
         "src/app/tournaments/[id]/TournamentMatchEditForm.tsx",
@@ -231,6 +233,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/firebaseAppCheck.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/localDateTime.ts": {
           lines: 85,
           functions: 100,
@@ -264,6 +270,18 @@ export default defineConfig({
           functions: 100,
         },
         "src/app/calendar/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/join/page.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/outreach/page.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/sponsors/page.tsx": {
           lines: 85,
           functions: 100,
         },

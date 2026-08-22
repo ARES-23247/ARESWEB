@@ -149,4 +149,68 @@ describe("JoinPage Recruitment & Form Verification", () => {
     expect(getAppCheckHeader).toHaveBeenCalledTimes(2);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("covers required-field validation, deselection, phone entry, and role reset controls", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    render(<JoinPage />);
+
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: /Submit Student Application/i })
+        .closest("form")!,
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/Full Name \*/i), {
+      target: { value: "Validation Student" },
+    });
+    fireEvent.change(screen.getByLabelText(/Email Address \*/i), {
+      target: { value: "validation@example.test" },
+    });
+    const studentForm = screen
+      .getByRole("button", { name: /Submit Student Application/i })
+      .closest("form")!;
+    fireEvent.submit(studentForm);
+    expect(screen.getByRole("alert")).toHaveTextContent(/school and grade/i);
+
+    fireEvent.change(screen.getByLabelText(/School \*/i), {
+      target: { value: "Test School" },
+    });
+    fireEvent.change(screen.getByLabelText(/Current Grade \*/i), {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getByLabelText(/Phone Number/i), {
+      target: { value: "304-555-0100" },
+    });
+    fireEvent.submit(studentForm);
+    expect(screen.getByRole("alert")).toHaveTextContent(/select at least one/i);
+
+    const programming = screen.getByLabelText(/Programming/i);
+    fireEvent.click(programming);
+    fireEvent.click(programming);
+    fireEvent.submit(studentForm);
+    expect(screen.getByRole("alert")).toHaveTextContent(/select at least one/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /Mentor Application/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Student Application/i }));
+    expect(screen.getByLabelText(/Phone Number/i)).toHaveValue("304-555-0100");
+  });
+
+  it("shows mentor occupation validation before interest validation", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    render(<JoinPage />);
+    fireEvent.click(screen.getByRole("button", { name: /Mentor Application/i }));
+    fireEvent.change(screen.getByLabelText(/Full Name \*/i), {
+      target: { value: "Validation Mentor" },
+    });
+    fireEvent.change(screen.getByLabelText(/Email Address \*/i), {
+      target: { value: "mentor-validation@example.test" },
+    });
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: /Submit Mentor Application/i })
+        .closest("form")!,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/occupation\/company/i);
+  });
 });

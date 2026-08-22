@@ -12,7 +12,6 @@ import { describe, expect, it } from "vitest";
  */
 const LEGACY_EXEMPT_LIB = new Set([
   "financeCsv.ts",
-  "firebaseAppCheck.ts",
   "firebaseAuth.ts",
   "firebaseCore.ts",
   "firebaseDevBootstrap.ts",

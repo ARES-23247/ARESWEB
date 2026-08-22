@@ -93,10 +93,14 @@ describe("SponsorsPage partner directory and inquiry form", () => {
     const nameInput = screen.getByPlaceholderText("Your organization");
     const emailInput = screen.getByPlaceholderText("you@example.org");
     const messageInput = screen.getByPlaceholderText(/We'd love to partner/i);
+    const phoneInput = screen.getByPlaceholderText("(304) 555-1234");
+    const levelSelect = screen.getByLabelText("Sponsorship Level");
 
     fireEvent.change(nameInput, { target: { value: "Apex Dynamics" } });
     fireEvent.change(emailInput, { target: { value: "sponsor@apexdynamics.org" } });
     fireEvent.change(messageInput, { target: { value: "We would like to sponsor robot fabrication." } });
+    fireEvent.change(phoneInput, { target: { value: "304-555-0102" } });
+    fireEvent.change(levelSelect, { target: { value: "Gold" } });
 
     await waitFor(() => expect(nameInput).toHaveValue("Apex Dynamics"));
     await waitFor(() => expect(emailInput).toHaveValue("sponsor@apexdynamics.org"));
@@ -113,5 +117,56 @@ describe("SponsorsPage partner directory and inquiry form", () => {
     expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("/api/inquiries"))).toHaveLength(1);
 
     expect(await screen.findByText(/Request sent successfully/i)).toBeInTheDocument();
+  });
+
+  it("retries loading, scrolls to the form, and falls back when a partner logo fails", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce(response({
+        sponsors: [
+          null,
+          { name: "Missing Tier" },
+          { name: "Invalid Tier", tier: "Diamond" },
+          {
+            name: "Logo Partner",
+            tier: "Gold",
+            logoUrl: "https://images.example.test/logo.png",
+            websiteUrl: "not a valid URL",
+          },
+        ],
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+    renderPage();
+    expect(
+      await screen.findByText("Unable to load our partner list"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    const logo = await screen.findByAltText("Logo Partner logo");
+    fireEvent.error(logo);
+    expect(logo).not.toBeVisible();
+    expect(logo.parentElement?.querySelector(".fallback-text")).not.toHaveClass(
+      "hidden",
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("scrolls from the truthful empty state to the sponsor form", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response({ sponsors: [] })));
+    const scrollIntoView = vi.fn();
+    renderPage();
+
+    const formSection = document.getElementById("sponsor-form-section");
+    Object.defineProperty(formSection, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /become a sponsor/i }),
+    );
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth" });
   });
 });
