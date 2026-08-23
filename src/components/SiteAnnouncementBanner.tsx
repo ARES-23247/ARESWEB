@@ -23,7 +23,7 @@ const DISMISSED_REVISION_KEY = "ares.dismissedAnnouncementRevision";
 const REFRESH_INTERVAL_MS = 60_000;
 export const ANNOUNCEMENT_UPDATED_EVENT = "ares:announcement-updated";
 
-function isPublicAnnouncement(value: unknown): value is PublicAnnouncement {
+export function isPublicAnnouncement(value: unknown): value is PublicAnnouncement {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<PublicAnnouncement>;
   return (

@@ -8,6 +8,37 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     await expect(page.locator('body')).not.toContainText('Developer Bypass Active');
   });
 
+  test('should expose the mobile Team Today workspace to authenticated members', async ({ page, loginAs }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.route('**/api/calendar/events**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ events: [], nextCursor: null }),
+    }));
+    await page.route('**/api/photos?**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ photos: [] }),
+    }));
+    await page.route('**/api/announcements', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ announcement: null }),
+    }));
+
+    await loginAs('member', 'Mobile Member');
+    await page.goto('/dashboard/today');
+
+    await expect(page.getByRole('heading', { name: 'Team Today' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('No urgent team alert is active.')).toBeVisible();
+    await expect(page.getByText('No upcoming event is currently published.')).toBeVisible();
+    const viewport = await page.locator('html').evaluate((element) => ({
+      documentWidth: element.scrollWidth,
+      viewportWidth: element.clientWidth,
+    }));
+    expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.viewportWidth);
+  });
+
   test('should deny the isolated member fixture on admin routes', async ({ page, loginAs }) => {
     await loginAs('member', 'Test Member');
     await page.goto('/dashboard');
