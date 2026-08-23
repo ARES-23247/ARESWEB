@@ -6,7 +6,6 @@ const storageRules = readFileSync("storage.rules", "utf8");
 const firebaseCore = readFileSync("src/lib/firebaseCore.ts", "utf8");
 const firebaseAuth = readFileSync("src/lib/firebaseAuth.ts", "utf8");
 const firebaseFirestore = readFileSync("src/lib/firebaseFirestore.ts", "utf8");
-const firebaseStorage = readFileSync("src/lib/firebaseStorage.ts", "utf8");
 const firebaseAppCheck = readFileSync("src/lib/firebaseAppCheck.ts", "utf8");
 const firebaseEnvironment = readFileSync("src/lib/firebaseEnvironment.ts", "utf8");
 const authContext = readFileSync("src/context/AuthContext.tsx", "utf8");
@@ -29,8 +28,7 @@ describe("security-rule invariants", () => {
 
   it("does not let every verified member publish arbitrary editor assets", () => {
     const editorRule = storageRules.match(/match \/editor\/uploads\/\{allPaths=\*\*\} \{([\s\S]*?)\n    \}/)?.[1] || "";
-    expect(editorRule).toContain("isContentManager()");
-    expect(editorRule).not.toContain("allow write: if isAuthorized()");
+    expect(editorRule).toContain("allow write: if false");
   });
 
   it("uses the dedicated reCAPTCHA Enterprise provider for App Check", () => {
@@ -38,6 +36,11 @@ describe("security-rule invariants", () => {
     expect(firebaseAppCheck).not.toContain("ReCaptchaV3Provider");
     expect(firebaseAppCheck).toContain('"X-Firebase-AppCheck"');
     expect(firebaseAppCheck).toContain("isTokenAutoRefreshEnabled: true");
+  });
+
+  it("keeps new public-media objects behind the same-origin gateway", () => {
+    const publicMediaRule = storageRules.match(/match \/public-media\/\{allPaths=\*\*\} \{([\s\S]*?)\n    \}/)?.[1] || "";
+    expect(publicMediaRule).toContain("allow read, write: if false");
   });
 
   it("prevents a second legacy reCAPTCHA client from colliding with App Check", () => {
@@ -59,10 +62,6 @@ describe("security-rule invariants", () => {
     expect(firebaseFirestore).toContain('from "./firebaseCore"');
     expect(firebaseFirestore).not.toMatch(/firebase\/(auth|storage|app-check)/);
 
-    expect(firebaseStorage).toContain('from "firebase/storage"');
-    expect(firebaseStorage).toContain('from "./firebaseCore"');
-    expect(firebaseStorage).not.toMatch(/firebase\/(auth|firestore|app-check)/);
-
     expect(firebaseAppCheck).toContain('import("firebase/app-check")');
     expect(firebaseAppCheck).toContain('from "./firebaseCore"');
     expect(firebaseAppCheck).not.toMatch(/firebase\/(auth|firestore|storage)/);
@@ -70,9 +69,7 @@ describe("security-rule invariants", () => {
 
   it("limits emulator and App Check debug behavior to explicitly local development", () => {
     expect(firebaseFirestore).toContain("import.meta.env.DEV ? getLocalFirebaseEmulatorHost() : null");
-    expect(firebaseStorage).toContain("import.meta.env.DEV ? getLocalFirebaseEmulatorHost() : null");
     expect(firebaseFirestore).toContain('import("./firebaseFirestoreEmulator")');
-    expect(firebaseStorage).toContain('import("./firebaseStorageEmulator")');
 
     expect(firebaseEnvironment).toContain('import.meta.env.VITE_USE_EMULATOR !== "false"');
     expect(firebaseEnvironment).toContain('import.meta.env.NEXT_PUBLIC_USE_EMULATOR !== "false"');

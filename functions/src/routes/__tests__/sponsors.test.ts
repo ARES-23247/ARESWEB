@@ -35,6 +35,9 @@ vi.mock("../../lib/firebase-admin", () => {
     adminDb: {
       collection: mockCollection,
     },
+    adminStorage: {
+      bucket: vi.fn(() => ({ name: "ares-test.firebasestorage.app" })),
+    },
   };
 });
 
@@ -79,7 +82,7 @@ describe("Sponsors Router Backend Endpoints", () => {
           data: () => ({
             name: "Gold Partner",
             tier: "Gold",
-            logoUrl: "https://gold.com/logo.png",
+            logoUrl: "https://firebasestorage.googleapis.com/v0/b/ares-test.firebasestorage.app/o/editor%2Fuploads%2Fsponsors%2Fgold.png?alt=media",
             websiteUrl: "https://gold.com",
             isActive: true,
           }),
@@ -137,6 +140,36 @@ describe("Sponsors Router Backend Endpoints", () => {
       expect(res.json.mock.calls[0][0].sponsors).not.toEqual(
         expect.arrayContaining([expect.objectContaining({ name: "Archived Partner" })]),
       );
+      expect(res.json.mock.calls[0][0].sponsors[1]).toEqual(expect.objectContaining({
+        logoUrl: "/api/photos/public/sponsor-logo/sp1",
+      }));
+      expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("firebasestorage.googleapis.com");
+    });
+
+    it("drops unsafe legacy URLs instead of returning them in the public DTO", async () => {
+      const mockCollection = adminDb.collection as any;
+      mockCollection().where.mockReturnValue({
+        limit: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue({
+          docs: [{
+            id: "sp_legacy",
+            data: () => ({
+              name: "Legacy Partner",
+              tier: "Gold",
+              logoUrl: "javascript:alert(1)",
+              websiteUrl: "not a URL",
+              isActive: true,
+            }),
+          }],
+        }),
+      });
+
+      await getHandler("/", "get")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        sponsors: [expect.objectContaining({ logoUrl: null, websiteUrl: null })],
+      });
     });
   });
 
@@ -229,6 +262,53 @@ describe("Sponsors Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true, id: expect.stringMatching(/^sp_/) })
       );
+    });
+
+    it("binds only server-issued sponsor logo assets", async () => {
+      req.body = {
+        id: "sp_asset",
+        name: "Asset Sponsor",
+        tier: "Gold",
+        logoAssetId: "123e4567-e89b-42d3-a456-426614174000",
+        isActive: true,
+      };
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get)
+        .mockResolvedValueOnce({ exists: true, data: () => ({}) } as any)
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            kind: "sponsor-logo",
+            storagePath: "public-media/sponsors/123e4567-e89b-42d3-a456-426614174000.webp",
+          }),
+        } as any);
+
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      await handler(req, res, next);
+
+      expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
+        logoAssetId: "123e4567-e89b-42d3-a456-426614174000",
+        logoStoragePath: "public-media/sponsors/123e4567-e89b-42d3-a456-426614174000.webp",
+        logoUrl: null,
+      }));
+    });
+
+    it("rejects unknown uploaded sponsor logo assets", async () => {
+      req.body = {
+        id: "sp_asset",
+        name: "Asset Sponsor",
+        tier: "Gold",
+        logoAssetId: "123e4567-e89b-42d3-a456-426614174000",
+      };
+      const mockDocRef = adminDb.collection("").doc("");
+      vi.mocked(mockDocRef.get)
+        .mockResolvedValueOnce({ exists: true, data: () => ({}) } as any)
+        .mockResolvedValueOnce({ exists: false } as any);
+
+      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      await handler(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+      expect(mockDocRef.update).not.toHaveBeenCalled();
     });
 
     it("should throw error if name is missing", async () => {

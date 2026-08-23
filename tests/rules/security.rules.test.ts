@@ -17,7 +17,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
+import { getBytes, ref, uploadBytes } from "firebase/storage";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
 const projectId = "aresweb-ci";
@@ -962,6 +962,31 @@ describe("Storage zero-trust rules", () => {
         contentType: "text/plain",
       }),
     );
+  });
+
+  it("requires sponsor and editor uploads to use the validated server route", async () => {
+    await seedAuthorizedUser("admin-user", "admin");
+    await seedAuthorizedUser("coach-user", "coach");
+    const image = new Uint8Array([137, 80, 78, 71]);
+
+    for (const uid of ["admin-user", "coach-user"]) {
+      const storage = testEnvironment.authenticatedContext(uid).storage();
+      await assertFails(
+        uploadBytes(ref(storage, `editor/uploads/sponsors/${uid}.png`), image, {
+          contentType: "image/png",
+        }),
+      );
+    }
+  });
+
+  it("keeps server-owned public-media objects private at the Storage boundary", async () => {
+    await seedAuthorizedUser("admin-user", "admin");
+    const storage = testEnvironment.authenticatedContext("admin-user").storage();
+    const logo = ref(storage, "public-media/sponsors/logo.webp");
+    await assertFails(uploadBytes(logo, new Uint8Array([82, 73, 70, 70]), {
+      contentType: "image/webp",
+    }));
+    await assertFails(getBytes(logo));
   });
 
   it("rejects retired direct CAD uploads for every role", async () => {

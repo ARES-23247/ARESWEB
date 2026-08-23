@@ -18,8 +18,6 @@ const LEGACY_EXEMPT_LIB = new Set([
   "firebaseEnvironment.ts",
   "firebaseFirestore.ts",
   "firebaseFirestoreEmulator.ts",
-  "firebaseStorage.ts",
-  "firebaseStorageEmulator.ts",
   "googleDrivePicker.ts",
   "image.ts",
   "media.ts",

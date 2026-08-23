@@ -1,6 +1,11 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { adminDb } from "../lib/firebase-admin";
+import { adminDb, adminStorage } from "../lib/firebase-admin";
+import {
+  managedSponsorLogoPath,
+  safeSponsorLogoPath,
+  sponsorLogoGatewayUrl,
+} from "../lib/publicMedia";
 import { ensureAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -24,6 +29,8 @@ interface SponsorDocument {
   name?: unknown;
   tier?: unknown;
   logoUrl?: unknown;
+  logoAssetId?: unknown;
+  logoStoragePath?: unknown;
   websiteUrl?: unknown;
   isActive?: unknown;
   isDeleted?: unknown;
@@ -37,26 +44,34 @@ interface SponsorWriteRequest {
   name: string;
   tier: SponsorTier;
   logoUrl?: string | null;
+  logoAssetId?: string | null;
   websiteUrl?: string | null;
   isActive?: boolean;
 }
 
 function toSponsorDto(id: string, data: SponsorDocument, includeLifecycle: boolean) {
+  const managedPath = safeSponsorLogoPath(data.logoStoragePath)
+    ?? managedSponsorLogoPath(data.logoUrl, adminStorage.bucket().name);
+  const sourceLogoUrl = safeHttpsUrl(data.logoUrl);
   const dto = {
     id,
     name: typeof data.name === "string" ? data.name : "",
     tier: typeof data.tier === "string" ? data.tier : "In-Kind",
-    logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : null,
-    websiteUrl: typeof data.websiteUrl === "string" ? data.websiteUrl : null,
+    logoUrl: managedPath
+      ? sponsorLogoGatewayUrl(id, includeLifecycle)
+      : sourceLogoUrl,
+    websiteUrl: safeHttpsUrl(data.websiteUrl),
     isActive: data.isActive !== false,
-    createdAt: typeof data.createdAt === "string" ? data.createdAt : null,
   };
 
   if (!includeLifecycle) return dto;
 
   return {
     ...dto,
+    logoAssetId: typeof data.logoAssetId === "string" ? data.logoAssetId : null,
+    logoSourceUrl: typeof data.logoAssetId === "string" ? null : sourceLogoUrl,
     isDeleted: data.isDeleted === 1 ? 1 : 0,
+    createdAt: typeof data.createdAt === "string" ? data.createdAt : null,
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : null,
     archivedAt: typeof data.archivedAt === "string" ? data.archivedAt : null,
   };
@@ -128,8 +143,69 @@ function requireHttpsUrl(value: unknown, label: string): string | null {
   return value;
 }
 
+function safeHttpsUrl(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > 2_048) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+const SAFE_ASSET_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+function existingLogoFields(data: SponsorDocument) {
+  return {
+    logoAssetId: typeof data.logoAssetId === "string" ? data.logoAssetId : null,
+    logoStoragePath: safeSponsorLogoPath(data.logoStoragePath),
+    logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : null,
+  };
+}
+
+async function resolveLogoFields(
+  sponsorId: string,
+  existing: SponsorDocument,
+  logoUrl: unknown,
+  logoAssetId: unknown,
+) {
+  if (typeof logoAssetId === "string" && logoAssetId) {
+    if (!SAFE_ASSET_ID.test(logoAssetId)) {
+      throw new ApiError(400, "Choose a valid uploaded sponsor logo.");
+    }
+    const asset = await adminDb.collection("media_assets").doc(logoAssetId).get();
+    if (!asset.exists) {
+      throw new ApiError(400, "The uploaded sponsor logo is unavailable. Upload it again.");
+    }
+    const data = asset.data() as Record<string, unknown> | undefined;
+    const storagePath = safeSponsorLogoPath(data?.storagePath);
+    if (data?.kind !== "sponsor-logo" || !storagePath) {
+      throw new ApiError(400, "The uploaded sponsor logo is unavailable. Upload it again.");
+    }
+    return { logoAssetId, logoStoragePath: storagePath, logoUrl: null };
+  }
+
+  if (logoUrl === undefined) return existingLogoFields(existing);
+  if (logoUrl === null || logoUrl === "") {
+    return { logoAssetId: null, logoStoragePath: null, logoUrl: null };
+  }
+
+  if (
+    logoUrl === sponsorLogoGatewayUrl(sponsorId)
+    || logoUrl === sponsorLogoGatewayUrl(sponsorId, true)
+  ) {
+    return existingLogoFields(existing);
+  }
+
+  const safeLogoUrl = requireHttpsUrl(logoUrl, "Logo URL");
+  const managedPath = managedSponsorLogoPath(safeLogoUrl, adminStorage.bucket().name);
+  return managedPath
+    ? { logoAssetId: null, logoStoragePath: managedPath, logoUrl: null }
+    : { logoAssetId: null, logoStoragePath: null, logoUrl: safeLogoUrl };
+}
+
 router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
-  const { id, name, tier, logoUrl, websiteUrl, isActive } = req.body as SponsorWriteRequest;
+  const { id, name, tier, logoUrl, logoAssetId, websiteUrl, isActive } = req.body as SponsorWriteRequest;
 
   if (!name || !name.trim() || name.trim().length > 120) {
     throw new ApiError(400, "A sponsor name of 120 characters or fewer is required.");
@@ -141,7 +217,6 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 
   // Validate URLs if they are provided (https only: http assets would be
   // blocked or downgraded on the public site anyway)
-  const safeLogoUrl = requireHttpsUrl(logoUrl, "Logo URL");
   const safeWebsiteUrl = requireHttpsUrl(websiteUrl, "Website URL");
 
   const activeVal = isActive !== false; // default to true
@@ -152,6 +227,13 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 
   const docRef = adminDb.collection("sponsors").doc(sponsorId);
   const docSnap = await docRef.get();
+  const current = (docSnap.data?.() ?? {}) as SponsorDocument;
+  const logoFields = await resolveLogoFields(
+    sponsorId,
+    current,
+    logoUrl,
+    logoAssetId,
+  );
 
   const timestamp = new Date().toISOString();
 
@@ -160,7 +242,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
     await docRef.update({
       name: name.trim(),
       tier,
-      logoUrl: safeLogoUrl,
+      ...logoFields,
       websiteUrl: safeWebsiteUrl,
       isActive: activeVal,
       updatedAt: timestamp,
@@ -171,7 +253,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
       id: sponsorId,
       name: name.trim(),
       tier,
-      logoUrl: safeLogoUrl,
+      ...logoFields,
       websiteUrl: safeWebsiteUrl,
       isActive: activeVal,
       isDeleted: 0,

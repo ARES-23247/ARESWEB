@@ -17,6 +17,8 @@ export interface Sponsor {
   name: string;
   tier: "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
   logoUrl?: string | null;
+  logoSourceUrl?: string | null;
+  logoAssetId?: string | null;
   websiteUrl?: string | null;
   isActive: boolean;
   isDeleted: 0 | 1;

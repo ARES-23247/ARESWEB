@@ -2,7 +2,7 @@ import cors from "cors";
 import express, { type Router } from "express";
 import rateLimit from "express-rate-limit";
 import { enforceAppCheck, observeAppCheck } from "./middleware/appCheck";
-import { ensureTeamMember } from "./middleware/auth";
+import { ensureAdmin, ensureTeamMember } from "./middleware/auth";
 import { distributedQuota } from "./middleware/distributedQuota";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { allowedOrigins } from "./functionConfig";
@@ -54,6 +54,15 @@ export function createApiApp({ routes, enableLargePhotoUpload = false }: CreateA
       ensureTeamMember,
       distributedQuota({ scope: "photo-upload", limit: 30, windowMs: 15 * 60 * 1000 }),
       express.json({ limit: "12mb" }),
+    );
+    app.use(
+      "/api/photos/sponsor-logo",
+      ensureAdmin,
+      distributedQuota({ scope: "sponsor-logo-upload", limit: 20, windowMs: 15 * 60 * 1000 }),
+      express.raw({
+        type: ["image/jpeg", "image/png", "image/webp"],
+        limit: "5mb",
+      }),
     );
   }
 

@@ -27,7 +27,15 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/routes/sponsorLogoUpload.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/linkAuthorizedUser.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/publicMedia.ts": {
           lines: 85,
           functions: 100,
         },
