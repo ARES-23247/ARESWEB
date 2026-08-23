@@ -119,6 +119,7 @@ describe("partner lifecycle managers", () => {
 
     render(<SponsorsManagerPage />);
     await screen.findByText("No Sponsors Listed");
+    expect(screen.queryByPlaceholderText("Logo URL (or upload below)")).not.toBeInTheDocument();
     const file = new File([new Uint8Array([137, 80, 78, 71])], "logo.png", {
       type: "image/png",
     });
