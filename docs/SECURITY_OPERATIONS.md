@@ -50,9 +50,32 @@ legitimate clients will receive 403 responses.
 
 ## App Check monitoring and enforcement
 
-Firestore and Storage use `UNENFORCED` mode during the monitoring stage. This
-mode records App Check metrics but does not block requests. Authentication stays
-`OFF` until the team tests every sign-in flow.
+Cloud Firestore is enforced after verified production traffic reached 100%.
+Keep it enforced. Authentication remains in monitoring until legitimate popup,
+redirect, incognito, and mobile-browser sign-ins are consistently verified.
+
+Cloud Storage intentionally remains in monitoring while legacy gallery, blog,
+event, and editor media is still served as ordinary Storage HTTPS `<img>`
+requests. Those requests cannot carry the Firebase App Check header and
+therefore appear as unverified even when Storage rules correctly allow the
+public read. Enforcing Storage globally before those remaining paths migrate
+can break public media. This is not an App Check initialization failure.
+
+New sponsor logos no longer use a public Storage URL. The upload API writes a
+metadata-stripped WebP beneath the server-only `public-media/sponsors/` prefix,
+records an opaque asset identifier in Firestore, and returns an authenticated
+same-origin preview URL. Published sponsor DTOs expose only the sponsor-scoped
+`/api/photos/public/sponsor-logo/:sponsorId` gateway. That gateway re-checks the
+sponsor's publication state on every cache miss and caches public responses for
+at most five minutes; administrator previews are private and uncached. A newly
+archived sponsor can therefore remain visible only for that bounded CDN/browser
+cache window, not for the Storage object's lifetime.
+
+All browser Storage writes are denied by `storage.rules`. Uploads use an
+authenticated API route that verifies Firebase identity and role, requires App
+Check, applies a distributed quota before allocating the large body, validates
+the decoded image, strips metadata, and writes through the media runtime's Admin
+SDK identity. Keep public reads and server-owned writes as separate boundaries.
 
 The API also records App Check results for mutation requests. Each event has a
 `valid`, `missing`, or `invalid` status. Logs include only the method and route
@@ -101,9 +124,20 @@ variable `ENFORCE_APP_CHECK=false` only as a temporary incident override. While
 that override exists, the API records observations without rejecting requests.
 Remove the override as soon as the supported browser flow is repaired.
 
-Enable Storage first. Watch errors for 24 hours. Enable Firestore next, then
-watch for another 24 hours. Return a service to `UNENFORCED` at once if valid
-users receive new 401, 403, or permission errors.
+Do not enable Storage enforcement until the remaining gallery, blog, event, and
+editor media is moved to publication-aware same-origin gateways or a separate
+public bucket/CDN. Sponsor delivery is the first completed migration, not proof
+that the whole bucket is ready. Before enforcement, inventory live Firestore
+URLs, migrate or retain every referenced object, test every thumbnail and
+original-image path, and confirm Storage metrics no longer contain legitimate
+direct browser reads.
+
+Before enabling Authentication enforcement, test Google popup sign-in on
+desktop Chromium/Firefox/WebKit, Android Chromium, iOS Safari, and incognito;
+also test a tab left open across a deployment. Review the Authentication App
+Check breakdown and investigate every legitimate unverified request. Return a
+service to monitoring at once if valid users receive new 401, 403, or permission
+errors.
 
 ## Coordinated deployment
 

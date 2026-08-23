@@ -8,6 +8,7 @@ import photosAuthRouter from "./photosAuth";
 import albumsRouter from "./albums";
 import photosImportRouter from "./photosImport";
 import photosUploadRouter from "./photosUpload";
+import sponsorLogoUploadRouter from "./sponsorLogoUpload";
 import rateLimit from "express-rate-limit";
 import { photoDerivativeDtoFields } from "../lib/photoDerivatives";
 
@@ -295,6 +296,7 @@ router.get("/public/media/:photoId/:variant", asyncHandler(async (req, res) => {
 router.use("/albums", albumsRouter);
 router.use("/", photosImportRouter);
 router.use("/", photosUploadRouter);
+router.use("/", sponsorLogoUploadRouter);
 router.use("/", photosAuthRouter);
 
 router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {

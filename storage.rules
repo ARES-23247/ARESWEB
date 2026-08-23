@@ -2,31 +2,6 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    function authorizationData() {
-      return firestore.get(/databases/(default)/documents/authorized_users/$(request.auth.uid)).data;
-    }
-
-    function isActiveRole(role) {
-      return role in ['admin', 'coach', 'mentor', 'member', 'student', 'parent', 'lead'];
-    }
-
-    function isAuthorized() {
-      return request.auth != null &&
-        firestore.exists(/databases/(default)/documents/authorized_users/$(request.auth.uid)) &&
-        isActiveRole(authorizationData().role) &&
-        authorizationData().get('isDeleted', false) != true &&
-        authorizationData().get('isDeleted', 0) != 1;
-    }
-
-    function hasRole(role) {
-      return isAuthorized() &&
-        authorizationData().role == role;
-    }
-
-    function isContentManager() {
-      return hasRole('admin') || hasRole('coach') || hasRole('mentor');
-    }
-
     match /events/{eventId}/photos/{photoId} {
       allow read: if true;
       // Event media is validated, normalized, and written by the Admin SDK route.
@@ -50,9 +25,15 @@ service firebase.storage {
 
     match /editor/uploads/{allPaths=**} {
       allow read: if true;
-      allow write: if isContentManager() &&
-        request.resource.size < 5 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+      // Sponsor and editor media must pass through the authenticated server
+      // upload routes, which validate bytes before using the Admin SDK.
+      allow write: if false;
+    }
+
+    match /public-media/{allPaths=**} {
+      // New media is private at the Storage boundary. Public pages receive it
+      // only through publication-aware, same-origin API gateways.
+      allow read, write: if false;
     }
 
     match /field/{allPaths=**} {

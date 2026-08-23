@@ -26,6 +26,7 @@ import {
   TerminalSquare,
   Trophy,
   Megaphone,
+  Sunrise,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebaseFirestore";
@@ -218,6 +219,13 @@ export default function DashboardSidebar({
               tab=""
               icon={LayoutDashboard}
               label="Command Center"
+              currentPath={pathname}
+              onNavigate={onCloseMobile}
+            />
+            <NavButton
+              tab="today"
+              icon={Sunrise}
+              label="Team Today"
               currentPath={pathname}
               onNavigate={onCloseMobile}
             />

@@ -230,6 +230,17 @@ describe("Express App Endpoints", () => {
     expect(uploadLayers.map((layer: any) => layer.name)).toEqual(expectedNames);
   });
 
+  it("authenticates and quotas sponsor logos before allocating the raw upload body", () => {
+    const expectedNames = ["ensureAdmin", "enforceDistributedQuota", "rawParser"];
+    const uploadLayers = stackFor(mediaApp).filter(
+      (layer: any) =>
+        expectedNames.includes(layer.name) &&
+        matchesPath(layer, "/api/photos/sponsor-logo"),
+    );
+
+    expect(uploadLayers.map((layer: any) => layer.name)).toEqual(expectedNames);
+  });
+
   it("should mount and respond on the /api/reference endpoint", () => {
     const referenceMount = stackFor(publicApp).find(
       (layer: any) =>

@@ -4,8 +4,6 @@ import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
-import { storage } from "@/lib/firebaseStorage";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   Heart, 
   X, 
@@ -67,7 +65,12 @@ export default function SponsorsManagerPage() {
   const [name, setName] = useState("");
   const [tier, setTier] = useState<"Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind">("Bronze");
   const [websiteUrl, setWebsiteUrl] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [logoSourceUrl, setLogoSourceUrl] = useState("");
+  const [logoPreview, setLogoPreview] = useState<{
+    kind: "asset" | "sponsor";
+    id: string;
+  } | null>(null);
+  const [logoAssetId, setLogoAssetId] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(true);
 
   const fetchSponsors = useCallback(async () => {
@@ -110,10 +113,27 @@ export default function SponsorsManagerPage() {
 
     setIsUploading(true);
     try {
-      const fileRef = ref(storage, `editor/uploads/sponsors/${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
-      const downloadUrl = await getDownloadURL(fileRef);
-      setLogoUrl(downloadUrl);
+      const response = await authenticatedFetch("/api/photos/sponsor-logo", {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const payload = await getApiPayload(response) as ApiErrorPayload & {
+        logo?: { assetId?: unknown; previewUrl?: unknown };
+      };
+      if (!response.ok) {
+        setOperationStatus(getApiFailure(response, payload, "The logo could not be uploaded."));
+        return;
+      }
+      if (
+        typeof payload.logo?.assetId !== "string"
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(payload.logo.assetId)
+      ) {
+        throw new Error("The upload service returned an invalid logo asset.");
+      }
+      setLogoAssetId(payload.logo.assetId);
+      setLogoSourceUrl("");
+      setLogoPreview({ kind: "asset", id: payload.logo.assetId });
       setOperationStatus({ kind: "success", message: "Logo uploaded. Save the sponsor to keep this change." });
     } catch (err: unknown) {
       logger.error("Failed to upload image:", err);
@@ -139,7 +159,8 @@ export default function SponsorsManagerPage() {
       const payload: Partial<Sponsor> = {
         name: name.trim(),
         tier,
-        logoUrl: logoUrl.trim() || null,
+        logoUrl: logoSourceUrl.trim() || null,
+        logoAssetId,
         websiteUrl: websiteUrl.trim() || null,
         isActive,
       };
@@ -180,7 +201,11 @@ export default function SponsorsManagerPage() {
     setName(sponsor.name);
     setTier(sponsor.tier);
     setWebsiteUrl(sponsor.websiteUrl || "");
-    setLogoUrl(sponsor.logoUrl || "");
+    setLogoSourceUrl(sponsor.logoSourceUrl || "");
+    setLogoPreview(sponsor.logoUrl?.startsWith("/api/photos/admin/sponsor-logo/")
+      ? { kind: "sponsor", id: sponsor.id }
+      : null);
+    setLogoAssetId(sponsor.logoAssetId || null);
     setIsActive(sponsor.isActive);
   };
 
@@ -189,7 +214,9 @@ export default function SponsorsManagerPage() {
     setName("");
     setTier("Bronze");
     setWebsiteUrl("");
-    setLogoUrl("");
+    setLogoSourceUrl("");
+    setLogoPreview(null);
+    setLogoAssetId(null);
     setIsActive(true);
   };
 
@@ -202,7 +229,8 @@ export default function SponsorsManagerPage() {
           id: sponsor.id,
           name: sponsor.name,
           tier: sponsor.tier,
-          logoUrl: sponsor.logoUrl,
+          logoUrl: sponsor.logoSourceUrl,
+          logoAssetId: sponsor.logoAssetId,
           websiteUrl: sponsor.websiteUrl,
           isActive: !sponsor.isActive,
         }),
@@ -392,23 +420,15 @@ export default function SponsorsManagerPage() {
                 />
               </div>
 
-              {/* Logo URL / Upload */}
+              {/* Logo Upload */}
               <div className="space-y-1.5">
-                <label htmlFor="sponsor-logo-url" className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Logo</label>
-                <input
-                  id="sponsor-logo-url"
-                  type="url"
-                  placeholder="Logo URL (or upload below)"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  className="w-full bg-obsidian border border-white/10 ares-cut-sm px-3.5 py-2 text-xs text-white placeholder-marble/30 focus:outline-none focus:border-ares-cyan focus:ring-1 focus:ring-ares-cyan/20 transition-all font-semibold mb-2"
-                />
+                <span className="text-[10px] uppercase font-bold text-marble/55 tracking-widest block">Sponsor Logo</span>
                 
                 {/* Logo File Selector */}
                 <div className="relative w-full">
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     id="logo-file-picker"
                     onChange={handleLogoUpload}
                     disabled={isUploading}
@@ -427,12 +447,27 @@ export default function SponsorsManagerPage() {
                   </label>
                 </div>
 
-                {logoUrl && (
+                {logoPreview && (
                   <div className="mt-3 p-3 bg-black/45 border border-white/5 rounded-xl flex items-center justify-between gap-3">
-                    <span className="text-[9px] uppercase font-bold text-marble/40 truncate select-all">{logoUrl}</span>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <img
+                        src={logoPreview.kind === "asset"
+                          ? `/api/photos/admin/sponsor-logo-assets/${encodeURIComponent(logoPreview.id)}`
+                          : `/api/photos/admin/sponsor-logo/${encodeURIComponent(logoPreview.id)}`}
+                        alt="Sponsor logo preview"
+                        className="h-10 w-16 shrink-0 object-contain"
+                      />
+                      <span className="text-[9px] uppercase font-bold text-marble/40 truncate select-all">
+                        {logoAssetId ? "Uploaded logo asset" : "Existing managed logo"}
+                      </span>
+                    </div>
                     <button
                       type="button" 
-                      onClick={() => setLogoUrl("")} 
+                      onClick={() => {
+                        setLogoSourceUrl("");
+                        setLogoPreview(null);
+                        setLogoAssetId(null);
+                      }}
                       className="bg-ares-red text-white hover:bg-white hover:text-obsidian transition-colors p-1 cursor-pointer ares-cut-sm focus-visible:ring-2 focus-visible:ring-ares-cyan"
                       aria-label="Remove sponsor logo URL"
                     >
