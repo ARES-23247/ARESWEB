@@ -65,6 +65,34 @@ describe("media reference migration", () => {
     expect(revision.updates.thumbnail).toBe("/api/photos/admin/media/photo-1/thumbnail");
   });
 
+  it("does not re-plan content whose gateway references and opaque IDs are already canonical", () => {
+    const post = planContentMigration("posts/build-log", {
+      content: "![robot](/api/photos/public/content/posts/build-log/photo-1/original)",
+      thumbnail: "/api/photos/public/content/posts/build-log/photo-1/thumbnail",
+      mediaPhotoIds: ["photo-1"],
+    }, bucket, assets);
+    expect(post).toMatchObject({
+      eligible: false,
+      unresolved: 0,
+      updates: {},
+      deleteFields: [],
+    });
+
+    const revision = planContentMigration("posts/build-log/revisions/rev-1", {
+      thumbnail: "/api/photos/admin/media/photo-1/thumbnail",
+      mediaPhotoIds: ["photo-1"],
+    }, bucket, assets, "admin");
+    expect(revision).toMatchObject({ eligible: false, unresolved: 0, updates: {} });
+  });
+
+  it("canonicalizes malformed or duplicate opaque media ID arrays once", () => {
+    const post = planContentMigration("posts/build-log", {
+      thumbnail: "/api/photos/public/content/posts/build-log/photo-1/thumbnail",
+      mediaPhotoIds: ["photo-1", "photo-1", 42],
+    }, bucket, assets);
+    expect(post.updates.mediaPhotoIds).toEqual(["photo-1"]);
+  });
+
   it("blocks unresolved references and removes legacy DTO URL fields", () => {
     const blocked = planContentMigration("posts/blocked", {
       thumbnail: direct("blog/missing.jpg"),

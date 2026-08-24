@@ -8,14 +8,15 @@ service firebase.storage {
     }
 
     match /blog/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
+      // Legacy blog bytes are retained, but browsers receive them only through
+      // publication-aware, same-origin content gateways.
+      allow read, write: if false;
     }
 
     match /gallery/{allPaths=**} {
-      allow read: if true;
-      // Gallery media is validated, normalized, and written by the Admin SDK route.
-      allow write: if false;
+      // Gallery media is validated, normalized, written, and streamed by the
+      // Admin SDK routes; direct browser access is retired.
+      allow read, write: if false;
     }
 
     match /cad/{allPaths=**} {

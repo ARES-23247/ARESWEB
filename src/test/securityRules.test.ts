@@ -43,8 +43,13 @@ describe("security-rule invariants", () => {
     expect(publicMediaRule).toContain("allow read, write: if false");
   });
 
-  it("keeps legacy event and editor prefixes behind same-origin gateways", () => {
-    for (const prefix of ["events/{eventId}/photos/{photoId}", "editor/uploads/{allPaths=**}"]) {
+  it("keeps migrated media prefixes behind same-origin gateways", () => {
+    for (const prefix of [
+      "blog/{allPaths=**}",
+      "gallery/{allPaths=**}",
+      "events/{eventId}/photos/{photoId}",
+      "editor/uploads/{allPaths=**}",
+    ]) {
       const escaped = prefix.replace(/[{}/*]/gu, (character) => `\\${character}`);
       const body = storageRules.match(new RegExp(`match \/${escaped} \\{([\\s\\S]*?)\\n    \\}`))?.[1] || "";
       expect(body).toContain("allow read, write: if false");
