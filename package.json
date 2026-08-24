@@ -21,6 +21,7 @@
     "test:rules": "firebase emulators:exec --project aresweb-ci --only firestore,storage \"node node_modules/vitest/vitest.mjs run --config vitest.rules.config.ts\"",
     "test:functions-emulator": "firebase emulators:exec --project aresweb-ci --only firestore \"pnpm --filter functions test:emulator\"",
     "test:e2e": "playwright test",
+    "appcheck:storage-observe": "node scripts/check-storage-app-check-observation.mjs",
     "media:inventory": "node scripts/inventory-media-references.mjs",
     "media:migrate": "node scripts/migrate-media-references.mjs",
     "media:rollback": "node scripts/rollback-media-references.mjs"

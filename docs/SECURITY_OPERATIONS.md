@@ -54,22 +54,20 @@ Cloud Firestore is enforced after verified production traffic reached 100%.
 Keep it enforced. Authentication remains in monitoring until legitimate popup,
 redirect, incognito, and mobile-browser sign-ins are consistently verified.
 
-Cloud Storage intentionally remains in monitoring while legacy gallery, blog,
-event, and editor media is still served as ordinary Storage HTTPS `<img>`
-requests. Those requests cannot carry the Firebase App Check header and
-therefore appear as unverified even when Storage rules correctly allow the
-public read. Enforcing Storage globally before those remaining paths migrate
-can break public media. This is not an App Check initialization failure.
+Cloud Storage remains in monitoring during the post-migration observation
+window. As of deployment `ad2a40f` on 2026-08-24, gallery, blog, event, editor,
+and sponsor media is delivered through publication-aware same-origin gateways.
+`storage.rules` denies direct browser reads and writes for those namespaces.
+Keep Storage in monitoring for at least 72 hours after that deployment so
+delayed or uncommon legitimate clients can be identified before enforcement.
 
-New sponsor logos no longer use a public Storage URL. The upload API writes a
-metadata-stripped WebP beneath the server-only `public-media/sponsors/` prefix,
-records an opaque asset identifier in Firestore, and returns an authenticated
-same-origin preview URL. Published sponsor DTOs expose only the sponsor-scoped
-`/api/photos/public/sponsor-logo/:sponsorId` gateway. That gateway re-checks the
-sponsor's publication state on every cache miss and caches public responses for
-at most five minutes; administrator previews are private and uncached. A newly
-archived sponsor can therefore remain visible only for that bounded CDN/browser
-cache window, not for the Storage object's lifetime.
+Media records expose opaque asset identifiers and same-origin URLs instead of
+Storage paths or download URLs. Public gateways re-check publication state on
+every cache miss and use bounded public caching; administrator previews remain
+private and uncached. Upload APIs decode and validate images, strip metadata,
+create bounded derivatives where applicable, and write through the Admin SDK.
+Archiving content can therefore leave a cached public image visible only for
+the documented CDN/browser cache window, not for the Storage object's lifetime.
 
 All browser Storage writes are denied by `storage.rules`. Uploads use an
 authenticated API route that verifies Firebase identity and role, requires App
@@ -124,13 +122,22 @@ variable `ENFORCE_APP_CHECK=false` only as a temporary incident override. While
 that override exists, the API records observations without rejecting requests.
 Remove the override as soon as the supported browser flow is repaired.
 
-Do not enable Storage enforcement until the remaining gallery, blog, event, and
-editor media is moved to publication-aware same-origin gateways or a separate
-public bucket/CDN. Sponsor delivery is the first completed migration, not proof
-that the whole bucket is ready. Before enforcement, inventory live Firestore
-URLs, migrate or retain every referenced object, test every thumbnail and
-original-image path, and confirm Storage metrics no longer contain legitimate
-direct browser reads.
+Before enabling Storage enforcement, start the observation window at the
+deployment that retired direct media delivery and run:
+
+```text
+pnpm run appcheck:storage-observe -- --project aresfirst-portal --start 2026-08-24T06:29:00Z
+```
+
+The observation boundary follows three controlled direct-denial probes recorded
+at `2026-08-24T06:28:24Z`; it must not be moved later to hide unexpected traffic.
+The command is read-only, omits app identifiers, accounts for the documented
+three-minute Monitoring delay, and treats any direct Storage verification as a
+manual-review finding. After at least 72 hours, add `--require-ready`. A clean
+metric result is necessary but not sufficient: rerun the live media inventory,
+production health probe, direct-denial checks, and authenticated upload/editor
+flows before changing enforcement. Never enable enforcement automatically from
+the script.
 
 Before enabling Authentication enforcement, test Google popup sign-in on
 desktop Chromium/Firefox/WebKit, Android Chromium, iOS Safari, and incognito;
