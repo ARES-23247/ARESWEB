@@ -33,6 +33,7 @@ yarn-error.log*
 .env.test
 .env.production.local
 .dev.vars
+functions/.secret.local
 
 .firebase/
 firebase-debug.log*

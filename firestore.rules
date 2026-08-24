@@ -324,9 +324,9 @@ service cloud.firestore {
 
     match /chat_sessions/{sessionId} {
       // Restrict read/write to the session owner only
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthorized() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthorized() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthorized() && resource.data.userId == request.auth.uid;
     }
 
     // Public partners / sponsors
@@ -356,7 +356,7 @@ service cloud.firestore {
       allow read, create, update, delete: if false;
 
       match /layouts/{layoutId} {
-        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+        allow read, write: if isAuthorized() && request.auth.uid == userId;
       }
     }
 

@@ -50,6 +50,7 @@ following before handing off a code change:
 ```text
 pnpm install --frozen-lockfile
 pnpm run validate:agents
+pnpm run check:route-security
 pnpm run lint
 pnpm --filter functions lint
 pnpm exec tsc --noEmit

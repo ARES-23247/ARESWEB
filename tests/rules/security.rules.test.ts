@@ -465,6 +465,42 @@ describe("Firestore zero-trust rules", () => {
     }
   });
 
+  it("does not grant legacy owner-scoped data access to Firebase-only accounts", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    const firebaseOnlyDb = testEnvironment
+      .authenticatedContext("firebase-only-user")
+      .firestore();
+    const memberDb = testEnvironment
+      .authenticatedContext("member-user")
+      .firestore();
+
+    await assertFails(
+      setDoc(doc(firebaseOnlyDb, "chat_sessions", "firebase-only-session"), {
+        userId: "firebase-only-user",
+        messages: [],
+      }),
+    );
+    await assertFails(
+      setDoc(
+        doc(firebaseOnlyDb, "user_profiles", "firebase-only-user", "layouts", "default"),
+        { columns: [] },
+      ),
+    );
+
+    await assertSucceeds(
+      setDoc(doc(memberDb, "chat_sessions", "member-session"), {
+        userId: "member-user",
+        messages: [],
+      }),
+    );
+    await assertSucceeds(
+      setDoc(
+        doc(memberDb, "user_profiles", "member-user", "layouts", "default"),
+        { columns: [] },
+      ),
+    );
+  });
+
   it("routes public calendar reads and all event or venue writes through server DTO APIs", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("admin-user", "admin");
