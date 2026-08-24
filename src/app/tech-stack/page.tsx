@@ -10,7 +10,7 @@ export default function TechStackPage() {
     <div className="flex flex-col w-full min-h-screen bg-obsidian text-marble">
       <SEO 
         title="Technical Stack & Cloud Architecture" 
-        description="Explore the technical stack, serverless cloud database rules, and WebGL visualizations powering the ARES 23247 FIRST Robotics team portal."
+        description="Explore the verified frontend, Firebase services, Cloud Functions, security controls, and testing workflow behind the ARES 23247 team portal."
       />
       {/* Hero Header */}
       <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
@@ -23,7 +23,10 @@ export default function TechStackPage() {
             Our Tech <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-xl text-white">Stack</span>
           </h1>
           <p className="text-marble/85 text-base md:text-lg max-w-2xl mx-auto leading-relaxed border-t border-white/10 pt-6 mt-6">
-            ARES #23247&apos;s portal is built on a highly sustainable, serverless cloud architecture. By leveraging Firebase Hosting and Google Cloud Edge networks, we maintain sub-50ms loads with zero monthly operating costs.
+            ARES #23247&apos;s portal uses a Vite-built React frontend, Firebase Hosting,
+            Firestore, Storage, and second-generation Cloud Functions running on Node.js 24.
+            Public route shells are prerendered, while selected dynamic routes are rendered
+            through a dedicated web function before React takes over in the browser.
           </p>
         </div>
       </section>
@@ -45,56 +48,56 @@ export default function TechStackPage() {
               {
                 title: "Firebase Hosting & CDN",
                 icon: <Cloud className="text-ares-red" size={24} />,
-                desc: "Our React frontend is compiled with Vite and distributed globally via Firebase Hosting's CDN edge networks, guaranteeing sub-50ms static delivery and immediate rollbacks.",
-                cost: "Free Tier"
+                desc: "Vite builds hashed frontend assets for Firebase Hosting. Public route shells are prerendered, selected dynamic routes use a web Cloud Function, and the browser hydrates the result into React.",
+                model: "Managed hosting"
               },
               {
                 title: "Gemini & Vertex AI",
                 icon: <Zap className="text-ares-gold" size={24} />,
-                desc: "We use Gemini through Vertex AI in Cloud Functions to generate accessibility descriptions and labels for approved media and to support team writing tools.",
-                cost: "Free Tier"
+                desc: "Authenticated team members can use Gemini through Vertex AI-backed Cloud Functions for writing assistance, simulation help, and optional photo captions and labels. Requests are rate-limited and processed server-side.",
+                model: "Managed AI service"
               },
               {
                 title: "Cloud Firestore (NoSQL)",
                 icon: <Database className="text-ares-bronze" size={24} />,
-                desc: "All events, blog entries, Kanban cards, and user session permissions are stored in Cloud Firestore, using real-time document listener queries for zero-latency UI updates.",
-                cost: "Free Tier"
+                desc: "Firestore stores site content, calendar records, tasks, profile data, and operational records. Security rules and server-side authorization limit access, while selected member views use real-time listeners.",
+                model: "Managed database"
               },
               {
                 title: "Firebase Storage",
                 icon: <HardDrive className="text-white" size={24} />,
-                desc: "High-resolution build photos, team slide decks, and member avatars are stored securely on Firebase Storage with custom rule-based access controls.",
-                cost: "Free Tier"
+                desc: "Team media and authorized uploads use Firebase Storage with restrictive rules. Published photos are delivered through same-origin media endpoints, while authenticated upload flows use Firebase App Check.",
+                model: "Managed object storage"
               },
               {
-                title: "React, Vite, & Express",
+                title: "React, Vite & Express",
                 icon: <Code className="text-ares-red" size={24} />,
-                desc: "Built as a React Single-Page Application (SPA) bundled with Vite for near-instant client boot, paired with Express APIs in Cloud Functions to secure team transactions.",
-                cost: "Open Source"
+                desc: "The client uses React 19, React Router 7, and Vite 8. Express 5 routers run across multiple second-generation Cloud Functions instead of one monolithic API.",
+                model: "Open-source application stack"
               },
               {
-                title: "Firestore Live Listeners",
+                title: "Isolated Cloud Functions",
                 icon: <Users className="text-ares-gold" size={24} />,
-                desc: "Real-time synchronization for Kanban tasks and check-ins is powered directly by Firestore reactive subscriptions, eliminating manual page-refresh delays in the pits.",
-                cost: "Free Tier"
+                desc: "Public, core, media, Drive, and communications APIs deploy as separate functions. Each function receives only its required secrets and runs under a dedicated service account.",
+                model: "Serverless Node.js 24"
               },
               {
                 title: "Progressive Offline (PWA)",
                 icon: <Globe className="text-ares-bronze" size={24} />,
                 desc: "Our Service Worker caches the application shell and selected static assets, giving previously loaded pages limited support during weak or interrupted connections.",
-                cost: "Open Source"
+                model: "Web platform"
               },
               {
-                title: "Three.js WebGL Engine",
+                title: "Three.js Field Visualization",
                 icon: <Cpu className="text-white" size={24} />,
-                desc: "Our standalone ARES-Scope desktop application relies on custom WebGL geometries, rendering 3D kinematic odometry coordinates and linear slides procedurally.",
-                cost: "Open Source"
+                desc: "The portal's browser-based field simulation uses Three.js for robot geometry, field zones, game pieces, and path visualization. User-authored previews run in an opaque-origin iframe sandbox.",
+                model: "Open-source visualization"
               },
               {
                 title: "Zulip API Integrations",
                 icon: <Lock className="text-ares-red" size={24} />,
-                desc: "Kanban boards sync with Zulip Standard threads, generating Zulip topic alerts on task shifts and logging inquiries into dedicated STEM workspaces.",
-                cost: "Sponsored"
+                desc: "Authenticated task comments and status notifications can bridge between task cards and Zulip topics. Inquiry submissions send PII-free alerts; sensitive inquiry details remain in the restricted portal.",
+                model: "External integration"
               }
             ].map((tech) => (
               <div
@@ -113,7 +116,7 @@ export default function TechStackPage() {
                   </p>
                 </div>
                 <div className="text-[9px] font-mono text-marble/40 border-t border-white/5 pt-4 mt-6 uppercase tracking-wider font-bold">
-                  Cost: {tech.cost}
+                  Platform: {tech.model}
                 </div>
               </div>
             ))}
@@ -126,7 +129,7 @@ export default function TechStackPage() {
         <div className="max-w-4xl mx-auto px-6 space-y-16">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black uppercase text-white font-heading tracking-tight">
-              Championship Quality Standards
+              Engineering Quality Controls
             </h2>
             <p className="text-xs text-marble/60 uppercase tracking-widest mt-2 font-semibold">
               Strict rules of engineering governing our codebase
@@ -137,22 +140,22 @@ export default function TechStackPage() {
             {
               title: "Continuous Integration Gating",
               icon: <Award className="text-ares-red" size={28} />,
-              desc: "Every commit triggered on master runs through strict automated builds. Our GitHub Actions workflows enforce zero ESLint warnings and zero TypeScript errors during static page compilation, guaranteeing stable deployments."
+              desc: "Pull requests and master pushes run locked dependency installs, zero-warning lint, TypeScript checks, dependency auditing, coverage tests, Firebase emulator tests, production builds, bundle budgets, and Playwright. Only a green master workflow can deploy."
             },
             {
-              title: "100% Core Function Coverage",
+              title: "Layered Automated Testing",
               icon: <CheckCircle2 className="text-ares-gold" size={28} />,
-              desc: "All critical backend handlers are audited using Vitest unit checks to achieve 100% function coverage. Multi-browser Playwright E2E suites simulate concurrent collaborative cursors and session syncing before merging updates."
+              desc: "Vitest covers frontend and Cloud Functions behavior, Firebase Emulator Suite tests rules and authorization, and Playwright exercises desktop and mobile Chromium, Firefox, WebKit, and the production PWA flow. Coverage floors are ratcheted as the codebase improves."
             },
             {
-              title: "WCAG 2.1 AA Web Accessibility",
+              title: "Accessibility Engineering",
               icon: <Code className="text-ares-bronze" size={28} />,
-              desc: "Inclusion is a core FIRST value. ARESWEB enforces AA standard color contrast ratios, strictly requires descriptive ARIA labels, and integrates Skip to Content links to support drive team screen-readers."
+              desc: "The portal targets WCAG 2.2 AA practices with semantic controls, keyboard navigation, visible focus, skip navigation, responsive reflow, contrast checks, and explicit error states. Automated checks support, but do not replace, manual review."
             },
             {
               title: "FIRST Youth Data Protection",
               icon: <ShieldAlert className="text-white" size={28} />,
-              desc: "To ensure absolute safety for minors, all public profiles redact student PII. Names are scrubbed into secure nicknames, emails and phones are excluded from client queries, and avatars use custom randomized robots."
+              desc: "Public student profiles expose only a nickname, member type, and approved avatar. Legal names, email addresses, phone numbers, and schools are excluded from public responses; inquiry PII is encrypted and restricted to authorized team leadership."
             }
           ].map(pillar => (
             <div key={pillar.title} className="flex flex-col sm:flex-row items-start gap-6 border-b border-white/5 pb-12 last:border-0 last:pb-0">
