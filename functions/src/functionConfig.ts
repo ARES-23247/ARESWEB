@@ -11,7 +11,7 @@ export const allowedOrigins = [
 
 export const API_ROUTE_GROUPS = {
   public: [
-    "/api/app-check", "/api/announcements", "/api/calendar", "/api/sponsors", "/api/outreach", "/api/tournaments",
+    "/api/app-check", "/api/announcements", "/api/calendar", "/api/content", "/api/sponsors", "/api/outreach", "/api/tournaments",
     "/api/robots", "/api/store", "/api/finance", "/api/reference",
     "/api/og", "/sitemap.xml", "/api/sitemap.xml",
     "/feed.xml", "/api/feed.xml",

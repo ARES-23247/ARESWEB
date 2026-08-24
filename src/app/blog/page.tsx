@@ -3,15 +3,6 @@
 import { logger } from "@/utils/logger";
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  limit,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
 import { Pencil, Plus } from "lucide-react";
@@ -19,6 +10,7 @@ import SEO from "@/components/SEO";
 import BlogThumbnailImage from "@/components/BlogThumbnailImage";
 import { PublicDataState } from "@/components/PublicDataState";
 import { toPlainText } from "@/lib/contentFormatters";
+import { fetchPublicBlogPosts } from "@/lib/publicContentApi";
 
 interface BlogPost {
   slug: string;
@@ -62,43 +54,27 @@ export default function BlogFeedPage() {
   };
 
   useEffect(() => {
-    const q = query(
-      collection(db, "posts"),
-      where("status", "==", "published"),
-      where("isDeleted", "==", 0),
-      orderBy("date", "desc"),
-      limit(50),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const postsList = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          const rawSnippet = data.snippet || data.content || "";
-          return {
-            slug: doc.id,
-            title: data.title || "Untitled Post",
-            date: data.date || "",
-            snippet: toPlainText(rawSnippet, 200),
-            thumbnail: data.thumbnail || "",
-            author: data.author || "ARES Member",
-            authorAvatar: data.authorAvatar || "",
-          };
-        });
+    let active = true;
+    void fetchPublicBlogPosts()
+      .then((publishedPosts) => {
+        if (!active) return;
+        const postsList = publishedPosts.map((post) => ({
+          ...post,
+          snippet: toPlainText(post.snippet || "", 200),
+        }));
         setPosts(postsList);
         setLoadError(null);
         setIsLoading(false);
-      },
-      (error) => {
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
         logger.error("Unable to load published blog posts:", error);
         setPosts([]);
-        setLoadError(error.message);
+        setLoadError(error instanceof Error ? error.message : "Unable to load published blog posts.");
         setIsLoading(false);
-      },
-    );
+      });
 
-    return () => unsubscribe();
+    return () => { active = false; };
   }, []);
 
   return (

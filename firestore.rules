@@ -202,11 +202,8 @@ service cloud.firestore {
 
     // Public collections (blogs, calendar, knowledge base docs)
     match /posts/{postSlug} {
-      allow read: if isAuthorized() || (
-        resource.data.status == "published" &&
-        resource.data.isDeleted == 0 &&
-        (!("approvalStatus" in resource.data) || resource.data.approvalStatus == "approved")
-      );
+      // Public readers use the explicit /api/content DTO boundary.
+      allow read: if isAuthorized();
       allow create: if canCreateContent('posts', postSlug);
       allow update: if canUpdateContent('posts', postSlug);
       allow delete: if isContentPublisher();
@@ -257,11 +254,8 @@ service cloud.firestore {
     }
 
     match /docs/{docSlug} {
-      allow read: if isAuthorized() || (
-        resource.data.status == "published" &&
-        resource.data.isDeleted == 0 &&
-        (!("approvalStatus" in resource.data) || resource.data.approvalStatus == "approved")
-      );
+      // Public readers use the explicit /api/content DTO boundary.
+      allow read: if isAuthorized();
       allow create: if canCreateContent('docs', docSlug);
       allow update: if canUpdateContent('docs', docSlug);
       allow delete: if isContentPublisher();
@@ -403,7 +397,7 @@ service cloud.firestore {
 
     // documents
     match /documents/{docId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      allow read: if isAuthorized();
       allow create: if hasNoServerDriveFields() && canCreateContent('documents', docId);
       allow update: if preservesServerDriveFields() && canUpdateContent('documents', docId);
       allow delete: if isContentPublisher();
@@ -422,13 +416,15 @@ service cloud.firestore {
 
     // seasons
     match /seasons/{seasonId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      // Public readers use the explicit /api/seasons DTO boundary.
+      allow read: if isAuthorized();
       allow create, update, delete: if isContentPublisher();
     }
 
     // awards
     match /awards/{awardId} {
-      allow read: if isAuthorized() || (resource.data.status == "published" && resource.data.isDeleted == 0);
+      // Public readers use the explicit /api/awards DTO boundary.
+      allow read: if isAuthorized();
       allow create, update, delete: if isContentPublisher();
     }
 

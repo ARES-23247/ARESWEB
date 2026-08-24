@@ -32,6 +32,34 @@ export const test = base.extend<AresFixtures>({
         body: JSON.stringify({ hasPending: false }),
       }),
     );
+    await page.route("**/api/content/posts", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ posts: [] }),
+      }),
+    );
+    await page.route("**/api/content/docs?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ documents: [] }),
+      }),
+    );
+    await page.route("**/api/seasons", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ seasons: [] }),
+      }),
+    );
+    await page.route("**/api/awards", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ awards: [] }),
+      }),
+    );
     // The isolated role fixture intentionally does not start Firebase Auth's
     // emulator. WebKit still requests its helper iframe during SDK startup;
     // satisfy only that loopback origin so a missing, unused emulator does not

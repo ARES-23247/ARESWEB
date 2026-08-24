@@ -69,6 +69,27 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(indexHtml).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 
+  it("denies unused browser capabilities at the hosting boundary", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const policy = config.hosting.headers
+      .find((rule) => rule.source === "/!(assets){,/**}")
+      ?.headers.find((header) => header.key === "Permissions-Policy")
+      ?.value;
+
+    for (const capability of [
+      "camera=()",
+      "geolocation=()",
+      "microphone=()",
+      "payment=()",
+      "usb=()",
+      "xr-spatial-tracking=()",
+    ]) {
+      expect(policy).toContain(capability);
+    }
+  });
+
   it("applies the exact sitemap cache policy after the broad app-shell policy", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),

@@ -369,6 +369,22 @@ describe("errorHandler", () => {
     expect(jsonMock).toHaveBeenCalledWith({ error: "Not Found Custom", code: "HTTP_404" });
   });
 
+  it("does not log concrete user or record identifiers from request paths", () => {
+    const uid = "DnFWdaJ2WQJm1BAUiNgpW2KH8mEf";
+    req = {
+      path: `/api/profiles/admin/users/${uid}/profile`,
+      method: "GET",
+    };
+    const errorSpy = vi.mocked(console.error);
+
+    globalErrorHandler(new ApiError(403, "Forbidden"), req as any, res as any, next);
+
+    const output = errorSpy.mock.calls.flat().join(" ");
+    expect(output).toContain('"routeGroup":"/api/profiles"');
+    expect(output).not.toContain(uid);
+    expect(output).not.toContain("/admin/users/");
+  });
+
   it("terminates a partial streaming response instead of appending JSON", () => {
     const err = new Error("stream failed");
     const destroy = vi.fn();

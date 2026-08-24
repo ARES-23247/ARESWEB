@@ -22,7 +22,7 @@ file. Current mounts (keep this table aligned with `functions/src/apps/*.ts`):
 
 | App file | Mounts | Purposes |
 |---|---|---|
-| `apps/public.ts` | `/api/announcements`, `/api/calendar`, `/api/sponsors`, `/api/seasons`, `/api/awards`, `/api/outreach`, `/api/tournaments`, `/api/robots`, `/api/store`, `/api/finance`, `/api/reference`, `/api/og`, `/sitemap.xml`, `/feed.xml` | Public content DTOs, calendar (incl. recurrence/iCal), sponsors, seasons & awards, outreach, tournaments, robots, finance ledger, OG image rendering, sitemap and RSS |
+| `apps/public.ts` | `/api/announcements`, `/api/calendar`, `/api/content`, `/api/sponsors`, `/api/seasons`, `/api/awards`, `/api/outreach`, `/api/tournaments`, `/api/robots`, `/api/store`, `/api/finance`, `/api/reference`, `/api/og`, `/sitemap.xml`, `/feed.xml` | Public blog/document DTOs, calendar (incl. recurrence/iCal), sponsors, seasons & awards, outreach, tournaments, robots, finance ledger, OG image rendering, sitemap and RSS |
 | `apps/core.ts` | `/api/profiles`, `/api/inquiries`, `/api/ai`, and related profile routes | Identity/session claims, inquiry intake (encrypted PII), profile admin, AI copilot |
 | `apps/media.ts` | `/api/photos`, `/api/videos` | Photo/album management, derivatives, Google Photos picker import, YouTube sync |
 | `apps/drive.ts` | `/api/drive` | Drive library browse, draft import, retired-sync tombstone |

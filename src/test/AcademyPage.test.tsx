@@ -2,7 +2,12 @@ import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from "@
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AcademyPage from "../app/academy/page";
-import { addDoc, getDoc, getDocs } from "firebase/firestore";
+import { addDoc } from "firebase/firestore";
+import {
+  fetchPublicDocument,
+  fetchPublicDocuments,
+  PublicContentApiError,
+} from "@/lib/publicContentApi";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
 vi.mock("@/components/EducationalCredentialSchema", () => ({
@@ -11,6 +16,11 @@ vi.mock("@/components/EducationalCredentialSchema", () => ({
 }));
 vi.mock("@/components/ZulipThread", () => ({ default: () => null }));
 vi.mock("@/lib/firebaseFirestore", () => ({ db: {} }));
+vi.mock("@/lib/publicContentApi", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/publicContentApi")>(),
+  fetchPublicDocument: vi.fn(),
+  fetchPublicDocuments: vi.fn(),
+}));
 
 const mockUseAuth = vi.fn();
 vi.mock("@/context/AuthContext", () => ({
@@ -20,15 +30,7 @@ vi.mock("@/context/AuthContext", () => ({
 
 vi.mock("firebase/firestore", () => ({
   collection: vi.fn((_db: unknown, path: string) => ({ id: path, path })),
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn(),
-  doc: vi.fn((_db: unknown, path: string, id: string) => ({ id, path: `${path}/${id}` })),
-  getDoc: vi.fn(),
   addDoc: vi.fn(),
-  or: vi.fn(),
-  and: vi.fn(),
-  limit: vi.fn(),
 }));
 
 class MockIntersectionObserver {
@@ -52,10 +54,14 @@ const mockDocsList = [
     slug: "ai-101-intro",
     title: "Introduction to Artificial Intelligence",
     category: "AI 101",
+    sortOrder: 1,
     description: "Foundational concepts of artificial intelligence in FTC robotics.",
     content: "# Intro to AI\n\nArtificial intelligence powers modern autonomous navigation.",
     displayInMathCorner: 1,
     displayInScienceCorner: 0,
+    displayInAreslib: 0,
+    isPortfolio: 0,
+    isExecutiveSummary: 0,
     status: "published",
     isDeleted: 0,
     original_authorNickname: "AlphaCoder",
@@ -65,10 +71,14 @@ const mockDocsList = [
     slug: "neural-networks-basics",
     title: "Neural Networks for Computer Vision",
     category: "Neural Networks",
+    sortOrder: 2,
     description: "Understanding perceptrons and convolutional layers.",
     content: "# Neural Networks\n\nConvolutional filters extract spatial features from camera frames.",
     displayInMathCorner: 0,
     displayInScienceCorner: 1,
+    displayInAreslib: 0,
+    isPortfolio: 0,
+    isExecutiveSummary: 0,
     status: "published",
     isDeleted: 0,
     original_authorNickname: "VisionLead",
@@ -91,22 +101,8 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("loads doc list and displays the active lesson with author lifecycle and navigation links", async () => {
-    vi.mocked(getDocs).mockImplementation(async () => {
-      return {
-        docs: mockDocsList.map((docItem) => ({
-          id: docItem.slug,
-          data: () => docItem,
-        })),
-      } as unknown as Awaited<ReturnType<typeof getDocs>>;
-    });
-
-    vi.mocked(getDoc).mockImplementation(async () => {
-      return {
-        exists: () => true,
-        id: mockDocsList[0].slug,
-        data: () => mockDocsList[0],
-      } as unknown as Awaited<ReturnType<typeof getDoc>>;
-    });
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
 
     render(
       <MemoryRouter initialEntries={["/academy/ai-101-intro"]}>
@@ -130,23 +126,10 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("allows searching documents with quick search modal and navigating to selected lesson", async () => {
-    vi.mocked(getDocs).mockImplementation(async () => {
-      return {
-        docs: mockDocsList.map((docItem) => ({
-          id: docItem.slug,
-          data: () => docItem,
-        })),
-      } as unknown as Awaited<ReturnType<typeof getDocs>>;
-    });
-
-    vi.mocked(getDoc).mockImplementation(async (reference) => {
-      const requested = mockDocsList.find((item) => item.slug === (reference as { id?: string }).id) ?? mockDocsList[0];
-      return {
-        exists: () => true,
-        id: requested.slug,
-        data: () => requested,
-      } as unknown as Awaited<ReturnType<typeof getDoc>>;
-    });
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockImplementation(async (requestedSlug) => (
+      mockDocsList.find((item) => item.slug === requestedSlug) ?? mockDocsList[0]
+    ));
 
     render(
       <MemoryRouter initialEntries={["/academy/ai-101-intro?q=Neural&view=full"]}>
@@ -170,22 +153,8 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("submits helpful reader feedback to Firestore docs_feedback collection", async () => {
-    vi.mocked(getDocs).mockImplementation(async () => {
-      return {
-        docs: mockDocsList.map((docItem) => ({
-          id: docItem.slug,
-          data: () => docItem,
-        })),
-      } as unknown as Awaited<ReturnType<typeof getDocs>>;
-    });
-
-    vi.mocked(getDoc).mockImplementation(async () => {
-      return {
-        exists: () => true,
-        id: mockDocsList[0].slug,
-        data: () => mockDocsList[0],
-      } as unknown as Awaited<ReturnType<typeof getDoc>>;
-    });
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
 
     vi.mocked(addDoc).mockResolvedValue({ id: "feedback-1" } as unknown as Awaited<ReturnType<typeof addDoc>>);
 
@@ -216,22 +185,8 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("submits detailed constructive feedback through the modal dialog", async () => {
-    vi.mocked(getDocs).mockImplementation(async () => {
-      return {
-        docs: mockDocsList.map((docItem) => ({
-          id: docItem.slug,
-          data: () => docItem,
-        })),
-      } as unknown as Awaited<ReturnType<typeof getDocs>>;
-    });
-
-    vi.mocked(getDoc).mockImplementation(async () => {
-      return {
-        exists: () => true,
-        id: mockDocsList[0].slug,
-        data: () => mockDocsList[0],
-      } as unknown as Awaited<ReturnType<typeof getDoc>>;
-    });
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
 
     vi.mocked(addDoc).mockResolvedValue({ id: "feedback-2" } as unknown as Awaited<ReturnType<typeof addDoc>>);
 
@@ -271,20 +226,10 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("renders 404 state when the requested lesson slug does not exist", async () => {
-    vi.mocked(getDocs).mockImplementation(async () => {
-      return {
-        docs: mockDocsList.map((docItem) => ({
-          id: docItem.slug,
-          data: () => docItem,
-        })),
-      } as unknown as Awaited<ReturnType<typeof getDocs>>;
-    });
-
-    vi.mocked(getDoc).mockImplementation(async () => {
-      return {
-        exists: () => false,
-      } as unknown as Awaited<ReturnType<typeof getDoc>>;
-    });
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockRejectedValue(
+      new PublicContentApiError(404, "Published document not found."),
+    );
 
     render(
       <MemoryRouter initialEntries={["/academy/non-existent-lesson"]}>

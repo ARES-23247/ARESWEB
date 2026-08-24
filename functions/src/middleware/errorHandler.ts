@@ -11,6 +11,14 @@ export class ApiError extends Error {
   }
 }
 
+/** Keep diagnostic routing useful without retaining concrete user/record IDs. */
+export function diagnosticRouteGroup(path: unknown): string {
+  if (typeof path !== "string") return "/";
+  const segments = path.split("/").filter(Boolean);
+  if (segments.length === 0) return "/";
+  return `/${segments.slice(0, segments[0] === "api" ? 2 : 1).join("/")}`;
+}
+
 /**
  * Global Express error handling middleware to catch bubbled exceptions and return clean JSON responses.
  */
@@ -23,7 +31,7 @@ export const globalErrorHandler = (
   // Log the full stack trace on the server for diagnostics
   const error = err instanceof Error ? err : new Error("Unknown thrown value");
   logger.error("errorHandler", "[Global Error Handler] Caught Exception:", {
-    path: req.path,
+    routeGroup: diagnosticRouteGroup(req.path),
     method: req.method,
     error,
   });

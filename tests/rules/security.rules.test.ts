@@ -11,11 +11,9 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
   runTransaction,
   setDoc,
   updateDoc,
-  where,
 } from "firebase/firestore";
 import { getBytes, ref, uploadBytes } from "firebase/storage";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
@@ -68,72 +66,27 @@ afterAll(async () => {
 });
 
 describe("Firestore zero-trust rules", () => {
-  it("allows only published, non-deleted posts to be read publicly", async () => {
-    await seedDocument("posts", "published", {
-      status: "published",
-      isDeleted: 0,
-    });
-    await seedDocument("posts", "draft", { status: "draft", isDeleted: 0 });
-    await seedDocument("posts", "deleted", {
-      status: "published",
-      isDeleted: 1,
-    });
-
+  it("keeps raw public-content records behind server DTO APIs", async () => {
+    await seedAuthorizedUser("member-user", "member");
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    await assertSucceeds(getDoc(doc(publicDb, "posts", "published")));
-    await assertFails(getDoc(doc(publicDb, "posts", "draft")));
-    await assertFails(getDoc(doc(publicDb, "posts", "deleted")));
-  });
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
 
-  it("requires approval metadata before an explicitly reviewed post is public", async () => {
-    await seedDocument("posts", "approved", {
-      status: "published",
-      isDeleted: 0,
-      approvalStatus: "approved",
-    });
-    await seedDocument("posts", "pending", {
-      status: "published",
-      isDeleted: 0,
-      approvalStatus: "pending_approval",
-    });
-    await seedDocument("posts", "legacy", {
-      status: "published",
-      isDeleted: 0,
-    });
-
-    const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    await assertSucceeds(getDoc(doc(publicDb, "posts", "approved")));
-    await assertFails(getDoc(doc(publicDb, "posts", "pending")));
-    await assertSucceeds(getDoc(doc(publicDb, "posts", "legacy")));
-  });
-
-  it("requires public collection queries to carry every publication constraint", async () => {
-    await seedDocument("posts", "approved", {
-      status: "published",
-      isDeleted: 0,
-      approvalStatus: "approved",
-    });
-    await seedDocument("posts", "pending", {
-      status: "published",
-      isDeleted: 0,
-      approvalStatus: "pending_approval",
-    });
-    const publicDb = testEnvironment.unauthenticatedContext().firestore();
-    const posts = collection(publicDb, "posts");
-
-    await assertSucceeds(
-      getDocs(
-        query(
-          posts,
-          where("status", "==", "published"),
-          where("isDeleted", "==", 0),
-          where("approvalStatus", "==", "approved"),
-        ),
-      ),
-    );
-    await assertFails(
-      getDocs(query(posts, where("status", "==", "published"))),
-    );
+    for (const [collectionName, id] of [
+      ["posts", "published"],
+      ["docs", "published"],
+      ["documents", "published"],
+      ["seasons", "season_2026"],
+      ["awards", "award_2026"],
+    ] as const) {
+      await seedDocument(collectionName, id, {
+        status: "published",
+        isDeleted: 0,
+        internalFutureField: "must-not-cross-the-public-boundary",
+      });
+      await assertFails(getDoc(doc(publicDb, collectionName, id)));
+      await assertFails(getDocs(collection(publicDb, collectionName)));
+      await assertSucceeds(getDoc(doc(memberDb, collectionName, id)));
+    }
   });
 
   it("enforces role checks for private collection queries, not only document reads", async () => {

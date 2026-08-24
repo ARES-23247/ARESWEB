@@ -3,8 +3,6 @@
 import { logger } from "@/utils/logger";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebaseFirestore";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import TiptapRenderer from "@/components/TiptapRenderer";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +15,10 @@ import { toTiptapAst, toPlainText } from "@/lib/contentFormatters";
 import BlogThumbnailImage, {
   getBlogThumbnailSource,
 } from "@/components/BlogThumbnailImage";
+import {
+  fetchPublicBlogPost,
+  PublicContentApiError,
+} from "@/lib/publicContentApi";
 
 interface BlogPostDetails {
   slug: string;
@@ -58,25 +60,10 @@ export default function BlogPostPage() {
   useEffect(() => {
     if (!slug) return;
 
-    const docRef = doc(db, "posts", slug);
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (!docSnap.exists()) {
-          setPost(null);
-          setLoadError(null);
-          setIsLoading(false);
-          return;
-        }
-
-        const data = docSnap.data();
-        if (!data || data.isDeleted === 1 || data.status !== "published") {
-          setPost(null);
-          setLoadError(null);
-          setIsLoading(false);
-          return;
-        }
-
+    let active = true;
+    void fetchPublicBlogPost(slug)
+      .then((data) => {
+        if (!active) return;
         const rawSnippet = data.snippet || data.content || "";
         setPost({
           slug,
@@ -90,16 +77,22 @@ export default function BlogPostPage() {
         });
         setLoadError(null);
         setIsLoading(false);
-      },
-      (error) => {
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        if (error instanceof PublicContentApiError && error.status === 404) {
+          setPost(null);
+          setLoadError(null);
+          setIsLoading(false);
+          return;
+        }
         logger.error("Unable to load published blog post:", { slug, error });
         setPost(null);
-        setLoadError(error.message);
+        setLoadError(error instanceof Error ? error.message : "Unable to load the published blog post.");
         setIsLoading(false);
-      },
-    );
+      });
 
-    return () => unsubscribe();
+    return () => { active = false; };
   }, [slug]);
 
   if (isLoading) {
