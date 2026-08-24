@@ -186,13 +186,23 @@ export function planContentMigration(documentPath, data, expectedBucket, assetBy
     delete updates.coverImageUrl;
   }
   if (["posts", "docs", "documents"].includes(collection)) {
+    const currentMediaPhotoIds = Array.isArray(data.mediaPhotoIds)
+      ? data.mediaPhotoIds.filter((id) => typeof id === "string").slice(0, 100)
+      : [];
     const ids = new Set([
-      ...(Array.isArray(data.mediaPhotoIds) ? data.mediaPhotoIds.filter((id) => typeof id === "string") : []),
+      ...currentMediaPhotoIds,
       ...existingGatewayPhotoIds(data.content),
       ...existingGatewayPhotoIds(data.thumbnail),
       ...references.map((asset) => asset.photoId),
     ]);
-    if (ids.size > 0) updates.mediaPhotoIds = [...ids].slice(0, 100);
+    const nextMediaPhotoIds = [...ids].slice(0, 100);
+    const hasCanonicalMediaPhotoIds = Array.isArray(data.mediaPhotoIds)
+      && data.mediaPhotoIds.length === currentMediaPhotoIds.length
+      && nextMediaPhotoIds.length === currentMediaPhotoIds.length
+      && nextMediaPhotoIds.every((id, index) => id === currentMediaPhotoIds[index]);
+    if (nextMediaPhotoIds.length > 0 && !hasCanonicalMediaPhotoIds) {
+      updates.mediaPhotoIds = nextMediaPhotoIds;
+    }
   }
   return {
     documentPath,

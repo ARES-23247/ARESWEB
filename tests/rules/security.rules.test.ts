@@ -989,8 +989,10 @@ describe("Storage zero-trust rules", () => {
     await assertFails(getBytes(logo));
   });
 
-  it("denies direct reads from migrated event and editor prefixes", async () => {
+  it("denies direct reads from every migrated media prefix", async () => {
     const publicStorage = testEnvironment.unauthenticatedContext().storage();
+    await assertFails(getBytes(ref(publicStorage, "blog/legacy-photo.jpg")));
+    await assertFails(getBytes(ref(publicStorage, "gallery/legacy-photo.jpg")));
     await assertFails(getBytes(ref(publicStorage, "events/event-1/photos/photo-1.jpg")));
     await assertFails(getBytes(ref(publicStorage, "editor/uploads/legacy-photo.jpg")));
   });

@@ -1,6 +1,6 @@
 # Media delivery migration for Storage App Check
 
-Status: gateway, write-path, and bounded migration tooling implemented; production apply pending
+Status: production backfill complete; direct-read rule hardening pending protected deployment; App Check observation pending
 Inventory date: 2026-08-23
 Production project: `aresfirst-portal`
 
@@ -43,6 +43,32 @@ objects (8,479,388 bytes). There were no objects under `events/` or
 `editor/uploads/`. Every consumer-side direct URL resolved to one of the ten
 managed photo records. The inventory intentionally emits aggregate counts only;
 it never prints document content, object names, download tokens, or user data.
+
+## Production backfill evidence
+
+On 2026-08-23, after gateway release `12a75458` passed the protected production
+deployment, the bounded apply migrated 27 Firestore documents in four separate
+transactions:
+
+| Scope | Updated documents | Replaced references | Deleted legacy URL fields |
+| --- | ---: | ---: | ---: |
+| Managed photos | 10 | 28 | 28 |
+| Blog posts | 2 | 3 | 0 |
+| Revisions | 12 | 13 | 0 |
+| Nested photo mirrors | 3 | 9 | 9 |
+
+Every transaction reported zero blocked and zero failed records. Four distinct,
+gitignored rollback manifests contain 27 entries; each manifest passed a dry-run
+rollback integrity check immediately after its transaction. Source objects were
+not copied, re-encoded, or deleted.
+
+The final untruncated inventory scanned 12 posts, 83 events, 1 album, 10 managed
+photos, 36 docs, 3 nested photo mirrors, and 38 revisions. It found zero direct
+Storage URL references in every scope. The 1 retained `blog/` object and 27
+retained `gallery/` objects remain the server-owned source bytes. The 15-check
+production health suite passed, both media references on the published blog post
+streamed through the same-origin gateway, and a pending-approval post correctly
+returned 404 from the public gateway.
 
 ## Target contract
 
@@ -125,7 +151,7 @@ backup path. Continue a bounded page with the aggregate `nextCursor` as
    checking its MIME type, public cache policy, and `nosniff` header.
 3. Run the full dry-run and retain its aggregate report.
 4. With explicit approval, run bounded apply pages and verify each checkpoint.
-5. Deploy Storage rules that deny the migrated legacy prefixes.
+5. Deploy Storage rules that deny the migrated legacy prefixes. **Pending.**
 6. Observe Storage App Check until legitimate direct browser requests reach
    zero for a representative usage window.
 7. Only then recommend enabling Storage App Check enforcement.
@@ -147,10 +173,11 @@ Rollback apply additionally requires `--apply`, `--confirm-project`, and
 `--confirm-bucket`. It refuses the whole page when any field integrity hash no
 longer matches, preventing a rollback from overwriting later edits. It restores
 token-free canonical Storage URLs, restores previous opaque-ID lists, and
-removes migration markers. Keep the old public Storage rules until post-
-backfill verification passes. Do not delete source objects as part of this
-migration. Object cleanup is a separate, explicitly approved retention
-operation.
+removes migration markers. Once direct reads are denied for `blog/` and
+`gallery/`, a data rollback must first redeploy the prior public-read rules;
+otherwise the restored legacy URLs will remain intentionally inaccessible. Do
+not delete source objects as part of this migration. Object cleanup is a
+separate, explicitly approved retention operation.
 
 ## Verification evidence
 
