@@ -40,6 +40,7 @@ export interface EventWriteInput {
   description?: string;
   category: "internal" | "outreach" | "competition";
   coverImage?: string;
+  coverPhotoId?: string;
   isPotluck?: 0 | 1;
   isVolunteer?: 0 | 1;
   status?: "published" | "pending" | "draft";
@@ -54,6 +55,7 @@ export interface OccurrenceWriteInput {
   description: string | null;
   category: "internal" | "outreach" | "competition";
   coverImage: string | null;
+  coverPhotoId?: string | null;
   isPotluck: 0 | 1;
   isVolunteer: 0 | 1;
 }
@@ -115,6 +117,7 @@ function normalizeOccurrenceDefaults(
           ? "competition"
           : "internal",
     coverImage: optionalString(record, "coverImage"),
+    coverPhotoId: optionalString(record, "coverPhotoId"),
     isPotluck: record.isPotluck === 1 ? 1 : 0,
     isVolunteer: record.isVolunteer === 1 ? 1 : 0,
   };
@@ -192,6 +195,7 @@ function normalizeEvent(value: unknown): TeamEvent {
     description: optionalString(record, "description"),
     category,
     coverImage: optionalString(record, "coverImage"),
+    coverPhotoId: optionalString(record, "coverPhotoId"),
     isPotluck: record.isPotluck === 1 ? 1 : 0,
     isVolunteer: record.isVolunteer === 1 ? 1 : 0,
     isDeleted: record.isDeleted === 1 ? 1 : 0,

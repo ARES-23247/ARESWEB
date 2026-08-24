@@ -37,6 +37,10 @@ function response(body: object, status = 200, statusText = "OK"): Response {
 describe("partner lifecycle managers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperties(URL, {
+      createObjectURL: { configurable: true, value: vi.fn(() => "blob:sponsor-logo-preview") },
+      revokeObjectURL: { configurable: true, value: vi.fn() },
+    });
   });
 
   it("archives and restores sponsors without browser confirmation dialogs", async () => {
@@ -114,6 +118,12 @@ describe("partner lifecycle managers", () => {
           },
         }, 201, "Created");
       }
+      if (url === "/api/photos/admin/sponsor-logo-assets/123e4567-e89b-42d3-a456-426614174000") {
+        return new Response(new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" }), {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        });
+      }
       return response({ success: true });
     });
 
@@ -133,6 +143,9 @@ describe("partner lifecycle managers", () => {
     ));
     expect(await screen.findByAltText("Sponsor logo preview")).toHaveAttribute(
       "src",
+      "blob:sponsor-logo-preview",
+    );
+    expect(authenticatedFetch).toHaveBeenCalledWith(
       "/api/photos/admin/sponsor-logo-assets/123e4567-e89b-42d3-a456-426614174000",
     );
     expect(screen.getByText("Uploaded logo asset")).toBeInTheDocument();

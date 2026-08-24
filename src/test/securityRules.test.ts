@@ -28,7 +28,7 @@ describe("security-rule invariants", () => {
 
   it("does not let every verified member publish arbitrary editor assets", () => {
     const editorRule = storageRules.match(/match \/editor\/uploads\/\{allPaths=\*\*\} \{([\s\S]*?)\n    \}/)?.[1] || "";
-    expect(editorRule).toContain("allow write: if false");
+    expect(editorRule).toContain("allow read, write: if false");
   });
 
   it("uses the dedicated reCAPTCHA Enterprise provider for App Check", () => {
@@ -41,6 +41,14 @@ describe("security-rule invariants", () => {
   it("keeps new public-media objects behind the same-origin gateway", () => {
     const publicMediaRule = storageRules.match(/match \/public-media\/\{allPaths=\*\*\} \{([\s\S]*?)\n    \}/)?.[1] || "";
     expect(publicMediaRule).toContain("allow read, write: if false");
+  });
+
+  it("keeps legacy event and editor prefixes behind same-origin gateways", () => {
+    for (const prefix of ["events/{eventId}/photos/{photoId}", "editor/uploads/{allPaths=**}"]) {
+      const escaped = prefix.replace(/[{}/*]/gu, (character) => `\\${character}`);
+      const body = storageRules.match(new RegExp(`match \/${escaped} \\{([\\s\\S]*?)\\n    \\}`))?.[1] || "";
+      expect(body).toContain("allow read, write: if false");
+    }
   });
 
   it("prevents a second legacy reCAPTCHA client from colliding with App Check", () => {

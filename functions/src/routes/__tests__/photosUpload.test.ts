@@ -118,14 +118,11 @@ describe("Photos upload route", () => {
     });
     vi.mocked(storePhotoAssets).mockResolvedValue({
       storagePath: "gallery/original.jpg",
-      publicUrl: "https://storage.test/original.jpg",
       thumbnailPath: "gallery/thumbnail.webp",
-      thumbnailUrl: "https://storage.test/thumbnail.webp",
       thumbnailWidth: 480,
       thumbnailHeight: 270,
       thumbnailFileSize: 5,
       mediumPath: "gallery/medium.webp",
-      mediumUrl: "https://storage.test/medium.webp",
       mediumWidth: 1280,
       mediumHeight: 720,
       mediumFileSize: 6,
@@ -231,14 +228,16 @@ describe("Photos upload route", () => {
     await handler()({ body: imageBody({ albumId: "album-1", runAiLabeling: true }) }, res);
     expect(storePhotoAssets).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mimeType: "image/jpeg" }), expect.stringContaining("gallery/derivatives/"), expect.anything());
     expect(generatePhotoCaptionAndLabels).toHaveBeenCalledWith(Buffer.from("sanitized"), "image/jpeg");
-    expect(mockBatchSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0, fileSize: 7, thumbnailUrl: "https://storage.test/thumbnail.webp", }));
+    expect(mockBatchSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ caption: "AI caption", labels: ["robot"], isDeleted: 0, fileSize: 7, thumbnailPath: "gallery/thumbnail.webp", }));
+    expect(mockBatchSet.mock.calls[0]?.[1]).not.toHaveProperty("publicUrl");
     expect(mockBatchUpdate).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ mediaCount: expect.anything() }));
     expect(mockBatchCommit).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       photo: expect.objectContaining({
-        thumbnailUrl: "https://storage.test/thumbnail.webp",
-        mediumUrl: "https://storage.test/medium.webp",
+        publicUrl: expect.stringMatching(/^\/api\/photos\/admin\/media\/photo-[^/]+\/original$/),
+        thumbnailUrl: expect.stringMatching(/^\/api\/photos\/admin\/media\/photo-[^/]+\/thumbnail$/),
+        mediumUrl: expect.stringMatching(/^\/api\/photos\/admin\/media\/photo-[^/]+\/medium$/),
         width: 1600,
         height: 900,
       }),

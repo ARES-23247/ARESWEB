@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Check, Upload, Trash2 } from "lucide-react";
 import { EventPhoto } from "./EventEditorDrawer";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 interface EventGalleryTabProps {
   photos: EventPhoto[];
@@ -78,7 +79,7 @@ export default function EventGalleryTab({
                 key={p.id}
                 className="relative group border border-white/10 rounded-lg overflow-hidden bg-black aspect-video hover:border-white/20 transition-all"
               >
-                <img
+                <AuthenticatedImage
                   src={p.thumbnailUrl ?? p.url}
                   alt={p.filename || "Event gallery photo"}
                   className="w-full h-full object-cover"

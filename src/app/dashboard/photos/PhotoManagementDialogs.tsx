@@ -1,8 +1,10 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { Dispatch, FormEventHandler, SetStateAction } from "react";
+import { useState, type Dispatch, type FormEventHandler, type SetStateAction } from "react";
 import type { AlbumCategory, ManagedAlbum, ManagedPhoto } from "@/lib/media";
 import ArchiveConfirmationDialog from "./ArchiveConfirmationDialog";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
+import PhotoPickerModal from "@/components/PhotoPickerModal";
 
 const CATEGORIES: AlbumCategory[] = [
   "Robot Specs",
@@ -24,6 +26,7 @@ export interface AlbumEditorDraft {
   description: string;
   category: AlbumCategory;
   coverImageUrl: string;
+  coverPhotoId: string;
   isPublic: boolean;
 }
 
@@ -166,7 +169,7 @@ function PhotoDetailsDialog({
           </div>
           {photo && (
             <form onSubmit={onSave} className="mt-6 space-y-4">
-              <img
+              <AuthenticatedImage
                 src={photo.mediumUrl || photo.publicUrl}
                 alt=""
                 className="max-h-64 w-full bg-black object-contain"
@@ -318,7 +321,9 @@ function AlbumEditorDialog({
   onOpenChange,
   onSave,
 }: AlbumEditorDialogProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   return (
+    <>
     <Dialog.Root
       open={open}
       onOpenChange={(nextOpen) => !saving && onOpenChange(nextOpen)}
@@ -416,20 +421,37 @@ function AlbumEditorDialog({
                 htmlFor="album-cover"
                 className="mb-1 block text-xs font-bold text-marble"
               >
-                Cover image URL
+                Cover image
               </label>
-              <input
-                id="album-cover"
-                type="url"
-                value={draft.coverImageUrl}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    coverImageUrl: event.target.value,
-                  }))
-                }
-                className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  id="album-cover"
+                  type="url"
+                  value={draft.coverImageUrl}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      coverImageUrl: event.target.value,
+                      coverPhotoId: "",
+                    }))
+                  }
+                  className="min-w-0 flex-1 border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="border border-white/15 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Choose managed photo
+                </button>
+              </div>
+              {draft.coverImageUrl && (
+                <AuthenticatedImage
+                  src={draft.coverImageUrl}
+                  alt="Album cover preview"
+                  className="mt-3 aspect-video w-full max-w-sm bg-black object-cover"
+                />
+              )}
             </div>
             <label className="flex items-start gap-2 text-sm text-marble">
               <input
@@ -467,6 +489,20 @@ function AlbumEditorDialog({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+    <PhotoPickerModal
+      isOpen={pickerOpen}
+      onClose={() => setPickerOpen(false)}
+      onSelect={(url, _alt, photoId) => {
+        setDraft((current) => ({
+          ...current,
+          coverImageUrl: url,
+          coverPhotoId: photoId || "",
+        }));
+        setPickerOpen(false);
+      }}
+      mode="imageOnly"
+    />
+    </>
   );
 }
 

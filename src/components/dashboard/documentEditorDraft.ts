@@ -1,4 +1,5 @@
 import type { DocRecord, DocRevision } from "@/hooks/useDocumentSync";
+import { normalizeDocumentMedia, type ContentMediaCollection } from "@/lib/documentMedia";
 
 export type DocumentEditorVariant = "docs" | "documents" | "blog";
 
@@ -230,5 +231,17 @@ export function buildDocumentSave(
     payload.date = draft.date;
     payload.thumbnail = draft.thumbnail.trim();
   }
+  const mediaCollection: ContentMediaCollection =
+    variant === "blog" ? "posts" : variant === "documents" ? "documents" : "docs";
+  const media = normalizeDocumentMedia(
+    payload.content,
+    payload.thumbnail || "",
+    mediaCollection,
+    slug,
+  );
+  if ("error" in media) return media;
+  payload.content = media.content;
+  if (variant === "blog") payload.thumbnail = media.thumbnail;
+  payload.mediaPhotoIds = media.mediaPhotoIds;
   return { slug, payload };
 }

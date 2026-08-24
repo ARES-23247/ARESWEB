@@ -1,6 +1,7 @@
 import React from "react";
 import { Upload, AlertCircle, Image as ImageIcon, Maximize2, RefreshCw, } from "lucide-react";
 import { EventPhoto } from "./types";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 interface EventGalleryProps {
   isVerified: boolean;
@@ -137,7 +138,7 @@ export default function EventGallery({
               aria-label={`Open event photo: ${item.filename}`}
               className="aspect-square relative overflow-hidden group cursor-pointer ares-cut border border-white/10 bg-black/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
-              <img
+              <AuthenticatedImage
                 src={item.thumbnailUrl ?? item.url}
                 alt={item.filename}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103 opacity-80 group-hover:opacity-100"

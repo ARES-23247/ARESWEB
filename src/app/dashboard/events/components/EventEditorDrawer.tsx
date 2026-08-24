@@ -14,6 +14,7 @@ import EventRecurrenceSection from "./EventRecurrenceSection";
 import EventFormRoster from "./EventFormRoster";
 import EventEditorAiCopilot from "./EventEditorAiCopilot";
 import AccessibleTabs, { tabElementId, tabPanelId, } from "@/components/AccessibleTabs";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 import { TeamEvent } from "@/types/event";
 import { useEventEditor, EventRevision, EventSignup, EventPhoto, } from "../hooks/useEventEditor";
@@ -52,6 +53,7 @@ export default function EventEditorDrawer({
     setFormCategory,
     formCoverImage,
     setFormCoverImage,
+    setFormCoverPhotoId,
     formIsPotluck,
     setFormIsPotluck,
     formIsVolunteer,
@@ -325,7 +327,10 @@ export default function EventEditorDrawer({
                   formCategory={formCategory}
                   setFormCategory={setFormCategory}
                   formCoverImage={formCoverImage}
-                  setFormCoverImage={setFormCoverImage}
+                  setFormCoverImage={(value) => {
+                    setFormCoverImage(value);
+                    setFormCoverPhotoId("");
+                  }}
                   formIsPotluck={formIsPotluck}
                   setFormIsPotluck={setFormIsPotluck}
                   formIsVolunteer={formIsVolunteer}
@@ -521,7 +526,7 @@ export default function EventEditorDrawer({
                   <X aria-hidden="true" size={18} />
                 </button>
               </Dialog.Close>
-              <img
+              <AuthenticatedImage
                 src={selectedPhoto.mediumUrl ?? selectedPhoto.url}
                 alt={selectedPhoto.filename}
                 className="max-h-[75vh] w-full object-contain rounded-lg"
@@ -542,7 +547,10 @@ export default function EventEditorDrawer({
       <PhotoPickerModal
         isOpen={isPhotoPickerOpen}
         onClose={() => setIsPhotoPickerOpen(false)}
-        onSelect={(url) => setFormCoverImage(url)}
+        onSelect={(url, _alt, photoId) => {
+          setFormCoverImage(url);
+          setFormCoverPhotoId(photoId || "");
+        }}
       />
 
       {/* Locations Manager Modal overlay */}

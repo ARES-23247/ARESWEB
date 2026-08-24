@@ -1,7 +1,6 @@
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 import {
-  firebaseStoragePublicUrl,
   generatePhotoDerivatives,
   deleteStoredPhotoAssets,
   photoDerivativeDtoFields,
@@ -96,14 +95,16 @@ describe("photo derivatives", () => {
       resumable: false,
     }));
     expect(stored).toMatchObject({
-      publicUrl: expect.stringContaining("gallery%2Fuploads%2Fphoto.jpg"),
-      thumbnailUrl: expect.stringContaining("photo-thumbnail.webp"),
-      mediumUrl: expect.stringContaining("photo-medium.webp"),
+      storagePath: "gallery/uploads/photo.jpg",
+      thumbnailPath: expect.stringContaining("photo-thumbnail.webp"),
+      mediumPath: expect.stringContaining("photo-medium.webp"),
       width: 1600,
       height: 900,
     });
+    expect(stored).not.toHaveProperty("publicUrl");
+    expect(stored).not.toHaveProperty("thumbnailUrl");
+    expect(stored).not.toHaveProperty("mediumUrl");
     expect(remove).not.toHaveBeenCalled();
-    expect(firebaseStoragePublicUrl("bucket", "a/b.webp")).toContain("a%2Fb.webp");
   });
 
   it("removes every target when any Storage write fails", async () => {

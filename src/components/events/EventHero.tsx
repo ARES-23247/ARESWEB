@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, Pencil } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import { EventItem } from "./types";
 import { TeamLocation } from "@/types/location";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 interface EventHeroProps {
   event: EventItem;
@@ -39,7 +40,7 @@ export default function EventHero({
       <GreekMeander variant="thick" opacity="opacity-50" className="absolute bottom-[-1px] left-0 z-10" />
       
       {event.coverImage ? (
-        <img
+        <AuthenticatedImage
           src={event.coverImage}
           alt={event.title}
           className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity"

@@ -33,6 +33,7 @@ vi.mock("../../lib/firebase-admin", () => ({
     })),
   },
   adminFieldValue: { increment: vi.fn((value) => value) },
+  adminStorage: { bucket: vi.fn(() => ({ name: "ares-test.firebasestorage.app" })) },
 }));
 
 vi.mock("../../middleware/auth", () => ({
@@ -153,6 +154,40 @@ describe("albums routes", () => {
   });
 
   describe("POST /", () => {
+    it("stores an opaque managed cover and returns an authenticated preview gateway", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ storagePath: "gallery/cover.jpg", isDeleted: 0 }),
+        })
+        .mockResolvedValueOnce({ exists: false });
+
+      await handler("/", "post")({ body: {
+        title: "Managed Cover",
+        category: "Practice",
+        coverPhotoId: "photo-1",
+      } }, res, next);
+
+      expect(docSet).toHaveBeenCalledWith(expect.objectContaining({
+        coverPhotoId: "photo-1",
+      }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        album: expect.objectContaining({
+          coverPhotoId: "photo-1",
+          coverImageUrl: "/api/photos/admin/media/photo-1/medium",
+        }),
+      }));
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("rejects a new direct URL to the managed Storage bucket", async () => {
+      await expectApiError("/", "post", { body: {
+        title: "Direct Cover",
+        category: "Practice",
+        coverImageUrl: "https://storage.googleapis.com/ares-test.firebasestorage.app/gallery/cover.jpg",
+      } }, 400, "Choose the image from managed photos instead of saving a direct Storage URL.");
+    });
+
     it("creates a complete album with a stable slug", async () => {
       docGet.mockResolvedValueOnce({ exists: false });
       await handler("/", "post")({ body: {

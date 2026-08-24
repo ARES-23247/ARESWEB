@@ -1,6 +1,7 @@
 import React, { ReactNode, Suspense } from "react";
 import { Info, AlertTriangle, Lightbulb } from "lucide-react";
 import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 import { SIM_COMPONENTS } from "./generated/sim-registry";
 
 export interface ASTMark {
@@ -197,7 +198,7 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
       }
       return (
         <div className="my-6 flex flex-col items-center gap-2">
-          <img
+          <AuthenticatedImage
             src={src}
             alt={alt}
             className="rounded-lg max-w-full h-auto border border-white/10 shadow-lg"

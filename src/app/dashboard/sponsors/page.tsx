@@ -4,6 +4,7 @@ import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 import { 
   Heart, 
   X, 
@@ -450,7 +451,7 @@ export default function SponsorsManagerPage() {
                 {logoPreview && (
                   <div className="mt-3 p-3 bg-black/45 border border-white/5 rounded-xl flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <img
+                      <AuthenticatedImage
                         src={logoPreview.kind === "asset"
                           ? `/api/photos/admin/sponsor-logo-assets/${encodeURIComponent(logoPreview.id)}`
                           : `/api/photos/admin/sponsor-logo/${encodeURIComponent(logoPreview.id)}`}

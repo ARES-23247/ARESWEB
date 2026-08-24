@@ -166,8 +166,8 @@ describe("photo derivative backfill safety", () => {
       isDeleted: 0,
     };
     expect(isEligiblePhotoRecord(base)).toBe(true);
-    expect(isEligiblePhotoRecord({ ...base, thumbnailUrl: "https://example.org/thumb.webp" })).toBe(false);
-    expect(isEligiblePhotoRecord({ ...base, mediumUrl: "https://example.org/medium.webp" })).toBe(false);
+    expect(isEligiblePhotoRecord({ ...base, thumbnailPath: "gallery/thumb.webp" })).toBe(false);
+    expect(isEligiblePhotoRecord({ ...base, mediumPath: "gallery/medium.webp" })).toBe(false);
     expect(isEligiblePhotoRecord({ ...base, isDeleted: 1 })).toBe(false);
     expect(isEligiblePhotoRecord({ ...base, storagePath: "../private/photo.jpg" })).toBe(false);
     expect(isEligiblePhotoRecord({ ...base, mimeType: "image/svg+xml" })).toBe(false);

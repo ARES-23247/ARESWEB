@@ -60,8 +60,8 @@ export function isEligiblePhotoRecord(data) {
     && !data.storagePath.includes("\\")
     && data.storagePath.length <= 1024
     && ["image/jpeg", "image/png", "image/webp"].includes(data.mimeType)
-    && !(typeof data.thumbnailUrl === "string" && data.thumbnailUrl.startsWith("https://"))
-    && !(typeof data.mediumUrl === "string" && data.mediumUrl.startsWith("https://"));
+    && !(typeof data.thumbnailPath === "string" && data.thumbnailPath.startsWith("gallery/"))
+    && !(typeof data.mediumPath === "string" && data.mediumPath.startsWith("gallery/"));
 }
 
 function loadBackfillDependencies() {

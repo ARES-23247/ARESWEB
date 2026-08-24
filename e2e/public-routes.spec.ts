@@ -56,3 +56,52 @@ test("public routes render with their titles and a main landmark", async ({ page
     await expect(page.locator("main").first()).toBeVisible();
   }
 });
+
+test("same-origin gallery media renders without direct Storage traffic", async ({ page, context }) => {
+  const onePixelPng = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+  let gatewayRequests = 0;
+  let directStorageRequests = 0;
+
+  await context.route(/https:\/\/(?:firebasestorage\.googleapis\.com|storage\.googleapis\.com)\//u, async (route) => {
+    directStorageRequests += 1;
+    await route.abort("blockedbyclient");
+  });
+  await context.route(/\/api\/photos\/public(?:\?|\/)/u, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.includes("/media/")) {
+      gatewayRequests += 1;
+      await route.fulfill({ status: 200, contentType: "image/png", body: onePixelPng });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        photos: [{
+          id: "photo-1",
+          caption: "Drive practice",
+          altText: "Drive practice progress",
+          category: "Practice",
+          publicUrl: "/api/photos/public/media/photo-1/original",
+          thumbnailUrl: "/api/photos/public/media/photo-1/thumbnail",
+        }],
+        hasMore: false,
+        nextCursor: null,
+      }),
+    });
+  });
+
+  await page.goto("/gallery", { waitUntil: "networkidle" });
+  const thumbnail = page.getByRole("img", { name: "Drive practice progress" }).first();
+  await expect(thumbnail).toBeVisible();
+  await expect.poll(() => thumbnail.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+  await thumbnail.click();
+  const lightboxImage = page.getByRole("dialog").getByRole("img", { name: "Drive practice progress" });
+  await expect(lightboxImage).toBeVisible();
+  await expect.poll(() => lightboxImage.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+  expect(gatewayRequests).toBeGreaterThanOrEqual(2);
+  expect(directStorageRequests).toBe(0);
+});

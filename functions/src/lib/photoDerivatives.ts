@@ -32,14 +32,11 @@ export interface GeneratedPhotoDerivatives {
 
 export interface StoredPhotoAssets {
   storagePath: string;
-  publicUrl: string;
   thumbnailPath: string;
-  thumbnailUrl: string;
   thumbnailWidth: number;
   thumbnailHeight: number;
   thumbnailFileSize: number;
   mediumPath: string;
-  mediumUrl: string;
   mediumWidth: number;
   mediumHeight: number;
   mediumFileSize: number;
@@ -49,7 +46,7 @@ export interface StoredPhotoAssets {
 
 export type StoredDerivativeAssets = Omit<
   StoredPhotoAssets,
-  "storagePath" | "publicUrl"
+  "storagePath"
 >;
 
 interface StorageFile {
@@ -80,26 +77,28 @@ function positiveInteger(value: unknown): number | null {
 }
 
 type PhotoDerivativeData = Partial<Pick<StoredPhotoAssets,
-  | "thumbnailUrl"
   | "thumbnailWidth"
   | "thumbnailHeight"
-  | "mediumUrl"
   | "mediumWidth"
   | "mediumHeight"
   | "width"
   | "height"
->> & Record<string, unknown>;
+>> & {
+  thumbnailUrl?: unknown;
+  mediumUrl?: unknown;
+} & Record<string, unknown>;
 
 export function photoDerivativeDtoFields(data: PhotoDerivativeData | StoredPhotoAssets) {
+  const source = data as PhotoDerivativeData;
   return {
-    thumbnailUrl: safeHttpsUrl(data.thumbnailUrl),
-    thumbnailWidth: positiveInteger(data.thumbnailWidth),
-    thumbnailHeight: positiveInteger(data.thumbnailHeight),
-    mediumUrl: safeHttpsUrl(data.mediumUrl),
-    mediumWidth: positiveInteger(data.mediumWidth),
-    mediumHeight: positiveInteger(data.mediumHeight),
-    width: positiveInteger(data.width),
-    height: positiveInteger(data.height),
+    thumbnailUrl: safeHttpsUrl(source.thumbnailUrl),
+    thumbnailWidth: positiveInteger(source.thumbnailWidth),
+    thumbnailHeight: positiveInteger(source.thumbnailHeight),
+    mediumUrl: safeHttpsUrl(source.mediumUrl),
+    mediumWidth: positiveInteger(source.mediumWidth),
+    mediumHeight: positiveInteger(source.mediumHeight),
+    width: positiveInteger(source.width),
+    height: positiveInteger(source.height),
   };
 }
 
@@ -186,10 +185,6 @@ export async function generatePhotoDerivatives(input: Buffer): Promise<Generated
   };
 }
 
-export function firebaseStoragePublicUrl(bucketName: string, path: string): string {
-  return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(path)}?alt=media`;
-}
-
 export async function storePhotoAssets(
   bucket: StorageBucket,
   original: { path: string; mimeType: string; metadata?: Record<string, string> },
@@ -234,14 +229,11 @@ export async function storePhotoAssets(
 
   return {
     storagePath: original.path,
-    publicUrl: firebaseStoragePublicUrl(bucket.name, original.path),
     thumbnailPath,
-    thumbnailUrl: firebaseStoragePublicUrl(bucket.name, thumbnailPath),
     thumbnailWidth: derivatives.thumbnail.width,
     thumbnailHeight: derivatives.thumbnail.height,
     thumbnailFileSize: derivatives.thumbnail.fileSize,
     mediumPath,
-    mediumUrl: firebaseStoragePublicUrl(bucket.name, mediumPath),
     mediumWidth: derivatives.medium.width,
     mediumHeight: derivatives.medium.height,
     mediumFileSize: derivatives.medium.fileSize,
@@ -284,12 +276,10 @@ export async function storeGeneratedPhotoDerivatives(
   }
   return {
     thumbnailPath,
-    thumbnailUrl: firebaseStoragePublicUrl(bucket.name, thumbnailPath),
     thumbnailWidth: derivatives.thumbnail.width,
     thumbnailHeight: derivatives.thumbnail.height,
     thumbnailFileSize: derivatives.thumbnail.fileSize,
     mediumPath,
-    mediumUrl: firebaseStoragePublicUrl(bucket.name, mediumPath),
     mediumWidth: derivatives.medium.width,
     mediumHeight: derivatives.medium.height,
     mediumFileSize: derivatives.medium.fileSize,

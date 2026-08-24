@@ -40,6 +40,7 @@ export interface EventRevision {
   description?: string;
   category: "internal" | "outreach" | "competition";
   coverImage?: string;
+  coverPhotoId?: string | null;
   isPotluck?: number;
   isVolunteer?: number;
   isDeleted?: number;
@@ -109,6 +110,7 @@ export function useEventEditor({
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState<"internal" | "outreach" | "competition">("internal");
   const [formCoverImage, setFormCoverImage] = useState("");
+  const [formCoverPhotoId, setFormCoverPhotoId] = useState("");
   const [formIsPotluck, setFormIsPotluck] = useState<number>(0);
   const [formIsVolunteer, setFormIsVolunteer] = useState<number>(0);
   const [formStatus, setFormStatus] = useState<"published" | "pending" | "draft">("published");
@@ -188,6 +190,7 @@ export function useEventEditor({
         setFormDescription(normalizeForMarkdownEditor(source.description));
         setFormCategory(source.category);
         setFormCoverImage(source.coverImage || "");
+        setFormCoverPhotoId(source.coverPhotoId || "");
         setFormIsPotluck(source.isPotluck || 0);
         setFormIsVolunteer(source.isVolunteer || 0);
         setFormStatus(eventToEdit.status || "published");
@@ -209,6 +212,7 @@ export function useEventEditor({
         setFormDescription("");
         setFormCategory("internal");
         setFormCoverImage("");
+        setFormCoverPhotoId("");
         setFormIsPotluck(0);
         setFormIsVolunteer(0);
         setFormStatus(canPublishDirectly ? "published" : "pending");
@@ -265,9 +269,18 @@ export function useEventEditor({
       (snapshot) => {
         const list = snapshot.docs.map((docSnap) => {
           const data = docSnap.data();
+          const sourcePhotoId =
+            typeof data.sourcePhotoId === "string" && data.sourcePhotoId
+              ? data.sourcePhotoId
+              : docSnap.id;
+          const encodedPhotoId = encodeURIComponent(sourcePhotoId);
+          const mediaBase = `/api/photos/admin/media/${encodedPhotoId}`;
           return {
             id: docSnap.id,
             ...data,
+            url: `${mediaBase}/original`,
+            thumbnailUrl: `${mediaBase}/thumbnail`,
+            mediumUrl: `${mediaBase}/medium`,
             publicationStatus:
               data.publicationStatus === "published" ? "published" : "pending",
           } as EventPhoto;
@@ -305,6 +318,7 @@ export function useEventEditor({
       setFormDescription(normalizeForMarkdownEditor(source.description));
       setFormCategory(source.category);
       setFormCoverImage(source.coverImage || "");
+      setFormCoverPhotoId(source.coverPhotoId || "");
       setFormIsPotluck(source.isPotluck || 0);
       setFormIsVolunteer(source.isVolunteer || 0);
       setOperationError(null);
@@ -384,7 +398,8 @@ export function useEventEditor({
       location: selectedLocation?.name,
       description: formDescription.trim() || undefined,
       category: formCategory,
-      coverImage: formCoverImage || undefined,
+      coverImage: formCoverPhotoId ? undefined : formCoverImage || undefined,
+      coverPhotoId: formCoverPhotoId || undefined,
       isPotluck: formIsPotluck === 1 ? 1 : 0,
       isVolunteer: formIsVolunteer === 1 ? 1 : 0,
       status: canPublishDirectly ? formStatus : "pending",
@@ -412,6 +427,7 @@ export function useEventEditor({
           description: newEvent.description ?? null,
           category: newEvent.category,
           coverImage: newEvent.coverImage ?? null,
+          coverPhotoId: newEvent.coverPhotoId ?? null,
           isPotluck: newEvent.isPotluck ?? 0,
           isVolunteer: newEvent.isVolunteer ?? 0,
         };
@@ -466,6 +482,7 @@ export function useEventEditor({
     setFormDescription(normalizeForMarkdownEditor(rev.description));
     setFormCategory(rev.category);
     setFormCoverImage(rev.coverImage || "");
+    setFormCoverPhotoId(rev.coverPhotoId || "");
     setFormIsPotluck(rev.isPotluck || 0);
     setFormIsVolunteer(rev.isVolunteer || 0);
     setRevertAlert(
@@ -603,6 +620,8 @@ export function useEventEditor({
     setFormCategory,
     formCoverImage,
     setFormCoverImage,
+    formCoverPhotoId,
+    setFormCoverPhotoId,
     formIsPotluck,
     setFormIsPotluck,
     formIsVolunteer,

@@ -50,6 +50,7 @@ export interface DocRecord {
   author?: string;
   date?: string;
   thumbnail?: string;
+  mediaPhotoIds?: string[];
   updatedAt?: string;
   original_authorNickname?: string;
   original_authorAvatar?: string;
@@ -80,6 +81,7 @@ export interface DocRevision {
   author?: string;
   date?: string;
   thumbnail?: string;
+  mediaPhotoIds?: string[];
 }
 
 export interface SaveDocumentOptions {
@@ -134,6 +136,11 @@ export function mapDocumentSnapshot(
     author: typeof data.author === "string" ? data.author : "",
     date: typeof data.date === "string" ? data.date : "",
     thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : "",
+    mediaPhotoIds: Array.isArray(data.mediaPhotoIds)
+      ? data.mediaPhotoIds.filter((value): value is string =>
+          typeof value === "string" && /^[A-Za-z0-9_-]{1,300}$/.test(value),
+        ).slice(0, 100)
+      : [],
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : "",
     original_authorNickname:
       typeof data.original_authorNickname === "string"
@@ -295,6 +302,7 @@ export const useDocumentSync = (
           author: payload.author || "",
           date: payload.date || "",
           thumbnail: payload.thumbnail || "",
+          mediaPhotoIds: payload.mediaPhotoIds || [],
           editedBy: user.uid,
           editedByName: userNickname || user.displayName || "Anonymous Member",
           editedByAvatar:

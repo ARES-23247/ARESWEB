@@ -205,12 +205,12 @@ export default function EventDetailPage() {
           }
           const thumbnailUrl =
             typeof record.thumbnailUrl === "string" &&
-            record.thumbnailUrl.startsWith("https://")
+            (record.thumbnailUrl.startsWith("https://") || record.thumbnailUrl.startsWith("/api/"))
               ? record.thumbnailUrl
               : null;
           const mediumUrl =
             typeof record.mediumUrl === "string" &&
-            record.mediumUrl.startsWith("https://")
+            (record.mediumUrl.startsWith("https://") || record.mediumUrl.startsWith("/api/"))
               ? record.mediumUrl
               : null;
           return {

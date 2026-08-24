@@ -11,6 +11,7 @@ import type {
   ManagedAlbum,
   ManagedPhoto,
 } from "@/lib/media";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 import {
   PhotoManagementEmpty,
   PhotoManagementFailure,
@@ -261,7 +262,7 @@ export default function PhotoLibraryPanel({
                 className="block aspect-video w-full bg-black focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 aria-label={`Open ${photo.caption || "team photo"} details`}
               >
-                <img
+                <AuthenticatedImage
                   src={photo.thumbnailUrl || photo.publicUrl}
                   alt={photo.altText || "Team photo; alt text needed"}
                   loading="lazy"
