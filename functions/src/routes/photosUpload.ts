@@ -14,6 +14,7 @@ import {
   photoDerivativeDtoFields,
   storePhotoAssets,
 } from "../lib/photoDerivatives";
+import { managedPhotoGatewayUrls } from "../lib/managedPhotoMedia";
 
 const router = express.Router();
 
@@ -161,7 +162,6 @@ router.post(
         success: true,
         photo: {
           id: existingPhotoDoc.id,
-          publicUrl: existingPhotoData.publicUrl,
           caption: existingPhotoData.caption || "",
           altText: existingPhotoData.altText || "",
           labels: Array.isArray(existingPhotoData.labels)
@@ -174,6 +174,7 @@ router.post(
           isSynced: Boolean(existingPhotoData.googleMediaItemId),
           isArchived: false,
           ...photoDerivativeDtoFields(existingPhotoData),
+          ...managedPhotoGatewayUrls(existingPhotoDoc.id, "admin"),
         },
         cached: true,
       });
@@ -267,7 +268,6 @@ router.post(
       success: true,
       photo: {
         id: docId,
-        publicUrl: storedAssets.publicUrl,
         caption,
         altText: "",
         labels,
@@ -278,6 +278,7 @@ router.post(
         isSynced: false,
         isArchived: false,
         ...photoDerivativeDtoFields(storedAssets),
+        ...managedPhotoGatewayUrls(docId, "admin"),
       },
     });
   }),

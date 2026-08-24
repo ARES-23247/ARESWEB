@@ -63,6 +63,7 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(csp).toContain("style-src-attr 'unsafe-inline'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("worker-src 'self' blob:");
+    expect(csp).toContain("img-src 'self' blob: data:");
     expect(csp).toContain("upgrade-insecure-requests");
     expect(csp).toContain("object-src 'none'");
     expect(indexHtml).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);

@@ -5,6 +5,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Link as LinkIcon } from "lucide-react";
 import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 import { SIM_COMPONENTS, SIM_TAG_NAMES } from "../generated/sim-registry";
 
 // ── Lazy-loaded Non-Sim Components ─────────────────────────────────────
@@ -209,7 +210,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
             );
           }
           return (
-            <img
+            <AuthenticatedImage
               src={safeUrl}
               alt={alt || ""}
               className="my-6 rounded-lg border border-white/10 max-w-full h-auto"

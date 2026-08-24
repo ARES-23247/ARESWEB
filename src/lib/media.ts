@@ -53,6 +53,7 @@ export interface ManagedAlbum {
   description: string;
   category: AlbumCategory;
   coverImageUrl: string;
+  coverPhotoId?: string | null;
   isPublic: boolean;
   mediaCount: number;
   createdAt: string;

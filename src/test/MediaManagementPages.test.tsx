@@ -759,6 +759,7 @@ describe("media management pages", () => {
             description: "Event photos",
             category: "Competition",
             coverImageUrl: "",
+            coverPhotoId: null,
             isPublic: true,
           }),
         }),

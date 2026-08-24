@@ -39,6 +39,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/managedPhotoMedia.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/bluesky.ts": {
           lines: 85,
           functions: 100,

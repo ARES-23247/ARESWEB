@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import calendarRouter, { ensureCalendarPublisher } from "../calendar";
-import { adminDb } from "../../lib/firebase-admin";
+import { adminDb, adminStorage } from "../../lib/firebase-admin";
+
+const { streamPipeline } = vi.hoisted(() => ({ streamPipeline: vi.fn() }));
+vi.mock("node:stream/promises", () => ({ pipeline: streamPipeline }));
 
 vi.mock("../../lib/firebase-admin", () => {
   const query = {
@@ -68,6 +71,12 @@ vi.mock("../../lib/firebase-admin", () => {
     set: vi.fn(),
   };
   const getAll = vi.fn();
+  const storageGetMetadata = vi.fn();
+  const storageCreateReadStream = vi.fn(() => ({ kind: "calendar-photo-stream" }));
+  const storageFile = vi.fn(() => ({
+    getMetadata: storageGetMetadata,
+    createReadStream: storageCreateReadStream,
+  }));
   return {
     adminDb: {
       collection: vi.fn(() => collectionRef),
@@ -89,7 +98,13 @@ vi.mock("../../lib/firebase-admin", () => {
     },
       __transaction: transaction,
       __getAll: getAll,
-  },
+    },
+    adminStorage: {
+      bucket: vi.fn(() => ({ file: storageFile, name: "ares-test.firebasestorage.app" })),
+      __file: storageFile,
+      __getMetadata: storageGetMetadata,
+      __createReadStream: storageCreateReadStream,
+    },
   };
 });
 
@@ -128,6 +143,8 @@ describe("calendar API", () => {
     send: ReturnType<typeof vi.fn>;
     setHeader: ReturnType<typeof vi.fn>;
     status: ReturnType<typeof vi.fn>;
+    set: ReturnType<typeof vi.fn>;
+    end: ReturnType<typeof vi.fn>;
   };
   let next: ReturnType<typeof vi.fn>;
   let collectionRef: any;
@@ -148,6 +165,8 @@ describe("calendar API", () => {
       send: vi.fn(),
       setHeader: vi.fn(),
       status: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      end: vi.fn().mockReturnThis(),
     };
     next = vi.fn();
     collectionRef = adminDb.collection("events") as any;
@@ -162,6 +181,9 @@ describe("calendar API", () => {
     documentRef.set.mockResolvedValue(undefined);
     documentRef.update.mockResolvedValue(undefined);
     batch.commit.mockResolvedValue(undefined);
+    (adminDb as any).__photo.get.mockResolvedValue({ exists: false, data: () => undefined });
+    (adminStorage as any).__getMetadata.mockResolvedValue([{ contentType: "image/jpeg", etag: '"event-photo"' }]);
+    streamPipeline.mockResolvedValue(undefined);
     documentRef.collection("photos").get.mockResolvedValue({ docs: [] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({ docs: [] });
     (adminDb as any).__occurrences.docGet.mockResolvedValue({
@@ -398,9 +420,7 @@ describe("calendar API", () => {
         {
           id: "photo-safe",
           data: () => ({
-            url: "https://images.example.test/practice.jpg",
-            thumbnailUrl: "https://images.example.test/practice-thumb.webp",
-            mediumUrl: "javascript:alert(1)",
+            sourcePhotoId: "photo-safe",
             filename: "Drive practice.jpg",
             uploadedBy: "student-private-id",
             uploadedAt: "2026-08-10T12:00:00.000Z",
@@ -419,8 +439,9 @@ describe("calendar API", () => {
         {
           id: "photo-unsafe",
           data: () => ({
-            url: "http://images.example.test/unsafe.jpg",
+            sourcePhotoId: "bad/path",
             isDeleted: 0,
+            publicationStatus: "published",
           }),
         },
       ],
@@ -435,9 +456,9 @@ describe("calendar API", () => {
       photos: [
         {
           id: "photo-safe",
-          url: "https://images.example.test/practice.jpg",
-          thumbnailUrl: "https://images.example.test/practice-thumb.webp",
-          mediumUrl: null,
+          url: "/api/calendar/events/generated-1/photos/photo-safe/media/original",
+          thumbnailUrl: "/api/calendar/events/generated-1/photos/photo-safe/media/thumbnail",
+          mediumUrl: "/api/calendar/events/generated-1/photos/photo-safe/media/medium",
           filename: "Drive practice.jpg",
           occurrenceDate: null,
         },
@@ -447,6 +468,103 @@ describe("calendar API", () => {
     expect(payload.photos[0]).not.toHaveProperty("uploadedBy");
     expect(payload.photos[0]).not.toHaveProperty("uploadedAt");
     expect(payload.photos[0]).not.toHaveProperty("storagePath");
+  });
+
+  it("streams a published event attachment through its managed source photo", async () => {
+    req.params = { id: "event-1", photoId: "association-1", variant: "medium" };
+    req.headers = {};
+    documentRef.get
+      .mockResolvedValueOnce({ exists: true, data: () => eventDocument("event-1").data() })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ storagePath: "gallery/source.jpg", mediumPath: "gallery/source-medium.webp", mimeType: "image/jpeg", isDeleted: 0 }),
+      });
+    (adminDb as any).__photo.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ sourcePhotoId: "source-1", publicationStatus: "published", isDeleted: 0 }),
+    });
+
+    await handler("/events/:id/photos/:photoId/media/:variant", "get")(req, res, next);
+
+    expect((adminStorage as any).__file).toHaveBeenCalledWith("gallery/source-medium.webp");
+    expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
+      "Content-Type": "image/jpeg",
+      "Cache-Control": expect.stringContaining("public"),
+    }));
+    expect(streamPipeline).toHaveBeenCalledWith(
+      (adminStorage as any).__createReadStream.mock.results.at(-1)?.value,
+      res,
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("streams a published managed event cover without exposing its storage path", async () => {
+    req.params = { id: "event-1" };
+    req.headers = {};
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1", { coverPhotoId: "cover-1" }).data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          storagePath: "gallery/cover.jpg",
+          mediumPath: "gallery/cover-medium.webp",
+          mimeType: "image/jpeg",
+          isDeleted: 0,
+        }),
+      });
+
+    await handler("/events/:id/cover", "get")(req, res, next);
+
+    expect((adminStorage as any).__file).toHaveBeenCalledWith("gallery/cover-medium.webp");
+    expect(res.set).toHaveBeenCalledWith(expect.objectContaining({
+      "Cache-Control": expect.stringContaining("public"),
+    }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("uses an occurrence-specific managed cover when one is configured", async () => {
+    req.params = { id: "event-1" };
+    req.query = { occurrence: "2026-08-20" };
+    req.headers = {};
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1", { coverPhotoId: "series-cover" }).data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ storagePath: "gallery/session-cover.jpg", mimeType: "image/jpeg", isDeleted: 0 }),
+      });
+    (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ overrides: { coverPhotoId: "session-cover", coverImage: null } }),
+    });
+
+    await handler("/events/:id/cover", "get")(req, res, next);
+
+    expect((adminStorage as any).__file).toHaveBeenCalledWith("gallery/session-cover.jpg");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("does not stream pending event attachments", async () => {
+    req.params = { id: "event-1", photoId: "association-1", variant: "original" };
+    req.headers = {};
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1").data(),
+    });
+    (adminDb as any).__photo.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ sourcePhotoId: "source-1", publicationStatus: "pending", isDeleted: 0 }),
+    });
+
+    await handler("/events/:id/photos/:photoId/media/:variant", "get")(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404, code: "PHOTO_NOT_FOUND" }));
+    expect((adminStorage as any).__file).not.toHaveBeenCalled();
   });
 
   it("associates only a trusted imported photo and leaves member submissions pending", async () => {
@@ -460,9 +578,8 @@ describe("calendar API", () => {
       .mockResolvedValueOnce({
         exists: true,
         data: () => ({
-          publicUrl: "https://storage.googleapis.com/event.jpg",
-          thumbnailUrl: "https://storage.googleapis.com/event-thumb.webp",
-          mediumUrl: "javascript:alert(1)",
+          storagePath: "gallery/event.jpg",
+          thumbnailPath: "gallery/event-thumb.webp",
           originalFilename: "Progress.jpg",
           isDeleted: 0,
         }),
@@ -474,8 +591,6 @@ describe("calendar API", () => {
       expect.anything(),
       expect.objectContaining({
         sourcePhotoId: "photo-1",
-        url: "https://storage.googleapis.com/event.jpg",
-        mediumUrl: null,
         publicationStatus: "pending",
         uploadedByUid: "member-1",
       }),
@@ -500,7 +615,7 @@ describe("calendar API", () => {
       .mockResolvedValueOnce({
         exists: true,
         data: () => ({
-          publicUrl: "https://storage.googleapis.com/event.jpg",
+          storagePath: "gallery/event.jpg",
           originalFilename: "Progress.jpg",
           isDeleted: 0,
         }),
@@ -710,6 +825,21 @@ describe("calendar API", () => {
     );
     expect(batch.commit).not.toHaveBeenCalled();
     expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it("rejects new direct URLs to the managed Storage bucket", async () => {
+    req.body = {
+      title: "Direct cover",
+      dateStart: "2026-09-10T18:00:00.000Z",
+      category: "internal",
+      coverImage: "https://storage.googleapis.com/ares-test.firebasestorage.app/gallery/cover.jpg",
+    };
+    await handler("/manage", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      status: 400,
+      code: "DIRECT_STORAGE_URL",
+    }));
+    expect(batch.commit).not.toHaveBeenCalled();
   });
 
   it("allows only calendar publishers through the lifecycle middleware", () => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiError } from "../middleware/errorHandler";
+import { managedPhotoGatewayUrls } from "../lib/managedPhotoMedia";
 
 export const eventStatusSchema = z.enum(["published", "pending", "draft"]);
 const eventCategorySchema = z.enum(["internal", "outreach", "competition"]);
@@ -82,6 +83,10 @@ export const occurrenceUpdateSchema = z
       .url()
       .refine((value) => value.startsWith("https://"), "URL must use HTTPS")
       .nullable(),
+    coverPhotoId: boundedText(300)
+      .regex(/^[A-Za-z0-9_-]+$/)
+      .nullable()
+      .optional(),
     isPotluck: z.union([z.literal(0), z.literal(1)]),
     isVolunteer: z.union([z.literal(0), z.literal(1)]),
   })
@@ -211,7 +216,6 @@ function applyOccurrenceOverrides<T extends ReturnType<typeof eventDto>>(
     "dateEnd",
     "description",
     "category",
-    "coverImage",
     "isPotluck",
     "isVolunteer",
   ];
@@ -221,6 +225,16 @@ function applyOccurrenceOverrides<T extends ReturnType<typeof eventDto>>(
   if ("locationId" in dto) {
     if ("locationId" in overrides) result.locationId = overrides.locationId;
     if ("location" in overrides) result.location = overrides.location;
+  }
+  if ("coverImage" in overrides) result.coverImage = overrides.coverImage;
+  if ("coverPhotoId" in overrides) {
+    const coverPhotoId = overrides.coverPhotoId;
+    if ("coverPhotoId" in dto) result.coverPhotoId = coverPhotoId;
+    if (coverPhotoId) {
+      result.coverImage = "coverPhotoId" in dto
+        ? managedPhotoGatewayUrls(coverPhotoId, "admin").publicUrl
+        : `/api/calendar/events/${encodeURIComponent(dto.id)}/cover?occurrence=${encodeURIComponent(String(result.occurrenceDate ?? ""))}`;
+    }
   }
   return result as T;
 }
@@ -242,6 +256,7 @@ function seriesDefaultsForOccurrence<T extends ReturnType<typeof eventDto>>(
     defaults.locationId = dto.locationId;
     defaults.location = dto.location;
   }
+  if ("coverPhotoId" in dto) defaults.coverPhotoId = dto.coverPhotoId;
   return defaults;
 }
 
@@ -304,6 +319,7 @@ export function occurrenceOverridesForInput(
   for (const key of Object.keys(
     occurrenceUpdateSchema.shape,
   ) as (keyof OccurrenceUpdateInput)[]) {
+    if (!(key in input)) continue;
     const baseValue = base[key] ?? null;
     if (input[key] !== baseValue)
       Object.assign(overrides, { [key]: input[key] });
@@ -321,6 +337,7 @@ export const eventWriteSchema = z
     description: optionalText(5000),
     category: eventCategorySchema,
     coverImage: optionalHttpsUrl,
+    coverPhotoId: boundedText(300).regex(/^[A-Za-z0-9_-]+$/).optional(),
     isPotluck: z.union([z.literal(0), z.literal(1)]).optional(),
     isVolunteer: z.union([z.literal(0), z.literal(1)]).optional(),
     status: eventStatusSchema.optional(),
@@ -372,6 +389,7 @@ export interface EventDocument {
   description?: unknown;
   category?: unknown;
   coverImage?: unknown;
+  coverPhotoId?: unknown;
   isPotluck?: unknown;
   isVolunteer?: unknown;
   isDeleted?: unknown;
@@ -433,6 +451,10 @@ export function eventDto(
   includeLifecycle: boolean,
 ) {
   const recurrence = readRecurrence(data.recurrence);
+  const candidateCoverPhotoId = readString(data.coverPhotoId);
+  const coverPhotoId = candidateCoverPhotoId && /^[A-Za-z0-9_-]{1,300}$/.test(candidateCoverPhotoId)
+    ? candidateCoverPhotoId
+    : null;
   const base = {
     id,
     title: readString(data.title) ?? "Untitled event",
@@ -447,7 +469,11 @@ export function eventDto(
         : data.category === "competition"
           ? ("competition" as const)
           : ("internal" as const),
-    coverImage: readString(data.coverImage),
+    coverImage: coverPhotoId
+      ? includeLifecycle
+        ? managedPhotoGatewayUrls(coverPhotoId, "admin").publicUrl
+        : `/api/calendar/events/${encodeURIComponent(id)}/cover`
+      : readString(data.coverImage),
     isPotluck: readFlag(data.isPotluck),
     isVolunteer: readFlag(data.isVolunteer),
     ...(recurrence ? { recurrence } : {}),
@@ -456,6 +482,7 @@ export function eventDto(
   if (!includeLifecycle) return base;
   return {
     ...base,
+    coverPhotoId,
     locationId: readString(data.locationId),
     location: readString(data.location),
     status: eventStatusSchema.safeParse(data.status).success
@@ -491,21 +518,24 @@ export function publicVenueDto(data: LocationDocument) {
   return { name, address };
 }
 
-export function eventPhotoDto(id: string, data: EventPhotoDocument) {
-  const url = readString(data.url);
+export function eventPhotoDto(
+  eventId: string,
+  id: string,
+  data: EventPhotoDocument,
+) {
+  const sourcePhotoId = readString(data.sourcePhotoId) ?? id;
   if (
-    !url?.startsWith("https://") ||
+    !/^[A-Za-z0-9_-]{1,300}$/.test(sourcePhotoId) ||
     data.isDeleted === 1 ||
     data.publicationStatus !== "published"
   )
     return null;
-  const thumbnailUrl = readString(data.thumbnailUrl);
-  const mediumUrl = readString(data.mediumUrl);
+  const base = `/api/calendar/events/${encodeURIComponent(eventId)}/photos/${encodeURIComponent(id)}/media`;
   return {
     id,
-    url,
-    thumbnailUrl: thumbnailUrl?.startsWith("https://") ? thumbnailUrl : null,
-    mediumUrl: mediumUrl?.startsWith("https://") ? mediumUrl : null,
+    url: `${base}/original`,
+    thumbnailUrl: `${base}/thumbnail`,
+    mediumUrl: `${base}/medium`,
     filename: readString(data.filename) ?? "Event photo",
     occurrenceDate: isOccurrenceDate(data.occurrenceDate)
       ? data.occurrenceDate
@@ -561,6 +591,7 @@ export function eventWriteData(
     description: input.description ?? null,
     category: input.category,
     coverImage: input.coverImage ?? null,
+    coverPhotoId: input.coverPhotoId ?? null,
     isPotluck: input.isPotluck ?? 0,
     isVolunteer: input.isVolunteer ?? 0,
     recurrence: input.recurrence ?? null,

@@ -85,6 +85,7 @@ export default function DashboardPhotosPage() {
     description: "",
     category: "Competition",
     coverImageUrl: "",
+    coverPhotoId: "",
     isPublic: false,
   });
   const [savingAlbum, setSavingAlbum] = useState(false);
@@ -231,6 +232,7 @@ export default function DashboardPhotosPage() {
       description: album?.description || "",
       category: album?.category || "Competition",
       coverImageUrl: album?.coverImageUrl || "",
+      coverPhotoId: album?.coverPhotoId || "",
       isPublic: album?.isPublic || false,
     });
     setEditorError(null);
@@ -255,6 +257,7 @@ export default function DashboardPhotosPage() {
             description: albumDraft.description,
             category: albumDraft.category,
             coverImageUrl: albumDraft.coverImageUrl,
+            coverPhotoId: albumDraft.coverPhotoId || null,
             isPublic: albumDraft.isPublic,
           }),
         },

@@ -1,7 +1,7 @@
 import express, { NextFunction, Response } from "express";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
-import { adminDb } from "../lib/firebase-admin";
+import { adminDb, adminStorage } from "../lib/firebase-admin";
 import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
@@ -34,6 +34,14 @@ import {
   readOccurrenceOverrides,
   readString,
 } from "./calendarHelpers";
+import {
+  managedPhotoGatewayUrls,
+  parseManagedPhotoVariant,
+  safeManagedPhotoPath,
+  streamManagedPhoto,
+  type ManagedPhotoRecord,
+} from "../lib/managedPhotoMedia";
+import { firebaseStorageObjectFromUrl } from "../lib/publicMedia";
 
 /** Recurring sessions are materialized for a forward window from today. */
 const OCCURRENCE_WINDOW_DAYS = 56;
@@ -68,6 +76,27 @@ function todayYmd(): string {
 
 function futureYmd(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+async function requireManagedCoverPhoto(photoId: string | null | undefined): Promise<void> {
+  if (!photoId) return;
+  const snapshot = await adminDb.collection("imported_photos").doc(photoId).get();
+  const data = (snapshot.data() || {}) as ManagedPhotoRecord;
+  if (!snapshot.exists || data.isDeleted === 1 || !safeManagedPhotoPath(data.storagePath)) {
+    throw new ApiError(400, "Choose an available managed photo for the event cover.", "INVALID_COVER_PHOTO");
+  }
+}
+
+function rejectDirectManagedStorageUrl(url: string | null | undefined): void {
+  if (!url) return;
+  const object = firebaseStorageObjectFromUrl(url);
+  if (object?.bucket === adminStorage.bucket().name) {
+    throw new ApiError(
+      400,
+      "Choose the image from managed photos instead of saving a direct Storage URL.",
+      "DIRECT_STORAGE_URL",
+    );
+  }
 }
 
 interface OccurrenceState {
@@ -320,7 +349,7 @@ router.get(
       .limit(Math.min(200, limitValue * 4))
       .get();
     const photos = snapshot.docs
-      .map((document) => eventPhotoDto(document.id, document.data() as EventPhotoDocument))
+      .map((document) => eventPhotoDto(ref.id, document.id, document.data() as EventPhotoDocument))
       .filter((photo): photo is NonNullable<typeof photo> => photo !== null)
       .filter(
         (photo) =>
@@ -329,6 +358,71 @@ router.get(
       .slice(0, limitValue);
 
     res.json({ success: true, photos });
+  }),
+);
+
+router.get(
+  "/events/:id/cover",
+  asyncHandler(async (req, res) => {
+    const { ref, data, derivedOccurrence } = await getEvent(req.params.id, false);
+    const occurrenceValue = req.query.occurrence ?? derivedOccurrence;
+    let coverPhotoId = readString(data.coverPhotoId);
+    if (occurrenceValue !== undefined) {
+      if (!isOccurrenceDate(occurrenceValue)) {
+        throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
+      }
+      const exception = await ref.collection("occurrences").doc(occurrenceValue).get();
+      const overrides = readOccurrenceOverrides(exception.data()?.overrides);
+      if (Object.prototype.hasOwnProperty.call(overrides, "coverPhotoId")) {
+        coverPhotoId = overrides.coverPhotoId ?? null;
+      }
+    }
+    if (!coverPhotoId || !/^[A-Za-z0-9_-]{1,300}$/.test(coverPhotoId)) {
+      throw new ApiError(404, "Event cover not found.", "PHOTO_NOT_FOUND");
+    }
+    const source = await adminDb.collection("imported_photos").doc(coverPhotoId).get();
+    const sourceData = (source.data() || {}) as ManagedPhotoRecord;
+    if (!source.exists || sourceData.isDeleted === 1) {
+      throw new ApiError(404, "Event cover not found.", "PHOTO_NOT_FOUND");
+    }
+    await streamManagedPhoto(
+      res,
+      req.headers["if-none-match"],
+      sourceData,
+      "medium",
+      "public",
+    );
+  }),
+);
+
+router.get(
+  "/events/:id/photos/:photoId/media/:variant",
+  asyncHandler(async (req, res) => {
+    const { ref } = await getEvent(req.params.id, false);
+    const photoId = parseId(req.params.photoId, "photo");
+    const variant = parseManagedPhotoVariant(req.params.variant);
+    const association = await ref.collection("photos").doc(photoId).get();
+    const associationData = association.data() as EventPhotoDocument | undefined;
+    if (
+      !association.exists ||
+      !associationData ||
+      !eventPhotoDto(ref.id, photoId, associationData)
+    ) {
+      throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+    }
+    const sourcePhotoId = readString(associationData.sourcePhotoId) ?? photoId;
+    const source = await adminDb.collection("imported_photos").doc(sourcePhotoId).get();
+    const sourceData = (source.data() || {}) as ManagedPhotoRecord;
+    if (!source.exists || sourceData.isDeleted === 1) {
+      throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+    }
+    await streamManagedPhoto(
+      res,
+      req.headers["if-none-match"],
+      sourceData,
+      variant,
+      "public",
+    );
   }),
 );
 
@@ -354,16 +448,13 @@ router.post(
       .doc(input.photoId)
       .get();
     const source = sourceSnapshot.data() as Record<string, unknown> | undefined;
-    const url = readString(source?.publicUrl);
     if (
       !sourceSnapshot.exists ||
       source?.isDeleted === 1 ||
-      !url?.startsWith("https://")
+      !safeManagedPhotoPath(source?.storagePath)
     ) {
       throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
     }
-    const thumbnailUrl = readString(source?.thumbnailUrl);
-    const mediumUrl = readString(source?.mediumUrl);
     const originalFilename = readString(source?.originalFilename)?.trim();
     const timestamp = new Date().toISOString();
     const publicationStatus = canPublish(req.authorizationRole)
@@ -372,9 +463,6 @@ router.post(
     const photoRef = ref.collection("photos").doc(input.photoId);
     const photoData = {
       sourcePhotoId: input.photoId,
-      url,
-      thumbnailUrl: thumbnailUrl?.startsWith("https://") ? thumbnailUrl : null,
-      mediumUrl: mediumUrl?.startsWith("https://") ? mediumUrl : null,
       filename: originalFilename?.slice(0, 180) || "Event photo",
       occurrenceDate: input.occurrenceDate ?? null,
       uploadedBy: "ARES Member",
@@ -409,9 +497,9 @@ router.post(
       success: true,
       photo: {
         id: input.photoId,
-        url,
-        thumbnailUrl: photoData.thumbnailUrl,
-        mediumUrl: photoData.mediumUrl,
+        url: managedPhotoGatewayUrls(input.photoId, "admin").publicUrl,
+        thumbnailUrl: managedPhotoGatewayUrls(input.photoId, "admin").thumbnailUrl,
+        mediumUrl: managedPhotoGatewayUrls(input.photoId, "admin").mediumUrl,
         filename: photoData.filename,
         occurrenceDate: photoData.occurrenceDate,
         publicationStatus,
@@ -524,6 +612,8 @@ router.post(
   ensureTeamMember,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const input = parseBody(eventWriteSchema, req.body);
+    await requireManagedCoverPhoto(input.coverPhotoId);
+    rejectDirectManagedStorageUrl(input.coverImage);
     const status = canPublish(req.authorizationRole) ? (input.status ?? "published") : "pending";
     const document = adminDb.collection("events").doc();
     const timestamp = new Date().toISOString();
@@ -591,6 +681,8 @@ router.put(
   ensureTeamMember,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const input = parseBody(eventWriteSchema, req.body);
+    await requireManagedCoverPhoto(input.coverPhotoId);
+    rejectDirectManagedStorageUrl(input.coverImage);
     const { id, ref, data: currentData } = await getEvent(req.params.id, true);
     if (currentData.isDeleted === 1) {
       throw new ApiError(409, "Restore this event before editing it.", "EVENT_ARCHIVED");
@@ -766,6 +858,8 @@ router.put(
       throw new ApiError(400, "Occurrence date must be YYYY-MM-DD.", "INVALID_DATE");
     }
     const input = parseBody(occurrenceUpdateSchema, req.body);
+    await requireManagedCoverPhoto(input.coverPhotoId);
+    rejectDirectManagedStorageUrl(input.coverImage);
     const baseOccurrences = expandEventOccurrences(eventDto(id, data, true), data, {
       fromDate: date,
       toDate: date,

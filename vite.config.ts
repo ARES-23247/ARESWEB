@@ -161,6 +161,7 @@ export default defineConfig({
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
         "src/lib/localDateTime.ts",
+        "src/lib/documentMedia.ts",
         "src/lib/outreachExport.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
@@ -239,6 +240,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/localDateTime.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/documentMedia.ts": {
           lines: 85,
           functions: 100,
         },

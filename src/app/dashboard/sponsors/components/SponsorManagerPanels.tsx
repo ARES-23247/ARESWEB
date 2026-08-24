@@ -11,6 +11,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 export interface Sponsor {
   id: string;
@@ -195,7 +196,7 @@ export function SponsorList({
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 bg-black/45 border border-white/5 rounded-xl flex items-center justify-center p-1.5 shrink-0 overflow-hidden relative">
               {sponsor.logoUrl ? (
-                <img src={sponsor.logoUrl} alt={`${sponsor.name} logo`} className="w-full h-full object-contain" />
+                <AuthenticatedImage src={sponsor.logoUrl} alt={`${sponsor.name} logo`} className="w-full h-full object-contain" />
               ) : (
                 <Heart aria-hidden="true" className="text-marble/25" size={24} />
               )}

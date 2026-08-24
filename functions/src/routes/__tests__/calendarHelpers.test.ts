@@ -7,6 +7,7 @@ import {
   eventPhotoDto,
   eventWriteData,
   eventWriteSchema,
+  expandEventOccurrences,
   formatIcalDate,
   locationDto,
   locationWriteSchema,
@@ -100,8 +101,8 @@ describe("calendar route helpers", () => {
     expect(publicVenueDto({ name: "Private home", address: "private", isAddressPublic: 0, })).toBeNull();
     expect(publicVenueDto({ name: "Archived", address: "public", isAddressPublic: 1, isDeleted: 1, })).toBeNull();
 
-    expect(eventPhotoDto("photo-1", {
-      url: "https://images.example.test/practice.jpg",
+    expect(eventPhotoDto("event-1", "photo-1", {
+      sourcePhotoId: "source-1",
       filename: "Practice.jpg",
       uploadedBy: "private-user-id",
       uploadedAt: "2026-08-10T12:00:00.000Z",
@@ -109,27 +110,55 @@ describe("calendar route helpers", () => {
         publicationStatus: "published",
     })).toEqual({
       id: "photo-1",
-      url: "https://images.example.test/practice.jpg",
+      url: "/api/calendar/events/event-1/photos/photo-1/media/original",
       filename: "Practice.jpg",
-      thumbnailUrl: null,
-      mediumUrl: null,
+      thumbnailUrl: "/api/calendar/events/event-1/photos/photo-1/media/thumbnail",
+      mediumUrl: "/api/calendar/events/event-1/photos/photo-1/media/medium",
       occurrenceDate: null,
     });
-    expect(eventPhotoDto("photo-fallback", {
-      url: "https://images.example.test/photo.jpg",
+    expect(eventPhotoDto("event-1", "photo-fallback", {
         publicationStatus: "published",
     })).toEqual(expect.objectContaining({ filename: "Event photo" }));
-    expect(eventPhotoDto("photo-deleted", {
-      url: "https://images.example.test/deleted.jpg",
+    expect(eventPhotoDto("event-1", "photo-deleted", {
       isDeleted: 1,
     })).toBeNull();
-    expect(eventPhotoDto("photo-http", { url: "http://images.example.test/photo.jpg", })).toBeNull();
+    expect(eventPhotoDto("event-1", "photo-bad", { sourcePhotoId: "bad/path", publicationStatus: "published" })).toBeNull();
     expect(
-      eventPhotoDto("photo-pending", {
-        url: "https://images.example.test/photo.jpg",
+      eventPhotoDto("event-1", "photo-pending", {
         publicationStatus: "pending",
   }),
     ).toBeNull();
+  });
+
+  it("maps managed event covers to publication-aware gateways", () => {
+    expect(eventDto("event-1", { coverPhotoId: "photo-1" }, false)).toMatchObject({
+      coverImage: "/api/calendar/events/event-1/cover",
+    });
+    expect(eventDto("event-1", { coverPhotoId: "photo-1" }, true)).toMatchObject({
+      coverImage: "/api/photos/admin/media/photo-1/original",
+      coverPhotoId: "photo-1",
+    });
+
+    const [publicOccurrence] = expandEventOccurrences(
+      eventDto("event-1", {
+        title: "Practice",
+        dateStart: "2026-08-20T18:00:00.000Z",
+        coverPhotoId: "series-cover",
+      }, false),
+      {
+        dateStart: "2026-08-20T18:00:00.000Z",
+        recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+      },
+      {
+        fromDate: "2026-08-20",
+        toDate: "2026-08-20",
+        occurrenceOverrides: new Map([["2026-08-20", { coverPhotoId: "session-cover", coverImage: null }]]),
+      },
+    );
+    expect(publicOccurrence.coverImage).toBe(
+      "/api/calendar/events/event-1_2026-08-20/cover?occurrence=2026-08-20",
+    );
+    expect(publicOccurrence).not.toHaveProperty("coverPhotoId");
   });
 
   it("bounds queries, validates identifiers, roles, and formats iCal values", () => {

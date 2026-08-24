@@ -989,6 +989,12 @@ describe("Storage zero-trust rules", () => {
     await assertFails(getBytes(logo));
   });
 
+  it("denies direct reads from migrated event and editor prefixes", async () => {
+    const publicStorage = testEnvironment.unauthenticatedContext().storage();
+    await assertFails(getBytes(ref(publicStorage, "events/event-1/photos/photo-1.jpg")));
+    await assertFails(getBytes(ref(publicStorage, "editor/uploads/legacy-photo.jpg")));
+  });
+
   it("rejects retired direct CAD uploads for every role", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("mentor-user", "mentor");

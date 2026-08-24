@@ -5,11 +5,12 @@ import { authenticatedFetch } from "@/lib/api";
 import { usePhotoUpload } from "../hooks/usePhotoUpload";
 import ImageCropper from "./media/ImageCropper";
 import GooglePhotosImporter from "./media/GooglePhotosImporter";
+import AuthenticatedImage from "./media/AuthenticatedImage";
 
 interface PhotoPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (url: string, alt?: string) => void;
+  onSelect: (url: string, alt?: string, photoId?: string) => void;
   mode?: "all" | "imageOnly";
 }
 
@@ -26,6 +27,7 @@ interface GalleryAlbum {
   title: string;
   category: string;
   coverImageUrl?: string | null;
+  coverPhotoId?: string | null;
 }
 
 export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "all" }: PhotoPickerModalProps) {
@@ -37,6 +39,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [selectedGalleryUrl, setSelectedGalleryUrl] = useState("");
+  const [selectedGalleryPhotoId, setSelectedGalleryPhotoId] = useState("");
 
   // Gallery
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
@@ -96,9 +99,9 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
   // Local upload direct helper
   const handleUploadDirect = async (file: File) => {
     setError(null);
-    const downloadUrl = await uploadDirect(file);
-    if (downloadUrl) {
-      onSelect(downloadUrl, imageAlt || file.name.split(".")[0]);
+    const photo = await uploadDirect(file);
+    if (photo) {
+      onSelect(photo.publicUrl, imageAlt || file.name.split(".")[0], photo.id);
       onClose();
     }
   };
@@ -128,9 +131,9 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
   const handleSaveCroppedBlob = async (blob: Blob) => {
     setError(null);
-    const downloadUrl = await uploadCropped(blob, cropFileName);
-    if (downloadUrl) {
-      onSelect(downloadUrl, imageAlt);
+    const photo = await uploadCropped(blob, cropFileName);
+    if (photo) {
+      onSelect(photo.publicUrl, imageAlt, photo.id);
       setCropImageSrc(null);
       onClose();
     }
@@ -138,6 +141,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
   const handleSelectGalleryPhoto = (photo: GalleryPhoto) => {
     setSelectedGalleryUrl(photo.publicUrl);
+    setSelectedGalleryPhotoId(photo.id);
     let titleClean = photo.originalFilename || "image";
     titleClean = titleClean.replace(/\.[^/.]+$/, "");
     setImageAlt(titleClean);
@@ -145,7 +149,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
   const handleInsertGalleryPhotoDirect = () => {
     if (!selectedGalleryUrl) return;
-    onSelect(selectedGalleryUrl, imageAlt);
+    onSelect(selectedGalleryUrl, imageAlt, selectedGalleryPhotoId || undefined);
     onClose();
   };
 
@@ -160,7 +164,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(selectedGalleryUrl);
+      const res = await authenticatedFetch(selectedGalleryUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const reader = new FileReader();
       reader.onload = () => {
@@ -375,7 +380,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                               selectedGalleryUrl === photo.publicUrl ? "border-ares-gold ring-1 ring-ares-gold" : "border-white/10"
                             }`}
                           >
-                            <img
+                            <AuthenticatedImage
                               src={photo.thumbnailUrl || photo.publicUrl}
                               alt={photo.originalFilename}
                               className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
@@ -442,7 +447,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                           >
                             <div className="flex gap-2.5 items-start">
                               {album.coverImageUrl ? (
-                                <img
+                                <AuthenticatedImage
                                   src={album.coverImageUrl}
                                   alt=""
                                   className="w-12 h-12 rounded object-cover shrink-0"
@@ -461,7 +466,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                               type="button"
                               onClick={() => {
                                 if (mode === "imageOnly") {
-                                  onSelect(album.coverImageUrl || "", album.title);
+                                  onSelect(album.coverImageUrl || "", album.title, album.coverPhotoId || undefined);
                                 } else {
                                   onSelect(`[album:${album.id}]`, album.title);
                                 }

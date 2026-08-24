@@ -1,8 +1,10 @@
 import express from "express";
-import { adminDb, adminFieldValue } from "../lib/firebase-admin";
+import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { managedPhotoGatewayUrls, safeManagedPhotoPath, type ManagedPhotoRecord } from "../lib/managedPhotoMedia";
+import { firebaseStorageObjectFromUrl } from "../lib/publicMedia";
 
 const router = express.Router();
 const CATEGORIES = ["Robot Specs", "Outreach", "Competition", "CAD Design", "Practice"] as const;
@@ -13,6 +15,7 @@ interface AlbumRecord {
   description?: unknown;
   category?: unknown;
   coverImageUrl?: unknown;
+  coverPhotoId?: unknown;
   isPublic?: unknown;
   mediaCount?: unknown;
   createdAt?: unknown;
@@ -26,6 +29,7 @@ interface AlbumInput {
   description?: unknown;
   category?: unknown;
   coverImageUrl?: unknown;
+  coverPhotoId?: unknown;
   isPublic?: unknown;
 }
 
@@ -70,7 +74,14 @@ function albumDto(id: string, data: AlbumRecord) {
     title: typeof data.title === "string" ? data.title : "Untitled album",
     description: typeof data.description === "string" ? data.description : "",
     category: CATEGORIES.includes(data.category as AlbumCategory) ? data.category as AlbumCategory : "Practice" as const,
-    coverImageUrl: safeCover,
+    coverImageUrl: typeof data.coverPhotoId === "string"
+      && /^[A-Za-z0-9_-]{1,300}$/.test(data.coverPhotoId)
+      ? managedPhotoGatewayUrls(data.coverPhotoId, "admin").mediumUrl
+      : safeCover,
+    coverPhotoId: typeof data.coverPhotoId === "string"
+      && /^[A-Za-z0-9_-]{1,300}$/.test(data.coverPhotoId)
+      ? data.coverPhotoId
+      : null,
     isPublic: data.isPublic === true && data.isDeleted !== 1,
     mediaCount: typeof data.mediaCount === "number" ? Math.max(0, data.mediaCount) : 0,
     createdAt: typeof data.createdAt === "string" ? data.createdAt : "",
@@ -86,17 +97,46 @@ function parseInput(input: AlbumInput, partial = false) {
     description: string;
     category: AlbumCategory;
     coverImageUrl: string;
+    coverPhotoId: string | null;
     isPublic: boolean;
   }> = {};
   if (!partial || input.title !== undefined) result.title = text(input.title, "Title", 120, true);
   if (!partial || input.description !== undefined) result.description = text(input.description, "Description", 1_000);
   if (!partial || input.category !== undefined) result.category = category(input.category);
   if (!partial || input.coverImageUrl !== undefined) result.coverImageUrl = coverUrl(input.coverImageUrl);
+  if (!partial || input.coverPhotoId !== undefined) {
+    if (input.coverPhotoId !== undefined && input.coverPhotoId !== null
+      && (typeof input.coverPhotoId !== "string" || !/^[A-Za-z0-9_-]{1,300}$/.test(input.coverPhotoId))) {
+      throw new ApiError(400, "Choose a valid managed cover photo.");
+    }
+    result.coverPhotoId = typeof input.coverPhotoId === "string" ? input.coverPhotoId : null;
+  }
   if (!partial || input.isPublic !== undefined) {
     if (input.isPublic !== undefined && typeof input.isPublic !== "boolean") throw new ApiError(400, "Public visibility must be true or false.");
     result.isPublic = input.isPublic === true;
   }
   return result;
+}
+
+async function requireManagedCoverPhoto(photoId: string | null | undefined): Promise<void> {
+  if (!photoId) return;
+  const snapshot = await adminDb.collection("imported_photos").doc(photoId).get();
+  const data = (snapshot.data() || {}) as ManagedPhotoRecord;
+  if (!snapshot.exists || data.isDeleted === 1 || !safeManagedPhotoPath(data.storagePath)) {
+    throw new ApiError(400, "Choose an available managed photo for the album cover.", "INVALID_COVER_PHOTO");
+  }
+}
+
+function rejectDirectManagedStorageUrl(url: string | undefined): void {
+  if (!url) return;
+  const object = firebaseStorageObjectFromUrl(url);
+  if (object?.bucket === adminStorage.bucket().name) {
+    throw new ApiError(
+      400,
+      "Choose the image from managed photos instead of saving a direct Storage URL.",
+      "DIRECT_STORAGE_URL",
+    );
+  }
 }
 
 function slugify(title: string): string {
@@ -127,6 +167,8 @@ router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
 
 router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
   const input = parseInput(req.body as AlbumInput);
+  await requireManagedCoverPhoto(input.coverPhotoId);
+  rejectDirectManagedStorageUrl(input.coverImageUrl);
   const id = slugify(input.title!);
   const ref = adminDb.collection("albums").doc(id);
   const existing = await ref.get();
@@ -143,7 +185,10 @@ router.patch("/:albumId", ensureAdmin, asyncHandler(async (req, res) => {
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new ApiError(404, "Album not found.");
   if (snapshot.data()?.isDeleted === 1) throw new ApiError(409, "Restore the album before editing it.");
-  const update = { ...parseInput(req.body as AlbumInput, true), updatedAt: new Date().toISOString() };
+  const parsed = parseInput(req.body as AlbumInput, true);
+  await requireManagedCoverPhoto(parsed.coverPhotoId);
+  rejectDirectManagedStorageUrl(parsed.coverImageUrl);
+  const update = { ...parsed, updatedAt: new Date().toISOString() };
   await ref.set(update, { merge: true });
   res.json({ success: true, album: albumDto(albumId, { ...snapshot.data(), ...update }) });
 }));

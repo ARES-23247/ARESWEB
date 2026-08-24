@@ -3,9 +3,8 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     match /events/{eventId}/photos/{photoId} {
-      allow read: if true;
-      // Event media is validated, normalized, and written by the Admin SDK route.
-      allow write: if false;
+      // The read/write boundary is the publication-aware calendar API.
+      allow read, write: if false;
     }
 
     match /blog/{allPaths=**} {
@@ -24,10 +23,8 @@ service firebase.storage {
     }
 
     match /editor/uploads/{allPaths=**} {
-      allow read: if true;
-      // Sponsor and editor media must pass through the authenticated server
-      // upload routes, which validate bytes before using the Admin SDK.
-      allow write: if false;
+      // Sponsor and editor media must pass through same-origin API routes.
+      allow read, write: if false;
     }
 
     match /public-media/{allPaths=**} {

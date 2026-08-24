@@ -1,6 +1,7 @@
 import { Archive, FolderOpen, Pencil, Plus, RotateCcw } from "lucide-react";
 import { tabElementId, tabPanelId } from "@/components/AccessibleTabs";
 import type { ManagedAlbum } from "@/lib/media";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 import {
   PhotoManagementEmpty,
   PhotoManagementFailure,
@@ -103,7 +104,7 @@ export default function PhotoAlbumsPanel({
               className="overflow-hidden border border-white/10 bg-black/25"
             >
               {album.coverImageUrl ? (
-                <img
+                <AuthenticatedImage
                   src={album.coverImageUrl}
                   alt=""
                   loading="lazy"

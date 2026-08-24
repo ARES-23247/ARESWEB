@@ -4,6 +4,7 @@ import React from "react";
 import { MapPin, Image as ImageIcon, X, Shield } from "lucide-react";
 import { TeamLocation } from "./LocationManagerModal";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 interface ShiftScheduleEditorProps {
   formTitle: string;
@@ -245,7 +246,7 @@ export default function ShiftScheduleEditor({
         </div>
         {formCoverImage && (
           <div className="mt-3 relative w-48 h-28 border border-white/10 rounded-lg overflow-hidden group">
-            <img src={getSafeImageUrl(formCoverImage)} alt="Cover preview" className="w-full h-full object-cover" />
+            <AuthenticatedImage src={getSafeImageUrl(formCoverImage)} alt="Cover preview" className="w-full h-full object-cover" />
             {canEdit && (
               <button
                 type="button"

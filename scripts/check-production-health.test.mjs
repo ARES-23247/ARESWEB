@@ -3,9 +3,11 @@ import {
   applyHealthOriginOverride,
   buildHealthCheckUrl,
   parseArgs,
+  runPublicMediaHealth,
   runHealthCheck,
   runHealthChecks,
   validateHealthResponse,
+  validatePublicMediaSurface,
 } from "./check-production-health.mjs";
 
 function contractWith(checks) {
@@ -262,5 +264,78 @@ describe("health checker arguments", () => {
       "https://aresfirst-portal.web.app",
     );
     expect(original.health.primaryOrigin).toBe("https://aresfirst.org");
+  });
+});
+
+describe("publication-aware media health", () => {
+  const imageBytes = new Uint8Array([137, 80, 78, 71]);
+  const publicPhoto = {
+    id: "photo-1",
+    publicUrl: "/api/photos/public/media/photo-1/original",
+    thumbnailUrl: "/api/photos/public/media/photo-1/thumbnail",
+    mediumUrl: "/api/photos/public/media/photo-1/medium",
+  };
+
+  it("verifies an opaque DTO and a non-empty same-origin image response", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ photos: [publicPhoto] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(imageBytes, {
+        status: 200,
+        headers: {
+          "content-type": "image/png",
+          "cache-control": "public, max-age=300",
+          "x-content-type-options": "nosniff",
+        },
+      }));
+    await expect(validatePublicMediaSurface("https://aresfirst-portal.web.app", {
+      fetchImpl,
+      timeoutMs: 100,
+    })).resolves.toBe(true);
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      new URL("https://aresfirst-portal.web.app/api/photos/public/media/photo-1/thumbnail"),
+      expect.objectContaining({ redirect: "error" }),
+    );
+  });
+
+  it("rejects private fields and direct Storage URLs without fetching image bytes", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      photos: [{
+        ...publicPhoto,
+        publicUrl: "https://storage.googleapis.com/team/gallery/photo.jpg",
+        storagePath: "gallery/photo.jpg",
+      }],
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    await expect(validatePublicMediaSurface("https://aresfirst.org", { fetchImpl }))
+      .rejects.toThrow(/private media field/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries propagation failures before reporting a healthy media surface", async () => {
+    const healthyList = () => new Response(JSON.stringify({ photos: [publicPhoto] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    const healthyImage = () => new Response(imageBytes, {
+      status: 200,
+      headers: {
+        "content-type": "image/png",
+        "cache-control": "public, max-age=300",
+        "x-content-type-options": "nosniff",
+      },
+    });
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response("warming", { status: 503 }))
+      .mockResolvedValueOnce(healthyList())
+      .mockResolvedValueOnce(healthyImage());
+    const sleep = vi.fn().mockResolvedValue(undefined);
+    const logger = { log: vi.fn() };
+    await expect(runPublicMediaHealth(contractWith([]), { fetchImpl, sleep, logger }))
+      .resolves.toBe(true);
+    expect(sleep).toHaveBeenCalledWith(1);
+    expect(logger.log).toHaveBeenCalledWith("PASS public same-origin media delivery");
   });
 });

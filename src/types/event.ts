@@ -17,6 +17,7 @@ export interface EventOccurrenceDefaults {
   description?: string;
   category: "internal" | "outreach" | "competition";
   coverImage?: string;
+  coverPhotoId?: string | null;
   isPotluck: number;
   isVolunteer: number;
 }
@@ -45,6 +46,7 @@ export interface TeamEvent {
   description?: string;
   category: "internal" | "outreach" | "competition";
   coverImage?: string;
+  coverPhotoId?: string | null;
   isPotluck?: number; // 0 or 1
   isVolunteer?: number; // 0 or 1
   isDeleted?: number; // 0 or 1 for Soft Delete

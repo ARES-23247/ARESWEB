@@ -1,6 +1,5 @@
 import express from "express";
-import { pipeline } from "node:stream/promises";
-import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
+import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -11,6 +10,13 @@ import photosUploadRouter from "./photosUpload";
 import sponsorLogoUploadRouter from "./sponsorLogoUpload";
 import rateLimit from "express-rate-limit";
 import { photoDerivativeDtoFields } from "../lib/photoDerivatives";
+import {
+  managedPhotoGatewayUrls,
+  parseManagedPhotoVariant,
+  safeManagedPhotoPath,
+  streamManagedPhoto,
+  type ManagedPhotoRecord,
+} from "../lib/managedPhotoMedia";
 
 const router = express.Router();
 
@@ -67,9 +73,11 @@ function safeHttpsUrl(value: unknown): string {
 }
 
 function photoDto(id: string, data: PhotoRecord) {
+  const gatewayUrls = managedPhotoGatewayUrls(id, "admin");
+  const hasManagedOriginal = Boolean(safeManagedPhotoPath(data.storagePath));
   return {
     id,
-    publicUrl: safeHttpsUrl(data.publicUrl),
+    publicUrl: hasManagedOriginal ? gatewayUrls.publicUrl : safeHttpsUrl(data.publicUrl),
     caption: text(data.caption, 500),
     altText: text(data.altText, 300),
     labels: Array.isArray(data.labels)
@@ -84,46 +92,37 @@ function photoDto(id: string, data: PhotoRecord) {
     isArchived: data.isDeleted === 1,
     archivedAt: typeof data.archivedAt === "string" ? data.archivedAt : undefined,
     ...photoDerivativeDtoFields(data),
+    thumbnailUrl: safeManagedPhotoPath(data.thumbnailPath)
+      ? gatewayUrls.thumbnailUrl
+      : photoDerivativeDtoFields(data).thumbnailUrl,
+    mediumUrl: safeManagedPhotoPath(data.mediumPath)
+      ? gatewayUrls.mediumUrl
+      : photoDerivativeDtoFields(data).mediumUrl,
   };
 }
 
-type MediaVariant = "original" | "medium" | "thumbnail";
+type ContentMediaCollection = "posts" | "docs" | "documents";
+const CONTENT_MEDIA_COLLECTIONS = new Set<ContentMediaCollection>([
+  "posts",
+  "docs",
+  "documents",
+]);
 
-const VALID_VARIANTS = new Set<MediaVariant>(["original", "medium", "thumbnail"]);
-const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const PUBLIC_MEDIA_CACHE_CONTROL = "public, max-age=300, s-maxage=300, must-revalidate";
-
-function parseMediaVariant(value: unknown): MediaVariant {
-  const variant = typeof value === "string" ? value.toLowerCase() : "";
-  if (!VALID_VARIANTS.has(variant as MediaVariant)) {
-    throw new ApiError(400, "Invalid media variant. Must be 'original', 'medium', or 'thumbnail'.");
+function contentMediaCollection(value: unknown): ContentMediaCollection {
+  if (typeof value !== "string" || !CONTENT_MEDIA_COLLECTIONS.has(value as ContentMediaCollection)) {
+    throw new ApiError(404, "Published content not found.", "CONTENT_NOT_FOUND");
   }
-  return variant as MediaVariant;
+  return value as ContentMediaCollection;
 }
 
-function safeGalleryPath(value: unknown): string {
-  if (typeof value !== "string") return "";
-  const path = value.trim();
-  const segments = path.split("/");
-  if (
-    path.length === 0
-    || path.length > 1_024
-    || !path.startsWith("gallery/")
-    || path.includes("\\")
-    || segments.some((segment) => !segment || segment === "." || segment === "..")
-  ) {
-    return "";
-  }
-  return path;
-}
-
-function mediaPath(data: PhotoRecord, variant: MediaVariant): string {
-  const derivativePath = variant === "thumbnail"
-    ? safeGalleryPath(data.thumbnailPath)
-    : variant === "medium"
-      ? safeGalleryPath(data.mediumPath)
-      : "";
-  return derivativePath || safeGalleryPath(data.storagePath);
+function isPublishedContent(data: Record<string, unknown>, photoId: string): boolean {
+  const mediaPhotoIds = Array.isArray(data.mediaPhotoIds)
+    ? data.mediaPhotoIds.filter((value): value is string => typeof value === "string").slice(0, 100)
+    : [];
+  return data.status === "published"
+    && data.isDeleted !== 1
+    && (data.approvalStatus === undefined || data.approvalStatus === "approved")
+    && mediaPhotoIds.includes(photoId);
 }
 
 async function withCursor(query: FirebaseFirestore.Query, cursor: unknown): Promise<FirebaseFirestore.Query> {
@@ -185,7 +184,7 @@ router.get("/public", asyncHandler(async (req, res) => {
     return query.limit(limit + 1).get();
   }));
   const candidates = snapshots.flatMap((snapshot) => snapshot.docs)
-    .filter((doc) => doc.data().isDeleted !== 1 && (Boolean(safeHttpsUrl(doc.data().publicUrl)) || Boolean(safeGalleryPath(doc.data().storagePath))))
+    .filter((doc) => doc.data().isDeleted !== 1 && (Boolean(safeHttpsUrl(doc.data().publicUrl)) || Boolean(safeManagedPhotoPath(doc.data().storagePath))))
     .sort((left, right) => {
       const leftDate = typeof left.data().importedAt === "string" ? left.data().importedAt : "";
       const rightDate = typeof right.data().importedAt === "string" ? right.data().importedAt : "";
@@ -194,15 +193,15 @@ router.get("/public", asyncHandler(async (req, res) => {
   const page = candidates.slice(0, limit);
   const photos = page.map((doc) => {
     const data = doc.data();
-    const hasStoragePath = Boolean(safeGalleryPath(data.storagePath));
+    const hasStoragePath = Boolean(safeManagedPhotoPath(data.storagePath));
     const publicUrl = hasStoragePath
       ? `/api/photos/public/media/${doc.id}/original`
       : safeHttpsUrl(data.publicUrl);
     const derivativeFields = photoDerivativeDtoFields(data);
-    const thumbnailUrl = Boolean(safeGalleryPath(data.thumbnailPath))
+    const thumbnailUrl = Boolean(safeManagedPhotoPath(data.thumbnailPath))
       ? `/api/photos/public/media/${doc.id}/thumbnail`
       : derivativeFields.thumbnailUrl;
-    const mediumUrl = Boolean(safeGalleryPath(data.mediumPath))
+    const mediumUrl = Boolean(safeManagedPhotoPath(data.mediumPath))
       ? `/api/photos/public/media/${doc.id}/medium`
       : derivativeFields.mediumUrl;
 
@@ -229,7 +228,7 @@ router.get("/public", asyncHandler(async (req, res) => {
 
 router.get("/public/media/:photoId/:variant", asyncHandler(async (req, res) => {
   const photoId = safeId(req.params.photoId, "photo ID");
-  const variant = parseMediaVariant(req.params.variant);
+  const variant = parseManagedPhotoVariant(req.params.variant);
 
   const photoDoc = await adminDb.collection("imported_photos").doc(photoId).get();
   if (!photoDoc.exists) {
@@ -249,49 +248,59 @@ router.get("/public/media/:photoId/:variant", asyncHandler(async (req, res) => {
     throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
   }
 
-  const targetPath = mediaPath(data, variant);
-  if (!targetPath) {
-    throw new ApiError(404, "Photo media file not found.", "PHOTO_NOT_FOUND");
-  }
-
-  const file = adminStorage.bucket().file(targetPath);
-  let metadata: { contentType?: string; etag?: string } = {};
-  try {
-    const [meta] = await file.getMetadata();
-    metadata = meta as { contentType?: string; etag?: string };
-  } catch (err: unknown) {
-    const code = (err as { code?: number })?.code;
-    if (code === 404) {
-      throw new ApiError(404, "Photo file not found in storage.", "PHOTO_NOT_FOUND");
-    }
-    throw err;
-  }
-
-  // A legacy record may not have derivatives, in which case mediaPath falls
-  // back to the original object. Derive the fallback MIME from the selected
-  // object path rather than the requested variant.
-  const isWebp = targetPath.toLowerCase().endsWith(".webp");
-  const contentType = metadata.contentType || (isWebp ? "image/webp" : (typeof data.mimeType === "string" ? data.mimeType : "image/jpeg"));
-  if (!ALLOWED_MEDIA_TYPES.has(contentType)) {
-    throw new ApiError(404, "Photo media file not found.", "PHOTO_NOT_FOUND");
-  }
-  const responseHeaders: Record<string, string> = {
-    "Content-Type": contentType,
-    "Cache-Control": PUBLIC_MEDIA_CACHE_CONTROL,
-    "Content-Disposition": "inline",
-    "X-Content-Type-Options": "nosniff",
-  };
-  if (metadata.etag) responseHeaders.ETag = metadata.etag;
-  res.set(responseHeaders);
-
-  const ifNoneMatch = req.headers["if-none-match"];
-  if (metadata.etag && ifNoneMatch === metadata.etag) {
-    res.status(304).end();
-    return;
-  }
-
-  await pipeline(file.createReadStream(), res);
+  await streamManagedPhoto(res, req.headers["if-none-match"], data, variant, "public");
 }));
+
+router.get(
+  "/public/content/:collection/:contentId/:photoId/:variant",
+  asyncHandler(async (req, res) => {
+    const collection = contentMediaCollection(req.params.collection);
+    const contentId = safeId(req.params.contentId, "content ID");
+    const photoId = safeId(req.params.photoId, "photo ID");
+    const variant = parseManagedPhotoVariant(req.params.variant);
+    const [contentDoc, photoDoc] = await Promise.all([
+      adminDb.collection(collection).doc(contentId).get(),
+      adminDb.collection("imported_photos").doc(photoId).get(),
+    ]);
+    const contentData = (contentDoc.data() || {}) as Record<string, unknown>;
+    const photoData = (photoDoc.data() || {}) as ManagedPhotoRecord;
+    if (
+      !contentDoc.exists ||
+      !photoDoc.exists ||
+      !isPublishedContent(contentData, photoId) ||
+      photoData.isDeleted === 1
+    ) {
+      throw new ApiError(404, "Published content media not found.", "PHOTO_NOT_FOUND");
+    }
+    await streamManagedPhoto(
+      res,
+      req.headers["if-none-match"],
+      photoData,
+      variant,
+      "public",
+    );
+  }),
+);
+
+router.get(
+  "/admin/media/:photoId/:variant",
+  ensureTeamMember,
+  asyncHandler(async (req, res) => {
+    const photoId = safeId(req.params.photoId, "photo ID");
+    const variant = parseManagedPhotoVariant(req.params.variant);
+    const photoDoc = await adminDb.collection("imported_photos").doc(photoId).get();
+    if (!photoDoc.exists) {
+      throw new ApiError(404, "Photo not found.", "PHOTO_NOT_FOUND");
+    }
+    await streamManagedPhoto(
+      res,
+      req.headers["if-none-match"],
+      (photoDoc.data() || {}) as ManagedPhotoRecord,
+      variant,
+      "admin",
+    );
+  }),
+);
 
 router.use("/albums", albumsRouter);
 router.use("/", photosImportRouter);

@@ -2,6 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { EventPhoto } from "./types";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 interface PhotoLightboxProps {
   selectedPhoto: EventPhoto | null;
@@ -47,7 +48,7 @@ export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxP
         </header>
 
         <div className="w-full flex-grow flex items-center justify-center my-6 overflow-hidden">
-          <img
+          <AuthenticatedImage
             src={selectedPhoto.mediumUrl ?? selectedPhoto.url}
             alt={selectedPhoto.filename}
             className="w-full h-auto max-h-[60vh] object-contain rounded-lg border border-white/5"

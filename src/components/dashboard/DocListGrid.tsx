@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw } from "lucide-react";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import type { DocRecord, DocumentConnectionState } from "@/hooks/useDocumentSync";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 
 interface DocListGridProps {
   items: DocRecord[];
@@ -182,7 +183,7 @@ export default function DocListGrid({
                       <div className="flex gap-3">
                         {variant === "blog" && item.thumbnail ? (
                           <div className="w-12 h-12 ares-cut border border-white/10 overflow-hidden shrink-0 mt-0.5 shadow-md">
-                            <img
+                            <AuthenticatedImage
                               src={cleanThumbnailUrl(item.thumbnail)}
                               alt={`Thumbnail for ${item.title}`}
                               className="w-full h-full object-cover"

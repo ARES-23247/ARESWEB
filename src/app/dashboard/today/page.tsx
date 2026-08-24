@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { db } from "@/lib/firebaseFirestore";
+import AuthenticatedImage from "@/components/media/AuthenticatedImage";
 import type { ManagedPhoto } from "@/lib/media";
 import { logger } from "@/utils/logger";
 import { fetchPublicEvents } from "@/app/calendar/api";
@@ -263,7 +264,7 @@ export default function TeamTodayPage() {
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {photos.map((photo) => (
               <li key={photo.id} className="min-w-0 overflow-hidden border border-white/10 bg-black/30 ares-cut-sm">
-                <img src={photo.thumbnailUrl || photo.publicUrl} alt={photo.altText || photo.caption || "Team progress photo"} loading="lazy" decoding="async" className="aspect-square w-full object-cover" />
+                <AuthenticatedImage src={photo.thumbnailUrl || photo.publicUrl} alt={photo.altText || photo.caption || "Team progress photo"} loading="lazy" decoding="async" className="aspect-square w-full object-cover" />
                 {(photo.caption || photo.altText) && <p className="line-clamp-2 p-2 text-xs text-marble/75">{photo.caption || photo.altText}</p>}
               </li>
             ))}

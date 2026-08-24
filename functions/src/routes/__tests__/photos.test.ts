@@ -648,4 +648,72 @@ describe("photos routes", () => {
       );
     });
   });
+
+  describe("publication-aware media gateways", () => {
+    it("streams media referenced by an active published content record", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ status: "published", isDeleted: 0, approvalStatus: "approved", mediaPhotoIds: ["photo-1"] }),
+        })
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ isDeleted: 0, storagePath: "gallery/photo.jpg", thumbnailPath: "gallery/photo-thumb.webp" }),
+        });
+
+      await handler("/public/content/:collection/:contentId/:photoId/:variant", "get")(
+        { params: { collection: "posts", contentId: "build-log", photoId: "photo-1", variant: "thumbnail" }, headers: {} },
+        res,
+        next,
+      );
+
+      expect(storageFile).toHaveBeenCalledWith("gallery/photo-thumb.webp");
+      expect(res.set).toHaveBeenCalledWith(expect.objectContaining({ "Cache-Control": expect.stringContaining("public") }));
+      expect(streamPipeline).toHaveBeenCalledWith(readStream, res);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("hides drafts, unreferenced photos, and unsupported owner collections", async () => {
+      docGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ status: "draft", isDeleted: 0, mediaPhotoIds: ["photo-1"] }),
+        })
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ isDeleted: 0, storagePath: "gallery/photo.jpg" }),
+        });
+      await expectApiError(
+        "/public/content/:collection/:contentId/:photoId/:variant",
+        "get",
+        { params: { collection: "docs", contentId: "draft", photoId: "photo-1", variant: "original" }, headers: {} },
+        404,
+        "Published content media not found.",
+      );
+
+      next.mockClear();
+      await expectApiError(
+        "/public/content/:collection/:contentId/:photoId/:variant",
+        "get",
+        { params: { collection: "events", contentId: "event", photoId: "photo-1", variant: "original" }, headers: {} },
+        404,
+        "Published content not found.",
+      );
+    });
+
+    it("streams authenticated previews privately without requiring publication", async () => {
+      docGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ isDeleted: 0, storagePath: "blog/legacy.jpg" }),
+      });
+      await handler("/admin/media/:photoId/:variant", "get")(
+        { params: { photoId: "photo-1", variant: "original" }, headers: {} },
+        res,
+        next,
+      );
+      expect(storageFile).toHaveBeenCalledWith("blog/legacy.jpg");
+      expect(res.set).toHaveBeenCalledWith(expect.objectContaining({ "Cache-Control": "private, no-store, max-age=0" }));
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
 });

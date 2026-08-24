@@ -9,7 +9,7 @@ export function usePhotoUpload() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const upload = async (file: File): Promise<string | null> => {
+  const upload = async (file: File): Promise<ManagedPhoto | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -33,7 +33,7 @@ export function usePhotoUpload() {
       });
       if (!response.ok) throw await apiFailure(response, "Image upload failed.");
       const payload = await response.json() as UploadResponse;
-      return payload.photo.publicUrl;
+      return payload.photo;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
       return null;
