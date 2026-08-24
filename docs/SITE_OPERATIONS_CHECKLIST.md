@@ -102,6 +102,21 @@ Use `ENFORCE_APP_CHECK=false` only as a time-limited incident response override.
 Record why it was needed, monitor affected traffic, fix the client path, and
 remove the override before closing the incident.
 
+Cloud Storage is intentionally in monitoring during the 72-hour window that
+started after the controlled post-release denial probes at
+`2026-08-24T06:29:00Z`. Check the redacted, project-wide Storage verification
+metric with:
+
+```text
+pnpm run appcheck:storage-observe -- --project aresfirst-portal --start 2026-08-24T06:29:00Z
+```
+
+Do not interpret a short zero-traffic interval as approval to enforce. At the
+end of the window, rerun with `--require-ready`, then repeat the media inventory,
+production health check, public thumbnail/original checks, authenticated upload
+and editor flows, and direct Storage denial probes. Any observed verification
+requires classification before enforcement.
+
 ## 5. Run the release gate
 
 Use Node 24.15 or newer in the Node 24 line, pnpm 11.21.0, and Java 21 or newer.

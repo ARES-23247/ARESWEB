@@ -13,11 +13,13 @@ import ogRouter from "../routes/og";
 import announcementsRouter from "../routes/announcements";
 import appCheckCanaryRouter from "../routes/appCheckCanary";
 import feedRouter from "../routes/feed";
+import contentRouter from "../routes/content";
 
 export const publicApp = createApiApp({ routes: [
   { path: "/api/app-check", router: appCheckCanaryRouter },
   { path: "/api/announcements", router: announcementsRouter },
   { path: "/api/calendar", router: calendarRouter },
+  { path: "/api/content", router: contentRouter },
   { path: "/api/sponsors", router: sponsorsRouter },
   { path: "/api/seasons", router: seasonsRouter },
   { path: "/api/awards", router: awardsRouter },

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
-import { collection, query, where, getDocs, doc, getDoc, addDoc, or, and, limit } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
 import EducationalCredentialSchema, { ARES_CREDENTIALS } from "@/components/EducationalCredentialSchema";
@@ -18,6 +18,11 @@ import ZulipThread from "@/components/ZulipThread";
 import TiptapRenderer from "@/components/TiptapRenderer";
 import { db } from "@/lib/firebaseFirestore";
 import { logger } from "@/utils/logger";
+import {
+  fetchPublicDocument,
+  fetchPublicDocuments,
+  PublicContentApiError,
+} from "@/lib/publicContentApi";
 
 const ACADEMY_SIDEBAR_ORDER = [
   "AI 101",
@@ -105,30 +110,7 @@ export default function AcademyPage() {
       setListLoading(true);
       setListError(null);
       try {
-        const q = isAresLib
-          ? query(
-              collection(db, "docs"),
-              where("status", "==", "published"),
-              where("isDeleted", "==", 0),
-              where("displayInAreslib", "==", 1),
-              limit(200)
-            )
-          : query(
-              collection(db, "docs"),
-              and(
-                where("status", "==", "published"),
-                where("isDeleted", "==", 0),
-                or(where("displayInMathCorner", "==", 1), where("displayInScienceCorner", "==", 1))
-              ),
-              limit(200)
-            );
-        const snap = await getDocs(q);
-        const docsList = snap.docs.map((d) => ({
-          slug: d.id,
-          ...d.data()
-        })) as unknown as DocRecord[];
-
-        setAllDocs(docsList);
+        setAllDocs(await fetchPublicDocuments(isAresLib ? "areslib" : "academy"));
       } catch (err) {
         logger.error("Error loading all docs:", err);
         setListError("The lesson library could not be reached. Check your connection and try again.");
@@ -147,17 +129,12 @@ export default function AcademyPage() {
       setDocError(null);
       setCurrentDoc(null);
       try {
-        const docRef = doc(db, "docs", slug);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setCurrentDoc({
-            slug: docSnap.id,
-            ...docSnap.data()
-          } as unknown as DocRecord);
-        } else {
-          setCurrentDoc(null);
-        }
+        setCurrentDoc(await fetchPublicDocument(slug, isAresLib ? "areslib" : "academy"));
       } catch (err) {
+        if (err instanceof PublicContentApiError && err.status === 404) {
+          setCurrentDoc(null);
+          return;
+        }
         logger.error("Error loading doc:", err);
         setDocError("This lesson could not be loaded. Check your connection and try again.");
       } finally {
@@ -165,7 +142,7 @@ export default function AcademyPage() {
       }
     };
     void fetchCurrentDoc();
-  }, [slug, reloadToken]);
+  }, [isAresLib, slug, reloadToken]);
 
   // Client-side quick search over documents
   const searchResults = useMemo(() => {

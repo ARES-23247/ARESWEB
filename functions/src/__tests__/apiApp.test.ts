@@ -31,6 +31,7 @@ describe("isolated API app factory", () => {
       headers: { Origin: "https://aresfirst.org" },
     });
     expect(response.status).toBe(200);
+    expect(response.headers.get("x-powered-by")).toBeNull();
     expect(response.headers.get("access-control-allow-origin")).toBe("https://aresfirst.org");
     await expect(response.json()).resolves.toEqual({ ok: true });
   });

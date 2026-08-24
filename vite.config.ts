@@ -163,6 +163,7 @@ export default defineConfig({
         "src/lib/localDateTime.ts",
         "src/lib/documentMedia.ts",
         "src/lib/outreachExport.ts",
+        "src/lib/publicContentApi.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
         "src/lib/tournamentApi.ts",
@@ -256,6 +257,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/outreachExport.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/publicContentApi.ts": {
           lines: 85,
           functions: 100,
         },

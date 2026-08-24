@@ -34,6 +34,7 @@ const corsOptions: cors.CorsOptions = {
 /** Build an isolated API process with the same security middleware contract. */
 export function createApiApp({ routes, enableLargePhotoUpload = false }: CreateApiAppOptions) {
   const app = express();
+  app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.use(cors(corsOptions));
   app.use("/api", rateLimit({

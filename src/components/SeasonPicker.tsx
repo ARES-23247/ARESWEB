@@ -1,14 +1,7 @@
-import { logger } from "@/utils/logger";
 import React, { useState, useEffect, useId } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebaseFirestore";
+import { fetchPublicSeasons, type PublicSeason } from "@/lib/publicContentApi";
 
-interface Season {
-  startYear: number;
-  endYear: number | null;
-  challengeName: string;
-  isDeleted: number;
-}
+type Season = Pick<PublicSeason, "startYear" | "endYear" | "challengeName">;
 
 interface SeasonPickerProps {
   value?: string | number;
@@ -18,22 +11,19 @@ interface SeasonPickerProps {
 
 export default function SeasonPicker({ value, onChange, label = "Linked Season" }: SeasonPickerProps) {
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const selectId = useId();
 
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const q = query(
-          collection(db, "seasons"),
-          where("status", "==", "published"),
-          where("isDeleted", "==", 0)
-        );
-        const snap = await getDocs(q);
-        const list = snap.docs.map((doc) => doc.data() as Season);
+        const list = await fetchPublicSeasons();
         list.sort((a, b) => b.startYear - a.startYear);
         setSeasons(list);
-      } catch (err) {
-        logger.error("Error fetching seasons in picker:", err);
+        setLoadError(null);
+      } catch {
+        setSeasons([]);
+        setLoadError("Season choices could not be loaded. Try again after reconnecting.");
       }
     };
     fetchSeasons();
@@ -58,6 +48,11 @@ export default function SeasonPicker({ value, onChange, label = "Linked Season" 
           </option>
         ))}
       </select>
+      {loadError && (
+        <p role="alert" className="mt-2 text-xs font-medium text-ares-red-light">
+          {loadError}
+        </p>
+      )}
     </div>
   );
 }

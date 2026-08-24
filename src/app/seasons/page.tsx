@@ -5,38 +5,18 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 import SEO from "@/components/SEO";
-import { db } from "@/lib/firebaseFirestore";
 import { PublicDataState } from "@/components/PublicDataState";
+import {
+  fetchPublicAwards,
+  fetchPublicSeasons,
+  type PublicAward,
+  type PublicSeason,
+} from "@/lib/publicContentApi";
 
-interface Season {
-  startYear: number;
-  endYear: number | null;
-  challengeName: string;
-  robotName?: string;
-  robotImage?: string;
-  robotDescription?: string;
-  robotCadUrl?: string;
-  summary?: string;
-  albumUrl?: string;
-  albumCover?: string;
-  status: string;
-  isDeleted: number;
-}
-
-interface Award {
-  id: number;
-  title: string;
-  eventName: string;
-  date: string;
-  description: string;
-  iconType: string;
-  isDeleted: number;
-  seasonId: number | null;
-  year?: number;
-}
+type Season = PublicSeason;
+type Award = PublicAward & { year?: number };
 
 export default function SeasonsPage() {
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -46,18 +26,11 @@ export default function SeasonsPage() {
   const [seasonsError, setSeasonsError] = useState<string | null>(null);
   const [awardsError, setAwardsError] = useState<string | null>(null);
 
-  // Fetch seasons from Firestore
+  // Fetch explicit published DTOs from the public API.
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const q = query(
-          collection(db, "seasons"),
-          where("status", "==", "published"),
-          where("isDeleted", "==", 0),
-          limit(25)
-        );
-        const snap = await getDocs(q);
-        const list = snap.docs.map((doc) => doc.data() as Season);
+        const list = await fetchPublicSeasons();
         // Sort seasons by start year descending
         list.sort((a, b) => b.startYear - a.startYear);
         setSeasons(list);
@@ -72,24 +45,16 @@ export default function SeasonsPage() {
     fetchSeasons();
   }, []);
 
-  // Fetch awards from Firestore
+  // Fetch explicit published DTOs from the public API.
   useEffect(() => {
     const fetchAwards = async () => {
       try {
-        const q = query(
-          collection(db, "awards"),
-          where("status", "==", "published"),
-          where("isDeleted", "==", 0),
-          limit(100)
-        );
-        const snap = await getDocs(q);
-        const list = snap.docs.map((doc) => {
-          const data = doc.data() as Award;
+        const list = (await fetchPublicAwards()).map((data) => {
           return {
             ...data,
             year: data.date ? new Date(data.date).getFullYear() : new Date().getFullYear()
           };
-        });
+        }) as Award[];
         // Sort awards by date descending
         list.sort((a, b) => b.date.localeCompare(a.date));
         setAwards(list);
