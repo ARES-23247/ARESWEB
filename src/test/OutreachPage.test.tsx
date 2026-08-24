@@ -107,6 +107,9 @@ describe("OutreachPage public community impact and STEM requests", () => {
     expect(await screen.findByText(/STEM Request Received!/i)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/inquiries", expect.objectContaining({
       method: "POST",
+      headers: expect.objectContaining({
+        "X-Firebase-AppCheck": "mock-app-check",
+      }),
       body: expect.stringContaining("Dr. Jane Smith"),
     }));
   });

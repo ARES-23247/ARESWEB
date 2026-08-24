@@ -31,7 +31,10 @@ vi.mock("@/components/dashboard/DashboardSidebar", async () => {
 });
 
 describe("Dashboard mobile navigation", () => {
+  const logout = vi.fn();
+
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({
       user: { uid: "admin-user" } as never,
       authorizedUser: { role: "admin" } as never,
@@ -39,9 +42,39 @@ describe("Dashboard mobile navigation", () => {
       authError: null,
       clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(),
-      logout: vi.fn(),
+      logout,
       loginWithMockUser: vi.fn(),
     });
+  });
+
+  it("fails closed when Firebase login has no active ARES authorization", () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "firebase-only-user" } as never,
+      authorizedUser: null,
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout,
+      loginWithMockUser: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardLayout>
+          <h1>Private dashboard content</h1>
+        </DashboardLayout>
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Portal access denied" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Private dashboard content")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open sidebar menu" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(logout).toHaveBeenCalledOnce();
   });
 
   it("exposes a labelled modal drawer and closes it after navigation", async () => {

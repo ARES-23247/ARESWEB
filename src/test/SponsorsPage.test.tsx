@@ -111,6 +111,9 @@ describe("SponsorsPage partner directory and inquiry form", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/inquiries", expect.objectContaining({
         method: "POST",
+        headers: expect.objectContaining({
+          "X-Firebase-AppCheck": "mock-app-check",
+        }),
         body: expect.stringContaining("Apex Dynamics"),
       }));
     });

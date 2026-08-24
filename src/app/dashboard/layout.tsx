@@ -14,7 +14,14 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, loginWithGoogle, loginWithMockUser } = useAuth();
+  const {
+    user,
+    authorizedUser,
+    loading,
+    loginWithGoogle,
+    loginWithMockUser,
+    logout,
+  } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mockAuthEnabled = import.meta.env.DEV || import.meta.env.MODE === "e2e";
 
@@ -167,6 +174,49 @@ export default function DashboardLayout({
               <span>•</span>
               <span>YPP Compliant</span>
             </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Firebase Authentication proves who controls the Google account; the
+  // backend authorization record determines whether that identity belongs in
+  // the ARES workspace. Keep the portal fail-closed when session linking is
+  // rejected or temporarily unavailable instead of rendering a half-authorized
+  // dashboard that will fail later at the API or Firestore boundary.
+  if (!authorizedUser) {
+    return (
+      <main
+        id="main-content"
+        className="min-h-screen bg-obsidian flex flex-col items-center justify-center p-6 relative overflow-hidden"
+      >
+        <SEO title="Portal Access Denied" noindex={true} />
+        <div className="relative z-10 w-full max-w-md border border-ares-red/45 bg-black/70 p-8 text-center shadow-2xl ares-cut">
+          <KeyRound className="mx-auto mb-5 h-10 w-10 text-ares-red" aria-hidden="true" />
+          <h1 className="font-heading text-2xl font-black uppercase tracking-tight text-white">
+            Portal access denied
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-marble/75">
+            This Google account does not have an active ARES authorization
+            record, or the secure session check is temporarily unavailable. No
+            team workspace data has been unlocked.
+          </p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="clipped-button bg-ares-red px-5 py-3 text-sm font-bold uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Sign out
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="border border-white/20 px-5 py-3 text-sm font-bold uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Retry verification
+            </button>
           </div>
         </div>
       </main>

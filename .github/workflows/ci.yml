@@ -52,6 +52,9 @@ jobs:
       - name: Validate shared agent skills
         run: pnpm run validate:agents
 
+      - name: Enforce API mutation route security invariants
+        run: pnpm run check:route-security
+
       - name: Validate production deployment contract
         run: node scripts/verify-production-deployment.mjs --validate-contract
 
