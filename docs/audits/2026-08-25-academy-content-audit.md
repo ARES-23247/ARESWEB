@@ -44,3 +44,71 @@ Acceptance evidence for remediation:
 - `pnpm run content:prepare` writes a draft-only import artifact under `build/`; it does not mutate Firestore.
 
 Production execution remains a separate approval checkpoint.
+
+## Release and migration execution update
+
+The Academy architecture was released through PR #191 and squash-merged as
+`248362cf5c9591cec0dbae0173907cfd8fc1760d`. All required pull-request and
+post-merge checks passed, including Firebase rules, Playwright, CodeQL,
+least-privilege deployment identity, deployed-surface verification, canonical
+domain reachability, and the production App Check browser smoke test.
+
+Before any content write, a consistent Firestore export completed successfully
+at snapshot time `2026-08-25T13:29:00Z`:
+
+```text
+gs://aresfirst-portal-firestore-backups/academy-migration/2026-08-25T132900Z
+```
+
+The dedicated backup bucket has uniform bucket-level access, public-access
+prevention, Google-managed encryption at rest, a seven-day retention floor, and
+seven-day soft delete. The successful export recorded 352 completed documents.
+
+Two bounded, transactional production batches were then applied and re-read:
+
+| Batch | Result |
+| --- | --- |
+| `academy-cleanup-20260825-01` | Archived `e2e-test-quick-start` and `e2e-valid-slug-123`; preserved `montyhall` in Academy and removed only its ARESLib display flag. |
+| `academy-stage-20260825-01` | Created the 11 new catalog documents as non-public `draft` records with `pending_approval`; no existing slug was overwritten. |
+
+Each changed document has a deterministic revision and redacted audit record.
+The ignored local rollback manifests contain only document paths and hashes;
+restorable content remains in the private Firestore export.
+
+Post-write public smoke evidence:
+
+- Academy remained at 23 published documents.
+- ARESLib now exposes four documents, with no test placeholders or Monty Hall
+  duplicate.
+- The two placeholder URLs return HTTP 404.
+- `/academy/montyhall` returns HTTP 200.
+- None of the 11 staged drafts appears through the public DTO API.
+
+## Engineering review of staged material
+
+This was an AI-assisted engineering accuracy review, not the required human
+coach/mentor publication approval. The review used ARESLib release `v9.10.0`
+at `c7af7d2399815ffc3474a89e8dc08adfe31a534c` and FTC Starter commit
+`c9ab43d75e642031bf110c80004066e8607faf3e`. `content:verify` recomputed all
+13 referenced Git blob hashes and validated 15 documents, seven legacy actions,
+15 proposed cross-links, and four populated learning paths.
+
+| Draft group | Documents | Result and representative code evidence |
+| --- | ---: | --- |
+| Robotics Foundations | 7 | Accurate at the pinned revisions. Repository ownership matches the workspace dependency graph; `AresRobot` reads registered subsystem sensors before writing outputs; `rootReducer`, immutable state, and `RobotClock` are present; NT4 uses port 5810; `LogManagerServer` uses port 5002; pose and heading contracts are CCW-positive. |
+| FTC Starter | 4 | Accurate at the pinned starter revision. The project has four mecanum motors and one IMU, empty autonomous/mechanism catalogs, canonical `.ares` inputs, generated output under `TeamCode/build/generated/ares`, small checked-in TeleOp/Auto lifecycle adapters, and a blocked empty autonomous entry. The lessons preserve simulation-versus-hardware and mentor-supervision boundaries. |
+| ARESLib reference replacements | 4 | Accurate at release 9.10.0. The ten-module build, Redux/season ownership, PathPlanner and delayed-vision contracts, canonical telemetry topics, offline log service, `.aresdrivetrain` topology, calibration provenance, cached feedback, neutral output, fault latching, and explicit neutral recovery are represented without claiming physical validation. |
+
+No draft fabricates team hardware, student work, calibration evidence, or
+physical test results. The active ARESLib and FRC feature branches were not used
+as publication authority.
+
+## Remaining approval boundary
+
+The 11 staged new lessons, four source-pinned ARESLib replacements, and 15
+metadata-only cross-links remain unpublished or unapplied. Before any of those
+approval-gated phases can run, a coach or mentor must review the specific slugs
+and provide a dated approval manifest as documented in
+`docs/ACADEMY_CONTENT_OPERATIONS.md`. The migration runner rejects production
+application without that manifest, exact live preconditions, the verified
+backup URI, a unique batch ID, and a new rollback-manifest path.

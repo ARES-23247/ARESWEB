@@ -183,6 +183,11 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     crossLinkSlugs.add(document.slug);
     assert(SUBJECTS.has(document.subject), `${document.slug}: invalid proposed subject.`);
     assert(Array.isArray(document.pathMemberships) && document.pathMemberships.length > 0, `${document.slug}: proposed paths are required.`);
+    assert(document.preconditions && typeof document.preconditions === "object", `${document.slug}: exact live preconditions are required.`);
+    assert(typeof document.preconditions.title === "string" && document.preconditions.title.trim(), `${document.slug}: precondition title is required.`);
+    assert(document.preconditions.status === "published", `${document.slug}: precondition status must remain published.`);
+    assert([0, 1].includes(document.preconditions.displayInMathCorner), `${document.slug}: math visibility precondition is invalid.`);
+    assert([0, 1].includes(document.preconditions.displayInScienceCorner), `${document.slug}: science visibility precondition is invalid.`);
     for (const membership of document.pathMemberships) {
       assert(PATH_IDS.has(membership.pathId), `${document.slug}: invalid proposed path.`);
       assert(Number.isInteger(membership.order) && membership.order >= 0 && membership.order <= 10000, `${document.slug}: invalid proposed path order.`);
