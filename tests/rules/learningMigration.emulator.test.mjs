@@ -67,12 +67,17 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
     expect(staged).not.toHaveProperty("reviewedByLabel");
 
     const approvalFile = join(directory, "publish-approval.json");
-    writeFileSync(approvalFile, JSON.stringify({
-      version: 1,
+    const preparedApproval = await runLearningMigration({
+      project,
+      apply: false,
+      prepareApproval: true,
+      approvedSlugs: "ares-workspace-map",
       phase: "publish-drafts",
+    });
+    writeFileSync(approvalFile, JSON.stringify({
+      ...preparedApproval.template,
       reviewedByLabel: "Emulator Coach",
       reviewedAt: "2026-08-25",
-      approvedSlugs: ["ares-workspace-map"],
     }));
     const publish = await runLearningMigration({
       ...base,
@@ -87,6 +92,11 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       approvalStatus: "approved",
       reviewedByLabel: "Emulator Coach",
       academyMigrationPhase: "publish-drafts",
+    });
+    expect((await db.doc("audit_logs/academy_v1_publish-drafts_ares-workspace-map").get()).data()).toMatchObject({
+      reviewDigest: preparedApproval.template.reviewDigest,
+      reviewedAt: "2026-08-25",
+      reviewedByLabel: "Emulator Coach",
     });
   });
 });

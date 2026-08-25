@@ -16,6 +16,9 @@ pnpm run content:prepare
 
 `content:validate` performs deterministic offline schema and commit-pinning checks. `content:verify` additionally downloads the exact pinned public source files and recomputes their Git blob hashes; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
 
+Preparation normalizes Markdown line endings to LF so the staged record and its
+review digest are identical on Windows, Linux, and CI.
+
 ## Legacy migration sequence
 
 1. Export `docs`, their `revisions` subcollections, and affected ownership/audit records to an encrypted administrative backup.
@@ -54,17 +57,36 @@ The supported phases are intentionally separate:
 - `cross-links` changes only explicitly approved existing-lesson metadata.
 
 `publish-drafts`, `replacements`, and `cross-links` require a human
-coach/mentor approval JSON whose `phase` matches the requested operation:
+coach/mentor approval JSON whose `phase` and `reviewDigest` match the exact
+requested operation. Generate the full-scope template before review:
+
+```powershell
+pnpm run content:approval -- --project aresfirst-portal --phase publish-drafts
+pnpm run content:approval -- --project aresfirst-portal --phase replacements
+pnpm run content:approval -- --project aresfirst-portal --phase cross-links
+```
+
+For a partial review, append `--approved-slugs slug-one,slug-two`. Copy the
+generated template to an ignored administrative location, then fill in the
+reviewer label and date only after that exact scope is reviewed:
 
 ```json
 {
   "version": 1,
   "phase": "replacements",
+  "reviewDigest": "64-character digest generated for this exact scope",
   "reviewedByLabel": "Public reviewer label",
   "reviewedAt": "YYYY-MM-DD",
   "approvedSlugs": ["reviewed-slug"]
 }
 ```
+
+The runner recomputes the digest from the exact source-pinned content,
+replacement preconditions, and cross-link metadata. It refuses a stale approval
+if any reviewed field, source, slug set, or proposal changes afterward. Review
+dates must be real, non-future calendar dates. Approval-gated audit records store
+the public reviewer label, review date, and digest for durable traceability; they
+do not copy lesson bodies or private reviewer data.
 
 Every phase re-reads exact preconditions inside one bounded transaction, writes
 a deterministic revision and redacted audit record per changed document, adds
