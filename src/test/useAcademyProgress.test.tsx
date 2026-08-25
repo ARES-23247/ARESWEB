@@ -4,7 +4,7 @@ import { useAcademyProgress } from "@/hooks/useAcademyProgress";
 import { ACADEMY_PROGRESS_STORAGE_KEY } from "@/lib/academyProgress";
 
 function createStorageEvent(key: string, newValue: string): StorageEvent {
-  const event = new StorageEvent("storage");
+  const event = new Event("storage") as StorageEvent;
   Object.defineProperties(event, {
     key: { value: key },
     newValue: { value: newValue },
