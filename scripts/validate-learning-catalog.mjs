@@ -45,6 +45,16 @@ export function compareSemverTags(left, right) {
   return 0;
 }
 
+export function buildGitHubApiHeaders(token = "") {
+  const normalizedToken = token.trim();
+  return {
+    accept: "application/vnd.github+json",
+    "user-agent": "ARESWEB-curriculum-provenance-validator",
+    "x-github-api-version": "2022-11-28",
+    ...(normalizedToken ? { authorization: `Bearer ${normalizedToken}` } : {}),
+  };
+}
+
 export function validateSourceAuthorities(authorities) {
   assert(authorities?.schemaVersion === 1, "source-authorities.json schemaVersion must be 1.");
   assert(authorities.repositories && typeof authorities.repositories === "object", "Source-authority repositories are required.");
@@ -121,11 +131,7 @@ async function verifyCurrentAresLibRelease(authorities) {
   const response = await fetch("https://api.github.com/repos/ARES-23247/ARESLib-Kotlin/tags?per_page=100", {
     redirect: "error",
     signal: AbortSignal.timeout(20_000),
-    headers: {
-      accept: "application/vnd.github+json",
-      "user-agent": "ARESWEB-curriculum-provenance-validator",
-      "x-github-api-version": "2022-11-28",
-    },
+    headers: buildGitHubApiHeaders(process.env.GITHUB_TOKEN),
   });
   assert(response.ok, `ARESLib release metadata failed with HTTP ${response.status}.`);
   const tags = await response.json();

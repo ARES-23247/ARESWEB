@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildGitHubApiHeaders,
   compareSemverTags,
   normalizeLearningMarkdown,
   registerPathOrder,
@@ -9,6 +10,14 @@ import {
 } from "./validate-learning-catalog.mjs";
 
 describe("learning catalog preparation", () => {
+  it("authenticates GitHub API checks only when an ephemeral token is available", () => {
+    expect(buildGitHubApiHeaders()).not.toHaveProperty("authorization");
+    expect(buildGitHubApiHeaders("  test-token  ")).toMatchObject({
+      authorization: "Bearer test-token",
+      accept: "application/vnd.github+json",
+    });
+  });
+
   it("normalizes Markdown line endings deterministically across operating systems", () => {
     expect(normalizeLearningMarkdown("  # Lesson\r\n\rBody\rMore\n  ")).toBe("# Lesson\n\nBody\nMore");
   });
