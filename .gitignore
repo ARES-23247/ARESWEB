@@ -52,6 +52,7 @@ pa11y_utf8*.log
 scratch/
 scratch_migration/
 media-migration-backups/
+academy-migration-backups/
 all_docs.json
 quiz_content*.json
 quiz_content.md

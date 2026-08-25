@@ -29,4 +29,50 @@ pnpm run content:prepare
 9. Re-read every affected document and smoke-test the public Academy and ARESLib routes.
 10. Keep the backup until the production verification window closes.
 
-The current repository intentionally contains no production writer for this migration. Adding or running one requires separate authorization and Application Default Credentials in an approved operational environment; service-account keys must never be added to the repository.
+## Bounded migration runner
+
+`pnpm run content:migrate` is dry-run-only unless `--apply` is present. An apply
+requires an exact project confirmation, a unique batch ID, a new ignored
+rollback-manifest path, and the verified backup URI entered twice. The runner
+uses Application Default Credentials; service-account keys must never be added
+to the repository.
+
+The supported phases are intentionally separate:
+
+- `cleanup` archives the two reviewed test placeholders and removes Monty Hall
+  from ARESLib while preserving its Academy publication.
+- `stage-drafts` creates only the 11 new catalog slugs as `draft` and
+  `pending_approval`. It never overwrites an existing slug.
+- `replacements` replaces only explicitly approved legacy ARESLib slugs.
+- `cross-links` changes only explicitly approved existing-lesson metadata.
+
+`replacements` and `cross-links` require a human coach/mentor approval JSON:
+
+```json
+{
+  "version": 1,
+  "phase": "replacements",
+  "reviewedByLabel": "Public reviewer label",
+  "reviewedAt": "YYYY-MM-DD",
+  "approvedSlugs": ["reviewed-slug"]
+}
+```
+
+Every phase re-reads exact preconditions inside one bounded transaction, writes
+a deterministic revision and redacted audit record per changed document, adds
+migration/checkpoint metadata, and re-reads the committed records. Repeating a
+completed phase is a no-op. Production cleanup example (use the actual verified
+URI and a fresh manifest path):
+
+```powershell
+pnpm run content:migrate -- --project aresfirst-portal --phase cleanup
+pnpm run content:migrate -- --project aresfirst-portal --phase cleanup --apply `
+  --confirm-project aresfirst-portal `
+  --batch-id academy-cleanup-YYYYMMDD `
+  --backup-uri gs://aresfirst-portal-firestore-backups/academy-migration/<snapshot> `
+  --confirm-backup-uri gs://aresfirst-portal-firestore-backups/academy-migration/<snapshot> `
+  --rollback-manifest academy-migration-backups/<batch>.json
+```
+
+The local manifest contains paths and hashes, not lesson bodies or PII. The
+restorable data remains in the private, retention-protected Firestore export.

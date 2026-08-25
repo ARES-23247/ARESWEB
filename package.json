@@ -28,7 +28,9 @@
     "media:rollback": "node scripts/rollback-media-references.mjs",
     "content:validate": "node scripts/validate-learning-catalog.mjs",
     "content:verify": "node scripts/validate-learning-catalog.mjs --verify-remote",
-    "content:prepare": "node scripts/validate-learning-catalog.mjs --write"
+    "content:prepare": "node scripts/validate-learning-catalog.mjs --write",
+    "content:migrate": "node scripts/migrate-learning-content.mjs",
+    "test:content-migration": "vitest run --config vitest.learning-migration.config.mts"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
