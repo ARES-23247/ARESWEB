@@ -43,10 +43,13 @@ The supported phases are intentionally separate:
   from ARESLib while preserving its Academy publication.
 - `stage-drafts` creates only the 11 new catalog slugs as `draft` and
   `pending_approval`. It never overwrites an existing slug.
+- `publish-drafts` publishes only explicitly approved staged catalog drafts and
+  refuses the batch if any reviewed content field changed after staging.
 - `replacements` replaces only explicitly approved legacy ARESLib slugs.
 - `cross-links` changes only explicitly approved existing-lesson metadata.
 
-`replacements` and `cross-links` require a human coach/mentor approval JSON:
+`publish-drafts`, `replacements`, and `cross-links` require a human
+coach/mentor approval JSON whose `phase` matches the requested operation:
 
 ```json
 {

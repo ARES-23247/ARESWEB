@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -65,5 +65,28 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
     const staged = (await db.doc("docs/ares-workspace-map").get()).data();
     expect(staged).toMatchObject({ status: "draft", approvalStatus: "pending_approval", academyMigrationPhase: "stage-drafts" });
     expect(staged).not.toHaveProperty("reviewedByLabel");
+
+    const approvalFile = join(directory, "publish-approval.json");
+    writeFileSync(approvalFile, JSON.stringify({
+      version: 1,
+      phase: "publish-drafts",
+      reviewedByLabel: "Emulator Coach",
+      reviewedAt: "2026-08-25",
+      approvedSlugs: ["ares-workspace-map"],
+    }));
+    const publish = await runLearningMigration({
+      ...base,
+      phase: "publish-drafts",
+      approvalFile,
+      batchId: "publish-emulator",
+      rollbackManifest: join(directory, "publish.json"),
+    }, { db });
+    expect(publish).toMatchObject({ planned: 1, ready: 1, blocked: 0, applied: 1, verified: 1 });
+    expect((await db.doc("docs/ares-workspace-map").get()).data()).toMatchObject({
+      status: "published",
+      approvalStatus: "approved",
+      reviewedByLabel: "Emulator Coach",
+      academyMigrationPhase: "publish-drafts",
+    });
   });
 });

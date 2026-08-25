@@ -105,9 +105,10 @@ as publication authority.
 
 ## Remaining approval boundary
 
-The four source-pinned ARESLib replacements and the 15 metadata-only cross-links
-remain unapplied. Before either phase can run, a coach or mentor must review the
-specific slugs and provide a dated approval manifest as documented in
+The 11 staged new lessons, four source-pinned ARESLib replacements, and 15
+metadata-only cross-links remain unpublished or unapplied. Before any of those
+approval-gated phases can run, a coach or mentor must review the specific slugs
+and provide a dated approval manifest as documented in
 `docs/ACADEMY_CONTENT_OPERATIONS.md`. The migration runner rejects production
 application without that manifest, exact live preconditions, the verified
 backup URI, a unique batch ID, and a new rollback-manifest path.

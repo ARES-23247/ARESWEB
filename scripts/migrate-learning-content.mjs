@@ -9,7 +9,8 @@ import { pathToFileURL } from "node:url";
 const MIGRATION_VERSION = 1;
 const MAX_FILE_BYTES = 2_000_000;
 const MAX_CHANGES = 25;
-const PHASES = new Set(["cleanup", "stage-drafts", "replacements", "cross-links"]);
+const APPROVAL_PHASES = new Set(["publish-drafts", "replacements", "cross-links"]);
+const PHASES = new Set(["cleanup", "stage-drafts", ...APPROVAL_PHASES]);
 const SAFE_SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/u;
 const SAFE_BATCH = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/u;
 const DEFAULT_ARTIFACT = resolve("build/learning-content-import.json");
@@ -79,7 +80,9 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
   if (!options.project || !/^[a-z][a-z0-9-]{4,62}$/u.test(options.project)) {
     throw new Error("--project must be an explicit Firebase project ID.");
   }
-  if (!PHASES.has(options.phase)) throw new Error("--phase must be cleanup, stage-drafts, replacements, or cross-links.");
+  if (!PHASES.has(options.phase)) {
+    throw new Error("--phase must be cleanup, stage-drafts, publish-drafts, replacements, or cross-links.");
+  }
   if (options.apply) {
     if (options.confirmProject !== options.project) throw new Error("Writes require --confirm-project to exactly match --project.");
     if (!SAFE_BATCH.test(options.batchId ?? "")) throw new Error("Writes require a safe explicit --batch-id.");
@@ -94,7 +97,7 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
       throw new Error("Production writes require the exact verified Academy backup URI twice.");
     }
   }
-  if (["replacements", "cross-links"].includes(options.phase) && !options.approvalFile) {
+  if (APPROVAL_PHASES.has(options.phase) && !options.approvalFile) {
     throw new Error(`${options.phase} requires --approval-file from a human coach or mentor review.`);
   }
   return options;
@@ -172,6 +175,24 @@ function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval) {
     return [...catalog.entries()]
       .filter(([slug]) => !replacementSlugs.has(slug))
       .map(([slug, data]) => ({ slug, kind: "create", preconditions: null, desired: data }));
+  }
+  if (phase === "publish-drafts") {
+    const approved = new Set(approval.approvedSlugs);
+    const staged = [...catalog.entries()].filter(([slug]) => !replacementSlugs.has(slug));
+    const selected = staged.filter(([slug]) => approved.has(slug));
+    if (selected.length !== approved.size) throw new Error("Approval file names a draft outside the staged catalog.");
+    return selected.map(([slug, data]) => ({
+      slug,
+      kind: "update",
+      preconditions: data,
+      desired: {
+        status: "published",
+        approvalStatus: "approved",
+        reviewedAt: approval.reviewedAt,
+        reviewedByLabel: approval.reviewedByLabel,
+        approvedAt: approval.reviewedAt,
+      },
+    }));
   }
   if (phase === "replacements") {
     const approved = new Set(approval.approvedSlugs);
@@ -326,7 +347,7 @@ export async function runLearningMigration(options, dependencies = null) {
   const artifact = readJson(options.artifact ?? DEFAULT_ARTIFACT, "Prepared learning artifact");
   const legacyPlan = readJson(options.legacyPlan ?? DEFAULT_LEGACY_PLAN, "Legacy migration plan");
   const crossLinkPlan = readJson(options.crossLinkPlan ?? DEFAULT_CROSS_LINK_PLAN, "Cross-link migration plan");
-  const approval = ["replacements", "cross-links"].includes(options.phase)
+  const approval = APPROVAL_PHASES.has(options.phase)
     ? validateApprovalFile(readJson(options.approvalFile, "Approval file"), options.phase)
     : null;
   const changes = desiredForPhase(options.phase, artifact, legacyPlan, crossLinkPlan, approval);

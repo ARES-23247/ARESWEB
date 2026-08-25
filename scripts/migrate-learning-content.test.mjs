@@ -99,6 +99,7 @@ describe("learning content migration", () => {
       "--confirm-backup-uri", "gs://aresfirst-portal-firestore-backups/academy-migration/2026-08-25T132900Z",
     ], {})).toThrow(/confirm-project/u);
     expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "replacements"])).toThrow(/approval-file/u);
+    expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "publish-drafts"])).toThrow(/approval-file/u);
   });
 
   it("validates bounded human approval manifests without inventing approval", () => {
@@ -272,6 +273,45 @@ describe("learning content migration", () => {
     }));
     await expect(runLearningMigration({ ...files, apply: false, project: "aresweb-ci", phase: "cross-links" }, { db: store.db }))
       .rejects.toThrow(/outside the reviewed plan/u);
+  });
+
+  it("publishes only approved staged drafts whose reviewed content is unchanged", async () => {
+    const draft = { title: "Reviewed lesson", status: "draft", approvalStatus: "pending_approval", content: "reviewed" };
+    const files = tempFiles({ documents: [{ slug: "new-lesson", data: draft }] });
+    writeFileSync(files.approvalFile, JSON.stringify({
+      version: 1,
+      phase: "publish-drafts",
+      reviewedByLabel: "Lead Coach",
+      reviewedAt: "2026-08-25",
+      approvedSlugs: ["new-lesson"],
+    }));
+    const store = fakeFirestore({
+      "docs/new-lesson": {
+        ...draft,
+        academyMigrationVersion: 1,
+        academyMigrationPhase: "stage-drafts",
+        academyMigrationBatch: "stage-emulator",
+      },
+    });
+    const result = await runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "publish-drafts",
+    }, { db: store.db });
+    expect(result).toMatchObject({ planned: 1, ready: 1, blocked: 0 });
+
+    store.records.set("docs/new-lesson", {
+      ...store.records.get("docs/new-lesson"),
+      content: "changed after review",
+    });
+    const changed = await runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "publish-drafts",
+    }, { db: store.db });
+    expect(changed).toMatchObject({ planned: 1, ready: 0, blocked: 1, blockedSlugs: ["new-lesson"] });
   });
 
   it("loads a named Admin app and exposes a testable CLI boundary", async () => {
