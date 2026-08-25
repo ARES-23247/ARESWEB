@@ -24,6 +24,11 @@ export function useDashboardDocController(
   const [pendingArchiveSlug, setPendingArchiveSlug] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [approvingSlug, setApprovingSlug] = useState<string | null>(null);
+  const [approvalNotice, setApprovalNotice] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const [syndicationNotice, setSyndicationNotice] = useState<{
     kind: "success" | "error";
@@ -128,6 +133,7 @@ export function useDashboardDocController(
 
   const handleSave = async (slug: string, payload: Omit<DocRecord, "slug">) => {
     const isMemberRole = !isApprover;
+    const requiresReview = collectionName === "docs";
     const finalPayload = {
       ...payload,
       original_authorNickname: selectedDoc
@@ -137,8 +143,8 @@ export function useDashboardDocController(
         ? selectedDoc.original_authorAvatar || userAvatar
         : userAvatar,
       // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published
-      status: isMemberRole ? "pending_approval" : payload.status || "published",
-      approvalStatus: isMemberRole
+      status: isMemberRole || requiresReview ? "pending_approval" : payload.status || "published",
+      approvalStatus: isMemberRole || requiresReview
         ? "pending_approval"
         : payload.approvalStatus || "approved",
     };
@@ -190,20 +196,71 @@ export function useDashboardDocController(
     }
   };
 
-  const handleApproveAndPublish = async (docItem: DocRecord) => {
+  const handleApproveAndPublish = async (
+    docItem: DocRecord,
+    library?: "academy" | "areslib",
+  ) => {
     if (!isApprover) return;
-    const { slug, ...existingPayload } = docItem;
-    const finalPayload: Omit<DocRecord, "slug"> = {
-      ...existingPayload,
-      status: "published",
-      approvalStatus: "approved",
-      approvedBy: userNickname,
-      approvedAt: new Date().toISOString(),
-    };
-    await saveDoc(slug, finalPayload, userNickname, userAvatar);
+    setApprovalNotice(null);
+    setApprovingSlug(docItem.slug);
+    try {
+      if (collectionName === "docs") {
+        if (!library) throw new Error("Choose the Academy or ARESLib review queue before approving.");
+        const { authenticatedFetch } = await import("@/lib/api");
+        const reviewResponse = await authenticatedFetch(
+          `/api/content-admin/docs/${encodeURIComponent(docItem.slug)}/review?library=${library}`,
+        );
+        const reviewPayload = await reviewResponse.json().catch(() => ({})) as {
+          review?: { digest?: unknown; updatedAt?: unknown; title?: unknown };
+          error?: unknown;
+        };
+        if (!reviewResponse.ok) {
+          throw new Error(typeof reviewPayload.error === "string" ? reviewPayload.error : "The draft could not be loaded for review.");
+        }
+        const review = reviewPayload.review;
+        if (!review || typeof review.digest !== "string"
+          || typeof review.updatedAt !== "string" || typeof review.title !== "string") {
+          throw new Error("The review service returned an invalid response.");
+        }
+        if ((docItem.updatedAt || "") !== review.updatedAt || docItem.title !== review.title) {
+          throw new Error("This draft changed after it appeared in the list. Wait for the latest version, review it, and try again.");
+        }
+        const approveResponse = await authenticatedFetch(
+          `/api/content-admin/docs/${encodeURIComponent(docItem.slug)}/approve`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ library, digest: review.digest }),
+          },
+        );
+        const approvePayload = await approveResponse.json().catch(() => ({})) as { error?: unknown };
+        if (!approveResponse.ok) {
+          throw new Error(typeof approvePayload.error === "string" ? approvePayload.error : "The draft was not approved.");
+        }
+        setApprovalNotice({ kind: "success", message: `${docItem.title} was approved from its exact reviewed version.` });
+        return;
+      }
 
-    if (collectionName === "posts") {
-      await deliverSocialAnnouncement(slug);
+      const { slug, ...existingPayload } = docItem;
+      const finalPayload: Omit<DocRecord, "slug"> = {
+        ...existingPayload,
+        status: "published",
+        approvalStatus: "approved",
+        approvedBy: userNickname,
+        approvedAt: new Date().toISOString(),
+      };
+      await saveDoc(slug, finalPayload, userNickname, userAvatar);
+
+      if (collectionName === "posts") {
+        await deliverSocialAnnouncement(slug);
+      }
+      setApprovalNotice({ kind: "success", message: `${docItem.title} was approved and published.` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Approval failed. Review the latest draft and try again.";
+      logger.error("Content approval failed", { collectionName, slug: docItem.slug });
+      setApprovalNotice({ kind: "error", message });
+    } finally {
+      setApprovingSlug(null);
     }
   };
 
@@ -278,6 +335,9 @@ export function useDashboardDocController(
     handleCloseEditor,
     handleSave,
     handleApproveAndPublish,
+    approvingSlug,
+    approvalNotice,
+    dismissApprovalNotice: () => setApprovalNotice(null),
     handleDelete,
     handleCancelArchive,
     handleConfirmArchive,

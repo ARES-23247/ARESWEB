@@ -43,6 +43,11 @@ export default function AcademyManagementPage() {
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
+    isApprover,
+    handleApproveAndPublish,
+    approvingSlug,
+    approvalNotice,
+    dismissApprovalNotice,
     handleDelete,
     handleRestore,
     handleCancelArchive,
@@ -97,10 +102,19 @@ export default function AcademyManagementPage() {
           {showArchived ? "Show active records" : `Archived records (${archivedDocs.length})`}
         </button>
       </div>
+      {approvalNotice && (
+        <div role={approvalNotice.kind === "error" ? "alert" : "status"} className={`flex flex-col gap-3 border p-4 text-sm sm:flex-row sm:items-center sm:justify-between ${approvalNotice.kind === "error" ? "border-ares-red/45 bg-ares-red/15 text-white" : "border-ares-cyan/35 bg-ares-cyan/10 text-white"}`}>
+          <p>{approvalNotice.message}</p>
+          <button type="button" onClick={dismissApprovalNotice} className="min-h-11 border border-white/20 px-3 py-2 text-xs font-bold uppercase focus-visible:ring-2 focus-visible:ring-ares-cyan">Dismiss</button>
+        </div>
+      )}
       <DocListGrid
         items={showArchived ? archivedDocs : docs}
         loadingList={loadingList}
         canEdit={canEdit}
+        isApprover={isApprover}
+        onApprove={(item) => handleApproveAndPublish(item, "academy")}
+        approvingSlug={approvingSlug}
         variant="docs"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}

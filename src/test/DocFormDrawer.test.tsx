@@ -274,4 +274,19 @@ describe("DocFormDrawer", () => {
     await act(async () => resolveSave?.());
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
+
+  it("previews the current unsaved draft without saving it", async () => {
+    const onSave = vi.fn(() => Promise.resolve());
+    render(<DocFormDrawer {...baseProps} onClose={vi.fn()} onSave={onSave} />);
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Mobile inspection guide" },
+    });
+    await waitFor(() => expect(screen.getByLabelText("Slug")).toHaveValue("mobile-inspection-guide"));
+    fireEvent.click(screen.getByRole("button", { name: /Preview Draft/i }));
+
+    expect(screen.getByRole("heading", { name: "Mobile inspection guide" })).toBeInTheDocument();
+    expect(screen.getByText("Preview only · return to Compose Content to make changes")).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
 });

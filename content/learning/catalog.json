@@ -3,7 +3,8 @@
   "generatedFrom": {
     "aresLibRelease": "v9.10.0",
     "aresLibCommit": "c7af7d2399815ffc3474a89e8dc08adfe31a534c",
-    "ftcStarterCommit": "c9ab43d75e642031bf110c80004066e8607faf3e"
+    "ftcStarterCommit": "c9ab43d75e642031bf110c80004066e8607faf3e",
+    "aresFtcCommit": "631682a167ba58d1d56ab2b31e982ccbf46ae0bf"
   },
   "documents": [
     {
@@ -290,6 +291,63 @@
       "sourceReferences": [{ "label": "Drivebase authoring contract", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/drivetrain-authoring.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }],
       "appliesToVersion": "ARESLib 9.10.0",
       "safetyScope": "physical-robot"
+    },
+    {
+      "slug": "ftc-season-composition-and-safe-lifecycle",
+      "title": "Compose an FTC Season Robot That Fails Safe",
+      "category": "Robotics & Engineering",
+      "description": "Read the current ARES FTC composition root to distinguish required generated systems, optional mechanisms, cached loop work, and latched failure handling.",
+      "contentFile": "current-robot/01-season-composition.md",
+      "subject": "robotics-engineering",
+      "topics": ["FTC", "composition root", "subsystem lifecycle", "fail-safe design"],
+      "contentType": "tutorial",
+      "level": "intermediate",
+      "estimatedMinutes": 35,
+      "pathMemberships": [{ "pathId": "ftc-robot-with-ares", "order": 8 }],
+      "prerequisites": ["robot-input-to-output", "simulation-is-not-hardware-validation"],
+      "objectives": ["Distinguish required generated subsystems from optional season mechanisms.", "Trace one update frame and its latched failure path without assuming hardware success."],
+      "platforms": ["ftc", "simulator"],
+      "sourceReferences": [{ "label": "Current FTC season composition root", "url": "https://github.com/ARES-23247/ARES-FTC/blob/631682a167ba58d1d56ab2b31e982ccbf46ae0bf/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "repository": "ARES-FTC", "revision": "631682a", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "blobHash": "18c623b5f8f92c21df5ea48ac1bacaa5f5c98104" }],
+      "appliesToVersion": "ARES-FTC 631682a; ARESLib 9.12.0",
+      "safetyScope": "simulation-only"
+    },
+    {
+      "slug": "ftc-driver-input-shaping-and-frames",
+      "title": "Shape FTC Driver Input Without Losing the Frame",
+      "category": "Mathematics & Data",
+      "description": "Trace deadband rescaling, response curves, smoothing, axis signs, alliance perspective, and field- versus robot-relative commands in current season code.",
+      "contentFile": "current-robot/02-driver-input-frames.md",
+      "subject": "mathematics-data",
+      "topics": ["FTC", "driver controls", "deadband", "coordinate frames"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 40,
+      "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 6 }],
+      "prerequisites": ["robot-coordinate-contracts", "redux-state-actions-reducers"],
+      "objectives": ["Calculate the output of the current deadband and exponent shaping pipeline.", "Explain which axes alliance selection mirrors and why rotation is unchanged."],
+      "platforms": ["simulator", "ftc"],
+      "sourceReferences": [{ "label": "Current FTC drive controller", "url": "https://github.com/ARES-23247/ARES-FTC/blob/631682a167ba58d1d56ab2b31e982ccbf46ae0bf/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "repository": "ARES-FTC", "revision": "631682a", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "blobHash": "824f055d52d973dac4686f5bb2d13dc468458064" }],
+      "appliesToVersion": "ARES-FTC 631682a; ARESLib 9.12.0",
+      "safetyScope": "simulation-only"
+    },
+    {
+      "slug": "ftc-intake-io-fault-recovery",
+      "title": "Design an FTC Intake Boundary That Recovers Neutral First",
+      "category": "Physics & Applied Science",
+      "description": "Study the current intake hardware adapter's cached observations, invalid-reading contract, voltage normalization, and neutral-first output recovery.",
+      "contentFile": "current-robot/03-intake-fault-recovery.md",
+      "subject": "physics-applied-science",
+      "topics": ["FTC", "hardware IO", "fault recovery", "electrical safety"],
+      "contentType": "tutorial",
+      "level": "advanced",
+      "estimatedMinutes": 45,
+      "pathMemberships": [],
+      "prerequisites": ["robot-input-to-output", "simulation-is-not-hardware-validation"],
+      "objectives": ["Explain why a failed sensor read is not equivalent to a measured zero.", "Trace the neutral-first latch that blocks motion after an unconfirmed output write."],
+      "platforms": ["ftc", "simulator"],
+      "sourceReferences": [{ "label": "Current FTC intake hardware boundary", "url": "https://github.com/ARES-23247/ARES-FTC/blob/631682a167ba58d1d56ab2b31e982ccbf46ae0bf/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/FtcIntakeIO.kt", "repository": "ARES-FTC", "revision": "631682a", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/FtcIntakeIO.kt", "blobHash": "245500ba505a219c1de54a5d0d16e0b6033f231b" }],
+      "appliesToVersion": "ARES-FTC 631682a; ARESLib 9.12.0",
+      "safetyScope": "bench-testing"
     }
   ]
 }

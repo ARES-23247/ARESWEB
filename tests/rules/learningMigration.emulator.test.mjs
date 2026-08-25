@@ -16,9 +16,11 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
   let app;
   let db;
   let directory;
+  let stageableDocuments;
 
   beforeAll(async () => {
-    await validateLearningCatalog({ write: true });
+    const catalog = await validateLearningCatalog({ write: true });
+    stageableDocuments = catalog.stageableDocuments;
     app = initializeApp({ projectId: project }, `learning-migration-${Date.now()}`);
     db = getFirestore(app);
     directory = mkdtempSync(join(tmpdir(), "ares-learning-emulator-"));
@@ -61,7 +63,13 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       batchId: "stage-emulator",
       rollbackManifest: join(directory, "stage.json"),
     }, { db });
-    expect(stage).toMatchObject({ planned: 11, ready: 11, blocked: 0, applied: 11, verified: 11 });
+    expect(stage).toMatchObject({
+      planned: stageableDocuments,
+      ready: stageableDocuments,
+      blocked: 0,
+      applied: stageableDocuments,
+      verified: stageableDocuments,
+    });
     const staged = (await db.doc("docs/ares-workspace-map").get()).data();
     expect(staged).toMatchObject({ status: "draft", approvalStatus: "pending_approval", academyMigrationPhase: "stage-drafts" });
     expect(staged).not.toHaveProperty("reviewedByLabel");

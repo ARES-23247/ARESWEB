@@ -9,7 +9,8 @@ interface DocListGridProps {
   loadingList: boolean;
   canEdit: boolean;
   isApprover?: boolean;
-  onApprove?: (item: DocRecord) => void;
+  onApprove?: (item: DocRecord) => void | Promise<void>;
+  approvingSlug?: string | null;
   variant?: "docs" | "documents" | "blog";
   onEdit: (item: DocRecord) => void;
   onDelete: (slug: string) => void;
@@ -33,6 +34,7 @@ export default function DocListGrid({
   canEdit,
   isApprover = false,
   onApprove,
+  approvingSlug = null,
   variant = "docs",
   onEdit,
   onDelete,
@@ -320,11 +322,12 @@ export default function DocListGrid({
                       <div className="inline-flex gap-1.5 items-center">
                         {isApprover && onApprove && isPendingApproval && (
                           <button
-                            onClick={() => onApprove(item)}
-                            className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1"
+                            onClick={() => void onApprove(item)}
+                            disabled={approvingSlug === item.slug}
+                            className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60"
                             title="Approve & Publish"
                           >
-                            <CheckCircle2 size={12} /> Approve
+                            <CheckCircle2 size={12} /> {approvingSlug === item.slug ? "Approving…" : "Approve"}
                           </button>
                         )}
                         {item.isDeleted === 1 && canEdit && onRestore ? (

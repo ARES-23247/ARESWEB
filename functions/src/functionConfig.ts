@@ -16,7 +16,7 @@ export const API_ROUTE_GROUPS = {
     "/api/og", "/sitemap.xml", "/api/sitemap.xml",
     "/feed.xml", "/api/feed.xml",
   ],
-  core: ["/api/inquiries", "/api/profiles"],
+  core: ["/api/inquiries", "/api/profiles", "/api/content-admin"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
   drive: ["/api/drive"],
   communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/zulip"],

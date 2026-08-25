@@ -85,4 +85,23 @@ describe("DocListGrid archive confirmation", () => {
     expect(screen.getByText("Pending Approval")).toBeVisible();
     expect(screen.queryByText(/^draft$/i)).not.toBeInTheDocument();
   });
+
+  it("locks the exact pending record while approval is running", () => {
+    const onApprove = vi.fn();
+    render(
+      <DocListGrid
+        items={[{ ...record, status: "pending_approval", approvalStatus: "pending_approval" }]}
+        loadingList={false}
+        canEdit
+        isApprover
+        approvingSlug="safety-guide"
+        onApprove={onApprove}
+        variant="docs"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Approving…" })).toBeDisabled();
+    expect(onApprove).not.toHaveBeenCalled();
+  });
 });
