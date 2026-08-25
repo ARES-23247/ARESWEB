@@ -8,6 +8,10 @@ import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
 const ACADEMY_CATEGORIES = [
+  "Robotics & Engineering",
+  "Mathematics & Data",
+  "Computing & AI",
+  "Physics & Applied Science",
   "AI 101",
   "Neural Networks",
   "Machine Vision",
@@ -60,7 +64,7 @@ export default function AcademyManagementPage() {
             <DocumentConnectionBadge state={connectionState} />
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-            Configure educational math lessons, physics lectures, and machine learning slide decks.
+            Organize robotics, mathematics, computing, physics, and applied STEM lessons into subjects and guided learning paths.
           </p>
         </div>
 
@@ -121,7 +125,7 @@ export default function AcademyManagementPage() {
           onClose={handleCloseEditor}
           editDoc={selectedDoc}
           categories={ACADEMY_CATEGORIES}
-          defaultCategory="AI 101"
+          defaultCategory="Robotics & Engineering"
           variant="docs"
           onSave={handleSave}
           revisions={revisions}

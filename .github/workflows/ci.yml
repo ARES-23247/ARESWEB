@@ -55,6 +55,9 @@ jobs:
       - name: Enforce API mutation route security invariants
         run: pnpm run check:route-security
 
+      - name: Validate Academy curriculum sources and provenance
+        run: pnpm run content:verify
+
       - name: Validate production deployment contract
         run: node scripts/verify-production-deployment.mjs --validate-contract
 

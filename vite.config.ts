@@ -161,6 +161,7 @@ export default defineConfig({
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
         "src/lib/localDateTime.ts",
+        "src/lib/learningContent.ts",
         "src/lib/documentMedia.ts",
         "src/lib/outreachExport.ts",
         "src/lib/publicContentApi.ts",
@@ -217,6 +218,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/contentUrls.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/learningContent.ts": {
           lines: 85,
           functions: 100,
         },

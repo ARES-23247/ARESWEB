@@ -25,7 +25,10 @@
     "appcheck:storage-observe": "node scripts/check-storage-app-check-observation.mjs",
     "media:inventory": "node scripts/inventory-media-references.mjs",
     "media:migrate": "node scripts/migrate-media-references.mjs",
-    "media:rollback": "node scripts/rollback-media-references.mjs"
+    "media:rollback": "node scripts/rollback-media-references.mjs",
+    "content:validate": "node scripts/validate-learning-catalog.mjs",
+    "content:verify": "node scripts/validate-learning-catalog.mjs --verify-remote",
+    "content:prepare": "node scripts/validate-learning-catalog.mjs --write"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

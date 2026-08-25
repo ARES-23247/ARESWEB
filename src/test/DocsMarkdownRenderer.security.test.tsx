@@ -3,6 +3,13 @@ import { describe, expect, it } from "vitest";
 import DocsMarkdownRenderer, { validateEmbedUrl } from "@/components/docs/DocsMarkdownRenderer";
 
 describe("DocsMarkdownRenderer embed policy", () => {
+  it("demotes authored Markdown H1 headings below the route title", () => {
+    render(<DocsMarkdownRenderer content="# Lesson section" />);
+
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Lesson section" })).toBeVisible();
+  });
+
   it("allows only HTTPS embed routes on approved media hosts", () => {
     expect(validateEmbedUrl("https://www.youtube-nocookie.com/embed/abc123")).toContain("/embed/abc123");
     expect(validateEmbedUrl("https://player.vimeo.com/video/12345")).toContain("/video/12345");

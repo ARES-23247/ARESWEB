@@ -1,0 +1,59 @@
+{
+  "planVersion": 1,
+  "mode": "proposal-only",
+  "auditedAt": "2026-08-25",
+  "auditedWebsiteCommit": "ceac0c69",
+  "publicInventory": {
+    "academyCount": 23,
+    "areslibCount": 7
+  },
+  "actions": [
+    {
+      "slug": "e2e-test-quick-start",
+      "action": "archive",
+      "reason": "Published empty end-to-end test placeholder is visible in the ARESLib library.",
+      "preconditions": { "title": "Quick Start Guide", "category": "Getting Started", "displayInAreslib": 1, "status": "published" }
+    },
+    {
+      "slug": "e2e-valid-slug-123",
+      "action": "archive",
+      "reason": "Published test document is visible in the ARESLib library.",
+      "preconditions": { "title": "Test Document", "category": "Test", "displayInAreslib": 1, "status": "published" }
+    },
+    {
+      "slug": "montyhall",
+      "action": "remove-from-areslib",
+      "reason": "The statistics simulation belongs in Academy but is not ARESLib reference documentation.",
+      "preconditions": { "title": "Monty Hall Problem", "displayInAreslib": 1, "displayInMathCorner": 1, "status": "published" },
+      "preserve": ["content", "displayInMathCorner", "displayInScienceCorner", "status"]
+    },
+    {
+      "slug": "areslib-fundamentals",
+      "action": "replace-from-catalog-after-review",
+      "reason": "The live page describes a command/subsystem architecture instead of the current Redux/action/reducer/controller/cached-IO architecture.",
+      "catalogSlug": "areslib-fundamentals",
+      "preconditions": { "title": "ARESLib Fundamentals", "status": "published", "displayInAreslib": 1 }
+    },
+    {
+      "slug": "autonomous-and-vision",
+      "action": "replace-from-catalog-after-review",
+      "reason": "The live page overstates PathPlanner ownership and claims vision instantly snaps the robot pose without the current estimator rejection and delayed-measurement boundaries.",
+      "catalogSlug": "autonomous-and-vision",
+      "preconditions": { "title": "Autonomous & Vision", "status": "published", "displayInAreslib": 1 }
+    },
+    {
+      "slug": "telemetry-and-control",
+      "action": "replace-from-catalog-after-review",
+      "reason": "The live page claims AdvantageKit, AdvantageScope, and USB-drive logging that are not the current ARES NT4 and local-log contracts.",
+      "catalogSlug": "telemetry-and-control",
+      "preconditions": { "title": "Telemetry & Control", "status": "published", "displayInAreslib": 1 }
+    },
+    {
+      "slug": "swerve-and-kinematics",
+      "action": "replace-from-catalog-after-review",
+      "reason": "The live page presents season-specific SOTM behavior as a general ARESLib contract and omits canonical drivebase topology, calibration, and safety boundaries.",
+      "catalogSlug": "swerve-and-kinematics",
+      "preconditions": { "title": "Swerve Drive & SOTM", "status": "published", "displayInAreslib": 1 }
+    }
+  ]
+}

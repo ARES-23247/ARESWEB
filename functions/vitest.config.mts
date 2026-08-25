@@ -51,6 +51,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/learningContent.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/routes/feed.ts": {
           lines: 85,
           functions: 100,

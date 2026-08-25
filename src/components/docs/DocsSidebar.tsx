@@ -4,25 +4,9 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
 import { useSidebarStore } from "@/store/sidebarStore";
+import type { PublicDocument } from "@/lib/publicContentApi";
 
-export interface DocRecord {
-  slug: string;
-  title: string;
-  category: string;
-  sortOrder: number;
-  description: string;
-  content: string;
-  status: string;
-  isDeleted: number;
-  isPortfolio: number;
-  isExecutiveSummary: number;
-  displayInAreslib: number;
-  displayInMathCorner: number;
-  displayInScienceCorner: number;
-  updatedAt?: string;
-  original_authorNickname?: string;
-  original_authorAvatar?: string;
-}
+export type DocRecord = PublicDocument;
 
 interface DocsSidebarProps {
   groupedDocs: [string, DocRecord[]][];

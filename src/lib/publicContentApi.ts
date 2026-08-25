@@ -9,13 +9,15 @@ export interface PublicBlogPost {
   content?: string;
 }
 
-export interface PublicDocument {
+import type { LearningMetadata } from "@/lib/learningContent";
+
+export interface PublicDocument extends LearningMetadata {
   slug: string;
   title: string;
   category: string;
   sortOrder: number;
   description: string;
-  content: string;
+  content?: string;
   status: string;
   isDeleted: number;
   isPortfolio: number;

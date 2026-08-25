@@ -176,5 +176,45 @@ describe("documentEditorDraft", () => {
         "manual",
       ),
     ).toEqual({ error: "Validation: specify a category before saving." });
+
+    const learningDraft = createDocumentEditorDraft({
+      editDoc: null,
+      categories: ["Robotics & Engineering"],
+      defaultCategory: "Robotics & Engineering",
+      variant: "docs",
+      currentUserNickname: "Mentor",
+      today: "2026-08-25",
+    });
+    const learningResult = buildDocumentSave({
+      ...learningDraft,
+      title: "Robot State Flow",
+      slug: "robot-state-flow",
+      topics: ["Redux", "control flow"],
+      pathMemberships: [{ pathId: "robotics-foundations", order: 2 }],
+      platforms: ["simulator", "ftc"],
+      sourceReferences: [{ label: "Released architecture guide", url: "https://github.com/ARES-23247/ARESLib-Kotlin", revision: "v9.3.6" }],
+      appliesToVersion: "ARES 9.3.6",
+      reviewedAt: "2026-08-25",
+      reviewedByLabel: "ARES software mentor",
+      safetyScope: "simulation-only",
+    }, "docs", "Robotics & Engineering");
+    expect(learningResult).toMatchObject({
+      payload: {
+        learningSchemaVersion: 1,
+        subject: "robotics-engineering",
+        topics: ["Redux", "control flow"],
+        pathMemberships: [{ pathId: "robotics-foundations", order: 2 }],
+        appliesToVersion: "ARES 9.3.6",
+        safetyScope: "simulation-only",
+      },
+    });
+    expect(buildDocumentSave({
+      ...learningDraft,
+      title: "Unsafe source",
+      slug: "unsafe-source",
+      sourceReferences: [{ label: "Bad", url: "http://example.com" }],
+    }, "docs", "Robotics & Engineering")).toEqual({
+      error: "Validation: every source needs a label and an HTTPS URL.",
+    });
   });
 });

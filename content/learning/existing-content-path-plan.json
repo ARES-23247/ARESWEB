@@ -1,0 +1,28 @@
+{
+  "planVersion": 1,
+  "mode": "proposal-only",
+  "auditedAt": "2026-08-25",
+  "requiresHumanReview": true,
+  "notes": [
+    "This plan changes metadata only and preserves every lesson body and URL.",
+    "The public inventory currently contains no Computing & AI lessons, so the AI/ML path remains truthfully in preparation.",
+    "Do not apply these proposals until each existing lesson has been reviewed for subject accuracy, age suitability, accessibility, and safety wording."
+  ],
+  "documents": [
+    { "slug": "linear-equations", "subject": "mathematics-data", "pathMemberships": [{ "pathId": "math-for-robotics", "order": 1 }] },
+    { "slug": "trig-basics", "subject": "mathematics-data", "pathMemberships": [{ "pathId": "math-for-robotics", "order": 2 }] },
+    { "slug": "trig-inverse", "subject": "mathematics-data", "pathMemberships": [{ "pathId": "math-for-robotics", "order": 3 }] },
+    { "slug": "trig-robotics", "subject": "mathematics-data", "pathMemberships": [{ "pathId": "math-for-robotics", "order": 4 }] },
+    { "slug": "sat-stats", "subject": "mathematics-data", "pathMemberships": [{ "pathId": "math-for-robotics", "order": 6 }] },
+    { "slug": "sat-graphs", "subject": "mathematics-data", "pathMemberships": [{ "pathId": "math-for-robotics", "order": 7 }] },
+    { "slug": "climbing-fall-factor", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 1 }] },
+    { "slug": "climbing-center-of-mass", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 2 }] },
+    { "slug": "climbing-anchor-angles", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 3 }] },
+    { "slug": "climbing-capstan-friction", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 4 }] },
+    { "slug": "climbing-finger-biomechanics", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 5 }] },
+    { "slug": "cycling-gear-ratios", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 6 }] },
+    { "slug": "skiing-carving-forces", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 7 }] },
+    { "slug": "kayaking-hydrodynamics", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 8 }] },
+    { "slug": "hiking-grade-energy", "subject": "physics-applied-science", "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 9 }] }
+  ]
+}

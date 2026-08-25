@@ -17,6 +17,10 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
+import {
+  normalizeLearningMetadata,
+  type LearningMetadata,
+} from "@/lib/learningContent";
 
 export const DOCUMENT_PAGE_SIZE = 75;
 export const MAX_DOCUMENTS_LOADED = 300;
@@ -31,7 +35,7 @@ export class DocumentSlugConflictError extends Error {
   }
 }
 
-export interface DocRecord {
+export interface DocRecord extends Partial<LearningMetadata> {
   slug: string;
   title: string;
   category: string;
@@ -59,7 +63,7 @@ export interface DocRecord {
   approvedAt?: string;
 }
 
-export interface DocRevision {
+export interface DocRevision extends Partial<LearningMetadata> {
   id: string;
   title: string;
   category: string;
@@ -109,13 +113,14 @@ export function mapDocumentSnapshot(
   docSnap: QueryDocumentSnapshot<DocumentData>,
 ): DocRecord {
   const data = docSnap.data();
+  const category = typeof data.category === "string" ? data.category : "General";
   return {
     slug: docSnap.id,
     title:
       typeof data.title === "string" && data.title.trim()
         ? data.title
         : "Untitled Record",
-    category: typeof data.category === "string" ? data.category : "General",
+    category,
     sortOrder: typeof data.sortOrder === "number" ? data.sortOrder : 0,
     description:
       typeof data.description === "string"
@@ -156,6 +161,12 @@ export function mapDocumentSnapshot(
       typeof data.approvedBy === "string" ? data.approvedBy : undefined,
     approvedAt:
       typeof data.approvedAt === "string" ? data.approvedAt : undefined,
+    ...normalizeLearningMetadata(data, {
+      category,
+      reference: data.displayInAreslib === 1
+        && data.displayInMathCorner !== 1
+        && data.displayInScienceCorner !== 1,
+    }),
   };
 }
 
@@ -283,6 +294,12 @@ export const useDocumentSync = (
     const documentRef = doc(db, collectionName, slug);
     const now = new Date().toISOString();
     const revId = `rev_${Date.now()}`;
+    const metadata = normalizeLearningMetadata(payload as unknown as Record<string, unknown>, {
+      category: payload.category,
+      reference: payload.displayInAreslib === 1
+        && payload.displayInMathCorner !== 1
+        && payload.displayInScienceCorner !== 1,
+    });
     const revisionData: DocRevision | null = user
       ? {
           id: revId,
@@ -303,6 +320,7 @@ export const useDocumentSync = (
           date: payload.date || "",
           thumbnail: payload.thumbnail || "",
           mediaPhotoIds: payload.mediaPhotoIds || [],
+          ...metadata,
           editedBy: user.uid,
           editedByName: userNickname || user.displayName || "Anonymous Member",
           editedByAvatar:
