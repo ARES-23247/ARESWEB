@@ -63,4 +63,26 @@ describe("DocListGrid archive confirmation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Archive Record" }));
     expect(onConfirmArchive).toHaveBeenCalledOnce();
   });
+
+  it("labels documentation drafts that require human review as pending approval", () => {
+    render(
+      <DocListGrid
+        items={[{
+          ...record,
+          slug: "review-me",
+          title: "Review Me",
+          status: "draft",
+          approvalStatus: "pending_approval",
+        }]}
+        loadingList={false}
+        canEdit
+        variant="docs"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Pending Approval")).toBeVisible();
+    expect(screen.queryByText(/^draft$/i)).not.toBeInTheDocument();
+  });
 });

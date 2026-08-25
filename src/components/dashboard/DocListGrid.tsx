@@ -175,6 +175,8 @@ export default function DocListGrid({
             ) : (
               filteredItems.map((item) => {
                 const isPublished = item.status === "published";
+                const isPendingApproval = item.status === "pending_approval"
+                  || item.approvalStatus === "pending_approval";
 
                 return (
                   <tr key={item.slug} className="hover:bg-white/5 transition-colors">
@@ -251,12 +253,14 @@ export default function DocListGrid({
                         <td className="p-4">
                           <span
                             className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
-                              isPublished
+                              isPendingApproval
+                                ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
+                                : isPublished
                                 ? "bg-ares-cyan/15 border-ares-cyan/30 text-ares-cyan"
                                 : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                             }`}
                           >
-                            {item.status}
+                            {isPendingApproval ? "Pending Approval" : (item.status || "published")}
                           </span>
                         </td>
                       </>
@@ -297,14 +301,14 @@ export default function DocListGrid({
                       <td className="p-4">
                         <span
                           className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded ${
-                            item.status === "pending_approval" || item.approvalStatus === "pending_approval"
+                            isPendingApproval
                               ? "bg-ares-gold/15 border-ares-gold/30 text-ares-gold animate-pulse"
                               : isPublished
                               ? "bg-ares-cyan/15 border-ares-cyan/30 text-ares-cyan"
                               : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                           }`}
                         >
-                          {item.status === "pending_approval" || item.approvalStatus === "pending_approval"
+                          {isPendingApproval
                             ? "Pending Approval"
                             : (item.status || "published")}
                         </span>
@@ -314,7 +318,7 @@ export default function DocListGrid({
                     {/* Actions Column */}
                     <td className="p-4 text-right">
                       <div className="inline-flex gap-1.5 items-center">
-                        {isApprover && onApprove && (item.status === "pending_approval" || item.approvalStatus === "pending_approval") && (
+                        {isApprover && onApprove && isPendingApproval && (
                           <button
                             onClick={() => onApprove(item)}
                             className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1"
