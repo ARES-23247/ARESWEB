@@ -105,7 +105,7 @@ function stringList(value: unknown, maxItems: number, maxLength: number): string
 
 function inferredSubject(category: string): LearningSubject {
   const normalized = category.toLowerCase();
-  if (normalized.includes("math")) return "mathematics-data";
+  if (normalized.includes("math") || /\b(?:statistics?|data)\b/u.test(normalized)) return "mathematics-data";
   if (["ai", "neural", "vision", "learning"].some((term) => normalized.includes(term))) return "computing-ai";
   if (["climb", "outdoor", "physics", "science"].some((term) => normalized.includes(term))) return "physics-applied-science";
   return "robotics-engineering";
