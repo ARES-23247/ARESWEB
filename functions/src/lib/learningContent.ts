@@ -84,7 +84,7 @@ function textList(value: unknown, maxItems: number, maxLength: number): string[]
 function inferSubject(category: string, library: "academy" | "areslib"): LearningSubject {
   if (library === "areslib") return "robotics-engineering";
   const normalized = category.toLowerCase();
-  if (normalized.includes("math")) return "mathematics-data";
+  if (normalized.includes("math") || /\b(?:statistics?|data)\b/u.test(normalized)) return "mathematics-data";
   if (normalized.includes("ai") || normalized.includes("neural") || normalized.includes("vision") || normalized.includes("learning")) {
     return "computing-ai";
   }

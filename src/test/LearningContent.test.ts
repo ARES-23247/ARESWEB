@@ -14,6 +14,8 @@ describe("normalizeLearningMetadata", () => {
       subject: "robotics-engineering",
       contentType: "reference",
     });
+    expect(normalizeLearningMetadata({}, { category: "Statistics" }).subject).toBe("mathematics-data");
+    expect(normalizeLearningMetadata({}, { category: "Robot Data" }).subject).toBe("mathematics-data");
   });
 
   it("normalizes persisted metadata and rejects unsafe source URLs", () => {

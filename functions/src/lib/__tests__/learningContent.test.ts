@@ -18,6 +18,9 @@ describe("publicLearningMetadata", () => {
       safetyScope: "none",
     });
     expect(publicLearningMetadata({ category: "Mathematics" }, "academy").subject).toBe("mathematics-data");
+    expect(publicLearningMetadata({ category: "Statistics" }, "academy").subject).toBe("mathematics-data");
+    expect(publicLearningMetadata({ category: "Robot Data" }, "academy").subject).toBe("mathematics-data");
+    expect(publicLearningMetadata({ category: "State Management" }, "academy").subject).toBe("robotics-engineering");
     expect(publicLearningMetadata({ category: "Science of Climbing" }, "academy").subject).toBe("physics-applied-science");
     expect(publicLearningMetadata({ category: "Controls" }, "areslib")).toMatchObject({
       subject: "robotics-engineering",
