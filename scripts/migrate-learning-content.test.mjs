@@ -142,6 +142,8 @@ describe("learning content migration", () => {
     expect(() => validateApprovalFile({}, "replacements")).toThrow(/version/u);
     expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "", reviewedAt: "today", approvedSlugs: [] }, "replacements")).toThrow(/reviewer/u);
     expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "today", approvedSlugs: ["valid"] }, "replacements")).toThrow(/date/u);
+    expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-02-30", reviewDigest: "a".repeat(64), approvedSlugs: ["valid"] }, "replacements")).toThrow(/calendar date/u);
+    expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-08-26", reviewDigest: "a".repeat(64), approvedSlugs: ["valid"] }, "replacements", new Date("2026-08-25T12:00:00Z"))).toThrow(/future/u);
     expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-08-25", reviewDigest: "bad", approvedSlugs: ["valid"] }, "replacements")).toThrow(/digest/u);
     expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-08-25", reviewDigest: "a".repeat(64), approvedSlugs: ["same", "same"] }, "replacements")).toThrow(/unique/u);
   });
@@ -301,7 +303,7 @@ describe("learning content migration", () => {
   it("publishes only approved staged drafts whose reviewed content is unchanged", async () => {
     const draft = { title: "Reviewed lesson", status: "draft", approvalStatus: "pending_approval", content: "reviewed" };
     const files = tempFiles({ documents: [{ slug: "new-lesson", data: draft }] });
-    writeApproval(files, "publish-drafts", ["new-lesson"]);
+    const approval = writeApproval(files, "publish-drafts", ["new-lesson"]);
     const store = fakeFirestore({
       "docs/new-lesson": {
         ...draft,
@@ -316,7 +318,7 @@ describe("learning content migration", () => {
       project: "aresweb-ci",
       phase: "publish-drafts",
     }, { db: store.db });
-    expect(result).toMatchObject({ planned: 1, ready: 1, blocked: 0 });
+    expect(result).toMatchObject({ planned: 1, ready: 1, blocked: 0, reviewDigest: approval.reviewDigest });
 
     const changedArtifact = JSON.parse(readFileSync(files.artifact, "utf8"));
     changedArtifact.documents[0].data.content = "changed after approval";

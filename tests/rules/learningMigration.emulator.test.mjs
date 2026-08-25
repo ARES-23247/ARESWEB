@@ -93,5 +93,10 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       reviewedByLabel: "Emulator Coach",
       academyMigrationPhase: "publish-drafts",
     });
+    expect((await db.doc("audit_logs/academy_v1_publish-drafts_ares-workspace-map").get()).data()).toMatchObject({
+      reviewDigest: preparedApproval.template.reviewDigest,
+      reviewedAt: "2026-08-25",
+      reviewedByLabel: "Emulator Coach",
+    });
   });
 });

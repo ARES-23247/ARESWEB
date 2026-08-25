@@ -83,7 +83,10 @@ reviewer label and date only after that exact scope is reviewed:
 
 The runner recomputes the digest from the exact source-pinned content,
 replacement preconditions, and cross-link metadata. It refuses a stale approval
-if any reviewed field, source, slug set, or proposal changes afterward.
+if any reviewed field, source, slug set, or proposal changes afterward. Review
+dates must be real, non-future calendar dates. Approval-gated audit records store
+the public reviewer label, review date, and digest for durable traceability; they
+do not copy lesson bodies or private reviewer data.
 
 Every phase re-reads exact preconditions inside one bounded transaction, writes
 a deterministic revision and redacted audit record per changed document, adds

@@ -130,13 +130,20 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
   return options;
 }
 
-export function validateApprovalFile(value, phase) {
+export function validateApprovalFile(value, phase, now = new Date()) {
   if (value?.version !== 1 || value.phase !== phase) throw new Error("Approval file version or phase is invalid.");
   if (typeof value.reviewedByLabel !== "string" || value.reviewedByLabel.trim().length < 2 || value.reviewedByLabel.length > 120) {
     throw new Error("Approval file requires a bounded public reviewer label.");
   }
   if (typeof value.reviewedAt !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(value.reviewedAt)) {
     throw new Error("Approval file requires a YYYY-MM-DD review date.");
+  }
+  const parsedReviewDate = new Date(`${value.reviewedAt}T00:00:00.000Z`);
+  if (Number.isNaN(parsedReviewDate.getTime()) || parsedReviewDate.toISOString().slice(0, 10) !== value.reviewedAt) {
+    throw new Error("Approval file review date is not a valid calendar date.");
+  }
+  if (value.reviewedAt > now.toISOString().slice(0, 10)) {
+    throw new Error("Approval file review date cannot be in the future.");
   }
   if (typeof value.reviewDigest !== "string" || !/^[a-f0-9]{64}$/u.test(value.reviewDigest)) {
     throw new Error("Approval file requires the exact 64-character review digest.");
@@ -406,7 +413,7 @@ async function snapshotsFor(db, changes) {
   return result;
 }
 
-async function applyPlans(db, options, plans, timestamp) {
+async function applyPlans(db, options, plans, timestamp, approval) {
   await db.runTransaction(async (transaction) => {
     const verified = [];
     for (const plan of plans) {
@@ -439,6 +446,11 @@ async function applyPlans(db, options, plans, timestamp) {
         batchId: options.batchId,
         changedFields: plan.changedFields,
         backupUri: options.backupUri,
+        ...(approval ? {
+          reviewDigest: approval.reviewDigest,
+          reviewedAt: approval.reviewedAt,
+          reviewedByLabel: approval.reviewedByLabel,
+        } : {}),
         createdAt: timestamp,
       });
     }
@@ -494,6 +506,7 @@ export async function runLearningMigration(options, dependencies = null) {
       reason: plan.blockedReason,
       fields: plan.changedFields,
     })),
+    ...(approval ? { reviewDigest: approval.reviewDigest } : {}),
   };
   if (!options.apply) return summary;
   if (blocked.length > 0) throw new Error("Migration refused because one or more exact preconditions failed.");
@@ -503,7 +516,7 @@ export async function runLearningMigration(options, dependencies = null) {
     options.rollbackManifest,
     buildLearningRollbackManifest(options, ready, timestamp),
   );
-  await applyPlans(db, options, ready, timestamp);
+  await applyPlans(db, options, ready, timestamp, approval);
   summary.applied = ready.length;
   const after = await snapshotsFor(db, ready);
   summary.verified = ready.filter((plan) => {
