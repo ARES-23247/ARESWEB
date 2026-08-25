@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runLearningMigration } from "../../scripts/migrate-learning-content.mjs";
+import { validateLearningCatalog } from "../../scripts/validate-learning-catalog.mjs";
 
 const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
 const project = "aresweb-learning-migration-ci";
@@ -17,6 +18,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
   let directory;
 
   beforeAll(async () => {
+    await validateLearningCatalog({ write: true });
     app = initializeApp({ projectId: project }, `learning-migration-${Date.now()}`);
     db = getFirestore(app);
     directory = mkdtempSync(join(tmpdir(), "ares-learning-emulator-"));
