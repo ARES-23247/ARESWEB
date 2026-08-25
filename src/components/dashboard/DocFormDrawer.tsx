@@ -14,6 +14,7 @@ import RevisionHistoryTable from "@/components/RevisionHistoryTable";
 import { useAuth } from "@/context/AuthContext";
 import DocFormDrawerAiCopilot from "./DocFormDrawerAiCopilot";
 import DocFormMainFields from "./DocFormMainFields";
+import DocumentDraftPreview from "./DocumentDraftPreview";
 import type { DocRecord, DocRevision } from "@/hooks/useDocumentSync";
 import { logger } from "@/utils/logger";
 import {
@@ -53,12 +54,14 @@ export default function DocFormDrawer({
   fetchRevisions,
 }: DocFormDrawerProps) {
   const { authorizedUser, user } = useAuth();
-  const isStudent = authorizedUser?.role === "student";
+  const isStudent = authorizedUser?.role === "member"
+    || authorizedUser?.role === "student"
+    || authorizedUser?.role === "parent";
   const currentUserNickname =
     authorizedUser?.name || user?.displayName || "Anonymous Member";
 
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"edit" | "revisions">("edit");
+  const [activeTab, setActiveTab] = useState<"edit" | "preview" | "revisions">("edit");
   const [showAiSidebar, setShowAiSidebar] = useState(true);
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -423,6 +426,17 @@ export default function DocFormDrawer({
             >
               ✏️ Compose Content
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("preview")}
+              className={`py-3 border-b-2 transition-all cursor-pointer ${
+                activeTab === "preview"
+                  ? "border-ares-gold text-white"
+                  : "border-transparent text-marble/40 hover:text-white"
+              }`}
+            >
+              👁️ Preview Draft
+            </button>
             {editDoc && (
               <button
                 type="button"
@@ -451,6 +465,16 @@ export default function DocFormDrawer({
               <Sparkles size={11} />
               {showAiSidebar ? "Hide AI Copilot" : "Show AI Copilot"}
             </button>
+          )}
+
+          {activeTab === "preview" && (
+            <div className="flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5">
+              <DocumentDraftPreview
+                draft={draft}
+                variant={variant}
+                defaultCategory={defaultCategory}
+              />
+            </div>
           )}
         </div>
 
@@ -548,7 +572,9 @@ export default function DocFormDrawer({
                 ? isDirty
                   ? "Unsaved changes · recovery draft enabled"
                   : "No unsaved changes"
-                : "Click Revert on logs to edit history"}
+                : activeTab === "preview"
+                  ? "Preview only · return to Compose Content to make changes"
+                  : "Click Revert on logs to edit history"}
             </span>
             {saveError && (
               <div

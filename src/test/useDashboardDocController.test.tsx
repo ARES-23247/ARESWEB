@@ -53,6 +53,7 @@ describe("useDashboardDocController archive workflow", () => {
     vi.clearAllMocks();
     deleteDocMock.mockResolvedValue(undefined);
     restoreDocMock.mockResolvedValue(undefined);
+    saveDocMock.mockResolvedValue(undefined);
     authenticatedFetchMock.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200,
         headers: { "Content-Type": "application/json" },
       }));
@@ -103,6 +104,94 @@ describe("useDashboardDocController archive workflow", () => {
     await act(async () => result.current.handleRestore("archived-guide"));
 
     expect(restoreDocMock).toHaveBeenCalledWith("archived-guide");
+  });
+
+  it("saves documentation changes as pending even for an approver", async () => {
+    const { result } = renderHook(
+      () => useDashboardDocController("docs", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleSave("robot-intent", {
+      title: "Robot intent",
+      category: "Robotics & Engineering",
+      content: "Reviewed later",
+      description: "",
+      status: "published",
+      approvalStatus: "approved",
+    } as never));
+
+    expect(saveDocMock).toHaveBeenCalledWith(
+      "robot-intent",
+      expect.objectContaining({ status: "pending_approval", approvalStatus: "pending_approval" }),
+      "CircuitFox",
+      "https://avatars.example.org/member.png",
+      { isCreate: true },
+    );
+  });
+
+  it("approves only the exact documentation version returned by the review API", async () => {
+    authenticatedFetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        review: {
+          title: "Robot intent",
+          updatedAt: "2026-08-25T12:00:00.000Z",
+          digest: "a".repeat(64),
+        },
+      }), { status: 200, headers: { "Content-Type": "application/json" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }));
+    const { result } = renderHook(
+      () => useDashboardDocController("docs", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleApproveAndPublish({
+      slug: "robot-intent",
+      title: "Robot intent",
+      updatedAt: "2026-08-25T12:00:00.000Z",
+    } as never, "academy"));
+
+    expect(authenticatedFetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/content-admin/docs/robot-intent/review?library=academy",
+    );
+    expect(authenticatedFetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/content-admin/docs/robot-intent/approve",
+      expect.objectContaining({ body: JSON.stringify({ library: "academy", digest: "a".repeat(64) }) }),
+    );
+    expect(saveDocMock).not.toHaveBeenCalled();
+    expect(result.current.approvalNotice).toMatchObject({ kind: "success" });
+  });
+
+  it("refuses a documentation approval when the visible snapshot is stale", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    authenticatedFetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      review: {
+        title: "Robot intent revised",
+        updatedAt: "2026-08-25T13:00:00.000Z",
+        digest: "b".repeat(64),
+      },
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    const { result } = renderHook(
+      () => useDashboardDocController("docs", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleApproveAndPublish({
+      slug: "robot-intent",
+      title: "Robot intent",
+      updatedAt: "2026-08-25T12:00:00.000Z",
+    } as never, "academy"));
+
+    expect(authenticatedFetchMock).toHaveBeenCalledTimes(1);
+    expect(result.current.approvalNotice).toMatchObject({
+      kind: "error",
+      message: expect.stringContaining("changed"),
+    });
   });
 
   it("announces an approved blog by slug without trusting client-authored metadata", async () => {

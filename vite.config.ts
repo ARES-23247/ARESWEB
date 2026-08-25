@@ -161,7 +161,9 @@ export default defineConfig({
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
         "src/lib/localDateTime.ts",
+        "src/lib/academyProgress.ts",
         "src/lib/learningContent.ts",
+        "src/lib/learningExperience.ts",
         "src/lib/documentMedia.ts",
         "src/lib/outreachExport.ts",
         "src/lib/publicContentApi.ts",
@@ -175,6 +177,8 @@ export default defineConfig({
         "src/components/PwaUpdatePrompt.tsx",
         "src/components/SiteAnnouncementBanner.tsx",
         "src/components/SEO.tsx",
+        "src/components/dashboard/DocumentDraftPreview.tsx",
+        "src/hooks/useAcademyProgress.ts",
         "src/app/dashboard/photos/*.{ts,tsx}",
         "src/app/calendar/api.ts",
         "src/app/dashboard/profile/page.tsx",
@@ -222,6 +226,22 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/learningContent.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/academyProgress.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/learningExperience.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/hooks/useAcademyProgress.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/dashboard/DocumentDraftPreview.tsx": {
           lines: 85,
           functions: 100,
         },

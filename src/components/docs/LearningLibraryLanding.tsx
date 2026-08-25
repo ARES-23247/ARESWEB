@@ -1,57 +1,78 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, BookOpen, Clock, Route, Search } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowRight, BookOpen, Check, Clock, Route, Search } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { PublicDocument } from "@/lib/publicContentApi";
 import {
   LEARNING_CONTENT_TYPES,
   LEARNING_LEVELS,
   LEARNING_PATHS,
+  LEARNING_PLATFORMS,
   LEARNING_SUBJECTS,
   labelFor,
-  type LearningContentType,
-  type LearningLevel,
-  type LearningPathId,
-  type LearningSubject,
 } from "@/lib/learningContent";
+import {
+  DEFAULT_LEARNING_FILTERS,
+  filterLearningDocuments,
+  learningFiltersToSearchParams,
+  learningTopics,
+  orderedPathDocuments,
+  parseLearningFilters,
+  type LearningFilters,
+} from "@/lib/learningExperience";
 
 interface LearningLibraryLandingProps {
   documents: PublicDocument[];
   library: "academy" | "areslib";
+  progress?: {
+    completedSlugs: ReadonlySet<string>;
+    storageAvailable: boolean;
+    resetProgress: () => void;
+  };
 }
 
-type AllOr<T extends string> = "all" | T;
+const FILTER_QUERY_KEYS = ["search", "subject", "level", "type", "path", "platform", "topic", "duration"] as const;
 
-export default function LearningLibraryLanding({ documents, library }: LearningLibraryLandingProps) {
-  const [query, setQuery] = useState("");
-  const [subject, setSubject] = useState<AllOr<LearningSubject>>("all");
-  const [level, setLevel] = useState<AllOr<LearningLevel>>("all");
-  const [contentType, setContentType] = useState<AllOr<LearningContentType>>("all");
-  const [pathId, setPathId] = useState<AllOr<LearningPathId>>("all");
+export default function LearningLibraryLanding({ documents, library, progress }: LearningLibraryLandingProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const basePath = library === "academy" ? "/academy" : "/docs";
+  const filters = useMemo(() => parseLearningFilters(new URLSearchParams(location.search)), [location.search]);
+  const pathId = library === "academy" ? filters.pathId : "all";
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const matches = documents.filter((document) => {
-      if (subject !== "all" && document.subject !== subject) return false;
-      if (level !== "all" && document.level !== level) return false;
-      if (contentType !== "all" && document.contentType !== contentType) return false;
-      if (pathId !== "all" && !document.pathMemberships.some((membership) => membership.pathId === pathId)) return false;
-      if (!normalizedQuery) return true;
-      return [document.title, document.description, document.category, ...document.topics]
-        .some((value) => value.toLowerCase().includes(normalizedQuery));
-    });
-    if (pathId === "all") return matches;
-    return matches.sort((left, right) => {
-      const leftOrder = left.pathMemberships.find((membership) => membership.pathId === pathId)?.order ?? Number.MAX_SAFE_INTEGER;
-      const rightOrder = right.pathMemberships.find((membership) => membership.pathId === pathId)?.order ?? Number.MAX_SAFE_INTEGER;
-      return leftOrder - rightOrder || left.title.localeCompare(right.title);
-    });
-  }, [contentType, documents, level, pathId, query, subject]);
+  const updateFilters = (next: LearningFilters) => {
+    const params = new URLSearchParams(location.search);
+    FILTER_QUERY_KEYS.forEach((key) => params.delete(key));
+    const normalized = library === "academy" ? next : { ...next, pathId: "all" as const };
+    learningFiltersToSearchParams(normalized).forEach((value, key) => params.set(key, value));
+    const search = params.toString();
+    navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
+  };
+
+  const setFilter = <Key extends keyof LearningFilters>(key: Key, value: LearningFilters[Key]) => {
+    updateFilters({ ...filters, [key]: value });
+  };
+
+  const filtered = useMemo(
+    () => filterLearningDocuments(documents, { ...filters, pathId }),
+    [documents, filters, pathId],
+  );
+  const topics = useMemo(() => learningTopics(documents), [documents]);
 
   const pathCounts = useMemo(() => new Map(LEARNING_PATHS.map((path) => [
     path.id,
     documents.filter((document) => document.pathMemberships.some((membership) => membership.pathId === path.id)).length,
   ])), [documents]);
+
+  const selectedPath = pathId === "all" ? null : LEARNING_PATHS.find((path) => path.id === pathId) ?? null;
+  const selectedPathDocuments = useMemo(
+    () => pathId === "all" ? [] : orderedPathDocuments(documents, pathId),
+    [documents, pathId],
+  );
+  const completedInPath = selectedPathDocuments.filter((document) => progress?.completedSlugs.has(document.slug)).length;
+  const continueDocument = selectedPathDocuments.find((document) => !progress?.completedSlugs.has(document.slug))
+    ?? selectedPathDocuments[0]
+    ?? null;
 
   return (
     <div className="w-full max-w-6xl pb-20">
@@ -85,9 +106,12 @@ export default function LearningLibraryLanding({ documents, library }: LearningL
                   key={path.id}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => setPathId(active ? "all" : path.id)}
+                  onClick={() => setFilter("pathId", active ? "all" : path.id)}
                   className={`min-h-40 border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-red bg-ares-red/15" : "border-white/10 bg-white/[0.04] hover:border-ares-gold/45"}`}
                 >
+                  <span className="mb-3 block text-[10px] font-black uppercase tracking-[0.16em] text-ares-cyan">
+                    {path.beginnerGuidance}
+                  </span>
                   <span className="font-heading text-lg font-bold uppercase text-white">{path.label}</span>
                   <span className="mt-2 block text-sm leading-6 text-marble/70">{path.description}</span>
                   <span className="mt-4 block text-xs font-bold uppercase tracking-wider text-ares-gold">
@@ -97,6 +121,53 @@ export default function LearningLibraryLanding({ documents, library }: LearningL
               );
             })}
           </div>
+
+          {selectedPath && (
+            <div className="mt-6 border border-ares-gold/35 bg-ares-gold/[0.07] p-5" aria-labelledby="selected-path-heading">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-ares-gold">Selected learning path</p>
+                  <h3 id="selected-path-heading" className="mt-2 font-heading text-xl font-black uppercase text-white">
+                    {selectedPath.label}
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-marble/70">
+                    Lessons below are in their recommended order. Complete them at your own pace; prerequisites appear on each lesson.
+                  </p>
+                  {progress && (
+                    <p className="mt-3 text-sm font-bold text-ares-cyan">
+                      {completedInPath} of {selectedPathDocuments.length} complete on this browser
+                    </p>
+                  )}
+                </div>
+                {continueDocument && (
+                  <Link
+                    to={`${basePath}/${continueDocument.slug}?path=${selectedPath.id}`}
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-red px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    {completedInPath > 0 ? "Continue path" : "Start path"}
+                    <ArrowRight aria-hidden="true" size={16} />
+                  </Link>
+                )}
+              </div>
+              {selectedPathDocuments.length > 0 && (
+                <ol className="mt-5 grid gap-2 border-t border-white/10 pt-5 md:grid-cols-2">
+                  {selectedPathDocuments.map((document, index) => {
+                    const completed = progress?.completedSlugs.has(document.slug) ?? false;
+                    return (
+                      <li key={document.slug} className="flex items-center gap-3 text-sm text-marble/75">
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${completed ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white"}`}>
+                          {completed ? <Check aria-label="Completed" size={15} /> : index + 1}
+                        </span>
+                        <Link to={`${basePath}/${document.slug}?path=${selectedPath.id}`} className="hover:text-white hover:underline focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                          {document.title}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -107,17 +178,32 @@ export default function LearningLibraryLanding({ documents, library }: LearningL
         </div>
 
         <div className="mt-5 grid gap-4 border border-white/10 bg-black/25 p-4 sm:grid-cols-2 xl:grid-cols-4">
-          <label className="sm:col-span-2 xl:col-span-4">
-            <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-marble/70">Search titles and topics</span>
+          <div className="sm:col-span-2 xl:col-span-4">
+            <label htmlFor="learning-library-search" className="mb-2 block text-xs font-bold uppercase tracking-wider text-marble/70">Search titles and topics</label>
             <span className="flex items-center gap-3 border border-white/15 bg-obsidian px-3 focus-within:ring-2 focus-within:ring-ares-cyan">
               <Search aria-hidden="true" size={17} className="text-marble/55" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-11 w-full bg-transparent text-sm text-white outline-none placeholder:text-marble/45" placeholder="Try geometry, controls, or climbing" />
+              <input id="learning-library-search" value={filters.search} onChange={(event) => setFilter("search", event.target.value.slice(0, 120))} className="min-h-11 w-full bg-transparent text-sm text-white outline-none placeholder:text-marble/45" placeholder="Try geometry, controls, or climbing" />
             </span>
-          </label>
-          <FilterSelect label="Subject" value={subject} onChange={(value) => setSubject(value as AllOr<LearningSubject>)} options={LEARNING_SUBJECTS} />
-          <FilterSelect label="Level" value={level} onChange={(value) => setLevel(value as AllOr<LearningLevel>)} options={LEARNING_LEVELS} />
-          <FilterSelect label="Content type" value={contentType} onChange={(value) => setContentType(value as AllOr<LearningContentType>)} options={LEARNING_CONTENT_TYPES} />
-          {library === "academy" && <FilterSelect label="Learning path" value={pathId} onChange={(value) => setPathId(value as AllOr<LearningPathId>)} options={LEARNING_PATHS} />}
+            <span className="mt-1 block text-xs text-marble/50">Search also checks lesson objectives and prerequisites.</span>
+          </div>
+          <FilterSelect label="Subject" value={filters.subject} onChange={(value) => setFilter("subject", value as LearningFilters["subject"])} options={LEARNING_SUBJECTS} />
+          <FilterSelect label="Level" value={filters.level} onChange={(value) => setFilter("level", value as LearningFilters["level"])} options={LEARNING_LEVELS} />
+          <FilterSelect label="Content type" value={filters.contentType} onChange={(value) => setFilter("contentType", value as LearningFilters["contentType"])} options={LEARNING_CONTENT_TYPES} />
+          <FilterSelect label="Platform" value={filters.platform} onChange={(value) => setFilter("platform", value as LearningFilters["platform"])} options={LEARNING_PLATFORMS} />
+          <FilterSelect label="Topic" value={filters.topic} onChange={(value) => setFilter("topic", value)} options={topics.map((topic) => ({ id: topic, label: topic }))} />
+          <FilterSelect label="Duration" value={filters.duration} onChange={(value) => setFilter("duration", value as LearningFilters["duration"])} options={[
+            { id: "15", label: "15 minutes or less" },
+            { id: "30", label: "30 minutes or less" },
+            { id: "60", label: "60 minutes or less" },
+          ] as const} />
+          {library === "academy" && <FilterSelect label="Learning path" value={pathId} onChange={(value) => setFilter("pathId", value as LearningFilters["pathId"])} options={LEARNING_PATHS} />}
+          <button
+            type="button"
+            onClick={() => updateFilters(DEFAULT_LEARNING_FILTERS)}
+            className="min-h-11 self-end border border-white/20 px-4 py-2 text-xs font-bold uppercase text-white hover:border-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            Clear filters
+          </button>
         </div>
 
         <p role="status" aria-live="polite" className="mt-4 text-sm text-marble/65">
@@ -125,22 +211,47 @@ export default function LearningLibraryLanding({ documents, library }: LearningL
         </p>
         {pathId !== "all" && (
           <p className="mt-2 text-xs leading-5 text-marble/55">
-            Items are shown in their suggested path order. Personal completion is not collected or stored.
+            Items are shown in their suggested path order. Completion stays only in this browser and is not connected to a student account.
           </p>
+        )}
+
+        {library === "academy" && progress && (
+          <div className="mt-4 border border-white/10 bg-white/[0.03] p-4 text-sm text-marble/70">
+            <p>
+              Progress is private to this browser. It is not sent to ARES, shared between devices, or tied to a sign-in.
+              {!progress.storageAvailable && " Browser storage is unavailable, so changes will last only until this page closes."}
+            </p>
+            {progress.completedSlugs.size > 0 && (
+              confirmingReset ? (
+                <div className="mt-3 flex flex-wrap items-center gap-3" role="group" aria-label="Confirm progress reset">
+                  <span className="font-bold text-white">Clear all local lesson progress?</span>
+                  <button type="button" onClick={() => { progress.resetProgress(); setConfirmingReset(false); }} className="min-h-11 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Yes, clear it</button>
+                  <button type="button" onClick={() => setConfirmingReset(false)} className="min-h-11 border border-white/20 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setConfirmingReset(true)} className="mt-3 min-h-11 border border-white/20 px-4 py-2 text-xs font-bold uppercase text-white hover:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan">Reset local progress</button>
+              )
+            )}
+          </div>
         )}
 
         {filtered.length === 0 ? (
           <div className="mt-5 border border-white/10 bg-white/[0.03] p-8 text-center">
             <h3 className="font-heading text-xl font-bold uppercase text-white">No matching lessons</h3>
             <p className="mt-2 text-sm text-marble/65">Change a filter or clear the search to see other material.</p>
-            <button type="button" onClick={() => { setQuery(""); setSubject("all"); setLevel("all"); setContentType("all"); setPathId("all"); }} className="mt-5 border border-white/20 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Clear filters</button>
+            <button type="button" onClick={() => updateFilters(DEFAULT_LEARNING_FILTERS)} className="mt-5 min-h-11 border border-white/20 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Clear filters</button>
           </div>
         ) : (
           <ul className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((document) => (
               <li key={document.slug}>
-                <Link to={`${basePath}/${document.slug}`} className="group flex h-full min-h-56 flex-col border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-ares-red/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                <Link to={`${basePath}/${document.slug}${pathId !== "all" ? `?path=${pathId}` : ""}`} className="group flex h-full min-h-56 flex-col border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-ares-red/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
                   <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                    {progress?.completedSlugs.has(document.slug) && (
+                      <span className="inline-flex items-center gap-1 bg-ares-cyan px-2 py-1 text-obsidian">
+                        <Check aria-hidden="true" size={12} /> Complete
+                      </span>
+                    )}
                     {pathId !== "all" && (
                       <span className="bg-ares-gold px-2 py-1 text-obsidian">
                         Suggested step {document.pathMemberships.find((membership) => membership.pathId === pathId)?.order ?? "not set"}

@@ -185,6 +185,58 @@ describe("Firestore zero-trust rules", () => {
     );
   });
 
+  it("keeps documentation publication behind the server approval transaction", async () => {
+    await seedAuthorizedUser("mentor-user", "mentor");
+    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
+    const pendingRef = doc(mentorDb, "docs", "pending-lesson");
+
+    await assertFails(setDoc(doc(mentorDb, "docs", "direct-publish"), {
+      title: "Direct publication",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    }));
+    await assertSucceeds(setDoc(pendingRef, {
+      title: "Pending lesson",
+      status: "pending_approval",
+      approvalStatus: "pending_approval",
+      isDeleted: 0,
+    }));
+    await assertFails(updateDoc(pendingRef, {
+      status: "published",
+      approvalStatus: "approved",
+    }));
+
+    await seedDocument("docs", "approved-lesson", {
+      title: "Approved lesson",
+      content: "Reviewed content",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    const approvedRef = doc(mentorDb, "docs", "approved-lesson");
+    await assertFails(updateDoc(approvedRef, { content: "Unreviewed live edit" }));
+    await assertSucceeds(updateDoc(approvedRef, {
+      content: "Revised pending content",
+      status: "pending_approval",
+      approvalStatus: "pending_approval",
+    }));
+
+    await seedDocument("docs", "approved-archive", {
+      title: "Approved archive",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    await assertSucceeds(updateDoc(doc(mentorDb, "docs", "approved-archive"), {
+      isDeleted: 1,
+      updatedAt: "2026-08-25T12:00:00.000Z",
+    }));
+    await assertFails(setDoc(doc(mentorDb, "content_approval_audit", "fake"), {
+      action: "content.approved",
+    }));
+  });
+
   it("limits docs_feedback writes to authorized team members", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("unverified-user", "unverified");

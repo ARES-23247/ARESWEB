@@ -212,6 +212,10 @@
         "function": "coreApi"
       },
       {
+        "source": "/api/content-admin{,/**}",
+        "function": "coreApi"
+      },
+      {
         "source": "/api/photos{,/**}",
         "function": "mediaApi"
       },

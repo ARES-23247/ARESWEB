@@ -35,12 +35,12 @@ export const LEARNING_SAFETY_SCOPES = [
 ] as const;
 
 export const LEARNING_PATHS = [
-  { id: "robotics-foundations", label: "Robotics Foundations", description: "Learn how robot software turns intent into safe, observable behavior." },
-  { id: "ftc-robot-with-ares", label: "Build an FTC Robot with ARES", description: "Progress from the FTC starter project to a simulated and then supervised physical robot." },
-  { id: "controls-localization-autonomous", label: "Controls, Localization & Autonomous", description: "Connect control loops, coordinates, sensing, localization, and autonomous routines." },
-  { id: "math-for-robotics", label: "Math for Robotics", description: "Apply geometry, algebra, statistics, and measurement to robot problems." },
-  { id: "ai-ml-foundations", label: "AI and Machine Learning Foundations", description: "Build a careful foundation for machine learning, vision, and generative AI." },
-  { id: "applied-stem-outdoors", label: "Applied STEM in the Outdoors", description: "Use climbing and outdoor activities to investigate physics, data, and engineering." },
+  { id: "robotics-foundations", label: "Robotics Foundations", description: "Learn how robot software turns intent into safe, observable behavior.", beginnerGuidance: "Best first robotics path" },
+  { id: "ftc-robot-with-ares", label: "Build an FTC Robot with ARES", description: "Progress from the FTC starter project to a simulated and then supervised physical robot.", beginnerGuidance: "Continue here after Robotics Foundations" },
+  { id: "controls-localization-autonomous", label: "Controls, Localization & Autonomous", description: "Connect control loops, coordinates, sensing, localization, and autonomous routines.", beginnerGuidance: "Advanced robotics follow-on" },
+  { id: "math-for-robotics", label: "Math for Robotics", description: "Apply geometry, algebra, statistics, and measurement to robot problems.", beginnerGuidance: "Beginner-friendly math path" },
+  { id: "ai-ml-foundations", label: "AI and Machine Learning Foundations", description: "Build a careful foundation for machine learning, vision, and generative AI.", beginnerGuidance: "Beginner-friendly computing path" },
+  { id: "applied-stem-outdoors", label: "Applied STEM in the Outdoors", description: "Use climbing and outdoor activities to investigate physics, data, and engineering.", beginnerGuidance: "Beginner-friendly applied STEM path" },
 ] as const;
 
 export type LearningSubject = (typeof LEARNING_SUBJECTS)[number]["id"];

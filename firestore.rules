@@ -75,6 +75,38 @@ service cloud.firestore {
       );
     }
 
+    // Reviewed documentation is saved as pending by browser clients. Only the
+    // Admin SDK approval transaction may create the pending -> published
+    // transition. A publisher may still archive/restore an already-approved
+    // record without changing its reviewed content.
+    function canCreatePendingDoc(docSlug) {
+      return isPendingContent(request.resource.data) &&
+        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        canCreateContent('docs', docSlug);
+    }
+
+    function canUpdatePendingDoc(docSlug) {
+      return isPendingContent(request.resource.data) &&
+        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' && (
+          isContentPublisher() || (
+            isAuthorized() &&
+            isPendingContent(resource.data) &&
+            isContentOwner('docs', docSlug)
+          )
+        );
+    }
+
+    function canChangeApprovedDocLifecycleOnly() {
+      return isContentPublisher() &&
+        resource.data.status == 'published' &&
+        resource.data.get('approvalStatus', 'approved') == 'approved' &&
+        request.resource.data.status == 'published' &&
+        request.resource.data.get('approvalStatus', 'approved') == 'approved' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'isDeleted', 'updatedAt'
+        ]);
+    }
+
     function canCreateRevision(collectionName, contentId) {
       return isAuthorized() &&
         request.resource.data.editedBy == request.auth.uid &&
@@ -256,8 +288,8 @@ service cloud.firestore {
     match /docs/{docSlug} {
       // Public readers use the explicit /api/content DTO boundary.
       allow read: if isAuthorized();
-      allow create: if canCreateContent('docs', docSlug);
-      allow update: if canUpdateContent('docs', docSlug);
+      allow create: if canCreatePendingDoc(docSlug);
+      allow update: if canUpdatePendingDoc(docSlug) || canChangeApprovedDocLifecycleOnly();
       allow delete: if isContentPublisher();
 
       match /revisions/{revisionId} {
@@ -265,6 +297,12 @@ service cloud.firestore {
         allow create: if canCreateRevision('docs', docSlug);
         allow update, delete: if false;
       }
+    }
+
+    // Approval records contain operational review metadata and are written by
+    // the server transaction only.
+    match /content_approval_audit/{auditId} {
+      allow read, write: if false;
     }
 
     // Secure team collections (Kanban tasks and AI chat sessions)

@@ -120,6 +120,7 @@ function LocationProbe() {
 describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     mockUseAuth.mockReturnValue({
       user: null,
       authorizedUser: null,
@@ -145,6 +146,11 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /AI and Machine Learning Foundations/i }));
     expect(screen.getByText("Showing 2 of 2 items.")).toBeInTheDocument();
+    expect(screen.getByTestId("location-probe")).toHaveTextContent("/academy?path=ai-ml-foundations");
+    expect(screen.getByRole("link", { name: /Start path/i })).toHaveAttribute(
+      "href",
+      "/academy/ai-101-intro?path=ai-ml-foundations",
+    );
     fireEvent.change(screen.getByLabelText("Search titles and topics"), { target: { value: "not present" } });
     expect(screen.getByRole("heading", { name: "No matching lessons" })).toBeInTheDocument();
   });
@@ -172,8 +178,61 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
     // Next navigation button to neural networks lesson
     expect(screen.getByRole("link", { name: /Next.*Neural Networks for Computer Vision/i })).toHaveAttribute(
       "href",
-      "/academy/neural-networks-basics"
+      "/academy/neural-networks-basics?path=ai-ml-foundations"
     );
+  });
+
+  it("preserves a selected path, renders prerequisites, and stores anonymous completion locally", async () => {
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[1]);
+
+    render(
+      <MemoryRouter initialEntries={["/academy/neural-networks-basics?path=ai-ml-foundations"]}>
+        <Routes>
+          <Route path="/academy/:slug" element={<AcademyPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Neural Networks for Computer Vision" })).toBeInTheDocument();
+    expect(screen.getByText(/Lesson 2 of 2/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Before you start" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Introduction to Artificial Intelligence" })).toHaveAttribute(
+      "href",
+      "/academy/ai-101-intro?path=ai-ml-foundations",
+    );
+    expect(screen.getByRole("link", { name: /Previous.*Introduction to Artificial Intelligence/i })).toHaveAttribute(
+      "href",
+      "/academy/ai-101-intro?path=ai-ml-foundations",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark lesson complete" }));
+    expect(screen.getByRole("button", { name: "Completed — undo" })).toHaveAttribute("aria-pressed", "true");
+    expect(window.localStorage.getItem("ares-academy-progress-v1")).toBe(
+      JSON.stringify({ version: 1, completedSlugs: ["neural-networks-basics"] }),
+    );
+  });
+
+  it("keeps progress usable in memory when browser storage rejects writes", async () => {
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+    vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
+
+    render(
+      <MemoryRouter initialEntries={["/academy/ai-101-intro"]}>
+        <Routes>
+          <Route path="/academy/:slug" element={<AcademyPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("heading", { name: "Introduction to Artificial Intelligence" });
+    fireEvent.click(screen.getByRole("button", { name: "Mark lesson complete" }));
+    expect(screen.getByRole("button", { name: "Completed — undo" })).toBeInTheDocument();
+    expect(screen.getByText(/Browser storage is unavailable/i)).toBeInTheDocument();
+    setItem.mockRestore();
   });
 
   it("allows searching documents with quick search modal and navigating to selected lesson", async () => {

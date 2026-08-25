@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "repositories": {
+    "ARESLib-Kotlin": {
+      "current": {
+        "revision": "v9.12.0",
+        "commit": "7515aee5c8817c56d047a7c05beb3720027b968d"
+      },
+      "approved": [
+        {
+          "revision": "v9.10.0",
+          "commit": "c7af7d2399815ffc3474a89e8dc08adfe31a534c"
+        },
+        {
+          "revision": "v9.12.0",
+          "commit": "7515aee5c8817c56d047a7c05beb3720027b968d"
+        }
+      ]
+    },
+    "ARES-FTC-Starter": {
+      "current": {
+        "revision": "c9ab43d",
+        "commit": "c9ab43d75e642031bf110c80004066e8607faf3e"
+      },
+      "approved": [
+        {
+          "revision": "c9ab43d",
+          "commit": "c9ab43d75e642031bf110c80004066e8607faf3e"
+        }
+      ]
+    },
+    "ARES-FTC": {
+      "current": {
+        "revision": "631682a",
+        "commit": "631682a167ba58d1d56ab2b31e982ccbf46ae0bf"
+      },
+      "approved": [
+        {
+          "revision": "631682a",
+          "commit": "631682a167ba58d1d56ab2b31e982ccbf46ae0bf"
+        }
+      ]
+    }
+  }
+}

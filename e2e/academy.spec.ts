@@ -59,16 +59,31 @@ const lesson = {
   safetyScope: "simulation-only",
 };
 
+const nextLesson = {
+  ...lesson,
+  slug: "safe-output-boundaries",
+  title: "Safe Output Boundaries",
+  sortOrder: 2,
+  description: "Distinguish requested outputs from confirmed hardware writes.",
+  topics: ["hardware IO", "safety"],
+  estimatedMinutes: 20,
+  pathMemberships: [{ pathId: "robotics-foundations", order: 2 }],
+  prerequisites: [lesson.slug],
+  objectives: ["Explain a neutral-first recovery boundary."],
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
-    const detail = new URL(route.request().url()).pathname !== "/api/content/docs";
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    const selected = pathname.endsWith(nextLesson.slug) ? nextLesson : lesson;
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(detail
-        ? { document: { ...lesson, content: "# Robot State Flow\n\nThis lab uses simulation before hardware." } }
-        : { documents: [lesson] }),
+        ? { document: { ...selected, content: `# ${selected.title}\n\nThis lab uses simulation before hardware.` } }
+        : { documents: [lesson, nextLesson] }),
     });
   });
 
@@ -78,18 +93,49 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   await expect(page.getByRole("heading", { name: "Learning paths" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Robot State Flow/i })).toBeVisible();
 
-  await page.getByRole("button", { name: /Robotics Foundations/i }).click();
+  const pathButton = page.getByRole("button").filter({
+    has: page.getByText("Robotics Foundations", { exact: true }),
+  });
+  await pathButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/path=robotics-foundations/u);
   await expect(page.getByText("Suggested step 1", { exact: true })).toBeVisible();
-  await expect(page.getByText("Personal completion is not collected or stored.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Progress is private to this browser.", { exact: false })).toBeVisible();
+
+  await page.getByLabel("Platform").selectOption("simulator");
+  await page.getByLabel("Duration").selectOption("30");
+  await page.getByLabel("Search titles and topics").fill("control flow");
+  await expect(page).toHaveURL(/search=control(?:\+|%20)flow/u);
+  await expect(page.getByText("Showing 1 of 2 items.")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).first().click();
+  await expect(page).not.toHaveURL(/search=|path=/u);
+  await expect(page.getByLabel("Search titles and topics")).toHaveValue("");
+  await expect(page.getByLabel("Platform")).toHaveValue("all");
+  await expect(page.getByLabel("Duration")).toHaveValue("all");
+  await expect(page.getByText("Showing 2 of 2 items.")).toBeVisible();
+
+  await pathButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("link", { name: /Start path/i })).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
 
-  await page.getByRole("link", { name: /Robot State Flow/i }).click();
-  await expect(page).toHaveURL(/\/academy\/robot-state-flow$/u);
+  await page.getByRole("link", { name: /Start path/i }).click();
+  await expect(page).toHaveURL(/\/academy\/robot-state-flow\?path=robotics-foundations$/u);
   await expect(page.getByRole("heading", { level: 1, name: "Robot State Flow" })).toBeVisible();
   await expect(page.getByText("Simulation only", { exact: true })).toBeVisible();
   await expect(page.getByText("Applies to ARESLib 9.10.0")).toBeVisible();
   await expect(page.getByRole("link", { name: /Released architecture.*v9.10.0/u })).toHaveAttribute("href", lesson.sourceReferences[0].url);
+
+  await page.getByRole("button", { name: "Mark lesson complete" }).click();
+  await expect(page.getByRole("button", { name: "Completed — undo" })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("ares-academy-progress-v1")))
+    .toContain(lesson.slug);
+  const nextLink = page.getByRole("link", { name: /Next Safe Output Boundaries/i });
+  await expect(nextLink).toHaveAttribute("href", `/academy/${nextLesson.slug}?path=robotics-foundations`);
+  await nextLink.click();
+  await expect(page.getByRole("heading", { level: 1, name: nextLesson.title })).toBeVisible();
+  await expect(page.getByText("Completed locally", { exact: true })).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
   const docsNavigationButton = page.getByRole("button", { name: "Open documentation navigation" });

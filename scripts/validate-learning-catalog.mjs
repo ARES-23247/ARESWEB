@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_ROOT = path.join(ROOT, "content", "learning");
 const CATALOG_PATH = path.join(CONTENT_ROOT, "catalog.json");
+const SOURCE_AUTHORITIES_PATH = path.join(CONTENT_ROOT, "source-authorities.json");
 const LEGACY_PLAN_PATH = path.join(CONTENT_ROOT, "legacy-migration-plan.json");
 const CROSS_LINK_PLAN_PATH = path.join(CONTENT_ROOT, "existing-content-path-plan.json");
 const OUTPUT_PATH = path.join(ROOT, "build", "learning-content-import.json");
@@ -26,6 +27,52 @@ function assertStringList(value, field, slug, maxItems) {
   for (const item of value) assert(typeof item === "string" && item.trim(), `${slug}: ${field} contains an empty or non-string item.`);
 }
 
+function assertCommit(value, field) {
+  assert(typeof value === "string" && /^[a-f0-9]{40}$/iu.test(value), `${field} must be an exact 40-character Git commit.`);
+}
+
+export function compareSemverTags(left, right) {
+  const parse = (value) => {
+    const match = /^v(\d+)\.(\d+)\.(\d+)$/u.exec(value);
+    assert(match, `${value}: expected a semantic release tag such as v1.2.3.`);
+    return match.slice(1).map(Number);
+  };
+  const leftParts = parse(left);
+  const rightParts = parse(right);
+  for (let index = 0; index < leftParts.length; index += 1) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+  }
+  return 0;
+}
+
+export function validateSourceAuthorities(authorities) {
+  assert(authorities?.schemaVersion === 1, "source-authorities.json schemaVersion must be 1.");
+  assert(authorities.repositories && typeof authorities.repositories === "object", "Source-authority repositories are required.");
+  for (const [repository, policy] of Object.entries(authorities.repositories)) {
+    assert(/^[A-Za-z0-9._-]+$/u.test(repository), `${repository}: invalid authority repository name.`);
+    assert(policy?.current && typeof policy.current === "object", `${repository}: current authority is required.`);
+    assert(Array.isArray(policy.approved) && policy.approved.length > 0, `${repository}: at least one approved authority is required.`);
+    assertCommit(policy.current.commit, `${repository}.current.commit`);
+    assert(typeof policy.current.revision === "string" && policy.current.revision.trim(), `${repository}.current.revision is required.`);
+    const approvedKeys = new Set();
+    for (const authority of policy.approved) {
+      assertCommit(authority.commit, `${repository}.approved.commit`);
+      assert(typeof authority.revision === "string" && authority.revision.trim(), `${repository}: approved revision is required.`);
+      const key = `${authority.revision}:${authority.commit}`;
+      assert(!approvedKeys.has(key), `${repository}: duplicate approved authority ${authority.revision}.`);
+      approvedKeys.add(key);
+    }
+    assert(approvedKeys.has(`${policy.current.revision}:${policy.current.commit}`), `${repository}: current authority must also be approved.`);
+  }
+  return authorities;
+}
+
+export function resolveApprovedAuthority(authorities, repository, revision, commit) {
+  const policy = authorities?.repositories?.[repository];
+  if (!policy) return null;
+  return policy.approved.find((authority) => authority.revision === revision && authority.commit === commit) ?? null;
+}
+
 export function normalizeLearningMarkdown(value) {
   return value.replace(/\r\n?/gu, "\n").trim();
 }
@@ -37,7 +84,7 @@ function safeContentPath(contentFile, slug) {
   return resolved;
 }
 
-function validateSource(source, slug, provenance) {
+export function validateSourceReference(source, slug, authorities) {
   assert(source && typeof source === "object", `${slug}: source reference must be an object.`);
   assert(typeof source.label === "string" && source.label.trim(), `${slug}: source label is required.`);
   const url = new URL(source.url);
@@ -45,23 +92,50 @@ function validateSource(source, slug, provenance) {
   assert(url.hostname === "github.com", `${slug}: source URL must use github.com.`);
   assert(typeof source.repository === "string" && source.repository.trim(), `${slug}: source repository is required.`);
   assert(typeof source.path === "string" && source.path.trim(), `${slug}: source path is required.`);
-  const expected = source.repository === "ARESLib-Kotlin"
-    ? { commit: provenance.aresLibCommit, revision: provenance.aresLibRelease }
-    : source.repository === "ARES-FTC-Starter"
-      ? { commit: provenance.ftcStarterCommit, revision: provenance.ftcStarterCommit.slice(0, 7) }
-      : null;
-  assert(expected, `${slug}: source repository is not an approved curriculum authority.`);
+  const policy = authorities.repositories[source.repository];
+  assert(policy, `${slug}: source repository is not an approved curriculum authority.`);
   const segments = url.pathname.split("/").filter(Boolean).map((segment) => decodeURIComponent(segment));
   assert(segments[0] === "ARES-23247" && segments[1] === source.repository && segments[2] === "blob", `${slug}: source URL does not match its declared repository.`);
-  assert(segments[3] === expected.commit, `${slug}: source URL is not pinned to the catalog's declared ${source.repository} commit.`);
+  const sourceCommit = segments[3];
+  assert(/^[a-f0-9]{40}$/iu.test(sourceCommit), `${slug}: source URL must use an immutable full Git commit.`);
   assert(segments.slice(4).join("/") === source.path, `${slug}: source URL path does not match the declared source path.`);
   assert(typeof source.blobHash === "string" && /^[a-f0-9]{40}$/i.test(source.blobHash), `${slug}: source blobHash must be a 40-character Git object hash.`);
-  assert(source.revision === expected.revision, `${slug}: source revision does not match the declared release or commit.`);
+  assert(resolveApprovedAuthority(authorities, source.repository, source.revision, sourceCommit), `${slug}: source revision and commit are not an approved curriculum authority.`);
   return {
     url: `https://raw.githubusercontent.com/${segments[0]}/${segments[1]}/${segments[3]}/${segments.slice(4).map(encodeURIComponent).join("/")}`,
     blobHash: source.blobHash.toLowerCase(),
     label: `${slug}: ${source.path}`,
+    current: policy.current.revision === source.revision && policy.current.commit === sourceCommit,
   };
+}
+
+export function registerPathOrder(pathOrders, pathId, order, slug) {
+  const pathOrderKey = `${pathId}:${order}`;
+  assert(!pathOrders.has(pathOrderKey), `${slug}: path order ${order} duplicates ${pathOrders.get(pathOrderKey)} in ${pathId}.`);
+  pathOrders.set(pathOrderKey, slug);
+}
+
+async function verifyCurrentAresLibRelease(authorities) {
+  const current = authorities.repositories["ARESLib-Kotlin"]?.current;
+  assert(current, "ARESLib-Kotlin current authority is required for remote release verification.");
+  const response = await fetch("https://api.github.com/repos/ARES-23247/ARESLib-Kotlin/tags?per_page=100", {
+    redirect: "error",
+    signal: AbortSignal.timeout(20_000),
+    headers: {
+      accept: "application/vnd.github+json",
+      "user-agent": "ARESWEB-curriculum-provenance-validator",
+      "x-github-api-version": "2022-11-28",
+    },
+  });
+  assert(response.ok, `ARESLib release metadata failed with HTTP ${response.status}.`);
+  const tags = await response.json();
+  assert(Array.isArray(tags), "ARESLib release metadata did not return a tag list.");
+  const semanticTags = tags.filter((tag) => /^v\d+\.\d+\.\d+$/u.test(tag?.name) && /^[a-f0-9]{40}$/iu.test(tag?.commit?.sha));
+  assert(semanticTags.length > 0, "ARESLib release metadata contains no semantic release tags.");
+  semanticTags.sort((left, right) => compareSemverTags(right.name, left.name));
+  const latest = semanticTags[0];
+  assert(current.revision === latest.name, `ARESLib current authority is stale: declared ${current.revision}, latest tag is ${latest.name}.`);
+  assert(current.commit === latest.commit.sha, `ARESLib ${latest.name} authority commit does not match the authoritative tag.`);
 }
 
 async function verifyRemoteSource(source, cache) {
@@ -89,15 +163,21 @@ async function verifyRemoteSource(source, cache) {
 
 export async function validateLearningCatalog({ write = false, verifyRemote = false } = {}) {
   const catalog = JSON.parse(await readFile(CATALOG_PATH, "utf8"));
+  const authorities = validateSourceAuthorities(JSON.parse(await readFile(SOURCE_AUTHORITIES_PATH, "utf8")));
   assert(catalog.catalogVersion === 1, "catalogVersion must be 1.");
   assert(catalog.generatedFrom && typeof catalog.generatedFrom === "object", "generatedFrom release provenance is required.");
   assert(typeof catalog.generatedFrom.aresLibRelease === "string" && /^v\d+\.\d+\.\d+$/u.test(catalog.generatedFrom.aresLibRelease), "generatedFrom.aresLibRelease must be a semantic release tag.");
-  assert(/^[a-f0-9]{40}$/iu.test(catalog.generatedFrom.aresLibCommit), "generatedFrom.aresLibCommit must be an exact commit.");
-  assert(/^[a-f0-9]{40}$/iu.test(catalog.generatedFrom.ftcStarterCommit), "generatedFrom.ftcStarterCommit must be an exact commit.");
+  assertCommit(catalog.generatedFrom.aresLibCommit, "generatedFrom.aresLibCommit");
+  assertCommit(catalog.generatedFrom.ftcStarterCommit, "generatedFrom.ftcStarterCommit");
+  assertCommit(catalog.generatedFrom.aresFtcCommit, "generatedFrom.aresFtcCommit");
+  assert(resolveApprovedAuthority(authorities, "ARESLib-Kotlin", catalog.generatedFrom.aresLibRelease, catalog.generatedFrom.aresLibCommit), "generatedFrom ARESLib release is not an approved authority.");
+  assert(resolveApprovedAuthority(authorities, "ARES-FTC-Starter", catalog.generatedFrom.ftcStarterCommit.slice(0, 7), catalog.generatedFrom.ftcStarterCommit), "generatedFrom FTC Starter commit is not an approved authority.");
+  assert(resolveApprovedAuthority(authorities, "ARES-FTC", catalog.generatedFrom.aresFtcCommit.slice(0, 7), catalog.generatedFrom.aresFtcCommit), "generatedFrom ARES-FTC commit is not an approved authority.");
   assert(Array.isArray(catalog.documents) && catalog.documents.length > 0, "catalog documents must not be empty.");
   const slugs = new Set();
   const prepared = [];
   const remoteSources = [];
+  const pathOrders = new Map();
 
   for (const document of catalog.documents) {
     const slug = document.slug;
@@ -123,10 +203,11 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
       assert(PATH_IDS.has(membership.pathId), `${slug}: invalid learning path ${membership.pathId}.`);
       assert(!assignedPaths.has(membership.pathId), `${slug}: duplicate learning path ${membership.pathId}.`);
       assert(Number.isInteger(membership.order) && membership.order >= 0 && membership.order <= 10000, `${slug}: invalid path order.`);
+      registerPathOrder(pathOrders, membership.pathId, membership.order, slug);
       assignedPaths.add(membership.pathId);
     }
     assert(Array.isArray(document.sourceReferences) && document.sourceReferences.length > 0 && document.sourceReferences.length <= 20, `${slug}: at least one bounded source reference is required.`);
-    for (const source of document.sourceReferences) remoteSources.push(validateSource(source, slug, catalog.generatedFrom));
+    for (const source of document.sourceReferences) remoteSources.push(validateSourceReference(source, slug, authorities));
 
     const contentPath = safeContentPath(document.contentFile, slug);
     const content = normalizeLearningMarkdown(await readFile(contentPath, "utf8"));
@@ -170,12 +251,16 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   assert(legacyPlan.planVersion === 1 && legacyPlan.mode === "proposal-only", "Legacy migration plan must remain proposal-only version 1.");
   assert(Array.isArray(legacyPlan.actions), "Legacy migration actions must be an array.");
   const legacySlugs = new Set();
+  const replacementCatalogSlugs = new Set();
   for (const action of legacyPlan.actions) {
     assert(typeof action.slug === "string" && !legacySlugs.has(action.slug), "Legacy migration actions require unique slugs.");
     legacySlugs.add(action.slug);
     assert(typeof action.reason === "string" && action.reason.trim(), `${action.slug}: migration reason is required.`);
     assert(action.preconditions && typeof action.preconditions === "object", `${action.slug}: migration preconditions are required.`);
-    if (action.catalogSlug) assert(slugs.has(action.catalogSlug), `${action.slug}: replacement catalog slug is missing.`);
+    if (action.catalogSlug) {
+      assert(slugs.has(action.catalogSlug), `${action.slug}: replacement catalog slug is missing.`);
+      replacementCatalogSlugs.add(action.catalogSlug);
+    }
   }
 
   const crossLinkPlan = JSON.parse(await readFile(CROSS_LINK_PLAN_PATH, "utf8"));
@@ -203,6 +288,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   }
 
   if (verifyRemote) {
+    await verifyCurrentAresLibRelease(authorities);
     const cache = new Map();
     for (const source of remoteSources) await verifyRemoteSource(source, cache);
   }
@@ -217,10 +303,12 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   }
   return {
     documents: prepared.length,
+    stageableDocuments: prepared.length - replacementCatalogSlugs.size,
     paths: [...new Set(catalog.documents.flatMap((document) => document.pathMemberships.map((item) => item.pathId)))].length,
     legacyActions: legacyPlan.actions.length,
     proposedCrossLinks: crossLinkPlan.documents.length,
     verifiedSources: verifyRemote ? new Set(remoteSources.map((source) => source.url)).size : 0,
+    historicalSources: remoteSources.filter((source) => !source.current).length,
     output: write ? OUTPUT_PATH : null,
   };
 }
@@ -230,5 +318,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     write: process.argv.includes("--write"),
     verifyRemote: process.argv.includes("--verify-remote"),
   });
-  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
+  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. ${result.historicalSources} source references intentionally retain reviewed historical pins.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARESLib release.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
 }

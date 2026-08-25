@@ -14,7 +14,7 @@ pnpm run content:verify
 pnpm run content:prepare
 ```
 
-`content:validate` performs deterministic offline schema and commit-pinning checks. `content:verify` additionally downloads the exact pinned public source files and recomputes their Git blob hashes; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
+`content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, and immutable commit-pinning checks. Historical reviewed pins remain valid and retain their real version labels. `content:verify` additionally downloads the exact pinned public source files, recomputes their Git blob hashes, and fails when `source-authorities.json` no longer names the latest authoritative ARESLib semantic release tag and commit; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
 
 Preparation normalizes Markdown line endings to LF so the staged record and its
 review digest are identical on Windows, Linux, and CI.

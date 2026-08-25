@@ -15,6 +15,13 @@ import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
 import LearningLibraryLanding from "@/components/docs/LearningLibraryLanding";
 import LearningMetadataPanel from "@/components/docs/LearningMetadataPanel";
+import { useAcademyProgress } from "@/hooks/useAcademyProgress";
+import {
+  learningPathNavigation,
+  parseLearningFilters,
+  relatedLearningDocuments,
+} from "@/lib/learningExperience";
+import { LEARNING_PATHS, labelFor } from "@/lib/learningContent";
 const AutonomousLogicDiagram = React.lazy(() => import("@/components/docs/AutonomousLogicDiagram"));
 import ZulipThread from "@/components/ZulipThread";
 import TiptapRenderer from "@/components/TiptapRenderer";
@@ -44,9 +51,15 @@ export default function AcademyPage() {
   const location = useLocation();
   const { pathname } = location;
   const { user, authorizedUser } = useAuth();
+  const academyProgress = useAcademyProgress();
 
   const isAresLib = pathname.startsWith("/docs");
   const basePath = isAresLib ? "/docs" : "/academy";
+  const requestedPath = useMemo(() => {
+    if (isAresLib) return null;
+    const parsed = parseLearningFilters(new URLSearchParams(location.search));
+    return parsed.pathId === "all" ? null : parsed.pathId;
+  }, [isAresLib, location.search]);
 
   const userRole = authorizedUser?.role;
   const isEditor = Boolean(
@@ -186,6 +199,17 @@ export default function AcademyPage() {
     }
     return ordered;
   }, [allDocs]);
+
+  const pathNavigation = useMemo(
+    () => currentDoc
+      ? learningPathNavigation(allDocs, currentDoc.slug, requestedPath)
+      : { pathId: null, documents: [], position: -1, previous: null, next: null },
+    [allDocs, currentDoc, requestedPath],
+  );
+  const relatedDocuments = useMemo(
+    () => currentDoc ? relatedLearningDocuments(allDocs, currentDoc.slug) : [],
+    [allDocs, currentDoc],
+  );
 
   // Handle Ctrl+K overlay search shortcuts
   useEffect(() => {
@@ -427,7 +451,11 @@ export default function AcademyPage() {
             )}
 
             {!slug && !listLoading && !listError && allDocs.length > 0 && (
-              <LearningLibraryLanding documents={allDocs} library={isAresLib ? "areslib" : "academy"} />
+              <LearningLibraryLanding
+                documents={allDocs}
+                library={isAresLib ? "areslib" : "academy"}
+                progress={isAresLib ? undefined : academyProgress}
+              />
             )}
 
             {currentDoc && !docLoading && (
@@ -439,7 +467,7 @@ export default function AcademyPage() {
               >
                 <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-white/60">
-                    <Link to={basePath} className="flex shrink-0 items-center overflow-hidden shadow-lg ares-cut-sm group">
+                    <Link to={pathNavigation.pathId ? `${basePath}?path=${pathNavigation.pathId}` : basePath} className="flex shrink-0 items-center overflow-hidden shadow-lg ares-cut-sm group">
                       <span className="bg-ares-red px-2 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10 flex items-center gap-1">
                         <GraduationCap size={12} /> ARES
                       </span>
@@ -474,6 +502,61 @@ export default function AcademyPage() {
                 )}
 
                 <LearningMetadataPanel document={currentDoc} />
+
+                {!isAresLib && (
+                  <section className="mb-8 border border-white/10 bg-white/[0.03] p-5" aria-labelledby="lesson-progress-heading">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 id="lesson-progress-heading" className="font-heading text-lg font-black uppercase text-white">
+                          Your local progress
+                        </h2>
+                        <p className="mt-1 text-sm leading-6 text-marble/65">
+                          This completion mark stays only in this browser. It is not connected to your name or ARES account.
+                          {!academyProgress.storageAvailable && " Browser storage is unavailable, so this mark will last only until the page closes."}
+                        </p>
+                        {pathNavigation.pathId && (
+                          <p className="mt-2 text-xs font-bold uppercase tracking-wider text-ares-gold">
+                            {labelFor(LEARNING_PATHS, pathNavigation.pathId)} · Lesson {pathNavigation.position + 1} of {pathNavigation.documents.length}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        aria-pressed={academyProgress.completedSlugs.has(currentDoc.slug)}
+                        onClick={() => academyProgress.toggleCompleted(currentDoc.slug)}
+                        className={`min-h-11 shrink-0 border px-5 py-3 text-xs font-black uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${academyProgress.completedSlugs.has(currentDoc.slug) ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white hover:border-ares-cyan"}`}
+                      >
+                        {academyProgress.completedSlugs.has(currentDoc.slug) ? "Completed — undo" : "Mark lesson complete"}
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {currentDoc.prerequisites.length > 0 && (
+                  <section className="mb-8 border-l-4 border-ares-gold bg-ares-gold/[0.06] p-5" aria-labelledby="prerequisites-heading">
+                    <h2 id="prerequisites-heading" className="font-heading text-lg font-black uppercase text-white">Before you start</h2>
+                    <ul className="mt-3 space-y-2 text-sm text-marble/75">
+                      {currentDoc.prerequisites.map((prerequisite) => {
+                        const prerequisiteDocument = allDocs.find((document) => document.slug === prerequisite);
+                        return (
+                          <li key={prerequisite}>
+                            {prerequisiteDocument ? (
+                              <Link
+                                to={`${basePath}/${prerequisiteDocument.slug}${pathNavigation.pathId ? `?path=${pathNavigation.pathId}` : ""}`}
+                                className="font-bold text-ares-gold hover:underline focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                              >
+                                {prerequisiteDocument.title}
+                              </Link>
+                            ) : prerequisite}
+                            {prerequisiteDocument && academyProgress.completedSlugs.has(prerequisiteDocument.slug) && (
+                              <span className="ml-2 text-xs font-bold uppercase text-ares-cyan">Completed locally</span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                )}
 
                 <div className="ares-docs-content">
                   {(() => {
@@ -516,18 +599,14 @@ export default function AcademyPage() {
 
                   <div className="mt-16 pt-8 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {(() => {
-                      const currentIndex = allDocs.findIndex((d) => d.slug === slug);
-                      const prevDoc = currentIndex > 0 ? allDocs[currentIndex - 1] : null;
-                      const nextDoc =
-                        currentIndex !== -1 && currentIndex < allDocs.length - 1
-                          ? allDocs[currentIndex + 1]
-                          : null;
-
+                      const prevDoc = pathNavigation.previous;
+                      const nextDoc = pathNavigation.next;
+                      const pathSearch = pathNavigation.pathId ? `?path=${pathNavigation.pathId}` : "";
                       return (
                         <>
                           {prevDoc ? (
                             <Link
-                              to={`${basePath}/${prevDoc.slug}`}
+                              to={`${basePath}/${prevDoc.slug}${pathSearch}`}
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-red/50 bg-black/20 hover:bg-black/40 transition-colors group"
                             >
                               <span className="text-marble/60 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
@@ -546,7 +625,7 @@ export default function AcademyPage() {
                           )}
                           {nextDoc ? (
                             <Link
-                              to={`${basePath}/${nextDoc.slug}`}
+                              to={`${basePath}/${nextDoc.slug}${pathSearch}`}
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end"
                             >
                               <span className="text-marble/60 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
@@ -563,6 +642,25 @@ export default function AcademyPage() {
                       );
                     })()}
                   </div>
+
+                  {relatedDocuments.length > 0 && (
+                    <section className="mt-10 border-t border-white/10 pt-8" aria-labelledby="related-lessons-heading">
+                      <h2 id="related-lessons-heading" className="font-heading text-xl font-black uppercase text-white">Related lessons</h2>
+                      <ul className="mt-4 grid gap-3 md:grid-cols-3">
+                        {relatedDocuments.map((document) => (
+                          <li key={document.slug}>
+                            <Link
+                              to={`${basePath}/${document.slug}`}
+                              className="flex h-full min-h-24 flex-col border border-white/10 bg-black/20 p-4 hover:border-ares-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                            >
+                              <span className="text-xs font-bold uppercase tracking-wider text-ares-gold">{document.category}</span>
+                              <span className="mt-2 font-bold text-white">{document.title}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                 </div>
 
                 {currentDoc && (
