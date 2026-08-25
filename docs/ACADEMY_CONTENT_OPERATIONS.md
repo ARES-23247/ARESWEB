@@ -29,6 +29,11 @@ pnpm run content:prepare
 9. Re-read every affected document and smoke-test the public Academy and ARESLib routes.
 10. Keep the backup until the production verification window closes.
 
+Use [`ACADEMY_HUMAN_REVIEW.md`](ACADEMY_HUMAN_REVIEW.md) for the exact review
+queue, protected preview links, replacement source files, cross-link proposals,
+and acceptance checklist. The reviewer must list exceptions rather than approve
+content they did not inspect.
+
 ## Bounded migration runner
 
 `pnpm run content:migrate` is dry-run-only unless `--apply` is present. An apply
