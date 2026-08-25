@@ -3,6 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAcademyProgress } from "@/hooks/useAcademyProgress";
 import { ACADEMY_PROGRESS_STORAGE_KEY } from "@/lib/academyProgress";
 
+function createStorageEvent(key: string, newValue: string): StorageEvent {
+  const event = new StorageEvent("storage");
+  Object.defineProperties(event, {
+    key: { value: key },
+    newValue: { value: newValue },
+  });
+  return event;
+}
+
 describe("useAcademyProgress", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -20,16 +29,16 @@ describe("useAcademyProgress", () => {
     act(() => result.current.toggleCompleted("robot-state-flow"));
     expect(result.current.completedSlugs).toEqual(new Set(["robot-state-flow"]));
 
-    act(() => window.dispatchEvent(new StorageEvent("storage", {
-      key: "unrelated-key",
-      newValue: JSON.stringify({ version: 1, completedSlugs: ["ignored"] }),
-    })));
+    act(() => window.dispatchEvent(createStorageEvent(
+      "unrelated-key",
+      JSON.stringify({ version: 1, completedSlugs: ["ignored"] }),
+    )));
     expect(result.current.completedSlugs).toEqual(new Set(["robot-state-flow"]));
 
-    act(() => window.dispatchEvent(new StorageEvent("storage", {
-      key: ACADEMY_PROGRESS_STORAGE_KEY,
-      newValue: JSON.stringify({ version: 1, completedSlugs: ["safe-output"] }),
-    })));
+    act(() => window.dispatchEvent(createStorageEvent(
+      ACADEMY_PROGRESS_STORAGE_KEY,
+      JSON.stringify({ version: 1, completedSlugs: ["safe-output"] }),
+    )));
     expect(result.current.completedSlugs).toEqual(new Set(["safe-output"]));
 
     act(() => result.current.resetProgress());
