@@ -111,7 +111,10 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
             return <LazyWrap><SimComponent /></LazyWrap>;
           }])
         ),
-        h1: ({ children }) => <h1 className="text-3xl font-bold font-heading mt-10 mb-4 text-white border-b border-white/10 pb-2">{children}</h1>,
+        // The route already owns the document's single page-level heading. Treat
+        // author-supplied Markdown H1s as sections so legacy content cannot create
+        // an invalid heading outline or duplicate the visible page title.
+        h1: ({ children }) => <h2 className="text-3xl font-bold font-heading mt-10 mb-4 text-white border-b border-white/10 pb-2">{children}</h2>,
         h2: ({ children }) => {
           const text = String(children);
           const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');

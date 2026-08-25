@@ -13,6 +13,8 @@ import { useFocusTrap } from "@/lib/useFocusTrap";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
+import LearningLibraryLanding from "@/components/docs/LearningLibraryLanding";
+import LearningMetadataPanel from "@/components/docs/LearningMetadataPanel";
 const AutonomousLogicDiagram = React.lazy(() => import("@/components/docs/AutonomousLogicDiagram"));
 import ZulipThread from "@/components/ZulipThread";
 import TiptapRenderer from "@/components/TiptapRenderer";
@@ -46,8 +48,12 @@ export default function AcademyPage() {
   const isAresLib = pathname.startsWith("/docs");
   const basePath = isAresLib ? "/docs" : "/academy";
 
-  const userRole = authorizedUser?.role || "member";
-  const isEditor = userRole === "admin" || userRole === "coach" || userRole === "mentor" || userRole === "author";
+  const userRole = authorizedUser?.role;
+  const isEditor = Boolean(
+    user
+    && userRole
+    && ["admin", "coach", "mentor", "member"].includes(userRole),
+  );
 
   const [allDocs, setAllDocs] = useState<DocRecord[]>([]);
   const [currentDoc, setCurrentDoc] = useState<DocRecord | null>(null);
@@ -154,13 +160,13 @@ export default function AcademyPage() {
           d.title.toLowerCase().includes(q) ||
           d.category.toLowerCase().includes(q) ||
           d.description.toLowerCase().includes(q) ||
-          d.content.toLowerCase().includes(q)
+          (d.content?.toLowerCase().includes(q) ?? false)
       )
       .map((d) => ({
         slug: d.slug,
         title: d.title,
         category: d.category,
-        snippet: d.description || d.content.substring(0, 100) + "..."
+        snippet: d.description || (d.content ? d.content.substring(0, 100) + "..." : "Open this item to read more.")
       }));
   }, [searchQuery, allDocs]);
 
@@ -201,13 +207,6 @@ export default function AcademyPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [closeSearch]);
-
-  // Redirect to first available document if raw route is opened
-  useEffect(() => {
-    if (!slug && !listLoading && !listError && allDocs.length > 0) {
-      navigate(`${basePath}/${allDocs[0].slug}`, { replace: true });
-    }
-  }, [slug, allDocs, listLoading, listError, navigate, basePath]);
 
   const handleFeedback = async (isHelpful: boolean, comment: string = "") => {
     if (!slug || isSubmittingFeedback) return;
@@ -376,7 +375,7 @@ export default function AcademyPage() {
         />
 
         <div className="flex-1 flex w-full">
-          <div className="flex-1 min-w-0 pt-24 pb-16 px-6 lg:px-12 max-w-4xl mx-auto xl:mx-0 xl:max-w-3xl">
+          <div className={`min-w-0 flex-1 px-6 pb-16 pt-24 lg:px-12 ${slug ? "mx-auto max-w-4xl xl:mx-0 xl:max-w-3xl" : "max-w-none"}`}>
             {docLoading && slug && (
               <div className="flex justify-center items-center py-20">
                 <div className="w-10 h-10 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin"></div>
@@ -418,6 +417,19 @@ export default function AcademyPage() {
               </div>
             )}
 
+            {!slug && listLoading && !listError && (
+              <div role="status" aria-live="polite" className="flex min-h-[50vh] items-center justify-center">
+                <div className="text-center">
+                  <div aria-hidden="true" className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-ares-red/30 border-t-ares-red" />
+                  <p className="mt-4 text-sm text-marble/70">Loading the learning library…</p>
+                </div>
+              </div>
+            )}
+
+            {!slug && !listLoading && !listError && allDocs.length > 0 && (
+              <LearningLibraryLanding documents={allDocs} library={isAresLib ? "areslib" : "academy"} />
+            )}
+
             {currentDoc && !docLoading && (
               <motion.article
                 key={currentDoc.slug}
@@ -425,9 +437,9 @@ export default function AcademyPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center gap-2 text-xs text-white/60">
-                    <Link to={basePath} className="flex items-center shadow-lg ares-cut-sm overflow-hidden group">
+                <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-white/60">
+                    <Link to={basePath} className="flex shrink-0 items-center overflow-hidden shadow-lg ares-cut-sm group">
                       <span className="bg-ares-red px-2 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10 flex items-center gap-1">
                         <GraduationCap size={12} /> ARES
                       </span>
@@ -436,9 +448,9 @@ export default function AcademyPage() {
                       </span>
                     </Link>
                     <ChevronRight size={12} />
-                    <span className="text-ares-gold/60">{currentDoc.category}</span>
+                    <span className="min-w-0 break-words text-ares-gold/60">{currentDoc.category}</span>
                     <ChevronRight size={12} />
-                    <span className="text-white/60">{currentDoc.title}</span>
+                    <span className="min-w-0 break-words text-white/60">{currentDoc.title}</span>
                   </div>
 
                   {isEditor && (
@@ -460,6 +472,8 @@ export default function AcademyPage() {
                     {currentDoc.description}
                   </p>
                 )}
+
+                <LearningMetadataPanel document={currentDoc} />
 
                 <div className="ares-docs-content">
                   {(() => {
@@ -597,6 +611,7 @@ export default function AcademyPage() {
                 )}
 
                 {/* ── Documentation Feedback ───────────────────────────── */}
+                {user && authorizedUser ? (
                 <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
                     <BookOpen size={64} className="text-ares-gold rotate-12" />
@@ -637,6 +652,11 @@ export default function AcademyPage() {
                     </div>
                   </div>
                 </div>
+                ) : (
+                  <p className="mb-8 mt-12 border-t border-white/10 pt-6 text-sm text-marble/60">
+                    Authorized team members can sign in to leave documentation feedback.
+                  </p>
+                )}
 
                 {/* ── Documentation Discussion ───────────────────────────── */}
                 {slug && user && currentDoc && <ZulipThread stream="announcements" topic={`Doc Slug: ${currentDoc.slug}`} />}

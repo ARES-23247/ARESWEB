@@ -51,6 +51,19 @@ Object.defineProperty(window, "IntersectionObserver", {
 
 const mockDocsList = [
   {
+    learningSchemaVersion: 1,
+    metadataStatus: "complete" as const,
+    subject: "computing-ai" as const,
+    topics: ["artificial intelligence"],
+    contentType: "lesson" as const,
+    level: "beginner" as const,
+    estimatedMinutes: 30,
+    pathMemberships: [{ pathId: "ai-ml-foundations" as const, order: 1 }],
+    prerequisites: [],
+    objectives: ["Describe foundational AI concepts."],
+    platforms: ["web" as const],
+    sourceReferences: [],
+    safetyScope: "none" as const,
     slug: "ai-101-intro",
     title: "Introduction to Artificial Intelligence",
     category: "AI 101",
@@ -68,6 +81,19 @@ const mockDocsList = [
     updatedAt: "2026-08-10T12:00:00Z",
   },
   {
+    learningSchemaVersion: 1,
+    metadataStatus: "complete" as const,
+    subject: "computing-ai" as const,
+    topics: ["neural networks", "computer vision"],
+    contentType: "lesson" as const,
+    level: "intermediate" as const,
+    estimatedMinutes: 45,
+    pathMemberships: [{ pathId: "ai-ml-foundations" as const, order: 2 }],
+    prerequisites: ["ai-101-intro"],
+    objectives: ["Explain how convolutional filters process images."],
+    platforms: ["web" as const],
+    sourceReferences: [],
+    safetyScope: "none" as const,
     slug: "neural-networks-basics",
     title: "Neural Networks for Computer Vision",
     category: "Neural Networks",
@@ -100,6 +126,29 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
     });
   });
 
+  it("keeps the Academy root as a subject and learning-path landing page", async () => {
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+
+    render(
+      <MemoryRouter initialEntries={["/academy"]}>
+        <Routes>
+          <Route path="/academy" element={<><AcademyPage /><LocationProbe /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "ARES Academy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Learning paths" })).toBeInTheDocument();
+    expect(screen.getByTestId("location-probe")).toHaveTextContent("/academy");
+    expect(fetchPublicDocument).not.toHaveBeenCalled();
+    expect(screen.getByText("Showing 2 of 2 items.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /AI and Machine Learning Foundations/i }));
+    expect(screen.getByText("Showing 2 of 2 items.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Search titles and topics"), { target: { value: "not present" } });
+    expect(screen.getByRole("heading", { name: "No matching lessons" })).toBeInTheDocument();
+  });
+
   it("loads doc list and displays the active lesson with author lifecycle and navigation links", async () => {
     vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
     vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
@@ -117,6 +166,8 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
     expect(screen.getByText(/Foundational concepts of artificial intelligence/i)).toBeInTheDocument();
     expect(screen.getByText("AlphaCoder")).toBeInTheDocument();
     expect(screen.getByText(/Last updated:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Authorized team members can sign in to leave documentation feedback/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Yes, it was/i })).not.toBeInTheDocument();
 
     // Next navigation button to neural networks lesson
     expect(screen.getByRole("link", { name: /Next.*Neural Networks for Computer Vision/i })).toHaveAttribute(
@@ -153,6 +204,10 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("submits helpful reader feedback to Firestore docs_feedback collection", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "member-user" },
+      authorizedUser: { role: "member" },
+    });
     vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
     vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
 
@@ -185,6 +240,10 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
   });
 
   it("submits detailed constructive feedback through the modal dialog", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: "member-user" },
+      authorizedUser: { role: "member" },
+    });
     vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
     vi.mocked(fetchPublicDocument).mockResolvedValue(mockDocsList[0]);
 

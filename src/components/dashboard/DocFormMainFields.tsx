@@ -7,6 +7,7 @@ import type {
   DocumentEditorDraft,
   DocumentEditorVariant,
 } from "./documentEditorDraft";
+import LearningMetadataFields from "./LearningMetadataFields";
 
 interface DocFormMainFieldsProps {
   variant: DocumentEditorVariant;
@@ -123,6 +124,7 @@ export default function DocFormMainFields({
         </div>
 
         {variant === "docs" && <DocFormMetadataFields {...metadataProps} />}
+        {variant === "docs" && <LearningMetadataFields draft={draft} onChange={onChange} />}
         {variant === "documents" && (
           <div className="space-y-6">
             <DocFormAttachmentFields {...attachmentProps} />

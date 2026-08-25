@@ -8,9 +8,16 @@ import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
 const ARESLIB_CATEGORIES = [
+  "Architecture & Redux",
+  "Math & Controls",
+  "Hardware & I/O",
+  "Simulation & Testing",
+  "FTC Integration",
+  "FRC Integration",
+  "Telemetry & Analytics",
+  "Migration & Release Notes",
   "Core Math & Control",
   "State Management",
-  "Hardware I/O",
   "Application Layer",
   "Kinematics & Odometry",
   "Path Planning & VFH+"
@@ -57,7 +64,7 @@ export default function AreslibManagementPage() {
             <DocumentConnectionBadge state={connectionState} />
           </h1>
           <p className="text-marble/70 text-sm mt-2 max-w-2xl font-medium">
-            Author and publish **ARESLib** software documentation, EKF localization guides, and state-space API documentation.
+            Author versioned ARESLib reference material with public source provenance, platform scope, and safety boundaries.
           </p>
         </div>
 
@@ -118,7 +125,7 @@ export default function AreslibManagementPage() {
           onClose={handleCloseEditor}
           editDoc={selectedDoc}
           categories={ARESLIB_CATEGORIES}
-          defaultCategory="Core Math & Control"
+          defaultCategory="Architecture & Redux"
           variant="docs"
           onSave={handleSave}
           revisions={revisions}

@@ -2,6 +2,7 @@ import express from "express";
 import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import { publicLearningMetadata } from "../lib/learningContent";
 
 const router = express.Router();
 
@@ -62,14 +63,19 @@ function postDto(id: string, data: Record<string, unknown>, includeContent: bool
   };
 }
 
-function documentDto(id: string, data: Record<string, unknown>) {
+function documentDto(
+  id: string,
+  data: Record<string, unknown>,
+  library: PublicLibrary,
+  includeContent: boolean,
+) {
   return {
     slug: id,
     title: text(data.title, 200) || "Untitled Document",
     category: text(data.category, 120) || "General",
     sortOrder: sortOrder(data.sortOrder),
     description: text(data.description, 4_000),
-    content: text(data.content, 750_000),
+    ...(includeContent ? { content: text(data.content, 750_000) } : {}),
     status: "published",
     isDeleted: 0,
     isPortfolio: flag(data.isPortfolio),
@@ -80,6 +86,7 @@ function documentDto(id: string, data: Record<string, unknown>) {
     updatedAt: text(data.updatedAt, 80) || undefined,
     original_authorNickname: text(data.original_authorNickname, 120) || undefined,
     original_authorAvatar: text(data.original_authorAvatar, 2_048) || undefined,
+    ...publicLearningMetadata(data, library),
   };
 }
 
@@ -128,7 +135,7 @@ router.get(
     const documents = snapshot.docs
       .filter((document) => isVisibleInLibrary(document.data(), library))
       .slice(0, 200)
-      .map((document) => documentDto(document.id, document.data()))
+      .map((document) => documentDto(document.id, document.data(), library, false))
       .sort((left, right) =>
         left.category.localeCompare(right.category)
         || left.sortOrder - right.sortOrder
@@ -148,7 +155,7 @@ router.get(
     if (!snapshot.exists || !isVisibleInLibrary(data, library)) {
       throw new ApiError(404, "Published document not found.", "CONTENT_NOT_FOUND");
     }
-    res.json({ document: documentDto(slug, data) });
+    res.json({ document: documentDto(slug, data, library, true) });
   }),
 );
 

@@ -131,6 +131,12 @@ describe("public content DTO API", () => {
           displayInMathCorner: 1,
           original_authorNickname: "Student Author",
           driveFileId: "internal-drive-id",
+          learningSchemaVersion: 1,
+          subject: "computing-ai",
+          contentType: "lesson",
+          level: "beginner",
+          safetyScope: "none",
+          topics: ["AI"],
         }),
         document("lesson-a", {
           title: "Lesson A",
@@ -161,7 +167,10 @@ describe("public content DTO API", () => {
     expect(payload.documents[1]).toMatchObject({
       sortOrder: 2,
       original_authorNickname: "Student Author",
+      subject: "computing-ai",
+      metadataStatus: "complete",
     });
+    expect(payload.documents[1]).not.toHaveProperty("content");
     expect(payload.documents[1]).not.toHaveProperty("driveFileId");
   });
 
@@ -186,6 +195,8 @@ describe("public content DTO API", () => {
         slug: "control-loops",
         sortOrder: 0,
         displayInAreslib: 1,
+        content: "",
+        contentType: "reference",
       }),
     });
 

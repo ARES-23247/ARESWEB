@@ -1,5 +1,15 @@
 import type { DocRecord, DocRevision } from "@/hooks/useDocumentSync";
 import { normalizeDocumentMedia, type ContentMediaCollection } from "@/lib/documentMedia";
+import {
+  normalizeLearningMetadata,
+  type LearningContentType,
+  type LearningLevel,
+  type LearningPathMembership,
+  type LearningPlatform,
+  type LearningSafetyScope,
+  type LearningSourceReference,
+  type LearningSubject,
+} from "@/lib/learningContent";
 
 export type DocumentEditorVariant = "docs" | "documents" | "blog";
 
@@ -22,6 +32,20 @@ export interface DocumentEditorDraft {
   author: string;
   date: string;
   thumbnail: string;
+  subject: LearningSubject;
+  topics: string[];
+  contentType: LearningContentType;
+  level: LearningLevel;
+  estimatedMinutes: number;
+  pathMemberships: LearningPathMembership[];
+  prerequisites: string[];
+  objectives: string[];
+  platforms: LearningPlatform[];
+  sourceReferences: LearningSourceReference[];
+  appliesToVersion: string;
+  reviewedAt: string;
+  reviewedByLabel: string;
+  safetyScope: LearningSafetyScope;
 }
 
 interface DraftContext {
@@ -49,6 +73,15 @@ export function createDocumentEditorDraft({
   const categoryIsCustom = Boolean(
     editDoc && variant === "docs" && !categories.includes(editDoc.category),
   );
+  const learningMetadata = normalizeLearningMetadata(
+    (editDoc ?? {}) as unknown as Record<string, unknown>,
+    {
+      category: editDoc?.category || defaultCategory,
+      reference: Boolean(editDoc?.displayInAreslib)
+        || defaultCategory === "Core Math & Control"
+        || defaultCategory === "Architecture & Redux",
+    },
+  );
 
   return {
     title: editDoc?.title || "",
@@ -65,14 +98,22 @@ export function createDocumentEditorDraft({
       ? editDoc.displayInAreslib === 1
       : variant === "docs" &&
         (defaultCategory === "Core Math & Control" ||
-          defaultCategory === "Core Math"),
+          defaultCategory === "Core Math" ||
+          defaultCategory === "Architecture & Redux"),
     displayInMathCorner: editDoc
       ? editDoc.displayInMathCorner === 1
       : variant === "docs" &&
-        (defaultCategory === "AI 101" || defaultCategory === "Mathematics"),
+        (defaultCategory === "AI 101" ||
+          defaultCategory === "Mathematics" ||
+          defaultCategory === "Mathematics & Data" ||
+          defaultCategory === "Computing & AI"),
     displayInScienceCorner: editDoc
       ? editDoc.displayInScienceCorner === 1
-      : variant === "docs" && defaultCategory === "Physics",
+      : variant === "docs" && (
+        defaultCategory === "Physics"
+        || defaultCategory === "Physics & Applied Science"
+        || defaultCategory === "Robotics & Engineering"
+      ),
     isPortfolio: editDoc?.isPortfolio === 1,
     isExecutiveSummary: editDoc?.isExecutiveSummary === 1,
     fileUrl: variant === "documents" ? editDoc?.fileUrl || "" : "",
@@ -80,6 +121,20 @@ export function createDocumentEditorDraft({
     author: variant === "blog" ? editDoc?.author || currentUserNickname : "",
     date: variant === "blog" ? editDoc?.date || date : "",
     thumbnail: variant === "blog" ? editDoc?.thumbnail || "" : "",
+    subject: learningMetadata.subject,
+    topics: learningMetadata.topics,
+    contentType: learningMetadata.contentType,
+    level: learningMetadata.level,
+    estimatedMinutes: learningMetadata.estimatedMinutes || 30,
+    pathMemberships: learningMetadata.pathMemberships,
+    prerequisites: learningMetadata.prerequisites,
+    objectives: learningMetadata.objectives,
+    platforms: learningMetadata.platforms,
+    sourceReferences: learningMetadata.sourceReferences,
+    appliesToVersion: learningMetadata.appliesToVersion || "",
+    reviewedAt: learningMetadata.reviewedAt?.slice(0, 10) || "",
+    reviewedByLabel: learningMetadata.reviewedByLabel || "",
+    safetyScope: learningMetadata.safetyScope,
   };
 }
 
@@ -113,6 +168,22 @@ export function parseRecoveryDraft(
     "isPortfolio",
     "isExecutiveSummary",
   ] as const;
+  const learningFields = [
+    "subject",
+    "topics",
+    "contentType",
+    "level",
+    "estimatedMinutes",
+    "pathMemberships",
+    "prerequisites",
+    "objectives",
+    "platforms",
+    "sourceReferences",
+    "appliesToVersion",
+    "reviewedAt",
+    "reviewedByLabel",
+    "safetyScope",
+  ] as const;
 
   for (const field of stringFields) {
     if (source[field] !== undefined) {
@@ -136,6 +207,25 @@ export function parseRecoveryDraft(
       throw new Error("Stored sortOrder is invalid.");
     }
     parsed.sortOrder = source.sortOrder;
+  }
+  if (learningFields.some((field) => source[field] !== undefined)) {
+    const normalized = normalizeLearningMetadata(source);
+    Object.assign(parsed, {
+      subject: normalized.subject,
+      topics: normalized.topics,
+      contentType: normalized.contentType,
+      level: normalized.level,
+      estimatedMinutes: normalized.estimatedMinutes || 30,
+      pathMemberships: normalized.pathMemberships,
+      prerequisites: normalized.prerequisites,
+      objectives: normalized.objectives,
+      platforms: normalized.platforms,
+      sourceReferences: normalized.sourceReferences,
+      appliesToVersion: normalized.appliesToVersion || "",
+      reviewedAt: normalized.reviewedAt?.slice(0, 10) || "",
+      reviewedByLabel: normalized.reviewedByLabel || "",
+      safetyScope: normalized.safetyScope,
+    });
   }
   return parsed;
 }
@@ -162,6 +252,10 @@ export function applyRevisionToDraft(
 
   if (context.variant === "docs") {
     const knownCategory = context.categories.includes(revision.category);
+    const learningMetadata = normalizeLearningMetadata(revision as unknown as Record<string, unknown>, {
+      category: revision.category,
+      reference: revision.displayInAreslib === 1,
+    });
     return {
       ...next,
       category: knownCategory ? revision.category : "custom",
@@ -172,6 +266,20 @@ export function applyRevisionToDraft(
       displayInScienceCorner: revision.displayInScienceCorner === 1,
       isPortfolio: revision.isPortfolio === 1,
       isExecutiveSummary: revision.isExecutiveSummary === 1,
+      subject: learningMetadata.subject,
+      topics: learningMetadata.topics,
+      contentType: learningMetadata.contentType,
+      level: learningMetadata.level,
+      estimatedMinutes: learningMetadata.estimatedMinutes || 30,
+      pathMemberships: learningMetadata.pathMemberships,
+      prerequisites: learningMetadata.prerequisites,
+      objectives: learningMetadata.objectives,
+      platforms: learningMetadata.platforms,
+      sourceReferences: learningMetadata.sourceReferences,
+      appliesToVersion: learningMetadata.appliesToVersion || "",
+      reviewedAt: learningMetadata.reviewedAt?.slice(0, 10) || "",
+      reviewedByLabel: learningMetadata.reviewedByLabel || "",
+      safetyScope: learningMetadata.safetyScope,
     };
   }
   if (context.variant === "documents") {
@@ -205,6 +313,27 @@ export function buildDocumentSave(
         : draft.category;
     if (!category)
       return { error: "Validation: specify a category before saving." };
+    if (!Number.isFinite(draft.estimatedMinutes) || draft.estimatedMinutes < 1 || draft.estimatedMinutes > 600) {
+      return { error: "Validation: estimated time must be between 1 and 600 minutes." };
+    }
+    if (draft.prerequisites.some((slugValue) => !/^[A-Za-z0-9][A-Za-z0-9_-]{0,299}$/.test(slugValue))) {
+      return { error: "Validation: every prerequisite must be a valid lesson slug." };
+    }
+    if (new Set(draft.pathMemberships.map((item) => item.pathId)).size !== draft.pathMemberships.length) {
+      return { error: "Validation: a learning path can only be assigned once." };
+    }
+    for (const source of draft.sourceReferences) {
+      try {
+        if (!source.label.trim() || new URL(source.url).protocol !== "https:") {
+          return { error: "Validation: every source needs a label and an HTTPS URL." };
+        }
+        if (source.blobHash && !/^[a-f0-9]{7,64}$/i.test(source.blobHash)) {
+          return { error: "Validation: source hashes must be hexadecimal Git object hashes." };
+        }
+      } catch {
+        return { error: "Validation: every source needs a label and an HTTPS URL." };
+      }
+    }
   }
 
   const payload: Omit<DocRecord, "slug"> = {
@@ -223,7 +352,32 @@ export function buildDocumentSave(
     updatedAt: new Date().toISOString(),
   };
 
-  if (variant === "documents") {
+  if (variant === "docs") {
+    const normalizedLearning = normalizeLearningMetadata({
+      ...draft,
+      learningSchemaVersion: 1,
+    } as unknown as Record<string, unknown>, {
+      category,
+      reference: draft.displayInAreslib,
+    });
+    Object.assign(payload, {
+      learningSchemaVersion: 1,
+      subject: normalizedLearning.subject,
+      topics: normalizedLearning.topics,
+      contentType: normalizedLearning.contentType,
+      level: normalizedLearning.level,
+      estimatedMinutes: normalizedLearning.estimatedMinutes || 30,
+      pathMemberships: normalizedLearning.pathMemberships,
+      prerequisites: normalizedLearning.prerequisites,
+      objectives: normalizedLearning.objectives,
+      platforms: normalizedLearning.platforms,
+      sourceReferences: normalizedLearning.sourceReferences,
+      ...(normalizedLearning.appliesToVersion ? { appliesToVersion: normalizedLearning.appliesToVersion } : {}),
+      ...(normalizedLearning.reviewedAt ? { reviewedAt: normalizedLearning.reviewedAt } : {}),
+      ...(normalizedLearning.reviewedByLabel ? { reviewedByLabel: normalizedLearning.reviewedByLabel } : {}),
+      safetyScope: normalizedLearning.safetyScope,
+    });
+  } else if (variant === "documents") {
     payload.fileUrl = draft.fileUrl.trim();
     payload.createdAt = draft.createdAt;
   } else if (variant === "blog") {
