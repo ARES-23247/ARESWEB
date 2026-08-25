@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildLearningApprovalTemplate,
   buildLearningRollbackManifest,
   loadFirebase,
   main,
@@ -33,6 +34,20 @@ function tempFiles({ documents = [], actions = [], links = [] } = {}) {
     documents: links,
   }));
   return files;
+}
+
+function writeApproval(files, phase, approvedSlugs) {
+  const artifact = JSON.parse(readFileSync(files.artifact, "utf8"));
+  const legacyPlan = JSON.parse(readFileSync(files.legacyPlan, "utf8"));
+  const crossLinkPlan = JSON.parse(readFileSync(files.crossLinkPlan, "utf8"));
+  const template = buildLearningApprovalTemplate(phase, artifact, legacyPlan, crossLinkPlan, approvedSlugs);
+  const approval = {
+    ...template,
+    reviewedByLabel: "Lead Coach",
+    reviewedAt: "2026-08-25",
+  };
+  writeFileSync(files.approvalFile, JSON.stringify(approval));
+  return approval;
 }
 
 function snapshot(value) {
@@ -100,6 +115,14 @@ describe("learning content migration", () => {
     ], {})).toThrow(/confirm-project/u);
     expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "replacements"])).toThrow(/approval-file/u);
     expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "publish-drafts"])).toThrow(/approval-file/u);
+    expect(parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "publish-drafts", "--prepare-approval"])).toMatchObject({
+      prepareApproval: true,
+      phase: "publish-drafts",
+    });
+    expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "cleanup", "--prepare-approval"])).toThrow(/approval-gated/u);
+    expect(() => parseLearningMigrationArgs([
+      "--project", "aresweb-ci", "--phase", "publish-drafts", "--prepare-approval", "--approval-file", "approval.json",
+    ])).toThrow(/cannot be combined/u);
   });
 
   it("validates bounded human approval manifests without inventing approval", () => {
@@ -108,24 +131,35 @@ describe("learning content migration", () => {
       phase: "replacements",
       reviewedByLabel: "Lead Coach",
       reviewedAt: "2026-08-25",
+      reviewDigest: "a".repeat(64),
       approvedSlugs: ["areslib-fundamentals"],
     }, "replacements")).toEqual({
       reviewedByLabel: "Lead Coach",
       reviewedAt: "2026-08-25",
+      reviewDigest: "a".repeat(64),
       approvedSlugs: ["areslib-fundamentals"],
     });
     expect(() => validateApprovalFile({}, "replacements")).toThrow(/version/u);
     expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "", reviewedAt: "today", approvedSlugs: [] }, "replacements")).toThrow(/reviewer/u);
     expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "today", approvedSlugs: ["valid"] }, "replacements")).toThrow(/date/u);
-    expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-08-25", approvedSlugs: ["same", "same"] }, "replacements")).toThrow(/unique/u);
+    expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-08-25", reviewDigest: "bad", approvedSlugs: ["valid"] }, "replacements")).toThrow(/digest/u);
+    expect(() => validateApprovalFile({ version: 1, phase: "replacements", reviewedByLabel: "Coach", reviewedAt: "2026-08-25", reviewDigest: "a".repeat(64), approvedSlugs: ["same", "same"] }, "replacements")).toThrow(/unique/u);
   });
 
   it("classifies ready, blocked, and idempotently unchanged documents", () => {
     const update = { slug: "lesson", kind: "update", preconditions: { title: "Before" }, desired: { status: "draft" } };
     expect(planLearningDocument(update, snapshot({ title: "Before", status: "published" }), "cleanup")).toMatchObject({ state: "ready", changedFields: ["status"] });
-    expect(planLearningDocument(update, snapshot({ title: "Changed" }), "cleanup").state).toBe("blocked");
+    expect(planLearningDocument(update, snapshot({ title: "Changed" }), "cleanup")).toMatchObject({
+      state: "blocked",
+      blockedReason: "precondition-mismatch",
+      changedFields: ["title"],
+    });
     expect(planLearningDocument({ slug: "new", kind: "create", preconditions: null, desired: { status: "draft" } }, snapshot(undefined), "stage-drafts").state).toBe("ready");
-    expect(planLearningDocument({ slug: "new", kind: "create", preconditions: null, desired: { status: "draft" } }, snapshot({ status: "other" }), "stage-drafts").state).toBe("blocked");
+    expect(planLearningDocument({ slug: "new", kind: "create", preconditions: null, desired: { status: "draft" } }, snapshot({ status: "other" }), "stage-drafts")).toMatchObject({
+      state: "blocked",
+      blockedReason: "slug-already-exists",
+      changedFields: ["status"],
+    });
     expect(planLearningDocument(update, snapshot({
       title: "Changed",
       status: "draft",
@@ -234,13 +268,7 @@ describe("learning content migration", () => {
       "docs/replacement": { title: "Old", status: "published", displayInAreslib: 1 },
       "docs/math-lesson": { title: "Math", status: "published", displayInMathCorner: 1 },
     });
-    writeFileSync(files.approvalFile, JSON.stringify({
-      version: 1,
-      phase: "replacements",
-      reviewedByLabel: "Lead Coach",
-      reviewedAt: "2026-08-25",
-      approvedSlugs: ["replacement"],
-    }));
+    writeApproval(files, "replacements", ["replacement"]);
     const replacementResult = await runLearningMigration({
       ...files,
       apply: false,
@@ -249,13 +277,7 @@ describe("learning content migration", () => {
     }, { db: store.db });
     expect(replacementResult).toMatchObject({ planned: 1, ready: 1, blocked: 0 });
 
-    writeFileSync(files.approvalFile, JSON.stringify({
-      version: 1,
-      phase: "cross-links",
-      reviewedByLabel: "Lead Coach",
-      reviewedAt: "2026-08-25",
-      approvedSlugs: ["math-lesson"],
-    }));
+    writeApproval(files, "cross-links", ["math-lesson"]);
     const linkResult = await runLearningMigration({
       ...files,
       apply: false,
@@ -269,6 +291,7 @@ describe("learning content migration", () => {
       phase: "cross-links",
       reviewedByLabel: "Lead Coach",
       reviewedAt: "2026-08-25",
+      reviewDigest: "a".repeat(64),
       approvedSlugs: ["outside-plan"],
     }));
     await expect(runLearningMigration({ ...files, apply: false, project: "aresweb-ci", phase: "cross-links" }, { db: store.db }))
@@ -278,13 +301,7 @@ describe("learning content migration", () => {
   it("publishes only approved staged drafts whose reviewed content is unchanged", async () => {
     const draft = { title: "Reviewed lesson", status: "draft", approvalStatus: "pending_approval", content: "reviewed" };
     const files = tempFiles({ documents: [{ slug: "new-lesson", data: draft }] });
-    writeFileSync(files.approvalFile, JSON.stringify({
-      version: 1,
-      phase: "publish-drafts",
-      reviewedByLabel: "Lead Coach",
-      reviewedAt: "2026-08-25",
-      approvedSlugs: ["new-lesson"],
-    }));
+    writeApproval(files, "publish-drafts", ["new-lesson"]);
     const store = fakeFirestore({
       "docs/new-lesson": {
         ...draft,
@@ -301,6 +318,18 @@ describe("learning content migration", () => {
     }, { db: store.db });
     expect(result).toMatchObject({ planned: 1, ready: 1, blocked: 0 });
 
+    const changedArtifact = JSON.parse(readFileSync(files.artifact, "utf8"));
+    changedArtifact.documents[0].data.content = "changed after approval";
+    writeFileSync(files.artifact, JSON.stringify(changedArtifact));
+    await expect(runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "publish-drafts",
+    }, { db: store.db })).rejects.toThrow(/review digest/u);
+    changedArtifact.documents[0].data.content = draft.content;
+    writeFileSync(files.artifact, JSON.stringify(changedArtifact));
+
     store.records.set("docs/new-lesson", {
       ...store.records.get("docs/new-lesson"),
       content: "changed after review",
@@ -312,6 +341,43 @@ describe("learning content migration", () => {
       phase: "publish-drafts",
     }, { db: store.db });
     expect(changed).toMatchObject({ planned: 1, ready: 0, blocked: 1, blockedSlugs: ["new-lesson"] });
+  });
+
+  it("prepares a content-bound approval template without connecting to Firestore", async () => {
+    const draft = { title: "Review me", status: "draft", approvalStatus: "pending_approval", content: "exact body" };
+    const files = tempFiles({
+      documents: [
+        { slug: "review-me", data: draft },
+        { slug: "review-too", data: { ...draft, title: "Review too" } },
+        { slug: "replacement", data: { ...draft, title: "Replacement" } },
+      ],
+      actions: [{
+        slug: "replacement",
+        catalogSlug: "replacement",
+        action: "replace-from-catalog-after-review",
+        reason: "stale",
+        preconditions: { title: "Old", status: "published" },
+      }],
+    });
+    const result = await runLearningMigration({
+      ...files,
+      apply: false,
+      prepareApproval: true,
+      approvedSlugs: "review-too, review-me",
+      project: "aresweb-ci",
+      phase: "publish-drafts",
+    });
+    expect(result).toMatchObject({
+      mode: "approval-template",
+      template: {
+        version: 1,
+        phase: "publish-drafts",
+        reviewedByLabel: "",
+        reviewedAt: "",
+        approvedSlugs: ["review-too", "review-me"],
+      },
+    });
+    expect(result.template.reviewDigest).toMatch(/^[a-f0-9]{64}$/u);
   });
 
   it("loads a named Admin app and exposes a testable CLI boundary", async () => {

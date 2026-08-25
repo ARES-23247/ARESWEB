@@ -88,13 +88,17 @@ path remains visibly in preparation.
 ## Recording the decision
 
 After completing the review, send or record a statement with a real public
-reviewer label and date. For a full approval:
+reviewer label, date, and the three generated review digests. For a full
+approval:
 
 > Coach/mentor review completed. Approved by **[public reviewer label]** on
 > **[YYYY-MM-DD]**: publish all 11 staged drafts, replace all four ARESLib
-> pages, and apply all 15 cross-links.
+> pages, and apply all 15 cross-links. Reviewed digests: **publish-drafts
+> [digest]**, **replacements [digest]**, and **cross-links [digest]**.
 
 For partial approval, list approved or rejected slugs in each group. The
 operator will create separate approval manifests for `publish-drafts`,
 `replacements`, and `cross-links`, dry-run all three phases, and show any
 precondition mismatch before requesting the final production-write confirmation.
+Each manifest is bound to the exact reviewed scope; changing content or metadata
+after review invalidates its digest.

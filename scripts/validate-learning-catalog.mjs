@@ -26,6 +26,10 @@ function assertStringList(value, field, slug, maxItems) {
   for (const item of value) assert(typeof item === "string" && item.trim(), `${slug}: ${field} contains an empty or non-string item.`);
 }
 
+export function normalizeLearningMarkdown(value) {
+  return value.replace(/\r\n?/gu, "\n").trim();
+}
+
 function safeContentPath(contentFile, slug) {
   assert(typeof contentFile === "string" && contentFile.endsWith(".md"), `${slug}: contentFile must name a Markdown file.`);
   const resolved = path.resolve(CONTENT_ROOT, contentFile);
@@ -125,7 +129,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     for (const source of document.sourceReferences) remoteSources.push(validateSource(source, slug, catalog.generatedFrom));
 
     const contentPath = safeContentPath(document.contentFile, slug);
-    const content = (await readFile(contentPath, "utf8")).trim();
+    const content = normalizeLearningMarkdown(await readFile(contentPath, "utf8"));
     assert(content.startsWith("# "), `${slug}: Markdown must begin with one level-one heading.`);
     assert(content.length >= 300, `${slug}: Markdown is too short to be a useful lesson draft.`);
     assert(!/\bTODO\b|lorem ipsum|placeholder content/i.test(content), `${slug}: unresolved placeholder text is not allowed.`);

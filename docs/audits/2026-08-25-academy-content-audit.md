@@ -103,6 +103,31 @@ No draft fabricates team hardware, student work, calibration evidence, or
 physical test results. The active ARESLib and FRC feature branches were not used
 as publication authority.
 
+## Migration-integrity follow-up
+
+A read-only production preflight after staging initially classified all 11
+drafts as collisions. Redacted field-level diagnostics showed that `content`
+was the only mismatch. The prepared artifact had inherited Windows CRLF line
+endings while the staged Firestore strings used LF. Catalog preparation now
+normalizes Markdown to LF before validation, hashing, or staging. The same
+production dry run then reported all 11 drafts as exact, idempotent matches and
+zero blocked records.
+
+Approval manifests are now bound to a deterministic SHA-256 review digest over
+the exact selected slugs, source-pinned content, replacement preconditions, and
+cross-link metadata. The runner rejects an approval if that scope changes after
+review. Blocked dry runs report only slug, reason, and mismatched field names;
+they do not expose lesson bodies or private record data.
+
+Validation evidence for this follow-up included 11 focused migration/catalog
+tests at 95.83% line and 100% function coverage, 29 Firebase emulator rule and
+migration tests, 774 frontend tests, 761 Functions tests, 111 Playwright tests
+across desktop and mobile Chromium/WebKit/Firefox plus PWA Chromium, successful
+production builds and bundle budgets, all 13 remote source hashes, and a clean
+production dependency audit. The emulator suite initially caught its own stale
+approval fixture; the fixture was upgraded to generate a real content-bound
+test digest and the suite passed on rerun.
+
 ## Remaining approval boundary
 
 The 11 staged new lessons, four source-pinned ARESLib replacements, and 15
