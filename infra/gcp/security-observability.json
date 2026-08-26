@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "project": "aresfirst-portal",
+  "notificationChannel": "canonical-security-email",
+  "logMetrics": [
+    {
+      "name": "aresweb_app_check_rejected",
+      "description": "Mutation requests with missing, invalid, or unexpected-app App Check observations.",
+      "filter": "resource.type=\"cloud_run_revision\" textPayload:\"[app-check] App Check observation\" (textPayload:\"\\\"status\\\":\\\"missing\\\"\" OR textPayload:\"\\\"status\\\":\\\"invalid\\\"\")"
+    },
+    {
+      "name": "aresweb_access_denied",
+      "description": "API requests rejected by authentication or authorization without retaining identity values.",
+      "filter": "resource.type=\"cloud_run_revision\" textPayload:\"\\\"securityEvent\\\":\\\"access_denied\\\"\""
+    },
+    {
+      "name": "aresweb_rate_limited",
+      "description": "Shared or local request quotas returning an HTTP 429 response.",
+      "filter": "resource.type=\"cloud_run_revision\" (textPayload:\"\\\"securityEvent\\\":\\\"rate_limited\\\"\" OR textPayload:\"\\\"securityEvent\\\":\\\"quota_exceeded\\\"\")"
+    },
+    {
+      "name": "aresweb_server_error",
+      "description": "Handled API failures returning an HTTP 5xx response.",
+      "filter": "resource.type=\"cloud_run_revision\" textPayload:\"\\\"securityEvent\\\":\\\"server_error\\\"\""
+    },
+    {
+      "name": "aresweb_ai_generation",
+      "description": "Successful AI provider invocations without prompts, content, or user identifiers.",
+      "filter": "resource.type=\"cloud_run_revision\" textPayload:\"\\\"securityEvent\\\":\\\"ai_generation_completed\\\"\""
+    }
+  ],
+  "alertPolicies": [
+    {
+      "name": "ARESWEB App Check rejection surge",
+      "metric": "logging.googleapis.com/user/aresweb_app_check_rejected",
+      "threshold": 25,
+      "windowSeconds": 300,
+      "severity": "warning",
+      "containment": "Inspect canonical-origin and app-version health before changing enforcement."
+    },
+    {
+      "name": "ARESWEB authorization denial surge",
+      "metric": "logging.googleapis.com/user/aresweb_access_denied",
+      "threshold": 30,
+      "windowSeconds": 300,
+      "severity": "warning",
+      "containment": "Check token failures and targeted route groups; do not log or enumerate identities."
+    },
+    {
+      "name": "ARESWEB shared quota surge",
+      "metric": "logging.googleapis.com/user/aresweb_rate_limited",
+      "threshold": 20,
+      "windowSeconds": 300,
+      "severity": "critical",
+      "containment": "Preserve evidence, keep quotas enabled, and isolate only the affected feature if cost grows."
+    },
+    {
+      "name": "ARESWEB API server-error surge",
+      "metric": "logging.googleapis.com/user/aresweb_server_error",
+      "threshold": 5,
+      "windowSeconds": 300,
+      "severity": "critical",
+      "containment": "Identify the current revision and route group; roll back only when the release is causal."
+    },
+    {
+      "name": "ARESWEB AI generation volume",
+      "metric": "logging.googleapis.com/user/aresweb_ai_generation",
+      "threshold": 200,
+      "windowSeconds": 3600,
+      "severity": "warning",
+      "containment": "Review daily quota state and disable only system_settings/ai_generation when usage is unexpected."
+    }
+  ],
+  "platformAlerts": [
+    {
+      "signal": "Cloud Run request count and 5xx ratio",
+      "scope": ["publicapi", "coreapi", "mediaapi", "driveapi", "communicationsapi", "web"],
+      "windowSeconds": 300,
+      "action": "Alert when the 5xx ratio exceeds 5% with at least 20 requests."
+    },
+    {
+      "signal": "Cloud Run instance and billable-instance time",
+      "scope": ["publicapi", "coreapi", "mediaapi", "driveapi", "communicationsapi", "web"],
+      "windowSeconds": 900,
+      "action": "Alert when a service sustains 80% of its configured maximum-instance ceiling."
+    },
+    {
+      "signal": "Cloud Firestore document reads and writes",
+      "scope": ["aresfirst-portal"],
+      "windowSeconds": 900,
+      "action": "Alert on a 3x increase over the trailing seven-day same-hour baseline."
+    },
+    {
+      "signal": "Vertex AI request and token usage",
+      "scope": ["aresfirst-portal"],
+      "windowSeconds": 3600,
+      "action": "Alert before the project daily token budget reaches 75%; the application quota remains the hard guard."
+    }
+  ],
+  "budget": {
+    "scope": "project:aresfirst-portal",
+    "thresholdPercents": [50, 75, 90, 100],
+    "hardCap": false,
+    "note": "Billing budgets notify but do not stop spend. Use feature-level circuit breakers rather than disabling project billing."
+  }
+}
+

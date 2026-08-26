@@ -31,6 +31,7 @@ vi.mock("../../lib/firebase-admin", () => {
   nestedQuery.doc.mockReturnValue(photoRef);
   const occurrencesQuery = {
     where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     get: vi.fn(),
   };
@@ -80,6 +81,7 @@ vi.mock("../../lib/firebase-admin", () => {
   return {
     adminDb: {
       collection: vi.fn(() => collectionRef),
+      collectionGroup: vi.fn(() => occurrencesQuery),
       getAll,
       batch: vi.fn(() => batch),
       runTransaction: vi.fn(
@@ -133,6 +135,18 @@ function eventDocument(id: string, overrides: Record<string, unknown> = {}) {
       internalNotes: "do not expose",
       ...overrides,
     }),
+  };
+}
+
+function occurrenceExceptionDocument(
+  parentId: string,
+  date: string,
+  data: Record<string, unknown>,
+) {
+  return {
+    id: date,
+    ref: { parent: { parent: { id: parentId } } },
+    data: () => ({ date, ...data }),
   };
 }
 
@@ -1474,7 +1488,7 @@ describe("calendar recurrence", () => {
   it("skips cancelled occurrence dates during expansion", async () => {
     collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({
-      docs: [{ id: todayYmdStr, data: () => ({ isCancelled: 1 }) }],
+      docs: [occurrenceExceptionDocument("weekly-1", todayYmdStr, { isCancelled: 1 })],
     });
     await handler("/events", "get")(req, res, next);
     const payload = res.json.mock.calls[0][0];
@@ -1483,6 +1497,30 @@ describe("calendar recurrence", () => {
     expect(
       payload.events.map((event: any) => event.occurrenceDate),
     ).not.toContain(todayYmdStr);
+    const exceptionQuery = (adminDb as any).collectionGroup.mock.results.at(-1).value;
+    expect(exceptionQuery.where).toHaveBeenNthCalledWith(1, "date", ">=", todayYmdStr);
+    expect(exceptionQuery.where).toHaveBeenNthCalledWith(2, "date", "<=", expect.any(String));
+    expect(exceptionQuery.orderBy).toHaveBeenCalledWith("date", "asc");
+    expect(exceptionQuery.limit).toHaveBeenCalledWith(501);
+  });
+
+  it("fails closed when the bounded public exception query is saturated", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValue({
+      docs: Array.from({ length: 501 }, (_, index) => occurrenceExceptionDocument(
+        "weekly-1",
+        new Date(Date.now() + index * 86_400_000).toISOString().slice(0, 10),
+        { isCancelled: 1 },
+      )),
+    });
+
+    await handler("/events", "get")(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      status: 503,
+      code: "CALENDAR_EXCEPTION_LIMIT",
+    }));
+    expect(res.json).not.toHaveBeenCalled();
   });
 
   it("keeps plain events untouched by expansion", async () => {
@@ -1681,7 +1719,7 @@ describe("calendar recurrence", () => {
     });
     collectionRef.get.mockResolvedValue({ docs: [thursday] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({
-      docs: [{ id: "2026-09-03", data: () => ({ isCancelled: 1 }) }],
+      docs: [occurrenceExceptionDocument("weekly-1", "2026-09-03", { isCancelled: 1 })],
     });
     await handler("/feed", "get")(req, res, next);
     const body = res.send.mock.calls[0][0] as string;
@@ -1701,9 +1739,7 @@ describe("calendar recurrence", () => {
     collectionRef.get.mockResolvedValue({ docs: [thursday] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({
       docs: [
-        {
-          id: "2026-09-03",
-          data: () => ({
+        occurrenceExceptionDocument("weekly-1", "2026-09-03", {
             overrides: {
               title: "Scrimmage Practice",
               dateStart: "2026-09-03T19:00:00.000Z",
@@ -1713,8 +1749,7 @@ describe("calendar recurrence", () => {
               locationId: "public-library",
               location: "Private home address",
             },
-          }),
-        },
+        }),
       ],
     });
     (adminDb as any).__getAll.mockResolvedValue([

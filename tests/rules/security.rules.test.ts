@@ -916,6 +916,11 @@ describe("Media API boundary rules", () => {
     await seedDocument("system_settings", "google_auth", {
       refreshToken: "encrypted-secret",
     });
+    await seedDocument("internal_api_quotas", "opaque-quota", { count: 1 });
+    await seedDocument("internal_public_artifacts", "sitemap", {
+      version: 1,
+      chunkCount: 1,
+    });
 
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
     const adminDb = testEnvironment
@@ -927,6 +932,8 @@ describe("Media API boundary rules", () => {
       ["albums", "album-1"],
       ["videos", "video_abcdefghijk"],
       ["system_settings", "google_auth"],
+      ["internal_api_quotas", "opaque-quota"],
+      ["internal_public_artifacts", "sitemap"],
     ] as const) {
       await assertFails(getDoc(doc(publicDb, collectionName, id)));
       await assertFails(getDoc(doc(adminDb, collectionName, id)));

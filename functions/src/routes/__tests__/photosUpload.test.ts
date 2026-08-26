@@ -54,6 +54,7 @@ vi.mock("../../middleware/auth", () => ({
 
 vi.mock("../../lib/imageImport", () => ({ validateImageMagicBytes: vi.fn() }));
 vi.mock("../../lib/vertex", () => ({ generatePhotoCaptionAndLabels: vi.fn() }));
+vi.mock("../../lib/aiControls", () => ({ isAiGenerationEnabled: vi.fn().mockResolvedValue(true) }));
 vi.mock("../../lib/photoDerivatives", () => ({
   generatePhotoDerivatives: vi.fn(),
   storePhotoAssets: vi.fn(),
@@ -72,6 +73,7 @@ vi.mock("../../lib/photoDerivatives", () => ({
 
 import { validateImageMagicBytes } from "../../lib/imageImport";
 import { generatePhotoCaptionAndLabels } from "../../lib/vertex";
+import { isAiGenerationEnabled } from "../../lib/aiControls";
 import { deleteStoredPhotoAssets, generatePhotoDerivatives, storePhotoAssets, } from "../../lib/photoDerivatives";
 import router from "../photosUpload";
 
@@ -264,6 +266,16 @@ describe("Photos upload route", () => {
     const res = response();
     await handler()({ body: imageBody({ runAiLabeling: true }) }, res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ photo: expect.objectContaining({ caption: "", labels: [] }), }));
+  });
+
+  it("keeps uploads available while the AI-only circuit breaker is disabled", async () => {
+    vi.mocked(isAiGenerationEnabled).mockResolvedValueOnce(false);
+    const res = response();
+
+    await handler()({ body: imageBody({ runAiLabeling: true }) }, res);
+
+    expect(generatePhotoCaptionAndLabels).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 
 });

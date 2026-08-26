@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 
 process.env.ENCRYPTION_SECRET = "dummy-encryption-secret-must-be-32-chars-long";
+process.env.ABUSE_HMAC_SECRET = "dummy-abuse-hmac-secret-must-be-32-chars-long";
 
 export default defineConfig({
   test: {
@@ -52,6 +53,14 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/learningContent.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/aiControls.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/publicArtifactCache.ts": {
           lines: 85,
           functions: 100,
         },

@@ -12,7 +12,7 @@ export const allowedOrigins = [
 export const API_ROUTE_GROUPS = {
   public: [
     "/api/app-check", "/api/announcements", "/api/calendar", "/api/content", "/api/sponsors", "/api/outreach", "/api/tournaments",
-    "/api/robots", "/api/store", "/api/finance", "/api/reference",
+    "/api/seasons", "/api/awards", "/api/robots", "/api/store", "/api/finance", "/api/reference",
     "/api/og", "/sitemap.xml", "/api/sitemap.xml",
     "/feed.xml", "/api/feed.xml",
   ],
@@ -23,14 +23,14 @@ export const API_ROUTE_GROUPS = {
 } as const;
 
 export const FUNCTION_SECRET_BINDINGS = {
-  publicApi: [],
+  publicApi: ["ABUSE_HMAC_SECRET"],
   coreApi: ["ENCRYPTION_SECRET", "PROFILE_SYNC_SECRET", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
   mediaApi: [
     "ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
     "GOOGLE_PHOTOS_REFRESH_TOKEN", "GEMINI_API_KEY", "YOUTUBE_API_KEY",
   ],
   driveApi: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN"],
-  communicationsApi: ["GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN", "BLUESKY_APP_PASSWORD", "BUFFER_API_KEY", "ONSHAPE_WEBHOOK_TOKEN"],
+  communicationsApi: ["ABUSE_HMAC_SECRET", "GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN", "BLUESKY_APP_PASSWORD", "BUFFER_API_KEY", "ONSHAPE_WEBHOOK_TOKEN"],
 } as const;
 
 /**

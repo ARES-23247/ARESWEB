@@ -4,7 +4,11 @@ import { checkGrammarAndSpelling, getAIAssistance, getSimulationPlaygroundStream
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import rateLimit from "express-rate-limit";
-import { distributedQuota } from "../middleware/distributedQuota";
+import {
+  aiGenerationBudget,
+  ensureAiGenerationEnabled,
+  estimatedTextTokens,
+} from "../middleware/aiBudget";
 
 const router = express.Router();
 
@@ -16,14 +20,30 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 router.use(limiter);
-const generationQuota = distributedQuota({
-  scope: "ai-generation",
-  limit: 30,
-  windowMs: 15 * 60 * 1000,
+const grammarBudget = aiGenerationBudget((req) => estimatedTextTokens(
+  typeof req.body?.text === "string" ? req.body.text.length : 0,
+  1_536,
+));
+const assistantBudget = aiGenerationBudget((req) => estimatedTextTokens(
+  [req.body?.prompt, req.body?.text, req.body?.context]
+    .filter((value): value is string => typeof value === "string")
+    .reduce((total, value) => total + value.length, 0),
+  1_024,
+));
+const simulationBudget = aiGenerationBudget((req) => {
+  const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  const characterCount = (typeof req.body?.systemPrompt === "string" ? req.body.systemPrompt.length : 0)
+    + messages.reduce((total: number, message: unknown) => (
+      total + (message && typeof message === "object" && typeof (message as { content?: unknown }).content === "string"
+        ? (message as { content: string }).content.length
+        : 0)
+    ), 0);
+  const imageTokens = typeof req.body?.imageUrl === "string" && req.body.imageUrl ? 2_048 : 0;
+  return estimatedTextTokens(characterCount, 1_024) + imageTokens;
 });
 
 // POST /api/ai/grammar - Check spelling & grammar
-router.post("/grammar", ensureTeamMember, generationQuota, asyncHandler(async (req, res) => {
+router.post("/grammar", ensureTeamMember, ensureAiGenerationEnabled, grammarBudget, asyncHandler(async (req, res) => {
   const { text } = req.body as { text: string };
   if (typeof text !== "string") {
     throw new ApiError(400, "Missing required 'text' field.");
@@ -37,7 +57,7 @@ router.post("/grammar", ensureTeamMember, generationQuota, asyncHandler(async (r
 }));
 
 // POST /api/ai/assistant - Get general AI assistant help
-router.post("/assistant", ensureTeamMember, generationQuota, asyncHandler(async (req, res) => {
+router.post("/assistant", ensureTeamMember, ensureAiGenerationEnabled, assistantBudget, asyncHandler(async (req, res) => {
   const { prompt, text, context } = req.body as {
     prompt: string;
     text?: string;
@@ -62,7 +82,7 @@ router.post("/assistant", ensureTeamMember, generationQuota, asyncHandler(async 
 }));
 
 // POST /api/ai/sim-playground - Stream simulation playground responses
-router.post("/sim-playground", ensureTeamMember, generationQuota, asyncHandler(async (req, res) => {
+router.post("/sim-playground", ensureTeamMember, ensureAiGenerationEnabled, simulationBudget, asyncHandler(async (req, res) => {
   const { systemPrompt, messages, imageUrl } = req.body as {
     systemPrompt: string;
     messages: Array<{ role: string; content: string }>;

@@ -55,6 +55,9 @@ jobs:
       - name: Enforce API mutation route security invariants
         run: pnpm run check:route-security
 
+      - name: Validate security observability contract
+        run: pnpm run validate:security-observability
+
       - name: Validate Academy curriculum sources and provenance
         env:
           GITHUB_TOKEN: ${{ github.token }}

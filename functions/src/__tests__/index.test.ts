@@ -1,9 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const driveSyncMock = vi.hoisted(() => vi.fn());
+const { driveSyncMock, sitemapRefreshMock, simulationsRefreshMock } = vi.hoisted(() => ({
+  driveSyncMock: vi.fn(),
+  sitemapRefreshMock: vi.fn(),
+  simulationsRefreshMock: vi.fn(),
+}));
 vi.mock("../lib/googleDriveLibrary", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/googleDriveLibrary")>()),
   syncImportedDriveChanges: driveSyncMock,
+}));
+vi.mock("../routes/sitemap", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../routes/sitemap")>()),
+  refreshSitemapArtifact: sitemapRefreshMock,
+}));
+vi.mock("../routes/simulations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../routes/simulations")>()),
+  refreshSimulationArtifacts: simulationsRefreshMock,
 }));
 
 vi.mock("../lib/firebase-admin", () => {
@@ -40,6 +52,8 @@ import {
   driveApi,
   mediaApi,
   publicApi,
+  refreshPublicSitemap,
+  refreshSimulationArtifacts,
   web,
   syncGoogleDriveChanges,
 } from "../index";
@@ -127,6 +141,40 @@ describe("cleanupOldInquiries scheduled function", () => {
     await expect((cleanupOldInquiries as any).run({})).rejects.toThrow(
       "Firestore database error",
     );
+  });
+});
+
+describe("public artifact refresh schedules", () => {
+  it("refreshes the sitemap with the public runtime and strict bounds", async () => {
+    sitemapRefreshMock.mockResolvedValue(undefined);
+    const endpoint = (refreshPublicSitemap as any).__endpoint;
+    expect(endpoint.scheduleTrigger).toEqual(expect.objectContaining({
+      schedule: "every 30 minutes",
+      retryConfig: expect.objectContaining({retryCount: 3}),
+    }));
+    expect(endpoint.availableMemoryMb).toBe(256);
+    expect(endpoint.concurrency).toBe(1);
+    expect(endpoint.maxInstances).toBe(1);
+    expect(endpoint.serviceAccountEmail).toBe(RUNTIME_SERVICE_ACCOUNTS.publicApi);
+
+    await (refreshPublicSitemap as any).run({});
+    expect(sitemapRefreshMock).toHaveBeenCalledOnce();
+  });
+
+  it("refreshes simulations with only the repository credential", async () => {
+    simulationsRefreshMock.mockResolvedValue(undefined);
+    const endpoint = (refreshSimulationArtifacts as any).__endpoint;
+    expect(endpoint.scheduleTrigger).toEqual(expect.objectContaining({
+      schedule: "every 30 minutes",
+      retryConfig: expect.objectContaining({retryCount: 3}),
+    }));
+    expect(endpoint.secretEnvironmentVariables.map((secret: { key: string }) => secret.key)).toEqual([
+      "GITHUB_PAT",
+    ]);
+    expect(endpoint.serviceAccountEmail).toBe(RUNTIME_SERVICE_ACCOUNTS.communicationsApi);
+
+    await (refreshSimulationArtifacts as any).run({});
+    expect(simulationsRefreshMock).toHaveBeenCalledOnce();
   });
 });
 
@@ -219,6 +267,7 @@ describe("Express App Endpoints", () => {
     const expectedNames = [
       "ensureTeamMember",
       "enforceDistributedQuota",
+      "enforceDistributedQuota",
       "jsonParser",
     ];
     const uploadLayers = stackFor(mediaApp).filter(
@@ -278,18 +327,22 @@ describe("Express App Endpoints", () => {
     }
   });
 
-  it("binds no secrets to public routes and caps every other blast radius", () => {
-    expect(FUNCTION_SECRET_BINDINGS.publicApi).toEqual([]);
+  it("binds only the pseudonymization key to public routes and caps every other blast radius", () => {
+    expect(FUNCTION_SECRET_BINDINGS.publicApi).toEqual(["ABUSE_HMAC_SECRET"]);
     expect(
       Math.max(
         ...Object.values(FUNCTION_SECRET_BINDINGS).map(
           (secrets) => secrets.length,
         ),
       ),
-    ).toBe(7);
+    ).toBe(8);
     expect(new Set(Object.values(API_ROUTE_GROUPS).flat()).size).toBe(
       Object.values(API_ROUTE_GROUPS).flat().length,
     );
+    expect(API_ROUTE_GROUPS.public).toEqual(expect.arrayContaining([
+      "/api/seasons",
+      "/api/awards",
+    ]));
 
     const communicationsEndpoint = (
       communicationsApi as unknown as {

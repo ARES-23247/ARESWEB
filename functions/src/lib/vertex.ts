@@ -109,13 +109,17 @@ Do not wrap the JSON response in any markdown code blocks.`;
       ],
       config: {
         responseMimeType: "application/json",
-        maxOutputTokens: 2048
+        maxOutputTokens: 1536
       }
     });
 
     const resultText = response.text || "";
     if (!resultText) throw new Error("Empty response from Gemini.");
-    
+    logger.info("ai-usage", "AI generation completed", {
+      securityEvent: "ai_generation_completed",
+      operation: "grammar",
+      maximumOutputTokens: 1536,
+    });
     return grammarCheckSchema.parse(JSON.parse(resultText));
   } catch (err) {
     throw upstreamAiError("Grammar check", err);
@@ -155,13 +159,17 @@ Always use professional technical language, preserve Markdown formatting, and ad
         { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
       ],
       config: {
-        maxOutputTokens: 2048
+        maxOutputTokens: 1024
       }
     });
 
     const assistanceText = response.text || "";
     if (!assistanceText) throw new Error("Empty response from Gemini.");
-    
+    logger.info("ai-usage", "AI generation completed", {
+      securityEvent: "ai_generation_completed",
+      operation: "assistant",
+      maximumOutputTokens: 1024,
+    });
     return assistanceText;
   } catch (err) {
     throw upstreamAiError("AI assistance", err);
@@ -211,13 +219,17 @@ Do not wrap the JSON response in any markdown code blocks.`;
       ],
       config: {
         responseMimeType: "application/json",
-        maxOutputTokens: 1024
+        maxOutputTokens: 512
       }
     });
 
     const resultText = response.text || "";
     if (!resultText) throw new Error("Empty response from Gemini.");
-    
+    logger.info("ai-usage", "AI generation completed", {
+      securityEvent: "ai_generation_completed",
+      operation: "photo-labeling",
+      maximumOutputTokens: 512,
+    });
     return photoAnalysisSchema.parse(JSON.parse(resultText));
   } catch (err) {
     throw upstreamAiError("Photo analysis", err);
@@ -277,7 +289,7 @@ export async function getSimulationPlaygroundStream(
       contents: contents,
       config: {
         systemInstruction: staticSystemInstruction,
-        maxOutputTokens: 2048
+        maxOutputTokens: 1024
       }
     });
 
@@ -286,6 +298,11 @@ export async function getSimulationPlaygroundStream(
         onChunk(chunk.text);
       }
     }
+    logger.info("ai-usage", "AI generation completed", {
+      securityEvent: "ai_generation_completed",
+      operation: "simulation-playground",
+      maximumOutputTokens: 1024,
+    });
   } catch (err) {
     logger.error("vertex", "Simulation playground streaming failed", err);
     throw err;

@@ -28,18 +28,28 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
-  // Log the full stack trace on the server for diagnostics
   const error = err instanceof Error ? err : new Error("Unknown thrown value");
-  logger.error("errorHandler", "[Global Error Handler] Caught Exception:", {
-    routeGroup: diagnosticRouteGroup(req.path),
-    method: req.method,
-    error,
-  });
-
   const isApiError = err instanceof ApiError;
   const status = isApiError ? err.status : 500;
   const message = isApiError ? err.message : "Internal server error.";
   const code = isApiError ? err.code || `HTTP_${status}` : "INTERNAL_ERROR";
+  const securityEvent = status === 401 || status === 403
+    ? "access_denied"
+    : status === 429
+      ? "rate_limited"
+      : status >= 500
+        ? "server_error"
+        : "request_rejected";
+  const logData = {
+    routeGroup: diagnosticRouteGroup(req.path),
+    method: req.method,
+    status,
+    errorCode: code,
+    securityEvent,
+    error,
+  };
+  if (status >= 500) logger.error("errorHandler", "Request failed", logData);
+  else logger.warn("errorHandler", "Request rejected", logData);
 
   // A streaming response may already have sent image headers or body bytes.
   // Do not append a JSON error payload to a partial binary response; terminate

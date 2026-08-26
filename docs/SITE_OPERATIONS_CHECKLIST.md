@@ -30,6 +30,12 @@ Confirm these GitHub repository variables before the release:
 Both are public browser identifiers. Keep the Google integration secrets in Secret
 Manager. Never copy those secret values into GitHub variables.
 
+Create a dedicated random `ABUSE_HMAC_SECRET` (at least 32 characters) in
+Secret Manager before deploying the denial-of-wallet hardening release. It is
+not an API credential; public and communications runtimes use it only to derive
+non-reversible anonymous quota IDs. Do not reuse `ENCRYPTION_SECRET`. Confirm
+the deployment contract binds it only to those two runtimes.
+
 Follow `docs/GOOGLE_DRIVE_INTEGRATION.md` for the separate Drive token, Picker
 key restrictions, OAuth redirect, and root-folder validation steps.
 

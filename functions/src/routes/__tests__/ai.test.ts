@@ -55,6 +55,7 @@ describe("AI Router Backend Endpoints", () => {
       const layer = aiRouter.stack.find((entry) => entry.route?.path === path);
       expect(layer?.route?.stack.map((entry) => entry.name)).toEqual([
         "ensureTeamMember",
+        "ensureAiGenerationEnabled",
         "enforceDistributedQuota",
         expect.any(String),
       ]);

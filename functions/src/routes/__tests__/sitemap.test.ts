@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import sitemapRouter, { isSitemapRecordIndexable, normalizeLastModified } from "../sitemap";
+import sitemapRouter, {
+  buildSitemapXml,
+  isSitemapRecordIndexable,
+  normalizeLastModified,
+  refreshSitemapArtifact,
+} from "../sitemap";
 
 const mocks = vi.hoisted(() => ({
   documents: {
@@ -49,7 +54,19 @@ const mocks = vi.hoisted(() => ({
     limit: ReturnType<typeof vi.fn>;
     get: ReturnType<typeof vi.fn>;
   }>(),
-  failCollection: null as string | null
+  failCollection: null as string | null,
+  cachedArtifact: null as null | {
+    body: string;
+    contentType: string;
+    generatedAt: string;
+    etag: string;
+  },
+  writeArtifact: vi.fn(),
+}));
+
+vi.mock("../../lib/publicArtifactCache", () => ({
+  readPublicArtifact: vi.fn(async () => mocks.cachedArtifact),
+  writePublicArtifact: mocks.writeArtifact,
 }));
 
 vi.mock("../../lib/firebase-admin", () => ({
@@ -99,6 +116,8 @@ describe("sitemap route", () => {
   let res: {
     setHeader: ReturnType<typeof vi.fn>;
     send: ReturnType<typeof vi.fn>;
+    status: ReturnType<typeof vi.fn>;
+    end: ReturnType<typeof vi.fn>;
   };
   let next: ReturnType<typeof vi.fn>;
 
@@ -106,12 +125,30 @@ describe("sitemap route", () => {
     vi.clearAllMocks();
     mocks.queries.clear();
     mocks.failCollection = null;
-    res = { setHeader: vi.fn(), send: vi.fn() };
+    mocks.cachedArtifact = null;
+    mocks.writeArtifact.mockResolvedValue(undefined);
+    res = {
+      setHeader: vi.fn(),
+      send: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      end: vi.fn(),
+    };
     next = vi.fn();
   });
 
   it("returns bounded, cached XML with only real last-modified values", async () => {
-    await getHandler()({}, res, next);
+    const generatedXml = await buildSitemapXml();
+    mocks.cachedArtifact = {
+      body: generatedXml,
+      contentType: "application/xml; charset=utf-8",
+      generatedAt: "2026-08-26T00:00:00.000Z",
+      etag: '"durable-etag"',
+    };
+    const sourceReads = [...mocks.queries.values()].reduce(
+      (sum, query) => sum + query.get.mock.calls.length,
+      0,
+    );
+    await getHandler()({ get: vi.fn() }, res, next);
 
     expect(next).not.toHaveBeenCalled();
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "application/xml; charset=utf-8");
@@ -119,6 +156,7 @@ describe("sitemap route", () => {
       "Cache-Control",
       "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
     );
+    expect(res.setHeader).toHaveBeenCalledWith("ETag", '"durable-etag"');
 
     const xml = res.send.mock.calls[0][0] as string;
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
@@ -151,6 +189,10 @@ describe("sitemap route", () => {
       expect(query.orderBy).toHaveBeenCalledWith(expect.anything(), "asc");
       expect(query.limit).toHaveBeenCalledWith(250);
     }
+    expect([...mocks.queries.values()].reduce(
+      (sum, query) => sum + query.get.mock.calls.length,
+      0,
+    )).toBe(sourceReads);
   });
 
   it("reads deterministic query pages beyond the former 500-record ceiling", async () => {
@@ -161,9 +203,7 @@ describe("sitemap route", () => {
     }));
 
     try {
-      await getHandler()({}, res, next);
-
-      const xml = res.send.mock.calls[0][0] as string;
+      const xml = await buildSitemapXml();
       expect(xml).toContain("/blog/published-post-500</loc>");
       const postsQuery = mocks.queries.get("posts")!;
       expect(postsQuery.get).toHaveBeenCalledTimes(3);
@@ -188,9 +228,7 @@ describe("sitemap route", () => {
     }));
 
     try {
-      await getHandler()({}, res, next);
-
-      const xml = res.send.mock.calls[0][0] as string;
+      const xml = await buildSitemapXml();
       expect(xml).toContain("/blog/bounded-post-4999</loc>");
       expect(xml).not.toContain("/blog/bounded-post-5000</loc>");
       const postsQuery = mocks.queries.get("posts")!;
@@ -204,14 +242,29 @@ describe("sitemap route", () => {
   it("forwards a diagnosable 503 instead of returning a partial sitemap", async () => {
     mocks.failCollection = "events";
 
-    await getHandler()({}, res, next);
-
-    expect(res.send).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+    await expect(buildSitemapXml()).rejects.toEqual(expect.objectContaining({
       status: 503,
       code: "SITEMAP_QUERY_FAILED",
       message: "Sitemap is temporarily unavailable."
     }));
+  });
+
+  it("serves the static inventory without scanning source collections when the artifact is absent", async () => {
+    await getHandler()({ get: vi.fn() }, res, next);
+
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining("<loc>https://aresfirst.org/</loc>"));
+    expect(res.send).toHaveBeenCalledWith(expect.not.stringContaining("/blog/blog%20%26%20post"));
+    expect(mocks.queries.size).toBe(0);
+  });
+
+  it("refreshes the durable artifact only from the scheduled build path", async () => {
+    await refreshSitemapArtifact();
+
+    expect(mocks.writeArtifact).toHaveBeenCalledWith(
+      "sitemap",
+      expect.stringContaining("/blog/blog%20%26%20post"),
+      "application/xml; charset=utf-8",
+    );
   });
 });
 

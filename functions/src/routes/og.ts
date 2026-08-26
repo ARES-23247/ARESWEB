@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import sharp from "sharp";
 type SharpConstructor = typeof sharp;
 import { asyncHandler } from "../lib/utils";
+import { distributedAnonymousQuota } from "../middleware/distributedQuota";
 
 const router = express.Router();
 const OG_CACHE_CONTROL = "public, max-age=86400, s-maxage=31536000, immutable";
@@ -17,6 +18,11 @@ router.use(rateLimit({
   message: { error: "Too many social card requests. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+}));
+router.use(distributedAnonymousQuota({
+  scope: "public-og",
+  limit: 60,
+  windowMs: 15 * 60 * 1000,
 }));
 
 function loadSharp(): Promise<SharpConstructor> {

@@ -46,6 +46,7 @@
       "serviceAccount": "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
+        "ABUSE_HMAC_SECRET",
         "BLUESKY_APP_PASSWORD",
         "BUFFER_API_KEY",
         "GITHUB_PAT",
@@ -134,11 +135,35 @@
       "runServiceId": "publicapi",
       "serviceAccount": "aresweb-public-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
-      "secrets": [],
+      "secrets": ["ABUSE_HMAC_SECRET"],
       "timeoutSeconds": 60,
       "availableMemoryMb": 512,
       "maxInstances": 10,
       "concurrency": 20
+    },
+    {
+      "id": "refreshPublicSitemap",
+      "trigger": "schedule",
+      "runServiceId": "refreshpublicsitemap",
+      "serviceAccount": "aresweb-public-runtime@aresfirst-portal.iam.gserviceaccount.com",
+      "public": false,
+      "secrets": [],
+      "timeoutSeconds": 120,
+      "availableMemoryMb": 256,
+      "maxInstances": 1,
+      "concurrency": 1
+    },
+    {
+      "id": "refreshSimulationArtifacts",
+      "trigger": "schedule",
+      "runServiceId": "refreshsimulationartifacts",
+      "serviceAccount": "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",
+      "public": false,
+      "secrets": ["GITHUB_PAT"],
+      "timeoutSeconds": 120,
+      "availableMemoryMb": 256,
+      "maxInstances": 1,
+      "concurrency": 1
     },
     {
       "id": "taskDueDigest",
