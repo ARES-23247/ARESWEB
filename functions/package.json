@@ -16,7 +16,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@google/genai": "^2.18.0",
+    "@google/genai": "2.18.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
@@ -32,6 +32,9 @@
     "@vitest/coverage-v8": "^4.1.11",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "rolldown": "1.2.5"
   },
   "private": true
 }

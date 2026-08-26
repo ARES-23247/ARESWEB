@@ -51,6 +51,7 @@ following before handing off a code change:
 pnpm install --frozen-lockfile
 pnpm run validate:agents
 pnpm run check:route-security
+pnpm run validate:functions-deploy-lock
 pnpm run lint
 pnpm --filter functions lint
 pnpm exec tsc --noEmit

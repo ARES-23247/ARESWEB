@@ -16,6 +16,7 @@
     "validate:agents": "node scripts/validate-agent-config.mjs",
     "check:route-security": "node scripts/check-route-security.mjs",
     "validate:security-observability": "node scripts/validate-security-observability.mjs",
+    "validate:functions-deploy-lock": "node scripts/verify-functions-npm-lock.mjs",
     "generate:sims": "node --experimental-strip-types scripts/generate-sim-registry.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",

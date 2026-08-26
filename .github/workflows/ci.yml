@@ -66,6 +66,9 @@ jobs:
       - name: Validate production deployment contract
         run: node scripts/verify-production-deployment.mjs --validate-contract
 
+      - name: Validate Cloud Functions npm deployment lock
+        run: pnpm run validate:functions-deploy-lock
+
       - name: Run Cloud Functions ESLint
         run: pnpm --filter functions lint
 
