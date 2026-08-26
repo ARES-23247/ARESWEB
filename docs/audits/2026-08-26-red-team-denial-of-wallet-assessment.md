@@ -44,6 +44,8 @@ Those production mutations still require explicit owner approval.
   ARESWEB system at `https://aresfirst.org`, its split Cloud Functions services,
   and disposable local Firebase emulators.
 - Audited commit: `184c62613dc18c886397d79a79af22080c85bce9` on `master`.
+- Locally verified remediation commit:
+  `2c8a8934e6e870275643bb9edf661f66c8c09bb5` on `master`; not pushed or deployed.
 - The tracked worktree was clean at test start.
 - Date and timezone: 2026-08-26, America/New_York.
 - Production tests were low-rate and non-destructive. No sustained traffic,
