@@ -189,6 +189,15 @@ export function useDashboardDocController(
     const requiresReview = collectionName === "docs";
     const wasPublished = selectedDoc?.status === "published"
       && selectedDoc.approvalStatus !== "pending_approval";
+    const status = isMemberRole || requiresReview
+      ? "pending_approval"
+      : payload.status || "published";
+    const approvalStatus = isMemberRole || requiresReview
+      ? "pending_approval"
+      : payload.approvalStatus || "approved";
+    const becamePublished = status === "published"
+      && approvalStatus === "approved"
+      && !wasPublished;
     const finalPayload = {
       ...payload,
       original_authorNickname: selectedDoc
@@ -197,19 +206,20 @@ export function useDashboardDocController(
       original_authorAvatar: selectedDoc
         ? selectedDoc.original_authorAvatar || userAvatar
         : userAvatar,
-      // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published
-      status: isMemberRole || requiresReview ? "pending_approval" : payload.status || "published",
-      approvalStatus: isMemberRole || requiresReview
-        ? "pending_approval"
-        : payload.approvalStatus || "approved",
+      // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published.
+      status,
+      approvalStatus,
+      // Direct coach/admin publication is an approval transition too. Stamp it
+      // before requesting social delivery so the server can derive a stable,
+      // idempotent syndication version from the saved record.
+      ...(becamePublished
+        ? { approvedBy: userNickname, approvedAt: new Date().toISOString() }
+        : {}),
     };
     await saveDoc(slug, finalPayload, userNickname, userAvatar, {
       isCreate: !selectedDoc,
     });
 
-    const becamePublished = finalPayload.status === "published"
-      && finalPayload.approvalStatus === "approved"
-      && !wasPublished;
     if (collectionName === "posts" && becamePublished) {
       await runSocialAnnouncement(slug);
     }

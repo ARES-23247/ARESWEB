@@ -456,6 +456,37 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    it("repairs legacy direct publications with a server-owned timestamp", async () => {
+      const createdAt = "2026-08-26T20:20:00.000Z";
+      req.body = { slug: "legacy-coach-post" };
+      mocks.transactionGet
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ ...approvedPost, approvedAt: undefined }),
+          createTime: { toDate: () => new Date(createdAt) },
+        })
+        .mockResolvedValueOnce({ exists: false, data: () => undefined });
+
+      await getHandler("/syndicate-post", "post")(req, res, next);
+
+      expect(mocks.transactionUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "post" }),
+        { approvedAt: createdAt },
+      );
+      expect(mocks.syndicate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          slug: "legacy-coach-post",
+          version: createdAt,
+        }),
+        ["zulip", "bluesky", "buffer"],
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        syndication: { zulip: true, bluesky: true, buffer: true },
+      });
+      expect(next).not.toHaveBeenCalled();
+    });
+
     it("rejects members who cannot publish", async () => {
       req.authorizationRole = "member";
       req.body = { slug: "state-finals-2026" };

@@ -236,7 +236,12 @@ describe("useDashboardDocController archive workflow", () => {
 
     expect(saveDocMock).toHaveBeenCalledWith(
       "coach-update",
-      expect.objectContaining({ status: "published", approvalStatus: "approved" }),
+      expect.objectContaining({
+        status: "published",
+        approvalStatus: "approved",
+        approvedBy: "CircuitFox",
+        approvedAt: expect.any(String),
+      }),
       "CircuitFox",
       "https://avatars.example.org/member.png",
       { isCreate: true },

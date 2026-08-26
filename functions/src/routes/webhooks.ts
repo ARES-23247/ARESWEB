@@ -119,6 +119,13 @@ function optionalText(value: unknown, maxLength: number): string | undefined {
   return text || undefined;
 }
 
+function validIsoTimestamp(value: unknown): string | undefined {
+  const timestamp = optionalText(value, 100);
+  return timestamp && !Number.isNaN(Date.parse(timestamp))
+    ? timestamp
+    : undefined;
+}
+
 async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
   const postRef = adminDb.collection("posts").doc(slug);
   const receiptRef = adminDb.collection(SYNDICATION_RECEIPTS).doc(slug);
@@ -145,50 +152,60 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
     }
 
     const title = optionalText(data.title, 160);
-    const approvedAt = optionalText(data.approvedAt, 100);
-    if (!title || !approvedAt || Number.isNaN(Date.parse(approvedAt))) {
+    const approvedAt = validIsoTimestamp(data.approvedAt);
+    const documentCreatedAt = postSnapshot.createTime?.toDate().toISOString();
+    const version = approvedAt || validIsoTimestamp(documentCreatedAt);
+    if (!title || !version) {
       throw new ApiError(
         409,
         "The published blog post is missing approval metadata.",
       );
     }
 
+    // Older direct-publish clients saved approvalStatus=approved without the
+    // timestamp required for idempotent social receipts. Firestore createTime
+    // is server-owned and stable, so use it to repair those already-published
+    // records instead of trusting a client-authored fallback.
+    if (!approvedAt) {
+      transaction.update(postRef, { approvedAt: version });
+    }
+
     const receipt = receiptSnapshot.exists ? receiptSnapshot.data() || {} : {};
-    const deliveries = receiptDeliveries(receipt, approvedAt);
+    const deliveries = receiptDeliveries(receipt, version);
     const channels = SYNDICATION_CHANNELS.filter(
       (channel) => !deliveries[channel],
     );
     if (channels.length === 0) {
-      return { alreadyComplete: true, version: approvedAt };
+      return { alreadyComplete: true, version };
     }
     const startedAtMs =
       typeof receipt.startedAt === "string"
         ? Date.parse(receipt.startedAt)
         : Number.NaN;
     if (
-      receipt.version === approvedAt &&
+      receipt.version === version &&
       receipt.status === "in_progress" &&
       Number.isFinite(startedAtMs) &&
       startedAtMs > now.getTime() - CLAIM_TIMEOUT_MS
     ) {
-      return { pending: true, version: approvedAt };
+      return { pending: true, version };
     }
 
     transaction.set(receiptRef, {
-      version: approvedAt,
+      version,
       status: "in_progress",
       deliveries,
       startedAt: now.toISOString(),
       updatedAt: now.toISOString(),
     });
     return {
-      version: approvedAt,
+      version,
       channels,
       deliveries,
       payload: {
         slug,
         title,
-        version: approvedAt,
+        version,
         snippet: optionalText(data.snippet, 500),
         category: optionalText(data.category, 60),
         author:
