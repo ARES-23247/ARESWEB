@@ -78,7 +78,7 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
   const valueArguments = new Set([
     "--project", "--phase", "--artifact", "--legacy-plan", "--cross-link-plan",
     "--approval-file", "--backup-uri", "--confirm-backup-uri", "--confirm-project",
-    "--batch-id", "--rollback-manifest", "--approved-slugs",
+    "--batch-id", "--rollback-manifest", "--approved-slugs", "--stage-slugs",
   ]);
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -109,6 +109,16 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
   }
   if (options.approvedSlugs && !options.prepareApproval) {
     throw new Error("--approved-slugs is only valid with --prepare-approval.");
+  }
+  if (options.stageSlugs) {
+    if (options.phase !== "stage-drafts") throw new Error("--stage-slugs is only valid with stage-drafts.");
+    const stageSlugs = options.stageSlugs.split(",").map((slug) => slug.trim()).filter(Boolean);
+    if (stageSlugs.length < 1 || stageSlugs.length > MAX_CHANGES
+      || new Set(stageSlugs).size !== stageSlugs.length
+      || stageSlugs.some((slug) => !SAFE_SLUG.test(slug))) {
+      throw new Error("--stage-slugs must contain 1 through 25 unique safe slugs.");
+    }
+    options.stageSlugs = stageSlugs;
   }
   if (options.apply) {
     if (options.confirmProject !== options.project) throw new Error("Writes require --confirm-project to exactly match --project.");
@@ -194,7 +204,7 @@ function crossLinkDocuments(plan) {
   return plan.documents;
 }
 
-function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval) {
+function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, requestedStageSlugs = null) {
   const catalog = catalogMap(artifact);
   const legacy = legacyActions(legacyPlan);
   if (phase === "cleanup") {
@@ -210,9 +220,14 @@ function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval) {
   const replacementActions = legacy.filter((action) => action.action === "replace-from-catalog-after-review");
   const replacementSlugs = new Set(replacementActions.map((action) => action.catalogSlug));
   if (phase === "stage-drafts") {
-    return [...catalog.entries()]
-      .filter(([slug]) => !replacementSlugs.has(slug))
-      .map(([slug, data]) => ({ slug, kind: "create", preconditions: null, desired: data }));
+    const stageable = [...catalog.entries()].filter(([slug]) => !replacementSlugs.has(slug));
+    if (!requestedStageSlugs) {
+      return stageable.map(([slug, data]) => ({ slug, kind: "create", preconditions: null, desired: data }));
+    }
+    const requested = new Set(requestedStageSlugs);
+    const selected = stageable.filter(([slug]) => requested.has(slug));
+    if (selected.length !== requested.size) throw new Error("--stage-slugs names a draft outside the stageable catalog.");
+    return selected.map(([slug, data]) => ({ slug, kind: "create", preconditions: null, desired: data }));
   }
   if (phase === "publish-drafts") {
     const approved = new Set(approval.approvedSlugs);
@@ -479,7 +494,7 @@ export async function runLearningMigration(options, dependencies = null) {
   const approval = APPROVAL_PHASES.has(options.phase)
     ? validateApprovalFile(readJson(options.approvalFile, "Approval file"), options.phase)
     : null;
-  const changes = desiredForPhase(options.phase, artifact, legacyPlan, crossLinkPlan, approval);
+  const changes = desiredForPhase(options.phase, artifact, legacyPlan, crossLinkPlan, approval, options.stageSlugs);
   if (approval && reviewDigestForChanges(options.phase, changes) !== approval.reviewDigest) {
     throw new Error("Approval review digest does not match the exact proposed content and metadata.");
   }

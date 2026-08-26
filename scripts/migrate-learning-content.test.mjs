@@ -123,6 +123,15 @@ describe("learning content migration", () => {
     expect(() => parseLearningMigrationArgs([
       "--project", "aresweb-ci", "--phase", "publish-drafts", "--prepare-approval", "--approval-file", "approval.json",
     ])).toThrow(/cannot be combined/u);
+    expect(parseLearningMigrationArgs([
+      "--project", "aresweb-ci", "--phase", "stage-drafts", "--stage-slugs", "second, first",
+    ])).toMatchObject({ stageSlugs: ["second", "first"] });
+    expect(() => parseLearningMigrationArgs([
+      "--project", "aresweb-ci", "--phase", "cleanup", "--stage-slugs", "first",
+    ])).toThrow(/only valid with stage-drafts/u);
+    expect(() => parseLearningMigrationArgs([
+      "--project", "aresweb-ci", "--phase", "stage-drafts", "--stage-slugs", "same,same",
+    ])).toThrow(/unique safe slugs/u);
   });
 
   it("validates bounded human approval manifests without inventing approval", () => {
@@ -229,6 +238,35 @@ describe("learning content migration", () => {
       phase: "stage-drafts",
     }, { db: store.db });
     expect(result).toMatchObject({ planned: 1, ready: 0, blocked: 1, blockedSlugs: ["new-lesson"] });
+  });
+
+  it("stages only the explicitly selected subset without touching existing catalog drafts", async () => {
+    const draft = { title: "Lesson", status: "draft", approvalStatus: "pending_approval", content: "review me" };
+    const files = tempFiles({
+      documents: [
+        { slug: "already-published", data: { ...draft, title: "Published" } },
+        { slug: "selected-draft", data: { ...draft, title: "Selected" } },
+      ],
+    });
+    const store = fakeFirestore({
+      "docs/already-published": { title: "Published", status: "published", approvalStatus: "approved" },
+    });
+    const result = await runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "stage-drafts",
+      stageSlugs: ["selected-draft"],
+    }, { db: store.db });
+    expect(result).toMatchObject({ planned: 1, ready: 1, blocked: 0, readySlugs: ["selected-draft"] });
+
+    await expect(runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "stage-drafts",
+      stageSlugs: ["outside-catalog"],
+    }, { db: store.db })).rejects.toThrow(/outside the stageable catalog/u);
   });
 
   it("builds a bounded rollback manifest from hashes and paths", () => {
