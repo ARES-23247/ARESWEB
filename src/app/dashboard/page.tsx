@@ -7,6 +7,10 @@ import { and, collection, onSnapshot, getCountFromServer, or, query, where, limi
 import { db } from "@/lib/firebaseFirestore";
 import { maskEmail } from "@/lib/utils";
 import { canUseMemberAi } from "@/lib/authorization";
+import {
+  canReviewDashboardContent,
+  useDashboardNotifications,
+} from "@/context/DashboardNotificationsContext";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -51,6 +55,9 @@ export default function DashboardHome() {
   const userRole = authorizedUser?.role || "Pending Verification";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
   const canUseAi = canUseMemberAi( userRole);
+  const canReviewContent = canReviewDashboardContent(userRole);
+  const { pendingBlogApprovals, blogApprovalsState } =
+    useDashboardNotifications();
 
   // Fetch content counts once and keep the bounded task summary synchronized.
   useEffect(() => {
@@ -163,6 +170,51 @@ export default function DashboardHome() {
           Manage system states, track active operations, publish content, and monitor portal infrastructure.
         </p>
       </header>
+
+      {canReviewContent && pendingBlogApprovals > 0 && blogApprovalsState !== "error" && (
+        <section
+          aria-labelledby="pending-blog-approval-heading"
+          className="glass-card flex flex-col gap-5 border border-ares-gold/40 bg-ares-gold/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        >
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ares-gold/40 bg-ares-gold/15 text-ares-gold">
+              <AlertCircle aria-hidden="true" size={22} />
+            </div>
+            <div>
+              <h2
+                id="pending-blog-approval-heading"
+                className="font-heading text-base font-black uppercase tracking-tight text-white sm:text-lg"
+              >
+                {pendingBlogApprovals} blog {pendingBlogApprovals === 1 ? "post needs" : "posts need"} mentor approval
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed text-marble/75">
+                Student-authored content is waiting for review before it can be published.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/dashboard/blog?tab=pending"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-gold px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            Review approval queue <ArrowUpRight aria-hidden="true" size={14} />
+          </Link>
+        </section>
+      )}
+
+      {canReviewContent && blogApprovalsState === "error" && (
+        <div
+          role="alert"
+          className="flex flex-col gap-3 border border-ares-red/40 bg-ares-red/10 p-5 text-sm text-white sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>Blog approval queue status is unavailable. Open Blog Management to check it directly.</span>
+          <Link
+            to="/dashboard/blog?tab=pending"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center border border-white/20 px-4 py-2 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            Open Blog Management
+          </Link>
+        </div>
+      )}
 
       {/* ─── SECURITY NOTICE ─── */}
       {isUnverified && (

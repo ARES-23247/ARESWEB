@@ -8,6 +8,7 @@ import { LogIn, Menu, X, KeyRound } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
 import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
+import { DashboardNotificationsProvider } from "@/context/DashboardNotificationsContext";
 
 export default function DashboardLayout({
   children,
@@ -225,7 +226,8 @@ export default function DashboardLayout({
 
   // 3. Authenticated Dashboard Layout
   return (
-    <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
+    <DashboardNotificationsProvider>
+      <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
       {/* ─── DESKTOP SIDEBAR ─── */}
       <div className="hidden md:block shrink-0 self-stretch flex flex-col">
         <DashboardSidebar />
@@ -297,6 +299,7 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
-    </div>
+      </div>
+    </DashboardNotificationsProvider>
   );
 }

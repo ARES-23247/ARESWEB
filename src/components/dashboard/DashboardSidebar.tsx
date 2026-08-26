@@ -1,7 +1,5 @@
 "use client";
 
-import { logger } from "@/utils/logger";
-import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   DollarSign,
@@ -29,8 +27,7 @@ import {
   Sunrise,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebaseFirestore";
-import { onSnapshot, collection, query, where } from "firebase/firestore";
+import { useDashboardNotifications } from "@/context/DashboardNotificationsContext";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
@@ -44,6 +41,8 @@ interface NavButtonProps {
   label: string;
   currentPath: string;
   hasAlert?: boolean;
+  alertCount?: number;
+  alertLabel?: string;
   onNavigate?: () => void;
 }
 
@@ -53,10 +52,13 @@ const NavButton: React.FC<NavButtonProps> = ({
   label,
   currentPath,
   hasAlert,
+  alertCount,
+  alertLabel,
   onNavigate,
 }) => {
   const targetPath = tab === "" ? "/dashboard" : `/dashboard/${tab}`;
   const isActive = currentPath === targetPath;
+  const showAlert = hasAlert || (alertCount ?? 0) > 0;
 
   return (
     <Link
@@ -77,16 +79,19 @@ const NavButton: React.FC<NavButtonProps> = ({
         />
         <span className="truncate">{label}</span>
       </div>
-      {hasAlert && (
+      {showAlert && (
         <>
           <span
             aria-hidden="true"
-            className="flex h-2.5 w-2.5 shrink-0 relative mr-1"
+            className={
+              alertCount
+                ? "flex min-w-5 shrink-0 items-center justify-center rounded-full bg-ares-gold px-1.5 py-0.5 text-[9px] font-black text-black"
+                : "mr-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-ares-red"
+            }
           >
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ares-red opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ares-red"></span>
+            {alertCount ? (alertCount > 99 ? "99+" : alertCount) : null}
           </span>
-          <span className="sr-only">Pending inquiries</span>
+          {alertLabel && <span className="sr-only">{alertLabel}</span>}
         </>
       )}
     </Link>
@@ -100,8 +105,12 @@ export default function DashboardSidebar({
 }) {
   const { pathname } = useLocation();
   const { user, authorizedUser, logout } = useAuth();
-  const [hasPendingInquiries, setHasPendingInquiries] =
-    useState<boolean>(false);
+  const {
+    pendingBlogApprovals,
+    blogApprovalsState,
+    hasPendingInquiries,
+    inquiriesState,
+  } = useDashboardNotifications();
 
   const userRole = authorizedUser?.role || "Pending Verification";
   const profileQuery = useCurrentProfile(
@@ -116,37 +125,6 @@ export default function DashboardSidebar({
       : profileQuery.error
         ? "Profile request failed"
         : "";
-
-  useEffect(() => {
-    if (import.meta.env.MODE === "e2e") return;
-    if (
-      !user?.uid ||
-      (userRole !== "admin" && userRole !== "coach" && userRole !== "mentor")
-    ) {
-      setHasPendingInquiries(false);
-      return;
-    }
-
-    const q = query(
-      collection(db, "inquiries"),
-      where("status", "==", "pending"),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        setHasPendingInquiries(!snapshot.empty);
-      },
-      (error) => {
-        logger.error(
-          "Error subscribing to pending inquiries in sidebar:",
-          error,
-        );
-      },
-    );
-
-    return () => unsubscribe();
-  }, [user?.uid, userRole]);
 
   const userImage = profileAvatar || user?.photoURL;
   const displayName = profileNickname || user?.displayName || "ARES Member";
@@ -264,6 +242,13 @@ export default function DashboardSidebar({
               icon={PenTool}
               label="Manage Blogs"
               currentPath={pathname}
+              hasAlert={blogApprovalsState === "error"}
+              alertCount={pendingBlogApprovals}
+              alertLabel={
+                blogApprovalsState === "error"
+                  ? "Approval queue status unavailable"
+                  : `${pendingBlogApprovals} pending blog ${pendingBlogApprovals === 1 ? "post" : "posts"} awaiting mentor approval`
+              }
               onNavigate={onCloseMobile}
             />
             <NavButton
@@ -335,7 +320,12 @@ export default function DashboardSidebar({
                   icon={MessageSquare}
                   label="Inquiries Hub"
                   currentPath={pathname}
-                  hasAlert={hasPendingInquiries}
+                  hasAlert={hasPendingInquiries || inquiriesState === "error"}
+                  alertLabel={
+                    inquiriesState === "error"
+                      ? "Pending inquiry status unavailable"
+                      : "Pending inquiries"
+                  }
                   onNavigate={onCloseMobile}
                 />
               )}

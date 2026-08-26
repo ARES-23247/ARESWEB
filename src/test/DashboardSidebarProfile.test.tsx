@@ -5,11 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import { useAuth } from "../context/AuthContext";
 import { authenticatedFetch } from "../lib/api";
+import { useDashboardNotifications } from "../context/DashboardNotificationsContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn(), useOptionalAuth: () => undefined,
 }));
 vi.mock("../lib/api", () => ({ authenticatedFetch: vi.fn() }));
+vi.mock("../context/DashboardNotificationsContext", () => ({
+  useDashboardNotifications: vi.fn(),
+}));
 vi.mock("../lib/firebaseFirestore", () => ({ db: {} }));
 vi.mock("firebase/firestore", () => ({
   collection: vi.fn(), query: vi.fn(), where: vi.fn(), onSnapshot: vi.fn(),
@@ -39,6 +43,12 @@ describe("DashboardSidebar profile DTO", () => {
       logout: vi.fn(),
       loginWithMockUser: vi.fn(),
     } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(useDashboardNotifications).mockReturnValue({
+      pendingBlogApprovals: 0,
+      blogApprovalsState: "connected",
+      hasPendingInquiries: false,
+      inquiriesState: "connected",
+    });
   });
 
   it("loads nickname and avatar through the authenticated API without a UID-seeded fallback", async () => {
@@ -77,5 +87,28 @@ describe("DashboardSidebar profile DTO", () => {
     expect(status).toHaveAttribute("title", "HTTP 503: Service Unavailable. Profile unavailable");
     expect(screen.getByText("OAuth Legal Name")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("link", { name: /My Profile/i })).toBeInTheDocument());
+  });
+
+  it("puts the pending mentor approval count on the Blog Management link", async () => {
+    vi.mocked(useDashboardNotifications).mockReturnValue({
+      pendingBlogApprovals: 2,
+      blogApprovalsState: "connected",
+      hasPendingInquiries: false,
+      inquiriesState: "connected",
+    });
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({ exists: false, profile: { nickname: "", avatar: "" } }),
+    } as Response);
+
+    renderSidebar();
+
+    expect(
+      await screen.findByRole("link", {
+        name: /Manage Blogs 2 pending blog posts awaiting mentor approval/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

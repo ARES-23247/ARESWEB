@@ -2,18 +2,18 @@ import { useState, useRef } from "react";
 
 interface ImageCropperProps {
   cropImageSrc: string;
-  cropFileName: string;
   loading: boolean;
   onCancel: () => void;
+  onUseFullImage: () => void;
   onSave: (blob: Blob) => void;
   onError: (errorMsg: string) => void;
 }
 
 export default function ImageCropper({
   cropImageSrc,
-  cropFileName: _cropFileName,
   loading,
   onCancel,
+  onUseFullImage,
   onSave,
   onError,
 }: ImageCropperProps) {
@@ -119,8 +119,12 @@ export default function ImageCropper({
 
   return (
     <div className="space-y-4">
-      <div className="text-xs text-marble/70">
-        Drag image to adjust crop. Use zoom slider to fit.
+      <div className="space-y-1 text-xs text-marble/70">
+        <p className="font-bold text-white">Choose the version you want to insert.</p>
+        <p>
+          Use the full image to preserve its original composition. For a 16:9 thumbnail,
+          drag the image to adjust the crop and use the zoom slider to fit.
+        </p>
       </div>
 
       <div
@@ -199,7 +203,7 @@ export default function ImageCropper({
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-4 border-t border-white/5">
+      <div className="flex flex-col-reverse gap-2 pt-4 border-t border-white/5 sm:flex-row sm:justify-end">
         <button
           type="button"
           onClick={onCancel}
@@ -210,11 +214,19 @@ export default function ImageCropper({
         </button>
         <button
           type="button"
-          onClick={handleSaveCrop}
-          className="px-5 py-2 bg-ares-gold text-black font-black uppercase tracking-widest text-[10px] ares-cut-sm transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg disabled:opacity-40"
+          onClick={onUseFullImage}
+          className="min-h-11 px-5 py-2 border border-ares-gold/60 bg-ares-gold/10 text-ares-gold font-black uppercase tracking-widest text-[10px] ares-cut-sm transition-colors hover:bg-ares-gold hover:text-black cursor-pointer shadow-lg disabled:opacity-40"
           disabled={loading}
         >
-          {loading ? "Saving..." : "Apply Crop & Save"}
+          {loading ? "Uploading..." : "Use Full Image"}
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveCrop}
+          className="min-h-11 px-5 py-2 bg-ares-red text-white font-black uppercase tracking-widest text-[10px] ares-cut-sm transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg disabled:opacity-40"
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Apply 16:9 Crop"}
         </button>
       </div>
     </div>

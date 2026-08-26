@@ -3,8 +3,8 @@
   "repositories": {
     "ARESLib-Kotlin": {
       "current": {
-        "revision": "v9.13.0",
-        "commit": "e4b4a98953f5b957c776d60e2ef6ec85cf3bd3b8"
+        "revision": "v10.0.0",
+        "commit": "6401a295e57aef31ab3ad0f445e6a95516607d27"
       },
       "approved": [
         {
@@ -18,6 +18,10 @@
         {
           "revision": "v9.13.0",
           "commit": "e4b4a98953f5b957c776d60e2ef6ec85cf3bd3b8"
+        },
+        {
+          "revision": "v10.0.0",
+          "commit": "6401a295e57aef31ab3ad0f445e6a95516607d27"
         }
       ]
     },
