@@ -35,7 +35,7 @@ export function useDashboardDocController(
     message: string;
     slug: string;
   } | null>(null);
-  const [isRetryingSyndication, setIsRetryingSyndication] = useState(false);
+  const [syndicatingSlug, setSyndicatingSlug] = useState<string | null>(null);
 
   const isApprover = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "mentor" || authorizedUser.role === "coach"));
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
@@ -131,28 +131,6 @@ export function useDashboardDocController(
     }
   };
 
-  const handleSave = async (slug: string, payload: Omit<DocRecord, "slug">) => {
-    const isMemberRole = !isApprover;
-    const requiresReview = collectionName === "docs";
-    const finalPayload = {
-      ...payload,
-      original_authorNickname: selectedDoc
-        ? selectedDoc.original_authorNickname || userNickname
-        : userNickname,
-      original_authorAvatar: selectedDoc
-        ? selectedDoc.original_authorAvatar || userAvatar
-        : userAvatar,
-      // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published
-      status: isMemberRole || requiresReview ? "pending_approval" : payload.status || "published",
-      approvalStatus: isMemberRole || requiresReview
-        ? "pending_approval"
-        : payload.approvalStatus || "approved",
-    };
-    await saveDoc(slug, finalPayload, userNickname, userAvatar, {
-      isCreate: !selectedDoc,
-    });
-  };
-
   const deliverSocialAnnouncement = async (slug: string) => {
     setSyndicationNotice(null);
     try {
@@ -178,10 +156,10 @@ export function useDashboardDocController(
         slug,
         message:
           payload.pending === true
-            ? "Post published. Social delivery is already in progress."
+            ? "Social delivery is already in progress."
             : payload.alreadySyndicated === true
-              ? "Post published. Social channels were already up to date."
-              : "Post published and delivered to all configured social channels.",
+              ? "Social channels were already up to date."
+              : "Post delivered to all configured social channels.",
       });
       return true;
     } catch (err) {
@@ -190,9 +168,50 @@ export function useDashboardDocController(
         kind: "error",
         slug,
         message:
-          "Post published on the website, but one or more social channels failed. Retry without republishing the post.",
+          "The post remains published on the website, but one or more social channels failed. Retry without republishing the post.",
       });
       return false;
+    }
+  };
+
+  const runSocialAnnouncement = async (slug: string) => {
+    if (syndicatingSlug) return false;
+    setSyndicatingSlug(slug);
+    try {
+      return await deliverSocialAnnouncement(slug);
+    } finally {
+      setSyndicatingSlug(null);
+    }
+  };
+
+  const handleSave = async (slug: string, payload: Omit<DocRecord, "slug">) => {
+    const isMemberRole = !isApprover;
+    const requiresReview = collectionName === "docs";
+    const wasPublished = selectedDoc?.status === "published"
+      && selectedDoc.approvalStatus !== "pending_approval";
+    const finalPayload = {
+      ...payload,
+      original_authorNickname: selectedDoc
+        ? selectedDoc.original_authorNickname || userNickname
+        : userNickname,
+      original_authorAvatar: selectedDoc
+        ? selectedDoc.original_authorAvatar || userAvatar
+        : userAvatar,
+      // If student/member saves, mark as pending_approval; if approver, respect selected status or default to published
+      status: isMemberRole || requiresReview ? "pending_approval" : payload.status || "published",
+      approvalStatus: isMemberRole || requiresReview
+        ? "pending_approval"
+        : payload.approvalStatus || "approved",
+    };
+    await saveDoc(slug, finalPayload, userNickname, userAvatar, {
+      isCreate: !selectedDoc,
+    });
+
+    const becamePublished = finalPayload.status === "published"
+      && finalPayload.approvalStatus === "approved"
+      && !wasPublished;
+    if (collectionName === "posts" && becamePublished) {
+      await runSocialAnnouncement(slug);
     }
   };
 
@@ -252,7 +271,7 @@ export function useDashboardDocController(
       await saveDoc(slug, finalPayload, userNickname, userAvatar);
 
       if (collectionName === "posts") {
-        await deliverSocialAnnouncement(slug);
+        await runSocialAnnouncement(slug);
       }
       setApprovalNotice({ kind: "success", message: `${docItem.title} was approved and published.` });
     } catch (error) {
@@ -265,13 +284,18 @@ export function useDashboardDocController(
   };
 
   const handleRetrySyndication = async () => {
-    if (!syndicationNotice?.slug || isRetryingSyndication) return;
-    setIsRetryingSyndication(true);
-    try {
-      await deliverSocialAnnouncement(syndicationNotice.slug);
-    } finally {
-      setIsRetryingSyndication(false);
-    }
+    if (!syndicationNotice?.slug) return;
+    await runSocialAnnouncement(syndicationNotice.slug);
+  };
+
+  const handleSyndicatePost = async (docItem: DocRecord) => {
+    if (
+      collectionName !== "posts"
+      || !isApprover
+      || docItem.status !== "published"
+      || docItem.isDeleted === 1
+    ) return;
+    await runSocialAnnouncement(docItem.slug);
   };
 
   const handleDelete = async (slug: string) => {
@@ -346,7 +370,9 @@ export function useDashboardDocController(
     isArchiving,
     archiveError,
     syndicationNotice,
-    isRetryingSyndication,
+    syndicatingSlug,
+    isRetryingSyndication: syndicatingSlug === syndicationNotice?.slug,
+    handleSyndicatePost,
     handleRetrySyndication,
     dismissSyndicationNotice: () => setSyndicationNotice(null),
     userNickname,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw } from "lucide-react";
+import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw, Share2 } from "lucide-react";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import type { DocRecord, DocumentConnectionState } from "@/hooks/useDocumentSync";
 import AuthenticatedImage from "@/components/media/AuthenticatedImage";
@@ -11,6 +11,8 @@ interface DocListGridProps {
   isApprover?: boolean;
   onApprove?: (item: DocRecord) => void | Promise<void>;
   approvingSlug?: string | null;
+  onSyndicate?: (item: DocRecord) => void | Promise<void>;
+  syndicatingSlug?: string | null;
   variant?: "docs" | "documents" | "blog";
   onEdit: (item: DocRecord) => void;
   onDelete: (slug: string) => void;
@@ -35,6 +37,8 @@ export default function DocListGrid({
   isApprover = false,
   onApprove,
   approvingSlug = null,
+  onSyndicate,
+  syndicatingSlug = null,
   variant = "docs",
   onEdit,
   onDelete,
@@ -328,6 +332,19 @@ export default function DocListGrid({
                             title="Approve & Publish"
                           >
                             <CheckCircle2 size={12} /> {approvingSlug === item.slug ? "Approving…" : "Approve"}
+                          </button>
+                        )}
+                        {variant === "blog" && isApprover && onSyndicate && isPublished && item.isDeleted !== 1 && (
+                          <button
+                            type="button"
+                            onClick={() => void onSyndicate(item)}
+                            disabled={syndicatingSlug !== null}
+                            className="inline-flex min-h-9 items-center gap-1 rounded border border-ares-cyan/40 bg-ares-cyan/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-ares-cyan transition-all hover:bg-ares-cyan/20 focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-wait disabled:opacity-60"
+                            aria-label={`Crosspost or retry social delivery for ${item.title}`}
+                            title="Crosspost / Retry social delivery"
+                          >
+                            <Share2 size={12} aria-hidden="true" />
+                            {syndicatingSlug === item.slug ? "Sending…" : "Crosspost"}
                           </button>
                         )}
                         {item.isDeleted === 1 && canEdit && onRestore ? (

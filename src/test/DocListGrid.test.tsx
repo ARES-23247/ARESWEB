@@ -104,4 +104,28 @@ describe("DocListGrid archive confirmation", () => {
     expect(screen.getByRole("button", { name: "Approving…" })).toBeDisabled();
     expect(onApprove).not.toHaveBeenCalled();
   });
+
+  it("offers published blog approvers an explicit crosspost or retry action", () => {
+    const onSyndicate = vi.fn();
+    render(
+      <DocListGrid
+        items={[{ ...record, title: "Build Recap", author: "ARES", date: "2026-08-26" }]}
+        loadingList={false}
+        canEdit
+        isApprover
+        onSyndicate={onSyndicate}
+        variant="blog"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "Crosspost or retry social delivery for Build Recap",
+    }));
+    expect(onSyndicate).toHaveBeenCalledWith(expect.objectContaining({
+      slug: "safety-guide",
+      title: "Build Recap",
+    }));
+  });
 });
