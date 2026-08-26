@@ -291,6 +291,41 @@ describe("videos routes", () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ pagesFetched: 2, addedUpdatedCount: 2, archivedCount: 1, archivalSkipped: false }));
   });
 
+  it("bounds long upstream descriptions without losing Shorts classification", async () => {
+    process.env.YOUTUBE_API_KEY = "secret-key";
+    const longDescription = `${"A".repeat(2_100)}🤖 #shorts`;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [{
+          snippet: {
+            title: "Long team update",
+            description: longDescription,
+            publishedAt: "2026-01-01T00:00:00.000Z",
+            resourceId: { videoId: "abcdefghijk" },
+            thumbnails: { high: { url: "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg" } },
+          },
+        }],
+      }),
+    }));
+    queryGet.mockResolvedValueOnce({ docs: [] });
+    queryGet.mockResolvedValueOnce({ docs: [] });
+
+    await handler("/sync", "post")({ user: { uid: "admin" } }, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(batchSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        description: expect.stringMatching(/…$/u),
+        type: "short",
+      }),
+      { merge: true },
+    );
+    const stored = batchSet.mock.calls[0][1] as { description: string };
+    expect(stored.description.length).toBeLessThanOrEqual(2_000);
+  });
+
   it("announces only fresh uploads discovered by sync", async () => {
     process.env.YOUTUBE_API_KEY = "secret-key";
     const freshDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
