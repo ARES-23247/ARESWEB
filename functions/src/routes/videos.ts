@@ -78,6 +78,20 @@ function boundedText(value: unknown, field: string, max: number, required = fals
   return clean;
 }
 
+/**
+ * YouTube descriptions are upstream display text, not form submissions. Keep
+ * the local data contract bounded without rejecting an otherwise valid
+ * playlist page. Avoid ending the stored value on half of a surrogate pair.
+ */
+function truncateUpstreamText(value: unknown, max: number): string {
+  if (typeof value !== "string" || max < 1) return "";
+  const clean = value.trim();
+  if (clean.length <= max) return clean;
+  let prefix = clean.slice(0, max - 1);
+  if (/[\uD800-\uDBFF]$/u.test(prefix)) prefix = prefix.slice(0, -1);
+  return `${prefix}…`;
+}
+
 function parseVideoId(value: unknown): string {
   const input = boundedText(value, "YouTube video", 300, true);
   if (YOUTUBE_ID_PATTERN.test(input)) return input;
@@ -368,8 +382,9 @@ router.post(
     const rawId = snippet?.resourceId?.videoId;
     if (!rawId || !YOUTUBE_ID_PATTERN.test(rawId)) continue;
     const title = boundedText(snippet?.title || "Untitled YouTube video", "Title", 180, true);
-    const description = boundedText(snippet?.description || "", "Description", 2_000);
-    const metadata = `${title} ${description}`.toLowerCase();
+    const rawDescription = typeof snippet?.description === "string" ? snippet.description : "";
+    const description = truncateUpstreamText(rawDescription, 2_000);
+    const metadata = `${title} ${rawDescription}`.toLowerCase();
     const thumbnailCandidate = snippet?.thumbnails?.maxres?.url
       || snippet?.thumbnails?.standard?.url
       || snippet?.thumbnails?.high?.url

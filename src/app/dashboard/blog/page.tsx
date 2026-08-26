@@ -67,7 +67,9 @@ export default function BlogManagementPage({
     isArchiving,
     archiveError,
     syndicationNotice,
+    syndicatingSlug,
     isRetryingSyndication,
+    handleSyndicatePost,
     handleRetrySyndication,
     dismissSyndicationNotice,
   } = useDashboardDocController(
@@ -221,6 +223,8 @@ export default function BlogManagementPage({
         canEdit={canEdit}
         isApprover={isApprover}
         onApprove={handleApproveAndPublish}
+        onSyndicate={handleSyndicatePost}
+        syndicatingSlug={syndicatingSlug}
         variant="blog"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}

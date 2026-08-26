@@ -217,7 +217,87 @@ describe("useDashboardDocController archive workflow", () => {
       kind: "success",
       slug: "state-finals",
   });
-});
+  });
+
+  it("announces a blog when a coach creates it as published", async () => {
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleSave("coach-update", {
+      title: "Coach Update",
+      category: "Team Update",
+      content: "Published directly by a coach.",
+      description: "A direct publication",
+      status: "published",
+      approvalStatus: "approved",
+    } as never));
+
+    expect(saveDocMock).toHaveBeenCalledWith(
+      "coach-update",
+      expect.objectContaining({ status: "published", approvalStatus: "approved" }),
+      "CircuitFox",
+      "https://avatars.example.org/member.png",
+      { isCreate: true },
+    );
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      "/api/webhooks/syndicate-post",
+      expect.objectContaining({ body: JSON.stringify({ slug: "coach-update" }) }),
+    );
+    expect(result.current.syndicationNotice).toMatchObject({
+      kind: "success",
+      slug: "coach-update",
+    });
+  });
+
+  it("does not silently repost an edit to an already-published blog", async () => {
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    act(() => result.current.handleOpenEdit({
+      slug: "existing-post",
+      title: "Existing Post",
+      status: "published",
+      approvalStatus: "approved",
+    } as never));
+    await act(async () => result.current.handleSave("existing-post", {
+      title: "Existing Post Revised",
+      category: "Team Update",
+      content: "A correction that should not create another social post.",
+      description: "Corrected copy",
+      status: "published",
+      approvalStatus: "approved",
+    } as never));
+
+    expect(saveDocMock).toHaveBeenCalledOnce();
+    expect(authenticatedFetchMock).not.toHaveBeenCalled();
+  });
+
+  it("allows an approver to crosspost or retry a published blog explicitly", async () => {
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleSyndicatePost({
+      slug: "existing-post",
+      title: "Existing Post",
+      status: "published",
+      isDeleted: 0,
+    } as never));
+
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      "/api/webhooks/syndicate-post",
+      expect.objectContaining({ body: JSON.stringify({ slug: "existing-post" }) }),
+    );
+    expect(result.current.syndicationNotice).toMatchObject({
+      kind: "success",
+      slug: "existing-post",
+    });
+  });
 
   it("reports partial publication failure and retries social delivery without saving again", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
