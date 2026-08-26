@@ -1,8 +1,11 @@
 # ARES Academy Phase 2
 
-Status: implementation complete; production handoff not yet authorized  
+Status: deployed and verified; Phase 3 content launch completed 2026-08-25 EDT
 Baseline commit: `a9e01f7b72c9ce2ef415b9c1fa38688f1eea57b3`  
 Baseline date: 2026-08-25
+
+The starting-point notes below describe the state before Phase 2 implementation.
+The implemented-result and verification sections record the delivered state.
 
 ## Verified starting point
 
@@ -106,12 +109,12 @@ Acceptance evidence:
   requires a fresh backup, exact-content human approval, dry run, explicit
   production-write confirmation, and post-write re-read.
 
-## Production boundary
+## Production boundary used during implementation
 
-Code implementation, local tests, emulators, and draft preparation are authorized
-by the Phase 2 goal. Pushing, merging, deploying, changing Firebase rules, or
-writing tutorial/content records in production requires a separate explicit user
-approval after the complete verification evidence is presented.
+Phase 2 kept code implementation, local tests, emulators, and draft preparation
+separate from production changes. Production publication occurred only after a
+fresh protected Firestore export, emulator rehearsal, exact-content Lead Coach
+approval, explicit write authorization, and post-write verification.
 
 ## Implemented result
 
@@ -131,17 +134,23 @@ approval after the complete verification evidence is presented.
   same transaction writes a redacted audit record; Firestore rules prevent any
   browser client from performing the pending-to-published transition.
 - `source-authorities.json` preserves reviewed historical sources while naming
-  ARESLib v9.12.0 and the current ARES-FTC commit. Remote CI recomputes immutable
-  Git blob hashes and fails if the declared current ARESLib release is stale.
-- Three current-code tutorials were added as pending drafts: season composition
-  and failure latching, driver-input shaping and coordinate frames, and intake
-  I/O neutral-first fault recovery. No tutorial was imported or published.
+  ARESLib v9.13.0 at commit
+  `e4b4a98953f5b957c776d60e2ef6ec85cf3bd3b8` as current. The current-robot
+  tutorials remain accurately labeled with the ARESLib version used by their
+  pinned ARES-FTC source. Remote CI recomputes immutable Git blob hashes and
+  fails if the declared current ARESLib release is stale.
+- Three current-code tutorials cover season composition and failure latching,
+  driver-input shaping and coordinate frames, and intake I/O neutral-first
+  fault recovery. They were staged and published as the bounded Phase 3 launch
+  after review of digest
+  `c4d912d91cf442de36084ad278ae25900f44a54fb62939b38eafa3f391c700c4`.
 
 ## Verification evidence
 
-- Source verification: 18 drafts, 16 unique source blobs recomputed, current
-  ARESLib v9.12.0/tag commit verified.
-- Frontend coverage: 145 files and 800 tests pass; all Phase 2 utilities and the
+- Source verification: 18 source-controlled documents, 16 unique source blobs
+  recomputed, and current ARESLib v9.13.0/tag commit verified. Historical pins
+  remain valid and retain their actual version labels.
+- Frontend coverage: 145 files and 802 tests pass; all Phase 2 utilities and the
   preview component meet 85% line and 100% function thresholds.
 - Functions coverage: 63 files and 768 tests pass; the approval route has 94.59%
   line and 100% function coverage.

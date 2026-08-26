@@ -49,8 +49,10 @@ The supported phases are intentionally separate:
 
 - `cleanup` archives the two reviewed test placeholders and removes Monty Hall
   from ARESLib while preserving its Academy publication.
-- `stage-drafts` creates only the 11 new catalog slugs as `draft` and
-  `pending_approval`. It never overwrites an existing slug.
+- `stage-drafts` creates only new catalog slugs as `draft` and
+  `pending_approval`. It never overwrites an existing slug. Use
+  `--stage-slugs slug-one,slug-two` for a bounded subset when other catalog
+  lessons already exist or are published.
 - `publish-drafts` publishes only explicitly approved staged catalog drafts and
   refuses the batch if any reviewed content field changed after staging.
 - `replacements` replaces only explicitly approved legacy ARESLib slugs.
