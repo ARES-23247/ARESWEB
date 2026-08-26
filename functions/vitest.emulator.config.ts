@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 // emulator (FIRESTORE_EMULATOR_HOST). Invoked via the root script
 // `pnpm run test:functions-emulator`; never part of the offline test run.
 process.env.ENCRYPTION_SECRET = "dummy-encryption-secret-must-be-32-chars-long";
+process.env.ABUSE_HMAC_SECRET = "dummy-abuse-hmac-secret-must-be-32-chars-long";
 
 export default defineConfig({
   test: {

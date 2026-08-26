@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { ensureTeamMember, AuthenticatedRequest } from "../middleware/auth";
@@ -5,6 +6,12 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
 import { requireRouteParam } from "../middleware/validation";
+import { distributedAnonymousQuota } from "../middleware/distributedQuota";
+import {
+  type PublicArtifact,
+  readPublicArtifact,
+  writePublicArtifact,
+} from "../lib/publicArtifactCache";
 
 const router = express.Router();
 
@@ -16,8 +23,53 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 router.use(limiter);
+router.use(distributedAnonymousQuota({
+  scope: "public-simulations",
+  limit: 100,
+  windowMs: 15 * 60 * 1000,
+}));
 
 const SIM_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
+const PUBLIC_CACHE_CONTROL = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
+const REGISTRY_ARTIFACT_KEY = "simulation-registry";
+
+interface RegistrySimulation {
+  id: string;
+  name: string;
+}
+
+function parseRegistry(text: string): RegistrySimulation[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new ApiError(502, "Simulation registry is temporarily unavailable.", "SIMULATION_REGISTRY_INVALID");
+  }
+  const simulators = parsed && typeof parsed === "object" && "simulators" in parsed
+    ? (parsed as { simulators?: unknown }).simulators
+    : undefined;
+  if (!Array.isArray(simulators) || simulators.length > 100) {
+    throw new ApiError(502, "Simulation registry is temporarily unavailable.", "SIMULATION_REGISTRY_INVALID");
+  }
+  return simulators.map((simulation) => {
+    if (
+      !simulation
+      || typeof simulation !== "object"
+      || typeof (simulation as { id?: unknown }).id !== "string"
+      || !SIM_ID_PATTERN.test((simulation as { id: string }).id)
+      || typeof (simulation as { name?: unknown }).name !== "string"
+    ) {
+      throw new ApiError(502, "Simulation registry is temporarily unavailable.", "SIMULATION_REGISTRY_INVALID");
+    }
+    const id = (simulation as { id: string }).id;
+    const name = (simulation as { name: string }).name.trim().slice(0, 120) || id;
+    return { id, name };
+  });
+}
+
+function simulationArtifactKey(id: string): string {
+  return `simulation-source-${createHash("sha256").update(id).digest("hex").slice(0, 32)}`;
+}
 
 // GitHub Repository Configuration
 function getGitHubConfig() {
@@ -33,37 +85,95 @@ function getGitHubPat(): string | undefined {
   return process.env.GITHUB_PAT;
 }
 
-// GET /api/simulations - List all simulations from GitHub
-router.get("/", asyncHandler(async (req, res) => {
-  const ghConfig = getGitHubConfig();
-  const pat = await getGitHubPat();
-
+function githubHeaders(accept = "application/vnd.github.v3.raw"): Record<string, string> {
   const headers: Record<string, string> = {
     "User-Agent": "ARES-Firebase-Functions",
-    "Accept": "application/vnd.github.v3.raw"
+    "Accept": accept,
   };
-  if (pat) headers["Authorization"] = `Bearer ${pat}`;
+  const pat = getGitHubPat();
+  if (pat) headers.Authorization = `Bearer ${pat}`;
+  return headers;
+}
 
-  const ghRes = await fetch(`${ghConfig.apiBase}/contents/src/sims/simRegistry.json`, { headers });
-  if (!ghRes.ok) {
-    logger.error("simulations", "GitHub registry request failed", {
-      status: ghRes.status,
-      statusText: ghRes.statusText,
-    });
-    throw new ApiError(502, `GitHub registry request failed: HTTP ${ghRes.status}`);
+async function fetchRepositoryText(path: string): Promise<Response> {
+  const ghConfig = getGitHubConfig();
+  return fetch(`${ghConfig.apiBase}/contents/${path}`, { headers: githubHeaders() });
+}
+
+async function refreshRegistryArtifact(): Promise<PublicArtifact> {
+  const response = await fetchRepositoryText("src/sims/simRegistry.json");
+  if (!response.ok) {
+    logger.error("simulations", "GitHub registry request failed", { status: response.status });
+    throw new ApiError(502, "Simulation registry is temporarily unavailable.", "SIMULATION_UPSTREAM_ERROR");
   }
+  const text = await response.text();
+  parseRegistry(text);
+  return writePublicArtifact(REGISTRY_ARTIFACT_KEY, text, "application/json; charset=utf-8");
+}
 
-  const registryText = await ghRes.text();
-  const registry = JSON.parse(registryText);
+async function registryArtifact(forceRefresh = false): Promise<PublicArtifact> {
+  if (!forceRefresh) {
+    const cached = await readPublicArtifact(REGISTRY_ARTIFACT_KEY);
+    if (cached) {
+      parseRegistry(cached.body);
+      return cached;
+    }
+  }
+  return refreshRegistryArtifact();
+}
 
-  const githubSims = (registry.simulators || []).map((s: { id: string; name: string }) => ({
+async function refreshSimulationSourceArtifact(id: string): Promise<PublicArtifact> {
+  let response = await fetchRepositoryText(`src/sims/${id}/index.tsx`);
+  if (!response.ok) response = await fetchRepositoryText(`src/sims/${id}.tsx`);
+  if (!response.ok) throw new ApiError(404, "Simulation not found in GitHub");
+  const code = await response.text();
+  if (code.length > 1_000_000) {
+    throw new ApiError(502, "Simulation source exceeds its safe size limit.", "SIMULATION_SOURCE_TOO_LARGE");
+  }
+  return writePublicArtifact(simulationArtifactKey(id), code, "text/plain; charset=utf-8");
+}
+
+async function simulationSourceArtifact(id: string, forceRefresh = false): Promise<PublicArtifact> {
+  if (!forceRefresh) {
+    const cached = await readPublicArtifact(simulationArtifactKey(id));
+    if (cached) return cached;
+  }
+  return refreshSimulationSourceArtifact(id);
+}
+
+/** Scheduled refresh path; public requests consume the durable result. */
+export async function refreshSimulationArtifacts(): Promise<void> {
+  const registry = await registryArtifact(true);
+  const simulations = parseRegistry(registry.body);
+  for (const simulation of simulations) {
+    await simulationSourceArtifact(simulation.id, true);
+  }
+  logger.info("simulations", "Durable simulation artifacts refreshed", {
+    artifactCount: simulations.length + 1,
+  });
+}
+
+function setPublicArtifactHeaders(res: express.Response, artifact: PublicArtifact): void {
+  res.setHeader("Cache-Control", PUBLIC_CACHE_CONTROL);
+  res.setHeader("ETag", artifact.etag);
+}
+
+// GET /api/simulations - List all simulations from GitHub
+router.get("/", asyncHandler(async (req, res) => {
+  const artifact = await registryArtifact();
+  setPublicArtifactHeaders(res, artifact);
+  if (req.get("If-None-Match") === artifact.etag) {
+    res.status(304).end();
+    return;
+  }
+  const githubSims = parseRegistry(artifact.body).map((s) => ({
     id: `github:${s.id}`,
     name: s.name,
     description: null,
     authorId: "ARES-23247",
     isPublic: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: artifact.generatedAt,
+    updatedAt: artifact.generatedAt,
     type: "github"
   }));
 
@@ -77,13 +187,7 @@ router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
   if (!safeId) {
     throw new ApiError(400, "Invalid Gist ID");
   }
-  const pat = await getGitHubPat();
-
-  const headers: Record<string, string> = {
-    "User-Agent": "ARES-Firebase-Functions",
-    "Accept": "application/vnd.github.v3+json"
-  };
-  if (pat) headers["Authorization"] = `Bearer ${pat}`;
+  const headers = githubHeaders("application/vnd.github.v3+json");
 
   const ghRes = await fetch(`https://api.github.com/gists/${safeId}`, { headers });
   if (!ghRes.ok) {
@@ -135,53 +239,26 @@ router.get("/:id", asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid simulation ID");
   }
 
-  const filePath = `src/sims/${simId}/index.tsx`;
-
-  const ghConfig = getGitHubConfig();
-  const pat = await getGitHubPat();
-  const headers: Record<string, string> = {
-    "User-Agent": "ARES-Firebase-Functions",
-    "Accept": "application/vnd.github.v3.raw"
-  };
-  if (pat) headers["Authorization"] = `Bearer ${pat}`;
-  
-  const ghRes = await fetch(`${ghConfig.apiBase}/contents/${filePath}`, { headers });
-  
-  if (!ghRes.ok) {
-    const legacyPath = `src/sims/${simId}.tsx`;
-    const legacyRes = await fetch(`${ghConfig.apiBase}/contents/${legacyPath}`, { headers });
-    if (!legacyRes.ok) {
-      throw new ApiError(404, "Simulation not found in GitHub");
-    }
-    const code = await legacyRes.text();
-    res.json({
-      simulation: {
-        id,
-        name: simId,
-        type: "github",
-        description: null,
-        files: JSON.stringify({ [`${simId}.tsx`]: code }),
-        authorId: "ARES-23247",
-        isPublic: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    });
+  const registry = await registryArtifact();
+  const registered = parseRegistry(registry.body).find((simulation) => simulation.id === simId);
+  if (!registered) throw new ApiError(404, "Simulation not found");
+  const artifact = await simulationSourceArtifact(simId);
+  setPublicArtifactHeaders(res, artifact);
+  if (req.get("If-None-Match") === artifact.etag) {
+    res.status(304).end();
     return;
   }
-
-  const code = await ghRes.text();
   res.json({
     simulation: {
       id,
-      name: simId,
+      name: registered.name,
       type: "github",
       description: null,
-      files: JSON.stringify({ "index.tsx": code }),
+      files: JSON.stringify({ "index.tsx": artifact.body }),
       authorId: "ARES-23247",
       isPublic: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: artifact.generatedAt,
+      updatedAt: artifact.generatedAt,
     }
   });
 }));

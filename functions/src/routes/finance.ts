@@ -4,6 +4,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { ensureAdmin, type AuthenticatedRequest } from "../middleware/auth";
+import { distributedAnonymousQuota } from "../middleware/distributedQuota";
 
 const router = express.Router();
 const SCAN_PAGE_SIZE = 100;
@@ -21,6 +22,11 @@ router.use(rateLimit({
   message: { error: "Too many finance requests, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,
+}));
+router.use(distributedAnonymousQuota({
+  scope: "public-finance",
+  limit: 100,
+  windowMs: 15 * 60 * 1000,
 }));
 
 // Public finance data must cross a DTO boundary. The underlying documents may

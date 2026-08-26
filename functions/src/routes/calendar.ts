@@ -42,12 +42,15 @@ import {
   type ManagedPhotoRecord,
 } from "../lib/managedPhotoMedia";
 import { firebaseStorageObjectFromUrl } from "../lib/publicMedia";
+import { distributedAnonymousQuota } from "../middleware/distributedQuota";
 
 /** Recurring sessions are materialized for a forward window from today. */
 const OCCURRENCE_WINDOW_DAYS = 56;
 const OCCURRENCE_WINDOW_MAX_DAYS = 190;
 /** Hard ceiling on expanded occurrences per page regardless of inputs. */
 const OCCURRENCE_PAGE_MAX = 300;
+const OCCURRENCE_EXCEPTION_QUERY_MAX = 500;
+const FEED_EXCEPTION_QUERY_MAX = 1_000;
 const eventPhotoAssociationSchema = z
   .object({
     photoId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/, "Photo ID is invalid."),
@@ -78,6 +81,10 @@ function futureYmd(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+function pastYmd(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 async function requireManagedCoverPhoto(photoId: string | null | undefined): Promise<void> {
   if (!photoId) return;
   const snapshot = await adminDb.collection("imported_photos").doc(photoId).get();
@@ -104,23 +111,49 @@ interface OccurrenceState {
   overrides: Map<string, ReturnType<typeof readOccurrenceOverrides>>;
 }
 
-/** Loads bounded cancellation and override state for recurring events on a page. */
-async function loadOccurrenceStates(parentIds: readonly string[]): Promise<Map<string, OccurrenceState>> {
+/**
+ * Loads every stored exception in one date-bounded collection-group query.
+ * Read cost is independent of historical exceptions and avoids an N+1 query per
+ * recurring parent. A saturated result fails closed rather than silently showing
+ * a cancelled or privately changed session as current.
+ */
+async function loadOccurrenceStates(
+  parentIds: readonly string[],
+  fromDate: string,
+  toDate: string,
+  maximumDocuments: number,
+): Promise<Map<string, OccurrenceState>> {
   const states = new Map<string, OccurrenceState>();
-  for (const id of parentIds) {
-    const snapshot = await adminDb.collection("events").doc(id).collection("occurrences").limit(200).get();
-    const state: OccurrenceState = {
-      cancelledDates: new Set(),
-      overrides: new Map(),
+  if (parentIds.length === 0) return states;
+  const parentSet = new Set(parentIds);
+  const snapshot = await adminDb
+    .collectionGroup("occurrences")
+    .where("date", ">=", fromDate)
+    .where("date", "<=", toDate)
+    .orderBy("date", "asc")
+    .limit(maximumDocuments + 1)
+    .get();
+  if (snapshot.docs.length > maximumDocuments) {
+    throw new ApiError(
+      503,
+      "Calendar exceptions exceed the safe public query limit.",
+      "CALENDAR_EXCEPTION_LIMIT",
+    );
+  }
+
+  for (const document of snapshot.docs) {
+    const parentId = document.ref.parent.parent?.id;
+    const data = document.data() as EventOccurrence;
+    const date = readString(data.date) ?? document.id;
+    if (!parentId || !parentSet.has(parentId) || !isOccurrenceDate(date)) continue;
+    const state = states.get(parentId) ?? {
+      cancelledDates: new Set<string>(),
+      overrides: new Map<string, ReturnType<typeof readOccurrenceOverrides>>(),
     };
-    for (const document of snapshot.docs) {
-      if (!isOccurrenceDate(document.id)) continue;
-      const data = document.data() as EventOccurrence;
-      if (data.isCancelled === 1) state.cancelledDates.add(document.id);
-      const overrides = readOccurrenceOverrides(data.overrides);
-      if (Object.keys(overrides).length > 0) state.overrides.set(document.id, overrides);
-    }
-    if (state.cancelledDates.size > 0 || state.overrides.size > 0) states.set(id, state);
+    if (data.isCancelled === 1) state.cancelledDates.add(date);
+    const overrides = readOccurrenceOverrides(data.overrides);
+    if (Object.keys(overrides).length > 0) state.overrides.set(date, overrides);
+    if (state.cancelledDates.size > 0 || state.overrides.size > 0) states.set(parentId, state);
   }
   return states;
 }
@@ -173,7 +206,14 @@ async function renderEventPage(
     .map((document) => document.id);
   if (recurringIds.length === 0) return { events: dtos };
 
-  const occurrenceStates = await loadOccurrenceStates(recurringIds);
+  const fromDate = todayYmd();
+  const toDate = futureYmd(windowDays);
+  const occurrenceStates = await loadOccurrenceStates(
+    recurringIds,
+    fromDate,
+    toDate,
+    OCCURRENCE_EXCEPTION_QUERY_MAX,
+  );
   const cap = perEventCap(windowDays);
   const expanded: ReturnType<typeof eventDto>[] = [];
   for (const [index, dto] of dtos.entries()) {
@@ -184,8 +224,8 @@ async function renderEventPage(
     }
     if (expanded.length >= OCCURRENCE_PAGE_MAX) break;
     const occurrences = expandEventOccurrences(dto, data, {
-      fromDate: todayYmd(),
-      toDate: futureYmd(windowDays),
+      fromDate,
+      toDate,
       cancelledDates: occurrenceStates.get(dto.id)?.cancelledDates,
       occurrenceOverrides: occurrenceStates.get(dto.id)?.overrides,
       maxPerEvent: Math.min(cap, OCCURRENCE_PAGE_MAX - expanded.length),
@@ -206,6 +246,11 @@ router.use(
     legacyHeaders: false,
   }),
 );
+router.use(distributedAnonymousQuota({
+  scope: "public-calendar",
+  limit: 120,
+  windowMs: 15 * 60 * 1000,
+}));
 
 export function ensureCalendarPublisher(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   if (!req.user) {
@@ -1111,7 +1156,12 @@ router.get(
     const recurringIds = snapshot.docs
       .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
       .map((document) => document.id);
-    const occurrenceStates = await loadOccurrenceStates(recurringIds);
+    const occurrenceStates = await loadOccurrenceStates(
+      recurringIds,
+      pastYmd(31),
+      futureYmd(366),
+      FEED_EXCEPTION_QUERY_MAX,
+    );
     const publicVenueLabels = await loadPublicVenueLabels(
       feedLocationIds(snapshot.docs, occurrenceStates),
     );

@@ -12,6 +12,7 @@ a credential must be rotated:
 
 ```text
 firebase functions:secrets:set GITHUB_PAT
+firebase functions:secrets:set ABUSE_HMAC_SECRET
 firebase functions:secrets:set PROFILE_SYNC_SECRET
 firebase functions:secrets:set BLUESKY_APP_PASSWORD
 firebase functions:secrets:set BUFFER_API_KEY
@@ -22,6 +23,14 @@ firebase functions:secrets:set ONSHAPE_WEBHOOK_TOKEN
 only the contents/gist permissions the simulation routes need. The legacy
 `settings/GITHUB_PAT` Firestore document must remain deleted. Do not reuse
 `ENCRYPTION_KEY` as an API credential.
+
+`ABUSE_HMAC_SECRET` must be a new random value of at least 32 characters. It is
+bound only to the public and communications runtimes and is used solely to turn
+normalized client addresses into non-reversible quota document IDs. Never reuse
+`ENCRYPTION_SECRET`, store a raw address in Firestore, or log the derived value.
+Rotate it only during a planned quota reset because a new value starts new quota
+windows. The site will fail costly anonymous routes closed if this secret is
+missing; create it before deploying the hardening release.
 
 Set a dedicated App Check reCAPTCHA Enterprise site key in the frontend build:
 
@@ -151,15 +160,21 @@ errors.
 The HTTP API is split into five processes so a compromised public endpoint does
 not inherit unrelated credentials:
 
-- `publicApi`: public and administrative data routes, with no Secret Manager values.
-- `coreApi`: inquiry/profile routes, with encryption, reCAPTCHA, profile-sync,
-  and Zulip bot secrets used for inquiry alerts and member provisioning.
+- `publicApi`: public data routes, with only the anonymous-quota HMAC secret.
+- `coreApi`: inquiry/profile routes, with encryption, profile-sync, and Zulip
+  bot secrets used for inquiry alerts and member provisioning.
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with encryption, the
   OAuth client pair, and the dedicated Drive refresh token (four secrets).
 - `communicationsApi`: task, Zulip, webhook, simulation, and social
-  syndication routes, with their seven integration secrets (GitHub, Zulip x3,
-  Bluesky, Buffer, Onshape webhook).
+  syndication routes, with the anonymous-quota HMAC secret plus seven
+  integration secrets (GitHub, Zulip x3, Bluesky, Buffer, Onshape webhook).
+
+`refreshPublicSitemap` runs every 30 minutes with the public runtime identity
+and no secrets. It alone scans published source collections and writes the
+durable sitemap artifact. `refreshSimulationArtifacts` runs every 30 minutes
+with the communications identity and only `GITHUB_PAT`; it refreshes the
+bounded official registry/source cache outside anonymous request paths.
 
 The private `syncGoogleDriveChanges` schedule binds only the OAuth client and
 dedicated Drive refresh token. It never inherits Photos, AI, YouTube, inquiry,
@@ -182,11 +197,13 @@ The production access baseline is:
 
 | Workload                 | Project or resource roles                                                                             | Secret access                                                      |
 | ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `publicApi`              | Firestore user, App Check token verifier                                                              | none                                                               |
-| `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, inquiry reCAPTCHA, profile sync, Zulip bot credentials |
+| `publicApi`              | Firestore user, App Check token verifier                                                              | anonymous-quota HMAC                                               |
+| `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, profile sync, Zulip bot credentials                    |
 | `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
 | `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
-| `communicationsApi`      | Firestore user, App Check token verifier                                                              | GitHub, Zulip, Bluesky, Buffer, and Onshape webhook tokens         |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | anonymous-quota HMAC; GitHub, Zulip, Bluesky, Buffer, Onshape      |
+| `refreshPublicSitemap`   | Firestore user                                                                                        | none                                                               |
+| `refreshSimulationArtifacts` | Firestore user                                                                                   | GitHub                                                             |
 | `taskDueDigest`          | Firestore user                                                                                        | Zulip bot credentials                                              |
 | `cleanupOldInquiries`    | Firestore user                                                                                        | encryption                                                         |
 | `syncGoogleDriveChanges` | Firestore user                                                                                        | Drive OAuth                                                        |
@@ -303,6 +320,32 @@ endpoint returns 2xx. If end-to-end email delivery must be proven, schedule a
 controlled incident test and warn the recipient first; do not weaken the real
 policy or take production down merely to produce a test message.
 
+The reviewed alert contract is
+[`infra/gcp/security-observability.json`](../infra/gcp/security-observability.json).
+It defines redacted log metrics for App Check rejection, authorization denial,
+quota rejection, server errors, and AI generation, plus platform alerts for
+Cloud Run, Firestore, and Vertex AI. CI validates the definitions with
+`pnpm run validate:security-observability`; it does **not** apply them. Creating
+metrics, policies, a project-scoped budget, or changing notification channels is
+a production cloud mutation and requires explicit owner approval.
+
+After approval, create each log metric with its exact filter, create the named
+policies against the canonical notification channel, and confirm that every
+policy is enabled. Scope the general ARESWEB budget to project
+`aresfirst-portal` with 50%, 75%, 90%, and 100% notifications. A budget is an
+alert, not a hard cap. Do not automate project billing disablement: isolate the
+costly feature while preserving authentication, public information, and stored
+team data.
+
+Run a controlled alert exercise after installation:
+
+1. Warn the canonical recipient that a synthetic incident will open.
+2. Emit only the documented redacted event marker; do not generate production
+   traffic, failed logins, PII, or billable AI calls to test an alert.
+3. Confirm both opened and resolved notifications and record their timestamps.
+4. Delete the synthetic log entry only under normal logging retention policy;
+   do not weaken the alert after the test.
+
 The project-wide Editor assignment for `jules.huss@gmail.com` was explicitly
 confirmed as intentional on 2026-08-13. Reconfirm its need during access
 reviews, but do not remove or narrow it based only on automated least-privilege
@@ -397,3 +440,25 @@ the publishing user's ID or other Firestore metadata.
 - Review Cloud Logging for `INTERNAL_ERROR`, App Check failures, rate-limit spikes,
   and repeated authorization denials. Logs must not contain raw PII or tokens.
 - Use Firebase Emulator Suite integration tests before expanding public access.
+
+### Denial-of-wallet containment
+
+1. Preserve the affected service, revision, route group, event counts, and time
+   range. Do not record source addresses, tokens, user IDs, or request bodies.
+2. Keep App Check, authentication, shared quotas, and maximum-instance settings
+   enabled. Disabling a guard to make errors disappear increases cost exposure.
+3. For unexpected AI volume, use an Admin SDK or the Google Cloud/Firebase
+   console to set the server-only document `system_settings/ai_generation` to
+   `{ enabled: false }`. Browser rules deny this document. Within 15 seconds,
+   AI endpoints return `AI_GENERATION_DISABLED`; uploads and non-AI site routes
+   continue working. The emergency deployment override
+   `AI_GENERATION_DISABLED=true` provides a second, slower containment path.
+4. If one public artifact route is targeted, keep the durable artifact in place,
+   reduce only that route's shared quota in source, verify emulator behavior, and
+   deploy through the protected release workflow. Do not delete the artifact and
+   force requests back onto source collections or GitHub.
+5. Restore AI by setting `enabled: true` (or removing the control document) only
+   after the cause and current daily quota state are understood. Remove the
+   emergency environment override in the same reviewed release.
+6. Exercise both disable and restore paths with a non-billable mocked provider in
+   the emulator after every control-plane change.

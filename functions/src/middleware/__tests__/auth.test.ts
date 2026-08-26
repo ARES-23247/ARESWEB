@@ -346,6 +346,7 @@ describe("errorHandler", () => {
     };
     next = vi.fn() as unknown as NextFunction;
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   it("ApiError holds status and message", () => {
@@ -375,12 +376,14 @@ describe("errorHandler", () => {
       path: `/api/profiles/admin/users/${uid}/profile`,
       method: "GET",
     };
-    const errorSpy = vi.mocked(console.error);
+    const warningSpy = vi.mocked(console.warn);
 
     globalErrorHandler(new ApiError(403, "Forbidden"), req as any, res as any, next);
 
-    const output = errorSpy.mock.calls.flat().join(" ");
+    const output = warningSpy.mock.calls.flat().join(" ");
     expect(output).toContain('"routeGroup":"/api/profiles"');
+    expect(output).toContain('"securityEvent":"access_denied"');
+    expect(output).toContain('"status":403');
     expect(output).not.toContain(uid);
     expect(output).not.toContain("/admin/users/");
   });

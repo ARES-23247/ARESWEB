@@ -3,6 +3,7 @@ import { adminDb, adminFieldValue, adminStorage } from "../lib/firebase-admin";
 import { validateImageMagicBytes } from "../lib/imageImport";
 import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { generatePhotoCaptionAndLabels } from "../lib/vertex";
+import { isAiGenerationEnabled } from "../lib/aiControls";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -216,12 +217,14 @@ router.post(
     let labels: string[] = [];
     if (runAiLabeling) {
       try {
-        const aiResult = await generatePhotoCaptionAndLabels(
-          derivatives.original.buffer,
-          mimeType,
-        );
-        caption = aiResult.caption;
-        labels = aiResult.labels;
+        if (await isAiGenerationEnabled()) {
+          const aiResult = await generatePhotoCaptionAndLabels(
+            derivatives.original.buffer,
+            mimeType,
+          );
+          caption = aiResult.caption;
+          labels = aiResult.labels;
+        }
       } catch (aiErr: unknown) {
         logger.warn("photos", "AI labeling failed during upload", aiErr);
       }

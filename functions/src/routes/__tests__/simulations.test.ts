@@ -1,5 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import simulationsRouter from "../simulations";
+import simulationsRouter, { refreshSimulationArtifacts } from "../simulations";
+
+const artifactMocks = vi.hoisted(() => {
+  const artifacts = new Map<string, {
+    body: string;
+    contentType: string;
+    generatedAt: string;
+    etag: string;
+  }>();
+  const read = vi.fn(async (key: string) => artifacts.get(key) ?? null);
+  const write = vi.fn(async (key: string, body: string, contentType: string) => {
+    const artifact = {
+      body,
+      contentType,
+      generatedAt: "2026-08-26T12:00:00.000Z",
+      etag: `"etag-${key}"`,
+    };
+    artifacts.set(key, artifact);
+    return artifact;
+  });
+  return { artifacts, read, write };
+});
+
+vi.mock("../../lib/publicArtifactCache", () => ({
+  readPublicArtifact: artifactMocks.read,
+  writePublicArtifact: artifactMocks.write,
+}));
 
 // Mock Firebase Admin
 vi.mock("../../lib/firebase-admin", () => {
@@ -24,12 +50,26 @@ describe("Simulations Router Backend Endpoints", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.GITHUB_PAT = "mock-pat-key";
+    artifactMocks.artifacts.clear();
+    artifactMocks.artifacts.set("simulation-registry", {
+      body: JSON.stringify({
+        simulators: [
+          { id: "climbingCenterOfMass", name: "Climbing Center of Mass" },
+          { id: "legacySim", name: "Legacy Sim" },
+          { id: "missingSim", name: "Missing Sim" },
+        ],
+      }),
+      contentType: "application/json; charset=utf-8",
+      generatedAt: "2026-08-26T12:00:00.000Z",
+      etag: '"registry-etag"',
+    });
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     req = {
       params: {},
       body: {},
+      get: vi.fn(),
       user: {
         uid: "user_123",
         email: "test@example.com",
@@ -40,6 +80,7 @@ describe("Simulations Router Backend Endpoints", () => {
       json: vi.fn().mockReturnThis(),
       setHeader: vi.fn(),
       send: vi.fn(),
+      end: vi.fn(),
     };
     next = vi.fn();
   });
@@ -60,6 +101,7 @@ describe("Simulations Router Backend Endpoints", () => {
 
   describe("GET /api/simulations - List simulations", () => {
     it("should fetch simRegistry.json from GitHub and list simulations", async () => {
+      artifactMocks.artifacts.clear();
       // Mock GitHub registry fetch response
       const registryData = {
         simulators: [
@@ -90,9 +132,19 @@ describe("Simulations Router Backend Endpoints", () => {
           expect.objectContaining({ id: "github:elevatorpid", name: "Elevator PID" }),
         ],
       });
+      expect(artifactMocks.write).toHaveBeenCalledWith(
+        "simulation-registry",
+        JSON.stringify(registryData),
+        "application/json; charset=utf-8",
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        "Cache-Control",
+        expect.stringContaining("s-maxage=3600"),
+      );
     });
 
     it("should expose an upstream failure if the GitHub registry is missing", async () => {
+      artifactMocks.artifacts.clear();
       fetchMock.mockResolvedValue({ ok: false, status: 404, statusText: "Not Found" });
 
       const handler = getHandler("/", "get");
@@ -101,7 +153,7 @@ describe("Simulations Router Backend Endpoints", () => {
       expect(res.json).not.toHaveBeenCalled();
       expect(next).toHaveBeenCalledWith(expect.objectContaining({
         status: 502,
-        message: "GitHub registry request failed: HTTP 404",
+        code: "SIMULATION_UPSTREAM_ERROR",
       }));
     });
   });
@@ -175,7 +227,7 @@ describe("Simulations Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         simulation: expect.objectContaining({
           id: "github:legacySim",
-          files: JSON.stringify({ "legacySim.tsx": "export default function LegacySim() {}" }),
+          files: JSON.stringify({ "index.tsx": "export default function LegacySim() {}" }),
         }),
       });
     });
@@ -191,6 +243,63 @@ describe("Simulations Router Backend Endpoints", () => {
       const err = next.mock.calls[0][0];
       expect(err.status).toBe(404);
       expect(err.message).toBe("Simulation not found in GitHub");
+    });
+
+    it("rejects valid-shaped but unregistered repository paths without an upstream request", async () => {
+      req.params.id = "github:notInRegistry";
+
+      await getHandler("/:id", "get")(req, res, next);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
+    });
+
+    it("serves a durable source artifact without repeating the GitHub request", async () => {
+      req.params.id = "github:climbingCenterOfMass";
+      fetchMock.mockResolvedValue({
+        ok: true,
+        text: vi.fn().mockResolvedValue("export default function CachedSim() {}"),
+      });
+      const handler = getHandler("/:id", "get");
+
+      await handler(req, res, next);
+      vi.clearAllMocks();
+      req.get = vi.fn();
+      await handler(req, res, next);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        simulation: expect.objectContaining({
+          files: JSON.stringify({ "index.tsx": "export default function CachedSim() {}" }),
+        }),
+      }));
+    });
+  });
+
+  describe("scheduled simulation artifact refresh", () => {
+    it("refreshes the validated registry and each registered source", async () => {
+      artifactMocks.artifacts.clear();
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          text: vi.fn().mockResolvedValue(JSON.stringify({
+            simulators: [
+              { id: "armkg", name: "Arm Kinematics" },
+              { id: "elevatorpid", name: "Elevator PID" },
+            ],
+          })),
+        })
+        .mockResolvedValueOnce({ ok: true, text: vi.fn().mockResolvedValue("arm source") })
+        .mockResolvedValueOnce({ ok: true, text: vi.fn().mockResolvedValue("elevator source") });
+
+      await refreshSimulationArtifacts();
+
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(artifactMocks.write).toHaveBeenCalledTimes(3);
+      expect([...artifactMocks.artifacts.keys()]).toEqual(expect.arrayContaining([
+        "simulation-registry",
+        expect.stringMatching(/^simulation-source-[a-f0-9]{32}$/),
+      ]));
     });
   });
 

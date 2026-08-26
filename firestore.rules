@@ -427,6 +427,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Pseudonymous abuse counters and compressed public artifacts are internal
+    // Admin SDK implementation details, never browser data contracts.
+    match /internal_api_quotas/{quotaId} {
+      allow read, write: if false;
+    }
+
+    match /internal_public_artifacts/{artifactId} {
+      allow read, write: if false;
+
+      match /chunks/{chunkId} {
+        allow read, write: if false;
+      }
+    }
+
     // Retired simulation field configuration. Historical records remain
     // server-inaccessible until a reviewed DTO API is introduced.
     match /field_configs/{configId} {

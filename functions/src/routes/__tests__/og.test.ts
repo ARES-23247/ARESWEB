@@ -28,9 +28,13 @@ describe("GET /api/og dynamic OpenGraph generator", () => {
   it("keeps an abuse limiter in front of the raster renderer", () => {
     const routeIndex = ogRouter.stack.findIndex((entry) => entry.route?.path === "/");
     expect(routeIndex).toBeGreaterThan(0);
-    expect(ogRouter.stack.slice(0, routeIndex)).toHaveLength(1);
-    expect(ogRouter.stack[0].route).toBeUndefined();
-    expect(ogRouter.stack[0].handle).toEqual(expect.any(Function));
+    const abuseGuards = ogRouter.stack.slice(0, routeIndex);
+    expect(abuseGuards).toHaveLength(2);
+    expect(abuseGuards.every((entry) => entry.route === undefined)).toBe(true);
+    expect(abuseGuards.map((entry) => entry.handle)).toEqual([
+      expect.any(Function),
+      expect.any(Function),
+    ]);
   });
 
   it("renders a crawler-compatible 1200x630 PNG with immutable cache headers", { timeout: 20_000 }, async () => {

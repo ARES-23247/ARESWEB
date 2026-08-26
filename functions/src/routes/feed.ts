@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { toPlainText } from "../lib/contentFormatters";
 import { asyncHandler } from "../lib/utils";
+import { distributedAnonymousQuota } from "../middleware/distributedQuota";
 
 const router = express.Router();
 const SITE_ORIGIN = "https://aresfirst.org";
@@ -18,6 +19,11 @@ router.use(
     legacyHeaders: false,
   }),
 );
+router.use(distributedAnonymousQuota({
+  scope: "public-feed",
+  limit: 300,
+  windowMs: 15 * 60 * 1000,
+}));
 
 function xmlText(value: string): string {
   return value

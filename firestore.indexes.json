@@ -113,6 +113,16 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "occurrences",
+      "fieldPath": "date",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
       "collectionGroup": "internal_api_quotas",
       "fieldPath": "expiresAt",
       "ttl": true,

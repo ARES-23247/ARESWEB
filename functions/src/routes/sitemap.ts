@@ -4,12 +4,15 @@ import { adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
+import { readPublicArtifact, writePublicArtifact } from "../lib/publicArtifactCache";
+import { distributedAnonymousQuota } from "../middleware/distributedQuota";
 
 const router = express.Router();
 const BASE_URL = "https://aresfirst.org";
 const QUERY_PAGE_SIZE = 250;
 const MAX_DOCUMENTS_PER_COLLECTION = 5_000;
 const CACHE_CONTROL = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
+const SITEMAP_ARTIFACT_KEY = "sitemap";
 const NON_PRODUCTION_RECORD_PATTERNS = [
   /(^|[-_])(e2e|fixture|wip)(?:$|[-_\d])/i,
   /(^|[-_])test(?:\d+)?(?:$|[-_])/i,
@@ -146,7 +149,14 @@ function renderEntry(entry: SitemapEntry): string {
   return `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>${lastmod}\n    <changefreq>${entry.changefreq}</changefreq>\n    <priority>${entry.priority}</priority>\n  </url>`;
 }
 
-const handleSitemapRequest = asyncHandler(async (_req, res) => {
+function renderSitemap(entries: Iterable<SitemapEntry>): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${Array.from(entries, renderEntry).join("\n")}\n</urlset>`;
+}
+
+const STATIC_SITEMAP = renderSitemap(STATIC_URLS);
+
+/** Expensive source scan used only by the scheduled artifact refresher. */
+export async function buildSitemapXml(): Promise<string> {
   let snapshots;
 
   try {
@@ -235,13 +245,40 @@ const handleSitemapRequest = asyncHandler(async (_req, res) => {
     });
   });
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${Array.from(entries.values(), renderEntry).join("\n")}\n</urlset>`;
+  return renderSitemap(entries.values());
+}
+
+/** Precomputes the durable sitemap served by every public request instance. */
+export async function refreshSitemapArtifact(): Promise<void> {
+  const xml = await buildSitemapXml();
+  await writePublicArtifact(SITEMAP_ARTIFACT_KEY, xml, "application/xml; charset=utf-8");
+  logger.info("sitemap", "Durable sitemap artifact refreshed", {
+    artifactBytes: Buffer.byteLength(xml, "utf8"),
+  });
+}
+
+const handleSitemapRequest = asyncHandler(async (req, res) => {
+  const artifact = await readPublicArtifact(SITEMAP_ARTIFACT_KEY);
+  const etag = artifact?.etag ?? 'W/"static-sitemap-fallback-v1"';
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", CACHE_CONTROL);
-  res.send(xml);
+  res.setHeader("ETag", etag);
+  if (req.get("If-None-Match") === etag) {
+    res.status(304).end();
+    return;
+  }
+  // A missing/corrupt durable artifact must not let an anonymous request trigger
+  // the expensive source scan. The scheduled refresher repairs it; meanwhile
+  // crawlers receive the truthful static route inventory.
+  res.send(artifact?.body ?? STATIC_SITEMAP);
 });
 
+router.use(distributedAnonymousQuota({
+  scope: "public-sitemap",
+  limit: 120,
+  windowMs: 15 * 60 * 1000,
+}));
 router.get("/", handleSitemapRequest);
 router.get("/sitemap.xml", handleSitemapRequest);
 

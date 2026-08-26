@@ -51,6 +51,7 @@ export const publicApi = onRequest(
     memory: "512MiB",
     timeoutSeconds: 60,
     serviceAccount: RUNTIME_SERVICE_ACCOUNTS.publicApi,
+    secrets: [...FUNCTION_SECRET_BINDINGS.publicApi],
   },
   publicHandler,
 );
@@ -145,6 +146,50 @@ export const cleanupOldInquiries = onSchedule(
       // retries and production alerts can detect that stale PII was not removed.
       throw error;
     }
+  },
+);
+
+/**
+ * Rebuilds the durable public sitemap out of band so anonymous requests never
+ * fan out across the published Firestore collections.
+ */
+export const refreshPublicSitemap = onSchedule(
+  {
+    schedule: "every 30 minutes",
+    retryCount: 3,
+    minBackoffSeconds: 60,
+    maxBackoffSeconds: 300,
+    maxRetrySeconds: 900,
+    memory: "256MiB",
+    timeoutSeconds: 120,
+    concurrency: 1,
+    maxInstances: 1,
+    serviceAccount: RUNTIME_SERVICE_ACCOUNTS.publicApi,
+  },
+  async (_event) => {
+    const { refreshSitemapArtifact } = await import("./routes/sitemap");
+    await refreshSitemapArtifact();
+  },
+);
+
+/** Refreshes public simulation registry/source artifacts outside request paths. */
+export const refreshSimulationArtifacts = onSchedule(
+  {
+    schedule: "every 30 minutes",
+    retryCount: 3,
+    minBackoffSeconds: 60,
+    maxBackoffSeconds: 300,
+    maxRetrySeconds: 900,
+    memory: "256MiB",
+    timeoutSeconds: 120,
+    concurrency: 1,
+    maxInstances: 1,
+    serviceAccount: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
+    secrets: ["GITHUB_PAT"],
+  },
+  async (_event) => {
+    const simulations = await import("./routes/simulations");
+    await simulations.refreshSimulationArtifacts();
   },
 );
 

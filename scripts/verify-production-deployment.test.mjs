@@ -101,6 +101,8 @@ describe("production deployment contract", () => {
       "mediaApi",
       "syncGoogleDriveChanges",
       "publicApi",
+      "refreshPublicSitemap",
+      "refreshSimulationArtifacts",
       "taskDueDigest",
       "web",
     ]);
@@ -121,6 +123,7 @@ describe("production deployment contract", () => {
     expect(
       contract.functions.find(({ id }) => id === "communicationsApi")?.secrets,
     ).toEqual([
+      "ABUSE_HMAC_SECRET",
       "BLUESKY_APP_PASSWORD",
       "BUFFER_API_KEY",
       "GITHUB_PAT",

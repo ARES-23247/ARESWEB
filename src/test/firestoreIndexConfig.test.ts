@@ -22,4 +22,16 @@ describe("Firestore index source of truth", () => {
       indexes: [],
     });
   });
+
+  it("supports one bounded collection-group query for calendar occurrence dates", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firestore.indexes.json"), "utf8"),
+    ) as { fieldOverrides: FieldOverride[] };
+
+    expect(config.fieldOverrides).toContainEqual({
+      collectionGroup: "occurrences",
+      fieldPath: "date",
+      indexes: [{ order: "ASCENDING", queryScope: "COLLECTION_GROUP" }],
+    });
+  });
 });

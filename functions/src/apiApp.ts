@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { enforceAppCheck, observeAppCheck } from "./middleware/appCheck";
 import { ensureAdmin, ensureTeamMember } from "./middleware/auth";
 import { distributedQuota } from "./middleware/distributedQuota";
+import { photoAiGenerationBudget } from "./middleware/aiBudget";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { allowedOrigins } from "./functionConfig";
 
@@ -54,6 +55,7 @@ export function createApiApp({ routes, enableLargePhotoUpload = false }: CreateA
       "/api/photos/upload-unified",
       ensureTeamMember,
       distributedQuota({ scope: "photo-upload", limit: 30, windowMs: 15 * 60 * 1000 }),
+      photoAiGenerationBudget,
       express.json({ limit: "12mb" }),
     );
     app.use(

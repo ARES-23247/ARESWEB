@@ -23,8 +23,8 @@ file. Current mounts (keep this table aligned with `functions/src/apps/*.ts`):
 | App file | Mounts | Purposes |
 |---|---|---|
 | `apps/public.ts` | `/api/announcements`, `/api/calendar`, `/api/content`, `/api/sponsors`, `/api/seasons`, `/api/awards`, `/api/outreach`, `/api/tournaments`, `/api/robots`, `/api/store`, `/api/finance`, `/api/reference`, `/api/og`, `/sitemap.xml`, `/feed.xml` | Public blog/document DTOs, calendar (incl. recurrence/iCal), sponsors, seasons & awards, outreach, tournaments, robots, finance ledger, OG image rendering, sitemap and RSS |
-| `apps/core.ts` | `/api/profiles`, `/api/inquiries`, `/api/ai`, and related profile routes | Identity/session claims, inquiry intake (encrypted PII), profile admin, AI copilot |
-| `apps/media.ts` | `/api/photos`, `/api/videos` | Photo/album management, derivatives, Google Photos picker import, YouTube sync |
+| `apps/core.ts` | `/api/profiles`, `/api/inquiries`, `/api/content-admin` | Identity/session claims, inquiry intake (encrypted PII), profile admin, content approval |
+| `apps/media.ts` | `/api/photos`, `/api/ai`, `/api/videos` | Photo/album management, derivatives, Google Photos picker import, bounded AI generation, YouTube sync |
 | `apps/drive.ts` | `/api/drive` | Drive library browse, draft import, retired-sync tombstone |
 | `apps/communications.ts` | `/api/tasks`, `/api/webhooks`, `/api/simulations`, `/api/zulip` | Kanban tasks + Zulip notify, inbound Zulip/Onshape webhooks, simulation registry/Gists, Zulip proxy |
 
@@ -80,6 +80,10 @@ router.post("/save", ensureTeamMember, asyncHandler(async (req: AuthenticatedReq
 ## Route Standards
 
 - **Query Limits:** All collection reads must restrict return sizes (e.g. `.limit(50)`) to guard against excessive read operations.
+- **Public cost controls:** Costly anonymous routes use both an in-process burst limiter and `distributedAnonymousQuota`. The latter stores only HMAC-derived window IDs in `internal_api_quotas`; it requires `ABUSE_HMAC_SECRET` and must stay in front of source scans, rasterization, or upstream calls.
+- **Stable public artifacts:** Sitemap and official simulation source requests read compressed, chunked artifacts from `internal_public_artifacts`. Only scheduled functions may rebuild those artifacts from Firestore or GitHub. A cache miss must remain bounded and must never expose the internal manifest/chunks to clients.
+- **Calendar exceptions:** Public recurring-event lists load occurrence exceptions with one date-bounded collection-group query. Do not reintroduce one subcollection query per parent; a saturated exception window must fail explicitly rather than silently omit cancellations.
+- **AI budgets:** AI routes reserve atomic short-window, daily user, daily project, and estimated-token allowances before provider work. `system_settings/ai_generation.enabled = false` is the server-only circuit breaker; non-AI routes must remain available while it is disabled.
 - **Soft-delete:** Always set `isDeleted: 1` instead of recursively deleting primary references.
 - **PII security:** Contact information for minors must be kept encrypted in the database and only decrypted server-side for admin requests.
 - **Structured Logging:** Banish `console.log`/`console.error` calls. Import `logger` from `../lib/logger` and write logs as `logger.error("tag", "message", error)`.
