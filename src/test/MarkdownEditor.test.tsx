@@ -199,6 +199,8 @@ This is **bold** text`} />);
       fireEvent.change(fileInput, { target: { files: [file] } });
     });
 
+    fireEvent.click(await screen.findByRole("button", { name: "Use Full Image" }));
+
     // Modal should close and markdown should embed the API-managed photo URL.
     await waitFor(() => expect(screen.queryByText("Embed Image")).not.toBeInTheDocument());
     expect(textarea.value).toBe("Start ![Intake Mechanism](https://firebasestorage.googleapis.com/v0/b/mock/o/editor%2Fuploads%2Fintake.png)");

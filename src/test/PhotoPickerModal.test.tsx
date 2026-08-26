@@ -1,8 +1,9 @@
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import PhotoPickerModal from "../components/PhotoPickerModal";
 import { authenticatedFetch } from "../lib/api";
+import { usePhotoUpload } from "../hooks/usePhotoUpload";
 
 // Mock api helper
 vi.mock("../lib/api", () => {
@@ -10,6 +11,10 @@ vi.mock("../lib/api", () => {
     authenticatedFetch: vi.fn(),
   };
 });
+
+vi.mock("../hooks/usePhotoUpload", () => ({
+  usePhotoUpload: vi.fn(),
+}));
 
 describe("PhotoPickerModal", () => {
   const mockPhotos = [
@@ -44,6 +49,59 @@ describe("PhotoPickerModal", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(usePhotoUpload).mockReturnValue({
+      uploadDirect: vi.fn(),
+      uploadCropped: vi.fn(),
+      loading: false,
+      error: null,
+      setError: vi.fn(),
+    });
+  });
+
+  it("offers and uploads the full image without forcing a crop", async () => {
+    const onSelect = vi.fn();
+    const onClose = vi.fn();
+    const uploadDirect = vi.fn().mockResolvedValue({
+      id: "photo-full",
+      publicUrl: "https://example.com/full.jpg",
+      caption: "",
+      altText: "",
+      labels: [],
+      albumId: null,
+      mimeType: "image/jpeg",
+      fileSize: 14,
+      importedAt: "2026-08-26T00:00:00.000Z",
+      isSynced: true,
+      isArchived: false,
+    });
+    vi.mocked(usePhotoUpload).mockReturnValue({
+      uploadDirect,
+      uploadCropped: vi.fn(),
+      loading: false,
+      error: null,
+      setError: vi.fn(),
+    });
+
+    render(<PhotoPickerModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
+
+    const file = new File(["portrait-image"], "team-poster.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByLabelText(/Select image from your device/), {
+      target: { files: [file] },
+    });
+
+    const fullImageButton = await screen.findByRole("button", { name: "Use Full Image" });
+    fireEvent.change(screen.getByLabelText("Alt Text / Caption"), {
+      target: { value: "Students presenting the BioBuzz event poster" },
+    });
+    fireEvent.click(fullImageButton);
+
+    await waitFor(() => expect(uploadDirect).toHaveBeenCalledWith(file));
+    expect(onSelect).toHaveBeenCalledWith(
+      "https://example.com/full.jpg",
+      "Students presenting the BioBuzz event poster",
+      "photo-full"
+    );
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("does not render when isOpen is false", () => {

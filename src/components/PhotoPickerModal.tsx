@@ -51,13 +51,11 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
   // Cropping State
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-  const [cropFileName, setCropFileName] = useState("image.jpg");
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { uploadDirect, uploadCropped, loading: uploadLoading, error: uploadError } = usePhotoUpload();
-
-  const isTestEnv = import.meta.env.MODE === "test";
 
   const displayError = error || uploadError;
   const displayLoading = loading || uploadLoading;
@@ -102,8 +100,24 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
     const photo = await uploadDirect(file);
     if (photo) {
       onSelect(photo.publicUrl, imageAlt || file.name.split(".")[0], photo.id);
+      clearCrop();
       onClose();
     }
+  };
+
+  const clearCrop = () => {
+    setCropImageSrc(null);
+    setCropSourceFile(null);
+  };
+
+  const openCropChoice = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropSourceFile(file);
+    };
+    reader.onerror = () => setError("The selected image could not be read.");
+    reader.readAsDataURL(file);
   };
 
   // Local file selection
@@ -116,25 +130,24 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
       return;
     }
 
-    if (isTestEnv) {
-      handleUploadDirect(file);
+    openCropChoice(file);
+  };
+
+  const handleUseFullImage = async () => {
+    if (!cropSourceFile) {
+      setError("The full image is no longer available. Select it again and retry.");
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCropImageSrc(reader.result as string);
-      setCropFileName(file.name);
-    };
-    reader.readAsDataURL(file);
+    await handleUploadDirect(cropSourceFile);
   };
 
   const handleSaveCroppedBlob = async (blob: Blob) => {
     setError(null);
-    const photo = await uploadCropped(blob, cropFileName);
+    const fileName = cropSourceFile?.name || "image.jpg";
+    const photo = await uploadCropped(blob, fileName);
     if (photo) {
-      onSelect(photo.publicUrl, imageAlt, photo.id);
-      setCropImageSrc(null);
+      onSelect(photo.publicUrl, imageAlt || fileName.replace(/\.[^/.]+$/, ""), photo.id);
+      clearCrop();
       onClose();
     }
   };
@@ -167,13 +180,9 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
       const res = await authenticatedFetch(selectedGalleryUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onload = () => {
-        setCropImageSrc(reader.result as string);
-        setCropFileName(imageAlt || "gallery-photo.jpg");
-        setLoading(false);
-      };
-      reader.readAsDataURL(blob);
+      const filename = imageAlt ? `${imageAlt.replace(/[^a-z0-9_-]+/gi, "-")}.jpg` : "gallery-photo.jpg";
+      openCropChoice(new File([blob], filename, { type: blob.type || "image/jpeg" }));
+      setLoading(false);
     } catch (err: unknown) {
       setError(`Failed to retrieve gallery photo for editing: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
@@ -217,14 +226,29 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
 
         {/* ─── CROP EDITOR VIEW ─── */}
         {cropImageSrc ? (
-          <ImageCropper
-            cropImageSrc={cropImageSrc}
-            cropFileName={cropFileName}
-            loading={displayLoading}
-            onCancel={() => setCropImageSrc(null)}
-            onSave={handleSaveCroppedBlob}
-            onError={(msg) => setError(msg)}
-          />
+          <div className="space-y-4">
+            <ImageCropper
+              cropImageSrc={cropImageSrc}
+              loading={displayLoading}
+              onCancel={clearCrop}
+              onUseFullImage={handleUseFullImage}
+              onSave={handleSaveCroppedBlob}
+              onError={(msg) => setError(msg)}
+            />
+            <div>
+              <label htmlFor="crop-image-alt" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">
+                Alt Text / Caption
+              </label>
+              <input
+                id="crop-image-alt"
+                type="text"
+                placeholder="Describe the image contents"
+                value={imageAlt}
+                onChange={(event) => setImageAlt(event.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan focus:border-ares-red transition-colors placeholder:text-marble/25"
+              />
+            </div>
+          </div>
         ) : (
           /* ─── TAB SELECTION VIEW ─── */
           <div className="flex flex-col flex-grow overflow-hidden min-h-[350px]">
@@ -487,10 +511,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                   loading={displayLoading}
                   setLoading={setLoading}
                   setError={setError}
-                  onSelectPhotoToCrop={(src, filename) => {
-                    setCropImageSrc(src);
-                    setCropFileName(filename);
-                  }}
+                  onSelectPhotoToCrop={openCropChoice}
                 />
               ) : (
                 <div className="space-y-4 mt-2">

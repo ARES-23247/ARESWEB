@@ -6,7 +6,7 @@ interface GooglePhotosImporterProps {
   loading: boolean;
   setLoading: (l: boolean) => void;
   setError: (e: string | null) => void;
-  onSelectPhotoToCrop: (src: string, filename: string) => void;
+  onSelectPhotoToCrop: (file: File) => void;
 }
 
 interface GooglePickerItem {
@@ -122,12 +122,8 @@ export default function GooglePhotosImporter({
       if (!res.ok) throw new Error("Could not download Google Photo for cropping.");
 
       const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onload = () => {
-        onSelectPhotoToCrop(reader.result as string, filename);
-        setLoading(false);
-      };
-      reader.readAsDataURL(blob);
+      onSelectPhotoToCrop(new File([blob], filename, { type: blob.type || "image/jpeg" }));
+      setLoading(false);
     } catch (err: unknown) {
       setError(`Failed to retrieve Google Photo: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
