@@ -477,7 +477,11 @@ service cloud.firestore {
     match /awards/{awardId} {
       // Public readers use the explicit /api/awards DTO boundary.
       allow read: if isAuthorized();
-      allow create, update, delete: if isContentPublisher();
+      allow create, update: if isContentPublisher();
+      // Permanent deletion is reserved for already-archived records and mirrors
+      // the audited admin API. Active awards must be archived first.
+      allow delete: if (hasRole('admin') || hasRole('coach')) &&
+        resource.data.get('isDeleted', 0) == 1;
     }
 
 

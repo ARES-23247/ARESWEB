@@ -108,4 +108,50 @@ describe("seasons & awards manager", () => {
     ).toBeInTheDocument();
     expect(authenticatedFetch).not.toHaveBeenCalled();
   });
+
+  it("requires title confirmation before permanently deleting an archived award", async () => {
+    vi.mocked(authenticatedFetch)
+      .mockResolvedValueOnce(response({ seasons: [] }))
+      .mockResolvedValueOnce(response({
+        awards: [
+          {
+            id: "award_mock",
+            title: "Mock Award",
+            eventName: "Test Event",
+            date: "2026-01-01",
+            description: null,
+            iconType: "trophy",
+            seasonId: null,
+            status: "published",
+            isDeleted: 1,
+          },
+        ],
+      }))
+      .mockResolvedValueOnce(response({ success: true }))
+      .mockResolvedValueOnce(response({ seasons: [] }))
+      .mockResolvedValueOnce(response({ awards: [] }));
+
+    render(<SeasonsAwardsManagerPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Delete permanently" }));
+
+    const confirmation = screen.getByRole("dialog", {
+      name: "Delete award permanently?",
+    });
+    const confirmButton = screen.getByRole("button", { name: "Delete permanently" });
+    expect(confirmButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Type the award title to confirm"), {
+      target: { value: "Mock Award" },
+    });
+    expect(confirmButton).toBeEnabled();
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(authenticatedFetch).toHaveBeenCalledWith(
+        "/api/awards/admin/award_mock/permanent",
+        { method: "DELETE" },
+      );
+    });
+    await waitFor(() => expect(confirmation).not.toBeInTheDocument());
+  });
 });

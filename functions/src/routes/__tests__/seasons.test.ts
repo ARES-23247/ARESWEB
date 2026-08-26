@@ -1,5 +1,6 @@
 import express from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ensureAdmin } from "../../middleware/auth";
 
 const mocks = vi.hoisted(() => ({
   orderBy: vi.fn().mockReturnThis(),
@@ -9,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   docGet: vi.fn(),
   set: vi.fn(),
   update: vi.fn(),
+  transactionGet: vi.fn(),
+  transactionDelete: vi.fn(),
+  transactionSet: vi.fn(),
 }));
 
 vi.mock("../../lib/firebase-admin", () => ({
@@ -24,6 +28,17 @@ vi.mock("../../lib/firebase-admin", () => ({
         update: mocks.update,
       })),
     })),
+    runTransaction: vi.fn(
+      async (callback: (transaction: {
+        get: typeof mocks.transactionGet;
+        delete: typeof mocks.transactionDelete;
+        set: typeof mocks.transactionSet;
+      }) => Promise<void>) => callback({
+        get: mocks.transactionGet,
+        delete: mocks.transactionDelete,
+        set: mocks.transactionSet,
+      }),
+    ),
   },
 }));
 
@@ -45,6 +60,7 @@ describe("Seasons and awards admin API", () => {
     body?: unknown;
     params?: Record<string, string>;
     authorizationRole?: string;
+    user?: { uid: string };
   };
   let res: { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> };
   let next: ReturnType<typeof vi.fn>;
@@ -53,7 +69,13 @@ describe("Seasons and awards admin API", () => {
     vi.clearAllMocks();
     mocks.get.mockResolvedValue({ docs: [] });
     mocks.docGet.mockResolvedValue({ exists: false });
-    req = { body: {}, params: {}, authorizationRole: "admin" };
+    mocks.transactionGet.mockResolvedValue({ exists: false });
+    req = {
+      body: {},
+      params: {},
+      authorizationRole: "admin",
+      user: { uid: "admin-1" },
+    };
     res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
     next = vi.fn();
   });
@@ -319,5 +341,70 @@ describe("Seasons and awards admin API", () => {
     req.params = { id: "award_missing" };
     await handler(awardsRouter, "/admin/:id", "delete")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));
+  });
+
+  it("permanently deletes only archived awards and records an audit event", async () => {
+    mocks.transactionGet.mockResolvedValue({
+      exists: true,
+      data: () => ({ isDeleted: 1 }),
+    });
+    req.params = { id: "award_1" };
+
+    await handler(awardsRouter, "/admin/:id/permanent", "delete")(
+      req,
+      res,
+      next,
+    );
+
+    expect(mocks.transactionDelete).toHaveBeenCalledTimes(1);
+    expect(mocks.transactionSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "award.deleted_permanently",
+        actorUid: "admin-1",
+        targetId: "award_1",
+      }),
+    );
+    expect(res.json).toHaveBeenLastCalledWith({ success: true });
+  });
+
+  it("registers admin authorization before permanent deletion", () => {
+    const route = awardsRouter.stack.find(
+      (entry) => entry.route?.path === "/admin/:id/permanent",
+    )?.route;
+
+    expect(route?.stack.map((entry) => entry.handle)).toContain(ensureAdmin);
+  });
+
+  it("rejects permanent deletion of active, missing, or unsafe awards", async () => {
+    req.params = { id: "award_active" };
+    mocks.transactionGet.mockResolvedValue({
+      exists: true,
+      data: () => ({ isDeleted: 0 }),
+    });
+    await handler(awardsRouter, "/admin/:id/permanent", "delete")(
+      req,
+      res,
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 409 }));
+
+    req.params = { id: "award_missing" };
+    mocks.transactionGet.mockResolvedValue({ exists: false });
+    await handler(awardsRouter, "/admin/:id/permanent", "delete")(
+      req,
+      res,
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 404 }));
+
+    req.params = { id: "../unsafe" };
+    await handler(awardsRouter, "/admin/:id/permanent", "delete")(
+      req,
+      res,
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400 }));
+    expect(mocks.transactionDelete).not.toHaveBeenCalled();
   });
 });
