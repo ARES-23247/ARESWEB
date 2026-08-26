@@ -35,4 +35,3 @@ When restrictions are changed, append the date, operator, key label, old and new
 restriction categories (not values), preview URL, tested browsers/flows, and
 rollback outcome. Production key changes require explicit owner approval and are
 not performed by repository CI.
-

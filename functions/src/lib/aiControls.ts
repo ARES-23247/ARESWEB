@@ -35,4 +35,3 @@ export async function requireAiGenerationEnabled(): Promise<void> {
 export function resetAiControlCache(): void {
   cached = null;
 }
-

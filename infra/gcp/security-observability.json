@@ -104,4 +104,3 @@
     "note": "Billing budgets notify but do not stop spend. Use feature-level circuit breakers rather than disabling project billing."
   }
 }
-

@@ -184,4 +184,3 @@ export async function writePublicArtifact(
 export function resetPublicArtifactMemoryCache(): void {
   memoryCache.clear();
 }
-

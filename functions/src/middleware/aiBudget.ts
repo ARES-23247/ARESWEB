@@ -58,4 +58,3 @@ export function aiGenerationBudget(
 
 /** Conservative reservation for optional photo analysis. */
 export const photoAiGenerationBudget = aiGenerationBudget(() => 2_560);
-
