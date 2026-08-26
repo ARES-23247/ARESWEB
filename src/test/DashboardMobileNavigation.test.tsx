@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardLayout from "@/app/dashboard/layout";
@@ -7,6 +8,10 @@ import { useAuth } from "@/context/AuthContext";
 vi.mock("@/context/AuthContext", () => ({
   useAuth: vi.fn(),
   useOptionalAuth: () => undefined,
+}));
+
+vi.mock("@/context/DashboardNotificationsContext", () => ({
+  DashboardNotificationsProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
 vi.mock("@/components/GreekMeander", () => ({

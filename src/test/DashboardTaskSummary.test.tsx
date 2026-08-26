@@ -8,6 +8,15 @@ const firestore = vi.hoisted(() => ({
   onSnapshot: vi.fn(),
 }));
 
+const notifications = vi.hoisted(() => ({
+  value: {
+    pendingBlogApprovals: 2,
+    blogApprovalsState: "connected" as const,
+    hasPendingInquiries: false,
+    inquiriesState: "connected" as const,
+  },
+}));
+
 vi.mock("firebase/firestore", () => ({
   and: vi.fn((...constraints: unknown[]) => ({ constraints })),
   collection: vi.fn((_db: unknown, name: string) => ({ name })),
@@ -32,10 +41,21 @@ vi.mock("@/context/AuthContext", () => ({
   useOptionalAuth: () => undefined,
 }));
 
+vi.mock("@/context/DashboardNotificationsContext", () => ({
+  canReviewDashboardContent: (role?: string) => ["admin", "coach", "mentor"].includes(role || ""),
+  useDashboardNotifications: () => notifications.value,
+}));
+
 import DashboardHome from "@/app/dashboard/page";
 
 describe("Command center task summary", () => {
   beforeEach(() => {
+    notifications.value = {
+      pendingBlogApprovals: 2,
+      blogApprovalsState: "connected",
+      hasPendingInquiries: false,
+      inquiriesState: "connected",
+    };
     firestore.getCountFromServer
       .mockResolvedValueOnce({ data: () => ({ count: 3 }) })
       .mockResolvedValueOnce({ data: () => ({ count: 5 }) });
@@ -94,5 +114,11 @@ describe("Command center task summary", () => {
     expect(screen.getByText("Role eligible")).toBeInTheDocument();
     expect(screen.getByText("Not configured")).toBeInTheDocument();
     expect(screen.getByText("Signed in")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "2 blog posts need mentor approval" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Review approval queue/i }),
+    ).toHaveAttribute("href", "/dashboard/blog?tab=pending");
   });
 });

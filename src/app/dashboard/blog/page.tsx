@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Plus, Shield, Activity } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
@@ -20,7 +21,20 @@ export default function BlogManagementPage({
   prefilledAction?: "create" | "edit" | null;
   prefilledSlug?: string | null;
 } = {}) {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending" | "archived">("all");
+
+  React.useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (
+      requestedTab === "all"
+      || requestedTab === "published"
+      || requestedTab === "pending"
+      || requestedTab === "archived"
+    ) {
+      setActiveTab(requestedTab);
+    }
+  }, [searchParams]);
 
   const {
     docs,
