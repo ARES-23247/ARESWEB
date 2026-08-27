@@ -28,6 +28,12 @@
       "preserve": ["content", "displayInMathCorner", "displayInScienceCorner", "status"]
     },
     {
+      "slug": "ftc-intake-io-fault-recovery",
+      "action": "archive",
+      "reason": "The tutorial documents an intake adapter that no longer exists in the GUI-authored Lightbot reference robot. Its reviewed replacement uses a new truthful slug and the current indicator-light descriptor.",
+      "preconditions": { "title": "Design an FTC Intake Boundary That Recovers Neutral First", "status": "published", "isDeleted": 0 }
+    },
+    {
       "slug": "areslib-fundamentals",
       "action": "replace-from-catalog-after-review",
       "reason": "The live page describes a command/subsystem architecture instead of the current Redux/action/reducer/controller/cached-IO architecture.",

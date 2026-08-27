@@ -25,11 +25,11 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     });
     await expect(viewScheduleButton).toBeVisible();
 
-    // ARES Analytics remains identifiable as a secondary team project for OAuth
+    // ARES Robotics Studio remains identifiable as a secondary team project for OAuth
     // verification, without displacing the team's public identity.
-    const analyticsSection = page.getByLabel("ARES Analytics");
+    const analyticsSection = page.getByLabel("ARES Robotics Studio");
     await expect(
-      analyticsSection.getByRole("heading", { name: "ARES Analytics" }),
+      analyticsSection.getByRole("heading", { name: "ARES Robotics Studio" }),
     ).toBeVisible();
     await expect(
       analyticsSection.getByRole("link", { name: "Privacy" }),

@@ -1,17 +1,20 @@
 {
   "catalogVersion": 1,
   "generatedFrom": {
-    "aresLibRelease": "v9.10.0",
-    "aresLibCommit": "c7af7d2399815ffc3474a89e8dc08adfe31a534c",
-    "ftcStarterCommit": "c9ab43d75e642031bf110c80004066e8607faf3e",
-    "aresFtcCommit": "631682a167ba58d1d56ab2b31e982ccbf46ae0bf"
+    "sourceRepository": "ARES-Robotics",
+    "sourceRevision": "ares-11.0.0-studio-2.0.0",
+    "sourceCommit": "1810d74e8f3b260116df68fd8c1b0854b2d61493",
+    "aresVersion": "11.0.0",
+    "studioVersion": "2.0.0",
+    "ftcStarterVersion": "11.0.0",
+    "frcStarterVersion": "11.0.0"
   },
   "documents": [
     {
       "slug": "ares-workspace-map",
       "title": "The ARES Software Workspace",
       "category": "Robotics & Engineering",
-      "description": "Learn which ARES repository owns shared robotics behavior, season code, and desktop tools.",
+      "description": "Learn which directory and build owns shared robotics behavior, league code, starters, and ARES Robotics Studio in the ARES monorepo.",
       "contentFile": "robotics-foundations/01-ares-workspace.md",
       "subject": "robotics-engineering",
       "topics": ["software architecture", "repository ownership", "FTC", "FRC"],
@@ -20,10 +23,10 @@
       "estimatedMinutes": 20,
       "pathMemberships": [{ "pathId": "robotics-foundations", "order": 1 }],
       "prerequisites": [],
-      "objectives": ["Identify the responsibility of each ARES repository.", "Choose the correct repository for a proposed change."],
+      "objectives": ["Identify the responsibility of each top-level ARES monorepo directory.", "Choose the correct component and Gradle build for a proposed change."],
       "platforms": ["hardware-neutral"],
-      "sourceReferences": [{ "label": "ARESLib architecture", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/architecture.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/architecture.md", "blobHash": "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "ARES Robotics monorepo map", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/README.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "README.md", "blobHash": "16eb04e092325600823b1ec547132845b62d3006" }],
+      "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
       "safetyScope": "none"
     },
     {
@@ -41,8 +44,8 @@
       "prerequisites": ["ares-workspace-map"],
       "objectives": ["Trace a driver request through the ARES control pipeline.", "Explain why reducers do not access hardware."],
       "platforms": ["simulator", "ftc", "frc"],
-      "sourceReferences": [{ "label": "ARESLib architecture", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/architecture.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/architecture.md", "blobHash": "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "ARESLib architecture", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/architecture.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/architecture.md", "blobHash": "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }],
+      "appliesToVersion": "ARES 11.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -60,8 +63,8 @@
       "prerequisites": ["ares-workspace-map"],
       "objectives": ["Distinguish a listening simulator server from a running OpMode.", "Start and stop a local TeleOp safely."],
       "platforms": ["simulator", "ftc"],
-      "sourceReferences": [{ "label": "Desktop simulator onboarding", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/onboarding/02_desktop_simulator.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/onboarding/02_desktop_simulator.md", "blobHash": "4d04b30026493d5244c2a45f4434e5bfb81839fe" }, { "label": "FTC Starter first run", "url": "https://github.com/ARES-23247/ARES-FTC-Starter/blob/c9ab43d75e642031bf110c80004066e8607faf3e/README.md", "repository": "ARES-FTC-Starter", "revision": "c9ab43d", "path": "README.md", "blobHash": "6d7e52dc190ad162455ad6e6d8cddc0705a47360" }],
-      "appliesToVersion": "ARESLib 9.10.0; FTC Starter c9ab43d",
+      "sourceReferences": [{ "label": "Studio simulator connection", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-Analytics/docs/start/CONNECT_SIMULATOR.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-Analytics/docs/start/CONNECT_SIMULATOR.md", "blobHash": "63a05fbf16216f91f32a1e94f1bcfd176edf704d" }, { "label": "FTC Starter first run", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC-Starter/README.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC-Starter/README.md", "blobHash": "cf4e3fed4a0290ad2fae4f3683883f6fd2aaaa6b" }],
+      "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0; Studio 2.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -79,8 +82,8 @@
       "prerequisites": ["run-first-ftc-simulation"],
       "objectives": ["Interpret field and robot-local motion in ARES.", "Recognize where display and sensor transforms belong."],
       "platforms": ["simulator", "ftc", "frc"],
-      "sourceReferences": [{ "label": "Math and coordinate contracts", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/math-and-coordinate-contracts.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/math-and-coordinate-contracts.md", "blobHash": "8552021b1c337dc8d2e07a03d4d371960d9946dc" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Math and coordinate contracts", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/math-and-coordinate-contracts.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md", "blobHash": "8552021b1c337dc8d2e07a03d4d371960d9946dc" }],
+      "appliesToVersion": "ARES 11.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -98,8 +101,8 @@
       "prerequisites": ["robot-input-to-output"],
       "objectives": ["Explain the difference between an action and a hardware command.", "Run the released Redux onboarding test."],
       "platforms": ["hardware-neutral"],
-      "sourceReferences": [{ "label": "Redux onboarding", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/onboarding/01_redux_basics.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/onboarding/01_redux_basics.md", "blobHash": "9651bc6cb1d80b64304da663b38dffc65957a720" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Redux onboarding", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/onboarding/01_redux_basics.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/onboarding/01_redux_basics.md", "blobHash": "9651bc6cb1d80b64304da663b38dffc65957a720" }],
+      "appliesToVersion": "ARES 11.0.0",
       "safetyScope": "none"
     },
     {
@@ -117,8 +120,8 @@
       "prerequisites": ["run-first-ftc-simulation"],
       "objectives": ["Identify the local telemetry and log ports.", "Retrieve a completed log without exposing the robot service publicly."],
       "platforms": ["simulator", "ftc", "frc"],
-      "sourceReferences": [{ "label": "Telemetry and logging", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/telemetry-and-logging.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/telemetry-and-logging.md", "blobHash": "cc970123adc2499eb20e0b21b953094bcb4810e9" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Telemetry and logging", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/telemetry-and-logging.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/telemetry-and-logging.md", "blobHash": "cc970123adc2499eb20e0b21b953094bcb4810e9" }],
+      "appliesToVersion": "ARES 11.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -136,8 +139,8 @@
       "prerequisites": ["run-first-ftc-simulation"],
       "objectives": ["State what simulation can and cannot verify.", "Choose the next safe test boundary for a change."],
       "platforms": ["simulator", "ftc", "frc"],
-      "sourceReferences": [{ "label": "Pit operations and hardware", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/onboarding/04_pit_operations_and_hardware.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/onboarding/04_pit_operations_and_hardware.md", "blobHash": "d9ca9478618f132c98d2e890663ab58f7ec47019" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Pit operations and hardware", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "blobHash": "d9ca9478618f132c98d2e890663ab58f7ec47019" }],
+      "appliesToVersion": "ARES 11.0.0",
       "safetyScope": "physical-robot"
     },
     {
@@ -155,8 +158,8 @@
       "prerequisites": ["ares-workspace-map"],
       "objectives": ["Distinguish canonical .ares documents from generated output.", "Explain why starter tuning values do not describe a physical robot."],
       "platforms": ["simulator", "ftc"],
-      "sourceReferences": [{ "label": "FTC Starter architecture", "url": "https://github.com/ARES-23247/ARES-FTC-Starter/blob/c9ab43d75e642031bf110c80004066e8607faf3e/docs/STARTER_ARCHITECTURE.md", "repository": "ARES-FTC-Starter", "revision": "c9ab43d", "path": "docs/STARTER_ARCHITECTURE.md", "blobHash": "8d84f8d7eb4424a4fbcb74639f1de12f3e2970e8" }],
-      "appliesToVersion": "FTC Starter c9ab43d",
+      "sourceReferences": [{ "label": "Create a standalone robot project", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md", "blobHash": "625baed3cbbfd41428b23dd939bebdc7f680be26" }, { "label": "FTC Starter architecture", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md", "blobHash": "8d84f8d7eb4424a4fbcb74639f1de12f3e2970e8" }],
+      "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0; Studio 2.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -174,8 +177,8 @@
       "prerequisites": ["ftc-starter-project-identity", "run-first-ftc-simulation"],
       "objectives": ["Map an input to an explicit generated action.", "Observe the action/state result in local simulation."],
       "platforms": ["simulator", "ftc"],
-      "sourceReferences": [{ "label": "Generated starter TeleOp adapter", "url": "https://github.com/ARES-23247/ARES-FTC-Starter/blob/c9ab43d75e642031bf110c80004066e8607faf3e/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt", "repository": "ARES-FTC-Starter", "revision": "c9ab43d", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt", "blobHash": "63aad513c6c6e81c4e4a775639cdb2608032be1c" }],
-      "appliesToVersion": "FTC Starter c9ab43d",
+      "sourceReferences": [{ "label": "Generated starter TeleOp adapter", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt", "blobHash": "63aad513c6c6e81c4e4a775639cdb2608032be1c" }],
+      "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -193,8 +196,8 @@
       "prerequisites": ["ftc-starter-controller-bindings", "robot-coordinate-contracts"],
       "objectives": ["Explain why the empty starter autonomous mode blocks safely.", "Verify a generated routine before simulation."],
       "platforms": ["simulator", "ftc"],
-      "sourceReferences": [{ "label": "Generated starter autonomous adapter", "url": "https://github.com/ARES-23247/ARES-FTC-Starter/blob/c9ab43d75e642031bf110c80004066e8607faf3e/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterAuto.kt", "repository": "ARES-FTC-Starter", "revision": "c9ab43d", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterAuto.kt", "blobHash": "2e5d3d4198285e4d96e53b2f1b4d821e1eebb81a" }],
-      "appliesToVersion": "FTC Starter c9ab43d",
+      "sourceReferences": [{ "label": "Routine and controls authoring", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md", "blobHash": "8f150643f0a42d68453d052edcdb16a6a01bc6c0" }, { "label": "Generated starter autonomous adapter", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterAuto.kt", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterAuto.kt", "blobHash": "2e5d3d4198285e4d96e53b2f1b4d821e1eebb81a" }],
+      "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0; Studio 2.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -212,15 +215,15 @@
       "prerequisites": ["simulation-is-not-hardware-validation", "ftc-starter-first-autonomous"],
       "objectives": ["Prepare a disabled robot for supervised commissioning.", "Record evidence for motor mapping, inversion, sensors, limits, and calibration."],
       "platforms": ["ftc"],
-      "sourceReferences": [{ "label": "FTC Starter physical commissioning", "url": "https://github.com/ARES-23247/ARES-FTC-Starter/blob/c9ab43d75e642031bf110c80004066e8607faf3e/docs/PHYSICAL_COMMISSIONING.md", "repository": "ARES-FTC-Starter", "revision": "c9ab43d", "path": "docs/PHYSICAL_COMMISSIONING.md", "blobHash": "26364cd62adcf7c2ba60f9e192785491600f80a1" }],
-      "appliesToVersion": "FTC Starter c9ab43d",
+      "sourceReferences": [{ "label": "FTC Starter physical commissioning", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "blobHash": "26364cd62adcf7c2ba60f9e192785491600f80a1" }],
+      "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0",
       "safetyScope": "physical-robot"
     },
     {
       "slug": "areslib-fundamentals",
       "title": "ARESLib Architecture and Ownership",
       "category": "Architecture & Redux",
-      "description": "Reference the current ARESLib module boundaries, Redux flow, loop ordering, and cross-repository ownership rules.",
+      "description": "Reference the ARES 11 schema, model, compiler, runtime, platform-adapter, code-generation, and simulation boundaries inside the monorepo.",
       "contentFile": "areslib-reference/areslib-fundamentals.md",
       "subject": "robotics-engineering",
       "topics": ["ARESLib", "architecture", "Redux", "module ownership"],
@@ -229,17 +232,17 @@
       "estimatedMinutes": 20,
       "pathMemberships": [],
       "prerequisites": [],
-      "objectives": ["Locate shared behavior in the correct ARESLib module.", "Preserve the canonical robot-loop and Redux boundaries."],
+      "objectives": ["Locate shared behavior in the correct ARESLib module and Gradle build.", "Preserve the canonical document, compiler, robot-loop, and Redux boundaries."],
       "platforms": ["ftc", "frc", "simulator"],
-      "sourceReferences": [{ "label": "ARESLib architecture", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/architecture.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/architecture.md", "blobHash": "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "ARESLib architecture", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/architecture.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/architecture.md", "blobHash": "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }, { "label": "Clean-slate architecture completion", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/CLEAN_SLATE_ARCHITECTURE_COMPLETION.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "CLEAN_SLATE_ARCHITECTURE_COMPLETION.md", "blobHash": "9dc57c20afd45f8972dc72c5ebd1f2ff7090f0fd" }],
+      "appliesToVersion": "ARES 11.0.0",
       "safetyScope": "none"
     },
     {
       "slug": "autonomous-and-vision",
       "title": "Autonomous Paths, Localization, and Vision",
       "category": "Math & Controls",
-      "description": "Reference the current path pipeline, coordinate contract, delayed vision handling, and fail-closed autonomous checks.",
+      "description": "Reference canonical .aresroutine compilation, typed routine IR, localization, delayed vision handling, and fail-closed autonomous checks.",
       "contentFile": "areslib-reference/autonomous-and-vision.md",
       "subject": "robotics-engineering",
       "topics": ["autonomous", "pathing", "vision", "localization"],
@@ -248,10 +251,10 @@
       "estimatedMinutes": 30,
       "pathMemberships": [],
       "prerequisites": [],
-      "objectives": ["Trace path assets into the follower.", "Apply vision and coordinate checks without hiding rejected measurements."],
+      "objectives": ["Trace a canonical .aresroutine through compiler IR into the league runtime.", "Apply vision and coordinate checks without hiding rejected measurements."],
       "platforms": ["ftc", "frc", "simulator"],
-      "sourceReferences": [{ "label": "Pathing integration", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/onboarding/03_pathing_and_analytics.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/onboarding/03_pathing_and_analytics.md", "blobHash": "e11d0670ab43f526147a4fc6d22d615bb6645356" }, { "label": "Math and coordinate contracts", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/math-and-coordinate-contracts.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/math-and-coordinate-contracts.md", "blobHash": "8552021b1c337dc8d2e07a03d4d371960d9946dc" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Routines, controls, and code generation", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/routines-controls-and-codegen.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/routines-controls-and-codegen.md", "blobHash": "c8c767c48286538549eddafb3bfb05dbf539afdb" }, { "label": "Localization calibration", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/localization-calibration.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/localization-calibration.md", "blobHash": "c76aff1338afe58dd2ff5b8f9fb4d8cba9496ffd" }, { "label": "Math and coordinate contracts", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/math-and-coordinate-contracts.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md", "blobHash": "8552021b1c337dc8d2e07a03d4d371960d9946dc" }],
+      "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
       "safetyScope": "simulation-only"
     },
     {
@@ -269,8 +272,8 @@
       "prerequisites": [],
       "objectives": ["Use canonical topic names and units.", "Keep robot logging independent of internet services."],
       "platforms": ["ftc", "frc", "simulator"],
-      "sourceReferences": [{ "label": "Telemetry and logging", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/telemetry-and-logging.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/telemetry-and-logging.md", "blobHash": "cc970123adc2499eb20e0b21b953094bcb4810e9" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Telemetry and logging", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/telemetry-and-logging.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/telemetry-and-logging.md", "blobHash": "cc970123adc2499eb20e0b21b953094bcb4810e9" }],
+      "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
       "safetyScope": "none"
     },
     {
@@ -288,15 +291,15 @@
       "prerequisites": [],
       "objectives": ["Distinguish physical topology from tuning overlays.", "Preserve simulator and physical drivebase parity."],
       "platforms": ["ftc", "frc", "simulator"],
-      "sourceReferences": [{ "label": "Drivebase authoring contract", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/c7af7d2399815ffc3474a89e8dc08adfe31a534c/docs/drivetrain-authoring.md", "repository": "ARESLib-Kotlin", "revision": "v9.10.0", "path": "docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }],
-      "appliesToVersion": "ARESLib 9.10.0",
+      "sourceReferences": [{ "label": "Drivebase authoring contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARESLib-Kotlin/docs/drivetrain-authoring.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }],
+      "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
       "safetyScope": "physical-robot"
     },
     {
       "slug": "ftc-season-composition-and-safe-lifecycle",
       "title": "Compose an FTC Season Robot That Fails Safe",
       "category": "Robotics & Engineering",
-      "description": "Read the current ARES FTC composition root to distinguish required generated systems, optional mechanisms, cached loop work, and latched failure handling.",
+      "description": "Read the current ARES FTC composition root to trace generated subsystems and superstructures, cached loop work, canonical field setup, and latched failure handling.",
       "contentFile": "current-robot/01-season-composition.md",
       "subject": "robotics-engineering",
       "topics": ["FTC", "composition root", "subsystem lifecycle", "fail-safe design"],
@@ -305,10 +308,10 @@
       "estimatedMinutes": 35,
       "pathMemberships": [{ "pathId": "ftc-robot-with-ares", "order": 8 }],
       "prerequisites": ["robot-input-to-output", "simulation-is-not-hardware-validation"],
-      "objectives": ["Distinguish required generated subsystems from optional season mechanisms.", "Trace one update frame and its latched failure path without assuming hardware success."],
+      "objectives": ["Trace generated subsystem and superstructure registration into the shared lifecycle.", "Trace one update frame and its latched failure path without assuming hardware success."],
       "platforms": ["ftc", "simulator"],
-      "sourceReferences": [{ "label": "Current FTC season composition root", "url": "https://github.com/ARES-23247/ARES-FTC/blob/631682a167ba58d1d56ab2b31e982ccbf46ae0bf/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "repository": "ARES-FTC", "revision": "631682a", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "blobHash": "18c623b5f8f92c21df5ea48ac1bacaa5f5c98104" }],
-      "appliesToVersion": "ARES-FTC 631682a; ARESLib 9.12.0",
+      "sourceReferences": [{ "label": "Current FTC season composition root", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "blobHash": "f7b9bf0a77cc46b611602533e34721d0678a5f5c" }],
+      "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 1810d74",
       "safetyScope": "simulation-only"
     },
     {
@@ -326,28 +329,28 @@
       "prerequisites": ["robot-coordinate-contracts", "redux-state-actions-reducers"],
       "objectives": ["Calculate the output of the current deadband and exponent shaping pipeline.", "Explain which axes alliance selection mirrors and why rotation is unchanged."],
       "platforms": ["simulator", "ftc"],
-      "sourceReferences": [{ "label": "Current FTC drive controller", "url": "https://github.com/ARES-23247/ARES-FTC/blob/631682a167ba58d1d56ab2b31e982ccbf46ae0bf/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "repository": "ARES-FTC", "revision": "631682a", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "blobHash": "824f055d52d973dac4686f5bb2d13dc468458064" }],
-      "appliesToVersion": "ARES-FTC 631682a; ARESLib 9.12.0",
+      "sourceReferences": [{ "label": "Current FTC drive controller", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "blobHash": "824f055d52d973dac4686f5bb2d13dc468458064" }],
+      "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 1810d74",
       "safetyScope": "simulation-only"
     },
     {
-      "slug": "ftc-intake-io-fault-recovery",
-      "title": "Design an FTC Intake Boundary That Recovers Neutral First",
-      "category": "Physics & Applied Science",
-      "description": "Study the current intake hardware adapter's cached observations, invalid-reading contract, voltage normalization, and neutral-first output recovery.",
-      "contentFile": "current-robot/03-intake-fault-recovery.md",
-      "subject": "physics-applied-science",
-      "topics": ["FTC", "hardware IO", "fault recovery", "electrical safety"],
-      "contentType": "tutorial",
-      "level": "advanced",
-      "estimatedMinutes": 45,
+      "slug": "ftc-gui-owned-indicator-lights",
+      "title": "Author GUI-Owned FTC Indicator Lights",
+      "category": "Robotics & Engineering",
+      "description": "Study the current Lightbot indicator-light descriptor from canonical GUI-owned state through generated actions, safe output, simulator parity, and physical validation.",
+      "contentFile": "current-robot/03-gui-owned-indicator-lights.md",
+      "subject": "robotics-engineering",
+      "topics": ["FTC", "GUI-owned subsystem", "generated code", "indicator lights"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 40,
       "pathMemberships": [],
       "prerequisites": ["robot-input-to-output", "simulation-is-not-hardware-validation"],
-      "objectives": ["Explain why a failed sensor read is not equivalent to a measured zero.", "Trace the neutral-first latch that blocks motion after an unconfirmed output write."],
+      "objectives": ["Trace a GUI-owned subsystem descriptor into generated Redux and lifecycle plumbing.", "Distinguish simulator evidence from physical wiring and safe-off validation."],
       "platforms": ["ftc", "simulator"],
-      "sourceReferences": [{ "label": "Current FTC intake hardware boundary", "url": "https://github.com/ARES-23247/ARES-FTC/blob/631682a167ba58d1d56ab2b31e982ccbf46ae0bf/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/FtcIntakeIO.kt", "repository": "ARES-FTC", "revision": "631682a", "path": "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/FtcIntakeIO.kt", "blobHash": "245500ba505a219c1de54a5d0d16e0b6033f231b" }],
-      "appliesToVersion": "ARES-FTC 631682a; ARESLib 9.12.0",
-      "safetyScope": "bench-testing"
+      "sourceReferences": [{ "label": "GUI-owned Lightbot lighting example", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC/docs/examples/GUI_OWNED_LIGHTING.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC/docs/examples/GUI_OWNED_LIGHTING.md", "blobHash": "b02ec63d15f5e633a939dca35a049e936226026a" }, { "label": "Canonical indicator-light descriptor", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1810d74e8f3b260116df68fd8c1b0854b2d61493/ARES-FTC/.ares/subsystems/indicator-lights.aressubsystem", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC/.ares/subsystems/indicator-lights.aressubsystem", "blobHash": "11035b33e9e210339fd6407ce7122e6d0c64de0b" }],
+      "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 1810d74; Studio 2.0.0",
+      "safetyScope": "physical-robot"
     }
   ]
 }

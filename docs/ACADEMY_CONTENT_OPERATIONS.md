@@ -14,7 +14,7 @@ pnpm run content:verify
 pnpm run content:prepare
 ```
 
-`content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, and immutable commit-pinning checks. Historical reviewed pins remain valid and retain their real version labels. `content:verify` additionally downloads the exact pinned public source files, recomputes their Git blob hashes, and fails when `source-authorities.json` no longer names the latest authoritative ARESLib semantic release tag and commit; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
+`content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, published-refresh, and immutable commit-pinning checks. Historical reviewed pins remain valid and retain their real version labels. `content:verify` additionally downloads the exact pinned public source files, recomputes their Git blob hashes, and fails when the catalog's ARES, Studio, or starter version differs from the authoritative monorepo version file; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
 
 Preparation normalizes Markdown line endings to LF so the staged record and its
 review digest are identical on Windows, Linux, and CI.
@@ -50,20 +50,27 @@ The supported phases are intentionally separate:
 - `cleanup` archives the two reviewed test placeholders and removes Monty Hall
   from ARESLib while preserving its Academy publication.
 - `stage-drafts` creates only new catalog slugs as `draft` and
-  `pending_approval`. It never overwrites an existing slug. Use
+  `pending_approval`; slugs listed for published refresh are excluded. It never
+  overwrites an existing slug. Use
   `--stage-slugs slug-one,slug-two` for a bounded subset when other catalog
   lessons already exist or are published.
 - `publish-drafts` publishes only explicitly approved staged catalog drafts and
   refuses the batch if any reviewed content field changed after staging.
+- `refresh-published` updates only explicitly approved existing published
+  lessons. It refuses each lesson unless its old title, version, publication
+  state, and normalized Markdown SHA-256 still match
+  `published-refresh-plan.json`, preventing an editorial change from being
+  overwritten by a stale migration.
 - `replacements` replaces only explicitly approved legacy ARESLib slugs.
 - `cross-links` changes only explicitly approved existing-lesson metadata.
 
-`publish-drafts`, `replacements`, and `cross-links` require a human
+`publish-drafts`, `refresh-published`, `replacements`, and `cross-links` require a human
 coach/mentor approval JSON whose `phase` and `reviewDigest` match the exact
 requested operation. Generate the full-scope template before review:
 
 ```powershell
 pnpm run content:approval -- --project aresfirst-portal --phase publish-drafts
+pnpm run content:approval -- --project aresfirst-portal --phase refresh-published
 pnpm run content:approval -- --project aresfirst-portal --phase replacements
 pnpm run content:approval -- --project aresfirst-portal --phase cross-links
 ```

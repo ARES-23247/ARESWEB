@@ -1,6 +1,8 @@
 # Shape FTC driver input without losing the frame
 
-The current `AresDriveController` separates normalized driver intent from direct hardware access. This guided lab uses the controller pinned at commit `631682a` and can be completed with calculation and simulation.
+The current `AresDriveController` separates normalized driver intent from direct hardware access.
+This guided lab uses the controller pinned in the ARES 11 monorepo source line and can be completed
+with calculation and simulation.
 
 ## The shaping pipeline
 

@@ -4,10 +4,10 @@ The starter TeleOp lifecycle adapter is intentionally small. The checked-in cont
 
 ## Guided exercise
 
-1. Open TeleOp Controls in ARES Analytics.
+1. Open **Controller Bindings** in ARES Robotics Studio.
 2. Choose one drive-assist action, such as an explicit Enable, Disable, or Toggle binding.
 3. Map it to an unused simulated button.
-4. Regenerate and run project verification.
+4. Save the canonical binding document, inspect its structured diff, regenerate, and run project verification.
 5. Launch Local Simulator, select the generated TeleOp, send INIT and START, then arm local control.
 6. Press the binding once and observe the resulting state/telemetry. Release all input.
 7. Stop the OpMode.

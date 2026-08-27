@@ -10,6 +10,7 @@ const CATALOG_PATH = path.join(CONTENT_ROOT, "catalog.json");
 const SOURCE_AUTHORITIES_PATH = path.join(CONTENT_ROOT, "source-authorities.json");
 const LEGACY_PLAN_PATH = path.join(CONTENT_ROOT, "legacy-migration-plan.json");
 const CROSS_LINK_PLAN_PATH = path.join(CONTENT_ROOT, "existing-content-path-plan.json");
+const PUBLISHED_REFRESH_PLAN_PATH = path.join(CONTENT_ROOT, "published-refresh-plan.json");
 const OUTPUT_PATH = path.join(ROOT, "build", "learning-content-import.json");
 const SUBJECTS = new Set(["robotics-engineering", "mathematics-data", "computing-ai", "physics-applied-science"]);
 const CONTENT_TYPES = new Set(["lesson", "guided-lab", "tutorial", "reference", "interactive"]);
@@ -29,30 +30,6 @@ function assertStringList(value, field, slug, maxItems) {
 
 function assertCommit(value, field) {
   assert(typeof value === "string" && /^[a-f0-9]{40}$/iu.test(value), `${field} must be an exact 40-character Git commit.`);
-}
-
-export function compareSemverTags(left, right) {
-  const parse = (value) => {
-    const match = /^v(\d+)\.(\d+)\.(\d+)$/u.exec(value);
-    assert(match, `${value}: expected a semantic release tag such as v1.2.3.`);
-    return match.slice(1).map(Number);
-  };
-  const leftParts = parse(left);
-  const rightParts = parse(right);
-  for (let index = 0; index < leftParts.length; index += 1) {
-    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
-  }
-  return 0;
-}
-
-export function buildGitHubApiHeaders(token = "") {
-  const normalizedToken = token.trim();
-  return {
-    accept: "application/vnd.github+json",
-    "user-agent": "ARESWEB-curriculum-provenance-validator",
-    "x-github-api-version": "2022-11-28",
-    ...(normalizedToken ? { authorization: `Bearer ${normalizedToken}` } : {}),
-  };
 }
 
 export function validateSourceAuthorities(authorities) {
@@ -85,6 +62,22 @@ export function resolveApprovedAuthority(authorities, repository, revision, comm
 
 export function normalizeLearningMarkdown(value) {
   return value.replace(/\r\n?/gu, "\n").trim();
+}
+
+export function parseAresVersions(value) {
+  const versions = {};
+  for (const rawLine of value.replace(/\r\n?/gu, "\n").split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const separator = line.indexOf("=");
+    assert(separator > 0, `Invalid ARES version-property line: ${line}`);
+    const key = line.slice(0, separator).trim();
+    const version = line.slice(separator + 1).trim();
+    assert(/^[A-Za-z][A-Za-z0-9]*$/u.test(key) && version, `Invalid ARES version property: ${line}`);
+    assert(!Object.hasOwn(versions, key), `Duplicate ARES version property: ${key}`);
+    versions[key] = version;
+  }
+  return versions;
 }
 
 function safeContentPath(contentFile, slug) {
@@ -125,23 +118,27 @@ export function registerPathOrder(pathOrders, pathId, order, slug) {
   pathOrders.set(pathOrderKey, slug);
 }
 
-async function verifyCurrentAresLibRelease(authorities) {
-  const current = authorities.repositories["ARESLib-Kotlin"]?.current;
-  assert(current, "ARESLib-Kotlin current authority is required for remote release verification.");
-  const response = await fetch("https://api.github.com/repos/ARES-23247/ARESLib-Kotlin/tags?per_page=100", {
+async function verifyCurrentAresVersions(authorities, generatedFrom) {
+  const current = authorities.repositories["ARES-Robotics"]?.current;
+  assert(current, "ARES-Robotics current authority is required for remote version verification.");
+  assert(current.revision === generatedFrom.sourceRevision && current.commit === generatedFrom.sourceCommit,
+    "Catalog provenance must use the current reviewed ARES-Robotics authority.");
+  const response = await fetch("https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/main/release/ares-versions.properties", {
     redirect: "error",
     signal: AbortSignal.timeout(20_000),
-    headers: buildGitHubApiHeaders(process.env.GITHUB_TOKEN),
+    headers: { "user-agent": "ARESWEB-curriculum-provenance-validator" },
   });
-  assert(response.ok, `ARESLib release metadata failed with HTTP ${response.status}.`);
-  const tags = await response.json();
-  assert(Array.isArray(tags), "ARESLib release metadata did not return a tag list.");
-  const semanticTags = tags.filter((tag) => /^v\d+\.\d+\.\d+$/u.test(tag?.name) && /^[a-f0-9]{40}$/iu.test(tag?.commit?.sha));
-  assert(semanticTags.length > 0, "ARESLib release metadata contains no semantic release tags.");
-  semanticTags.sort((left, right) => compareSemverTags(right.name, left.name));
-  const latest = semanticTags[0];
-  assert(current.revision === latest.name, `ARESLib current authority is stale: declared ${current.revision}, latest tag is ${latest.name}.`);
-  assert(current.commit === latest.commit.sha, `ARESLib ${latest.name} authority commit does not match the authoritative tag.`);
+  assert(response.ok, `ARES monorepo version metadata failed with HTTP ${response.status}.`);
+  const versions = parseAresVersions(await response.text());
+  const expected = {
+    aresVersion: generatedFrom.aresVersion,
+    studioVersion: generatedFrom.studioVersion,
+    ftcStarterVersion: generatedFrom.ftcStarterVersion,
+    frcStarterVersion: generatedFrom.frcStarterVersion,
+  };
+  for (const [key, version] of Object.entries(expected)) {
+    assert(versions[key] === version, `ARES monorepo ${key} changed: catalog declares ${version}, main declares ${versions[key] ?? "missing"}.`);
+  }
 }
 
 async function verifyRemoteSource(source, cache) {
@@ -172,13 +169,13 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   const authorities = validateSourceAuthorities(JSON.parse(await readFile(SOURCE_AUTHORITIES_PATH, "utf8")));
   assert(catalog.catalogVersion === 1, "catalogVersion must be 1.");
   assert(catalog.generatedFrom && typeof catalog.generatedFrom === "object", "generatedFrom release provenance is required.");
-  assert(typeof catalog.generatedFrom.aresLibRelease === "string" && /^v\d+\.\d+\.\d+$/u.test(catalog.generatedFrom.aresLibRelease), "generatedFrom.aresLibRelease must be a semantic release tag.");
-  assertCommit(catalog.generatedFrom.aresLibCommit, "generatedFrom.aresLibCommit");
-  assertCommit(catalog.generatedFrom.ftcStarterCommit, "generatedFrom.ftcStarterCommit");
-  assertCommit(catalog.generatedFrom.aresFtcCommit, "generatedFrom.aresFtcCommit");
-  assert(resolveApprovedAuthority(authorities, "ARESLib-Kotlin", catalog.generatedFrom.aresLibRelease, catalog.generatedFrom.aresLibCommit), "generatedFrom ARESLib release is not an approved authority.");
-  assert(resolveApprovedAuthority(authorities, "ARES-FTC-Starter", catalog.generatedFrom.ftcStarterCommit.slice(0, 7), catalog.generatedFrom.ftcStarterCommit), "generatedFrom FTC Starter commit is not an approved authority.");
-  assert(resolveApprovedAuthority(authorities, "ARES-FTC", catalog.generatedFrom.aresFtcCommit.slice(0, 7), catalog.generatedFrom.aresFtcCommit), "generatedFrom ARES-FTC commit is not an approved authority.");
+  assert(catalog.generatedFrom.sourceRepository === "ARES-Robotics", "generatedFrom.sourceRepository must be ARES-Robotics.");
+  assert(typeof catalog.generatedFrom.sourceRevision === "string" && catalog.generatedFrom.sourceRevision.trim(), "generatedFrom.sourceRevision is required.");
+  assertCommit(catalog.generatedFrom.sourceCommit, "generatedFrom.sourceCommit");
+  for (const field of ["aresVersion", "studioVersion", "ftcStarterVersion", "frcStarterVersion"]) {
+    assert(typeof catalog.generatedFrom[field] === "string" && /^\d+\.\d+\.\d+$/u.test(catalog.generatedFrom[field]), `generatedFrom.${field} must be a semantic version.`);
+  }
+  assert(resolveApprovedAuthority(authorities, catalog.generatedFrom.sourceRepository, catalog.generatedFrom.sourceRevision, catalog.generatedFrom.sourceCommit), "generatedFrom ARES-Robotics source is not an approved authority.");
   assert(Array.isArray(catalog.documents) && catalog.documents.length > 0, "catalog documents must not be empty.");
   const slugs = new Set();
   const prepared = [];
@@ -289,12 +286,29 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     }
   }
 
+  const publishedRefreshPlan = JSON.parse(await readFile(PUBLISHED_REFRESH_PLAN_PATH, "utf8"));
+  assert(publishedRefreshPlan.planVersion === 1 && publishedRefreshPlan.mode === "proposal-only" && publishedRefreshPlan.requiresHumanReview === true,
+    "Published-refresh plan must remain a proposal requiring human review.");
+  assert(Array.isArray(publishedRefreshPlan.documents) && publishedRefreshPlan.documents.length <= 25,
+    "Published-refresh documents must be a bounded array.");
+  const refreshSlugs = new Set();
+  for (const document of publishedRefreshPlan.documents) {
+    assert(typeof document.slug === "string" && slugs.has(document.slug) && !refreshSlugs.has(document.slug),
+      "Published-refresh proposals require unique catalog slugs.");
+    refreshSlugs.add(document.slug);
+    assert(document.preconditions && typeof document.preconditions === "object", `${document.slug}: published-refresh preconditions are required.`);
+    assert(document.preconditions.status === "published", `${document.slug}: published-refresh status precondition must be published.`);
+    assert(typeof document.preconditions.title === "string" && document.preconditions.title.trim(), `${document.slug}: published-refresh title precondition is required.`);
+    assert(typeof document.preconditions.appliesToVersion === "string" && document.preconditions.appliesToVersion.trim(), `${document.slug}: published-refresh version precondition is required.`);
+    assert(typeof document.contentSha256 === "string" && /^[a-f0-9]{64}$/u.test(document.contentSha256), `${document.slug}: published-refresh content hash is invalid.`);
+  }
+
   for (const document of catalog.documents) {
     for (const prerequisite of document.prerequisites) assert(slugs.has(prerequisite), `${document.slug}: prerequisite ${prerequisite} is absent from this catalog.`);
   }
 
   if (verifyRemote) {
-    await verifyCurrentAresLibRelease(authorities);
+    await verifyCurrentAresVersions(authorities, catalog.generatedFrom);
     const cache = new Map();
     for (const source of remoteSources) await verifyRemoteSource(source, cache);
   }
@@ -309,10 +323,11 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   }
   return {
     documents: prepared.length,
-    stageableDocuments: prepared.length - replacementCatalogSlugs.size,
+    stageableDocuments: prepared.length - new Set([...replacementCatalogSlugs, ...refreshSlugs]).size,
     paths: [...new Set(catalog.documents.flatMap((document) => document.pathMemberships.map((item) => item.pathId)))].length,
     legacyActions: legacyPlan.actions.length,
     proposedCrossLinks: crossLinkPlan.documents.length,
+    proposedPublishedRefreshes: publishedRefreshPlan.documents.length,
     verifiedSources: verifyRemote ? new Set(remoteSources.map((source) => source.url)).size : 0,
     historicalSources: remoteSources.filter((source) => !source.current).length,
     output: write ? OUTPUT_PATH : null,
@@ -324,5 +339,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     write: process.argv.includes("--write"),
     verifyRemote: process.argv.includes("--verify-remote"),
   });
-  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. ${result.historicalSources} source references intentionally retain reviewed historical pins.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARESLib release.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
+  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. ${result.historicalSources} source references intentionally retain reviewed historical pins.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
 }

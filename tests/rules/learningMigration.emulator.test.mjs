@@ -28,6 +28,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       "e2e-test-quick-start": { title: "Quick Start Guide", category: "Getting Started", displayInAreslib: 1, status: "published", content: "empty test record" },
       "e2e-valid-slug-123": { title: "Test Document", category: "Test", displayInAreslib: 1, status: "published", content: "test record" },
       montyhall: { title: "Monty Hall Problem", displayInAreslib: 1, displayInMathCorner: 1, displayInScienceCorner: 0, status: "published", content: "statistics" },
+      "ftc-intake-io-fault-recovery": { title: "Design an FTC Intake Boundary That Recovers Neutral First", status: "published", isDeleted: 0, content: "retired intake lesson" },
     };
     await Promise.all(Object.entries(fixtures).map(([slug, value]) => db.doc(`docs/${slug}`).set(value)));
   });
@@ -51,9 +52,10 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       batchId: "cleanup-emulator",
       rollbackManifest: join(directory, "cleanup.json"),
     }, { db });
-    expect(cleanup).toMatchObject({ planned: 3, ready: 3, blocked: 0, applied: 3, verified: 3 });
+    expect(cleanup).toMatchObject({ planned: 4, ready: 4, blocked: 0, applied: 4, verified: 4 });
     expect((await db.doc("docs/e2e-test-quick-start").get()).data()).toMatchObject({ isDeleted: 1 });
     expect((await db.doc("docs/montyhall").get()).data()).toMatchObject({ displayInAreslib: 0 });
+    expect((await db.doc("docs/ftc-intake-io-fault-recovery").get()).data()).toMatchObject({ isDeleted: 1 });
     expect((await db.doc("docs/montyhall/revisions/academy_v1_cleanup_montyhall").get()).exists).toBe(true);
     expect((await db.doc("audit_logs/academy_v1_cleanup_montyhall").get()).data()).not.toHaveProperty("content");
 
@@ -70,7 +72,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       applied: stageableDocuments,
       verified: stageableDocuments,
     });
-    const staged = (await db.doc("docs/ares-workspace-map").get()).data();
+    const staged = (await db.doc("docs/ftc-gui-owned-indicator-lights").get()).data();
     expect(staged).toMatchObject({ status: "draft", approvalStatus: "pending_approval", academyMigrationPhase: "stage-drafts" });
     expect(staged).not.toHaveProperty("reviewedByLabel");
 
@@ -79,7 +81,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       project,
       apply: false,
       prepareApproval: true,
-      approvedSlugs: "ares-workspace-map",
+      approvedSlugs: "ftc-gui-owned-indicator-lights",
       phase: "publish-drafts",
     });
     writeFileSync(approvalFile, JSON.stringify({
@@ -95,13 +97,13 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       rollbackManifest: join(directory, "publish.json"),
     }, { db });
     expect(publish).toMatchObject({ planned: 1, ready: 1, blocked: 0, applied: 1, verified: 1 });
-    expect((await db.doc("docs/ares-workspace-map").get()).data()).toMatchObject({
+    expect((await db.doc("docs/ftc-gui-owned-indicator-lights").get()).data()).toMatchObject({
       status: "published",
       approvalStatus: "approved",
       reviewedByLabel: "Emulator Coach",
       academyMigrationPhase: "publish-drafts",
     });
-    expect((await db.doc("audit_logs/academy_v1_publish-drafts_ares-workspace-map").get()).data()).toMatchObject({
+    expect((await db.doc("audit_logs/academy_v1_publish-drafts_ftc-gui-owned-indicator-lights").get()).data()).toMatchObject({
       reviewDigest: preparedApproval.template.reviewDigest,
       reviewedAt: "2026-08-25",
       reviewedByLabel: "Emulator Coach",
