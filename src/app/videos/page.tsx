@@ -334,7 +334,7 @@ export default function VideosPage() {
                     src={`${selected.embedUrl}?autoplay=1&rel=0`}
                     title={selected.title}
                     loading="lazy"
-                    sandbox="allow-scripts allow-presentation allow-popups"
+                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                     referrerPolicy="strict-origin-when-cross-origin"
                     allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen

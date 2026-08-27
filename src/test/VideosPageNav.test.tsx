@@ -88,7 +88,9 @@ describe("VideosPage Filter, Sandbox, & Keyboard Navigation", () => {
       "src",
       "https://www.youtube-nocookie.com/embed/pathing1234?autoplay=1&rel=0",
     );
-    expect(iframe?.getAttribute("sandbox")).toBe("allow-scripts allow-presentation allow-popups");
+    expect(iframe?.getAttribute("sandbox")).toBe(
+      "allow-scripts allow-same-origin allow-presentation allow-popups",
+    );
     expect(iframe).toHaveAttribute(
       "referrerpolicy",
       "strict-origin-when-cross-origin",
