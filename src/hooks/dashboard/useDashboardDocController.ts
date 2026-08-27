@@ -4,6 +4,97 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentSync, type DocRecord } from "@/hooks/useDocumentSync";
 
+type BufferChannelOutcome =
+  | "submitted"
+  | "already-submitted"
+  | "failed"
+  | "not-connected"
+  | "unavailable";
+
+export interface SyndicationChannelDetail {
+  label: string;
+  detail: string;
+  ok: boolean;
+}
+
+interface SyndicationResponse {
+  success?: unknown;
+  pending?: unknown;
+  alreadySyndicated?: unknown;
+  syndication?: unknown;
+  bufferChannels?: unknown;
+}
+
+const BUFFER_CHANNEL_LABELS = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  twitter: "X",
+} as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+export function syndicationChannelDetails(
+  payload: SyndicationResponse,
+): SyndicationChannelDetail[] {
+  const details: SyndicationChannelDetail[] = [];
+  const syndication = isRecord(payload.syndication)
+    ? payload.syndication
+    : {};
+
+  if (typeof syndication.zulip === "boolean") {
+    details.push({
+      label: "Zulip",
+      detail: syndication.zulip ? "Delivered" : "Not delivered",
+      ok: syndication.zulip,
+    });
+  }
+  if (typeof syndication.bluesky === "boolean") {
+    details.push({
+      label: "Bluesky",
+      detail: syndication.bluesky ? "Delivered" : "Not delivered",
+      ok: syndication.bluesky,
+    });
+  }
+
+  const bufferChannels = isRecord(payload.bufferChannels)
+    ? payload.bufferChannels
+    : null;
+  if (bufferChannels) {
+    for (const [service, label] of Object.entries(BUFFER_CHANNEL_LABELS)) {
+      const outcome = bufferChannels[service];
+      const detailByOutcome: Record<BufferChannelOutcome, string> = {
+        submitted: "Submitted immediately via Buffer",
+        "already-submitted": "Already submitted via Buffer",
+        failed: "Buffer rejected the submission",
+        "not-connected": "Not connected in Buffer",
+        unavailable: "Buffer was unavailable",
+      };
+      if (typeof outcome === "string" && outcome in detailByOutcome) {
+        const typedOutcome = outcome as BufferChannelOutcome;
+        details.push({
+          label,
+          detail: detailByOutcome[typedOutcome],
+          ok: typedOutcome === "submitted" || typedOutcome === "already-submitted",
+        });
+      }
+    }
+  } else if (typeof syndication.buffer === "boolean") {
+    for (const label of Object.values(BUFFER_CHANNEL_LABELS)) {
+      details.push({
+        label,
+        detail: syndication.buffer
+          ? "Previously accepted by Buffer; platform status unavailable"
+          : "Not submitted through Buffer",
+        ok: syndication.buffer,
+      });
+    }
+  }
+
+  return details;
+}
+
 export function useDashboardDocController(
   collectionName: string,
   filterFn: (doc: DocRecord) => boolean,
@@ -34,6 +125,7 @@ export function useDashboardDocController(
     kind: "success" | "error";
     message: string;
     slug: string;
+    channels: SyndicationChannelDetail[];
   } | null>(null);
   const [syndicatingSlug, setSyndicatingSlug] = useState<string | null>(null);
 
@@ -143,23 +235,28 @@ export function useDashboardDocController(
           body: JSON.stringify({ slug }),
         },
       );
-      if (!response.ok)
-        throw new Error(
-          `HTTP ${response.status}: announcement delivery failed`,
-        );
-      const payload = (await response.json()) as {
-        pending?: unknown;
-        alreadySyndicated?: unknown;
-      };
+      const payload = (await response.json().catch(() => ({}))) as SyndicationResponse;
+      const channels = syndicationChannelDetails(payload);
+      if (!response.ok || payload.success === false) {
+        setSyndicationNotice({
+          kind: "error",
+          slug,
+          channels,
+          message:
+            "The post remains published on the website, but some social deliveries need attention. Retry without republishing the post.",
+        });
+        return false;
+      }
       setSyndicationNotice({
         kind: "success",
         slug,
+        channels,
         message:
           payload.pending === true
             ? "Social delivery is already in progress."
             : payload.alreadySyndicated === true
               ? "Social channels were already up to date."
-              : "Post delivered to all configured social channels.",
+              : "Social delivery request completed.",
       });
       return true;
     } catch (err) {
@@ -167,6 +264,7 @@ export function useDashboardDocController(
       setSyndicationNotice({
         kind: "error",
         slug,
+        channels: [],
         message:
           "The post remains published on the website, but one or more social channels failed. Retry without republishing the post.",
       });

@@ -9,7 +9,22 @@ const MAX_CHANNELS_PER_ORGANIZATION = 20;
 const MAX_RECENT_POSTS = 100;
 const DEFAULT_SOCIAL_IMAGE = `${SITE_ORIGIN}/social-post-default.jpg`;
 
-const BUFFER_SERVICES = new Set(["facebook", "instagram", "twitter"]);
+export const BUFFER_SERVICES = ["facebook", "instagram", "twitter"] as const;
+export type BufferService = (typeof BUFFER_SERVICES)[number];
+export type BufferChannelOutcome =
+  | "submitted"
+  | "already-submitted"
+  | "failed"
+  | "not-connected"
+  | "unavailable";
+export type BufferChannelOutcomes = Record<BufferService, BufferChannelOutcome>;
+
+export interface BufferSyndicationResult {
+  success: boolean;
+  channels: BufferChannelOutcomes;
+}
+
+const BUFFER_SERVICE_SET = new Set<string>(BUFFER_SERVICES);
 const ACTIVE_POST_STATUSES = new Set([
   "needs_approval",
   "scheduled",
@@ -90,7 +105,18 @@ export interface BuiltBufferPost {
 
 interface BufferChannel {
   id: string;
-  service: string;
+  service: BufferService;
+}
+
+function unavailableBufferResult(): BufferSyndicationResult {
+  return {
+    success: false,
+    channels: {
+      facebook: "unavailable",
+      instagram: "unavailable",
+      twitter: "unavailable",
+    },
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -215,7 +241,9 @@ function supportedChannels(data: Record<string, unknown>): BufferChannel[] {
     const id = boundedId(entry.id);
     const service =
       typeof entry.service === "string" ? entry.service.toLowerCase() : "";
-    return id && BUFFER_SERVICES.has(service) ? [{ id, service }] : [];
+    return id && BUFFER_SERVICE_SET.has(service)
+      ? [{ id, service: service as BufferService }]
+      : [];
   });
 }
 
@@ -261,7 +289,7 @@ async function createBufferPost(
       assets: [{ image: { url: post.imageUrl } }],
       channelId: channel.id,
       ...(metadata ? { metadata } : {}),
-      mode: "addToQueue",
+      mode: "shareNow",
       needsApproval: false,
       schedulingType: "automatic",
       source: "aresweb",
@@ -283,14 +311,14 @@ async function createBufferPost(
  */
 export async function sendBufferPosts(
   options: BufferPostOptions,
-): Promise<boolean> {
+): Promise<BufferSyndicationResult> {
   const apiKey = getBufferApiKey();
   if (!apiKey) {
     logger.warn(
       "buffer",
       "Buffer syndication inactive because its API key is not configured.",
     );
-    return false;
+    return unavailableBufferResult();
   }
 
   try {
@@ -299,13 +327,18 @@ export async function sendBufferPosts(
     const organizations = organizationIds(accountData);
     if (organizations.length === 0) {
       logger.error("buffer", "Buffer returned no usable organization");
-      return false;
+      return unavailableBufferResult();
     }
 
     let supportedCount = 0;
     let createdCount = 0;
     let duplicateCount = 0;
     let failedCount = 0;
+    const serviceResults: Record<BufferService, Array<"submitted" | "already-submitted" | "failed">> = {
+      facebook: [],
+      instagram: [],
+      twitter: [],
+    };
     for (const organizationId of organizations) {
       const channelData = await bufferRequest(apiKey, CHANNELS_QUERY, {
         organizationId,
@@ -319,20 +352,51 @@ export async function sendBufferPosts(
         channelIds: channels.map(({ id }) => id),
       });
       const existing = existingChannelIds(recentData, post.text);
-      duplicateCount += channels.filter(({ id }) => existing.has(id)).length;
+      const duplicates = channels.filter(({ id }) => existing.has(id));
+      duplicateCount += duplicates.length;
+      for (const channel of duplicates) {
+        serviceResults[channel.service].push("already-submitted");
+      }
 
       const pending = channels.filter(({ id }) => !existing.has(id));
       const results = await Promise.all(
-        pending.map((channel) => createBufferPost(apiKey, channel, post)),
+        pending.map(async (channel) => ({
+          channel,
+          created: await createBufferPost(apiKey, channel, post),
+        })),
       );
-      createdCount += results.filter(Boolean).length;
-      failedCount += results.filter((created) => !created).length;
+      for (const { channel, created } of results) {
+        serviceResults[channel.service].push(created ? "submitted" : "failed");
+        if (created) createdCount += 1;
+        else failedCount += 1;
+      }
     }
 
     if (supportedCount === 0) {
       logger.error("buffer", "Buffer has no supported social channels");
-      return false;
+      return {
+        success: false,
+        channels: {
+          facebook: "not-connected",
+          instagram: "not-connected",
+          twitter: "not-connected",
+        },
+      };
     }
+
+    const channels = Object.fromEntries(
+      BUFFER_SERVICES.map((service): [BufferService, BufferChannelOutcome] => {
+        const results = serviceResults[service];
+        if (results.length === 0) return [service, "not-connected"];
+        if (results.includes("failed")) return [service, "failed"];
+        if (results.includes("submitted")) return [service, "submitted"];
+        return [service, "already-submitted"];
+      }),
+    ) as BufferChannelOutcomes;
+    const success = BUFFER_SERVICES.every((service) =>
+      channels[service] === "submitted" ||
+      channels[service] === "already-submitted",
+    );
 
     logger.info("buffer", "Processed Buffer social syndication", {
       slug: options.slug,
@@ -340,15 +404,14 @@ export async function sendBufferPosts(
       createdCount,
       duplicateCount,
       failedCount,
+      channels,
     });
-    return (
-      failedCount === 0 && createdCount + duplicateCount === supportedCount
-    );
+    return { success, channels };
   } catch (error) {
     logger.error("buffer", "Buffer syndication failed", {
       slug: options.slug,
       reason: error instanceof Error ? error.name : "unknown",
     });
-    return false;
+    return unavailableBufferResult();
   }
 }

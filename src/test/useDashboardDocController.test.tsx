@@ -2,7 +2,10 @@ import type { PropsWithChildren } from "react";
 import { act, renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
+import {
+  syndicationChannelDetails,
+  useDashboardDocController,
+} from "@/hooks/dashboard/useDashboardDocController";
 
 const { authenticatedFetchMock, deleteDocMock, restoreDocMock, saveDocMock } = vi.hoisted(() => ({
   authenticatedFetchMock: vi.fn(() => Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200,
@@ -57,6 +60,30 @@ describe("useDashboardDocController archive workflow", () => {
     authenticatedFetchMock.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200,
         headers: { "Content-Type": "application/json" },
       }));
+  });
+
+  it("translates provider results into truthful per-channel details", () => {
+    expect(syndicationChannelDetails({
+      syndication: { zulip: true, bluesky: false, buffer: false },
+      bufferChannels: {
+        facebook: "submitted",
+        instagram: "already-submitted",
+        twitter: "not-connected",
+      },
+    })).toEqual([
+      { label: "Zulip", detail: "Delivered", ok: true },
+      { label: "Bluesky", detail: "Not delivered", ok: false },
+      { label: "Facebook", detail: "Submitted immediately via Buffer", ok: true },
+      { label: "Instagram", detail: "Already submitted via Buffer", ok: true },
+      { label: "X", detail: "Not connected in Buffer", ok: false },
+    ]);
+    expect(syndicationChannelDetails({
+      syndication: { buffer: true },
+    })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "Facebook", ok: true }),
+      expect.objectContaining({ label: "Instagram", ok: true }),
+      expect.objectContaining({ label: "X", ok: true }),
+    ]));
   });
 
   it("requests confirmation without archiving, supports cancel, then archives only after confirmation", async () => {
@@ -308,8 +335,18 @@ describe("useDashboardDocController archive workflow", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     authenticatedFetchMock
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: "upstream unavailable" }), {
-          status: 502,
+        new Response(JSON.stringify({
+          success: false,
+          error: "Some social channels did not accept the announcement.",
+          syndication: { zulip: true, bluesky: true, buffer: false },
+          bufferChannels: {
+            facebook: "submitted",
+            instagram: "failed",
+            twitter: "not-connected",
+          },
+        }), {
+          status: 207,
+          headers: { "Content-Type": "application/json" },
         }),
       )
       .mockResolvedValueOnce(
@@ -334,6 +371,11 @@ describe("useDashboardDocController archive workflow", () => {
     expect(result.current.syndicationNotice).toMatchObject({
       kind: "error",
       slug: "robot-reveal",
+      channels: expect.arrayContaining([
+        { label: "Facebook", detail: "Submitted immediately via Buffer", ok: true },
+        { label: "Instagram", detail: "Buffer rejected the submission", ok: false },
+        { label: "X", detail: "Not connected in Buffer", ok: false },
+      ]),
     });
     expect(saveDocMock).toHaveBeenCalledTimes(1);
 

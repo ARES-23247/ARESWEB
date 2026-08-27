@@ -75,9 +75,12 @@ describe("Webhooks Router Backend Endpoints", () => {
     mocks.transactionGet.mockResolvedValue({ exists: false });
     mocks.zulipSend.mockResolvedValue(true);
     mocks.syndicate.mockResolvedValue({
-      zulip: true,
-      bluesky: true,
-      buffer: true,
+      deliveries: { zulip: true, bluesky: true, buffer: true },
+      bufferChannels: {
+        facebook: "submitted",
+        instagram: "submitted",
+        twitter: "submitted",
+      },
     });
     mocks.receiptSet.mockResolvedValue(undefined);
     req = {
@@ -446,12 +449,22 @@ describe("Webhooks Router Backend Endpoints", () => {
         expect.objectContaining({
           status: "complete",
           deliveries: { zulip: true, bluesky: true, buffer: true },
+          bufferChannels: {
+            facebook: "submitted",
+            instagram: "submitted",
+            twitter: "submitted",
+          },
         }),
         { merge: true },
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         syndication: { zulip: true, bluesky: true, buffer: true },
+        bufferChannels: {
+          facebook: "submitted",
+          instagram: "submitted",
+          twitter: "submitted",
+        },
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -483,6 +496,11 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         syndication: { zulip: true, bluesky: true, buffer: true },
+        bufferChannels: {
+          facebook: "submitted",
+          instagram: "submitted",
+          twitter: "submitted",
+        },
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -534,6 +552,11 @@ describe("Webhooks Router Backend Endpoints", () => {
             status: "complete",
             version: approvedPost.approvedAt,
             deliveries: { zulip: true, bluesky: true, buffer: true },
+            bufferChannels: {
+              facebook: "already-submitted",
+              instagram: "already-submitted",
+              twitter: "already-submitted",
+            },
           }),
         });
       await getHandler("/syndicate-post", "post")(req, res, next);
@@ -542,6 +565,12 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         alreadySyndicated: true,
+        syndication: { zulip: true, bluesky: true, buffer: true },
+        bufferChannels: {
+          facebook: "already-submitted",
+          instagram: "already-submitted",
+          twitter: "already-submitted",
+        },
       });
     });
 
@@ -556,7 +585,14 @@ describe("Webhooks Router Backend Endpoints", () => {
             version: approvedPost.approvedAt,
           }),
         });
-      mocks.syndicate.mockResolvedValue({ bluesky: true, buffer: true });
+      mocks.syndicate.mockResolvedValue({
+        deliveries: { bluesky: true, buffer: true },
+        bufferChannels: {
+          facebook: "submitted",
+          instagram: "submitted",
+          twitter: "submitted",
+        },
+      });
 
       await getHandler("/syndicate-post", "post")(req, res, next);
 
@@ -585,7 +621,14 @@ describe("Webhooks Router Backend Endpoints", () => {
             deliveries: { zulip: true, bluesky: true },
           }),
         });
-      mocks.syndicate.mockResolvedValue({ buffer: true });
+      mocks.syndicate.mockResolvedValue({
+        deliveries: { buffer: true },
+        bufferChannels: {
+          facebook: "submitted",
+          instagram: "submitted",
+          twitter: "submitted",
+        },
+      });
 
       await getHandler("/syndicate-post", "post")(req, res, next);
 
@@ -621,25 +664,45 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({ success: true, pending: true });
     });
 
-    it("records delivery failure and returns an upstream error", async () => {
+    it("records delivery failure and returns explicit per-channel status", async () => {
       req.body = { slug: "state-finals-2026" };
       mocks.transactionGet
         .mockResolvedValueOnce({ exists: true, data: () => approvedPost })
         .mockResolvedValueOnce({ exists: false, data: () => undefined });
-      mocks.syndicate.mockResolvedValue({ zulip: false });
+      mocks.syndicate.mockResolvedValue({
+        deliveries: { zulip: false },
+        bufferChannels: {
+          facebook: "failed",
+          instagram: "submitted",
+          twitter: "not-connected",
+        },
+      });
       await getHandler("/syndicate-post", "post")(req, res, next);
 
       expect(mocks.receiptSet).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
           deliveries: { zulip: false, bluesky: false, buffer: false },
+          bufferChannels: {
+            facebook: "failed",
+            instagram: "submitted",
+            twitter: "not-connected",
+          },
         }),
         { merge: true },
       );
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 502 }),
-      );
-      expect(res.json).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(207);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        error: "Some social channels did not accept the announcement.",
+        syndication: { zulip: false, bluesky: false, buffer: false },
+        bufferChannels: {
+          facebook: "failed",
+          instagram: "submitted",
+          twitter: "not-connected",
+        },
+      });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 });

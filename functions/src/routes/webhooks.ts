@@ -12,6 +12,13 @@ import {
   SyndicationChannel,
   syndicatePublishedPost,
 } from "../lib/socialSyndication";
+import {
+  BUFFER_SERVICES,
+} from "../lib/buffer";
+import type {
+  BufferChannelOutcome,
+  BufferChannelOutcomes,
+} from "../lib/buffer";
 import { formatOnshapeEvent } from "../lib/onshape";
 import { sendZulipMessage } from "../lib/zulip";
 
@@ -79,6 +86,7 @@ interface ClaimedPost {
   version: string;
   channels?: SyndicationChannel[];
   deliveries?: Record<SyndicationChannel, boolean>;
+  bufferChannels?: BufferChannelOutcomes;
   payload?: {
     slug: string;
     title: string;
@@ -88,6 +96,38 @@ interface ClaimedPost {
     author?: string;
     thumbnail?: string;
   };
+}
+
+const BUFFER_CHANNEL_OUTCOMES = new Set<BufferChannelOutcome>([
+  "submitted",
+  "already-submitted",
+  "failed",
+  "not-connected",
+  "unavailable",
+]);
+
+function receiptBufferChannels(
+  receipt: Record<string, unknown>,
+  version: string,
+): BufferChannelOutcomes | undefined {
+  if (
+    receipt.version !== version ||
+    !receipt.bufferChannels ||
+    typeof receipt.bufferChannels !== "object" ||
+    Array.isArray(receipt.bufferChannels)
+  ) return undefined;
+  const stored = receipt.bufferChannels as Record<string, unknown>;
+  const entries = BUFFER_SERVICES.map((service) => {
+    const outcome = stored[service];
+    return typeof outcome === "string" &&
+      BUFFER_CHANNEL_OUTCOMES.has(outcome as BufferChannelOutcome)
+      ? [service, outcome] as const
+      : undefined;
+  });
+  if (entries.some((entry) => entry === undefined)) return undefined;
+  return Object.fromEntries(
+    entries as Array<readonly [string, BufferChannelOutcome]>,
+  ) as BufferChannelOutcomes;
 }
 
 function receiptDeliveries(
@@ -172,11 +212,17 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
 
     const receipt = receiptSnapshot.exists ? receiptSnapshot.data() || {} : {};
     const deliveries = receiptDeliveries(receipt, version);
+    const bufferChannels = receiptBufferChannels(receipt, version);
     const channels = SYNDICATION_CHANNELS.filter(
       (channel) => !deliveries[channel],
     );
     if (channels.length === 0) {
-      return { alreadyComplete: true, version };
+      return {
+        alreadyComplete: true,
+        version,
+        deliveries,
+        ...(bufferChannels ? { bufferChannels } : {}),
+      };
     }
     const startedAtMs =
       typeof receipt.startedAt === "string"
@@ -202,6 +248,7 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
       version,
       channels,
       deliveries,
+      ...(bufferChannels ? { bufferChannels } : {}),
       payload: {
         slug,
         title,
@@ -398,7 +445,14 @@ router.post(
 
     const claim = await claimPublishedPost(parsed.data.slug);
     if (claim.alreadyComplete) {
-      res.json({ success: true, alreadySyndicated: true });
+      res.json({
+        success: true,
+        alreadySyndicated: true,
+        syndication: claim.deliveries,
+        ...(claim.bufferChannels
+          ? { bufferChannels: claim.bufferChannels }
+          : {}),
+      });
       return;
     }
     if (
@@ -415,7 +469,8 @@ router.post(
       .collection(SYNDICATION_RECEIPTS)
       .doc(parsed.data.slug);
     const result = await syndicatePublishedPost(claim.payload, claim.channels);
-    const deliveries = { ...claim.deliveries, ...result };
+    const deliveries = { ...claim.deliveries, ...result.deliveries };
+    const bufferChannels = result.bufferChannels || claim.bufferChannels;
     const allDelivered = SYNDICATION_CHANNELS.every(
       (channel) => deliveries[channel],
     );
@@ -426,14 +481,18 @@ router.post(
           version: claim.version,
           status: "failed",
           deliveries,
+          ...(bufferChannels ? { bufferChannels } : {}),
           updatedAt: completedAt,
         },
         { merge: true },
       );
-      throw new ApiError(
-        502,
-        "Social syndication did not deliver to every configured channel.",
-      );
+      res.status(207).json({
+        success: false,
+        error: "Some social channels did not accept the announcement.",
+        syndication: deliveries,
+        ...(bufferChannels ? { bufferChannels } : {}),
+      });
+      return;
     }
 
     await receiptRef.set(
@@ -441,12 +500,17 @@ router.post(
         version: claim.version,
         status: "complete",
         deliveries,
+        ...(bufferChannels ? { bufferChannels } : {}),
         completedAt,
         updatedAt: completedAt,
       },
       { merge: true },
     );
-    res.json({ success: true, syndication: deliveries });
+    res.json({
+      success: true,
+      syndication: deliveries,
+      ...(bufferChannels ? { bufferChannels } : {}),
+    });
   }),
 );
 
