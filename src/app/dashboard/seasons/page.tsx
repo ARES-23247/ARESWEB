@@ -1,7 +1,8 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import { useCallback, useEffect, useState } from "react";
-import { Award, CalendarRange, Edit2, Plus, RefreshCw, X } from "lucide-react";
+import { Award, CalendarRange, Edit2, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { logger } from "@/utils/logger";
@@ -81,8 +82,12 @@ export default function SeasonsAwardsManagerPage() {
   const [saving, setSaving] = useState(false);
   const [seasonForm, setSeasonForm] = useState<SeasonForm | null>(null);
   const [awardForm, setAwardForm] = useState<AwardForm | null>(null);
+  const [pendingAwardDeletion, setPendingAwardDeletion] = useState<AwardRecord | null>(null);
+  const [deletionConfirmation, setDeletionConfirmation] = useState("");
+  const [deletingAwardId, setDeletingAwardId] = useState<string | null>(null);
 
   const canManage = ["admin", "coach", "mentor"].includes(authorizedUser?.role ?? "");
+  const canPermanentlyDelete = ["admin", "coach"].includes(authorizedUser?.role ?? "");
 
   const reload = useCallback(async () => {
     setIsLoading(true);
@@ -172,6 +177,31 @@ export default function SeasonsAwardsManagerPage() {
       await reload();
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const closePermanentDeleteDialog = () => {
+    if (deletingAwardId) return;
+    setPendingAwardDeletion(null);
+    setDeletionConfirmation("");
+  };
+
+  const permanentlyDeleteAward = async () => {
+    if (!pendingAwardDeletion || deletionConfirmation !== pendingAwardDeletion.title) return;
+    setDeletingAwardId(pendingAwardDeletion.id);
+    setOperationError(null);
+    try {
+      await apiJson(
+        `/api/awards/admin/${encodeURIComponent(pendingAwardDeletion.id)}/permanent`,
+        { method: "DELETE" },
+      );
+      setPendingAwardDeletion(null);
+      setDeletionConfirmation("");
+      await reload();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDeletingAwardId(null);
     }
   };
 
@@ -479,7 +509,7 @@ export default function SeasonsAwardsManagerPage() {
                         {award.eventName} · {award.date}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() =>
@@ -504,12 +534,89 @@ export default function SeasonsAwardsManagerPage() {
                       >
                         {award.isDeleted === 1 ? "Restore" : "Archive"}
                       </button>
+                      {award.isDeleted === 1 && canPermanentlyDelete && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPendingAwardDeletion(award);
+                            setDeletionConfirmation("");
+                          }}
+                          className="inline-flex min-h-11 items-center gap-1 border border-ares-red/60 px-3 text-xs font-bold text-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                        >
+                          <Trash2 size={12} aria-hidden="true" /> Delete permanently
+                        </button>
+                      )}
                     </div>
                   </li>
                 ))}
               </ul>
             )}
           </section>
+
+          <Dialog.Root
+            open={pendingAwardDeletion !== null}
+            onOpenChange={(open) => !open && closePermanentDeleteDialog()}
+          >
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-[130] bg-black/80 backdrop-blur-sm" />
+              <Dialog.Content className="fixed left-1/2 top-1/2 z-[131] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-ares-red/50 bg-obsidian p-6 shadow-2xl focus:outline-none">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <Dialog.Title className="font-heading text-xl font-black uppercase text-white">
+                      Delete award permanently?
+                    </Dialog.Title>
+                    <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/75">
+                      This permanently removes “{pendingAwardDeletion?.title}”. It cannot be restored.
+                    </Dialog.Description>
+                  </div>
+                  <Dialog.Close asChild>
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingAwardId)}
+                      aria-label="Close permanent delete confirmation"
+                      className="p-2 text-marble/70 focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                    >
+                      <X size={16} aria-hidden="true" />
+                    </button>
+                  </Dialog.Close>
+                </div>
+                <label className="mt-5 block text-xs font-bold text-marble">
+                  Type the award title to confirm
+                  <input
+                    autoFocus
+                    value={deletionConfirmation}
+                    onChange={(event) => setDeletionConfirmation(event.target.value)}
+                    autoComplete="off"
+                    className="mt-2 w-full border border-white/20 bg-black/30 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  />
+                </label>
+                <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Dialog.Close asChild>
+                    <button
+                      type="button"
+                      disabled={Boolean(deletingAwardId)}
+                      className="min-h-11 border border-white/20 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                    >
+                      Keep award
+                    </button>
+                  </Dialog.Close>
+                  <button
+                    type="button"
+                    onClick={() => void permanentlyDeleteAward()}
+                    disabled={
+                      !pendingAwardDeletion ||
+                      deletionConfirmation !== pendingAwardDeletion.title ||
+                      Boolean(deletingAwardId)
+                    }
+                    className="inline-flex min-h-11 items-center justify-center gap-2 bg-ares-red px-4 py-2 text-xs font-black uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 size={14} aria-hidden="true" />
+                    {deletingAwardId ? "Deleting…" : "Delete permanently"}
+                  </button>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </>
       )}
     </div>

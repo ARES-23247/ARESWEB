@@ -89,6 +89,37 @@ describe("Firestore zero-trust rules", () => {
     }
   });
 
+  it("allows publishers to permanently delete only archived awards", async () => {
+    await seedAuthorizedUser("admin-user", "admin");
+    await seedAuthorizedUser("coach-user", "coach");
+    await seedAuthorizedUser("mentor-user", "mentor");
+    await seedDocument("awards", "active-award", {
+      status: "published",
+      isDeleted: 0,
+    });
+    await seedDocument("awards", "archived-award", {
+      status: "published",
+      isDeleted: 1,
+    });
+    await seedDocument("awards", "coach-archived-award", {
+      status: "published",
+      isDeleted: 1,
+    });
+    await seedDocument("awards", "mentor-archived-award", {
+      status: "published",
+      isDeleted: 1,
+    });
+
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
+    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
+
+    await assertFails(deleteDoc(doc(adminDb, "awards", "active-award")));
+    await assertSucceeds(deleteDoc(doc(adminDb, "awards", "archived-award")));
+    await assertSucceeds(deleteDoc(doc(coachDb, "awards", "coach-archived-award")));
+    await assertFails(deleteDoc(doc(mentorDb, "awards", "mentor-archived-award")));
+  });
+
   it("enforces role checks for private collection queries, not only document reads", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("member-user", "member");

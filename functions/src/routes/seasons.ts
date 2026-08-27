@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
-import { ensureAdmin } from "../middleware/auth";
+import { ensureAdmin, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
@@ -315,6 +315,29 @@ async function archiveOrRestore(
   );
 }
 
+async function permanentlyDeleteArchivedAward(id: unknown, actorUid: string) {
+  if (typeof id !== "string" || !SAFE_DOC_ID.test(id)) {
+    throw new ApiError(400, "Provide a valid award id.");
+  }
+
+  await adminDb.runTransaction(async (transaction) => {
+    const ref = adminDb.collection("awards").doc(id);
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError(404, "Award not found.");
+    if (snapshot.data()?.isDeleted !== 1) {
+      throw new ApiError(409, "Archive the award before deleting it permanently.");
+    }
+
+    transaction.delete(ref);
+    transaction.set(adminDb.collection("audit_logs").doc(), {
+      action: "award.deleted_permanently",
+      actorUid,
+      targetId: id,
+      createdAt: new Date().toISOString(),
+    });
+  });
+}
+
 // DELETE /api/seasons/admin/:id - archive a season
 seasonsRouter.delete(
   "/admin/:id",
@@ -351,6 +374,17 @@ awardsRouter.patch(
   ensureAdmin,
   asyncHandler(async (req, res) => {
     await archiveOrRestore("awards", req.params.id, false);
+    res.json({ success: true });
+  }),
+);
+
+// DELETE /api/awards/admin/:id/permanent - permanently delete an archived award
+awardsRouter.delete(
+  "/admin/:id/permanent",
+  ensureAdmin,
+  asyncHandler(async (req, res) => {
+    const actorUid = (req as AuthenticatedRequest).user!.uid;
+    await permanentlyDeleteArchivedAward(req.params.id, actorUid);
     res.json({ success: true });
   }),
 );
