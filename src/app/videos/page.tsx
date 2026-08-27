@@ -335,16 +335,27 @@ export default function VideosPage() {
                     title={selected.title}
                     loading="lazy"
                     sandbox="allow-scripts allow-presentation allow-popups"
+                    referrerPolicy="strict-origin-when-cross-origin"
                     allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     className="h-full w-full"
                   />
                 </div>
-                {selected.description && (
-                  <p className="p-5 text-sm leading-relaxed text-marble/70">
-                    {selected.description}
-                  </p>
-                )}
+                <div className="space-y-3 p-5">
+                  {selected.description && (
+                    <p className="text-sm leading-relaxed text-marble/70">
+                      {selected.description}
+                    </p>
+                  )}
+                  <a
+                    href={selected.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center text-xs font-black uppercase tracking-wide text-ares-cyan underline decoration-ares-cyan/60 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    Open on YouTube
+                  </a>
+                </div>
 
                 {visibleVideos.length > 1 && (
                   <div className="flex items-center justify-end gap-2 border-t border-white/10 p-4">

@@ -84,7 +84,18 @@ describe("VideosPage Filter, Sandbox, & Keyboard Navigation", () => {
 
     const iframe = dialog.querySelector("iframe");
     expect(iframe).toBeInTheDocument();
+    expect(iframe).toHaveAttribute(
+      "src",
+      "https://www.youtube-nocookie.com/embed/pathing1234?autoplay=1&rel=0",
+    );
     expect(iframe?.getAttribute("sandbox")).toBe("allow-scripts allow-presentation allow-popups");
+    expect(iframe).toHaveAttribute(
+      "referrerpolicy",
+      "strict-origin-when-cross-origin",
+    );
+    expect(
+      within(dialog).getByRole("link", { name: "Open on YouTube" }),
+    ).toHaveAttribute("href", "https://www.youtube.com/watch?v=pathing1234");
 
     // Navigate right with keyboard
     fireEvent.keyDown(window, { key: "ArrowRight" });
