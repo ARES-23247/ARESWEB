@@ -33,6 +33,6 @@ describe("brand and press kit", () => {
     render(<BrandPage />);
 
     expect(screen.getByText(/FIRST® Tech Challenge robotics team from Morgantown/)).toBeInTheDocument();
-    expect(screen.getByText("contact@aresfirst.org")).toBeInTheDocument();
+    expect(screen.getByText("ares23247wv@gmail.com")).toBeInTheDocument();
   });
 });
