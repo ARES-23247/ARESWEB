@@ -1,29 +1,56 @@
-# Start an FTC project without inherited robot assumptions
+# Start an FTC project without old robot settings
 
-ARES Robotics Studio creates the FTC Starter as a complete standalone repository. Its canonical
-source is maintained in the ARES Robotics monorepo and exported as a public mirror, but a generated
-team project does not depend on a monorepo checkout. It begins with four mecanum motors, one Control
-Hub IMU, and empty mechanism and routine catalogs.
+ARES Robotics Studio can make a new FTC project for your team. The project starts with a simple
+mecanum drive, one Control Hub motion sensor, and no extra mechanisms. This clean start helps you
+avoid copying settings from a different robot.
 
-## Project setup
+## What you will learn
 
-1. Create or open the starter in ARES Robotics Studio.
-2. Set team, season, and robot name in Project Identity.
-3. Keep Standard FTC SDK for initial bring-up unless the team deliberately reviews another runtime policy.
-4. Review `fl`, `fr`, `rl`, `rr`, and `imu` in Drivebase Builder.
-5. Create or import a reviewed season field instead of inventing tag positions.
+- where your team edits the robot plan;
+- which files Studio creates for you; and
+- why sample measurements are not facts about your robot.
 
-Project schema 4 requires an explicit authoring model: `GUI_OWNED`, `CODE_FIRST`, or `HYBRID`.
-Studio-created beginner projects normally use `GUI_OWNED`, where canonical `.ares` documents define
-robot behavior. Code-first projects declare their user-owned registrations; Studio does not
-reverse-engineer arbitrary Kotlin. Hybrid projects keep drivetrain and routines in `.ares` while
-selected mechanisms remain registered Kotlin.
+## Three kinds of project files
 
-Gradle emits generated source and tests under build-generated directories; do not hand-edit those
-outputs. Schemas 1-3 and the retired split `.ares-robot.json` identity are unsupported. The
-starter's dimensions and tuning are conservative simulation defaults, not measurements from a
-physical robot.
+```mermaid
+%% aria: Students edit the ARES project documents. Studio uses them to generate code and tests. The FTC adapter then connects that code to the robot.
+flowchart LR
+  A["Editable .ares documents"] --> B["Studio and Gradle"]
+  B --> C["Generated code and tests"]
+  C --> D["FTC lifecycle adapter"]
+```
 
-## Checkpoint
+**Canonical** means “the source we agree to edit.” The `.ares` documents are canonical. Generated
+files are results. If you change a generated file, the next build may replace your change.
 
-Identify one canonical input document, one generated output, and one lifecycle adapter. Explain which can be edited and which must be regenerated.
+The project also has an **authoring model**:
+
+- **GUI-owned:** Studio documents describe the robot.
+- **Code-first:** Kotlin code registers the parts your team owns.
+- **Hybrid:** Studio owns some parts while Kotlin owns others.
+
+New teams usually begin with GUI-owned projects.
+
+## Set up the project
+
+1. Create or open the FTC Starter in ARES Robotics Studio.
+2. Enter the team number, season, and robot name in **Project Identity**.
+3. Keep the standard FTC SDK during first setup unless your team has reviewed another choice.
+4. Open **Drivebase Builder**. Find `fl`, `fr`, `rl`, `rr`, and `imu`.
+5. Check that each name matches the job you expect it to do.
+6. Add only a reviewed season field and AprilTag map. Do not guess tag locations.
+7. Run **Verify & build** and read the result before moving on.
+
+The starter includes safe simulation defaults for size and tuning. These numbers are examples. They
+are not measurements from your robot.
+
+## Try it
+
+Make a three-column chart labeled **Edit**, **Generated**, and **Runtime**. Place one real file from
+your project in each column. Explain why only the first column should be changed by hand.
+
+## Check your understanding
+
+1. What can happen if you edit generated code?
+2. Why should you measure your own robot instead of copying another team?
+3. Which authoring model does your project use?

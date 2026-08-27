@@ -32,8 +32,18 @@ function loadMermaid() {
 export interface MermaidDiagramProps {
   /** Mermaid diagram source (the contents of a ```mermaid code fence). */
   code: string;
-  /** Accessible summary; defaults to the first line of the diagram source. */
+  /** Accessible summary; defaults to a `%% aria:` comment in the diagram. */
   label?: string;
+}
+
+function getAccessibleLabel(source: string, label?: string) {
+  const ariaComment = source.match(/^%%\s*aria:\s*(.+)$/im)?.[1]?.trim();
+  return (
+    label?.trim() ||
+    ariaComment?.slice(0, 240) ||
+    source.split("\n")[0]?.slice(0, 160) ||
+    "Diagram"
+  );
 }
 
 export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
@@ -43,8 +53,7 @@ export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
   const [failed, setFailed] = useState(false);
 
   const source = code.replace(/\u0000/g, "").trim();
-  const accessibleLabel =
-    label?.trim() || source.split("\n")[0]?.slice(0, 160) || "Diagram";
+  const accessibleLabel = getAccessibleLabel(source, label);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +112,7 @@ export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
   return (
     <figure className="my-6 overflow-x-auto rounded-lg border border-white/10 bg-obsidian p-4">
       <div role="img" aria-label={accessibleLabel} title={accessibleLabel} dangerouslySetInnerHTML={{ __html: svg }} />
-      <figcaption className="sr-only">{source}</figcaption>
+      <figcaption className="sr-only">{accessibleLabel}</figcaption>
     </figure>
   );
 }

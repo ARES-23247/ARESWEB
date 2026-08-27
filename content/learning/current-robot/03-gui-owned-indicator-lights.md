@@ -1,47 +1,54 @@
-# Author GUI-owned FTC indicator lights
+# Follow GUI-owned FTC indicator lights
 
-Lightbot's two goBILDA indicator lights are canonical Robot Builder subsystems. This guided lab
-traces `.ares/subsystems/indicator-lights.aressubsystem` through generated Redux state, actions,
-controllers, FTC/mock adapters, lifecycle registration, simulator output, and physical validation.
-Do not hand-edit generated source to complete the exercise.
+Lightbot has two goBILDA indicator lights. Robot Builder owns their canonical subsystem document.
+This lab follows that document through generated state, actions, control, simulation, and physical
+checking. Do not edit generated code to finish the lab.
 
-## Read the canonical descriptor
+## What you will learn
 
-The descriptor declares two independently addressable devices: `indicator` on the left and
-`indicator2` on the right. Each has a safe output of zero and a simulator placement. Separate
-`leftColor` and `rightColor` target fields feed separate direct control loops, so changing one side
-must not mutate the other.
+- how one GUI-owned subsystem becomes working robot code;
+- why the two light targets stay separate; and
+- what simulation can and cannot prove.
 
-The implementation is `DECLARATIVE_GENERATED` with `GENERATED_DO_NOT_EDIT` ownership. It requests a
-generated mock and generated tests. `requiredAtStartup` is false, but that startup policy does not
-remove the safe-off or physical-review requirements.
+## Read the descriptor
 
-## Trace the generated flow
+The descriptor names `indicator` on the left and `indicator2` on the right. Each device has a safe
+output of zero. Separate `leftColor` and `rightColor` targets feed separate control loops. Changing
+one side must not change the other.
 
-```text
-TeleOp or autonomous choice
-  -> generated named action
-  -> Redux reducer
-  -> immutable subsystem state
-  -> generated controller
-  -> shared I/O contract
-  -> FTC or mock adapter
+The ownership is `DECLARATIVE_GENERATED` and `GENERATED_DO_NOT_EDIT`. The project asks for a mock
+and generated tests. `requiredAtStartup` is false, but each light must still turn off safely.
+
+## Trace the flow
+
+```mermaid
+%% aria: A TeleOp or autonomous choice sends a generated action through the Redux reducer and controller to either the FTC adapter or simulator mock.
+flowchart LR
+  A["Driver or routine choice"] --> B["Generated action"]
+  B --> C["Redux reducer"]
+  C --> D["Subsystem state"]
+  D --> E["Generated controller"]
+  E --> F["FTC adapter or mock"]
 ```
 
-1. Open the indicator-light subsystem in ARES Robotics Studio's Robot Builder.
-2. Locate the two hardware-map names, visual placements, target fields, output limits, and safe
-   outputs. Do not change them merely to complete this lesson.
-3. In generated-artifact details, identify the definition, registry, tests, and mock/adapter
-   boundary. Confirm that editable adapter starters are distinct from generated mechanical files.
-4. Run **Verify & build** and inspect the evidence for safe startup/stop, independent targets,
-   generated actions, failed writes, simulator integration, and FTC lifecycle coverage.
-5. In Local Simulator, set and cycle each side independently. Record the applied outputs and visual
-   placements; do not treat apparent color accuracy as physical evidence.
+1. Open the indicator-light subsystem in Robot Builder.
+2. Find both hardware names, target fields, placements, limits, and safe outputs.
+3. Open generated-artifact details. Find the definition, registry, tests, and adapter boundary.
+4. Run **Verify & build**. Read the evidence for startup, stop, separate targets, failed writes,
+   simulation, and the FTC lifecycle.
+5. In Local Simulator, change one side at a time. Record both applied outputs.
+6. Stop the simulation and confirm that both targets return to their safe state.
 
-## Physical-validation boundary
+## Check the physical lights
 
-The highest automatic claim is **Ready for physical validation**. Before recording physical
-evidence, a mentor must keep the robot disabled, confirm both hardware-map names and physical sides,
-verify safe-off behavior, use restrained hold-to-run steps, and keep an accessible emergency stop.
-Compilation and simulation cannot prove wiring, brightness, PWM color accuracy, or a safe physical
-installation.
+Students can follow the team's robot-safety procedure to check the real lights. Keep the robot
+disabled while matching hardware names to physical sides. Then use small hold-to-run steps with an
+easy-to-reach emergency stop. Record safe-off behavior and each side's response.
+
+Simulation cannot prove wiring, brightness, color accuracy, or safe installation.
+
+## Check your understanding
+
+1. Which file should you edit to change this generated subsystem?
+2. Why are there two target fields?
+3. What physical facts remain unknown after simulation?

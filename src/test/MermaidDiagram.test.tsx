@@ -23,8 +23,39 @@ describe("MermaidDiagram", () => {
     await waitFor(() => expect(screen.getByRole("img")).toBeInTheDocument());
     expect(screen.getByRole("img").getAttribute("aria-label")).toContain("flowchart TD");
     expect(renderMock).toHaveBeenCalledWith(expect.any(String), "flowchart TD\n  A --> B");
-    // The diagram source stays available to screen readers as a text alternative.
     expect(screen.getByText(/flowchart TD/)).toBeInTheDocument();
+  });
+
+  it("uses the concise aria comment instead of diagram syntax", async () => {
+    renderMock.mockResolvedValue({ svg: "<svg><g>diagram</g></svg>" });
+    render(
+      <MermaidDiagram
+        code={"%% aria: Driver input becomes a safe motor command.\nflowchart LR\n  A --> B"}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole("img")).toBeInTheDocument());
+    expect(screen.getByRole("img")).toHaveAttribute(
+      "aria-label",
+      "Driver input becomes a safe motor command.",
+    );
+    expect(screen.getByText("Driver input becomes a safe motor command.")).toBeInTheDocument();
+  });
+
+  it("lets an explicit label override an aria comment", async () => {
+    renderMock.mockResolvedValue({ svg: "<svg><g>diagram</g></svg>" });
+    render(
+      <MermaidDiagram
+        code={"%% aria: Source summary.\nflowchart LR\n  A --> B"}
+        label="Page-specific summary"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole("img")).toBeInTheDocument());
+    expect(screen.getByRole("img")).toHaveAttribute(
+      "aria-label",
+      "Page-specific summary",
+    );
   });
 
   it("falls back to the diagram source when rendering fails", async () => {

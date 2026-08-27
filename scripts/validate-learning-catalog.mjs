@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { analyzeLearningReadability } from "./learning-readability.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_ROOT = path.join(ROOT, "content", "learning");
@@ -62,6 +63,33 @@ export function resolveApprovedAuthority(authorities, repository, revision, comm
 
 export function normalizeLearningMarkdown(value) {
   return value.replace(/\r\n?/gu, "\n").trim();
+}
+
+export function assertStudentLedRobotVerificationLanguage(content, slug) {
+  const mentorGatePatterns = [
+    /\b(?:mentor|coach|adult)\b.{0,80}\b(?:must|required|approve|approval|supervis)/isu,
+    /\b(?:must|required)\b.{0,80}\b(?:mentor|coach|adult)\b/isu,
+    /\b(?:complete|perform|verify|validate|review|test|commission)\b.{0,100}\b(?:with|by)\s+(?:an?\s+)?(?:experienced\s+)?(?:mentor|coach|adult)\b/isu,
+  ];
+  assert(
+    mentorGatePatterns.every((pattern) => !pattern.test(content)),
+    `${slug}: robot verification must be student-led; reserve required mentor approval for website posts.`,
+  );
+}
+
+export function assertMiddleSchoolLearningQuality(content, slug) {
+  const readability = analyzeLearningReadability(content);
+  const sectionCount = content.match(/^##\s+/gmu)?.length ?? 0;
+  const diagramCount = content.match(/^```mermaid\s*$/gmu)?.length ?? 0;
+  const describedDiagramCount = content.match(/^```mermaid\s*\n%%\s*aria:\s*\S.+$/gmu)?.length ?? 0;
+
+  assert(readability.words >= 200, `${slug}: lesson prose must contain at least 200 words.`);
+  assert(readability.grade <= 8.9, `${slug}: estimated reading grade ${readability.grade} exceeds the grade 6-8 target.`);
+  assert(readability.longestSentenceWords <= 28, `${slug}: a sentence exceeds the 28-word readability limit.`);
+  assert(sectionCount >= 2, `${slug}: lessons need at least two clear level-two sections.`);
+  assert(diagramCount >= 1, `${slug}: lessons need at least one purposeful Mermaid diagram.`);
+  assert(describedDiagramCount === diagramCount, `${slug}: every Mermaid diagram needs a first-line %% aria: summary.`);
+  return readability;
 }
 
 export function parseAresVersions(value) {
@@ -217,6 +245,10 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(content.startsWith("# "), `${slug}: Markdown must begin with one level-one heading.`);
     assert(content.length >= 300, `${slug}: Markdown is too short to be a useful lesson draft.`);
     assert(!/\bTODO\b|lorem ipsum|placeholder content/i.test(content), `${slug}: unresolved placeholder text is not allowed.`);
+    assertMiddleSchoolLearningQuality(content, slug);
+    if (document.platforms.includes("ftc") || document.platforms.includes("frc")) {
+      assertStudentLedRobotVerificationLanguage(content, slug);
+    }
     prepared.push({
       slug,
       data: {

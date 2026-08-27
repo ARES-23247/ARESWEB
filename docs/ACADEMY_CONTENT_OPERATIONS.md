@@ -14,7 +14,9 @@ pnpm run content:verify
 pnpm run content:prepare
 ```
 
-`content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, published-refresh, and immutable commit-pinning checks. Historical reviewed pins remain valid and retain their real version labels. `content:verify` additionally downloads the exact pinned public source files, recomputes their Git blob hashes, and fails when the catalog's ARES, Studio, or starter version differs from the authoritative monorepo version file; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
+`content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, published-refresh, immutable commit-pinning, student-led robot-verification language, and middle-school readability checks. Every lesson must include clear sections and at least one code-native Mermaid diagram with a useful `%% aria:` summary. `content:readability` reports the estimated grade, word count, sentence average, and longest sentence. The estimate catches regressions but does not replace a student usability review.
+
+`content:verify` additionally downloads the exact pinned public source files, recomputes their Git blob hashes, and fails when the catalog's ARES, Studio, or starter version differs from the authoritative monorepo version file; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
 
 Preparation normalizes Markdown line endings to LF so the staged record and its
 review digest are identical on Windows, Linux, and CI.
@@ -26,7 +28,7 @@ review digest are identical on Windows, Linux, and CI.
 3. Load the exported data and prepared drafts into the Firebase Emulator Suite.
 4. Apply the proposed archive/display/replacement actions in bounded batches in the emulator.
 5. Verify old URLs, rendering, links, interactive components, search, subjects, learning paths, mobile reflow, keyboard use, and public DTO minimization.
-6. Have a coach or mentor review each source-pinned draft. Record a public reviewer label and date only after that review occurs.
+6. Have a coach review each source-pinned website draft. Record a public reviewer label and date only after that review occurs. This editorial gate does not require mentor approval for student robot verification.
 7. Obtain explicit approval immediately before any production write.
 8. Apply one bounded production batch with checkpoints and write revision records before replacing existing content.
 9. Re-read every affected document and smoke-test the public Academy and ARESLib routes.
