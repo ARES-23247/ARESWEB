@@ -64,6 +64,7 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("worker-src 'self' blob:");
     expect(csp).toContain("img-src 'self' blob: data:");
+    expect(csp).toMatch(/frame-src[^;]*https:\/\/www\.youtube-nocookie\.com/);
     expect(csp).toContain("upgrade-insecure-requests");
     expect(csp).toContain("object-src 'none'");
     expect(indexHtml).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
