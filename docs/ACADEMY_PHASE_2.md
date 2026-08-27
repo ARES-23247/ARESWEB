@@ -134,8 +134,8 @@ approval, explicit write authorization, and post-write verification.
   same transaction writes a redacted audit record; Firestore rules prevent any
   browser client from performing the pending-to-published transition.
 - `source-authorities.json` preserves reviewed historical sources while naming
-  ARESLib v10.0.0 at commit
-  `6401a295e57aef31ab3ad0f445e6a95516607d27` as current. The current-robot
+  ARESLib v10.1.0 at commit
+  `13599358be7fb87d44e9804e798c7f27c6e84b21` as current. The current-robot
   tutorials remain accurately labeled with the ARESLib version used by their
   pinned ARES-FTC source. Remote CI recomputes immutable Git blob hashes and
   fails if the declared current ARESLib release is stale.
@@ -148,7 +148,7 @@ approval, explicit write authorization, and post-write verification.
 ## Verification evidence
 
 - Source verification: 18 source-controlled documents, 16 unique source blobs
-  recomputed, and current ARESLib v10.0.0/tag commit verified. Historical pins
+  recomputed, and current ARESLib v10.1.0/tag commit verified. Historical pins
   remain valid and retain their actual version labels.
 - Frontend coverage: 145 files and 802 tests pass; all Phase 2 utilities and the
   preview component meet 85% line and 100% function thresholds.
