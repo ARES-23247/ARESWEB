@@ -74,8 +74,12 @@ it ignores Bluesky and every other Buffer channel. Bluesky remains on the
 direct AT Protocol integration above so it cannot receive duplicate posts.
 Buffer posts include a public HTTPS image because Instagram requires image
 media. If a blog thumbnail is absent or unsafe, the team-generated social card
-is used instead. Never put the Buffer key in GitHub, Firestore, browser storage,
-logs, or source code.
+is used instead. A publication request uses Buffer's immediate `shareNow` mode,
+not its queue. The dashboard reports Buffer API acceptance as **submitted**;
+that status is not proof that the downstream platform has already rendered the
+post. It also identifies missing channel connections and per-channel failures so
+coaches can retry without republishing the website post. Never put the Buffer
+key in GitHub, Firestore, browser storage, logs, or source code.
 
 ## 3. Confirm encryption and profile privacy
 

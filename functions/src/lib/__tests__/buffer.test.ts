@@ -8,6 +8,12 @@ const post = {
   thumbnail: "https://images.example.org/team.jpg",
 };
 
+const unavailableChannels = {
+  facebook: "unavailable",
+  instagram: "unavailable",
+  twitter: "unavailable",
+};
+
 function response(
   data: unknown,
   { ok = true, status = 200 }: { ok?: boolean; status?: number } = {},
@@ -55,7 +61,10 @@ describe("Buffer social syndication", () => {
   });
 
   it("fails safely when the API key is absent or explicitly disabled", async () => {
-    await expect(sendBufferPosts(post)).resolves.toBe(false);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: false,
+      channels: unavailableChannels,
+    });
     process.env.BUFFER_API_KEY = "disabled";
     expect(getBufferApiKey()).toBe("");
     process.env.BUFFER_API_KEY = " buffer-key ";
@@ -91,7 +100,7 @@ describe("Buffer social syndication", () => {
     );
   });
 
-  it("queues Facebook, Instagram, and Twitter posts but never Bluesky", async () => {
+  it("submits Facebook, Instagram, and Twitter immediately but never Bluesky", async () => {
     process.env.BUFFER_API_KEY = "buffer-key";
     const fetchMock = vi
       .fn()
@@ -136,7 +145,14 @@ describe("Buffer social syndication", () => {
       );
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(sendBufferPosts(post)).resolves.toBe(true);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: true,
+      channels: {
+        facebook: "submitted",
+        instagram: "submitted",
+        twitter: "submitted",
+      },
+    });
     expect(fetchMock).toHaveBeenCalledTimes(6);
     const requests = fetchMock.mock.calls.map(([, init]) =>
       JSON.parse(init.body as string),
@@ -150,7 +166,7 @@ describe("Buffer social syndication", () => {
       "twitter-1",
     ]);
     expect(createInputs[0]).toMatchObject({
-      mode: "addToQueue",
+      mode: "shareNow",
       needsApproval: false,
       schedulingType: "automatic",
       source: "aresweb",
@@ -175,7 +191,7 @@ describe("Buffer social syndication", () => {
     ).not.toHaveProperty("metadata");
   });
 
-  it("deduplicates an already queued channel before retrying the remainder", async () => {
+  it("deduplicates already submitted channels before retrying the remainder", async () => {
     process.env.BUFFER_API_KEY = "buffer-key";
     const expectedText = buildBufferPost(post).text;
     const fetchMock = vi
@@ -187,6 +203,7 @@ describe("Buffer social syndication", () => {
         graphql({
           channels: [
             { id: "facebook-1", service: "facebook" },
+            { id: "instagram-1", service: "instagram" },
             { id: "twitter-1", service: "twitter" },
           ],
         }),
@@ -198,6 +215,13 @@ describe("Buffer social syndication", () => {
               {
                 node: {
                   channelId: "facebook-1",
+                  text: expectedText,
+                  status: "sent",
+                },
+              },
+              {
+                node: {
+                  channelId: "instagram-1",
                   text: expectedText,
                   status: "sent",
                 },
@@ -224,7 +248,14 @@ describe("Buffer social syndication", () => {
       );
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(sendBufferPosts(post)).resolves.toBe(true);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: true,
+      channels: {
+        facebook: "already-submitted",
+        instagram: "already-submitted",
+        twitter: "submitted",
+      },
+    });
     expect(fetchMock).toHaveBeenCalledTimes(4);
     const createRequest = JSON.parse(fetchMock.mock.calls[3][1].body);
     expect(createRequest.variables.input.channelId).toBe("twitter-1");
@@ -239,8 +270,14 @@ describe("Buffer social syndication", () => {
         .mockResolvedValueOnce(graphql({ account: { organizations: [] } }))
         .mockResolvedValueOnce(response({}, { ok: false, status: 503 })),
     );
-    await expect(sendBufferPosts(post)).resolves.toBe(false);
-    await expect(sendBufferPosts(post)).resolves.toBe(false);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: false,
+      channels: unavailableChannels,
+    });
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: false,
+      channels: unavailableChannels,
+    });
 
     const noChannels = vi
       .fn()
@@ -251,7 +288,14 @@ describe("Buffer social syndication", () => {
         graphql({ channels: [{ id: "bluesky-1", service: "bluesky" }] }),
       );
     vi.stubGlobal("fetch", noChannels);
-    await expect(sendBufferPosts(post)).resolves.toBe(false);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: false,
+      channels: {
+        facebook: "not-connected",
+        instagram: "not-connected",
+        twitter: "not-connected",
+      },
+    });
 
     const rejectedMutation = vi
       .fn()
@@ -268,12 +312,22 @@ describe("Buffer social syndication", () => {
         }),
       );
     vi.stubGlobal("fetch", rejectedMutation);
-    await expect(sendBufferPosts(post)).resolves.toBe(false);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: false,
+      channels: {
+        facebook: "failed",
+        instagram: "not-connected",
+        twitter: "not-connected",
+      },
+    });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(response({ errors: [{ message: "bad" }] })),
     );
-    await expect(sendBufferPosts(post)).resolves.toBe(false);
+    await expect(sendBufferPosts(post)).resolves.toEqual({
+      success: false,
+      channels: unavailableChannels,
+    });
   });
 });

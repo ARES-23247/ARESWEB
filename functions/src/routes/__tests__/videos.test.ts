@@ -7,7 +7,14 @@ const queryGet = vi.fn();
 const batchSet = vi.fn();
 const batchCommit = vi.fn();
 const doc = vi.fn(() => ({ get: docGet, set: docSet, update: docUpdate }));
-const syndicateVideo = vi.fn().mockResolvedValue({ zulip: true, bluesky: true, buffer: true });
+const syndicateVideo = vi.fn().mockResolvedValue({
+  deliveries: { zulip: true, bluesky: true, buffer: true },
+  bufferChannels: {
+    facebook: "submitted",
+    instagram: "submitted",
+    twitter: "submitted",
+  },
+});
 const query: any = {
   where: vi.fn(() => query),
   orderBy: vi.fn(() => query),

@@ -196,6 +196,21 @@ export default function BlogManagementPage({
           }`}
         >
           <p>{syndicationNotice.message}</p>
+          {syndicationNotice.channels.length > 0 && (
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {syndicationNotice.channels.map((channel) => (
+                <li
+                  key={channel.label}
+                  className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                >
+                  <span className="font-black">{channel.label}: </span>
+                  <span className={channel.ok ? "text-ares-cyan" : "text-ares-gold"}>
+                    {channel.detail}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
             {syndicationNotice.kind === "error" && (
               <button

@@ -1,7 +1,16 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const controllerState = vi.hoisted(() => ({
+  syndicationNotice: null as null | {
+    kind: "success" | "error";
+    message: string;
+    slug: string;
+    channels: Array<{ label: string; detail: string; ok: boolean }>;
+  },
+}));
 
 vi.mock("@/hooks/dashboard/useDashboardDocController", () => ({
   useDashboardDocController: () => ({
@@ -34,7 +43,7 @@ vi.mock("@/hooks/dashboard/useDashboardDocController", () => ({
     pendingArchiveSlug: null,
     isArchiving: false,
     archiveError: null,
-    syndicationNotice: null,
+    syndicationNotice: controllerState.syndicationNotice,
     syndicatingSlug: null,
     isRetryingSyndication: false,
     handleSyndicatePost: vi.fn(),
@@ -55,6 +64,10 @@ vi.mock("@/components/dashboard/DocumentConnectionBadge", () => ({ default: () =
 import BlogManagementPage from "@/app/dashboard/blog/page";
 
 describe("blog approval queue deep link", () => {
+  beforeEach(() => {
+    controllerState.syndicationNotice = null;
+  });
+
   it("opens the pending mentor approval filter from the command center link", async () => {
     render(
       <MemoryRouter initialEntries={["/dashboard/blog?tab=pending"]}>
@@ -64,5 +77,29 @@ describe("blog approval queue deep link", () => {
 
     expect(await screen.findByText("Needs mentor review")).toBeInTheDocument();
     expect(screen.queryByText("Published post")).not.toBeInTheDocument();
+  });
+
+  it("shows truthful status for each social destination", async () => {
+    controllerState.syndicationNotice = {
+      kind: "error",
+      message: "Some social deliveries need attention.",
+      slug: "published",
+      channels: [
+        { label: "Bluesky", detail: "Delivered", ok: true },
+        { label: "Facebook", detail: "Submitted immediately via Buffer", ok: true },
+        { label: "X", detail: "Not connected in Buffer", ok: false },
+      ],
+    };
+    render(
+      <MemoryRouter initialEntries={["/dashboard/blog"]}>
+        <BlogManagementPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Some social deliveries need attention.")).toBeInTheDocument();
+    expect(screen.getByText("Delivered")).toBeInTheDocument();
+    expect(screen.getByText("Submitted immediately via Buffer")).toBeInTheDocument();
+    expect(screen.getByText("Not connected in Buffer")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry social delivery" })).toBeInTheDocument();
   });
 });
