@@ -46,7 +46,7 @@ export default function TermsPage() {
               If you do not agree with any of these terms, you are prohibited from using or accessing this site. All materials contained in this website are protected by applicable copyright and trademark law.
             </p>
             <p className="text-marble leading-relaxed mt-4">
-              These terms also cover the optional online features of the ARES Analytics desktop
+              These terms also cover the optional online features of the ARES Robotics Studio desktop
               application. Its local authoring, simulation, and analysis tools do not require a
               Google account. If you enable Google Drive synchronization, your use of Google Drive
               remains subject to Google&apos;s terms and to the permissions of the folder or Shared Drive

@@ -1,6 +1,8 @@
 # Telemetry, control state, and offline logs
 
-ARES robot and simulator processes serve live NT4 telemetry on port `5810` and completed logs through the local HTTP API on port `5002`. Robot code never needs cloud credentials; ARES Analytics performs optional laptop-to-cloud synchronization.
+ARES robot and simulator processes serve live NT4 telemetry on port `5810` and completed logs
+through the local HTTP API on port `5002`. Robot code never needs cloud credentials; ARES Robotics
+Studio performs optional laptop-to-cloud synchronization.
 
 Canonical pose topics include `Drive/Odom_X`, `Drive/Odom_Y`, `Drive/Odom_Heading`, `Drive/Pose_X`, `Drive/Pose_Y`, `Drive/Pose_Heading`, and `ARES/EstimatedPose`. Positions are meters and headings are counter-clockwise-positive radians. Topic names are normalized without a leading slash.
 

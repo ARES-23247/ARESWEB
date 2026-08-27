@@ -153,10 +153,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── ARES ANALYTICS PUBLIC PRODUCT IDENTITY ─── */}
+      {/* ─── ARES ROBOTICS STUDIO PUBLIC PRODUCT IDENTITY ─── */}
       <section
-        aria-labelledby="ares-analytics-heading"
-        aria-label="ARES Analytics"
+        aria-labelledby="ares-robotics-studio-heading"
+        aria-label="ARES Robotics Studio"
         className="py-20 bg-white/5 border-y border-white/10"
       >
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
@@ -165,13 +165,13 @@ export default function Home() {
               Open-source robotics software
             </p>
             <h2
-              id="ares-analytics-heading"
+              id="ares-robotics-studio-heading"
               className="text-4xl md:text-5xl font-bold font-heading text-white mb-6"
             >
-              ARES Analytics
+              ARES Robotics Studio
             </h2>
             <p className="text-marble/90 text-lg leading-relaxed mb-5">
-              ARES Analytics is our local-first desktop mission-control
+              ARES Robotics Studio is our local-first desktop mission-control
               application for robot projects, simulation, telemetry, match-log
               analysis, and evidence-based tuning. FTC and FRC teams can use its
               local tools without a Google account or internet access.
@@ -206,7 +206,7 @@ export default function Home() {
             </ul>
             <div className="flex flex-wrap gap-3 mt-7">
               <a
-                href="https://github.com/ARES-23247/ARES-Analytics"
+                href="https://github.com/ARES-23247/ARES-Robotics/tree/main/ARES-Analytics"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="clipped-button bg-ares-red text-white text-xs uppercase tracking-wider"

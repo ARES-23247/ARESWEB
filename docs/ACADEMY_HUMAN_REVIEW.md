@@ -105,6 +105,14 @@ path remains visibly in preparation.
 
 ## Recording future decisions
 
+The ARES 11 / Studio 2 monorepo refresh uses the approval-gated
+`refresh-published` phase for existing lessons. Review the rendered lesson and
+its pinned `ARES-Robotics` sources. The runner verifies the recorded hash of the
+old live body before it can update anything, so a lesson edited since this plan
+was prepared blocks instead of being overwritten. The obsolete intake lesson
+is archived separately, and the GUI-owned indicator-light lesson is staged as
+a new draft with its own review.
+
 For future content changes, record a statement with a real public reviewer
 label, date, and the generated review digests. For a full approval:
 

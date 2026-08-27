@@ -55,10 +55,10 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
                 <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">4. ARES Analytics and Google Drive</h2>
+              <h2 className="text-2xl font-bold font-heading">4. ARES Robotics Studio and Google Drive</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              ARES Analytics is a local-first desktop application. Robot connections, authoring,
+              ARES Robotics Studio is a local-first desktop application. Robot connections, authoring,
               simulation, imported logs, and analysis remain on the user&apos;s computer unless the user
               explicitly enables Google Drive synchronization.
             </p>

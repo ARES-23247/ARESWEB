@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildGitHubApiHeaders,
-  compareSemverTags,
   normalizeLearningMarkdown,
+  parseAresVersions,
   registerPathOrder,
   resolveApprovedAuthority,
   validateSourceReference,
@@ -10,23 +9,17 @@ import {
 } from "./validate-learning-catalog.mjs";
 
 describe("learning catalog preparation", () => {
-  it("authenticates GitHub API checks only when an ephemeral token is available", () => {
-    expect(buildGitHubApiHeaders()).not.toHaveProperty("authorization");
-    expect(buildGitHubApiHeaders("  test-token  ")).toMatchObject({
-      authorization: "Bearer test-token",
-      accept: "application/vnd.github+json",
-    });
-  });
-
   it("normalizes Markdown line endings deterministically across operating systems", () => {
     expect(normalizeLearningMarkdown("  # Lesson\r\n\rBody\rMore\n  ")).toBe("# Lesson\n\nBody\nMore");
   });
 
-  it("orders semantic release tags numerically rather than lexically", () => {
-    expect(compareSemverTags("v9.12.0", "v9.9.0")).toBeGreaterThan(0);
-    expect(compareSemverTags("v10.0.0", "v9.99.99")).toBeGreaterThan(0);
-    expect(compareSemverTags("v9.12.0", "v9.12.0")).toBe(0);
-    expect(() => compareSemverTags("main", "v9.12.0")).toThrow(/semantic release tag/u);
+  it("parses the monorepo version identity file and rejects ambiguous keys", () => {
+    expect(parseAresVersions("# release identity\r\naresVersion=11.0.0\r\nstudioVersion=2.0.0\r\n")).toEqual({
+      aresVersion: "11.0.0",
+      studioVersion: "2.0.0",
+    });
+    expect(() => parseAresVersions("aresVersion=11.0.0\naresVersion=12.0.0")).toThrow(/Duplicate ARES version property/u);
+    expect(() => parseAresVersions("not-a-property")).toThrow(/Invalid ARES version-property line/u);
   });
 
   it("accepts current and historical pins but rejects undeclared source identities", () => {

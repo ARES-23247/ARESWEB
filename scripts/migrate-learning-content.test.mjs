@@ -1,4 +1,5 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -15,13 +16,14 @@ import {
 
 const tempDirectories = [];
 
-function tempFiles({ documents = [], actions = [], links = [] } = {}) {
+function tempFiles({ documents = [], actions = [], links = [], refreshes = [] } = {}) {
   const directory = mkdtempSync(join(tmpdir(), "ares-learning-migration-"));
   tempDirectories.push(directory);
   const files = {
     artifact: join(directory, "artifact.json"),
     legacyPlan: join(directory, "legacy.json"),
     crossLinkPlan: join(directory, "links.json"),
+    refreshPlan: join(directory, "refresh.json"),
     approvalFile: join(directory, "approval.json"),
     rollbackManifest: join(directory, "rollback.json"),
   };
@@ -33,6 +35,12 @@ function tempFiles({ documents = [], actions = [], links = [] } = {}) {
     requiresHumanReview: true,
     documents: links,
   }));
+  writeFileSync(files.refreshPlan, JSON.stringify({
+    planVersion: 1,
+    mode: "proposal-only",
+    requiresHumanReview: true,
+    documents: refreshes,
+  }));
   return files;
 }
 
@@ -40,7 +48,8 @@ function writeApproval(files, phase, approvedSlugs) {
   const artifact = JSON.parse(readFileSync(files.artifact, "utf8"));
   const legacyPlan = JSON.parse(readFileSync(files.legacyPlan, "utf8"));
   const crossLinkPlan = JSON.parse(readFileSync(files.crossLinkPlan, "utf8"));
-  const template = buildLearningApprovalTemplate(phase, artifact, legacyPlan, crossLinkPlan, approvedSlugs);
+  const refreshPlan = JSON.parse(readFileSync(files.refreshPlan, "utf8"));
+  const template = buildLearningApprovalTemplate(phase, artifact, legacyPlan, crossLinkPlan, approvedSlugs, refreshPlan);
   const approval = {
     ...template,
     reviewedByLabel: "Lead Coach",
@@ -115,6 +124,7 @@ describe("learning content migration", () => {
     ], {})).toThrow(/confirm-project/u);
     expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "replacements"])).toThrow(/approval-file/u);
     expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "publish-drafts"])).toThrow(/approval-file/u);
+    expect(() => parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "refresh-published"])).toThrow(/approval-file/u);
     expect(parseLearningMigrationArgs(["--project", "aresweb-ci", "--phase", "publish-drafts", "--prepare-approval"])).toMatchObject({
       prepareApproval: true,
       phase: "publish-drafts",
@@ -383,6 +393,40 @@ describe("learning content migration", () => {
     expect(changed).toMatchObject({ planned: 1, ready: 0, blocked: 1, blockedSlugs: ["new-lesson"] });
   });
 
+  it("refreshes approved published lessons only when the old body hash still matches", async () => {
+    const oldBody = "# Existing lesson\n\nOld reviewed content.";
+    const refreshed = {
+      title: "Existing lesson",
+      status: "draft",
+      approvalStatus: "pending_approval",
+      content: "# Existing lesson\n\nARES 11 monorepo content.",
+    };
+    const files = tempFiles({
+      documents: [{ slug: "existing-lesson", data: refreshed }],
+      refreshes: [{
+        slug: "existing-lesson",
+        preconditions: { title: "Existing lesson", status: "published", appliesToVersion: "ARES 10.1.0" },
+        contentSha256: createHash("sha256").update(oldBody).digest("hex"),
+      }],
+    });
+    const approval = writeApproval(files, "refresh-published", ["existing-lesson"]);
+    const store = fakeFirestore({
+      "docs/existing-lesson": {
+        title: "Existing lesson",
+        status: "published",
+        appliesToVersion: "ARES 10.1.0",
+        content: oldBody,
+      },
+    });
+    const options = { ...files, apply: false, project: "aresweb-ci", phase: "refresh-published" };
+    const ready = await runLearningMigration(options, { db: store.db });
+    expect(ready).toMatchObject({ planned: 1, ready: 1, blocked: 0, reviewDigest: approval.reviewDigest });
+
+    store.records.get("docs/existing-lesson").content = `${oldBody}\nCoach edit`;
+    const blocked = await runLearningMigration(options, { db: store.db });
+    expect(blocked).toMatchObject({ ready: 0, blocked: 1, blockedDetails: [{ slug: "existing-lesson", fields: ["content"] }] });
+  });
+
   it("prepares a content-bound approval template without connecting to Firestore", async () => {
     const draft = { title: "Review me", status: "draft", approvalStatus: "pending_approval", content: "exact body" };
     const files = tempFiles({
@@ -435,6 +479,7 @@ describe("learning content migration", () => {
       "--artifact", files.artifact,
       "--legacy-plan", files.legacyPlan,
       "--cross-link-plan", files.crossLinkPlan,
+      "--refresh-plan", files.refreshPlan,
     ], { db: store.db }, output);
     expect(output.log).toHaveBeenCalledWith(expect.stringContaining('"mode": "dry-run"'));
     expect(output.error).not.toHaveBeenCalled();

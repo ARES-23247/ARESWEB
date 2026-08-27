@@ -2,7 +2,7 @@
 
 `RobotState` is the current root snapshot. `RobotAction` describes a transition. `Store.dispatch` serializes that transition through the root and season reducers.
 
-The released ARESLib onboarding test demonstrates that heading target and drive mode are separate actions:
+The pinned ARES 11 onboarding test demonstrates that heading target and drive mode are separate actions:
 
 ```kotlin
 val withTarget = rootReducer(
@@ -15,7 +15,7 @@ val holding = rootReducer(
 )
 ```
 
-Run the released test from an ARESLib 9.10.0 checkout:
+Run the pinned ARES 11 onboarding test from the monorepo's `ARESLib-Kotlin` directory:
 
 ```powershell
 .\gradlew.bat :core:test --tests "com.areslib.student.StudentOnboardingTest"

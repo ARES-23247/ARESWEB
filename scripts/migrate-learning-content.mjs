@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 const MIGRATION_VERSION = 1;
 const MAX_FILE_BYTES = 2_000_000;
 const MAX_CHANGES = 25;
-const APPROVAL_PHASES = new Set(["publish-drafts", "replacements", "cross-links"]);
+const APPROVAL_PHASES = new Set(["publish-drafts", "refresh-published", "replacements", "cross-links"]);
 const APPROVAL_METADATA_FIELDS = new Set(["approvalStatus", "approvedAt", "reviewedAt", "reviewedByLabel", "status"]);
 const PHASES = new Set(["cleanup", "stage-drafts", ...APPROVAL_PHASES]);
 const SAFE_SLUG = /^[a-z0-9][a-z0-9-]{0,199}$/u;
@@ -17,6 +17,7 @@ const SAFE_BATCH = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/u;
 const DEFAULT_ARTIFACT = resolve("build/learning-content-import.json");
 const DEFAULT_LEGACY_PLAN = resolve("content/learning/legacy-migration-plan.json");
 const DEFAULT_CROSS_LINK_PLAN = resolve("content/learning/existing-content-path-plan.json");
+const DEFAULT_REFRESH_PLAN = resolve("content/learning/published-refresh-plan.json");
 
 function readJson(path, label) {
   const target = resolve(path);
@@ -76,7 +77,7 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
     crossLinkPlan: DEFAULT_CROSS_LINK_PLAN,
   };
   const valueArguments = new Set([
-    "--project", "--phase", "--artifact", "--legacy-plan", "--cross-link-plan",
+    "--project", "--phase", "--artifact", "--legacy-plan", "--cross-link-plan", "--refresh-plan",
     "--approval-file", "--backup-uri", "--confirm-backup-uri", "--confirm-project",
     "--batch-id", "--rollback-manifest", "--approved-slugs", "--stage-slugs",
   ]);
@@ -101,7 +102,7 @@ export function parseLearningMigrationArgs(argv, env = process.env) {
     throw new Error("--project must be an explicit Firebase project ID.");
   }
   if (!PHASES.has(options.phase)) {
-    throw new Error("--phase must be cleanup, stage-drafts, publish-drafts, replacements, or cross-links.");
+    throw new Error("--phase must be cleanup, stage-drafts, publish-drafts, refresh-published, replacements, or cross-links.");
   }
   if (options.prepareApproval) {
     if (!APPROVAL_PHASES.has(options.phase)) throw new Error("--prepare-approval requires an approval-gated phase.");
@@ -204,7 +205,18 @@ function crossLinkDocuments(plan) {
   return plan.documents;
 }
 
-function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, requestedStageSlugs = null) {
+function refreshDocuments(plan) {
+  if (plan?.planVersion !== 1 || plan.mode !== "proposal-only" || plan.requiresHumanReview !== true || !Array.isArray(plan.documents)) {
+    throw new Error("Published-refresh migration plan is invalid.");
+  }
+  return plan.documents;
+}
+
+function contentSha256(value) {
+  return createHash("sha256").update(String(value ?? "").replace(/\r\n?/gu, "\n").trim()).digest("hex");
+}
+
+function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, requestedStageSlugs = null, refreshPlan = null) {
   const catalog = catalogMap(artifact);
   const legacy = legacyActions(legacyPlan);
   if (phase === "cleanup") {
@@ -219,8 +231,9 @@ function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, r
   }
   const replacementActions = legacy.filter((action) => action.action === "replace-from-catalog-after-review");
   const replacementSlugs = new Set(replacementActions.map((action) => action.catalogSlug));
+  const publishedRefreshSlugs = new Set(refreshDocuments(refreshPlan).map((document) => document.slug));
   if (phase === "stage-drafts") {
-    const stageable = [...catalog.entries()].filter(([slug]) => !replacementSlugs.has(slug));
+    const stageable = [...catalog.entries()].filter(([slug]) => !replacementSlugs.has(slug) && !publishedRefreshSlugs.has(slug));
     if (!requestedStageSlugs) {
       return stageable.map(([slug, data]) => ({ slug, kind: "create", preconditions: null, desired: data }));
     }
@@ -231,7 +244,7 @@ function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, r
   }
   if (phase === "publish-drafts") {
     const approved = new Set(approval.approvedSlugs);
-    const staged = [...catalog.entries()].filter(([slug]) => !replacementSlugs.has(slug));
+    const staged = [...catalog.entries()].filter(([slug]) => !replacementSlugs.has(slug) && !publishedRefreshSlugs.has(slug));
     const selected = staged.filter(([slug]) => approved.has(slug));
     if (selected.length !== approved.size) throw new Error("Approval file names a draft outside the staged catalog.");
     return selected.map(([slug, data]) => ({
@@ -246,6 +259,29 @@ function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, r
         approvedAt: approval.reviewedAt,
       },
     }));
+  }
+  if (phase === "refresh-published") {
+    const approved = new Set(approval.approvedSlugs);
+    const selected = refreshDocuments(refreshPlan).filter((proposal) => approved.has(proposal.slug));
+    if (selected.length !== approved.size) throw new Error("Approval file names a published refresh outside the reviewed plan.");
+    return selected.map((proposal) => {
+      const data = catalog.get(proposal.slug);
+      if (!data) throw new Error("Published-refresh catalog document is missing.");
+      return {
+        slug: proposal.slug,
+        kind: "update",
+        preconditions: proposal.preconditions,
+        contentSha256: proposal.contentSha256,
+        desired: {
+          ...data,
+          status: "published",
+          approvalStatus: "approved",
+          reviewedAt: approval.reviewedAt,
+          reviewedByLabel: approval.reviewedByLabel,
+          approvedAt: approval.reviewedAt,
+        },
+      };
+    });
   }
   if (phase === "replacements") {
     const approved = new Set(approval.approvedSlugs);
@@ -287,15 +323,17 @@ function desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, approval, r
   }));
 }
 
-function eligibleApprovalSlugs(phase, artifact, legacyPlan, crossLinkPlan) {
+function eligibleApprovalSlugs(phase, artifact, legacyPlan, crossLinkPlan, refreshPlan = null) {
   const catalog = catalogMap(artifact);
   const replacements = legacyActions(legacyPlan)
     .filter((action) => action.action === "replace-from-catalog-after-review");
   if (phase === "publish-drafts") {
     const replacementSlugs = new Set(replacements.map((action) => action.catalogSlug));
-    return [...catalog.keys()].filter((slug) => !replacementSlugs.has(slug)).sort();
+    const publishedRefreshSlugs = new Set(refreshDocuments(refreshPlan).map((document) => document.slug));
+    return [...catalog.keys()].filter((slug) => !replacementSlugs.has(slug) && !publishedRefreshSlugs.has(slug)).sort();
   }
   if (phase === "replacements") return replacements.map((action) => action.slug).sort();
+  if (phase === "refresh-published") return refreshDocuments(refreshPlan).map((document) => document.slug).sort();
   return crossLinkDocuments(crossLinkPlan).map((document) => document.slug).sort();
 }
 
@@ -305,6 +343,7 @@ export function reviewDigestForChanges(phase, changes) {
       slug: change.slug,
       kind: change.kind,
       preconditions: change.preconditions,
+      ...(change.contentSha256 ? { contentSha256: change.contentSha256 } : {}),
       desired: Object.fromEntries(
         Object.entries(change.desired).filter(([field]) => !APPROVAL_METADATA_FIELDS.has(field)),
       ),
@@ -313,9 +352,9 @@ export function reviewDigestForChanges(phase, changes) {
   return hash({ migrationVersion: MIGRATION_VERSION, phase, changes: reviewableChanges });
 }
 
-export function buildLearningApprovalTemplate(phase, artifact, legacyPlan, crossLinkPlan, requestedSlugs = null) {
+export function buildLearningApprovalTemplate(phase, artifact, legacyPlan, crossLinkPlan, requestedSlugs = null, refreshPlan = null) {
   if (!APPROVAL_PHASES.has(phase)) throw new Error("Approval templates require an approval-gated phase.");
-  const eligibleSlugs = eligibleApprovalSlugs(phase, artifact, legacyPlan, crossLinkPlan);
+  const eligibleSlugs = eligibleApprovalSlugs(phase, artifact, legacyPlan, crossLinkPlan, refreshPlan);
   const approvedSlugs = requestedSlugs ?? eligibleSlugs;
   if (!Array.isArray(approvedSlugs) || approvedSlugs.length < 1 || approvedSlugs.length > MAX_CHANGES) {
     throw new Error("Approval template must contain 1 through 25 slugs.");
@@ -331,7 +370,7 @@ export function buildLearningApprovalTemplate(phase, artifact, legacyPlan, cross
     reviewedAt: "1970-01-01",
     reviewedByLabel: "Review pending",
   };
-  const changes = desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, seed);
+  const changes = desiredForPhase(phase, artifact, legacyPlan, crossLinkPlan, seed, null, refreshPlan);
   return {
     version: 1,
     phase,
@@ -361,12 +400,16 @@ export function planLearningDocument(change, snapshot, phase) {
     }
   } else if (!exists) {
     return { ...change, state: "blocked", current, changedFields: [], blockedReason: "document-missing" };
-  } else if (!change.preconditions || !exactFields(current, change.preconditions)) {
+  } else if (!change.preconditions || !exactFields(current, change.preconditions)
+    || (change.contentSha256 && contentSha256(current.content) !== change.contentSha256)) {
     return {
       ...change,
       state: "blocked",
       current,
-      changedFields: mismatchedFields(current, change.preconditions ?? {}),
+      changedFields: [
+        ...mismatchedFields(current, change.preconditions ?? {}),
+        ...(change.contentSha256 && contentSha256(current.content) !== change.contentSha256 ? ["content"] : []),
+      ].sort(),
       blockedReason: "precondition-mismatch",
     };
   }
@@ -476,6 +519,7 @@ export async function runLearningMigration(options, dependencies = null) {
   const artifact = readJson(options.artifact ?? DEFAULT_ARTIFACT, "Prepared learning artifact");
   const legacyPlan = readJson(options.legacyPlan ?? DEFAULT_LEGACY_PLAN, "Legacy migration plan");
   const crossLinkPlan = readJson(options.crossLinkPlan ?? DEFAULT_CROSS_LINK_PLAN, "Cross-link migration plan");
+  const refreshPlan = readJson(options.refreshPlan ?? DEFAULT_REFRESH_PLAN, "Published-refresh migration plan");
   if (options.prepareApproval) {
     const requestedSlugs = options.approvedSlugs
       ? options.approvedSlugs.split(",").map((slug) => slug.trim()).filter(Boolean)
@@ -488,13 +532,14 @@ export async function runLearningMigration(options, dependencies = null) {
         legacyPlan,
         crossLinkPlan,
         requestedSlugs,
+        refreshPlan,
       ),
     };
   }
   const approval = APPROVAL_PHASES.has(options.phase)
     ? validateApprovalFile(readJson(options.approvalFile, "Approval file"), options.phase)
     : null;
-  const changes = desiredForPhase(options.phase, artifact, legacyPlan, crossLinkPlan, approval, options.stageSlugs);
+  const changes = desiredForPhase(options.phase, artifact, legacyPlan, crossLinkPlan, approval, options.stageSlugs, refreshPlan);
   if (approval && reviewDigestForChanges(options.phase, changes) !== approval.reviewDigest) {
     throw new Error("Approval review digest does not match the exact proposed content and metadata.");
   }

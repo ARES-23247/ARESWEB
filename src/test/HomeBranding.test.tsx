@@ -11,7 +11,7 @@ vi.mock("@/context/AuthContext", () => ({
 }));
 
 describe("Home page branding & OAuth truthfulness", () => {
-  it("renders the primary team identity and open-source ARES Analytics section", () => {
+  it("renders the primary team identity and open-source ARES Robotics Studio section", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       authorizedUser: null,
@@ -35,9 +35,9 @@ describe("Home page branding & OAuth truthfulness", () => {
     expect(screen.getByText("To Inspire")).toBeInTheDocument();
     expect(screen.getByText(/Mountaineer Mindset/i)).toBeInTheDocument();
 
-    // ARES Analytics product section
-    const analyticsHeading = screen.getByRole("heading", { name: "ARES Analytics" });
-    expect(analyticsHeading).toBeInTheDocument();
+    // ARES Robotics Studio product section
+    const studioHeading = screen.getByRole("heading", { name: "ARES Robotics Studio" });
+    expect(studioHeading).toBeInTheDocument();
     expect(screen.getByText(/Local-first:/i)).toBeInTheDocument();
 
     // Terms and Privacy links for Google OAuth compliance
