@@ -34,7 +34,7 @@ describe("store support choices", () => {
     expect(screen.getByText("Checkout unavailable")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /sponsor the team/i })).toHaveAttribute("href", "/sponsors#sponsor-form-section");
     expect(screen.getByRole("link", { name: /join ares/i })).toHaveAttribute("href", "/join");
-    expect(screen.getByRole("link", { name: /contact the team/i })).toHaveAttribute("href", expect.stringContaining("mailto:contact@aresfirst.org"));
+    expect(screen.getByRole("link", { name: /contact the team/i })).toHaveAttribute("href", expect.stringContaining("mailto:ares23247wv@gmail.com"));
     expect(screen.queryByRole("button", { name: /checkout|pay|buy/i })).not.toBeInTheDocument();
   });
 });

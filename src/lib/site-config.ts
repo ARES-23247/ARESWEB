@@ -25,7 +25,7 @@ export const siteConfig = {
     bluesky: "https://bsky.app/profile/ares23247.bsky.social",
   },
   contact: {
-    email: "contact@aresfirst.org",
+    email: "ares23247wv@gmail.com",
     dashboardEmail: "dashboard@aresfirst.org",
     sponsorship: "sponsors@aresfirst.org",
   },
