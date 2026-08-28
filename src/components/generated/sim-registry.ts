@@ -25,6 +25,7 @@ const driverInputCurveLab = lazy(() => import("../../sims/driver-input-curve-lab
 const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"));
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
 const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
+const fastenerChoiceLab = lazy(() => import("../../sims/fastener-choice-lab"));
 const fault = lazy(() => import("../../sims/fault"));
 const faultTreeLab = lazy(() => import("../../sims/fault-tree-lab"));
 const field = lazy(() => import("../../sims/field"));
@@ -138,6 +139,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   elevatorpid: elevatorpid,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
+  fastenerChoiceLab: fastenerChoiceLab,
+  fastenerchoicelab: fastenerChoiceLab,
   fault: fault,
   faultTreeLab: faultTreeLab,
   faulttreelab: faultTreeLab,
@@ -276,6 +279,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   drivetrainchoicelab: drivetrainChoiceLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
+  fastenerChoiceLab: fastenerChoiceLab,
+  fastenerchoicelab: fastenerChoiceLab,
   faultTreeLab: faultTreeLab,
   faulttreelab: faultTreeLab,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
@@ -501,6 +506,14 @@ const SIM_METADATA = [
     'id': 'evidenceLevelScenarios',
     'name': 'Evidence Level Scenarios',
     'folder': 'evidence-level-scenarios',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'fastenerChoiceLab',
+    'name': 'Fastener Joint Evidence Lab',
+    'folder': 'fastener-choice-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

@@ -1,0 +1,136 @@
+/** @sim {"name":"Fastener Joint Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
+import { useMemo, useState } from "react";
+import { RotateCcw } from "lucide-react";
+
+export type JointPurpose = "removablePanel" | "fixedBracket" | "rotatingPivot" | "serviceCover";
+
+export type FastenerEvidence = {
+  jointNeedRecorded: boolean;
+  exactPartsRecorded: boolean;
+  standardSourceAttached: boolean;
+  matingAndEngagementRecorded: boolean;
+  loadAndClearanceRecorded: boolean;
+  retentionAndTorqueSourceAttached: boolean;
+  inspectionAndServicePlanRecorded: boolean;
+};
+
+export type FastenerReviewResult = {
+  reviewPath: string;
+  ready: boolean;
+  nextAction: string;
+  missingKey?: keyof FastenerEvidence;
+};
+
+export const EMPTY_FASTENER_EVIDENCE: FastenerEvidence = {
+  jointNeedRecorded: false,
+  exactPartsRecorded: false,
+  standardSourceAttached: false,
+  matingAndEngagementRecorded: false,
+  loadAndClearanceRecorded: false,
+  retentionAndTorqueSourceAttached: false,
+  inspectionAndServicePlanRecorded: false,
+};
+
+const CHECKS: Array<{ key: keyof FastenerEvidence; label: string; action: string }> = [
+  { key: "jointNeedRecorded", label: "The joint's job and needed motion are recorded.", action: "Record what the joint must hold, align, or let move before naming hardware." },
+  { key: "exactPartsRecorded", label: "The exact joined parts, materials, and thicknesses are recorded.", action: "Identify the exact parts, materials, thicknesses, and revision." },
+  { key: "standardSourceAttached", label: "An approved source for the exact fastener standard is attached.", action: "Attach current manufacturer or standard documentation for the exact proposed hardware." },
+  { key: "matingAndEngagementRecorded", label: "Mating threads, engagement, and non-threaded interfaces are recorded.", action: "Record every mating thread and interface using the approved source. Do not infer compatibility by appearance." },
+  { key: "loadAndClearanceRecorded", label: "Load direction, alignment, access, and clearance are recorded.", action: "Draw the expected load direction and check alignment, tool access, and nearby clearance." },
+  { key: "retentionAndTorqueSourceAttached", label: "Retention and tightening requirements have approved sources.", action: "Attach the source for retention, locking, and tightening requirements. Do not invent a torque." },
+  { key: "inspectionAndServicePlanRecorded", label: "Inspection, marking, recheck, and service steps are recorded.", action: "Record how the joint will be inspected, marked, rechecked, and serviced without hiding wear or loosening." },
+];
+
+const REVIEW_PATHS: Record<JointPurpose, string> = {
+  removablePanel: "Review a removable panel joint and repeatable alignment.",
+  fixedBracket: "Review a fixed bracket joint and its load path.",
+  rotatingPivot: "Review a pivot joint that must retain parts without clamping away motion.",
+  serviceCover: "Review a frequently serviced cover and its access plan.",
+};
+
+export function reviewFastenerJoint(purpose: JointPurpose, evidence: FastenerEvidence): FastenerReviewResult {
+  const firstMissing = CHECKS.find((check) => !evidence[check.key]);
+  if (firstMissing) {
+    return {
+      reviewPath: REVIEW_PATHS[purpose],
+      ready: false,
+      nextAction: firstMissing.action,
+      missingKey: firstMissing.key,
+    };
+  }
+  return {
+    reviewPath: REVIEW_PATHS[purpose],
+    ready: true,
+    nextAction: "The paper joint record is ready for team-process review. It does not select hardware or authorize assembly.",
+  };
+}
+
+export default function FastenerChoiceLab() {
+  const [purpose, setPurpose] = useState<JointPurpose>("removablePanel");
+  const [evidence, setEvidence] = useState<FastenerEvidence>({ ...EMPTY_FASTENER_EVIDENCE });
+  const result = useMemo(() => reviewFastenerJoint(purpose, evidence), [purpose, evidence]);
+  const reset = () => {
+    setPurpose("removablePanel");
+    setEvidence({ ...EMPTY_FASTENER_EVIDENCE });
+  };
+
+  return (
+    <section aria-labelledby="fastener-lab-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Paper joint review</p>
+          <h3 id="fastener-lab-title" className="mt-1 text-xl font-black text-white">Fastener Joint Evidence Lab</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
+            Start from the joint's job, then collect the evidence needed to review a real fastener proposal.
+          </p>
+        </div>
+        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
+          <RotateCcw aria-hidden="true" size={16} /> Reset
+        </button>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.8fr)]">
+        <div className="grid gap-5">
+          <label className="grid gap-2 text-sm font-semibold text-white">
+            Joint purpose
+            <select value={purpose} onChange={(event) => setPurpose(event.currentTarget.value as JointPurpose)} className="min-h-11 rounded border border-white/20 bg-obsidian px-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+              <option value="removablePanel">Removable panel</option>
+              <option value="fixedBracket">Fixed structural bracket</option>
+              <option value="rotatingPivot">Rotating pivot</option>
+              <option value="serviceCover">Frequently serviced cover</option>
+            </select>
+          </label>
+
+          <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
+            <legend className="px-2 text-sm font-bold text-ares-gold">Self-reported joint evidence</legend>
+            {CHECKS.map((check) => (
+              <label key={check.key} className="flex min-h-11 items-start gap-3 rounded border border-white/10 p-3 text-sm leading-relaxed text-white">
+                <input
+                  type="checkbox"
+                  checked={evidence[check.key]}
+                  onChange={(event) => {
+                    const checked = event.currentTarget.checked;
+                    setEvidence((current) => ({ ...current, [check.key]: checked }));
+                  }}
+                  className="mt-0.5 size-5 shrink-0 accent-ares-red"
+                />
+                <span>{check.label}</span>
+              </label>
+            ))}
+          </fieldset>
+        </div>
+
+        <div aria-live="polite" aria-atomic="true" className="rounded-lg border border-white/10 bg-obsidian p-4">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">Joint review path</h4>
+          <p className="mt-4 border-l-4 border-ares-cyan bg-ares-cyan/10 p-3 text-sm font-bold text-white">{result.reviewPath}</p>
+          <h4 className="mt-6 text-sm font-bold uppercase tracking-wider text-ares-gold">Next paper step</h4>
+          <p className={`mt-3 border-l-4 p-3 text-sm leading-relaxed ${result.ready ? "border-emerald-400 bg-emerald-400/10 text-emerald-100" : "border-ares-red bg-ares-red/10 text-white"}`}>{result.nextAction}</p>
+        </div>
+      </div>
+
+      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
+        <strong>Evidence limit:</strong> The lab does not inspect a joint, identify thread size, verify compatibility, calculate strength or clamping force, choose a fastener, set torque, detect loosening, supervise assembly, or approve physical use.
+      </p>
+    </section>
+  );
+}

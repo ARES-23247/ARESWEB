@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-five new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-six new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -130,6 +130,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Test Robot Logic Across Mocks and Simulation | Programming with ARES | Physical robot | [`08-tests-parity.md`](../content/learning/programming/08-tests-parity.md) |
 | Measure, Sketch, and Record a Design | Mechanical Design & Fabrication | None | [`00-measurement-design-notebook.md`](../content/learning/mechanical-design/00-measurement-design-notebook.md) |
 | Choose and Use Common Robot Tools | Mechanical Design & Fabrication | Physical robot | [`01-tool-evidence.md`](../content/learning/mechanical-design/01-tool-evidence.md) |
+| Fasteners, Threads, and Keeping Parts Together | Mechanical Design & Fabrication | Physical robot | [`02-fastener-evidence.md`](../content/learning/mechanical-design/02-fastener-evidence.md) |
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
 | Build Motion with Arms, Elevators, Intakes, and Linkages | Mechanical Design & Fabrication | Physical robot | [`03-mechanism-motion.md`](../content/learning/mechanical-design/03-mechanism-motion.md) |
@@ -295,6 +296,15 @@ organizes a paper review: it cannot identify a tool, inspect its condition,
 choose protection, verify training, secure work, authorize operation, or teach
 tool-specific operation. Official tool guidance and authentic team photos
 remain open source requests.
+The new fastener lesson contains the Fastener Joint Evidence Lab, and the tool
+and CAD lessons now link into that lesson where a joint decision begins.
+Review all four joint-purpose paths; the ordered job, exact-parts,
+standard-source, mating-interface, load/clearance, retention/tightening-source,
+and inspection/service checks; native controls; first-missing result; narrow
+layout; and deterministic reset. Confirm that the lab cannot inspect a joint,
+identify threads, verify compatibility, calculate strength or clamping force,
+choose hardware, set torque, detect loosening, supervise assembly, or approve
+physical use. Manufacturer fastener references remain an open request.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

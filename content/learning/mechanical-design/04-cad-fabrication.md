@@ -141,5 +141,5 @@ Return to [Measure, Sketch, and Record a Design](/academy/mechanical-measurement
 when an interface lacks a repeatable measurement. Use [Compare Mecanum, Differential, and Swerve
 Drivetrains](/academy/mechanical-drivetrains?path=mechanical-design-fabrication) to see why canonical
 geometry and source identity matter. Use [Choose and Use Common Robot Tools](/academy/mechanical-tools-safe-work?path=mechanical-design-fabrication)
-for the full paper preflight. Fastener and structure lessons remain blocked on their official
-guidance or authentic team examples.
+for the full paper preflight. Use [Fasteners, Threads, and Keeping Parts Together](/academy/mechanical-fasteners?path=mechanical-design-fabrication)
+when the part includes a joint. The structure lesson remains blocked on authentic team examples.

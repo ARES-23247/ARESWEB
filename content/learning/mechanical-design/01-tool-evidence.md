@@ -134,6 +134,8 @@ cannot approve a tool, process, or work area.
 ## Related and next
 
 Use [From a CAD Model to a Buildable Part](/academy/mechanical-cad-fabrication?path=mechanical-design-fabrication)
-to connect a revisioned model to an evidence-backed process request. Continue later with fasteners
-after manufacturer sources are reviewed. Use [Wire, Connectors, Polarity, and Strain Relief](/academy/electrical-wiring-connectors?path=electrical-systems-diagnostics)
+to connect a revisioned model to an evidence-backed process request. Continue with [Fasteners,
+Threads, and Keeping Parts Together](/academy/mechanical-fasteners?path=mechanical-design-fabrication)
+to build a source-backed paper joint record without inventing manufacturer values. Use [Wire,
+Connectors, Polarity, and Strain Relief](/academy/electrical-wiring-connectors?path=electrical-systems-diagnostics)
 for a separate isolated electrical plan.

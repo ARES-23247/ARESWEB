@@ -762,6 +762,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "mechanical-fasteners",
+      "title": "Fasteners, Threads, and Keeping Parts Together",
+      "category": "Robotics & Engineering",
+      "description": "Start from a joint's job and build a source-backed paper record for interfaces, loads, retention, tightening, inspection, and service.",
+      "contentFile": "mechanical-design/02-fastener-evidence.md",
+      "subject": "robotics-engineering",
+      "topics": ["fasteners", "threads", "joints", "load direction", "retention", "serviceability"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 3 }],
+      "prerequisites": ["mechanical-tools-safe-work"],
+      "objectives": ["Describe a joint by its job, exact interfaces, expected motion, load direction, access, and service need.", "Build an ordered evidence record for standards, mating interfaces, retention, tightening, inspection, and recheck.", "Explain why a paper checklist cannot select hardware, set torque, prove strength, or authorize assembly."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "FTC physical commissioning boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "blobHash": "26364cd62adcf7c2ba60f9e192785491600f80a1" }, { "label": "FRC hardware review boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FRC-Starter/docs/HARDWARE_REVIEW.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FRC-Starter/docs/HARDWARE_REVIEW.md", "blobHash": "ac6fc6ec692810b696d7c716e80441ca9dc0f394" }, { "label": "Hardware Setup evidence boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARES-Analytics/docs/start/HARDWARE_SETUP.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARES-Analytics/docs/start/HARDWARE_SETUP.md", "blobHash": "ddd412ded5bae5fef7f976479ff77141d2e495d6" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.2; manufacturer fastener references remain open",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "mechanical-gears-sprockets-belts",
       "title": "Gears, Sprockets, Belts, Speed, and Torque",
       "category": "Robotics & Engineering",

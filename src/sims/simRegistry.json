@@ -169,6 +169,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "fastenerChoiceLab",
+      "name": "Fastener Joint Evidence Lab",
+      "path": "./fastener-choice-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "fault",
       "name": "Fault Tolerant State Manager",
       "path": "./fault",
