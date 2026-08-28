@@ -137,7 +137,7 @@
         { "id": "controls-motion-profiles", "title": "Plan Smooth Motion with Limits", "level": "intermediate", "interaction": "motion-profile-lab", "sourceGap": null },
         { "id": "controls-odometry", "title": "Estimate Motion with Encoders and Odometry", "level": "intermediate", "interaction": "odometry-error-lab", "sourceGap": null },
         { "id": "controls-sensor-fusion", "title": "Combine Measurements without Hiding Uncertainty", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
-        { "id": "controls-vision", "title": "Use AprilTags and Reject Bad Vision Measurements", "level": "advanced", "interaction": "vision-uncertainty-lab", "sourceGap": null },
+        { "id": "controls-vision", "title": "Use AprilTags and Reject Bad Vision Measurements", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
         { "id": "controls-autonomous-routines", "title": "Build and Verify an Autonomous Routine", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null }
       ]
     },

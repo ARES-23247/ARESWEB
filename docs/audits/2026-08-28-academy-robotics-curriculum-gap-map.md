@@ -324,3 +324,32 @@ vision, sensor noise, and physical robot behavior. A future physical calibration
 still needs independently surveyed truth and student-run repeated routes. No
 draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Seventh bounded implementation evidence
+
+The uncertainty batch adds `controls-sensor-fusion` and `controls-vision`. Both
+reuse the Academy-only Sensor Fusion Uncertainty Lab with different questions.
+The first lesson studies inverse-variance weighting and independent truth. The
+second studies AprilTag quality, capture time, bounds, innovation checks, and
+visible rejection reasons. The existing beginner camera-evidence lesson reuses
+the lab only as an optional decision exercise.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 32 documents and 20 approved embeds;
+- sensor fusion has 699 prose words at estimated grade 8.5;
+- vision rejection has 739 prose words at estimated grade 8.6;
+- all 36 unique source blobs were recomputed, including the current ARES vision
+  measurement and outlier-filter implementations;
+- tests cover inverse-variance weighting, high-ambiguity rejection, invalid
+  uncertainty, native controls, text-equivalent data, reset, and visible model
+  limits;
+- renderer security, catalog contract, TypeScript, and lint checks pass; and
+- the unauthored full-contract track count is now 35 of 48.
+
+The shared model is a one-dimensional weighted average with one rejection rule.
+It does not reproduce the ARES EKF, field bounds, timestamps, tag geometry,
+history replay, or physical camera behavior. Authentic camera screenshots and
+student-run surveyed trials remain subject to the media/evidence request ledger.
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

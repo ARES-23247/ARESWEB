@@ -45,6 +45,16 @@ that reveal private information.
 4. Write one reason for each rank.
 5. Ask a partner whether the stated reasons support the order.
 
+## Optional robot-data connection
+
+Use the lab below to see one camera-quality decision beside an odometry estimate. Raise ambiguity
+until the lesson rejects vision. Open the table and record what stayed visible.
+
+<sensorfusionlab />
+
+This lab uses one invented rule. It does not reproduce an AprilTag camera or the ARES estimator.
+Continue to the controls vision lesson for the full rejection checklist.
+
 ## Check your understanding
 
 1. Why is a camera result a measurement instead of perfect truth?
