@@ -36,6 +36,7 @@ const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"
 const linearequations = lazy(() => import("../../sims/linearequations"));
 const logComparisonLab = lazy(() => import("../../sims/log-comparison-lab"));
 const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
+const mechanismMotionExplorer = lazy(() => import("../../sims/mechanism-motion-explorer"));
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
 const motionProfileLab = lazy(() => import("../../sims/motion-profile-lab"));
@@ -146,6 +147,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
+  mechanismMotionExplorer: mechanismMotionExplorer,
+  mechanismmotionexplorer: mechanismMotionExplorer,
   mechanismRatioExplorer: mechanismRatioExplorer,
   mechanismratioexplorer: mechanismRatioExplorer,
   montyhall: montyhall,
@@ -257,6 +260,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
+  mechanismMotionExplorer: mechanismMotionExplorer,
+  mechanismmotionexplorer: mechanismMotionExplorer,
   mechanismRatioExplorer: mechanismRatioExplorer,
   mechanismratioexplorer: mechanismRatioExplorer,
   motionProfileLab: motionProfileLab,
@@ -544,6 +549,14 @@ const SIM_METADATA = [
     'id': 'loopCacheLab',
     'name': 'Cached Output Decision Lab',
     'folder': 'loop-cache-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'mechanismMotionExplorer',
+    'name': 'Mechanism Motion Explorer',
+    'folder': 'mechanism-motion-explorer',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

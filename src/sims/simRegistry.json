@@ -257,6 +257,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "mechanismMotionExplorer",
+      "name": "Mechanism Motion Explorer",
+      "path": "./mechanism-motion-explorer",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "mechanismRatioExplorer",
       "name": "Mechanism Ratio Explorer",
       "path": "./mechanism-ratio-explorer",

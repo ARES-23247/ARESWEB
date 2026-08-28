@@ -722,6 +722,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "mechanical-mechanisms",
+      "title": "Build Motion with Arms, Elevators, Intakes, and Linkages",
+      "category": "Robotics & Engineering",
+      "description": "Match a robot task to a mechanism, predict ideal arm, elevator, or roller motion, and separate calculated claims from physical evidence.",
+      "contentFile": "mechanical-design/03-mechanism-motion.md",
+      "subject": "robotics-engineering",
+      "topics": ["mechanisms", "arms", "elevators", "intakes", "linkages", "limits"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 70,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 7 }],
+      "prerequisites": ["mechanical-gears-sprockets-belts", "mechanical-drivetrains"],
+      "objectives": ["Match arms, elevators, rollers, and linkages to stated motion needs.", "Calculate ideal output rotation, arm angle, or linear travel from motor turns and ratio.", "Create a mechanism evidence record that keeps limits, load, clearance, and physical tests open."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "FTC subsystem authoring guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "8d1b872e71ddeb83cf07402cb9548b73fd11d6e3" }, { "label": "FRC subsystem authoring guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FRC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "dbef8141c058a554f7480b83743931102f7189e1" }, { "label": "Studio Subsystem Builder", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/SUBSYSTEM_BUILDER.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md", "blobHash": "4c9c9439518f02d5333b097cb6039a712404b800" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "capstone-simulated-mechanism",
       "title": "Capstone 1: Model and Test a Simulated Mechanism",
       "category": "Robotics & Engineering",

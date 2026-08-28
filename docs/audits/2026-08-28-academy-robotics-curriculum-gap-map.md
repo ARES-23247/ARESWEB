@@ -1045,3 +1045,34 @@ inspect evidence, approve a team process, replace official rules, authorize
 operation, or prove a claim. Authentic evidence and team review remain open.
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Thirty-first bounded implementation evidence
+
+The mechanical-mechanism batch adds `mechanical-mechanisms` and the approved
+Mechanism Motion Explorer. The interaction is also reused as an optional
+application in the existing gear-ratio lesson. The new lesson uses a described
+diagram while leaving the authentic team mechanism-image request open.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 49 documents, with 15 existing-lesson
+  interaction candidates and 50 approved embeds;
+- the new lesson has 960 prose words, estimated grade 6.4, and a 22-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 35 authored identities and
+  13 remaining full-contract lesson identities out of 48;
+- all 72 unique pinned source URLs were remotely recomputed, including current
+  FTC and FRC subsystem-authoring guides and the Studio builder contract;
+- tests cover arm, elevator, and roller calculations; invalid inputs; native
+  controls; live results; reset; fidelity limits; secure rendering; navigation;
+  instructional depth; readability; and the catalog contract; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  provenance, and 39 focused Academy tests pass. Targeted interaction coverage
+  is 100% for statements, functions, and lines, with 93.75% branch coverage.
+
+The explorer uses ideal ratio and circumference math. It does not solve linkage
+geometry, model gravity or load, choose hardware, inspect limits or clearance,
+command a simulator or robot, or prove safe motion. No authentic team photo was
+invented, and the tracked media request remains open. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.

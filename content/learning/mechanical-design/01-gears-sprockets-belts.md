@@ -136,9 +136,15 @@ Exact size depends on the real parts.
 Then create a two-stage ideal reduction. Multiply the stage ratios to find the total ratio. Keep the
 calculation separate from any claim about strength, efficiency, or safe motor load.
 
+Apply one of your ratios to an arm, elevator, or intake roller with the explorer below. Compare how
+the same output rotation becomes angle or ideal surface travel. Keep this optional extension separate
+from a claim about linkage shape, clearance, load, current, or real robot behavior.
+
+<mechanismmotionexplorer />
+
 ## Related and next
 
-Continue in the Mechanical Design and Fabrication path with measurement, structure, and mechanism
-lessons as they complete review. Use [The ARES Software Workspace](/academy/ares-workspace-map?path=robotics-foundations)
+Continue with [Build Motion with Arms, Elevators, Intakes, and Linkages](/academy/mechanical-mechanisms?path=mechanical-design-fabrication).
+Use [The ARES Software Workspace](/academy/ares-workspace-map?path=robotics-foundations)
 to see where a verified drivebase description belongs. The software can record a selected drivebase,
 but it cannot replace physical dimensions, assembly checks, or student test evidence.
