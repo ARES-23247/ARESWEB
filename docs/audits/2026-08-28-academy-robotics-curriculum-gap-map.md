@@ -844,3 +844,31 @@ actuator, identify a root cause, or prove a device works. The authentic Studio
 diagnostic screenshot request remains open. No draft was staged or published,
 no production data was written, and no branch was pushed or deployed during
 this batch.
+
+## Twenty-fourth bounded implementation evidence
+
+The log-replay batch adds `testing-logs-replay` and the Academy-only Log
+Comparison Lab. It places the existing telemetry reference first in the path,
+keeps the simulation-limits lesson second, and reserves later positions for
+fault-tree and system-identification lessons.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 42 documents, with 15 existing-lesson
+  interaction candidates and 36 approved embeds;
+- the new lesson has 841 prose words, estimated grade 8.0, and a 28-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 28 authored identities and
+  20 remaining full-contract lesson identities out of 48;
+- all 61 unique pinned source URLs were remotely recomputed, including Guided
+  Run Review, Deterministic Replay, and the Academy Practice Pack;
+- tests cover timestamp and shared-event alignment, unit-bearing signal
+  choices, native controls, live results, deterministic reset, fidelity
+  limits, renderer security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, readability, provenance,
+  and 34 focused Academy tests pass.
+
+The lab compares two fixed invented runs. It does not import logs, verify their
+provenance, infer a cause, prove a fault, or replace review in Studio or another
+real log tool. No draft was staged or published, no production data was
+written, and no branch was pushed or deployed during this batch.

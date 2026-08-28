@@ -225,6 +225,14 @@
       "fidelity": null
     },
     {
+      "id": "logComparisonLab",
+      "name": "Log Alignment and Comparison Lab",
+      "path": "./log-comparison-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "loopCacheLab",
       "name": "Cached Output Decision Lab",
       "path": "./loop-cache-lab",

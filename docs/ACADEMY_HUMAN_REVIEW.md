@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds nineteen new robotics drafts and deepens selected existing lessons.
+This branch adds twenty new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -135,6 +135,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Choose and Read Robot Sensors | Electrical Systems & Diagnostics | Physical robot | [`02-choose-read-sensors.md`](../content/learning/electrical-systems/02-choose-read-sensors.md) |
 | USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
 | Map Hardware and Diagnose a Dead Device | Electrical Systems & Diagnostics | Physical robot | [`07-hardware-map-diagnostics.md`](../content/learning/electrical-systems/07-hardware-map-diagnostics.md) |
+| Compare Logs and Replay a Failure | Testing, Debugging & Commissioning | None | [`02-logs-replay.md`](../content/learning/testing-debugging/02-logs-replay.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
@@ -231,6 +232,13 @@ connection, startup-health, cached-input, and output-write checks; native
 controls; first-failure result; and deterministic reset. Confirm that all boxes
 are self-reported and that a passing software sequence is not called a root
 cause, wiring check, physical operation, or proof that the device works.
+The log-comparison lesson follows the existing telemetry reference and
+simulation-limits lesson. Review its source identity and digest checks,
+baseline reason, timestamp-versus-shared-event alignment, unit-bearing signal
+choices, two-hypothesis evidence report, native controls, live table, and
+deterministic reset. Confirm that the fixed sample runs are not presented as
+imported team logs and that the lab does not infer a cause, prove a fault, or
+replace review in Studio or another real log tool.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
