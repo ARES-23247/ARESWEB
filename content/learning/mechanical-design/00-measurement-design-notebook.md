@@ -129,10 +129,16 @@ Make a second sketch from a different view. Identify one dimension that cannot b
 the first view alone. Create a revision comparison that highlights the one changed value and every
 downstream field it affects. Do not overwrite the first record.
 
+If several measured lengths meet in one direction, use the optional lab below. Enter lesson-only
+nominal values and allowed changes. Record whether their worst-case sum fits a written range. The
+result is arithmetic evidence, not approval of a CAD model, process, or real part.
+
+<tolerancestacklab />
+
 ## Related and next
 
-Continue to tools, fasteners, structures, drivetrains, mechanisms, CAD, and fabrication after their
-required sources are approved. Use the measurement record in
+Continue with [From a CAD Model to a Buildable Part](/academy/mechanical-cad-fabrication?path=mechanical-design-fabrication).
+Use the measurement record in
 [Compare Mecanum, Differential, and Swerve Drivetrains](/academy/mechanical-drivetrains?path=mechanical-design-fabrication)
 when evaluating geometry. Return to hardware setup before entering a measured value into a real
 project.

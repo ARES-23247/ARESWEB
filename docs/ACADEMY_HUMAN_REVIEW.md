@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds twenty-seven new robotics drafts and deepens selected existing lessons.
+This branch adds twenty-eight new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -132,6 +132,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
 | Build Motion with Arms, Elevators, Intakes, and Linkages | Mechanical Design & Fabrication | Physical robot | [`03-mechanism-motion.md`](../content/learning/mechanical-design/03-mechanism-motion.md) |
+| From a CAD Model to a Buildable Part | Mechanical Design & Fabrication | Physical robot | [`04-cad-fabrication.md`](../content/learning/mechanical-design/04-cad-fabrication.md) |
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Choose and Read Robot Sensors | Electrical Systems & Diagnostics | Physical robot | [`02-choose-read-sensors.md`](../content/learning/electrical-systems/02-choose-read-sensors.md) |
 | USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
@@ -225,6 +226,13 @@ finite-value and positive-ratio guards; unit-bearing results; native controls;
 live result; narrow layout; and deterministic reset. Confirm that the ideal
 model cannot choose hardware, solve linkage geometry, inspect clearance,
 command a robot, or prove safe motion. The authentic team mechanism-image
+request remains open.
+The new CAD/fabrication lesson and existing measurement lesson share the
+Tolerance Stack Lab. Review its nominal sum, one-direction worst-case range,
+required-range decision, invalid-value handling, unit-bearing native inputs,
+live result, narrow layout, and deterministic reset. Confirm that the model
+does not check hole position, angles, fit class, material, process capability,
+load, or a real part. The paired authentic team CAD and fabricated-part media
 request remains open.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and

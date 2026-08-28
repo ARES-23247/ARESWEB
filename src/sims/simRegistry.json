@@ -601,6 +601,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "toleranceStackLab",
+      "name": "Tolerance Stack Lab",
+      "path": "./tolerance-stack-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "trigbasics",
       "name": "Trigonometry Basics",
       "path": "./trigbasics",

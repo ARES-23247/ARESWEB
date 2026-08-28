@@ -79,6 +79,7 @@ const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
 const sysidTuningLab = lazy(() => import("../../sims/sysid-tuning-lab"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
+const toleranceStackLab = lazy(() => import("../../sims/tolerance-stack-lab"));
 const trigbasics = lazy(() => import("../../sims/trigbasics"));
 const triginverse = lazy(() => import("../../sims/triginverse"));
 const trigrobotics = lazy(() => import("../../sims/trigrobotics"));
@@ -215,6 +216,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sysidtuninglab: sysidTuningLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
+  toleranceStackLab: toleranceStackLab,
+  tolerancestacklab: toleranceStackLab,
   trigbasics: trigbasics,
   triginverse: triginverse,
   trigrobotics: trigrobotics,
@@ -290,6 +293,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sysidtuninglab: sysidTuningLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
+  toleranceStackLab: toleranceStackLab,
+  tolerancestacklab: toleranceStackLab,
   visionUncertaintyLab: visionUncertaintyLab,
   visionuncertaintylab: visionUncertaintyLab,
 };
@@ -893,6 +898,14 @@ const SIM_METADATA = [
     'id': 'telemetryGraphLab',
     'name': 'Telemetry Graph Lab',
     'folder': 'telemetry-graph-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'toleranceStackLab',
+    'name': 'Tolerance Stack Lab',
+    'folder': 'tolerance-stack-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

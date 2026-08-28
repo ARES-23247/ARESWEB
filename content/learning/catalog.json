@@ -742,6 +742,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "mechanical-cad-fabrication",
+      "title": "From a CAD Model to a Buildable Part",
+      "category": "Robotics & Engineering",
+      "description": "Turn a measured interface into a revisioned part plan, check a simple tolerance stack, and keep fabrication and physical-fit claims open.",
+      "contentFile": "mechanical-design/04-cad-fabrication.md",
+      "subject": "robotics-engineering",
+      "topics": ["CAD", "fabrication", "tolerances", "datums", "revisions", "interfaces"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 75,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 8 }],
+      "prerequisites": ["mechanical-measurement-design-notebook", "mechanical-mechanisms"],
+      "objectives": ["Translate a measured interface and requirement into a datum-based part plan.", "Calculate a one-direction worst-case tolerance stack and compare it with a required range.", "Create a revisioned evidence record that withholds process, fit, load, and physical validation claims."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Drivebase Builder geometry and provenance workflow", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/DRIVEBASE_BUILDER.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/DRIVEBASE_BUILDER.md", "blobHash": "7ce3fded54a1ddd3926fa51fc7688a6fe37952e3" }, { "label": "Hardware Setup evidence boundaries", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/start/HARDWARE_SETUP.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/start/HARDWARE_SETUP.md", "blobHash": "ddd412ded5bae5fef7f976479ff77141d2e495d6" }, { "label": "ARESLib drivetrain geometry contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/drivetrain-authoring.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "capstone-simulated-mechanism",
       "title": "Capstone 1: Model and Test a Simulated Mechanism",
       "category": "Robotics & Engineering",
