@@ -541,3 +541,33 @@ not inspect Kotlin, validate a descriptor, identify hazards, generate files,
 run tests, prove mock/hardware parity, or approve physical operation. No draft
 was staged or published, no production data was written, and no branch was
 pushed or deployed during this batch.
+
+## Fourteenth bounded implementation evidence
+
+The superstructure batch upgrades the existing
+`ftc-season-composition-and-safe-lifecycle` tutorial rather than creating the
+plan's parallel `programming-superstructure` page. It now connects FTC setup
+and latched frame failure with ordered superstructure policy, health fallbacks,
+transient postures, measured guards, and complete target preflight.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 35 documents, 15 existing-lesson interaction
+  candidates, and 27 approved embeds;
+- the upgraded lesson has 875 prose words, estimated grade 6.6, and an 18-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 20 authored identities and
+  28 remaining full-contract lesson identities out of 48;
+- all 46 unique pinned blobs were recomputed, including the reviewed FTC
+  composition root and generated superstructure runtime contract;
+- tests cover disabled and health precedence, transient-posture entry,
+  measured-guard blocking and release, native controls, deterministic stepping
+  and reset, the evaluation-order disclosure, fidelity limits, renderer
+  security, and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The state lab is an invented three-posture coordinator. It does not parse an
+ARES document, bind real fields, preflight or dispatch catalog tasks, model
+time and debounce, inspect physical clearance, run hardware, or prove safe
+motion. No draft was staged or published, no production data was written, and
+no branch was pushed or deployed during this batch.

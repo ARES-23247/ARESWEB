@@ -63,6 +63,7 @@ const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
 const subsystemDescriptorLab = lazy(() => import("../../sims/subsystem-descriptor-lab"));
 const subsystemOwnershipLab = lazy(() => import("../../sims/subsystem-ownership-lab"));
+const superstructureStateLab = lazy(() => import("../../sims/superstructure-state-lab"));
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
@@ -171,6 +172,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   subsystemdescriptorlab: subsystemDescriptorLab,
   subsystemOwnershipLab: subsystemOwnershipLab,
   subsystemownershiplab: subsystemOwnershipLab,
+  superstructureStateLab: superstructureStateLab,
+  superstructurestatelab: superstructureStateLab,
   swerve: swerve,
   sysid: sysid,
   telemetryGraphLab: telemetryGraphLab,
@@ -220,6 +223,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   subsystemdescriptorlab: subsystemDescriptorLab,
   subsystemOwnershipLab: subsystemOwnershipLab,
   subsystemownershiplab: subsystemOwnershipLab,
+  superstructureStateLab: superstructureStateLab,
+  superstructurestatelab: superstructureStateLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
 };
@@ -695,6 +700,14 @@ const SIM_METADATA = [
     'id': 'subsystemOwnershipLab',
     'name': 'Subsystem Ownership Decision Lab',
     'folder': 'subsystem-ownership-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'superstructureStateLab',
+    'name': 'Superstructure State Coordination Lab',
+    'folder': 'superstructure-state-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

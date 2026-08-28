@@ -114,7 +114,7 @@
         { "id": "programming-io-caching", "title": "Read Hardware Once and Write Safe Outputs", "level": "intermediate", "interaction": "loop-cache-lab", "sourceGap": null },
         { "id": "ftc-gui-owned-indicator-lights", "title": "Author GUI-Owned FTC Indicator Lights", "level": "intermediate", "interaction": "subsystem-descriptor-lab", "sourceGap": null },
         { "id": "programming-code-subsystem", "title": "Author a Code-First or Hybrid Subsystem", "level": "intermediate", "interaction": "subsystem-ownership-lab", "sourceGap": null },
-        { "id": "programming-superstructure", "title": "Coordinate Subsystems with a Superstructure", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
+        { "id": "ftc-season-composition-and-safe-lifecycle", "title": "Coordinate Subsystems and Fail Safe", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
         { "id": "programming-tests-parity", "title": "Test Robot Logic Across Mocks and Simulation", "level": "advanced", "interaction": "parity-evidence-lab", "sourceGap": null }
       ]
     },
@@ -204,6 +204,7 @@
   "existingLessonInteractionCandidates": [
     { "slug": "robot-input-to-output", "interaction": "robot-flow-tracer", "purpose": "trace driver and sensor paths through state and cached I/O" },
     { "slug": "ftc-gui-owned-indicator-lights", "interaction": "subsystem-descriptor-lab", "purpose": "trace independent targets and safe outputs from a real descriptor" },
+    { "slug": "ftc-season-composition-and-safe-lifecycle", "interaction": "superstructure-state-lab", "purpose": "step through disabled, health, transient-posture, and measured-guard decisions" },
     { "slug": "rates-units-and-motion", "interaction": "mechanism-ratio-explorer", "purpose": "connect rate calculations to drivetrain speed and torque" },
     { "slug": "read-a-telemetry-graph", "interaction": "telemetry-graph-lab", "purpose": "practice observations before explanations" },
     { "slug": "camera-evidence-and-uncertainty", "interaction": "vision-uncertainty-lab", "purpose": "compare accepted and rejected measurements" },

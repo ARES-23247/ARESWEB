@@ -66,7 +66,7 @@ reuse an old approval digest after changing any lesson.
 
 | Lesson | Safety scope | Public lesson | Canonical source file |
 | --- | --- | --- | --- |
-| Compose an FTC Season Robot That Fails Safe | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-season-composition-and-safe-lifecycle) | [`01-season-composition.md`](../content/learning/current-robot/01-season-composition.md) |
+| Coordinate Subsystems and Fail Safe | Physical robot | [Open lesson](https://aresfirst.org/academy/ftc-season-composition-and-safe-lifecycle) | [`01-season-composition.md`](../content/learning/current-robot/01-season-composition.md) |
 | Shape FTC Driver Input Without Losing the Frame | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-driver-input-shaping-and-frames) | [`02-driver-input-frames.md`](../content/learning/current-robot/02-driver-input-frames.md) |
 | Author GUI-Owned FTC Indicator Lights | Physical robot | [Open lesson](https://aresfirst.org/academy/ftc-gui-owned-indicator-lights) | [`03-gui-owned-indicator-lights.md`](../content/learning/current-robot/03-gui-owned-indicator-lights.md) |
 
@@ -167,6 +167,11 @@ tutorial rather than replacing it. Review the ownership lab's generated,
 hybrid, and hand-authored starting paths; its native controls and table; and
 its warning that two questions cannot inspect source, identify hazards, or
 approve physical operation.
+The existing season-composition tutorial now fills the planned superstructure
+lesson. Review its ordered disabled and health fallbacks, transient posture,
+measured guard, complete preset, deterministic steps, and physical-test
+boundary. Confirm that the invented three-posture model is not presented as the
+real ARES runtime or as proof of physical clearance.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

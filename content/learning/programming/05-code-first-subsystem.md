@@ -126,5 +126,5 @@ pinned source paths and test results.
 
 Return to the indicator-light tutorial to compare a GUI-owned descriptor with this code-first path.
 Next, study subsystem coordination in
-[Coordinate Subsystems with a Superstructure](/academy/programming-superstructure?path=programming-with-ares).
+[Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares).
 Then test shared logic across mocks and simulation before any physical claim.
