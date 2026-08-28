@@ -694,3 +694,34 @@ project, discover hardware, validate current vendor or competition ranges,
 inspect wiring or termination, connect to a robot, or prove physical identity.
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Nineteenth bounded implementation evidence
+
+The commissioning batch upgrades the existing
+`ftc-starter-physical-commissioning` lesson and embeds the Academy-only
+Commissioning Boundary Checklist. It does not add a duplicate FTC commissioning
+page. The upgraded lesson also joins the testing, debugging, and commissioning
+path while retaining its FTC starter path.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation still reports 39 documents and 15 existing-lesson
+  interaction candidates, while approved embeds increase to 32;
+- the upgraded lesson has 1,034 prose words, estimated grade 8.0, and a 23-word
+  longest sentence;
+- the exact curriculum-plan comparison remains at 25 authored identities and
+  23 remaining full-contract lesson identities out of 48;
+- all 57 unique pinned source URLs were remotely recomputed, including the
+  current FTC physical-commissioning guide, guided commissioning evidence
+  boundaries, and Hardware Setup inventory review;
+- tests cover the ordered evidence gates, stop-readiness failure, unexpected
+  result override, native checkboxes, live next actions, deterministic reset,
+  fidelity limits, renderer security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, readability, and focused
+  Academy tests pass.
+
+The checklist trusts student-entered boxes. It does not run tests, inspect an
+inventory, verify the safety setup, connect to hardware, authorize motion,
+command an actuator, or prove physical behavior. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.

@@ -15,6 +15,7 @@ const climbingCapstanFriction = lazy(() => import("../../sims/climbing-capstan-f
 const climbingCenterOfMass = lazy(() => import("../../sims/climbing-center-of-mass"));
 const climbingFallFactor = lazy(() => import("../../sims/climbing-fall-factor"));
 const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger-biomechanics"));
+const commissioningChecklistLab = lazy(() => import("../../sims/commissioning-checklist-lab"));
 const controlResponseLab = lazy(() => import("../../sims/control-response-lab"));
 const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
@@ -102,6 +103,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   climbingfallfactor: climbingFallFactor,
   climbingFingerBiomechanics: climbingFingerBiomechanics,
   climbingfingerbiomechanics: climbingFingerBiomechanics,
+  commissioningChecklistLab: commissioningChecklistLab,
+  commissioningchecklistlab: commissioningChecklistLab,
   controlResponseLab: controlResponseLab,
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
@@ -209,6 +212,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   autonomouspathlab: autonomousPathLab,
   busAddressTroubleshooter: busAddressTroubleshooter,
   busaddresstroubleshooter: busAddressTroubleshooter,
+  commissioningChecklistLab: commissioningChecklistLab,
+  commissioningchecklistlab: commissioningChecklistLab,
   controlResponseLab: controlResponseLab,
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
@@ -339,6 +344,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'commissioningChecklistLab',
+    'name': 'Commissioning Boundary Checklist',
+    'folder': 'commissioning-checklist-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'controlResponseLab',

@@ -195,6 +195,14 @@ parent, and numeric address gates; native controls; visible conflict reason;
 deterministic reset; and checklist. Confirm that “no duplicate” is never
 presented as project scanning, device discovery, valid vendor or league ranges,
 correct wiring, or proof of physical identity.
+The existing FTC physical-commissioning tutorial now contains the planned
+Commissioning Boundary Checklist instead of creating a second FTC-specific
+page. Review the ordered code, simulation, configuration, stop-readiness, and
+restrained-setup gates; the unexpected-result override; deterministic reset;
+and the visible statement that self-reported boxes cannot authorize motion or
+prove physical behavior. Confirm that students can run and document the team's
+robot-safety procedure without language requiring mentor approval; website
+publication remains the separate Lead Coach approval boundary.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
