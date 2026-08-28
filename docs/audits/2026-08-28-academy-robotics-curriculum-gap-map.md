@@ -424,3 +424,35 @@ The flow tracer is fixed teaching content. It does not inspect a project,
 dispatch an action, read a device, run the scheduler, command hardware, or
 prove loop timing. No draft was staged or published, no production data was
 written, and no branch was pushed or deployed during this batch.
+
+## Tenth bounded implementation evidence
+
+The GUI-subsystem batch upgrades the existing
+`ftc-gui-owned-indicator-lights` tutorial rather than adding a second generic
+descriptor page. It now satisfies the full instructional contract and embeds
+the Subsystem Descriptor Independence Lab. The activity connects the real
+Lightbot descriptor's two targets, two direct loops, and zero safe outputs to a
+bounded concept preview.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 32 documents, 14 existing-lesson interaction
+  candidates, and 23 approved embeds;
+- the upgraded tutorial has 842 prose words, estimated grade 7.5, and a
+  19-word longest sentence;
+- the exact curriculum-plan comparison now finds 17 authored identities and
+  31 remaining full-contract lesson identities out of 48;
+- all 41 unique pinned blobs were recomputed, including the Lightbot guide,
+  canonical indicator descriptor, and subsystem DSL;
+- the first focused test exposed an unstable slider name caused by a live
+  output inside its label; the control now has a stable explicit name;
+- tests cover independent channels, safe-off output, invalid input, native
+  controls, text results, deterministic reset, fidelity limits, renderer
+  security, and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The interaction is an invented two-channel preview. It does not load or
+validate an `.aressubsystem`, generate Kotlin, run Redux, call an FTC adapter,
+reproduce PWM color, detect a failed write, or prove physical wiring and
+safe-off behavior. No draft was staged or published, no production data was
+written, and no branch was pushed or deployed during this batch.

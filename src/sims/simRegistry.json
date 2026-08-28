@@ -441,6 +441,14 @@
       "fidelity": null
     },
     {
+      "id": "subsystemDescriptorLab",
+      "name": "Subsystem Descriptor Independence Lab",
+      "path": "./subsystem-descriptor-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "swerve",
       "name": "Swerve Kinematics Playground",
       "path": "./swerve",

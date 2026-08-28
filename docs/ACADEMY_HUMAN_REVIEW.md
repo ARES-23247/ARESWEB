@@ -151,6 +151,10 @@ The existing `robot-input-to-output` tutorial is upgraded in place as well.
 Review its Robot Input-to-Output Flow Tracer for keyboard order, touch targets,
 live step announcements, narrow-screen reflow, and the visible statement that
 the trace does not inspect code, run the scheduler, or command hardware.
+The existing `ftc-gui-owned-indicator-lights` tutorial now fills the planned
+GUI-owned subsystem lesson. Review its descriptor preview for independent
+targets, safe-off reset, stable slider names, text-equivalent results, and the
+clear separation between concept, generated tests, simulation, and hardware.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
