@@ -128,12 +128,19 @@ software selection proves a physical cause.
 
 <faulttreelab />
 
+If the fault tree reaches a wiring-plan branch, use the optional paper checklist below. It can order
+source, identity, polarity, connector, routing, strain-relief, and protection-source questions. It
+cannot inspect or energize the physical connection.
+
+<wiringdiagnosticlab />
+
 For each leaf in your real tree, name the smallest safe observation that would move the diagnosis
 forward. Keep every untested physical branch visibly open.
 
 ## Related and next
 
-Continue to fault-tree and commissioning lessons. Use
+Review [Wire, Connectors, Polarity, and Strain Relief](/academy/electrical-wiring-connectors?path=electrical-systems-diagnostics),
+then continue to fault-tree and commissioning lessons. Use
 [Commission an FTC Starter Robot Safely](/academy/ftc-starter-physical-commissioning?path=testing-debugging-commissioning)
 before a physical check. Return to the sensor lesson when the value exists but lacks fresh, valid,
 unit-labeled evidence.

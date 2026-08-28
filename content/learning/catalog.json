@@ -622,6 +622,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "electrical-wiring-connectors",
+      "title": "Wire, Connectors, Polarity, and Strain Relief",
+      "category": "Robotics & Engineering",
+      "description": "Build an isolated, source-backed wiring plan for one invented device and keep paper review separate from physical inspection and proof.",
+      "contentFile": "electrical-systems/03-wiring-connectors.md",
+      "subject": "robotics-engineering",
+      "topics": ["wiring", "connectors", "polarity", "strain relief", "routing", "device identity"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "electrical-systems-diagnostics", "order": 3 }],
+      "prerequisites": ["electrical-battery-protection"],
+      "objectives": ["Build a complete source-backed paper connection plan for one invented device.", "Review identity, polarity, connector, routing, strain relief, and protection-source evidence in order.", "Create a later physical inspection plan without claiming that self-reported checks prove wiring."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Hardware Setup combined inventory and review", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARES-Analytics/docs/start/HARDWARE_SETUP.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARES-Analytics/docs/start/HARDWARE_SETUP.md", "blobHash": "ddd412ded5bae5fef7f976479ff77141d2e495d6" }, { "label": "Canonical hardware topology models", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "blobHash": "aa3419236a83d8444967c5474ee70d5819c58fba" }, { "label": "Subsystem connection schema", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt", "blobHash": "3b3870b5100e16a6511df3e46b9e30f53206ca98" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.2; authentic wiring media and current ratings remain open",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "electrical-sensors",
       "title": "Choose and Read Robot Sensors",
       "category": "Robotics & Engineering",

@@ -665,6 +665,14 @@
       "fidelity": "code-derived"
     },
     {
+      "id": "wiringDiagnosticLab",
+      "name": "Wiring Plan Diagnostic Lab",
+      "path": "./wiring-diagnostic-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "zeroallocation",
       "name": "Zero Allocation Memory Profiler",
       "path": "./zeroallocation",
