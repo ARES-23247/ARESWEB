@@ -1,9 +1,12 @@
 import { gzipSync } from "node:zlib";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const config = JSON.parse(
   readFileSync("config/bundle-budgets.json", "utf-8"),
+);
+const roboticsCurriculum = JSON.parse(
+  readFileSync("content/learning/robotics-curriculum-plan.json", "utf-8"),
 );
 const distDir = join(process.cwd(), "dist");
 const assetsDir = join(distDir, "assets");
@@ -41,7 +44,28 @@ try {
   // some modes (for example `editor.api2-*` in the E2E build). Keep every
   // disambiguated editor API chunk in the optional-editor budget.
   const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|prettier|sucrase)-/;
-  const routeLazyJs = lazyJs.filter((file) => !editorRuntimePattern.test(file));
+  const academyInteractionIds = new Set(
+    [
+      ...roboticsCurriculum.tracks.flatMap((track) => track.lessons.map((lesson) => lesson.interaction)),
+      ...roboticsCurriculum.existingLessonInteractionCandidates.map((candidate) => candidate.interaction),
+    ].filter(Boolean),
+  );
+  const builtAcademyInteractionIds = [...academyInteractionIds].filter((interaction) =>
+    existsSync(join("src", "sims", interaction, "index.tsx")),
+  );
+  const academyInteractiveJs = lazyJs.filter((file) =>
+    builtAcademyInteractionIds.some((interaction) => file.startsWith(`${interaction}-`)),
+  );
+  const missingAcademyChunks = builtAcademyInteractionIds.filter((interaction) =>
+    !academyInteractiveJs.some((file) => file.startsWith(`${interaction}-`)),
+  );
+  if (missingAcademyChunks.length > 0) {
+    throw new Error(`Academy interaction chunks are not independently lazy: ${missingAcademyChunks.join(", ")}`);
+  }
+  const academyInteractiveSet = new Set(academyInteractiveJs);
+  const routeLazyJs = lazyJs.filter((file) =>
+    !editorRuntimePattern.test(file) && !academyInteractiveSet.has(file),
+  );
   const editorRuntimeJs = lazyJs.filter((file) => editorRuntimePattern.test(file));
   const largestEditor = editorRuntimeJs
     .map((file) => ({ file, ...assetSize(file) }))
@@ -50,12 +74,17 @@ try {
   const largestLazy = routeLazyJs
     .map((file) => ({ file, ...assetSize(file) }))
     .sort((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0, gzip: 0 };
+  const largestAcademyInteractive = academyInteractiveJs
+    .map((file) => ({ file, ...assetSize(file) }))
+    .sort((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0, gzip: 0 };
 
   const measurements = {
     initialJs: sumAssets(initialJs),
     initialCss: sumAssets(initialCss),
     largestLazyJs: largestLazy,
     totalRouteJs: sumAssets([...initialJs, ...routeLazyJs]),
+    academyInteractiveJs: sumAssets(academyInteractiveJs),
+    largestAcademyInteractiveJs: largestAcademyInteractive,
     editorRuntimeJs: sumAssets(editorRuntimeJs),
     largestEditorJs: largestEditor,
   };
@@ -67,6 +96,8 @@ try {
 
     const label = name === "largestLazyJs"
       ? `${name} (${largestLazy.file})`
+      : name === "largestAcademyInteractiveJs"
+        ? `${name} (${largestAcademyInteractive.file})`
       : name === "largestEditorJs"
         ? `${name} (${largestEditor.file})`
         : name;
