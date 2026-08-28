@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertMiddleSchoolLearningQuality,
+  assertSubstantialLessonContract,
   assertStudentLedRobotVerificationLanguage,
   normalizeLearningMarkdown,
   parseAresVersions,
@@ -8,6 +9,9 @@ import {
   resolveApprovedAuthority,
   validateSourceReference,
   validateSourceAuthorities,
+  validateRoboticsCurriculumPlan,
+  validateAcademySimRegistry,
+  validateCurriculumSourceRequests,
 } from "./validate-learning-catalog.mjs";
 
 describe("learning catalog preparation", () => {
@@ -111,5 +115,145 @@ describe("learning catalog preparation", () => {
     registerPathOrder(orders, "robotics-foundations", 1, "first");
     expect(() => registerPathOrder(orders, "robotics-foundations", 1, "second")).toThrow(/duplicates first/u);
     expect(() => registerPathOrder(orders, "another-path", 1, "second")).not.toThrow();
+  });
+
+  it("measures substantial lesson structure instead of relying on word count alone", () => {
+    const sentence = "Students change one value, record the result, and explain the pattern in clear words.";
+    const sections = [
+      "Purpose and prerequisites",
+      "Vocabulary",
+      "Worked example",
+      "Visual model",
+      "Hands-on activity",
+      "Checkpoints",
+      "Troubleshooting",
+      "Evidence artifact",
+      "Short assessment",
+      "Extension challenge",
+      "Related and next",
+    ];
+    const valid = `# Full lesson\n\n${sections.map((section) =>
+      `## ${section}\n\n${`${sentence} `.repeat(7)}`).join("\n\n")}`;
+    expect(() => assertSubstantialLessonContract(valid, "full-lesson")).not.toThrow();
+    expect(() => assertSubstantialLessonContract(
+      valid.replace("## Troubleshooting", "## More words"),
+      "missing-support",
+    )).toThrow(/missing the Troubleshooting section/u);
+  });
+
+  it("ratchets the robotics expansion and validates existing-lesson interaction targets", () => {
+    const lesson = (index) => ({
+      id: `lesson-${index}`,
+      title: `Lesson ${index}`,
+      level: "beginner",
+      interaction: index === 1 ? "ratio-explorer" : null,
+      sourceGap: null,
+    });
+    const trackIds = [
+      "mechanical-design-fabrication",
+      "electrical-systems-diagnostics",
+      "programming-with-ares",
+      "controls-localization-autonomy",
+      "testing-debugging-commissioning",
+      "competition-operations",
+      "robotics-capstones",
+    ];
+    const plan = {
+      planVersion: 1,
+      mode: "proposal-only",
+      requiresHumanReview: true,
+      minimumPlannedLessons: 48,
+      sourceAuthority: {
+        repository: "ARES-Robotics",
+        commit: "a".repeat(40),
+        aresVersion: "11.0.0",
+        studioVersion: "2.0.0",
+      },
+      instructionalContract: {
+        targetReadingGrades: [6, 8],
+        requiredElements: ["purpose", "activity"],
+        studentLedRobotVerification: true,
+        websitePublicationRequiresLeadCoachReview: true,
+      },
+      interactionContract: {
+        requiredEvidence: ["keyboard-operation"],
+        forbiddenClaims: ["physical-hardware-validation"],
+      },
+      mediaContract: {
+        authenticOnly: true,
+        requiredMetadata: ["origin"],
+        missingMediaBehavior: "record a truthful request",
+      },
+      tracks: trackIds.map((id, trackIndex) => ({
+        id,
+        pathId: id === "controls-localization-autonomy" ? "controls-localization-autonomous" : id,
+        label: id,
+        sourceRoots: [`docs/${id}.md`],
+        lessons: Array.from({ length: trackIndex === 0 ? 12 : 6 }, (_, lessonIndex) =>
+          lesson((trackIndex * 12) + lessonIndex)),
+      })),
+      existingLessonInteractionCandidates: [{
+        slug: "existing-lesson",
+        interaction: "ratio-explorer",
+        purpose: "compare inputs and outputs",
+      }],
+    };
+    const catalog = { documents: [{ slug: "existing-lesson" }] };
+
+    expect(validateRoboticsCurriculumPlan(plan, catalog)).toEqual({
+      tracks: 7,
+      lessons: 48,
+      existingInteractionCandidates: 1,
+    });
+    expect(() => validateRoboticsCurriculumPlan({ ...plan, minimumPlannedLessons: 47 }, catalog))
+      .toThrow(/48-lesson expansion floor/u);
+    expect(() => validateRoboticsCurriculumPlan({
+      ...plan,
+      existingLessonInteractionCandidates: [{ ...plan.existingLessonInteractionCandidates[0], slug: "missing" }],
+    }, catalog)).toThrow(/absent from catalog/u);
+    expect(() => validateRoboticsCurriculumPlan({
+      ...plan,
+      tracks: plan.tracks.map((track, index) => index === 1
+        ? { ...track, lessons: [{ ...track.lessons[0], id: plan.tracks[0].lessons[0].id }] }
+        : track),
+    }, catalog)).toThrow(/duplicates lesson/u);
+  });
+
+  it("allows only standalone simulations with declared fidelity into Academy lessons", () => {
+    expect(validateAcademySimRegistry({ simulators: [
+      { id: "ratioExplorer", academyApproved: true, requiresContext: false, fidelity: "conceptual" },
+      { id: "fieldRuntime", academyApproved: false, requiresContext: true, fidelity: null },
+    ] }).approvedTags).toEqual(new Set(["ratioexplorer"]));
+    expect(() => validateAcademySimRegistry({ simulators: [
+      { id: "unsafeRuntime", academyApproved: true, requiresContext: true, fidelity: "code-derived" },
+    ] })).toThrow(/cannot require application context/u);
+    expect(() => validateAcademySimRegistry({ simulators: [
+      { id: "unclearModel", academyApproved: true, requiresContext: false, fidelity: null },
+    ] })).toThrow(/declared fidelity/u);
+  });
+
+  it("tracks every curriculum source gap without claiming it is already fulfilled", () => {
+    const curriculumPlan = { tracks: [{ lessons: [
+      { id: "needs-photo", sourceGap: "authentic team photo required" },
+      { id: "complete-source", sourceGap: null },
+    ] }] };
+    const sourceRequests = {
+      schemaVersion: 1,
+      mode: "proposal-only",
+      requests: [{
+        lessonId: "needs-photo",
+        requestType: "authentic-media",
+        need: "authentic team photo required",
+        status: "requested",
+        acceptance: "An approved team photo supports the lesson objective.",
+      }],
+    };
+    expect(validateCurriculumSourceRequests(sourceRequests, curriculumPlan)).toEqual({ requests: 1 });
+    expect(() => validateCurriculumSourceRequests({ ...sourceRequests, requests: [] }, curriculumPlan))
+      .toThrow(/has no tracked request/u);
+    expect(() => validateCurriculumSourceRequests({
+      ...sourceRequests,
+      requests: [{ ...sourceRequests.requests[0], status: "fulfilled" }],
+    }, curriculumPlan)).toThrow(/must remain requested/u);
   });
 });

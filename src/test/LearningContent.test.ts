@@ -27,7 +27,7 @@ describe("normalizeLearningMetadata", () => {
       safetyScope: "simulation-only",
       estimatedMinutes: 45.8,
       platforms: ["simulator", "invalid"],
-      pathMemberships: [{ pathId: "robotics-foundations", order: 1.9 }, { pathId: "invalid", order: 2 }],
+      pathMemberships: [{ pathId: "robotics-foundations", order: 1.9 }, { pathId: "mechanical-design-fabrication", order: 2 }, { pathId: "invalid", order: 3 }],
       sourceReferences: [
         { label: "Source", url: "https://example.com/guide", revision: "v1", blobHash: "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" },
         { label: "Unsafe", url: "javascript:alert(1)" },
@@ -37,7 +37,7 @@ describe("normalizeLearningMetadata", () => {
       metadataStatus: "complete",
       estimatedMinutes: 45,
       platforms: ["simulator"],
-      pathMemberships: [{ pathId: "robotics-foundations", order: 1 }],
+      pathMemberships: [{ pathId: "robotics-foundations", order: 1 }, { pathId: "mechanical-design-fabrication", order: 2 }],
       sourceReferences: [{ label: "Source", url: "https://example.com/guide", revision: "v1", blobHash: "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }],
     });
   });

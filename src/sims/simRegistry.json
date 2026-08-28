@@ -4,313 +4,457 @@
       "id": "armkg",
       "name": "Arm Kinematics Gravity Model",
       "path": "./armkg",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "auto",
       "name": "Autonomous Visualizer",
       "path": "./auto",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "battleship",
       "name": "Battleship",
       "path": "./battleship",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "bee",
       "name": "Bee",
       "path": "./bee",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "climbingAnchorAngles",
       "name": "Anchor Vector Angles",
       "path": "./climbing-anchor-angles",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "climbingCapstanFriction",
       "name": "Capstan Friction & Belay Dynamics",
       "path": "./climbing-capstan-friction",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "climbingCenterOfMass",
       "name": "Center of Mass & Friction Vectors",
       "path": "./climbing-center-of-mass",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "climbingFallFactor",
       "name": "Fall Factor & Impact Force",
       "path": "./climbing-fall-factor",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "climbingFingerBiomechanics",
       "name": "Finger Biomechanics & Pulley Strain",
       "path": "./climbing-finger-biomechanics",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "cyclingGearRatios",
       "name": "Cycling Gear Ratios & Cadence",
       "path": "./cycling-gear-ratios",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "elevatorpid",
       "name": "Elevator PID Tuning",
       "path": "./elevatorpid",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
+    },
+    {
+      "id": "evidenceLevelScenarios",
+      "name": "Evidence Level Scenarios",
+      "path": "./evidence-level-scenarios",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
     },
     {
       "id": "fault",
       "name": "Fault Tolerant State Manager",
       "path": "./fault",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "field",
       "name": "PathPlanner Canvas Renderer",
       "path": "./field",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "flywheelkv",
       "name": "Flywheel KV Optimization",
       "path": "./flywheelkv",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "greatbee",
       "name": "The Great Bee Adventure",
       "path": "./greatbee",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "hikingGradeEnergy",
       "name": "Hiking Grade Energy Cost",
       "path": "./hiking-grade-energy",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "kayakingHydrodynamics",
       "name": "Kayaking Hydrodynamics",
       "path": "./kayaking-hydrodynamics",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "linearequations",
       "name": "Linear Equations",
       "path": "./linearequations",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
+    },
+    {
+      "id": "mechanismRatioExplorer",
+      "name": "Mechanism Ratio Explorer",
+      "path": "./mechanism-ratio-explorer",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
     },
     {
       "id": "montyhall",
       "name": "Monty Hall Problem",
       "path": "./montyhall",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnActivation",
       "name": "Sim 1.5: Activation Functions",
       "path": "./nn-activation",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnBiology",
       "name": "Sim 0: The Single Neuron",
       "path": "./nn-biology",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnCnn",
       "name": "Sim 2.5: Convolutions",
       "path": "./nn-cnn",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnDiffusion",
       "name": "Sim 5: Generative AI (Diffusion)",
       "path": "./nn-diffusion",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnIntro",
       "name": "Sim 1: Neural Networks Basics",
       "path": "./nn-intro",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnLlm",
       "name": "Sim 3: LLM Attention",
       "path": "./nn-llm",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnPlayground",
       "name": "Sim 6: Neural Playground",
       "path": "./nn-playground",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnRl",
       "name": "Sim 4: Reinforcement Learning",
       "path": "./nn-rl",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "nnVision",
       "name": "Sim 2: Machine Vision",
       "path": "./nn-vision",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "performance",
       "name": "AdvantageScope Telemetry Dashboard",
       "path": "./performance",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "physics",
       "name": "Dyn4j Physics Subsystem",
       "path": "./physics",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
+    },
+    {
+      "id": "powerBudgetExplorer",
+      "name": "Power Budget Explorer",
+      "path": "./power-budget-explorer",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
     },
     {
       "id": "powershedding",
       "name": "Brownout Protection Sandbox",
       "path": "./powershedding",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
+    },
+    {
+      "id": "reduxStateTracer",
+      "name": "Redux State Tracer",
+      "path": "./redux-state-tracer",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
     },
     {
       "id": "risk",
       "name": "Risk",
       "path": "./risk",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satcircles",
       "name": "Coordinate Circles & Sectors",
       "path": "./satcircles",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satexponential",
       "name": "Exponential Functions",
       "path": "./satexponential",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satgraphs",
       "name": "Scatterplots & Line of Best Fit",
       "path": "./satgraphs",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satinequalities",
       "name": "Systems of Inequalities",
       "path": "./satinequalities",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satquadratic",
       "name": "Quadratics & Parabolas",
       "path": "./satquadratic",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satstats",
       "name": "Statistics & Data Distributions",
       "path": "./satstats",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "satsystems",
       "name": "Systems of Linear Equations",
       "path": "./satsystems",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "sattables",
       "name": "Two-Way Tables & Probability",
       "path": "./sattables",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "sattriangles",
       "name": "Solving Right Triangles",
       "path": "./sattriangles",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "skiingCarvingForces",
       "name": "Skiing Carving Forces",
       "path": "./skiing-carving-forces",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "sotm",
       "name": "Shoot-on-the-Move Analytics",
       "path": "./sotm",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "statemachine",
       "name": "State Machine Hierarchy Visualizer",
       "path": "./statemachine",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "swerve",
       "name": "Swerve Kinematics Playground",
       "path": "./swerve",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "sysid",
       "name": "System Identification Optimizer",
       "path": "./sysid",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
+    },
+    {
+      "id": "telemetryGraphLab",
+      "name": "Telemetry Graph Lab",
+      "path": "./telemetry-graph-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
     },
     {
       "id": "trigbasics",
       "name": "Trigonometry Basics",
       "path": "./trigbasics",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "triginverse",
       "name": "Inverse Trigonometry",
       "path": "./triginverse",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "trigrobotics",
       "name": "Robotics Kinematics",
       "path": "./trigrobotics",
-      "requiresContext": false
+      "requiresContext": false,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "troubleshooting",
       "name": "MARSLib Error Triage Engine",
       "path": "./troubleshooting",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "vision",
       "name": "PhotonVision Pose Estimator",
       "path": "./vision",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     },
     {
       "id": "zeroallocation",
       "name": "Zero Allocation Memory Profiler",
       "path": "./zeroallocation",
-      "requiresContext": true
+      "requiresContext": true,
+      "academyApproved": false,
+      "fidelity": null
     }
   ]
 }

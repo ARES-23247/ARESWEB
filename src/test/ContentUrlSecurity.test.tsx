@@ -92,6 +92,16 @@ describe("untrusted content URL boundaries", () => {
     expect(screen.queryByText("[object Object]")).not.toBeInTheDocument();
   });
 
+  it("does not run an unreviewed simulator from a rich-text document", () => {
+    render(<TiptapRenderer node={{
+      type: "interactiveComponent",
+      attrs: { componentName: "cyclingGearRatios" },
+    }} />);
+
+    expect(screen.getByRole("note")).toHaveTextContent("not been approved");
+    expect(screen.queryByText("Cycling Gear Ratios & Cadence")).not.toBeInTheDocument();
+  });
+
   it("blocks unsafe Markdown images after schema sanitization", () => {
     render(<DocsMarkdownRenderer content="![Robot render](javascript:alert(1))" />);
 

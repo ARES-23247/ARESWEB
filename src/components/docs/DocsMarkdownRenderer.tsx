@@ -6,7 +6,7 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Link as LinkIcon } from "lucide-react";
 import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
 import AuthenticatedImage from "@/components/media/AuthenticatedImage";
-import { SIM_COMPONENTS, SIM_TAG_NAMES } from "../generated/sim-registry";
+import { ACADEMY_SIM_COMPONENTS, SIM_TAG_NAMES } from "../generated/sim-registry";
 
 // ── Lazy-loaded Non-Sim Components ─────────────────────────────────────
 const ConfigVisualizer = lazy(() => import("./ConfigVisualizer"));
@@ -104,10 +104,18 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
         codeplayground: () => <LazyWrap><CodePlayground /></LazyWrap>,
         screenshotgallery: () => <LazyWrap><ScreenshotGallery /></LazyWrap>,
         interactivetutorial: () => <LazyWrap><InteractiveTutorial /></LazyWrap>,
-        // All sims from SIM_COMPONENTS (auto-populated)
+        // All known tags receive an explicit state. Only the separately reviewed
+        // Academy subset is allowed to execute inside curriculum content.
         ...Object.fromEntries(
           SIM_TAG_NAMES.map(tag => [tag, () => {
-            const SimComponent = SIM_COMPONENTS[tag];
+            const SimComponent = ACADEMY_SIM_COMPONENTS[tag];
+            if (!SimComponent) {
+              return (
+                <p role="note" className="my-4 border border-ares-gold/35 bg-ares-gold/10 p-3 text-sm text-white">
+                  This simulation has not been approved as an Academy learning interaction.
+                </p>
+              );
+            }
             return <LazyWrap><SimComponent /></LazyWrap>;
           }])
         ),

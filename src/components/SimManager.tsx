@@ -10,6 +10,8 @@ interface SimMetadata {
   name: string;
   folder: string;
   requiresContext: boolean;
+  academyApproved: boolean;
+  fidelity: "conceptual" | "code-derived" | null;
 }
 
 export default function SimManager() {
@@ -26,6 +28,8 @@ export default function SimManager() {
         name: sim.name,
         path: `./${sim.folder}`,
         requiresContext: sim.requiresContext,
+        academyApproved: sim.academyApproved,
+        fidelity: sim.fidelity,
       })),
       _generated: new Date().toISOString(),
     }, null, 2);
@@ -71,7 +75,7 @@ export default function SimManager() {
           <li>
             Add optional metadata at the top:
             <pre className="mt-1 text-xs bg-obsidian-900 p-2 rounded text-ares-gold">
-              {`/** @sim {"name": "My Display Name", "requiresContext": false} */`}
+              {`/** @sim {"name": "My Display Name", "requiresContext": false, "academyApproved": false} */`}
             </pre>
           </li>
           <li>
@@ -98,6 +102,10 @@ export default function SimManager() {
         <div className="px-3 py-1.5 bg-obsidian-800 rounded-lg border border-ares-bronze/20">
           <span className="text-marble/60">Requires Context: </span>
           <span className="text-ares-bronze font-semibold">{sims.filter((s: SimMetadata) => s.requiresContext).length}</span>
+        </div>
+        <div className="px-3 py-1.5 bg-obsidian rounded-lg border border-ares-cyan/20">
+          <span className="text-marble/60">Academy reviewed: </span>
+          <span className="text-ares-cyan font-semibold">{sims.filter((s: SimMetadata) => s.academyApproved).length}</span>
         </div>
       </div>
 

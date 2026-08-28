@@ -33,6 +33,17 @@ Useful telemetry includes:
 
 Publish at a bounded rate. High-rate values can fill memory, slow a network, or hide useful signals.
 
+## Practice reading a trace
+
+Use the graph lab below to compare a steady signal, a response with overshoot, and a trace with one
+missing sample. First write only what you can observe. Then choose one explanation that would need
+another signal or test.
+
+<telemetrygraphlab />
+
+The lesson data is invented. The graph teaches observation habits and missing-data visibility. It
+does not model one ARES controller or prove why a real signal changed.
+
 ## Offline-first logs
 
 The robot writes logs locally first. A local log should stay useful when the internet is missing.

@@ -15,6 +15,7 @@ const climbingFallFactor = lazy(() => import("../../sims/climbing-fall-factor"))
 const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger-biomechanics"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
+const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
 const fault = lazy(() => import("../../sims/fault"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
@@ -22,6 +23,7 @@ const greatbee = lazy(() => import("../../sims/greatbee"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
+const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
 const nnActivation = lazy(() => import("../../sims/nn-activation"));
 const nnBiology = lazy(() => import("../../sims/nn-biology"));
@@ -34,7 +36,9 @@ const nnRl = lazy(() => import("../../sims/nn-rl"));
 const nnVision = lazy(() => import("../../sims/nn-vision"));
 const performance = lazy(() => import("../../sims/performance"));
 const physics = lazy(() => import("../../sims/physics"));
+const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"));
 const powershedding = lazy(() => import("../../sims/powershedding"));
+const reduxStateTracer = lazy(() => import("../../sims/redux-state-tracer"));
 const risk = lazy(() => import("../../sims/risk"));
 const satcircles = lazy(() => import("../../sims/satcircles"));
 const satexponential = lazy(() => import("../../sims/satexponential"));
@@ -50,6 +54,7 @@ const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
+const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
 const trigbasics = lazy(() => import("../../sims/trigbasics"));
 const triginverse = lazy(() => import("../../sims/triginverse"));
 const trigrobotics = lazy(() => import("../../sims/trigrobotics"));
@@ -80,6 +85,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
   elevatorpid: elevatorpid,
+  evidenceLevelScenarios: evidenceLevelScenarios,
+  evidencelevelscenarios: evidenceLevelScenarios,
   fault: fault,
   field: field,
   flywheelkv: flywheelkv,
@@ -89,6 +96,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   kayakingHydrodynamics: kayakingHydrodynamics,
   kayakinghydrodynamics: kayakingHydrodynamics,
   linearequations: linearequations,
+  mechanismRatioExplorer: mechanismRatioExplorer,
+  mechanismratioexplorer: mechanismRatioExplorer,
   montyhall: montyhall,
   nnActivation: nnActivation,
   nnactivation: nnActivation,
@@ -110,7 +119,11 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   nnvision: nnVision,
   performance: performance,
   physics: physics,
+  powerBudgetExplorer: powerBudgetExplorer,
+  powerbudgetexplorer: powerBudgetExplorer,
   powershedding: powershedding,
+  reduxStateTracer: reduxStateTracer,
+  reduxstatetracer: reduxStateTracer,
   risk: risk,
   satcircles: satcircles,
   satexponential: satexponential,
@@ -127,6 +140,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   statemachine: statemachine,
   swerve: swerve,
   sysid: sysid,
+  telemetryGraphLab: telemetryGraphLab,
+  telemetrygraphlab: telemetryGraphLab,
   trigbasics: trigbasics,
   triginverse: triginverse,
   trigrobotics: trigrobotics,
@@ -138,320 +153,481 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
 // Generate tag names and component mappings from SIM_COMPONENTS
 const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 
+// Academy content may render only simulations that completed the explicit
+// learning-purpose, fidelity, accessibility, and test review.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  evidenceLevelScenarios: evidenceLevelScenarios,
+  evidencelevelscenarios: evidenceLevelScenarios,
+  mechanismRatioExplorer: mechanismRatioExplorer,
+  mechanismratioexplorer: mechanismRatioExplorer,
+  powerBudgetExplorer: powerBudgetExplorer,
+  powerbudgetexplorer: powerBudgetExplorer,
+  reduxStateTracer: reduxStateTracer,
+  reduxstatetracer: reduxStateTracer,
+  telemetryGraphLab: telemetryGraphLab,
+  telemetrygraphlab: telemetryGraphLab,
+};
+const ACADEMY_SIM_TAG_NAMES = Object.keys(ACADEMY_SIM_COMPONENTS);
+
 // Full metadata for each sim (for management UI)
 const SIM_METADATA = [
   {
     'id': 'armkg',
     'name': 'Arm Kinematics Gravity Model',
     'folder': 'armkg',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'auto',
     'name': 'Autonomous Visualizer',
     'folder': 'auto',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'battleship',
     'name': 'Battleship',
     'folder': 'battleship',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'bee',
     'name': 'Bee',
     'folder': 'bee',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingAnchorAngles',
     'name': 'Anchor Vector Angles',
     'folder': 'climbing-anchor-angles',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingCapstanFriction',
     'name': 'Capstan Friction & Belay Dynamics',
     'folder': 'climbing-capstan-friction',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingCenterOfMass',
     'name': 'Center of Mass & Friction Vectors',
     'folder': 'climbing-center-of-mass',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingFallFactor',
     'name': 'Fall Factor & Impact Force',
     'folder': 'climbing-fall-factor',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingFingerBiomechanics',
     'name': 'Finger Biomechanics & Pulley Strain',
     'folder': 'climbing-finger-biomechanics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'cyclingGearRatios',
     'name': 'Cycling Gear Ratios & Cadence',
     'folder': 'cycling-gear-ratios',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'elevatorpid',
     'name': 'Elevator PID Tuning',
     'folder': 'elevatorpid',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'evidenceLevelScenarios',
+    'name': 'Evidence Level Scenarios',
+    'folder': 'evidence-level-scenarios',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'fault',
     'name': 'Fault Tolerant State Manager',
     'folder': 'fault',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'field',
     'name': 'PathPlanner Canvas Renderer',
     'folder': 'field',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'flywheelkv',
     'name': 'Flywheel KV Optimization',
     'folder': 'flywheelkv',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'greatbee',
     'name': 'The Great Bee Adventure',
     'folder': 'greatbee',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'hikingGradeEnergy',
     'name': 'Hiking Grade Energy Cost',
     'folder': 'hiking-grade-energy',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'kayakingHydrodynamics',
     'name': 'Kayaking Hydrodynamics',
     'folder': 'kayaking-hydrodynamics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'linearequations',
     'name': 'Linear Equations',
     'folder': 'linearequations',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'mechanismRatioExplorer',
+    'name': 'Mechanism Ratio Explorer',
+    'folder': 'mechanism-ratio-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'montyhall',
     'name': 'Monty Hall Problem',
     'folder': 'montyhall',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnActivation',
     'name': 'Sim 1.5: Activation Functions',
     'folder': 'nn-activation',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnBiology',
     'name': 'Sim 0: The Single Neuron',
     'folder': 'nn-biology',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnCnn',
     'name': 'Sim 2.5: Convolutions',
     'folder': 'nn-cnn',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnDiffusion',
     'name': 'Sim 5: Generative AI (Diffusion)',
     'folder': 'nn-diffusion',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnIntro',
     'name': 'Sim 1: Neural Networks Basics',
     'folder': 'nn-intro',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnLlm',
     'name': 'Sim 3: LLM Attention',
     'folder': 'nn-llm',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnPlayground',
     'name': 'Sim 6: Neural Playground',
     'folder': 'nn-playground',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnRl',
     'name': 'Sim 4: Reinforcement Learning',
     'folder': 'nn-rl',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnVision',
     'name': 'Sim 2: Machine Vision',
     'folder': 'nn-vision',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'performance',
     'name': 'AdvantageScope Telemetry Dashboard',
     'folder': 'performance',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'physics',
     'name': 'Dyn4j Physics Subsystem',
     'folder': 'physics',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'powerBudgetExplorer',
+    'name': 'Power Budget Explorer',
+    'folder': 'power-budget-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'powershedding',
     'name': 'Brownout Protection Sandbox',
     'folder': 'powershedding',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'reduxStateTracer',
+    'name': 'Redux State Tracer',
+    'folder': 'redux-state-tracer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'risk',
     'name': 'Risk',
     'folder': 'risk',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satcircles',
     'name': 'Coordinate Circles & Sectors',
     'folder': 'satcircles',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satexponential',
     'name': 'Exponential Functions',
     'folder': 'satexponential',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satgraphs',
     'name': 'Scatterplots & Line of Best Fit',
     'folder': 'satgraphs',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satinequalities',
     'name': 'Systems of Inequalities',
     'folder': 'satinequalities',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satquadratic',
     'name': 'Quadratics & Parabolas',
     'folder': 'satquadratic',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satstats',
     'name': 'Statistics & Data Distributions',
     'folder': 'satstats',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satsystems',
     'name': 'Systems of Linear Equations',
     'folder': 'satsystems',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sattables',
     'name': 'Two-Way Tables & Probability',
     'folder': 'sattables',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sattriangles',
     'name': 'Solving Right Triangles',
     'folder': 'sattriangles',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'skiingCarvingForces',
     'name': 'Skiing Carving Forces',
     'folder': 'skiing-carving-forces',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sotm',
     'name': 'Shoot-on-the-Move Analytics',
     'folder': 'sotm',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'statemachine',
     'name': 'State Machine Hierarchy Visualizer',
     'folder': 'statemachine',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'swerve',
     'name': 'Swerve Kinematics Playground',
     'folder': 'swerve',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sysid',
     'name': 'System Identification Optimizer',
     'folder': 'sysid',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'telemetryGraphLab',
+    'name': 'Telemetry Graph Lab',
+    'folder': 'telemetry-graph-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'trigbasics',
     'name': 'Trigonometry Basics',
     'folder': 'trigbasics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'triginverse',
     'name': 'Inverse Trigonometry',
     'folder': 'triginverse',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'trigrobotics',
     'name': 'Robotics Kinematics',
     'folder': 'trigrobotics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'troubleshooting',
     'name': 'MARSLib Error Triage Engine',
     'folder': 'troubleshooting',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'vision',
     'name': 'PhotonVision Pose Estimator',
     'folder': 'vision',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'zeroallocation',
     'name': 'Zero Allocation Memory Profiler',
     'folder': 'zeroallocation',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   }
-];
+] as const;
 
-export { SIM_COMPONENTS, SIM_TAG_NAMES, SIM_METADATA };
+export { SIM_COMPONENTS, SIM_TAG_NAMES, SIM_METADATA, ACADEMY_SIM_COMPONENTS, ACADEMY_SIM_TAG_NAMES };

@@ -26,6 +26,9 @@ For every item being approved, confirm:
 - language and exercises are suitable for the intended student audience;
 - links, headings, tables, lists, code, and instructions are understandable by
   keyboard and on a narrow screen;
+- each interaction serves a named learning objective, has a visible fidelity
+  limit and deterministic reset, exposes its result to assistive technology,
+  and remains usable with keyboard, touch, reduced motion, and narrow screens;
 - no student identity, private team data, credentials, unpublished hardware
   details, or fabricated accomplishments appear; and
 - the proposed subject and learning-path placement are useful and accurate.
@@ -114,6 +117,24 @@ website editorial workflow and production migration are separately approved.
 | Read a Telemetry Graph Like a Scientist | Math for Robotics | [`02-read-telemetry-graph.md`](../content/learning/middle-school-stem/02-read-telemetry-graph.md) |
 | Decide Whether Camera Evidence Is Trustworthy | AI & ML Foundations | [`03-camera-evidence.md`](../content/learning/middle-school-stem/03-camera-evidence.md) |
 | Measure, Test, and Improve a Design | Applied STEM in the Outdoors | [`04-measure-test-improve.md`](../content/learning/middle-school-stem/04-measure-test-improve.md) |
+
+## Robotics curriculum expansion awaiting review
+
+This branch adds four new robotics drafts and deepens selected existing lessons.
+The files remain local review sources. They are not staged, published, or live.
+
+| Lesson | Path | Safety scope | Canonical source file |
+| --- | --- | --- | --- |
+| Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
+| Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
+| Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
+| Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
+
+The review must also cover the upgraded Redux and simulation-evidence lessons,
+the telemetry interaction added to the ARESLib reference, and every approved
+interaction named in the generated registry. Missing authentic media and
+official event sources stay blocked in
+[`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
 
 ## Recording future decisions
 

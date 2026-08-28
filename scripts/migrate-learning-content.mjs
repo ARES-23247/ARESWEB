@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 const MIGRATION_VERSION = 2;
 const MAX_FILE_BYTES = 2_000_000;
 const MAX_CHANGES = 25;
+const MAX_ARTIFACT_DOCUMENTS = 100;
 const APPROVAL_PHASES = new Set(["publish-drafts", "refresh-published", "replacements", "cross-links"]);
 const APPROVAL_METADATA_FIELDS = new Set(["approvalStatus", "approvedAt", "reviewedAt", "reviewedByLabel", "status"]);
 const PHASES = new Set(["cleanup", "stage-drafts", ...APPROVAL_PHASES]);
@@ -175,8 +176,8 @@ export function validateApprovalFile(value, phase, now = new Date()) {
 }
 
 function catalogMap(artifact) {
-  if (artifact?.catalogVersion !== 1 || !Array.isArray(artifact.documents) || artifact.documents.length > MAX_CHANGES) {
-    throw new Error("Prepared learning artifact is invalid or exceeds 25 documents.");
+  if (artifact?.catalogVersion !== 1 || !Array.isArray(artifact.documents) || artifact.documents.length > MAX_ARTIFACT_DOCUMENTS) {
+    throw new Error("Prepared learning artifact is invalid or exceeds 100 documents.");
   }
   const result = new Map();
   for (const document of artifact.documents) {

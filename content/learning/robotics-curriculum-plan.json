@@ -1,0 +1,218 @@
+{
+  "planVersion": 1,
+  "mode": "proposal-only",
+  "requiresHumanReview": true,
+  "minimumPlannedLessons": 48,
+  "sourceAuthority": {
+    "repository": "ARES-Robotics",
+    "commit": "439f2a36855aa6d00010c0d4ada255511626d1af",
+    "aresVersion": "11.0.0",
+    "studioVersion": "2.0.0"
+  },
+  "instructionalContract": {
+    "targetReadingGrades": [6, 8],
+    "requiredElements": [
+      "purpose",
+      "prerequisites",
+      "vocabulary",
+      "worked-example",
+      "purposeful-visual",
+      "hands-on-activity",
+      "checkpoints",
+      "troubleshooting",
+      "evidence-artifact",
+      "assessment",
+      "extension-challenge",
+      "next-step"
+    ],
+    "studentLedRobotVerification": true,
+    "websitePublicationRequiresLeadCoachReview": true
+  },
+  "interactionContract": {
+    "requiredEvidence": [
+      "learning-purpose",
+      "fidelity-statement",
+      "keyboard-operation",
+      "touch-operation",
+      "narrow-viewport-reflow",
+      "screen-reader-result",
+      "reduced-motion-behavior",
+      "deterministic-reset",
+      "automated-component-test",
+      "manual-accessibility-review"
+    ],
+    "forbiddenClaims": [
+      "physical-hardware-validation",
+      "production-robot-simulation-equivalence",
+      "complete-safety-verification"
+    ]
+  },
+  "mediaContract": {
+    "authenticOnly": true,
+    "requiredMetadata": ["origin", "permission", "alt-text", "caption", "learning-purpose"],
+    "missingMediaBehavior": "record an editorial request and keep a truthful text or diagram alternative"
+  },
+  "tracks": [
+    {
+      "id": "mechanical-design-fabrication",
+      "pathId": "mechanical-design-fabrication",
+      "label": "Mechanical Design and Fabrication",
+      "sourceRoots": [
+        "ARES-Analytics/docs/DRIVEBASE_BUILDER.md",
+        "ARESLib-Kotlin/docs/drivetrain-authoring.md",
+        "ARES-FTC/docs/DRIVEBASE_CONFIGURATION.md",
+        "ARES-FRC/docs/DRIVEBASE_CONFIGURATION.md"
+      ],
+      "lessons": [
+        { "id": "mechanical-measurement-design-notebook", "title": "Measure, Sketch, and Record a Design", "level": "beginner", "interaction": null, "sourceGap": "authentic team measurement photos required" },
+        { "id": "mechanical-tools-safe-work", "title": "Choose and Use Common Robot Tools", "level": "beginner", "interaction": "tool-choice-scenarios", "sourceGap": "official tool guidance and authentic team photos required" },
+        { "id": "mechanical-fasteners", "title": "Fasteners, Threads, and Keeping Parts Together", "level": "beginner", "interaction": "fastener-choice-lab", "sourceGap": "official manufacturer references required" },
+        { "id": "mechanical-structure-load-paths", "title": "Frames, Bracing, and Load Paths", "level": "beginner", "interaction": "load-path-explorer", "sourceGap": "authentic team structure examples required" },
+        { "id": "mechanical-gears-sprockets-belts", "title": "Gears, Sprockets, Belts, Speed, and Torque", "level": "beginner", "interaction": "mechanism-ratio-explorer", "sourceGap": null },
+        { "id": "mechanical-drivetrains", "title": "Compare Mecanum, Tank, and Swerve Drivetrains", "level": "intermediate", "interaction": "drivetrain-choice-lab", "sourceGap": null },
+        { "id": "mechanical-mechanisms", "title": "Build Motion with Arms, Elevators, Intakes, and Linkages", "level": "intermediate", "interaction": "mechanism-motion-explorer", "sourceGap": "approved mechanism images required" },
+        { "id": "mechanical-cad-fabrication", "title": "From CAD Model to a Buildable Part", "level": "intermediate", "interaction": "tolerance-stack-lab", "sourceGap": "team CAD and fabricated-part examples required" }
+      ]
+    },
+    {
+      "id": "electrical-systems-diagnostics",
+      "pathId": "electrical-systems-diagnostics",
+      "label": "Electrical Systems and Diagnostics",
+      "sourceRoots": [
+        "ARES-Analytics/docs/start/HARDWARE_SETUP.md",
+        "ARES-Analytics/docs/GUIDED_COMMISSIONING.md",
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt",
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt",
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt"
+      ],
+      "lessons": [
+        { "id": "electrical-voltage-current-power", "title": "Voltage, Current, Power, and Energy", "level": "beginner", "interaction": "power-budget-explorer", "sourceGap": null },
+        { "id": "electrical-battery-protection", "title": "Batteries, Breakers, Fuses, and Brownouts", "level": "beginner", "interaction": "brownout-sandbox", "sourceGap": "official FTC and FRC electrical rules required" },
+        { "id": "electrical-wiring-connectors", "title": "Wire, Connectors, Polarity, and Strain Relief", "level": "beginner", "interaction": "wiring-diagnostic-lab", "sourceGap": "authentic team wiring photos required" },
+        { "id": "electrical-motors-servos", "title": "Choose Motors, Gearmotors, and Servos", "level": "intermediate", "interaction": "motor-servo-selector", "sourceGap": "approved manufacturer specifications required" },
+        { "id": "electrical-sensors", "title": "Choose and Read Robot Sensors", "level": "intermediate", "interaction": "sensor-signal-lab", "sourceGap": null },
+        { "id": "electrical-buses-addresses", "title": "USB, I2C, CAN, Addresses, and Device Identity", "level": "intermediate", "interaction": "bus-address-troubleshooter", "sourceGap": null },
+        { "id": "electrical-hardware-map-diagnostics", "title": "Map Hardware and Diagnose a Dead Device", "level": "intermediate", "interaction": "hardware-topology-diagnostic", "sourceGap": "authentic commissioning screenshots required" }
+      ]
+    },
+    {
+      "id": "programming-with-ares",
+      "pathId": "programming-with-ares",
+      "label": "Programming with ARES",
+      "sourceRoots": [
+        "ARESLib-Kotlin/docs/onboarding/01_redux_basics.md",
+        "ARESLib-Kotlin/docs/subsystem-dsl.md",
+        "ARESLib-Kotlin/docs/superstructure-runtime.md",
+        "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md",
+        "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md",
+        "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md"
+      ],
+      "lessons": [
+        { "id": "programming-kotlin-basics", "title": "Read and Change Small Kotlin Programs", "level": "beginner", "interaction": "kotlin-expression-lab", "sourceGap": null },
+        { "id": "programming-input-state-output", "title": "Trace Input, State, and Output", "level": "beginner", "interaction": "robot-flow-tracer", "sourceGap": null },
+        { "id": "redux-state-actions-reducers", "title": "Use Actions and Pure Reducers", "level": "beginner", "interaction": "redux-state-tracer", "sourceGap": null },
+        { "id": "programming-io-caching", "title": "Read Hardware Once and Write Safe Outputs", "level": "intermediate", "interaction": "loop-cache-lab", "sourceGap": null },
+        { "id": "programming-gui-subsystem", "title": "Author a GUI-Owned Subsystem", "level": "intermediate", "interaction": "subsystem-descriptor-lab", "sourceGap": null },
+        { "id": "programming-code-subsystem", "title": "Author a Code-First or Hybrid Subsystem", "level": "intermediate", "interaction": "subsystem-ownership-lab", "sourceGap": null },
+        { "id": "programming-superstructure", "title": "Coordinate Subsystems with a Superstructure", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
+        { "id": "programming-tests-parity", "title": "Test Robot Logic Across Mocks and Simulation", "level": "advanced", "interaction": "parity-evidence-lab", "sourceGap": null }
+      ]
+    },
+    {
+      "id": "controls-localization-autonomy",
+      "pathId": "controls-localization-autonomous",
+      "label": "Controls, Localization, and Autonomous",
+      "sourceRoots": [
+        "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md",
+        "ARESLib-Kotlin/docs/typed-tuning-profiles.md",
+        "ARESLib-Kotlin/docs/localization-calibration.md",
+        "ARESLib-Kotlin/docs/routines-controls-and-codegen.md",
+        "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md",
+        "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md"
+      ],
+      "lessons": [
+        { "id": "controls-frames-units", "title": "Use Units and Coordinate Frames", "level": "beginner", "interaction": "coordinate-transform-lab", "sourceGap": null },
+        { "id": "controls-motor-model-feedforward", "title": "Predict Motion with a Motor Model and Feedforward", "level": "intermediate", "interaction": "feedforward-response-lab", "sourceGap": null },
+        { "id": "controls-pid", "title": "Tune a PID Loop with Evidence", "level": "intermediate", "interaction": "pid-response-lab", "sourceGap": null },
+        { "id": "controls-motion-profiles", "title": "Plan Smooth Motion with Limits", "level": "intermediate", "interaction": "motion-profile-lab", "sourceGap": null },
+        { "id": "controls-odometry", "title": "Estimate Motion with Encoders and Odometry", "level": "intermediate", "interaction": "odometry-error-lab", "sourceGap": null },
+        { "id": "controls-sensor-fusion", "title": "Combine Measurements without Hiding Uncertainty", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
+        { "id": "controls-vision", "title": "Use AprilTags and Reject Bad Vision Measurements", "level": "advanced", "interaction": "vision-uncertainty-lab", "sourceGap": null },
+        { "id": "controls-autonomous-routines", "title": "Build and Verify an Autonomous Routine", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null }
+      ]
+    },
+    {
+      "id": "testing-debugging-commissioning",
+      "pathId": "testing-debugging-commissioning",
+      "label": "Testing, Debugging, and Commissioning",
+      "sourceRoots": [
+        "ARESLib-Kotlin/docs/telemetry-and-logging.md",
+        "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md",
+        "ARES-FTC/docs/TROUBLESHOOTING.md",
+        "ARES-Analytics/docs/RUN_COMPARISON_AND_GUIDED_DIAGNOSIS.md",
+        "ARES-Analytics/docs/GUIDED_COMMISSIONING.md",
+        "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md"
+      ],
+      "lessons": [
+        { "id": "simulation-is-not-hardware-validation", "title": "Choose the Next Safe Test", "level": "beginner", "interaction": "evidence-level-scenarios", "sourceGap": null },
+        { "id": "telemetry-and-control", "title": "Read Telemetry and Spot a Useful Pattern", "level": "beginner", "interaction": "telemetry-graph-lab", "sourceGap": null },
+        { "id": "testing-logs-replay", "title": "Compare Logs and Replay a Failure", "level": "intermediate", "interaction": "log-comparison-lab", "sourceGap": null },
+        { "id": "testing-fault-tree", "title": "Build a Fault Tree and Isolate a Cause", "level": "intermediate", "interaction": "fault-tree-lab", "sourceGap": null },
+        { "id": "testing-commissioning", "title": "Commission One Robot System", "level": "intermediate", "interaction": "commissioning-checklist-lab", "sourceGap": "authentic commissioning evidence required" },
+        { "id": "testing-sysid-tuning", "title": "Run SysId and a Bounded Tuning Experiment", "level": "advanced", "interaction": "sysid-tuning-lab", "sourceGap": null }
+      ]
+    },
+    {
+      "id": "competition-operations",
+      "pathId": "competition-operations",
+      "label": "FTC and FRC Competition Operations",
+      "sourceRoots": [
+        "ARES-FRC/docs/OPERATIONS.md",
+        "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md",
+        "ARES-FRC-Starter/docs/HARDWARE_REVIEW.md",
+        "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md"
+      ],
+      "lessons": [
+        { "id": "competition-ftc-inspection-pit", "title": "Prepare an FTC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-readiness-lab", "sourceGap": "current official FTC inspection rules required" },
+        { "id": "competition-frc-inspection-pit", "title": "Prepare an FRC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-readiness-lab", "sourceGap": "current official FRC inspection rules required" },
+        { "id": "competition-drive-team", "title": "Run a Drive-Team Match Cycle", "level": "intermediate", "interaction": "match-cycle-scenarios", "sourceGap": "Lead Coach process review required" },
+        { "id": "competition-scouting", "title": "Collect Useful Scouting Evidence", "level": "beginner", "interaction": "scouting-quality-lab", "sourceGap": "team scouting process and non-PII examples required" },
+        { "id": "competition-strategy", "title": "Turn Evidence into Match Strategy", "level": "intermediate", "interaction": "strategy-tradeoff-lab", "sourceGap": "Lead Coach process review required" },
+        { "id": "competition-post-match", "title": "Review, Repair, and Record after a Match", "level": "intermediate", "interaction": "post-match-triage-lab", "sourceGap": "authentic team checklist required" }
+      ]
+    },
+    {
+      "id": "robotics-capstones",
+      "pathId": "robotics-capstones",
+      "label": "Progressive Robotics Capstones",
+      "sourceRoots": [
+        "ARES-Analytics/docs/PROJECT_STRUCTURE.md",
+        "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md",
+        "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md",
+        "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md",
+        "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md"
+      ],
+      "lessons": [
+        { "id": "capstone-simulated-mechanism", "title": "Capstone 1: Model and Test a Simulated Mechanism", "level": "intermediate", "interaction": "capstone-evidence-board", "sourceGap": null },
+        { "id": "capstone-subsystem", "title": "Capstone 2: Build a Complete ARES Subsystem", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": null },
+        { "id": "capstone-autonomous-mission", "title": "Capstone 3: Complete a Simulated Autonomous Mission", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null },
+        { "id": "capstone-physical-commissioning", "title": "Capstone 4: Commission a Physical Feature", "level": "advanced", "interaction": "commissioning-checklist-lab", "sourceGap": "physical student evidence required" },
+        { "id": "capstone-competition-readiness", "title": "Capstone 5: Present Competition-Readiness Evidence", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "Lead Coach rubric and authentic evidence required" }
+      ]
+    }
+  ],
+  "existingLessonInteractionCandidates": [
+    { "slug": "rates-units-and-motion", "interaction": "mechanism-ratio-explorer", "purpose": "connect rate calculations to drivetrain speed and torque" },
+    { "slug": "read-a-telemetry-graph", "interaction": "telemetry-graph-lab", "purpose": "practice observations before explanations" },
+    { "slug": "camera-evidence-and-uncertainty", "interaction": "vision-uncertainty-lab", "purpose": "compare accepted and rejected measurements" },
+    { "slug": "robot-coordinate-contracts", "interaction": "coordinate-transform-lab", "purpose": "move a vector between robot and field frames" },
+    { "slug": "redux-state-actions-reducers", "interaction": "redux-state-tracer", "purpose": "trace state changes without touching hardware" },
+    { "slug": "ftc-starter-first-autonomous", "interaction": "autonomous-path-lab", "purpose": "inspect a bounded generated routine before simulation" },
+    { "slug": "ftc-starter-physical-commissioning", "interaction": "commissioning-checklist-lab", "purpose": "choose the next safe evidence boundary" },
+    { "slug": "ftc-driver-input-shaping-and-frames", "interaction": "driver-input-curve-lab", "purpose": "compare deadband and response curves" },
+    { "slug": "swerve-and-kinematics", "interaction": "swerve", "purpose": "connect chassis motion to module states" },
+    { "slug": "telemetry-and-control", "interaction": "telemetry-graph-lab", "purpose": "separate control state from displayed telemetry" },
+    { "slug": "autonomous-and-vision", "interaction": "vision-uncertainty-lab", "purpose": "show delayed measurements and visible rejection reasons" },
+    { "slug": "simulation-is-not-hardware-validation", "interaction": "evidence-level-scenarios", "purpose": "classify what each test boundary can prove" }
+  ]
+}

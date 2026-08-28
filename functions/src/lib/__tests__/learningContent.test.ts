@@ -41,6 +41,7 @@ describe("publicLearningMetadata", () => {
         { pathId: "robotics-foundations", order: 1 },
         { pathId: "not-real", order: 3 },
         { pathId: "ftc-robot-with-ares", order: -4 },
+        { pathId: "competition-operations", order: 4 },
       ],
       prerequisites: ["workspace-introduction"],
       objectives: ["Trace one Redux control cycle."],
@@ -65,6 +66,7 @@ describe("publicLearningMetadata", () => {
       pathMemberships: [
         { pathId: "ftc-robot-with-ares", order: 0 },
         { pathId: "robotics-foundations", order: 2 },
+        { pathId: "competition-operations", order: 4 },
       ],
       appliesToVersion: "ARES 9.3.6",
       safetyScope: "simulation-only",

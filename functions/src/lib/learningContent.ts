@@ -23,6 +23,12 @@ export const LEARNING_PATH_IDS = [
   "math-for-robotics",
   "ai-ml-foundations",
   "applied-stem-outdoors",
+  "mechanical-design-fabrication",
+  "electrical-systems-diagnostics",
+  "programming-with-ares",
+  "testing-debugging-commissioning",
+  "competition-operations",
+  "robotics-capstones",
 ] as const;
 
 type LearningSubject = (typeof LEARNING_SUBJECTS)[number];
