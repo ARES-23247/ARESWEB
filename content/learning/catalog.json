@@ -642,6 +642,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "electrical-motors-servos",
+      "title": "Choose Motors, Gearmotors, and Servos",
+      "category": "Robotics & Engineering",
+      "description": "Turn a required output motion into a sourced motor, gearmotor, or servo comparison while keeping product choice and physical proof open.",
+      "contentFile": "electrical-systems/04-motors-servos.md",
+      "subject": "robotics-engineering",
+      "topics": ["motors", "gearmotors", "servos", "actuators", "feedback", "safe neutral"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "electrical-systems-diagnostics", "order": 4 }],
+      "prerequisites": ["electrical-wiring-connectors", "mechanical-mechanisms"],
+      "objectives": ["Match continuous speed, bounded angle, and multi-turn position needs to bounded actuator comparison paths.", "Build an ordered evidence record with output units, transmission, manufacturer sources, feedback, homing, limits, and safe neutral.", "Explain why ARES motor and servo software contracts cannot select or validate a physical actuator."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "ARES motor I/O contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt", "blobHash": "8854f2d9f626062491add436c469aebff63a89ed" }, { "label": "ARES servo I/O contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt", "blobHash": "9527c1b44cf69d5033bc47f0176b674dd0ad27f8" }, { "label": "FTC subsystem authoring guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "8d1b872e71ddeb83cf07402cb9548b73fd11d6e3" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.2; approved manufacturer specifications remain an open source request",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "electrical-sensors",
       "title": "Choose and Read Robot Sensors",
       "category": "Robotics & Engineering",

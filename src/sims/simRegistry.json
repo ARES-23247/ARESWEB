@@ -297,6 +297,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "motorServoSelector",
+      "name": "Motor and Servo Evidence Sorter",
+      "path": "./motor-servo-selector",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "nnActivation",
       "name": "Sim 1.5: Activation Functions",
       "path": "./nn-activation",

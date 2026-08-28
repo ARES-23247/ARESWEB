@@ -130,9 +130,15 @@ Create two starting ideas for the same task. For example, compare an arm and an 
 an object at the same height. Give each idea one useful feature, one hazard, and three missing facts.
 Then choose the smallest software or paper test that would reduce one unknown without moving hardware.
 
+Use the evidence sorter below for each idea. It can turn a motion need into a motor, gearmotor, or
+servo review path. It cannot choose a part or prove that either mechanism is safe.
+
+<motorservoselector />
+
 ## Related and next
 
 Use [Author a Code-First or Hybrid Subsystem](/academy/programming-code-subsystem?path=programming-with-ares)
-to map the mechanism into state, control, IO, simulation, lifecycle, and tests. Continue later with
-the CAD and fabrication lessons after they complete source and media review. A software description
-can record units and limits, but students must still verify the real mechanism with the team process.
+to map the mechanism into state, control, IO, simulation, lifecycle, and tests. Use [Choose Motors,
+Gearmotors, and Servos](/academy/electrical-motors-servos?path=electrical-systems-diagnostics) to build
+the full actuator evidence record. A software description can record units and limits, but students
+must still verify the real mechanism with the team process.

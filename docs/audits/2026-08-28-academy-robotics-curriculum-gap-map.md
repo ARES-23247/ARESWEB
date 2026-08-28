@@ -25,10 +25,10 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 52 catalog documents across
-12 populated paths. Forty-one substantial lessons now implement instructional
-contract version 2, and 56 approved interaction embeds appear in Academy
-content. Thirty-eight of 48 planned identities are authored. Every required
+Current bounded-phase status: the branch contains 53 catalog documents across
+12 populated paths. Forty-two substantial lessons now implement instructional
+contract version 2, and 58 approved interaction embeds appear in Academy
+content. Thirty-nine of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -1179,3 +1179,33 @@ a conductor or protection rating, energize a circuit, or prove correct wiring.
 The authentic media request remains open. No draft was staged or published, no
 production data was written, and no branch was pushed or deployed during this
 batch.
+
+## Thirty-fifth bounded implementation evidence
+
+The actuator batch adds `electrical-motors-servos` and the approved Motor and
+Servo Evidence Sorter. The interaction is also reused as an optional extension
+in the existing mechanism lesson. Approved manufacturer specifications remain
+an open source request, so the lesson teaches comparison evidence without
+inventing ratings or selecting a product.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 53 documents, with 15 existing-lesson
+  interaction candidates and 58 approved embeds;
+- the new lesson has 1,040 prose words, estimated grade 6.9, and a 22-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 39 authored identities and
+  9 remaining full-contract lesson identities out of 48;
+- all 81 unique pinned source URLs were remotely recomputed, including the
+  current ARES 11.1.0 motor and servo contracts and FTC authoring guide;
+- 40 focused rendering, navigation, content, readability, security, and
+  interaction tests pass; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  and remote provenance pass. Targeted interaction coverage is 100% for
+  statements, branches, functions, and lines.
+
+The sorter reads only student selections. It does not inspect requirements,
+verify manufacturer specifications, calculate load, heat, current, life, or
+strength, choose a product, command hardware, or approve physical operation.
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

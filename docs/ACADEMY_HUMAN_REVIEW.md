@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-one new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -136,6 +136,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Batteries, Breakers, Fuses, and Brownouts | Electrical Systems & Diagnostics | Physical robot | [`02-battery-protection.md`](../content/learning/electrical-systems/02-battery-protection.md) |
 | Wire, Connectors, Polarity, and Strain Relief | Electrical Systems & Diagnostics | Physical robot | [`03-wiring-connectors.md`](../content/learning/electrical-systems/03-wiring-connectors.md) |
+| Choose Motors, Gearmotors, and Servos | Electrical Systems & Diagnostics | Physical robot | [`04-motors-servos.md`](../content/learning/electrical-systems/04-motors-servos.md) |
 | Choose and Read Robot Sensors | Electrical Systems & Diagnostics | Physical robot | [`02-choose-read-sensors.md`](../content/learning/electrical-systems/02-choose-read-sensors.md) |
 | USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
 | Map Hardware and Diagnose a Dead Device | Electrical Systems & Diagnostics | Physical robot | [`07-hardware-map-diagnostics.md`](../content/learning/electrical-systems/07-hardware-map-diagnostics.md) |
@@ -251,6 +252,14 @@ checkboxes; first-missing feedback; narrow layout; and deterministic reset.
 Confirm that its self-reported boxes do not inspect wiring, read a diagram,
 verify a source, identify a connector, choose a rating, energize a circuit, or
 prove correct wiring. The authentic team wiring-photo request remains open.
+The new actuator lesson and existing mechanism lesson share the Motor and Servo
+Evidence Sorter. Review its continuous-speed, bounded-angle, and multi-turn
+position paths; ordered source, feedback, homing, limit, and safe-neutral
+checks; native controls; live result; narrow layout; and deterministic reset.
+Confirm that its self-reported choices do not read requirements, verify a data
+sheet, calculate load or electrical limits, choose a product, command hardware,
+or approve physical operation. Approved manufacturer specifications remain an
+open source request.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

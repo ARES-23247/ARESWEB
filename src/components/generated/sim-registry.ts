@@ -41,6 +41,7 @@ const mechanismMotionExplorer = lazy(() => import("../../sims/mechanism-motion-e
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
 const motionProfileLab = lazy(() => import("../../sims/motion-profile-lab"));
+const motorServoSelector = lazy(() => import("../../sims/motor-servo-selector"));
 const nnActivation = lazy(() => import("../../sims/nn-activation"));
 const nnBiology = lazy(() => import("../../sims/nn-biology"));
 const nnCnn = lazy(() => import("../../sims/nn-cnn"));
@@ -159,6 +160,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   montyhall: montyhall,
   motionProfileLab: motionProfileLab,
   motionprofilelab: motionProfileLab,
+  motorServoSelector: motorServoSelector,
+  motorservoselector: motorServoSelector,
   nnActivation: nnActivation,
   nnactivation: nnActivation,
   nnBiology: nnBiology,
@@ -277,6 +280,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   mechanismratioexplorer: mechanismRatioExplorer,
   motionProfileLab: motionProfileLab,
   motionprofilelab: motionProfileLab,
+  motorServoSelector: motorServoSelector,
+  motorservoselector: motorServoSelector,
   odometryErrorLab: odometryErrorLab,
   odometryerrorlab: odometryErrorLab,
   parityEvidenceLab: parityEvidenceLab,
@@ -604,6 +609,14 @@ const SIM_METADATA = [
     'id': 'motionProfileLab',
     'name': 'Motion Profile Lab',
     'folder': 'motion-profile-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'motorServoSelector',
+    'name': 'Motor and Servo Evidence Sorter',
+    'folder': 'motor-servo-selector',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'
