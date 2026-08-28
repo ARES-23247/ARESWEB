@@ -41,6 +41,14 @@
       "fidelity": null
     },
     {
+      "id": "brownoutSandbox",
+      "name": "Brownout State Sandbox",
+      "path": "./brownout-sandbox",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "busAddressTroubleshooter",
       "name": "Bus and Address Troubleshooter",
       "path": "./bus-address-troubleshooter",

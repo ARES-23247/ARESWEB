@@ -9,6 +9,7 @@ const auto = lazy(() => import("../../sims/auto"));
 const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
 const battleship = lazy(() => import("../../sims/battleship"));
 const bee = lazy(() => import("../../sims/bee"));
+const brownoutSandbox = lazy(() => import("../../sims/brownout-sandbox"));
 const busAddressTroubleshooter = lazy(() => import("../../sims/bus-address-troubleshooter"));
 const capstoneEvidenceBoard = lazy(() => import("../../sims/capstone-evidence-board"));
 const climbingAnchorAngles = lazy(() => import("../../sims/climbing-anchor-angles"));
@@ -100,6 +101,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   autonomouspathlab: autonomousPathLab,
   battleship: battleship,
   bee: bee,
+  brownoutSandbox: brownoutSandbox,
+  brownoutsandbox: brownoutSandbox,
   busAddressTroubleshooter: busAddressTroubleshooter,
   busaddresstroubleshooter: busAddressTroubleshooter,
   capstoneEvidenceBoard: capstoneEvidenceBoard,
@@ -237,6 +240,8 @@ const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   autonomousPathLab: autonomousPathLab,
   autonomouspathlab: autonomousPathLab,
+  brownoutSandbox: brownoutSandbox,
+  brownoutsandbox: brownoutSandbox,
   busAddressTroubleshooter: busAddressTroubleshooter,
   busaddresstroubleshooter: busAddressTroubleshooter,
   capstoneEvidenceBoard: capstoneEvidenceBoard,
@@ -341,6 +346,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'brownoutSandbox',
+    'name': 'Brownout State Sandbox',
+    'folder': 'brownout-sandbox',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'busAddressTroubleshooter',

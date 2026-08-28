@@ -7,9 +7,9 @@ Audited: 2026-08-28
 - Baseline curriculum authority: ARES Robotics commit
   `1810d74e8f3b260116df68fd8c1b0854b2d61493`
 - Current reviewed curriculum authority and ARES Robotics `origin/main`: commit
-  `439f2a36855aa6d00010c0d4ada255511626d1af`
-- Current release identity: ARES `11.0.0`, FTC Starter `11.0.0`, FRC Starter
-  `11.0.0`, and Robotics Studio `2.0.0`
+  `7cd2cf5f2ade0944214994b2e9ce5565d8a7608d`
+- Current release identity: ARES `11.1.0`, FTC Starter `11.1.0`, FRC Starter
+  `11.1.0`, and Robotics Studio `2.0.2`
 - Scope: source curriculum, learning-path coverage, instructional depth,
   interactive-component reuse, source provenance, and authentic-media needs
 - Excluded: production Firestore changes, publication, deployment, and physical
@@ -25,12 +25,13 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 26 catalog documents across
-12 populated paths. Eight substantial lessons now implement instructional
-contract version 2, and nine approved interaction embeds appear in Academy
-content. Every required robotics track has at least one entry point, but the
-48-lesson architecture is not yet fully authored. Authentic media remains
-blocked on the 19 explicit source requests rather than being fabricated.
+Current bounded-phase status: the branch contains 51 catalog documents across
+12 populated paths. Forty substantial lessons now implement instructional
+contract version 2, and 54 approved interaction embeds appear in Academy
+content. Thirty-seven of 48 planned identities are authored. Every required
+robotics track has at least one entry point, but the architecture is not yet
+complete. Authentic media and official sources remain blocked on 19 explicit
+requests rather than being fabricated or remembered.
 
 The baseline website lazy-loaded 52 React learning components. Forty-three were
 standalone and nine require application context. Several standalone components
@@ -1109,3 +1110,41 @@ fabrication process, or real part. No team CAD or part image was invented, and
 the tracked media request remains open. No draft was staged or published, no
 production data was written, and no branch was pushed or deployed during this
 batch.
+
+## Thirty-third bounded implementation evidence
+
+The electrical-protection batch adds `electrical-battery-protection` and the
+approved Brownout State Sandbox. The interaction is also reused as an optional
+application in the existing voltage/current lesson. League-specific battery,
+wire, breaker, and fuse values remain blocked on current official sources.
+
+The remote gate detected a concurrent Studio 2.0.2 release at `7cd2cf5f`.
+Review of its four commits found Drive synchronization, team integrations,
+updater packaging, starter archives, and release metadata changes. None of the
+75 unique files pinned by current lessons changed. The catalog authority now
+records ARES 11.1.0 / Studio 2.0.2 while preserving all 2.0.1 links as reviewed
+historical pins.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 51 documents, with 15 existing-lesson
+  interaction candidates and 54 approved embeds;
+- the new lesson has 1,017 prose words, estimated grade 7.3, and a 23-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 37 authored identities and
+  11 remaining full-contract lesson identities out of 48;
+- all 75 unique pinned source URLs were remotely recomputed, including the
+  ARES brownout, current-budget, and shared power-manager contracts;
+- tests cover healthy, warning, critical, and hysteresis transitions; invalid
+  voltage and configuration; native controls; live results; reset; fidelity
+  limits; secure rendering; navigation; instructional depth; readability; and
+  the catalog contract; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  provenance, and 40 focused Academy tests pass. Targeted interaction coverage
+  is 100% for statements, functions, and lines, with 93.75% branch coverage.
+
+The sandbox performs one source-pinned state-machine step. It does not read a
+battery, estimate current, model internal resistance, size a breaker or fuse,
+command a motor, or prove protection. The official FTC/FRC electrical-rule
+request remains open. No draft was staged or published, no production data was
+written, and no branch was pushed or deployed during this batch.

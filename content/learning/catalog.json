@@ -2,10 +2,10 @@
   "catalogVersion": 1,
   "generatedFrom": {
     "sourceRepository": "ARES-Robotics",
-    "sourceRevision": "ares-11.1.0-studio-2.0.1",
-    "sourceCommit": "65351a2721840ed3063a4a5a97c440b6fcc0d1b9",
+    "sourceRevision": "ares-11.1.0-studio-2.0.2",
+    "sourceCommit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d",
     "aresVersion": "11.1.0",
-    "studioVersion": "2.0.1",
+    "studioVersion": "2.0.2",
     "ftcStarterVersion": "11.1.0",
     "frcStarterVersion": "11.1.0"
   },
@@ -600,6 +600,26 @@
       "sourceReferences": [{ "label": "ARES guided commissioning workflow", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARES-Analytics/docs/GUIDED_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-Analytics/docs/GUIDED_COMMISSIONING.md", "blobHash": "c5cec245ab12e8cd651d09a7aeeb6f982fd762f6" }, { "label": "ARESLib hardware topology model", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "blobHash": "aa3419236a83d8444967c5474ee70d5819c58fba" }],
       "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
       "safetyScope": "none"
+    },
+    {
+      "slug": "electrical-battery-protection",
+      "title": "Batteries, Breakers, Fuses, and Brownouts",
+      "category": "Robotics & Engineering",
+      "description": "Separate physical protection from software guards, step through ARES brownout hysteresis, and keep league-specific electrical choices blocked on official sources.",
+      "contentFile": "electrical-systems/02-battery-protection.md",
+      "subject": "robotics-engineering",
+      "topics": ["battery", "brownout", "breaker", "fuse", "hysteresis", "current budget"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "electrical-systems-diagnostics", "order": 2 }],
+      "prerequisites": ["electrical-voltage-current-power"],
+      "objectives": ["Separate physical circuit protection from software voltage and current guards.", "Trace healthy, warning, and critical brownout states with hysteresis and fail-closed input handling.", "Create an evidence record that withholds league-specific parts and ratings until current official rules are reviewed."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "ARES brownout guard", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/BrownoutGuard.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/BrownoutGuard.kt", "blobHash": "c7235918fba00d4c6b87734e406379905304afe8" }, { "label": "ARES current budget manager", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/CurrentBudgetManager.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/CurrentBudgetManager.kt", "blobHash": "3a22102836678cad4a219fa4454248c26eddf92e" }, { "label": "Shared power manager contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/PowerManager.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/PowerManager.kt", "blobHash": "91cbaa1dbf508d4ad558b6b55b54b3ab8589a03a" }],
+      "appliesToVersion": "ARES 11.1.0; current league rules remain an open source request",
+      "safetyScope": "physical-robot"
     },
     {
       "slug": "electrical-sensors",

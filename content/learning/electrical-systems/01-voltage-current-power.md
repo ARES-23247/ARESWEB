@@ -130,9 +130,15 @@ multiplication for both. Explain why equal calculated power does not make the re
 Then compare one setup for two minutes and ten minutes. Keep power fixed. Predict the energy ratio
 before using the explorer, and explain the result with units.
 
+Use the optional brownout sandbox below to see how one source-pinned software guard responds to a
+voltage sample. Keep its state and output scale separate from the ideal power budget above. The
+example thresholds are not current league rules or real hardware ratings.
+
+<brownoutsandbox />
+
 ## Related and next
 
-Continue in the Electrical Systems and Diagnostics path with battery protection, wiring, actuators,
-sensors, and fault isolation after those lessons complete source review. Revisit [Read a telemetry
+Continue with [Batteries, Breakers, Fuses, and Brownouts](/academy/electrical-battery-protection?path=electrical-systems-diagnostics).
+Revisit [Read a telemetry
 graph like a scientist](/academy/read-a-telemetry-graph?path=math-for-robotics) before diagnosing
 voltage sag. A graph can show the drop, but another signal is needed to support its cause.
