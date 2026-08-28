@@ -108,6 +108,29 @@
       "instructionalContractVersion": 2
     },
     {
+      "slug": "controls-motor-model-feedforward",
+      "title": "Predict Motion with Feedforward",
+      "category": "Robotics & Engineering",
+      "description": "Separate a motion-model prediction from feedback correction using a bounded conceptual response lab.",
+      "contentFile": "controls/02-feedforward-response.md",
+      "subject": "robotics-engineering",
+      "topics": ["feedforward", "feedback", "control response", "testing"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 60,
+      "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 3 }],
+      "prerequisites": ["robot-coordinate-contracts", "read-a-telemetry-graph"],
+      "objectives": ["Explain how feedforward prediction differs from feedback correction.", "Run one-change trials and compare final error with peak response.", "State why a conceptual response is not physical-robot evidence."],
+      "platforms": ["hardware-neutral", "simulator"],
+      "sourceReferences": [
+        { "label": "Typed tuning profiles", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARESLib-Kotlin/docs/typed-tuning-profiles.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/typed-tuning-profiles.md", "blobHash": "a3e8e6d736e6165cc63f96b553a0b79cc1adae3d" },
+        { "label": "Guided tuning experiments", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md", "blobHash": "6835a42a918f480a7b0a3692e1909b7e1d3f57a5" }
+      ],
+      "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
+      "safetyScope": "simulation-only",
+      "instructionalContractVersion": 2
+    },
+    {
       "slug": "telemetry-and-local-logs",
       "title": "Telemetry and Local Log Retrieval",
       "category": "Mathematics & Data",

@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds four new robotics drafts and deepens selected existing lessons.
+This branch adds five new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -129,10 +129,14 @@ The files remain local review sources. They are not staged, published, or live.
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
+| Predict Motion with Feedforward | Controls, Localization & Autonomous | Simulation only | [`02-feedforward-response.md`](../content/learning/controls/02-feedforward-response.md) |
 
 The review must also cover the upgraded coordinate, Redux, and
 simulation-evidence lessons, the telemetry interaction added to the ARESLib
-reference, and every approved interaction named in the generated registry.
+reference, and every approved interaction named in the generated registry. The
+Control Response Lab is intentionally reused in the existing telemetry-reading
+lesson as an optional graph exercise. Review that embed for age fit and verify
+that its conceptual-model warning remains visible in both lesson contexts.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

@@ -73,6 +73,14 @@
       "fidelity": null
     },
     {
+      "id": "controlResponseLab",
+      "name": "Control Response Lab",
+      "path": "./control-response-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "coordinateTransformLab",
       "name": "Coordinate Transform Lab",
       "path": "./coordinate-transform-lab",

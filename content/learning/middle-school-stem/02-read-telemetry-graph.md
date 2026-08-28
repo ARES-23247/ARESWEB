@@ -70,6 +70,18 @@ Next, make a paper graph. Record room temperature once each minute for five minu
 safe measurement. Draw time on the horizontal axis. Draw the measurement and its unit on the
 vertical axis. Add a title and one point for every reading.
 
+### Optional controls connection
+
+The response lab below reuses these graph-reading skills in a controls example. Keep the default
+settings. Read the graph and open its numeric table. Write one observation about the final value and
+one observation about the peak. Then change only the feedforward output and repeat.
+
+<controlresponselab />
+
+Treat the line as data from an invented teaching model. It is not a real motor trace. Save questions
+about causes for [Predict Motion with Feedforward](/academy/controls-motor-model-feedforward?path=controls-localization-autonomous),
+where the prediction and feedback terms are introduced.
+
 ## Checkpoints
 
 After labeling the graph, cover the title and ask a partner what each axis means. Repair any label

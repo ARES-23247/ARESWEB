@@ -211,3 +211,29 @@ Focused evidence:
   sentence;
 - coordinate math, renderer security, and catalog contract tests all pass; and
 - frontend TypeScript validation passes.
+
+## Third bounded implementation evidence
+
+The first controls-model batch adds `controls-motor-model-feedforward` at the
+previously open third position in Controls, Localization & Autonomous. It uses
+the source-pinned ARES typed-tuning and Studio guided-experiment contracts, but
+keeps every response value explicitly conceptual. The shared Control Response
+Lab is also embedded in the existing telemetry-reading lesson as an optional
+graph exercise. This reuse has a different prompt and does not make a motor or
+hardware claim.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 27 documents, 12 existing-lesson interaction
+  upgrade candidates, and 12 approved embeds;
+- all 29 pinned source blobs were recomputed against ARES Robotics commit
+  `439f2a36`, and the published monorepo version line still matches;
+- the new lesson has 943 prose words, estimated grade 5.8, and a 20-word
+  longest sentence;
+- the response calculation, native controls, numeric table, deterministic
+  reset, renderer security, and catalog contract tests pass; and
+- frontend TypeScript validation passes.
+
+This batch reduces the unauthored full-contract track count from 41 to 40. It
+does not test a physical robot, stage or publish a draft, write production data,
+push a branch, or deploy the website.
