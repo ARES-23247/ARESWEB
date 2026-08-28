@@ -633,3 +633,32 @@ measure geometry, solve wheel commands, inspect a document, validate vendor
 data, run simulation, command hardware, or prove safe motion. No draft was
 staged or published, no production data was written, and no branch was pushed
 or deployed during this batch.
+
+## Seventeenth bounded implementation evidence
+
+The sensor batch adds `electrical-sensors` and the Academy-only Sensor Signal
+Evidence Lab. The lesson compares sensor jobs in prose, then narrows its
+interaction to one distance sample so the model can state honest limits.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 38 documents, 15 existing-lesson interaction
+  candidates, and 30 approved embeds;
+- the new lesson has 874 prose words, estimated grade 6.4, and a 25-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 23 authored identities and
+  25 remaining full-contract lesson identities out of 48;
+- all 53 unique pinned blobs were recomputed, including the distance-sensor
+  I/O contract, shared simulation-device health contract, and hardware topology
+  models;
+- tests cover finite values, configuration identity, every health class used by
+  the lab, freshness, range, invalid age bounds, native controls, visible
+  reasons, disclosure, deterministic reset, fidelity limits, renderer security,
+  and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The signal lab uses invented distance data. It does not read or discover a
+sensor, validate a device range, model noise or target surfaces, select
+hardware, run a robot loop, command an actuator, or prove physical sensing. No
+draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

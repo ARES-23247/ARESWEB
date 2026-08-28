@@ -600,6 +600,26 @@
       "safetyScope": "none"
     },
     {
+      "slug": "electrical-sensors",
+      "title": "Choose and Read Robot Sensors",
+      "category": "Robotics & Engineering",
+      "description": "Choose a sensor from the robot question, then keep value, unit, identity, freshness, validity, and safe fallback together.",
+      "contentFile": "electrical-systems/02-choose-read-sensors.md",
+      "subject": "robotics-engineering",
+      "topics": ["sensors", "signal health", "freshness", "hardware topology", "cached inputs"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "electrical-systems-diagnostics", "order": 2 }],
+      "prerequisites": ["electrical-voltage-current-power", "programming-io-caching"],
+      "objectives": ["Choose a sensor kind from a bounded robot question and needed evidence.", "Classify a cached signal using value, unit, identity, health, and freshness.", "Create a sensor test plan that keeps simulator and physical evidence separate."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "ARES distance sensor I/O contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt", "blobHash": "39d25769ec5fb175a448d1d2d1406d2b10ac66c3" }, { "label": "Shared simulation device health contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationDeviceContract.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationDeviceContract.kt", "blobHash": "4c504dab907d0dc876502e5006f2a7ed1aa87ac7" }, { "label": "Hardware topology models", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "blobHash": "aa3419236a83d8444967c5474ee70d5819c58fba" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "mechanical-gears-sprockets-belts",
       "title": "Gears, Sprockets, Belts, Speed, and Torque",
       "category": "Robotics & Engineering",

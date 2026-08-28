@@ -60,6 +60,7 @@ const satsystems = lazy(() => import("../../sims/satsystems"));
 const sattables = lazy(() => import("../../sims/sattables"));
 const sattriangles = lazy(() => import("../../sims/sattriangles"));
 const sensorFusionLab = lazy(() => import("../../sims/sensor-fusion-lab"));
+const sensorSignalLab = lazy(() => import("../../sims/sensor-signal-lab"));
 const skiingCarvingForces = lazy(() => import("../../sims/skiing-carving-forces"));
 const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
@@ -170,6 +171,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sattriangles: sattriangles,
   sensorFusionLab: sensorFusionLab,
   sensorfusionlab: sensorFusionLab,
+  sensorSignalLab: sensorSignalLab,
+  sensorsignallab: sensorSignalLab,
   skiingCarvingForces: skiingCarvingForces,
   skiingcarvingforces: skiingCarvingForces,
   sotm: sotm,
@@ -229,6 +232,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   robotflowtracer: robotFlowTracer,
   sensorFusionLab: sensorFusionLab,
   sensorfusionlab: sensorFusionLab,
+  sensorSignalLab: sensorSignalLab,
+  sensorsignallab: sensorSignalLab,
   subsystemDescriptorLab: subsystemDescriptorLab,
   subsystemdescriptorlab: subsystemDescriptorLab,
   subsystemOwnershipLab: subsystemOwnershipLab,
@@ -686,6 +691,14 @@ const SIM_METADATA = [
     'id': 'sensorFusionLab',
     'name': 'Sensor Fusion Uncertainty Lab',
     'folder': 'sensor-fusion-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'sensorSignalLab',
+    'name': 'Sensor Signal Evidence Lab',
+    'folder': 'sensor-signal-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

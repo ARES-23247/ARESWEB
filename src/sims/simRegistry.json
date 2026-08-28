@@ -449,6 +449,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "sensorSignalLab",
+      "name": "Sensor Signal Evidence Lab",
+      "path": "./sensor-signal-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "skiingCarvingForces",
       "name": "Skiing Carving Forces",
       "path": "./skiing-carving-forces",
