@@ -75,6 +75,7 @@ const subsystemOwnershipLab = lazy(() => import("../../sims/subsystem-ownership-
 const superstructureStateLab = lazy(() => import("../../sims/superstructure-state-lab"));
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
+const sysidTuningLab = lazy(() => import("../../sims/sysid-tuning-lab"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
 const trigbasics = lazy(() => import("../../sims/trigbasics"));
 const triginverse = lazy(() => import("../../sims/triginverse"));
@@ -204,6 +205,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   superstructurestatelab: superstructureStateLab,
   swerve: swerve,
   sysid: sysid,
+  sysidTuningLab: sysidTuningLab,
+  sysidtuninglab: sysidTuningLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
   trigbasics: trigbasics,
@@ -273,6 +276,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   subsystemownershiplab: subsystemOwnershipLab,
   superstructureStateLab: superstructureStateLab,
   superstructurestatelab: superstructureStateLab,
+  sysidTuningLab: sysidTuningLab,
+  sysidtuninglab: sysidTuningLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
   visionUncertaintyLab: visionUncertaintyLab,
@@ -849,6 +854,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'sysidTuningLab',
+    'name': 'One-Change Tuning Experiment Lab',
+    'folder': 'sysid-tuning-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'telemetryGraphLab',

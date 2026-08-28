@@ -138,6 +138,11 @@ Students may verify robot functionality under the team's normal safety process. 
 need to approve each software conclusion. The Lead Coach approval gate applies when this website
 lesson or another student-authored post is published.
 
+Practice the one-change decision record below before planning a Local Sim tuning experiment. The
+fixed numbers teach threshold-based classification; they do not run SysId or tune this response.
+
+<sysidtuninglab />
+
 ## Related and next
 
 Return to [Read a Telemetry Graph Like a Scientist](/academy/read-a-telemetry-graph?path=math-for-robotics)

@@ -569,6 +569,14 @@
       "fidelity": null
     },
     {
+      "id": "sysidTuningLab",
+      "name": "One-Change Tuning Experiment Lab",
+      "path": "./sysid-tuning-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "telemetryGraphLab",
       "name": "Telemetry Graph Lab",
       "path": "./telemetry-graph-lab",

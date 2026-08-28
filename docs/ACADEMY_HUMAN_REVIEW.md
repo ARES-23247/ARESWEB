@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds twenty-one new robotics drafts and deepens selected existing lessons.
+This branch adds twenty-two new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -137,6 +137,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Map Hardware and Diagnose a Dead Device | Electrical Systems & Diagnostics | Physical robot | [`07-hardware-map-diagnostics.md`](../content/learning/electrical-systems/07-hardware-map-diagnostics.md) |
 | Compare Logs and Replay a Failure | Testing, Debugging & Commissioning | None | [`02-logs-replay.md`](../content/learning/testing-debugging/02-logs-replay.md) |
 | Build a Fault Tree and Isolate a Cause | Testing, Debugging & Commissioning | Physical robot | [`03-fault-tree.md`](../content/learning/testing-debugging/03-fault-tree.md) |
+| Run SysId and a Bounded Tuning Experiment | Testing, Debugging & Commissioning | Physical robot | [`05-sysid-tuning.md`](../content/learning/testing-debugging/05-sysid-tuning.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
@@ -246,6 +247,12 @@ order; competing open branches; smallest safe next test; native controls; live
 result; and deterministic reset. Confirm that its invented selections do not
 read robot state, inspect power or wiring, move a mechanism, authorize output,
 identify a root cause, or prove a repair.
+The bounded SysId and tuning lesson and existing PID lesson share the
+One-Change Tuning Experiment Lab. Review its prior threshold, intended
+direction, exactly-one-change gate, improved/regressed/inconclusive result,
+native controls, live result, and deterministic reset. Confirm that the fixed
+numbers are not presented as SysId data and that the lab cannot apply a
+parameter, control a simulator or robot, certify safety, or promote a profile.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

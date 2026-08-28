@@ -901,3 +901,34 @@ robot state, inspect wiring or power, move a mechanism, verify a sensor,
 identify a root cause, authorize output, or prove a repair. No draft was staged
 or published, no production data was written, and no branch was pushed or
 deployed during this batch.
+
+## Twenty-sixth bounded implementation evidence
+
+The tuning batch adds `testing-sysid-tuning` and the Academy-only One-Change
+Tuning Experiment Lab. The same interaction is embedded in the existing PID
+lesson, where threshold-based classification reinforces its controlled-trial
+and evidence-artifact objectives. The older generic SysId canvas remains
+unapproved and is not embedded in curriculum content.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 44 documents, with 15 existing-lesson
+  interaction candidates and 40 approved embeds;
+- the new lesson has 882 prose words, estimated grade 8.6, and a 25-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 30 authored identities and
+  18 remaining full-contract lesson identities out of 48;
+- all 66 unique pinned source URLs were remotely recomputed, including current
+  guided-tuning, typed-profile, and commissioning boundaries;
+- tests cover improvement, regression, inconclusive and blocked results,
+  direction, confounding, native controls, live results, reset, fidelity limits,
+  reuse in the existing PID lesson, renderer security, and catalog contract;
+  and
+- frontend TypeScript, lint, local catalog validation, readability, provenance,
+  and 34 focused Academy tests pass.
+
+The lab uses invented numbers. It does not run SysId, fit a motor model,
+connect to Studio, apply a parameter, control a simulator or robot, prove
+causation, certify safety, or promote a tuning profile. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.

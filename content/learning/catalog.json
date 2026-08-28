@@ -782,6 +782,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "testing-sysid-tuning",
+      "title": "Run SysId and a Bounded Tuning Experiment",
+      "category": "Robotics & Engineering",
+      "description": "Plan one typed parameter change, declare a metric and threshold before the run, and classify compatible Local Sim evidence without silently changing canonical tuning.",
+      "contentFile": "testing-debugging/05-sysid-tuning.md",
+      "subject": "robotics-engineering",
+      "topics": ["SysId", "tuning", "experiment", "threshold", "provenance"],
+      "contentType": "guided-lab",
+      "level": "advanced",
+      "estimatedMinutes": 75,
+      "pathMemberships": [{ "pathId": "testing-debugging-commissioning", "order": 5 }],
+      "prerequisites": ["testing-fault-tree", "controls-motor-model-feedforward", "controls-pid"],
+      "objectives": ["Plan one bounded parameter change with a prior prediction and threshold.", "Classify compatible evidence as improved, regressed, or inconclusive.", "Keep local experimental evidence separate from canonical tuning promotion."],
+      "platforms": ["simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Guided tuning experiments", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md", "blobHash": "6835a42a918f480a7b0a3692e1909b7e1d3f57a5" }, { "label": "Typed tuning declarations and profiles", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/typed-tuning-profiles.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/typed-tuning-profiles.md", "blobHash": "a3e8e6d736e6165cc63f96b553a0b79cc1adae3d" }, { "label": "Guided commissioning safety boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/GUIDED_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/GUIDED_COMMISSIONING.md", "blobHash": "c5cec245ab12e8cd651d09a7aeeb6f982fd762f6" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "competition-drive-team",
       "title": "Run a Drive-Team Match Cycle",
       "category": "Robotics & Engineering",
