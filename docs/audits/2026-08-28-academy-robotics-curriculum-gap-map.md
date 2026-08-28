@@ -41,6 +41,38 @@ presence does not prove they are suitable for Academy: each still needs a
 content, accessibility, mobile, fidelity, and terminology review before it can
 be embedded in a lesson.
 
+## Current completion boundary
+
+Implemented on this branch:
+
+- 59 catalog documents across 12 paths, including 37 new robotics drafts over
+  the 22-document baseline;
+- 49 full-contract lessons with purpose, prerequisites, vocabulary, worked
+  example, described diagram, hands-on activity, checkpoints, troubleshooting,
+  evidence artifact, assessment, extension, and next navigation;
+- 46 of 48 planned curriculum identities across all seven required tracks;
+- 69 reviewed embeds drawn from 40 Academy-approved interactions, of which 36
+  are labeled conceptual and four code-derived; and
+- immutable ARES source identities, remote blob verification, grade-level
+  checks, secure rendering, interaction tests, and guarded review records.
+
+Still incomplete by design:
+
+- FTC BIOBUZZ and FRC BIOCORE inspection/pit lessons are absent until current
+  official inspection resources are released and pinned;
+- 19 evidence requests remain open: eight authentic-media, three mixed, five
+  official-reference, two process-review, and one physical-evidence request;
+- no interaction proves real hardware behavior. Conceptual and code-derived
+  results remain calculations, classifications, previews, or self-reported
+  evidence boundaries; and
+- physical commissioning and capstone claims still require bounded student
+  procedures on the current robot, while authentic team photos and screenshots
+  require ownership, privacy, consent, revision, and context review.
+
+All content remains proposal-only. Nothing in this branch has been staged to
+Firestore, published, migrated, pushed, or deployed. Website publication still
+requires the separate Lead Coach review and guarded production-write workflow.
+
 ## Findings
 
 ### ACADEMY-EXP-01 — High — confirmed — high confidence
@@ -503,6 +535,28 @@ The lesson's fixed data cannot prove a real signal, controller, network,
 timing, or failure cause. It preserves missing samples and keeps control
 independent from dashboard, cloud, and internet availability. No production
 data was written, and no branch was pushed or deployed during this batch.
+
+## Forty-fourth bounded implementation evidence
+
+The two absent competition identities remain deliberately source-gated after a
+fresh review of official FIRST resources on 2026-08-28:
+
+- the official 2026–2027 FTC BIOBUZZ event page lists both the Inspection
+  Checklist and Inspection Quick Reference as **Version Coming Soon**, updated
+  July 31, 2026; and
+- the official FRC BIOCORE page states that the 2027 challenge releases January
+  9, 2027 and that updated 2027 materials are still forthcoming.
+
+The request records now preserve those official status URLs, check date, and
+reason for deferral. The available FTC V0 manual, last season's FTC checklist,
+and 2026 FRC REBUILT materials are not substituted into current-season
+inspection lessons.
+
+This leaves 46 of 48 planned identities present. The remaining two are honest
+source requests, not silently missing content. Their acceptance gates require
+the current official manual and inspection checklist to be pinned with season
+and access date before authoring. No draft was staged or published, no
+production data was written, and no branch was pushed or deployed.
 
 ## Fifth bounded implementation evidence
 
