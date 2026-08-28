@@ -41,6 +41,16 @@ const explicitNonFirebaseRoutes = new Map([
     rationale: "Onshape webhook authenticated by a Secret Manager shared secret",
     requiredSource: [/ONSHAPE_WEBHOOK_TOKEN/u, /timingSafeEqual/u, /onshapeWebhookSchema/u, /rateLimit/u],
   }],
+  ["studioIntegrations.ts:POST:/v1/notebook-drafts", {
+    rationale: "Studio installation authenticated by a scoped, salted token hash and durable per-installation quota",
+    requiredSource: [
+      /assertInstallationAuthorized/u,
+      /timingSafeEqual/u,
+      /STUDIO_SCOPE_REQUIRED/u,
+      /STUDIO_WORKSPACE_FORBIDDEN/u,
+      /HOURLY_INSTALLATION_LIMIT/u,
+    ],
+  }],
 ]);
 
 const observedExceptions = new Set();

@@ -433,6 +433,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Robot Studio installations, rate counters, and idempotency receipts are
+    // server-to-server integration state and must never be browser-readable.
+    match /studio_integrations/{installationId} {
+      allow read, write: if false;
+    }
+
+    match /studio_integration_quotas/{quotaId} {
+      allow read, write: if false;
+    }
+
+    match /studio_integration_receipts/{receiptId} {
+      allow read, write: if false;
+    }
+
     match /internal_public_artifacts/{artifactId} {
       allow read, write: if false;
 

@@ -12,6 +12,7 @@ const OBSERVATION_EXEMPTIONS = new Set([
   "POST /api/profiles/sync",
   "POST /api/webhooks/zulip",
   "POST /api/webhooks/onshape",
+  "POST /api/integrations/robotics-studio/v1/notebook-drafts",
 ]);
 
 export type AppCheckObservationStatus = "valid" | "missing" | "invalid";
