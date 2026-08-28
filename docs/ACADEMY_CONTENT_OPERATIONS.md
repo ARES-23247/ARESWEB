@@ -102,8 +102,11 @@ do not copy lesson bodies or private reviewer data.
 Every phase re-reads exact preconditions inside one bounded transaction, writes
 a deterministic revision and redacted audit record per changed document, adds
 migration/checkpoint metadata, and re-reads the committed records. Repeating a
-completed phase is a no-op. Production cleanup example (use the actual verified
-URI and a fresh manifest path):
+completed phase is a no-op. A later reviewed curriculum generation must advance
+the runner's migration version before approval templates are generated. Revision
+and audit IDs include that version, so a new generation preserves earlier
+snapshots instead of colliding with or overwriting them. Production cleanup
+example (use the actual verified URI and a fresh manifest path):
 
 ```powershell
 pnpm run content:migrate -- --project aresfirst-portal --phase cleanup
