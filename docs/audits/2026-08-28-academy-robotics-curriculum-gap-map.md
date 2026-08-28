@@ -754,3 +754,35 @@ solve an AprilTag pose, calculate ambiguity or innovation, model latency, run
 the estimator, connect to a camera, or prove field position. No draft was
 staged or published, no production data was written, and no branch was pushed
 or deployed during this batch.
+
+## Twenty-first bounded implementation evidence
+
+The driver-input batch upgrades the existing
+`ftc-driver-input-shaping-and-frames` tutorial and embeds the Academy-only FTC
+Driver Input Curve Lab. It adds the missing interactive trace to the existing
+source-backed page instead of creating a duplicate controls lesson.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation remains at 39 documents and 15 existing-lesson
+  interaction candidates, while approved embeds increase to 34;
+- the upgraded lesson has 805 prose words, estimated grade 6.8, and a 21-word
+  longest sentence;
+- the exact curriculum-plan comparison remains at 25 authored identities and
+  23 remaining full-contract lesson identities out of 48;
+- all 58 unique pinned source URLs were remotely recomputed, including the
+  current FTC controller and its focused test suite;
+- the first UI test correctly exposed duplicate text for the smoothing and
+  final values; the assertion now verifies both accessible copies;
+- tests cover the pinned calculation order, clamp, deadband, fallback,
+  smoothing, blue field mirroring, robot-relative behavior, native controls,
+  deterministic reset, fidelity limits, renderer security, and catalog
+  contract; and
+- frontend TypeScript, lint, local catalog validation, readability, provenance,
+  and focused Academy tests pass.
+
+The lab calculates one translation axis for one step. It does not read a
+gamepad, advance repeated timed loops, shape rotation separately, use robot
+heading, run drivetrain kinematics, connect to a robot, or prove driving
+behavior. No draft was staged or published, no production data was written,
+and no branch was pushed or deployed during this batch.

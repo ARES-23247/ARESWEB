@@ -121,6 +121,14 @@
       "fidelity": null
     },
     {
+      "id": "driverInputCurveLab",
+      "name": "FTC Driver Input Curve Lab",
+      "path": "./driver-input-curve-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "drivetrainChoiceLab",
       "name": "Drivetrain Starting-Point Lab",
       "path": "./drivetrain-choice-lab",

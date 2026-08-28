@@ -551,13 +551,14 @@
       "topics": ["FTC", "driver controls", "deadband", "coordinate frames"],
       "contentType": "guided-lab",
       "level": "intermediate",
-      "estimatedMinutes": 40,
+      "estimatedMinutes": 60,
       "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 11 }],
       "prerequisites": ["robot-coordinate-contracts", "redux-state-actions-reducers"],
-      "objectives": ["Calculate the output of the current deadband and exponent shaping pipeline.", "Explain which axes alliance selection mirrors and why rotation is unchanged."],
+      "objectives": ["Calculate one axis through finite-value handling, clamping, deadband rescaling, exponent shaping, and smoothing.", "Explain which translation axes alliance selection mirrors and why rotation is unchanged.", "Create a frame-and-sign evidence table that separates calculation, simulation, and physical observation."],
       "platforms": ["simulator", "ftc"],
-      "sourceReferences": [{ "label": "Current FTC drive controller", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "blobHash": "824f055d52d973dac4686f5bb2d13dc468458064" }],
-      "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 439f2a3",
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Current FTC drive controller", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt", "blobHash": "824f055d52d973dac4686f5bb2d13dc468458064" }, { "label": "Current FTC drive-controller tests", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresDriveControllerTest.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresDriveControllerTest.kt", "blobHash": "b8d8649d7cf31e3aabccfa2ab822899584cf0ad9" }],
+      "appliesToVersion": "ARES 11.1.0; ARES-FTC monorepo 65351a27",
       "safetyScope": "simulation-only"
     },
     {

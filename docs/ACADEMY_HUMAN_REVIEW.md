@@ -209,6 +209,13 @@ ordered first-failure reporting, native checkboxes, deterministic reset, and
 the visible rejection reason. Confirm that the switches are not presented as
 image processing, AprilTag solving, ambiguity or innovation calculation,
 latency modeling, estimator execution, or proof of field position.
+The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
+and a full middle-school instructional contract. Review its finite-value and
+clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed
+`0.6`/`0.4` smoothing step, alliance/frame selection, native controls, and
+deterministic reset. Confirm that the one-axis calculation is not presented as
+a timed loop, complete gamepad adapter, drivetrain simulation, or physical
+driving validation.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

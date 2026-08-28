@@ -19,6 +19,7 @@ const commissioningChecklistLab = lazy(() => import("../../sims/commissioning-ch
 const controlResponseLab = lazy(() => import("../../sims/control-response-lab"));
 const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
+const driverInputCurveLab = lazy(() => import("../../sims/driver-input-curve-lab"));
 const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"));
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
 const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
@@ -112,6 +113,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   coordinatetransformlab: coordinateTransformLab,
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
+  driverInputCurveLab: driverInputCurveLab,
+  driverinputcurvelab: driverInputCurveLab,
   drivetrainChoiceLab: drivetrainChoiceLab,
   drivetrainchoicelab: drivetrainChoiceLab,
   elevatorpid: elevatorpid,
@@ -221,6 +224,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
   coordinatetransformlab: coordinateTransformLab,
+  driverInputCurveLab: driverInputCurveLab,
+  driverinputcurvelab: driverInputCurveLab,
   drivetrainChoiceLab: drivetrainChoiceLab,
   drivetrainchoicelab: drivetrainChoiceLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
@@ -381,6 +386,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'driverInputCurveLab',
+    'name': 'FTC Driver Input Curve Lab',
+    'folder': 'driver-input-curve-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'drivetrainChoiceLab',
