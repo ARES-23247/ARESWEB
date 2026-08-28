@@ -73,6 +73,16 @@ heading on paper. Draw the field result shown by the lab. Label every value with
 
 Reset the lab. Confirm that it returns to one meter forward, zero meters left, and zero heading.
 
+### Optional calibration connection
+
+Use the odometry lab below after you understand the frame transform. Start with zero error. Then
+change only heading bias and explain why a straight estimate gains a field-Y component.
+
+<odometryerrorlab />
+
+This model does not run the ARES estimator. Continue to the full odometry lesson before planning a
+surveyed calibration route.
+
 ## Checkpoints
 
 Check the axis names before doing math. Robot X is forward. Robot Y is left. Field X and Y stay

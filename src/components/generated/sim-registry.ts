@@ -37,6 +37,7 @@ const nnLlm = lazy(() => import("../../sims/nn-llm"));
 const nnPlayground = lazy(() => import("../../sims/nn-playground"));
 const nnRl = lazy(() => import("../../sims/nn-rl"));
 const nnVision = lazy(() => import("../../sims/nn-vision"));
+const odometryErrorLab = lazy(() => import("../../sims/odometry-error-lab"));
 const performance = lazy(() => import("../../sims/performance"));
 const physics = lazy(() => import("../../sims/physics"));
 const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"));
@@ -126,6 +127,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   nnrl: nnRl,
   nnVision: nnVision,
   nnvision: nnVision,
+  odometryErrorLab: odometryErrorLab,
+  odometryerrorlab: odometryErrorLab,
   performance: performance,
   physics: physics,
   powerBudgetExplorer: powerBudgetExplorer,
@@ -176,6 +179,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   mechanismratioexplorer: mechanismRatioExplorer,
   motionProfileLab: motionProfileLab,
   motionprofilelab: motionProfileLab,
+  odometryErrorLab: odometryErrorLab,
+  odometryerrorlab: odometryErrorLab,
   powerBudgetExplorer: powerBudgetExplorer,
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
@@ -450,6 +455,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'odometryErrorLab',
+    'name': 'Odometry Error Lab',
+    'folder': 'odometry-error-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'performance',

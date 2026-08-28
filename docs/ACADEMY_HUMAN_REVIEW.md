@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds seven new robotics drafts and deepens selected existing lessons.
+This branch adds eight new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -132,6 +132,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Predict Motion with Feedforward | Controls, Localization & Autonomous | Simulation only | [`02-feedforward-response.md`](../content/learning/controls/02-feedforward-response.md) |
 | Tune Feedback with Evidence | Controls, Localization & Autonomous | Simulation only | [`03-pid-evidence.md`](../content/learning/controls/03-pid-evidence.md) |
 | Plan Smooth Motion with Limits | Controls, Localization & Autonomous | Simulation only | [`04-motion-profiles.md`](../content/learning/controls/04-motion-profiles.md) |
+| Estimate Motion with Odometry | Controls, Localization & Autonomous | Physical robot | [`05-odometry-calibration.md`](../content/learning/controls/05-odometry-calibration.md) |
 
 The review must also cover the upgraded coordinate, Redux, and
 simulation-evidence lessons, the telemetry interaction added to the ARESLib

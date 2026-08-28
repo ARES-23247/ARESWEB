@@ -265,6 +265,14 @@
       "fidelity": null
     },
     {
+      "id": "odometryErrorLab",
+      "name": "Odometry Error Lab",
+      "path": "./odometry-error-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "performance",
       "name": "AdvantageScope Telemetry Dashboard",
       "path": "./performance",

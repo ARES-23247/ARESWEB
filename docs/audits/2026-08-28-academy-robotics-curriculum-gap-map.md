@@ -295,3 +295,32 @@ The web model does not load an ARES routine or prove traction, current, load,
 backlash, collision clearance, feedback tracking, or any physical robot limit.
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Sixth bounded implementation evidence
+
+The localization batch adds `controls-odometry` and the Academy-only Odometry
+Calibration Error Lab. The lesson uses ARES 11.1.0 coordinate, estimator, and
+calibration contracts to teach independent truth, repeated routes, distance
+scale, and heading bias. The existing coordinate lesson reuses the lab only
+after its frame-transform activity. Both locations state that the model is not
+the ARES estimator.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 30 documents and 17 approved embeds;
+- the new lesson has 830 prose words, estimated grade 7.4, and a 23-word
+  longest sentence;
+- all 34 unique source blobs were recomputed against the recorded authorities;
+- tests cover zero-error truth, distance-scale error, heading bias, invalid
+  inputs, native controls, a text-equivalent table, reset, and visible fidelity
+  limits;
+- the catalog's student-led robot-verification language gate passes for the FTC
+  and FRC lesson scope;
+- renderer security, catalog contract, TypeScript, and lint checks pass; and
+- the unauthored full-contract track count is now 37 of 48.
+
+The model omits wheel slip, curved motion, covariance, timestamps, delayed
+vision, sensor noise, and physical robot behavior. A future physical calibration
+still needs independently surveyed truth and student-run repeated routes. No
+draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.
