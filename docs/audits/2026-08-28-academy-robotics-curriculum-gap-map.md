@@ -25,10 +25,10 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 54 catalog documents across
-12 populated paths. Forty-three substantial lessons now implement instructional
-contract version 2, and 60 approved interaction embeds appear in Academy
-content. Forty of 48 planned identities are authored. Every required
+Current bounded-phase status: the branch contains 55 catalog documents across
+12 populated paths. Forty-four substantial lessons now implement instructional
+contract version 2, and 62 approved interaction embeds appear in Academy
+content. Forty-one of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -298,6 +298,35 @@ verify a source, count events, remove private data, compare or rank robots,
 explain a result, judge people, or create strategy. No draft was staged or
 published, no production data was written, and no branch was pushed or deployed
 during this batch.
+
+## Thirty-seventh bounded implementation evidence
+
+The strategy batch adds `competition-strategy` and the approved Strategy
+Tradeoff Lab. The interaction is also reused as an optional extension in the
+scouting lesson. All plans and values are invented, and the current team
+strategy process remains an open review request.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 55 documents, with 15 existing-lesson
+  interaction candidates and 62 approved embeds;
+- the new lesson has 1,048 prose words, estimated grade 6.5, and a 21-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 41 authored identities and
+  7 remaining full-contract lesson identities out of 48;
+- all 85 unique pinned source URLs were remotely recomputed, including Guided
+  Run Review, run-comparison evidence, and the sample-only strategy UI boundary;
+- 40 focused rendering, navigation, content, readability, security, catalog,
+  and interaction tests pass; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  and remote provenance pass. Targeted interaction coverage is 100% for
+  statements, branches, functions, and lines.
+
+The matrix uses student-entered ratings and weights. It cannot read scouting
+or robot data, model current rules, alliance partners, opponents, timing,
+defense, failures, or uncertainty, optimize a plan, predict a match, or make a
+decision. No draft was staged or published, no production data was written,
+and no branch was pushed or deployed during this batch.
 
 ## Fifth bounded implementation evidence
 

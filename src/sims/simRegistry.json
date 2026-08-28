@@ -569,6 +569,14 @@
       "fidelity": null
     },
     {
+      "id": "strategyTradeoffLab",
+      "name": "Strategy Tradeoff Lab",
+      "path": "./strategy-tradeoff-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "subsystemDescriptorLab",
       "name": "Subsystem Descriptor Independence Lab",
       "path": "./subsystem-descriptor-lab",

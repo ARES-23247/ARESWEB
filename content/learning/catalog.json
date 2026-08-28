@@ -1022,6 +1022,26 @@
       "safetyScope": "none"
     },
     {
+      "slug": "competition-strategy",
+      "title": "Turn Evidence into Match Strategy",
+      "category": "Robotics & Engineering",
+      "description": "Compare invented plans with transparent evidence ratings, weights, recovery choices, and sensitivity checks without claiming a match prediction.",
+      "contentFile": "competition-operations/03-strategy-tradeoffs.md",
+      "subject": "robotics-engineering",
+      "topics": ["competition", "strategy", "tradeoffs", "evidence", "decision matrix", "recovery"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "competition-operations", "order": 5 }],
+      "prerequisites": ["competition-scouting"],
+      "objectives": ["Connect a bounded match goal to source-backed options, roles, limits, and recovery actions.", "Use a visible weighted matrix and sensitivity check without treating its score as a prediction.", "Create an invented decision record that preserves assumptions, missing data, privacy, and review triggers."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Guided run review evidence language", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/operate/GUIDED_RUN_REVIEW.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/operate/GUIDED_RUN_REVIEW.md", "blobHash": "e244c45e30b3fd068a484e9b4660c6985598a30d" }, { "label": "Run comparison evidence and claims", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/RUN_COMPARISON_AND_GUIDED_DIAGNOSIS.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/RUN_COMPARISON_AND_GUIDED_DIAGNOSIS.md", "blobHash": "bbd64a44a854c00168084e31a78c079f498cec80" }, { "label": "Sample-only Match Strategy screen boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MatchStrategyScreen.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MatchStrategyScreen.kt", "blobHash": "465a1563534081763dc6b6c4caec776b1c86d270" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1; team strategy process remains open for review",
+      "safetyScope": "none"
+    },
+    {
       "slug": "rates-units-and-motion",
       "title": "Use Rates and Units to Describe Motion",
       "category": "Mathematics & Data",

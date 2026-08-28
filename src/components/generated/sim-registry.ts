@@ -75,6 +75,7 @@ const sensorSignalLab = lazy(() => import("../../sims/sensor-signal-lab"));
 const skiingCarvingForces = lazy(() => import("../../sims/skiing-carving-forces"));
 const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
+const strategyTradeoffLab = lazy(() => import("../../sims/strategy-tradeoff-lab"));
 const subsystemDescriptorLab = lazy(() => import("../../sims/subsystem-descriptor-lab"));
 const subsystemOwnershipLab = lazy(() => import("../../sims/subsystem-ownership-lab"));
 const superstructureStateLab = lazy(() => import("../../sims/superstructure-state-lab"));
@@ -214,6 +215,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   skiingcarvingforces: skiingCarvingForces,
   sotm: sotm,
   statemachine: statemachine,
+  strategyTradeoffLab: strategyTradeoffLab,
+  strategytradeofflab: strategyTradeoffLab,
   subsystemDescriptorLab: subsystemDescriptorLab,
   subsystemdescriptorlab: subsystemDescriptorLab,
   subsystemOwnershipLab: subsystemOwnershipLab,
@@ -301,6 +304,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sensorfusionlab: sensorFusionLab,
   sensorSignalLab: sensorSignalLab,
   sensorsignallab: sensorSignalLab,
+  strategyTradeoffLab: strategyTradeoffLab,
+  strategytradeofflab: strategyTradeoffLab,
   subsystemDescriptorLab: subsystemDescriptorLab,
   subsystemdescriptorlab: subsystemDescriptorLab,
   subsystemOwnershipLab: subsystemOwnershipLab,
@@ -889,6 +894,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'strategyTradeoffLab',
+    'name': 'Strategy Tradeoff Lab',
+    'folder': 'strategy-tradeoff-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'subsystemDescriptorLab',

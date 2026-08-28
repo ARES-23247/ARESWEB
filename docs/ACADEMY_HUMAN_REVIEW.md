@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-two new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-three new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -146,6 +146,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Collect Useful Scouting Evidence | Competition Operations | None | [`02-scouting-evidence.md`](../content/learning/competition-operations/02-scouting-evidence.md) |
+| Turn Evidence into Match Strategy | Competition Operations | None | [`03-strategy-tradeoffs.md`](../content/learning/competition-operations/03-strategy-tradeoffs.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
 | Capstone 2: Build a Complete ARES Subsystem | Robotics Capstones | Physical robot | [`02-complete-subsystem.md`](../content/learning/robotics-capstones/02-complete-subsystem.md) |
 | Capstone 3: Complete a Simulated Autonomous Mission | Robotics Capstones | Simulation only | [`03-simulated-autonomous-mission.md`](../content/learning/robotics-capstones/03-simulated-autonomous-mission.md) |
@@ -268,6 +269,14 @@ narrow layout; and deterministic reset. Confirm that self-reported boxes do
 not watch a match, read a log, verify a source, count events, remove personal
 data, compare or rank robots, judge people, or create strategy. The current
 team scouting process and approved non-PII examples remain open for review.
+The new strategy lesson and scouting extension share the Strategy Tradeoff
+Lab. Review the visible zero-to-three ratings and weights, weighted scores,
+Plan A, Plan B, and tie outcomes, invalid-weight state, native controls,
+mobile table overflow, live result, and deterministic reset. Confirm that the
+matrix cannot read data, model current game rules or teams, predict a match,
+optimize a plan, or make a decision. The team strategy process remains open
+for review, and the ARES Match Strategy screen is correctly named as a
+sample-only developer preview rather than a source of real evidence.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

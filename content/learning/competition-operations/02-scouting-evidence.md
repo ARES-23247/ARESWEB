@@ -134,9 +134,15 @@ two students are more likely to record the same fact.
 Next, design one agreement check for a real future rehearsal. Keep the exercise anonymous and use
 only robot actions. Do not collect names or performance judgments.
 
+When the scouting record is ready, try the strategy tradeoff lab below. Use only invented plans.
+Notice how a visible weight can change the arithmetic without creating new evidence.
+
+<strategytradeofflab />
+
 ## Related and next
 
 Use [Compare Logs and Replay a Failure](/academy/testing-logs-replay?path=testing-debugging-commissioning)
 when a completed run can support a robot observation. Return to [Run a Drive-Team Match Cycle](/academy/competition-drive-team?path=competition-operations)
-to add a short, private-data-free evidence handoff after the debrief. Continue later with strategy
-only after the team reviews its process and limits.
+to add a short, private-data-free evidence handoff after the debrief. Continue with [Turn Evidence
+into Match Strategy](/academy/competition-strategy?path=competition-operations) for the full decision
+record. The team process still needs review before either lesson represents current team practice.
