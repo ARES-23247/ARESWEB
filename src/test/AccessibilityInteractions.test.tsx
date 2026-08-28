@@ -79,6 +79,10 @@ describe("accessible tab interactions", () => {
 
 describe("client-side route transitions", () => {
   it("focuses and announces the new page heading", async () => {
+    const scrollTo = vi
+      .spyOn(window, "scrollTo")
+      .mockImplementation(() => undefined);
+
     function RouteHarness() {
       const navigate = useNavigate();
       const { pathname } = useLocation();
@@ -104,6 +108,11 @@ describe("client-side route transitions", () => {
         screen.getByRole("heading", { name: "Second page" }),
       ).toHaveFocus(),
     );
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
     expect(screen.getByRole("status")).toHaveTextContent("Second page loaded");
   });
 
