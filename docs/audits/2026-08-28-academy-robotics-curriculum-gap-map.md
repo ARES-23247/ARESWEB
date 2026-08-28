@@ -456,3 +456,31 @@ validate an `.aressubsystem`, generate Kotlin, run Redux, call an FTC adapter,
 reproduce PWM color, detect a failed write, or prove physical wiring and
 safe-off behavior. No draft was staged or published, no production data was
 written, and no branch was pushed or deployed during this batch.
+
+## Eleventh bounded implementation evidence
+
+The cached-I/O batch adds `programming-io-caching` and the Academy-only Cached
+Output Decision Lab. The lesson connects one-read-per-loop ownership, cached
+getters, checked output writes, redundant-write thresholds, and explicit zero
+stops. It remains separate from the upgraded input-to-output overview so each
+page has one primary interaction and a clear learning purpose.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 33 documents and 24 approved embeds;
+- the new lesson has 820 prose words, estimated grade 6.1, and an 18-word
+  longest sentence;
+- the exact curriculum-plan comparison now finds 18 authored identities and
+  30 remaining full-contract lesson identities out of 48;
+- all 42 unique pinned blobs were recomputed, including architecture,
+  `CachedHardware.kt`, and the SDK-free `MotorIO` contract;
+- tests cover changed, redundant, and hard-stop writes, invalid input, native
+  controls, text results, loop-order disclosure, reset, fidelity limits,
+  renderer security, and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The lab models one output comparison with lesson-only values. It does not read
+hardware, model the first-write sentinel, validate FTC SDK ranges, run a robot
+loop, measure bus traffic, or prove that a device stops. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.

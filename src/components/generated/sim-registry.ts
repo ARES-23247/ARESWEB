@@ -26,6 +26,7 @@ const greatbee = lazy(() => import("../../sims/greatbee"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
+const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
 const motionProfileLab = lazy(() => import("../../sims/motion-profile-lab"));
@@ -110,6 +111,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   kayakingHydrodynamics: kayakingHydrodynamics,
   kayakinghydrodynamics: kayakingHydrodynamics,
   linearequations: linearequations,
+  loopCacheLab: loopCacheLab,
+  loopcachelab: loopCacheLab,
   mechanismRatioExplorer: mechanismRatioExplorer,
   mechanismratioexplorer: mechanismRatioExplorer,
   montyhall: montyhall,
@@ -189,6 +192,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   coordinatetransformlab: coordinateTransformLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
+  loopCacheLab: loopCacheLab,
+  loopcachelab: loopCacheLab,
   mechanismRatioExplorer: mechanismRatioExplorer,
   mechanismratioexplorer: mechanismRatioExplorer,
   motionProfileLab: motionProfileLab,
@@ -387,6 +392,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'loopCacheLab',
+    'name': 'Cached Output Decision Lab',
+    'folder': 'loop-cache-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'mechanismRatioExplorer',

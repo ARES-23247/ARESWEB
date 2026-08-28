@@ -177,6 +177,14 @@
       "fidelity": null
     },
     {
+      "id": "loopCacheLab",
+      "name": "Cached Output Decision Lab",
+      "path": "./loop-cache-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "mechanismRatioExplorer",
       "name": "Mechanism Ratio Explorer",
       "path": "./mechanism-ratio-explorer",
