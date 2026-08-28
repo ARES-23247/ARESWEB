@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const MIGRATION_VERSION = 1;
+const MIGRATION_VERSION = 2;
 const MAX_FILE_BYTES = 2_000_000;
 const MAX_CHANGES = 25;
 const APPROVAL_PHASES = new Set(["publish-drafts", "refresh-published", "replacements", "cross-links"]);
@@ -443,8 +443,8 @@ export function buildLearningRollbackManifest(options, plans, createdAt) {
       changedFields: plan.changedFields,
       beforeHash: plan.kind === "create" ? null : hash(plan.current),
       desiredFieldHashes: Object.fromEntries(Object.entries(plan.desired).map(([field, value]) => [field, hash(value)])),
-      revisionPath: `docs/${plan.slug}/revisions/academy_v1_${options.phase}_${plan.slug}`,
-      auditPath: `audit_logs/academy_v1_${options.phase}_${plan.slug}`,
+      revisionPath: `docs/${plan.slug}/revisions/academy_v${MIGRATION_VERSION}_${options.phase}_${plan.slug}`,
+      auditPath: `audit_logs/academy_v${MIGRATION_VERSION}_${options.phase}_${plan.slug}`,
     })),
   };
 }
@@ -492,10 +492,10 @@ async function applyPlans(db, options, plans, timestamp, approval) {
       };
       transaction.set(ref, value, { merge: plan.kind !== "create" });
       transaction.create(
-        db.doc(`docs/${plan.slug}/revisions/academy_v1_${options.phase}_${plan.slug}`),
+        db.doc(`docs/${plan.slug}/revisions/academy_v${MIGRATION_VERSION}_${options.phase}_${plan.slug}`),
         revisionData(plan, options.phase, timestamp),
       );
-      transaction.create(db.doc(`audit_logs/academy_v1_${options.phase}_${plan.slug}`), {
+      transaction.create(db.doc(`audit_logs/academy_v${MIGRATION_VERSION}_${options.phase}_${plan.slug}`), {
         action: "academy.content.migrated",
         targetCollection: "docs",
         targetSlug: plan.slug,
