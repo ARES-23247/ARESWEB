@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-three new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-four new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -147,6 +147,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Collect Useful Scouting Evidence | Competition Operations | None | [`02-scouting-evidence.md`](../content/learning/competition-operations/02-scouting-evidence.md) |
 | Turn Evidence into Match Strategy | Competition Operations | None | [`03-strategy-tradeoffs.md`](../content/learning/competition-operations/03-strategy-tradeoffs.md) |
+| Review, Repair, and Record after a Match | Competition Operations | Physical robot | [`04-post-match-triage.md`](../content/learning/competition-operations/04-post-match-triage.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
 | Capstone 2: Build a Complete ARES Subsystem | Robotics Capstones | Physical robot | [`02-complete-subsystem.md`](../content/learning/robotics-capstones/02-complete-subsystem.md) |
 | Capstone 3: Complete a Simulated Autonomous Mission | Robotics Capstones | Simulation only | [`03-simulated-autonomous-mission.md`](../content/learning/robotics-capstones/03-simulated-autonomous-mission.md) |
@@ -277,6 +278,13 @@ matrix cannot read data, model current game rules or teams, predict a match,
 optimize a plan, or make a decision. The team strategy process remains open
 for review, and the ARES Match Strategy screen is correctly named as a
 sample-only developer preview rather than a source of real evidence.
+The new post-match lesson and existing fault-tree extension share the
+Post-Match Triage Lab. Review its ordered safe-state, symptom, source,
+inspection-boundary, owner/stop, next-test, and return-status checks; native
+controls; first-missing result; narrow layout; and deterministic reset. Confirm
+that self-reported boxes cannot inspect or disable a robot, preserve a log,
+diagnose damage, assign a person, approve repair, authorize motion, or return a
+robot to play. The current authentic team checklist remains an open request.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

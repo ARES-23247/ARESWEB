@@ -1042,6 +1042,26 @@
       "safetyScope": "none"
     },
     {
+      "slug": "competition-post-match",
+      "title": "Review, Repair, and Record after a Match",
+      "category": "Robotics & Engineering",
+      "description": "Build an ordered handoff from safe return through preserved evidence, bounded diagnosis, and an explicit return or hold status.",
+      "contentFile": "competition-operations/04-post-match-triage.md",
+      "subject": "robotics-engineering",
+      "topics": ["competition", "post-match", "triage", "pit", "evidence", "handoff"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "competition-operations", "order": 6 }],
+      "prerequisites": ["competition-drive-team", "testing-fault-tree"],
+      "objectives": ["Order a post-match handoff from safe state through factual symptom capture and evidence preservation.", "Assign bounded next actions with owners, stop conditions, and one discriminating test.", "Record return, repair, or hold status without claiming that a paper checklist authorizes physical work."],
+      "platforms": ["ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "ARES Studio operations and pit evidence", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/OPERATIONS.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/OPERATIONS.md", "blobHash": "647bfa4e12e6f8890fa3e0c90226691d81df0faa" }, { "label": "Diagnostic Coach evidence boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachService.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachService.kt", "blobHash": "00cb1188ef8d41a6b87fc43debbb37d5dd0ce1f5" }, { "label": "Guided run review and safe next actions", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/operate/GUIDED_RUN_REVIEW.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/operate/GUIDED_RUN_REVIEW.md", "blobHash": "e244c45e30b3fd068a484e9b4660c6985598a30d" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1; authentic team post-match checklist remains open",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "rates-units-and-motion",
       "title": "Use Rates and Units to Describe Motion",
       "category": "Mathematics & Data",

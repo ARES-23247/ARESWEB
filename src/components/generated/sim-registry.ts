@@ -55,6 +55,7 @@ const odometryErrorLab = lazy(() => import("../../sims/odometry-error-lab"));
 const parityEvidenceLab = lazy(() => import("../../sims/parity-evidence-lab"));
 const performance = lazy(() => import("../../sims/performance"));
 const physics = lazy(() => import("../../sims/physics"));
+const postMatchTriageLab = lazy(() => import("../../sims/post-match-triage-lab"));
 const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"));
 const powershedding = lazy(() => import("../../sims/powershedding"));
 const reduxStateTracer = lazy(() => import("../../sims/redux-state-tracer"));
@@ -188,6 +189,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   parityevidencelab: parityEvidenceLab,
   performance: performance,
   physics: physics,
+  postMatchTriageLab: postMatchTriageLab,
+  postmatchtriagelab: postMatchTriageLab,
   powerBudgetExplorer: powerBudgetExplorer,
   powerbudgetexplorer: powerBudgetExplorer,
   powershedding: powershedding,
@@ -292,6 +295,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   odometryerrorlab: odometryErrorLab,
   parityEvidenceLab: parityEvidenceLab,
   parityevidencelab: parityEvidenceLab,
+  postMatchTriageLab: postMatchTriageLab,
+  postmatchtriagelab: postMatchTriageLab,
   powerBudgetExplorer: powerBudgetExplorer,
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
@@ -734,6 +739,14 @@ const SIM_METADATA = [
     'requiresContext': true,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'postMatchTriageLab',
+    'name': 'Post-Match Triage Lab',
+    'folder': 'post-match-triage-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'powerBudgetExplorer',

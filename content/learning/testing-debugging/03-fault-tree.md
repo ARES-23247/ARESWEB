@@ -125,9 +125,16 @@ Create a second tree for a pose that jumps during a mode transition. Include sta
 restart, coordinate convention, timestamp, sensor validity, and estimator branches. Choose one safe
 test that separates state handoff from coordinate error without changing both at once.
 
+Before building either tree, use the post-match triage lab below. It orders the safe-state, symptom,
+source, inspection, ownership, next-test, and return-status records. It cannot inspect a robot,
+confirm a cause, authorize a repair, or allow return to play.
+
+<postmatchtriagelab />
+
 ## Related and next
 
 Continue to [Commission an FTC Starter Robot Safely](/academy/ftc-starter-physical-commissioning?path=testing-debugging-commissioning).
 Use [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
 to add controlled failures before physical testing. Later, use SysId only for a suitable healthy
 system and a bounded tuning question. A fault tree cannot authorize motion or replace stop controls.
+For the complete competition handoff, use [Review, Repair, and Record after a Match](/academy/competition-post-match?path=competition-operations).

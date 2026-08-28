@@ -25,10 +25,10 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 55 catalog documents across
-12 populated paths. Forty-four substantial lessons now implement instructional
-contract version 2, and 62 approved interaction embeds appear in Academy
-content. Forty-one of 48 planned identities are authored. Every required
+Current bounded-phase status: the branch contains 56 catalog documents across
+12 populated paths. Forty-five substantial lessons now implement instructional
+contract version 2, and 64 approved interaction embeds appear in Academy
+content. Forty-two of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -327,6 +327,35 @@ or robot data, model current rules, alliance partners, opponents, timing,
 defense, failures, or uncertainty, optimize a plan, predict a match, or make a
 decision. No draft was staged or published, no production data was written,
 and no branch was pushed or deployed during this batch.
+
+## Thirty-eighth bounded implementation evidence
+
+The post-match batch adds `competition-post-match` and the approved Post-Match
+Triage Lab. The interaction is also reused as an optional opening boundary in
+the existing fault-tree lesson. The authentic team post-match checklist remains
+an open request.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 56 documents, with 15 existing-lesson
+  interaction candidates and 64 approved embeds;
+- the new lesson has 928 prose words, estimated grade 7.2, and a 25-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 42 authored identities and
+  6 remaining full-contract lesson identities out of 48;
+- all 87 unique pinned source URLs were remotely recomputed, including Studio
+  pit operations, Diagnostic Coach evidence limits, and Guided Run Review;
+- 39 focused rendering, navigation, content, readability, security, catalog,
+  and interaction tests pass; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  and remote provenance pass. Targeted interaction coverage is 100% for
+  statements, branches, functions, and lines.
+
+The lab uses self-reported checks. It cannot disable or inspect a robot,
+preserve a log, identify damage, diagnose a cause, assign a real person,
+approve a repair, authorize motion, or return a robot to play. No draft was
+staged or published, no production data was written, and no branch was pushed
+or deployed during this batch.
 
 ## Fifth bounded implementation evidence
 

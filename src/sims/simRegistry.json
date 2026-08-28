@@ -409,6 +409,14 @@
       "fidelity": null
     },
     {
+      "id": "postMatchTriageLab",
+      "name": "Post-Match Triage Lab",
+      "path": "./post-match-triage-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "powerBudgetExplorer",
       "name": "Power Budget Explorer",
       "path": "./power-budget-explorer",
