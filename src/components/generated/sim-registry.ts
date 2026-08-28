@@ -36,6 +36,7 @@ const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
 const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
+const loadPathExplorer = lazy(() => import("../../sims/load-path-explorer"));
 const logComparisonLab = lazy(() => import("../../sims/log-comparison-lab"));
 const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
 const mechanismMotionExplorer = lazy(() => import("../../sims/mechanism-motion-explorer"));
@@ -156,6 +157,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   kotlinExpressionLab: kotlinExpressionLab,
   kotlinexpressionlab: kotlinExpressionLab,
   linearequations: linearequations,
+  loadPathExplorer: loadPathExplorer,
+  loadpathexplorer: loadPathExplorer,
   logComparisonLab: logComparisonLab,
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
@@ -287,6 +290,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   kotlinExpressionLab: kotlinExpressionLab,
   kotlinexpressionlab: kotlinExpressionLab,
+  loadPathExplorer: loadPathExplorer,
+  loadpathexplorer: loadPathExplorer,
   logComparisonLab: logComparisonLab,
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
@@ -597,6 +602,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'loadPathExplorer',
+    'name': 'Load Path Evidence Explorer',
+    'folder': 'load-path-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'logComparisonLab',

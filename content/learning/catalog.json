@@ -782,6 +782,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "mechanical-structure-load-paths",
+      "title": "Frames, Bracing, and Load Paths",
+      "category": "Robotics & Engineering",
+      "description": "Trace a conceptual force route through members, joints, direction changes, and supports while keeping structural capacity open for real evidence.",
+      "contentFile": "mechanical-design/03-load-path-evidence.md",
+      "subject": "robotics-engineering",
+      "topics": ["frames", "bracing", "load paths", "joints", "reactions", "structural evidence"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 4 }],
+      "prerequisites": ["mechanical-fasteners", "mechanical-measurement-design-notebook"],
+      "objectives": ["Trace a conceptual load path from an input through every member and joint to a named support or reaction boundary.", "Mark direction changes, offsets, clearance, and the first unsupported claim in a paper evidence record.", "Explain why a conceptual route cannot calculate capacity, choose structure, authorize loading, or prove physical safety."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "FRC hardware geometry and physical-review boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FRC-Starter/docs/HARDWARE_REVIEW.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FRC-Starter/docs/HARDWARE_REVIEW.md", "blobHash": "ac6fc6ec692810b696d7c716e80441ca9dc0f394" }, { "label": "FTC physical commissioning boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "blobHash": "26364cd62adcf7c2ba60f9e192785491600f80a1" }, { "label": "Drivebase geometry authoring contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/drivetrain-authoring.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.2; authentic team structure examples remain open",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "mechanical-gears-sprockets-belts",
       "title": "Gears, Sprockets, Belts, Speed, and Torque",
       "category": "Robotics & Engineering",

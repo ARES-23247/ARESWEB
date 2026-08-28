@@ -122,7 +122,15 @@ always better. Include sideways motion, turning, traction assumptions, controls,
 work, software effort, and test evidence. Mark every assumption that needs a real part, field, or
 rule check.
 
+Then use the load-path explorer with the front-contact scenario. Trace the conceptual route through
+mounts, frame members, joints, and wheel-ground support for each starting point. The result does not
+calculate impact, strength, traction, or stability and cannot approve a chassis.
+
+<loadpathexplorer />
+
 ## Related and next
 
 Use [Drivebase, Swerve, and Kinematics Contracts](/docs/swerve-and-kinematics) for the advanced
-reference. Continue to mechanisms, CAD, fabrication, electrical power, and careful commissioning.
+reference. Review [Frames, Bracing, and Load Paths](/academy/mechanical-structure-load-paths?path=mechanical-design-fabrication)
+for the full conceptual evidence activity. Continue to mechanisms, CAD, fabrication, electrical
+power, and careful commissioning.

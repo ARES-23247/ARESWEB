@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-six new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-seven new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -131,6 +131,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Measure, Sketch, and Record a Design | Mechanical Design & Fabrication | None | [`00-measurement-design-notebook.md`](../content/learning/mechanical-design/00-measurement-design-notebook.md) |
 | Choose and Use Common Robot Tools | Mechanical Design & Fabrication | Physical robot | [`01-tool-evidence.md`](../content/learning/mechanical-design/01-tool-evidence.md) |
 | Fasteners, Threads, and Keeping Parts Together | Mechanical Design & Fabrication | Physical robot | [`02-fastener-evidence.md`](../content/learning/mechanical-design/02-fastener-evidence.md) |
+| Frames, Bracing, and Load Paths | Mechanical Design & Fabrication | Physical robot | [`03-load-path-evidence.md`](../content/learning/mechanical-design/03-load-path-evidence.md) |
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
 | Build Motion with Arms, Elevators, Intakes, and Linkages | Mechanical Design & Fabrication | Physical robot | [`03-mechanism-motion.md`](../content/learning/mechanical-design/03-mechanism-motion.md) |
@@ -305,6 +306,15 @@ layout; and deterministic reset. Confirm that the lab cannot inspect a joint,
 identify threads, verify compatibility, calculate strength or clamping force,
 choose hardware, set torque, detect loosening, supervise assembly, or approve
 physical use. Manufacturer fastener references remain an open request.
+The new structure lesson and existing drivetrain extension share the Load Path
+Evidence Explorer. Review its front-contact, arm-payload, side-mechanism, and
+hanging-support routes; ordered input, transfer-member, joint, reaction,
+direction-change, open-point, and later-test checks; semantic ordered path;
+native controls; first-missing result; narrow-screen reflow; and deterministic
+reset. Confirm that it cannot calculate force, stress, stiffness, bending,
+buckling, impact, fatigue, safety factor, joint capacity, traction, or
+stability; inspect a robot; choose material or geometry; authorize loading; or
+prove a structure safe. Authentic team structure images remain an open request.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

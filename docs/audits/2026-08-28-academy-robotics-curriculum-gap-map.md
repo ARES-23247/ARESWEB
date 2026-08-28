@@ -25,10 +25,10 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 58 catalog documents across
-12 populated paths. Forty-seven substantial lessons now implement instructional
-contract version 2, and 67 approved interaction embeds appear in Academy
-content. Forty-four of 48 planned identities are authored. Every required
+Current bounded-phase status: the branch contains 59 catalog documents across
+12 populated paths. Forty-eight substantial lessons now implement instructional
+contract version 2, and 69 approved interaction embeds appear in Academy
+content. Forty-five of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -418,6 +418,36 @@ size, verify compatibility, calculate strength or clamping force, choose a
 fastener, set torque, detect loosening, supervise assembly, or approve physical
 use. No draft was staged or published, no production data was written, and no
 branch was pushed or deployed during this batch.
+
+## Forty-first bounded implementation evidence
+
+The structure batch adds `mechanical-structure-load-paths` and the approved
+Load Path Evidence Explorer. The interaction is also reused as an optional
+front-contact activity in the existing drivetrain lesson. Authentic ARES team
+structure examples remain an open request, so all diagrams and routes are
+plainly labeled generic teaching models.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 59 documents, with 15 existing-lesson
+  interaction candidates and 69 approved embeds;
+- the new lesson has 975 prose words, estimated grade 5.7, and a 27-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 45 authored identities and
+  3 remaining full-contract lesson identities out of 48;
+- all 87 unique pinned source URLs were remotely recomputed, including the
+  immutable FTC/FRC physical-review and drivebase-geometry boundaries;
+- 39 focused rendering, navigation, content, readability, security, catalog,
+  and interaction tests pass; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  and remote provenance pass. Targeted interaction coverage is 100% for
+  statements, branches, functions, and lines.
+
+The explorer does not calculate force, stress, stiffness, bending, buckling,
+impact, fatigue, safety factor, joint capacity, traction, or stability. It
+cannot inspect a robot, choose material or geometry, authorize loading, or
+prove a structure safe. No draft was staged or published, no production data
+was written, and no branch was pushed or deployed during this batch.
 
 ## Fifth bounded implementation evidence
 
