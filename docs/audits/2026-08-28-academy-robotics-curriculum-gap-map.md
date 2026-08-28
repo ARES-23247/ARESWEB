@@ -237,3 +237,34 @@ Focused evidence on 2026-08-28:
 This batch reduces the unauthored full-contract track count from 41 to 40. It
 does not test a physical robot, stage or publish a draft, write production data,
 push a branch, or deploy the website.
+
+## Fourth bounded implementation evidence
+
+The feedback batch adds `controls-pid` and reuses the Control Response Lab with
+P-, I-, and D-focused trial prompts. The interaction now includes a bounded
+integral term and preserves its invented-plant warning. Controls path positions
+were shifted as a group so PID comes before telemetry/logging, autonomous, and
+the season driver-frame application.
+
+During remote verification, the provenance gate detected ARES Robotics 11.1.0
+and Studio 2.0.1 at commit `65351a27`. Review of the 11.0.0-to-11.1.0 source
+diff found new simulator fault-timeline and Studio project-editing APIs plus
+product-name corrections in several documentation files. The two tuning sources
+used by the feedforward and PID lessons did not change. The catalog therefore
+records 11.1.0/2.0.1 as the current authority while retaining the 41 exact
+11.0.0 source references as approved historical pins. Those pins must be
+repointed only when each affected lesson receives a source and wording review.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 28 documents and 13 approved embeds;
+- the PID lesson has 919 prose words, estimated grade 6.2, and a 25-word
+  longest sentence;
+- all 29 unique source blobs were recomputed, and the current release metadata
+  matches ARES 11.1.0, Studio 2.0.1, and both 11.1.0 starters;
+- deterministic response, output bound, integral behavior, reset, renderer
+  security, catalog contract, TypeScript, and lint checks pass; and
+- the unauthored full-contract track count is now 39 of 48.
+
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

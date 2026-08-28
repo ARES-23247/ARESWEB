@@ -2,12 +2,12 @@
   "catalogVersion": 1,
   "generatedFrom": {
     "sourceRepository": "ARES-Robotics",
-    "sourceRevision": "ares-11.0.0-studio-2.0.0",
-    "sourceCommit": "439f2a36855aa6d00010c0d4ada255511626d1af",
-    "aresVersion": "11.0.0",
-    "studioVersion": "2.0.0",
-    "ftcStarterVersion": "11.0.0",
-    "frcStarterVersion": "11.0.0"
+    "sourceRevision": "ares-11.1.0-studio-2.0.1",
+    "sourceCommit": "65351a2721840ed3063a4a5a97c440b6fcc0d1b9",
+    "aresVersion": "11.1.0",
+    "studioVersion": "2.0.1",
+    "ftcStarterVersion": "11.1.0",
+    "frcStarterVersion": "11.1.0"
   },
   "documents": [
     {
@@ -131,6 +131,29 @@
       "instructionalContractVersion": 2
     },
     {
+      "slug": "controls-pid",
+      "title": "Tune Feedback with Evidence",
+      "category": "Robotics & Engineering",
+      "description": "Compare proportional, integral, and derivative error correction with one-change trials and explicit acceptance limits.",
+      "contentFile": "controls/03-pid-evidence.md",
+      "subject": "robotics-engineering",
+      "topics": ["PID", "feedback", "control response", "evidence"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 70,
+      "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 4 }],
+      "prerequisites": ["controls-motor-model-feedforward"],
+      "objectives": ["Connect P, I, and D terms to different parts of the error record.", "Tune one conceptual gain at a time against a numeric goal.", "Design a bounded physical verification plan without treating simulation as proof."],
+      "platforms": ["hardware-neutral", "simulator"],
+      "sourceReferences": [
+        { "label": "Typed tuning profiles", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARESLib-Kotlin/docs/typed-tuning-profiles.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/typed-tuning-profiles.md", "blobHash": "a3e8e6d736e6165cc63f96b553a0b79cc1adae3d" },
+        { "label": "Guided tuning experiments", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md", "blobHash": "6835a42a918f480a7b0a3692e1909b7e1d3f57a5" }
+      ],
+      "appliesToVersion": "ARES 11.0.0; Studio 2.0.0",
+      "safetyScope": "simulation-only",
+      "instructionalContractVersion": 2
+    },
+    {
       "slug": "telemetry-and-local-logs",
       "title": "Telemetry and Local Log Retrieval",
       "category": "Mathematics & Data",
@@ -141,7 +164,7 @@
       "contentType": "guided-lab",
       "level": "intermediate",
       "estimatedMinutes": 35,
-      "pathMemberships": [{ "pathId": "robotics-foundations", "order": 6 }, { "pathId": "controls-localization-autonomous", "order": 4 }],
+      "pathMemberships": [{ "pathId": "robotics-foundations", "order": 6 }, { "pathId": "controls-localization-autonomous", "order": 5 }],
       "prerequisites": ["run-first-ftc-simulation"],
       "objectives": ["Identify the local telemetry and log ports.", "Retrieve a completed log without exposing the robot service publicly."],
       "platforms": ["simulator", "ftc", "frc"],
@@ -218,7 +241,7 @@
       "contentType": "guided-lab",
       "level": "intermediate",
       "estimatedMinutes": 50,
-      "pathMemberships": [{ "pathId": "ftc-robot-with-ares", "order": 6 }, { "pathId": "controls-localization-autonomous", "order": 5 }],
+      "pathMemberships": [{ "pathId": "ftc-robot-with-ares", "order": 6 }, { "pathId": "controls-localization-autonomous", "order": 6 }],
       "prerequisites": ["ftc-starter-controller-bindings", "robot-coordinate-contracts"],
       "objectives": ["Explain why the empty starter autonomous mode blocks safely.", "Verify a generated routine before simulation."],
       "platforms": ["simulator", "ftc"],
@@ -351,7 +374,7 @@
       "contentType": "guided-lab",
       "level": "intermediate",
       "estimatedMinutes": 40,
-      "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 6 }],
+      "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 7 }],
       "prerequisites": ["robot-coordinate-contracts", "redux-state-actions-reducers"],
       "objectives": ["Calculate the output of the current deadband and exponent shaping pipeline.", "Explain which axes alliance selection mirrors and why rotation is unchanged."],
       "platforms": ["simulator", "ftc"],

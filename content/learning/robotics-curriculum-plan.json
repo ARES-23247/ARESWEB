@@ -5,9 +5,9 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "439f2a36855aa6d00010c0d4ada255511626d1af",
-    "aresVersion": "11.0.0",
-    "studioVersion": "2.0.0"
+    "commit": "65351a2721840ed3063a4a5a97c440b6fcc0d1b9",
+    "aresVersion": "11.1.0",
+    "studioVersion": "2.0.1"
   },
   "instructionalContract": {
     "targetReadingGrades": [6, 8],
@@ -133,7 +133,7 @@
       "lessons": [
         { "id": "robot-coordinate-contracts", "title": "Use Units and Coordinate Frames", "level": "beginner", "interaction": "coordinate-transform-lab", "sourceGap": null },
         { "id": "controls-motor-model-feedforward", "title": "Predict Motion with a Motor Model and Feedforward", "level": "intermediate", "interaction": "control-response-lab", "sourceGap": null },
-        { "id": "controls-pid", "title": "Tune a PID Loop with Evidence", "level": "intermediate", "interaction": "pid-response-lab", "sourceGap": null },
+        { "id": "controls-pid", "title": "Tune a PID Loop with Evidence", "level": "intermediate", "interaction": "control-response-lab", "sourceGap": null },
         { "id": "controls-motion-profiles", "title": "Plan Smooth Motion with Limits", "level": "intermediate", "interaction": "motion-profile-lab", "sourceGap": null },
         { "id": "controls-odometry", "title": "Estimate Motion with Encoders and Odometry", "level": "intermediate", "interaction": "odometry-error-lab", "sourceGap": null },
         { "id": "controls-sensor-fusion", "title": "Combine Measurements without Hiding Uncertainty", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },

@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds five new robotics drafts and deepens selected existing lessons.
+This branch adds six new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -130,6 +130,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
 | Predict Motion with Feedforward | Controls, Localization & Autonomous | Simulation only | [`02-feedforward-response.md`](../content/learning/controls/02-feedforward-response.md) |
+| Tune Feedback with Evidence | Controls, Localization & Autonomous | Simulation only | [`03-pid-evidence.md`](../content/learning/controls/03-pid-evidence.md) |
 
 The review must also cover the upgraded coordinate, Redux, and
 simulation-evidence lessons, the telemetry interaction added to the ARESLib
@@ -140,6 +141,11 @@ that its conceptual-model warning remains visible in both lesson contexts.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
+
+The current reviewed source authority is ARES 11.1.0 / Studio 2.0.1 at commit
+`65351a27`. Existing 11.0.0 source links remain immutable historical pins until
+their individual lesson review is complete; a release-number change alone does
+not authorize silently replacing those references.
 
 ## Recording future decisions
 

@@ -4,19 +4,29 @@ import { RotateCcw } from "lucide-react";
 
 type Sample = { time: number; target: number; measured: number; output: number };
 
-const DEFAULTS = { feedforward: 1, proportional: 0.8, derivative: 0.1 } as const;
+const DEFAULTS = { feedforward: 1, proportional: 0.8, integral: 0, derivative: 0.1 } as const;
 
-export function calculateConceptResponse(feedforward: number, proportional: number, derivative: number): Sample[] {
+export function calculateConceptResponse(
+  feedforward: number,
+  proportional: number,
+  integral: number,
+  derivative: number,
+): Sample[] {
   const samples: Sample[] = [];
   const dt = 0.1;
   const target = 1;
   let measured = 0;
   let previousError = target;
+  let accumulatedError = 0;
   for (let index = 0; index <= 50; index += 1) {
     const time = index * dt;
     const error = target - measured;
     const errorRate = index === 0 ? 0 : (error - previousError) / dt;
-    const output = Math.max(-3, Math.min(3, feedforward + proportional * error + derivative * errorRate));
+    accumulatedError = Math.max(-5, Math.min(5, accumulatedError + error * dt));
+    const output = Math.max(
+      -3,
+      Math.min(3, feedforward + proportional * error + integral * accumulatedError + derivative * errorRate),
+    );
     samples.push({ time, target, measured, output });
     const acceleration = (output - measured) / 1.5;
     measured += acceleration * dt;
@@ -28,14 +38,19 @@ export function calculateConceptResponse(feedforward: number, proportional: numb
 export default function ControlResponseLab() {
   const [feedforward, setFeedforward] = useState<number>(DEFAULTS.feedforward);
   const [proportional, setProportional] = useState<number>(DEFAULTS.proportional);
+  const [integral, setIntegral] = useState<number>(DEFAULTS.integral);
   const [derivative, setDerivative] = useState<number>(DEFAULTS.derivative);
-  const samples = useMemo(() => calculateConceptResponse(feedforward, proportional, derivative), [feedforward, proportional, derivative]);
+  const samples = useMemo(
+    () => calculateConceptResponse(feedforward, proportional, integral, derivative),
+    [feedforward, proportional, integral, derivative],
+  );
   const final = samples.at(-1)!;
   const peak = Math.max(...samples.map((sample) => sample.measured));
 
   const reset = () => {
     setFeedforward(DEFAULTS.feedforward);
     setProportional(DEFAULTS.proportional);
+    setIntegral(DEFAULTS.integral);
     setDerivative(DEFAULTS.derivative);
   };
 
@@ -57,6 +72,7 @@ export default function ControlResponseLab() {
           <legend className="px-2 text-sm font-bold text-ares-gold">Choose lesson gains</legend>
           <NumberControl label="Feedforward output" value={feedforward} min={0} max={2} step={0.1} onChange={setFeedforward} />
           <NumberControl label="Proportional gain" value={proportional} min={0} max={3} step={0.1} onChange={setProportional} />
+          <NumberControl label="Integral gain" value={integral} min={0} max={1} step={0.05} onChange={setIntegral} />
           <NumberControl label="Derivative gain" value={derivative} min={0} max={1} step={0.05} onChange={setDerivative} />
         </fieldset>
 

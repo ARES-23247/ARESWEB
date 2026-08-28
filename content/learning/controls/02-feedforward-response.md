@@ -22,6 +22,7 @@ not a motor test, an ARES tuning profile, or proof that a robot is safe to run.
 - **Feedforward:** a predicted output based on the requested motion.
 - **Feedback:** a correction based on measured error.
 - **Proportional gain:** a number that makes correction grow with the error.
+- **Integral gain:** a number that makes correction grow with stored error over time.
 - **Derivative gain:** a number that reacts to how quickly the error changes.
 - **Plant:** the system being controlled, such as a motor and mechanism.
 - **Model:** a simpler description used to predict part of a plant's behavior.
@@ -81,9 +82,9 @@ velocity. Open the numeric table so your evidence is available as text, not only
 Set the feedforward output to zero. Keep the other two settings unchanged. Describe how the final
 error changes. Then reset the lab and set proportional gain to zero. Compare the two trials.
 
-Next, change only feedforward in steps of `0.2`. Stop after five trials. Record each setting and the
-three result numbers. Do not change two settings in the same trial. A one-change test makes the
-result easier to explain.
+Leave integral gain at zero. Next, change only feedforward in steps of `0.2`. Stop after five trials.
+Record each setting and the three result numbers. Do not change two settings in the same trial. A
+one-change test makes the result easier to explain.
 
 Finally, choose one feedforward setting and vary proportional gain. Watch the peak and final error.
 Use the graph and table to report what happened. Do not call one setting “best” without naming a
@@ -115,8 +116,9 @@ values and make a new one-change plan.
 
 ## Evidence artifact
 
-Create a table with at least six trials. Include feedforward, proportional gain, derivative gain,
-final velocity, final error, and peak velocity. Mark which setting changed in each row.
+Create a table with at least six trials. Include feedforward, proportional gain, integral gain,
+derivative gain, final velocity, final error, and peak velocity. Mark which setting changed in each
+row.
 
 Below the table, write three short claims. One must explain what feedforward changed. One must
 explain what proportional feedback changed. The last must name one fact that this conceptual model
