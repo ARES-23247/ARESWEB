@@ -350,7 +350,17 @@ describe("learning content migration", () => {
 
   it("publishes only approved staged drafts whose reviewed content is unchanged", async () => {
     const draft = { title: "Reviewed lesson", status: "draft", approvalStatus: "pending_approval", content: "reviewed" };
-    const files = tempFiles({ documents: [{ slug: "new-lesson", data: draft }] });
+    const files = tempFiles({
+      documents: [
+        { slug: "new-lesson", data: draft },
+        { slug: "published-refresh", data: { ...draft, title: "Published refresh" } },
+      ],
+      refreshes: [{
+        slug: "published-refresh",
+        preconditions: { title: "Published refresh", status: "published" },
+        contentSha256: createHash("sha256").update("old body").digest("hex"),
+      }],
+    });
     const approval = writeApproval(files, "publish-drafts", ["new-lesson"]);
     const store = fakeFirestore({
       "docs/new-lesson": {

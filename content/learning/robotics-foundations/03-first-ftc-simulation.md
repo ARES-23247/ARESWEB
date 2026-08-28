@@ -1,29 +1,57 @@
 # Run your first FTC simulation
 
-## Before launch
+A simulator lets you test robot code without moving a physical robot. A green connection light is
+not enough, though. You must also choose an OpMode, start it, and arm local controls.
 
-Use a clean FTC Starter project. Review Project Identity and the four required drive motors (`fl`, `fr`, `rl`, `rr`) plus the Control Hub IMU (`imu`). These names and the starter tuning profile are declarations for generation and simulation, not measurements from your robot.
+## What you will learn
 
-Run the normal released-artifact verification from the project root:
+- Check and build an FTC starter project.
+- Start a TeleOp in the right order.
+- Prove that the simulated robot moved.
+
+## Before you start
+
+Use a clean FTC Starter project. In **Project Identity**, check the drive motors `fl`, `fr`, `rl`,
+and `rr`. Also check the Control Hub IMU named `imu`. These are project settings for generation and
+simulation. They are not measurements from a real robot.
+
+From the project root, run:
 
 ```powershell
 .\gradlew.bat generateAresProject verifyAresProject :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
 ```
 
-## Start in the required order
+```mermaid
+%% aria: Build the project, launch the simulator, connect Studio, select a TeleOp, send INIT and START, then arm local control.
+flowchart LR
+    A["Verify and build"] --> B["Launch simulator"]
+    B --> C["Studio connects"]
+    C --> D["Choose TeleOp"]
+    D --> E["INIT"]
+    E --> F["START"]
+    F --> G["Arm control"]
+```
 
-1. Open the standalone project in ARES Robotics Studio.
-2. Select Local Simulator and verify the connection uses `127.0.0.1` or another loopback name.
-3. Use the monitor-shaped **Launch Simulator** control and keep the terminal drawer visible while
-   the project builds. Port `5810` being online only proves that an NT4 server is listening.
-4. Wait for both the green **Local Sim** target indicator and Studio's connected status.
-5. Select the generated TeleOp, send INIT, then START, and explicitly arm local control.
-6. Apply a brief input and release it. Confirm the true simulated pose or another expected live
-   telemetry value changes and then settles.
-7. Stop the OpMode and the managed simulator cleanly before closing Studio.
+## Start the simulation
 
-## Evidence to record
+1. Open the project in ARES Robotics Studio.
+2. Choose **Local Simulator**. Use `127.0.0.1`, `localhost`, or another loopback name.
+3. Select **Launch simulator**. Keep the terminal drawer open while the build runs.
+4. Wait for the green Local Sim target and the connected message.
+5. Choose the generated TeleOp.
+6. Send **INIT**, then **START**.
+7. Arm local control.
+8. Press one drive control for a moment, then release it.
+9. Stop the OpMode and the simulator before closing Studio.
 
-Record the selected OpMode, successful INIT and START messages, armed state, connection state, and
-before/after simulated pose. A successful build, listening port, changing button, chart, or
-transmitted frame alone is not evidence that the simulated robot moved.
+Port `5810` being online only means the NT4 server is listening. It does not mean an OpMode is
+running or the robot can move.
+
+## Check your work
+
+Record the OpMode name, INIT message, START message, armed state, and connection state. Also record
+the true simulated pose before and after the input. The pose should change, then stop changing when
+you release the control.
+
+A successful build or moving chart is not proof by itself. The true simulated pose is the evidence
+that the simulated robot moved.

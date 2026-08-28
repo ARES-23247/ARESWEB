@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertMiddleSchoolLearningQuality,
+  assertStudentLedRobotVerificationLanguage,
   normalizeLearningMarkdown,
   parseAresVersions,
   registerPathOrder,
@@ -11,6 +13,35 @@ import {
 describe("learning catalog preparation", () => {
   it("normalizes Markdown line endings deterministically across operating systems", () => {
     expect(normalizeLearningMarkdown("  # Lesson\r\n\rBody\rMore\n  ")).toBe("# Lesson\n\nBody\nMore");
+  });
+
+  it("keeps robot verification student-led without weakening safety instructions", () => {
+    expect(() => assertStudentLedRobotVerificationLanguage(
+      "Students keep the robot disabled, use blocks, and verify the emergency stop before testing.",
+      "safe-lesson",
+    )).not.toThrow();
+    expect(() => assertStudentLedRobotVerificationLanguage(
+      "A mentor must verify the robot before students record evidence.",
+      "mentor-gated-lesson",
+    )).toThrow(/student-led/u);
+    expect(() => assertStudentLedRobotVerificationLanguage(
+      "Complete this commissioning activity with an experienced mentor.",
+      "supervised-lesson",
+    )).toThrow(/student-led/u);
+  });
+
+  it("requires readable, structured lessons with described diagrams", () => {
+    const sentence = "Students test one small idea, record the result, and explain what changed.";
+    const valid = `# Clear lesson\n\n${`${sentence} `.repeat(18)}\n\n## See the flow\n\n\`\`\`mermaid\n%% aria: A small input moves through one safe check to an output.\nflowchart LR\n  A --> B\n\`\`\`\n\n## Check your work\n\n${`${sentence} `.repeat(4)}`;
+    expect(() => assertMiddleSchoolLearningQuality(valid, "clear-lesson")).not.toThrow();
+    expect(() => assertMiddleSchoolLearningQuality(
+      valid.replace("%% aria: A small input moves through one safe check to an output.\n", ""),
+      "missing-summary",
+    )).toThrow(/aria/u);
+    expect(() => assertMiddleSchoolLearningQuality(
+      valid.replace(`${sentence} `.repeat(18), "The institutionalization of incomprehensibility characterizes multidisciplinary implementations. ".repeat(22)),
+      "hard-lesson",
+    )).toThrow(/reading grade/u);
   });
 
   it("parses the monorepo version identity file and rejects ambiguous keys", () => {

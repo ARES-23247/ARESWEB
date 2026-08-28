@@ -21,8 +21,8 @@ For every item being approved, confirm:
   match the lesson;
 - technical statements match the pinned source and do not promise hardware
   behavior that was only simulated;
-- physical-robot work clearly requires disabled setup, supervision, and staged
-  commissioning where applicable;
+- physical-robot work clearly requires a disabled setup, the team's student-led
+  safety procedure, staged commissioning, and an accessible emergency stop;
 - language and exercises are suitable for the intended student audience;
 - links, headings, tables, lists, code, and instructions are understandable by
   keyboard and on a narrow screen;
@@ -57,16 +57,15 @@ for future edits, which return changed content to pending review.
 
 ## Three current-robot tutorials
 
-These lessons were reviewed and published on 2026-08-25 EDT under batch
-`academy-phase3-prod-publish-20260826-01`, digest
-`c4d912d91cf442de36084ad278ae25900f44a54fb62939b38eafa3f391c700c4`,
-and the public reviewer label `Lead Coach`.
+These links identify the current season-code review set. The first release and
+the later monorepo replacement have separate migration audit records; do not
+reuse an old approval digest after changing any lesson.
 
 | Lesson | Safety scope | Public lesson | Canonical source file |
 | --- | --- | --- | --- |
 | Compose an FTC Season Robot That Fails Safe | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-season-composition-and-safe-lifecycle) | [`01-season-composition.md`](../content/learning/current-robot/01-season-composition.md) |
-| Shape Driver Input Without Mixing Coordinate Frames | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-driver-input-shaping-and-frames) | [`02-driver-input-frames.md`](../content/learning/current-robot/02-driver-input-frames.md) |
-| Make Intake I/O Fail Neutral Before Recovery | Physical robot | [Open lesson](https://aresfirst.org/academy/ftc-intake-io-fault-recovery) | [`03-intake-fault-recovery.md`](../content/learning/current-robot/03-intake-fault-recovery.md) |
+| Shape FTC Driver Input Without Losing the Frame | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-driver-input-shaping-and-frames) | [`02-driver-input-frames.md`](../content/learning/current-robot/02-driver-input-frames.md) |
+| Author GUI-Owned FTC Indicator Lights | Physical robot | [Open lesson](https://aresfirst.org/academy/ftc-gui-owned-indicator-lights) | [`03-gui-owned-indicator-lights.md`](../content/learning/current-robot/03-gui-owned-indicator-lights.md) |
 
 ## Four applied ARESLib replacements
 
@@ -100,18 +99,30 @@ The completed batch is `academy-cross-links-20260825-01`, with digest
   `kayaking-hydrodynamics` (8), and `hiking-grade-energy` (9).
 
 The missing Math for Robotics order 5 is intentionally filled by the published
-`robot-coordinate-contracts` lesson. No Computing & AI item is invented; that
-path remains visibly in preparation.
+`robot-coordinate-contracts` lesson.
+
+## Middle-school expansion awaiting review
+
+The current proposal refreshes the 18 source-pinned robotics lessons with grade
+6-8 language and described Mermaid diagrams. It also stages four new,
+hardware-neutral lessons. None of these proposal files are live until the
+website editorial workflow and production migration are separately approved.
+
+| Lesson | Path | Canonical source file |
+| --- | --- | --- |
+| Use Rates and Units to Describe Motion | Math for Robotics | [`01-rates-units-motion.md`](../content/learning/middle-school-stem/01-rates-units-motion.md) |
+| Read a Telemetry Graph Like a Scientist | Math for Robotics | [`02-read-telemetry-graph.md`](../content/learning/middle-school-stem/02-read-telemetry-graph.md) |
+| Decide Whether Camera Evidence Is Trustworthy | AI & ML Foundations | [`03-camera-evidence.md`](../content/learning/middle-school-stem/03-camera-evidence.md) |
+| Measure, Test, and Improve a Design | Applied STEM in the Outdoors | [`04-measure-test-improve.md`](../content/learning/middle-school-stem/04-measure-test-improve.md) |
 
 ## Recording future decisions
 
-The ARES 11 / Studio 2 monorepo refresh uses the approval-gated
-`refresh-published` phase for existing lessons. Review the rendered lesson and
+The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
+18 existing lessons. Review the rendered lesson, its diagram alternative, and
 its pinned `ARES-Robotics` sources. The runner verifies the recorded hash of the
 old live body before it can update anything, so a lesson edited since this plan
-was prepared blocks instead of being overwritten. The obsolete intake lesson
-is archived separately, and the GUI-owned indicator-light lesson is staged as
-a new draft with its own review.
+was prepared blocks instead of being overwritten. The four new STEM lessons use
+the separate `stage-drafts` and `publish-drafts` phases.
 
 For future content changes, record a statement with a real public reviewer
 label, date, and the generated review digests. For a full approval:

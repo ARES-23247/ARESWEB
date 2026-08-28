@@ -1,44 +1,57 @@
-# Compose an FTC season robot that fails safe
+# See how the current FTC robot starts and stops safely
 
-This tutorial reads the checked-in `AresRobot` composition root from the ARES 11 monorepo source
-line. It is a source-reading exercise. Complete the trace in simulation; do not infer that a
-physical mechanism is safe merely because its generated constructor or simulator path succeeds.
+This lesson reads the checked-in `AresRobot` file from the current ARES source. That file is the
+**composition root**. It connects shared robot services, generated subsystems, the season field,
+and the FTC loop.
 
-## Generated systems and construction safety
+Complete this trace with source code and simulation. A successful trace does not prove that a real
+mechanism is wired or tuned safely.
 
-The generated subsystem and superstructure registries install Robot Builder descriptors through
-normal subsystem lifecycle plumbing. If either registry fails during construction, the composition
-root closes the already-created shared robot services and rethrows the failure. The object cannot
-return as a partly initialized robot.
+## What you will learn
 
-Lightbot's two indicator lights and Prism are owned by canonical `.aressubsystem` descriptors. Their
-individual `requiredAtStartup` policy lives in those descriptors and generated registries, not in a
-parallel hand-written optional-mechanism list. A missing optional device is not evidence that its
-commands or physical installation are safe.
+- how generated systems join the robot;
+- what happens during one update frame; and
+- how a failure keeps later frames from writing outputs.
 
-Before autonomous targets or AprilTags are accepted, the composition root loads and validates the
-checked-in FTC field contract. A missing or invalid field installs an empty tag map and keeps manual
-drive available; it does not silently fall back to unrelated tag geometry.
+## Robot construction
 
-## Trace one frame
+```mermaid
+%% aria: The composition root creates shared services, loads the season field, installs generated subsystems, and then returns a complete robot or fails without returning a partial robot.
+flowchart TD
+  A["Create shared services"] --> B["Load and check field"]
+  B --> C["Install generated systems"]
+  C --> D{"Did setup succeed?"}
+  D -->|Yes| E["Complete robot"]
+  D -->|No| F["Close created services"]
+```
 
-Follow `update` in order:
+The generated registries install systems made by Robot Builder. Their `.aressubsystem` documents
+state whether a device is required at startup and what its safe output is. Those rules do not live
+in a second handwritten list.
 
-1. Reject a robot instance that already has a latched shared or season failure.
-2. Run the shared base update, which refreshes registered I/O and computes the frame's power protection.
-3. Read every registered generated subsystem's cached sensor state.
-4. Write registered subsystem outputs using the same frame's power scale.
-5. Publish low-rate Driver Station telemetry.
+If setup fails, `AresRobot` closes services that were already created and throws the error. It does
+not return a half-built robot.
 
-If any step throws, the code latches that failure, attempts both subsystem and platform safing, and
-rethrows. A later loop cannot silently resume normal writes; recovery requires a newly constructed
+## Trace one update frame
+
+1. Check whether an earlier shared or season failure is latched.
+2. Run the shared update. It reads registered inputs and computes power protection.
+3. Read cached sensor state for generated subsystems.
+4. Write subsystem outputs using this frame's power scale.
+5. Send low-rate Driver Station telemetry.
+
+If a step throws, the code remembers the failure, tries to safe both subsystem and platform
+outputs, and throws again. A later loop cannot quietly start normal writes. Recovery needs a new
 OpMode robot instance.
 
-## Review exercise
+## Source-reading activity
 
-Draw the canonical field load, generated registry installation, normal update sequence, and
-exception sequence. For each generated subsystem, locate the descriptor field that decides startup
-policy and safe output. Have a teammate confirm each arrow against the pinned source before treating
-the diagram as reviewed.
+Draw the setup path and the five update steps. Add a red arrow from every step that can fail to the
+safe-output path. For one generated subsystem, find the descriptor fields for startup policy and
+safe output. Ask a teammate to check your arrows against the pinned source.
 
-This exercise verifies architectural reasoning, not wiring, current limits, calibration, emergency-stop access, or physical robot behavior.
+## Check your understanding
+
+1. Why should setup never return a partly built robot?
+2. What does a latched failure prevent?
+3. Which document owns a generated device's safe output?
