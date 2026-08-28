@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds twenty-five new robotics drafts and deepens selected existing lessons.
+This branch adds twenty-six new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -144,6 +144,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Capstone 2: Build a Complete ARES Subsystem | Robotics Capstones | Physical robot | [`02-complete-subsystem.md`](../content/learning/robotics-capstones/02-complete-subsystem.md) |
 | Capstone 3: Complete a Simulated Autonomous Mission | Robotics Capstones | Simulation only | [`03-simulated-autonomous-mission.md`](../content/learning/robotics-capstones/03-simulated-autonomous-mission.md) |
 | Capstone 4: Commission a Physical Robot Feature | Robotics Capstones | Physical robot | [`04-physical-feature-commissioning.md`](../content/learning/robotics-capstones/04-physical-feature-commissioning.md) |
+| Capstone 5: Present Competition-Readiness Evidence | Robotics Capstones | Physical robot | [`05-competition-readiness-evidence.md`](../content/learning/robotics-capstones/05-competition-readiness-evidence.md) |
 | Predict Motion with Feedforward | Controls, Localization & Autonomous | Simulation only | [`02-feedforward-response.md`](../content/learning/controls/02-feedforward-response.md) |
 | Tune Feedback with Evidence | Controls, Localization & Autonomous | Simulation only | [`03-pid-evidence.md`](../content/learning/controls/03-pid-evidence.md) |
 | Plan Smooth Motion with Limits | Controls, Localization & Autonomous | Simulation only | [`04-motion-profiles.md`](../content/learning/controls/04-motion-profiles.md) |
@@ -273,6 +274,12 @@ simulation and configuration evidence, restrained setup, smallest output,
 stop readiness, unexpected-result rule, authentic student record, privacy
 boundary, and stale-evidence behavior. Confirm that the open physical-evidence
 request cannot be fulfilled by either checklist or simulation output.
+The competition-readiness capstone reuses the Capstone Evidence Board and adds
+a draft team rubric. Review narrow claims, exact source and inventory identity,
+evidence levels, stop and fallback results, stale evidence, pit and operations
+handoffs, privacy, go/limited-go/no-go decisions, and next actions. Students and
+the team own robot-process review; only website publication uses the editorial
+Lead Coach gate. Authentic evidence from each claimed boundary remains required.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

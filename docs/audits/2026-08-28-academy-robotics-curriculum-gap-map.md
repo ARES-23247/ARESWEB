@@ -1015,3 +1015,33 @@ robot, authorize motion, verify student evidence, or prove a feature. The
 authentic physical-evidence request remains open. No draft was staged or
 published, no production data was written, and no branch was pushed or deployed
 during this batch.
+
+## Thirtieth bounded implementation evidence
+
+The readiness batch adds `capstone-competition-readiness`, completing the five
+planned capstone identities. It reuses the Capstone Evidence Board and adds a
+draft team rubric while leaving authentic boundary evidence and team review
+open. Stale curriculum-plan language was corrected so students and the team own
+robot-process verification; the Lead Coach gate applies only to website posts.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 48 documents, with 15 existing-lesson
+  interaction candidates and 48 approved embeds;
+- the new lesson has 952 prose words, estimated grade 7.5, and a 20-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 34 authored identities and
+  14 remaining full-contract lesson identities out of 48;
+- all 71 unique pinned source URLs were remotely recomputed, including current
+  FRC operations, ARESLib pit operations, and FTC commissioning boundaries;
+- tests cover secure embed rendering, navigation, instructional depth,
+  readability, student-led verification language, and the catalog contract;
+  and
+- frontend TypeScript, local catalog validation, readability, provenance, and
+  30 focused Academy tests pass.
+
+The rubric is a draft and the lesson claims no event readiness. It does not
+inspect evidence, approve a team process, replace official rules, authorize
+operation, or prove a claim. Authentic evidence and team review remain open.
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

@@ -175,9 +175,9 @@
       "lessons": [
         { "id": "competition-ftc-inspection-pit", "title": "Prepare an FTC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-readiness-lab", "sourceGap": "current official FTC inspection rules required" },
         { "id": "competition-frc-inspection-pit", "title": "Prepare an FRC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-readiness-lab", "sourceGap": "current official FRC inspection rules required" },
-        { "id": "competition-drive-team", "title": "Run a Drive-Team Match Cycle", "level": "intermediate", "interaction": "match-cycle-scenarios", "sourceGap": "Lead Coach process review required" },
+        { "id": "competition-drive-team", "title": "Run a Drive-Team Match Cycle", "level": "intermediate", "interaction": "match-cycle-scenarios", "sourceGap": "team process review required" },
         { "id": "competition-scouting", "title": "Collect Useful Scouting Evidence", "level": "beginner", "interaction": "scouting-quality-lab", "sourceGap": "team scouting process and non-PII examples required" },
-        { "id": "competition-strategy", "title": "Turn Evidence into Match Strategy", "level": "intermediate", "interaction": "strategy-tradeoff-lab", "sourceGap": "Lead Coach process review required" },
+        { "id": "competition-strategy", "title": "Turn Evidence into Match Strategy", "level": "intermediate", "interaction": "strategy-tradeoff-lab", "sourceGap": "team process review required" },
         { "id": "competition-post-match", "title": "Review, Repair, and Record after a Match", "level": "intermediate", "interaction": "post-match-triage-lab", "sourceGap": "authentic team checklist required" }
       ]
     },
@@ -197,7 +197,7 @@
         { "id": "capstone-subsystem", "title": "Capstone 2: Build a Complete ARES Subsystem", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": null },
         { "id": "capstone-autonomous-mission", "title": "Capstone 3: Complete a Simulated Autonomous Mission", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null },
         { "id": "capstone-physical-commissioning", "title": "Capstone 4: Commission a Physical Feature", "level": "advanced", "interaction": "commissioning-checklist-lab", "sourceGap": "physical student evidence required" },
-        { "id": "capstone-competition-readiness", "title": "Capstone 5: Present Competition-Readiness Evidence", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "Lead Coach rubric and authentic evidence required" }
+        { "id": "capstone-competition-readiness", "title": "Capstone 5: Present Competition-Readiness Evidence", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "team rubric review and authentic evidence required" }
       ]
     }
   ],
