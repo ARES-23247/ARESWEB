@@ -2,12 +2,12 @@
   "catalogVersion": 1,
   "generatedFrom": {
     "sourceRepository": "ARES-Robotics",
-    "sourceRevision": "ares-11.0.0-studio-2.0.0",
-    "sourceCommit": "1810d74e8f3b260116df68fd8c1b0854b2d61493",
-    "aresVersion": "11.0.0",
-    "studioVersion": "2.0.0",
-    "ftcStarterVersion": "11.0.0",
-    "frcStarterVersion": "11.0.0"
+    "sourceRevision": "ares-11.1.0-studio-2.0.1",
+    "sourceCommit": "65351a2721840ed3063a4a5a97c440b6fcc0d1b9",
+    "aresVersion": "11.1.0",
+    "studioVersion": "2.0.1",
+    "ftcStarterVersion": "11.1.0",
+    "frcStarterVersion": "11.1.0"
   },
   "documents": [
     {
