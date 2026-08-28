@@ -9,6 +9,7 @@ const auto = lazy(() => import("../../sims/auto"));
 const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
 const battleship = lazy(() => import("../../sims/battleship"));
 const bee = lazy(() => import("../../sims/bee"));
+const busAddressTroubleshooter = lazy(() => import("../../sims/bus-address-troubleshooter"));
 const climbingAnchorAngles = lazy(() => import("../../sims/climbing-anchor-angles"));
 const climbingCapstanFriction = lazy(() => import("../../sims/climbing-capstan-friction"));
 const climbingCenterOfMass = lazy(() => import("../../sims/climbing-center-of-mass"));
@@ -89,6 +90,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   autonomouspathlab: autonomousPathLab,
   battleship: battleship,
   bee: bee,
+  busAddressTroubleshooter: busAddressTroubleshooter,
+  busaddresstroubleshooter: busAddressTroubleshooter,
   climbingAnchorAngles: climbingAnchorAngles,
   climbinganchorangles: climbingAnchorAngles,
   climbingCapstanFriction: climbingCapstanFriction,
@@ -204,6 +207,8 @@ const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   autonomousPathLab: autonomousPathLab,
   autonomouspathlab: autonomousPathLab,
+  busAddressTroubleshooter: busAddressTroubleshooter,
+  busaddresstroubleshooter: busAddressTroubleshooter,
   controlResponseLab: controlResponseLab,
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
@@ -286,6 +291,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'busAddressTroubleshooter',
+    'name': 'Bus and Address Troubleshooter',
+    'folder': 'bus-address-troubleshooter',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'climbingAnchorAngles',

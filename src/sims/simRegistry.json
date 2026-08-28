@@ -41,6 +41,14 @@
       "fidelity": null
     },
     {
+      "id": "busAddressTroubleshooter",
+      "name": "Bus and Address Troubleshooter",
+      "path": "./bus-address-troubleshooter",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "climbingAnchorAngles",
       "name": "Anchor Vector Angles",
       "path": "./climbing-anchor-angles",

@@ -662,3 +662,35 @@ sensor, validate a device range, model noise or target surfaces, select
 hardware, run a robot loop, command an actuator, or prove physical sensing. No
 draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Eighteenth bounded implementation evidence
+
+The device-identity batch adds `electrical-buses-addresses` and the
+Academy-only Bus and Address Troubleshooter. It follows the existing sensor
+lesson instead of duplicating that page's signal-health model. The new lesson
+uses a complete connection record to show why a number alone is not a device
+identity.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 39 documents, 15 existing-lesson interaction
+  candidates, and 31 approved embeds;
+- the new lesson has 1,030 prose words, estimated grade 7.2, and a 28-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 25 authored identities and
+  23 remaining full-contract lesson identities out of 48;
+- all 55 unique pinned source URLs were remotely recomputed, including
+  the topology model, subsystem connection schema, and Studio cross-subsystem
+  collision review;
+- tests cover full duplicates, different types, different buses, different
+  numbers, bus-label normalization, invalid numbers, native controls, visible
+  reasons, disclosure, deterministic reset, fidelity limits, renderer
+  security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, and readability checks
+  pass.
+
+The troubleshooter compares two invented records. It does not scan an ARES
+project, discover hardware, validate current vendor or competition ranges,
+inspect wiring or termination, connect to a robot, or prove physical identity.
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

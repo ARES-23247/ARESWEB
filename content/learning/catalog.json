@@ -620,6 +620,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "electrical-buses-addresses",
+      "title": "USB, I2C, CAN, Addresses, and Device Identity",
+      "category": "Robotics & Engineering",
+      "description": "Build a complete device identity from connection type, bus or controller, and address or channel, then diagnose duplicate ownership without confusing configuration review with physical proof.",
+      "contentFile": "electrical-systems/03-buses-addresses.md",
+      "subject": "robotics-engineering",
+      "topics": ["USB", "I2C", "CAN", "device identity", "hardware topology", "duplicate addresses"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "electrical-systems-diagnostics", "order": 3 }],
+      "prerequisites": ["electrical-sensors", "electrical-voltage-current-power"],
+      "objectives": ["Explain why a complete device identity includes connection type, bus or parent, and address or channel.", "Classify a two-record identity collision while normalizing the bus label.", "Create a source-pinned connection inventory that separates configuration evidence from physical validation."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Hardware topology models", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt", "blobHash": "aa3419236a83d8444967c5474ee70d5819c58fba" }, { "label": "Subsystem connection schema", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt", "blobHash": "3b3870b5100e16a6511df3e46b9e30f53206ca98" }, { "label": "Studio cross-subsystem connection review", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt", "blobHash": "8afa5e97c6a76a26dc86509e41b57599797bbbb4" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "mechanical-gears-sprockets-belts",
       "title": "Gears, Sprockets, Belts, Speed, and Torque",
       "category": "Robotics & Engineering",

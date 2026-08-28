@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds sixteen new robotics drafts and deepens selected existing lessons.
+This branch adds seventeen new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -132,6 +132,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Choose and Read Robot Sensors | Electrical Systems & Diagnostics | Physical robot | [`02-choose-read-sensors.md`](../content/learning/electrical-systems/02-choose-read-sensors.md) |
+| USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
@@ -188,6 +189,12 @@ The sensor lesson deliberately uses one distance-signal interaction instead of
 pretending to model every device type. Review its finite-value, identity,
 health, age, and range gates; native controls; visible blocked reasons; reset;
 and separation between a cached software sample and real physical sensing.
+The bus-and-address lesson follows that sensor page and compares only two
+invented connection records. Review its connection-type, normalized bus or
+parent, and numeric address gates; native controls; visible conflict reason;
+deterministic reset; and checklist. Confirm that “no duplicate” is never
+presented as project scanning, device discovery, valid vendor or league ranges,
+correct wiring, or proof of physical identity.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
