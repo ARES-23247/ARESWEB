@@ -649,6 +649,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "toolChoiceScenarios",
+      "name": "Tool Task Evidence Lab",
+      "path": "./tool-choice-scenarios",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "trigbasics",
       "name": "Trigonometry Basics",
       "path": "./trigbasics",

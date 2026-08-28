@@ -85,6 +85,7 @@ const sysid = lazy(() => import("../../sims/sysid"));
 const sysidTuningLab = lazy(() => import("../../sims/sysid-tuning-lab"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
 const toleranceStackLab = lazy(() => import("../../sims/tolerance-stack-lab"));
+const toolChoiceScenarios = lazy(() => import("../../sims/tool-choice-scenarios"));
 const trigbasics = lazy(() => import("../../sims/trigbasics"));
 const triginverse = lazy(() => import("../../sims/triginverse"));
 const trigrobotics = lazy(() => import("../../sims/trigrobotics"));
@@ -234,6 +235,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   telemetrygraphlab: telemetryGraphLab,
   toleranceStackLab: toleranceStackLab,
   tolerancestacklab: toleranceStackLab,
+  toolChoiceScenarios: toolChoiceScenarios,
+  toolchoicescenarios: toolChoiceScenarios,
   trigbasics: trigbasics,
   triginverse: triginverse,
   trigrobotics: trigrobotics,
@@ -323,6 +326,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   telemetrygraphlab: telemetryGraphLab,
   toleranceStackLab: toleranceStackLab,
   tolerancestacklab: toleranceStackLab,
+  toolChoiceScenarios: toolChoiceScenarios,
+  toolchoicescenarios: toolChoiceScenarios,
   visionUncertaintyLab: visionUncertaintyLab,
   visionuncertaintylab: visionUncertaintyLab,
   wiringDiagnosticLab: wiringDiagnosticLab,
@@ -976,6 +981,14 @@ const SIM_METADATA = [
     'id': 'toleranceStackLab',
     'name': 'Tolerance Stack Lab',
     'folder': 'tolerance-stack-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'toolChoiceScenarios',
+    'name': 'Tool Task Evidence Lab',
+    'folder': 'tool-choice-scenarios',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

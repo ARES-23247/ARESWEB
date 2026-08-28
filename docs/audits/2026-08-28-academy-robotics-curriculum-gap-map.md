@@ -25,10 +25,10 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 56 catalog documents across
-12 populated paths. Forty-five substantial lessons now implement instructional
-contract version 2, and 64 approved interaction embeds appear in Academy
-content. Forty-two of 48 planned identities are authored. Every required
+Current bounded-phase status: the branch contains 57 catalog documents across
+12 populated paths. Forty-six substantial lessons now implement instructional
+contract version 2, and 66 approved interaction embeds appear in Academy
+content. Forty-three of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -356,6 +356,37 @@ preserve a log, identify damage, diagnose a cause, assign a real person,
 approve a repair, authorize motion, or return a robot to play. No draft was
 staged or published, no production data was written, and no branch was pushed
 or deployed during this batch.
+
+## Thirty-ninth bounded implementation evidence
+
+The common-tools batch adds `mechanical-tools-safe-work` and the approved Tool
+Task Evidence Lab. The interaction is also reused as an optional application
+in the existing CAD/fabrication lesson. Official tool-specific guidance and
+authentic team work-area photos remain open requests, so the lesson teaches a
+paper evidence boundary rather than operating instructions.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 57 documents, with 15 existing-lesson
+  interaction candidates and 66 approved embeds;
+- the new lesson has 979 prose words, estimated grade 7.2, and a 25-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 43 authored identities and
+  5 remaining full-contract lesson identities out of 48;
+- all 87 unique pinned source URLs were remotely recomputed, including the
+  current hardware-setup boundary and immutable FTC and ARESLib commissioning
+  and pit-operations sources;
+- 39 focused rendering, navigation, content, readability, security, catalog,
+  and interaction tests pass; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  and remote provenance pass. Targeted interaction coverage is 100% for
+  statements, branches, functions, and lines.
+
+The lab uses self-reported checks. It cannot identify a tool, inspect its
+condition, choose protection, verify training, secure work, authorize tool
+use, or teach tool-specific operation. No draft was staged or published, no
+production data was written, and no branch was pushed or deployed during this
+batch.
 
 ## Fifth bounded implementation evidence
 

@@ -130,10 +130,16 @@ measurement evidence would be needed to justify that tighter value.
 Create a change-impact list for one revised dimension. Include the mating part, ARES geometry field,
 simulation profile, drawing, fabrication file, and physical inspection record when each applies.
 
+Before proposing a fabrication step, use the tool task lab below. It can identify a review category
+and missing evidence. It cannot choose a tool, verify training, secure work, or authorize use.
+
+<toolchoicescenarios />
+
 ## Related and next
 
 Return to [Measure, Sketch, and Record a Design](/academy/mechanical-measurement-design-notebook?path=mechanical-design-fabrication)
 when an interface lacks a repeatable measurement. Use [Compare Mecanum, Differential, and Swerve
 Drivetrains](/academy/mechanical-drivetrains?path=mechanical-design-fabrication) to see why canonical
-geometry and source identity matter. Tools, fasteners, and structure lessons remain blocked on their
-official guidance or authentic team examples.
+geometry and source identity matter. Use [Choose and Use Common Robot Tools](/academy/mechanical-tools-safe-work?path=mechanical-design-fabrication)
+for the full paper preflight. Fastener and structure lessons remain blocked on their official
+guidance or authentic team examples.

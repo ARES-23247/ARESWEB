@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-four new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-five new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -129,6 +129,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Author a Code-First or Hybrid Subsystem | Programming with ARES | Physical robot | [`05-code-first-subsystem.md`](../content/learning/programming/05-code-first-subsystem.md) |
 | Test Robot Logic Across Mocks and Simulation | Programming with ARES | Physical robot | [`08-tests-parity.md`](../content/learning/programming/08-tests-parity.md) |
 | Measure, Sketch, and Record a Design | Mechanical Design & Fabrication | None | [`00-measurement-design-notebook.md`](../content/learning/mechanical-design/00-measurement-design-notebook.md) |
+| Choose and Use Common Robot Tools | Mechanical Design & Fabrication | Physical robot | [`01-tool-evidence.md`](../content/learning/mechanical-design/01-tool-evidence.md) |
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
 | Build Motion with Arms, Elevators, Intakes, and Linkages | Mechanical Design & Fabrication | Physical robot | [`03-mechanism-motion.md`](../content/learning/mechanical-design/03-mechanism-motion.md) |
@@ -285,6 +286,15 @@ controls; first-missing result; narrow layout; and deterministic reset. Confirm
 that self-reported boxes cannot inspect or disable a robot, preserve a log,
 diagnose damage, assign a person, approve repair, authorize motion, or return a
 robot to play. The current authentic team checklist remains an open request.
+The new common-tools lesson and existing CAD/fabrication extension share the
+Tool Task Evidence Lab. Review all five task categories, the ordered exact-tool,
+task/material, approved-instructions, work-area/workholding,
+training/protection, and isolation/stop checks; native controls; first-missing
+result; narrow layout; and deterministic reset. Confirm that the lab only
+organizes a paper review: it cannot identify a tool, inspect its condition,
+choose protection, verify training, secure work, authorize operation, or teach
+tool-specific operation. Official tool guidance and authentic team photos
+remain open source requests.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

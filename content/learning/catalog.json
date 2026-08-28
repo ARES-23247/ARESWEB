@@ -742,6 +742,26 @@
       "safetyScope": "none"
     },
     {
+      "slug": "mechanical-tools-safe-work",
+      "title": "Choose and Use Common Robot Tools",
+      "category": "Robotics & Engineering",
+      "description": "Turn one bounded shop task into a source-backed paper preflight without recommending a tool or authorizing physical work.",
+      "contentFile": "mechanical-design/01-tool-evidence.md",
+      "subject": "robotics-engineering",
+      "topics": ["tools", "workholding", "shop safety", "energy isolation", "evidence", "fabrication"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 60,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 2 }],
+      "prerequisites": ["mechanical-measurement-design-notebook"],
+      "objectives": ["Describe one bounded tool task with the exact workpiece, material, size, and result.", "Build an ordered paper preflight covering source identity, workholding, training, protection, isolation, stop conditions, and inspection.", "Explain why a task category and self-reported checklist cannot select a tool or authorize its use."],
+      "platforms": ["hardware-neutral", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Hardware Setup evidence boundaries", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/7cd2cf5f2ade0944214994b2e9ce5565d8a7608d/ARES-Analytics/docs/start/HARDWARE_SETUP.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARES-Analytics/docs/start/HARDWARE_SETUP.md", "blobHash": "ddd412ded5bae5fef7f976479ff77141d2e495d6" }, { "label": "FTC physical commissioning boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "blobHash": "26364cd62adcf7c2ba60f9e192785491600f80a1" }, { "label": "Pit operations and hardware evidence", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "blobHash": "23d61e0e3eaea01a20efc32042c816e8ba7a6889" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.2; official tool guidance and authentic team photos remain open",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "mechanical-gears-sprockets-belts",
       "title": "Gears, Sprockets, Belts, Speed, and Torque",
       "category": "Robotics & Engineering",
