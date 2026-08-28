@@ -169,6 +169,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "programming-tests-parity",
+      "title": "Test Robot Logic Across Mocks and Simulation",
+      "category": "Robotics & Engineering",
+      "description": "Run the same bounded safety cases against platform and simulated adapters, preserve mismatches, and keep physical proof separate.",
+      "contentFile": "programming/08-tests-parity.md",
+      "subject": "robotics-engineering",
+      "topics": ["contract tests", "mock adapters", "simulation", "fault injection", "evidence"],
+      "contentType": "guided-lab",
+      "level": "advanced",
+      "estimatedMinutes": 75,
+      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 8 }],
+      "prerequisites": ["ftc-season-composition-and-safe-lifecycle", "simulation-is-not-hardware-validation"],
+      "objectives": ["Design one contract-test case for both platform and simulated adapters.", "Classify aligned, incomplete, failed, and mismatched evidence without hiding errors.", "Separate adapter parity evidence from physical-robot verification."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Generated subsystem verification contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "blobHash": "e8329a476b140e87a5d2c9763e0a4a91ede72276" }, { "label": "Shared simulation device contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationDeviceContract.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationDeviceContract.kt", "blobHash": "4c504dab907d0dc876502e5006f2a7ed1aa87ac7" }, { "label": "FTC generated subsystem simulator parity test", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt", "blobHash": "f16e9785cb18bd8cdf43b1cc0fa52e6cb30622e4" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "controls-motor-model-feedforward",
       "title": "Predict Motion with Feedforward",
       "category": "Robotics & Engineering",

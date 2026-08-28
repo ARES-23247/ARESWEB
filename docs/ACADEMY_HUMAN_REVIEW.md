@@ -120,13 +120,14 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirteen new robotics drafts and deepens selected existing lessons.
+This branch adds fourteen new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
 | --- | --- | --- | --- |
 | Read and Change Small Kotlin Programs | Programming with ARES | None | [`01-kotlin-basics.md`](../content/learning/programming/01-kotlin-basics.md) |
 | Author a Code-First or Hybrid Subsystem | Programming with ARES | Physical robot | [`05-code-first-subsystem.md`](../content/learning/programming/05-code-first-subsystem.md) |
+| Test Robot Logic Across Mocks and Simulation | Programming with ARES | Physical robot | [`08-tests-parity.md`](../content/learning/programming/08-tests-parity.md) |
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
@@ -172,6 +173,11 @@ lesson. Review its ordered disabled and health fallbacks, transient posture,
 measured guard, complete preset, deterministic steps, and physical-test
 boundary. Confirm that the invented three-posture model is not presented as the
 real ARES runtime or as proof of physical clearance.
+The parity lesson closes the current Programming with ARES path. Review all
+four evidence classifications, native selects, deterministic reset, and the
+rule that shared compile success is weaker than matching runtime behavior.
+Confirm that platform-adapter and mock tests are never labeled as physical
+robot evidence.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

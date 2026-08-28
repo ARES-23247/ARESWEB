@@ -571,3 +571,34 @@ ARES document, bind real fields, preflight or dispatch catalog tasks, model
 time and debounce, inspect physical clearance, run hardware, or prove safe
 motion. No draft was staged or published, no production data was written, and
 no branch was pushed or deployed during this batch.
+
+## Fifteenth bounded implementation evidence
+
+The programming-parity batch adds `programming-tests-parity` and the
+Academy-only Adapter Parity Evidence Lab. It completes the planned Programming
+with ARES path without duplicating the existing beginner evidence-level lesson.
+The new page focuses narrowly on running the same contract case against a
+platform test boundary and a simulated adapter.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 36 documents, 15 existing-lesson interaction
+  candidates, and 28 approved embeds;
+- the new lesson has 871 prose words, estimated grade 6.6, and a 24-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 21 authored identities and
+  27 remaining full-contract lesson identities out of 48;
+- all 49 unique pinned blobs were recomputed, including the generated
+  verification contract, simulation-device contract, and FTC simulator parity
+  test;
+- tests cover incomplete, aligned, shared-failure, and mismatch findings;
+  native selects; expected-result changes; deterministic reset; the evidence
+  disclosure; fidelity limits; renderer security; and the catalog contract;
+  and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The parity lab records invented labels. It does not run Gradle, load adapters,
+inspect test XML, control a clock, inject faults, compare real outputs, connect
+to a robot, or prove physical behavior. No draft was staged or published, no
+production data was written, and no branch was pushed or deployed during this
+batch.
