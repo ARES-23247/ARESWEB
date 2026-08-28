@@ -185,6 +185,14 @@
       "fidelity": null
     },
     {
+      "id": "motionProfileLab",
+      "name": "Motion Profile Lab",
+      "path": "./motion-profile-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "nnActivation",
       "name": "Sim 1.5: Activation Functions",
       "path": "./nn-activation",

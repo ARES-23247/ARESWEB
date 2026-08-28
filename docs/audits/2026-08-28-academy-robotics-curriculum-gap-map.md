@@ -268,3 +268,30 @@ Focused evidence on 2026-08-28:
 
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Fifth bounded implementation evidence
+
+The motion-planning batch adds `controls-motion-profiles` and the Academy-only
+Motion Profile Lab. The model implements the rest-to-rest triangular and
+trapezoidal cases derived from ARESLib's bounded profile contract. The full
+lesson separates planned setpoints from measured mechanism behavior. The
+existing FTC autonomous tutorial reuses the lab only to preview bounded
+references before its real routine validation and Local Simulator steps.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 29 documents and 15 approved embeds;
+- the new lesson has 872 prose words, estimated grade 8.0, and a 19-word
+  longest sentence;
+- all 31 unique source blobs were recomputed, including current ARES 11.1.0
+  `TrapezoidProfile` and Studio 2.0.1 `MotionProfileLabCard` sources;
+- tests cover triangular and trapezoidal shapes, finite positive input checks,
+  velocity bounds, final rest state, native controls, text table, reset, and
+  visible physical-fidelity limits;
+- renderer security, catalog contract, TypeScript, and lint checks pass; and
+- the unauthored full-contract track count is now 38 of 48.
+
+The web model does not load an ARES routine or prove traction, current, load,
+backlash, collision clearance, feedback tracking, or any physical robot limit.
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

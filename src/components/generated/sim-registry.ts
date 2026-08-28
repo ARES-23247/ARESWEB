@@ -27,6 +27,7 @@ const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynami
 const linearequations = lazy(() => import("../../sims/linearequations"));
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
+const motionProfileLab = lazy(() => import("../../sims/motion-profile-lab"));
 const nnActivation = lazy(() => import("../../sims/nn-activation"));
 const nnBiology = lazy(() => import("../../sims/nn-biology"));
 const nnCnn = lazy(() => import("../../sims/nn-cnn"));
@@ -105,6 +106,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   mechanismRatioExplorer: mechanismRatioExplorer,
   mechanismratioexplorer: mechanismRatioExplorer,
   montyhall: montyhall,
+  motionProfileLab: motionProfileLab,
+  motionprofilelab: motionProfileLab,
   nnActivation: nnActivation,
   nnactivation: nnActivation,
   nnBiology: nnBiology,
@@ -171,6 +174,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   evidencelevelscenarios: evidenceLevelScenarios,
   mechanismRatioExplorer: mechanismRatioExplorer,
   mechanismratioexplorer: mechanismRatioExplorer,
+  motionProfileLab: motionProfileLab,
+  motionprofilelab: motionProfileLab,
   powerBudgetExplorer: powerBudgetExplorer,
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
@@ -365,6 +370,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'motionProfileLab',
+    'name': 'Motion Profile Lab',
+    'folder': 'motion-profile-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'nnActivation',

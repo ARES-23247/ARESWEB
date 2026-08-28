@@ -35,6 +35,18 @@ flowchart LR
 If the three paths do not agree, write down the time and type of mismatch. Do not change the display
 just to make it look correct. The drivebase must stop when loading or running the routine fails.
 
+## Preview motion limits
+
+Before using a new routine, explore how distance, velocity, and acceleration change a simple
+rest-to-rest reference. Use the lab below to compare one short move and one longer move. Record the
+profile shape and total time for each trial.
+
+<motionprofilelab />
+
+This one-dimensional model does not load your `.aresroutine`, follow a field path, or model the
+robot. Use it to explain the idea of bounded setpoints. Use the Local Simulator and routine
+verification steps above for project evidence.
+
 ## One mirror only
 
 ARES may mirror a path once for the other alliance. The screen also changes field points into pixel
