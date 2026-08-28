@@ -27,6 +27,7 @@ const fault = lazy(() => import("../../sims/fault"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
+const hardwareTopologyDiagnostic = lazy(() => import("../../sims/hardware-topology-diagnostic"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
 const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"));
@@ -124,6 +125,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   field: field,
   flywheelkv: flywheelkv,
   greatbee: greatbee,
+  hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
+  hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   hikingGradeEnergy: hikingGradeEnergy,
   hikinggradeenergy: hikingGradeEnergy,
   kayakingHydrodynamics: kayakingHydrodynamics,
@@ -230,6 +233,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   drivetrainchoicelab: drivetrainChoiceLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
+  hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
+  hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   kotlinExpressionLab: kotlinExpressionLab,
   kotlinexpressionlab: kotlinExpressionLab,
   loopCacheLab: loopCacheLab,
@@ -450,6 +455,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'hardwareTopologyDiagnostic',
+    'name': 'Hardware Topology Diagnostic',
+    'folder': 'hardware-topology-diagnostic',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'hikingGradeEnergy',

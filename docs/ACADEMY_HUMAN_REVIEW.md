@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds eighteen new robotics drafts and deepens selected existing lessons.
+This branch adds nineteen new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -134,6 +134,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Choose and Read Robot Sensors | Electrical Systems & Diagnostics | Physical robot | [`02-choose-read-sensors.md`](../content/learning/electrical-systems/02-choose-read-sensors.md) |
 | USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
+| Map Hardware and Diagnose a Dead Device | Electrical Systems & Diagnostics | Physical robot | [`07-hardware-map-diagnostics.md`](../content/learning/electrical-systems/07-hardware-map-diagnostics.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
@@ -223,6 +224,13 @@ measured-versus-calculated labels, revision trace, privacy note, and
 student-repeat activity. Confirm that it does not fabricate a team photo,
 select a tool or tolerance without evidence, or treat a value from another
 robot as a measurement of the current robot.
+The hardware-map diagnostic follows the missing electrical lessons at its
+final planned path position; sensor and bus pages were renumbered to preserve
+room for those future source-gated lessons. Review the ordered inventory, name,
+connection, startup-health, cached-input, and output-write checks; native
+controls; first-failure result; and deterministic reset. Confirm that all boxes
+are self-reported and that a passing software sequence is not called a root
+cause, wiring check, physical operation, or proof that the device works.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

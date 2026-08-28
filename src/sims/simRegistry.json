@@ -185,6 +185,14 @@
       "fidelity": null
     },
     {
+      "id": "hardwareTopologyDiagnostic",
+      "name": "Hardware Topology Diagnostic",
+      "path": "./hardware-topology-diagnostic",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "hikingGradeEnergy",
       "name": "Hiking Grade Energy Cost",
       "path": "./hiking-grade-energy",

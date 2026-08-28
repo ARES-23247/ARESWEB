@@ -812,3 +812,35 @@ The lesson does not select a physical tool, tolerance, or league limit. It
 does not fabricate a team photograph; the authentic measurement-photo request
 remains open. No draft was staged or published, no production data was written,
 and no branch was pushed or deployed during this batch.
+
+## Twenty-third bounded implementation evidence
+
+The topology-diagnostic batch adds `electrical-hardware-map-diagnostics` and
+the Academy-only Hardware Topology Diagnostic. It also moves the existing
+sensor and bus lessons to their final planned positions and moves the three
+authored mechanical lessons to their final planned positions. This leaves
+intentional path gaps for the source-gated lessons instead of creating later
+order collisions.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 41 documents, with 15 existing-lesson
+  interaction candidates and 35 approved embeds;
+- the new lesson has 906 prose words, estimated grade 7.7, and a 28-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 27 authored identities and
+  21 remaining full-contract lesson identities out of 48;
+- the lesson reuses three of the 58 already recomputed current source URLs:
+  Hardware Setup, topology models, and subsystem connection/startup policy;
+- tests cover every represented boundary, ordered first-failure reporting,
+  native checkboxes, live results, deterministic reset, fidelity limits,
+  renderer security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, readability, and focused
+  Academy tests pass.
+
+The lab uses self-reported checks. It does not open a project, scan a hardware
+map, connect to a controller, read power or wiring, poll a sensor, write an
+actuator, identify a root cause, or prove a device works. The authentic Studio
+diagnostic screenshot request remains open. No draft was staged or published,
+no production data was written, and no branch was pushed or deployed during
+this batch.
