@@ -55,6 +55,14 @@ function routeHandler() {
   return layer.route.stack.at(-1)!.handle;
 }
 
+function routeStackNames(): string[] {
+  const layer = studioIntegrationsRouter.stack.find(
+    (candidate) => candidate.route?.path === "/v1/notebook-drafts" && candidate.route.methods.post,
+  );
+  if (!layer?.route) throw new Error("Studio notebook route not found.");
+  return layer.route.stack.map((entry) => entry.name);
+}
+
 function entry(overrides: Partial<StudioNotebookEntry> = {}): StudioNotebookEntry {
   const base: StudioNotebookEntry = {
     entryId: "entry-2026-001",
@@ -172,6 +180,10 @@ describe("ARES Robotics Studio notebook integration", () => {
       get: mocks.transactionGet,
       set: mocks.transactionSet,
     }));
+  });
+
+  it("rate limits before authenticating the installation", () => {
+    expect(routeStackNames()).toHaveLength(2);
   });
 
   it("matches the Kotlin canonical hash contract", () => {

@@ -4,6 +4,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
@@ -20,6 +21,14 @@ const INSTALLATION_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,63}$/u;
 const HOURLY_INSTALLATION_LIMIT = 120;
 const ONE_HOUR_MS = 60 * 60 * 1_000;
 const RECEIPT_RETENTION_MS = 90 * 24 * ONE_HOUR_MS;
+
+const studioIngressLimiter = rateLimit({
+  windowMs: 15 * 60 * 1_000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many Studio integration requests. Try again later." },
+});
 
 const workspaceSchema = z.object({
   teamId: z.string().trim().min(1).max(80),
@@ -243,6 +252,7 @@ function receiptResponse(receipt: StudioReceipt, duplicate: boolean) {
 
 router.post(
   "/v1/notebook-drafts",
+  studioIngressLimiter,
   asyncHandler(async (req, res) => {
     if (!req.is("application/json")) {
       throw new ApiError(415, "Content-Type must be application/json.", "STUDIO_CONTENT_TYPE_REQUIRED");
