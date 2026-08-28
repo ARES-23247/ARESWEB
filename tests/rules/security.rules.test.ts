@@ -948,6 +948,9 @@ describe("Media API boundary rules", () => {
       refreshToken: "encrypted-secret",
     });
     await seedDocument("internal_api_quotas", "opaque-quota", { count: 1 });
+    await seedDocument("studio_integrations", "ares-team-23247", { status: "active" });
+    await seedDocument("studio_integration_quotas", "opaque-studio-quota", { count: 1 });
+    await seedDocument("studio_integration_receipts", "opaque-studio-receipt", { draftId: "draft-1" });
     await seedDocument("internal_public_artifacts", "sitemap", {
       version: 1,
       chunkCount: 1,
@@ -964,6 +967,9 @@ describe("Media API boundary rules", () => {
       ["videos", "video_abcdefghijk"],
       ["system_settings", "google_auth"],
       ["internal_api_quotas", "opaque-quota"],
+      ["studio_integrations", "ares-team-23247"],
+      ["studio_integration_quotas", "opaque-studio-quota"],
+      ["studio_integration_receipts", "opaque-studio-receipt"],
       ["internal_public_artifacts", "sitemap"],
     ] as const) {
       await assertFails(getDoc(doc(publicDb, collectionName, id)));
