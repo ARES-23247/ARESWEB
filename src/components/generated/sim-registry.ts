@@ -53,6 +53,7 @@ const satstats = lazy(() => import("../../sims/satstats"));
 const satsystems = lazy(() => import("../../sims/satsystems"));
 const sattables = lazy(() => import("../../sims/sattables"));
 const sattriangles = lazy(() => import("../../sims/sattriangles"));
+const sensorFusionLab = lazy(() => import("../../sims/sensor-fusion-lab"));
 const skiingCarvingForces = lazy(() => import("../../sims/skiing-carving-forces"));
 const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
@@ -146,6 +147,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   satsystems: satsystems,
   sattables: sattables,
   sattriangles: sattriangles,
+  sensorFusionLab: sensorFusionLab,
+  sensorfusionlab: sensorFusionLab,
   skiingCarvingForces: skiingCarvingForces,
   skiingcarvingforces: skiingCarvingForces,
   sotm: sotm,
@@ -185,6 +188,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
+  sensorFusionLab: sensorFusionLab,
+  sensorfusionlab: sensorFusionLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
 };
@@ -583,6 +588,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'sensorFusionLab',
+    'name': 'Sensor Fusion Uncertainty Lab',
+    'folder': 'sensor-fusion-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'skiingCarvingForces',

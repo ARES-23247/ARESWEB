@@ -393,6 +393,14 @@
       "fidelity": null
     },
     {
+      "id": "sensorFusionLab",
+      "name": "Sensor Fusion Uncertainty Lab",
+      "path": "./sensor-fusion-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "skiingCarvingForces",
       "name": "Skiing Carving Forces",
       "path": "./skiing-carving-forces",
