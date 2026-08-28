@@ -762,6 +762,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "capstone-autonomous-mission",
+      "title": "Capstone 3: Complete a Simulated Autonomous Mission",
+      "category": "Robotics & Engineering",
+      "description": "Join field coordinates, footprint checks, typed actions, bounded routine groups, generation, Blue and Red Local Sim runs, and fail-closed evidence in one mission.",
+      "contentFile": "robotics-capstones/03-simulated-autonomous-mission.md",
+      "subject": "robotics-engineering",
+      "topics": ["capstone", "autonomous", "routine", "pathing", "simulation", "preflight"],
+      "contentType": "guided-lab",
+      "level": "advanced",
+      "estimatedMinutes": 180,
+      "pathMemberships": [{ "pathId": "robotics-capstones", "order": 3 }],
+      "prerequisites": ["ftc-starter-first-autonomous", "controls-motion-profiles", "capstone-subsystem"],
+      "objectives": ["Author one bounded mission from canonical project, routine, and autonomous-entry data.", "Verify typed references, full-footprint checks, generation, alliance behavior, cancellation, and neutral output.", "Build a simulation evidence packet that withholds physical clearance and match-readiness claims."],
+      "platforms": ["simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Studio routines and controller bindings", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md", "blobHash": "8f150643f0a42d68453d052edcdb16a6a01bc6c0" }, { "label": "FTC routines and controls", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/docs/ROUTINES_AND_CONTROLS.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/docs/ROUTINES_AND_CONTROLS.md", "blobHash": "3e0322e19ad76e32a7bff3fa72d068104543cb83" }, { "label": "FRC autonomous and simulation", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FRC/docs/AUTONOMOUS_AND_SIMULATION.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FRC/docs/AUTONOMOUS_AND_SIMULATION.md", "blobHash": "dc475b953c8016757bd81c3e5846e595d4cb40c8" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "simulation-only"
+    },
+    {
       "slug": "testing-logs-replay",
       "title": "Compare Logs and Replay a Failure",
       "category": "Robotics & Engineering",

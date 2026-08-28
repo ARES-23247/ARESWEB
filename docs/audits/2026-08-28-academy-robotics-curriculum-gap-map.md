@@ -961,3 +961,30 @@ links, run tests, review student work, approve website publication, authorize
 physical operation, or prove a capstone claim. No draft was staged or
 published, no production data was written, and no branch was pushed or deployed
 during this batch.
+
+## Twenty-eighth bounded implementation evidence
+
+The autonomous capstone adds `capstone-autonomous-mission`. It reuses the
+approved Autonomous Path Clearance Lab, Motion Profile Lab, and Capstone
+Evidence Board because those interactions directly cover footprint, bounded
+motion, and claim-labeled packet objectives without a duplicate model.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 46 documents, with 15 existing-lesson
+  interaction candidates and 45 approved embeds;
+- the new lesson has 907 prose words, estimated grade 7.1, and a 24-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 32 authored identities and
+  16 remaining full-contract lesson identities out of 48;
+- all 69 unique pinned source URLs were remotely recomputed, including current
+  Studio, FTC, and FRC routine and simulation contracts;
+- tests cover all three secure embeds, navigation, renderer security,
+  instructional depth, readability, and the catalog contract; and
+- frontend TypeScript, local catalog validation, readability, provenance, and
+  30 focused Academy tests pass.
+
+The lesson does not create or inspect a project, save a routine, generate code,
+run Local Sim, deploy, command hardware, or prove physical clearance. No draft
+was staged or published, no production data was written, and no branch was
+pushed or deployed during this batch.
