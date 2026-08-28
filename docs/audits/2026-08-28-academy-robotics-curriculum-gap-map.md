@@ -353,3 +353,38 @@ history replay, or physical camera behavior. Authentic camera screenshots and
 student-run surveyed trials remain subject to the media/evidence request ledger.
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Eighth bounded implementation evidence
+
+The autonomous-routine batch upgrades the existing
+`ftc-starter-first-autonomous` tutorial instead of creating a duplicate lesson.
+It now satisfies the full instructional contract and embeds two approved
+interactions. The new Autonomous Path Clearance Lab teaches how a robot radius
+and margin can block a straight concept path. The existing Motion Profile Lab
+remains the separate model for bounded speed and acceleration.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 32 documents and 21 approved embeds;
+- the upgraded tutorial has 890 prose words, estimated grade 6.5, and a
+  15-word longest sentence;
+- the exact curriculum-plan comparison now finds 15 authored identities and
+  33 remaining full-contract lesson identities out of 48;
+- the routine guide, generated FTC adapter, and path evaluator are pinned to
+  ARES Robotics commit `65351a27` and the 11.1.0/2.0.1 version line;
+- all 37 unique pinned source blobs were recomputed against their recorded
+  authorities;
+- tests cover blocked and clear paths, invalid inputs, native controls, a text
+  table, deterministic reset, renderer security, and the catalog contract; and
+- frontend TypeScript and local provenance validation pass.
+
+The clearance lab uses one invented 5 m by 3 m field, one straight segment,
+one circular obstacle, and a center-line radius check. It does not parse an
+`.aresroutine`, sample an ARES path, use a costmap, model the full footprint,
+check chained segments, execute code, or validate a physical route. The real
+ARES evaluator continuously samples path segments against occupied costmap
+cells, fails closed on invalid or out-of-bounds data, and reports richer
+clearance and density evidence.
+
+No draft was staged or published, no production data was written, and no branch
+was pushed or deployed during this batch.

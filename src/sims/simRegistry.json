@@ -17,6 +17,14 @@
       "fidelity": null
     },
     {
+      "id": "autonomousPathLab",
+      "name": "Autonomous Path Clearance Lab",
+      "path": "./autonomous-path-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "battleship",
       "name": "Battleship",
       "path": "./battleship",

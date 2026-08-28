@@ -142,6 +142,11 @@ reference, and every approved interaction named in the generated registry. The
 Control Response Lab is intentionally reused in the existing telemetry-reading
 lesson as an optional graph exercise. Review that embed for age fit and verify
 that its conceptual-model warning remains visible in both lesson contexts.
+The existing `ftc-starter-first-autonomous` tutorial is also upgraded in place;
+it is not an eleventh new draft. Review its Autonomous Path Clearance Lab and
+Motion Profile Lab together with the real Studio, project-verification, Local
+Simulator, and student-led physical-test boundaries. Confirm that neither web
+model is described as project, robot, or physical-clearance validation.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

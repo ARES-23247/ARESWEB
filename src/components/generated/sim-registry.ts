@@ -6,6 +6,7 @@ import { lazy, type ComponentType } from "react";
 // ── Lazy-loaded Simulators ─────────────────────────────────────────────
 const armkg = lazy(() => import("../../sims/armkg"));
 const auto = lazy(() => import("../../sims/auto"));
+const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
 const battleship = lazy(() => import("../../sims/battleship"));
 const bee = lazy(() => import("../../sims/bee"));
 const climbingAnchorAngles = lazy(() => import("../../sims/climbing-anchor-angles"));
@@ -75,6 +76,8 @@ const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   armkg: armkg,
   auto: auto,
+  autonomousPathLab: autonomousPathLab,
+  autonomouspathlab: autonomousPathLab,
   battleship: battleship,
   bee: bee,
   climbingAnchorAngles: climbingAnchorAngles,
@@ -172,6 +175,8 @@ const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 // learning-purpose, fidelity, accessibility, and test review.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  autonomousPathLab: autonomousPathLab,
+  autonomouspathlab: autonomousPathLab,
   controlResponseLab: controlResponseLab,
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
@@ -212,6 +217,14 @@ const SIM_METADATA = [
     'requiresContext': true,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'autonomousPathLab',
+    'name': 'Autonomous Path Clearance Lab',
+    'folder': 'autonomous-path-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'battleship',

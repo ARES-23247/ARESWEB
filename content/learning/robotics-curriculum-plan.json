@@ -138,7 +138,7 @@
         { "id": "controls-odometry", "title": "Estimate Motion with Encoders and Odometry", "level": "intermediate", "interaction": "odometry-error-lab", "sourceGap": null },
         { "id": "controls-sensor-fusion", "title": "Combine Measurements without Hiding Uncertainty", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
         { "id": "controls-vision", "title": "Use AprilTags and Reject Bad Vision Measurements", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
-        { "id": "controls-autonomous-routines", "title": "Build and Verify an Autonomous Routine", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null }
+        { "id": "ftc-starter-first-autonomous", "title": "Build and Verify Your First FTC Autonomous Routine", "level": "intermediate", "interaction": "autonomous-path-lab", "sourceGap": null }
       ]
     },
     {
