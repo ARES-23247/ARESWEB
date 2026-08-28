@@ -988,3 +988,30 @@ The lesson does not create or inspect a project, save a routine, generate code,
 run Local Sim, deploy, command hardware, or prove physical clearance. No draft
 was staged or published, no production data was written, and no branch was
 pushed or deployed during this batch.
+
+## Twenty-ninth bounded implementation evidence
+
+The physical commissioning capstone adds `capstone-physical-commissioning`.
+It reuses the approved Commissioning Boundary Checklist and Capstone Evidence
+Board while leaving the authentic student physical-evidence request open.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 47 documents, with 15 existing-lesson
+  interaction candidates and 47 approved embeds;
+- the new lesson has 854 prose words, estimated grade 8.6, and a 22-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 33 authored identities and
+  15 remaining full-contract lesson identities out of 48;
+- all 70 unique pinned source URLs were remotely recomputed, including current
+  Studio evidence levels and FTC/FRC starter hardware-review procedures;
+- tests cover both secure embeds, navigation, renderer security,
+  instructional depth, readability, and the catalog contract; and
+- frontend TypeScript, local catalog validation, readability, provenance, and
+  30 focused Academy tests pass.
+
+The lesson contains no claimed physical result. Its checklists cannot inspect a
+robot, authorize motion, verify student evidence, or prove a feature. The
+authentic physical-evidence request remains open. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.

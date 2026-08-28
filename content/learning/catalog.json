@@ -782,6 +782,26 @@
       "safetyScope": "simulation-only"
     },
     {
+      "slug": "capstone-physical-commissioning",
+      "title": "Capstone 4: Commission a Physical Robot Feature",
+      "category": "Robotics & Engineering",
+      "description": "Carry one source-pinned subsystem through current simulation, configuration review, a restrained student-led physical procedure, stale-evidence rules, and a privacy-safe packet.",
+      "contentFile": "robotics-capstones/04-physical-feature-commissioning.md",
+      "subject": "robotics-engineering",
+      "topics": ["capstone", "commissioning", "physical validation", "safety", "evidence"],
+      "contentType": "guided-lab",
+      "level": "advanced",
+      "estimatedMinutes": 180,
+      "pathMemberships": [{ "pathId": "robotics-capstones", "order": 4 }],
+      "prerequisites": ["capstone-subsystem", "testing-fault-tree", "ftc-starter-physical-commissioning"],
+      "objectives": ["Separate simulation, configuration review, readiness, and bounded physical evidence.", "Plan and document one restrained student-led physical procedure with explicit stop conditions.", "Keep authentic evidence, privacy limits, and stale-configuration behavior visible."],
+      "platforms": ["ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Guided commissioning evidence levels", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/GUIDED_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/GUIDED_COMMISSIONING.md", "blobHash": "c5cec245ab12e8cd651d09a7aeeb6f982fd762f6" }, { "label": "FTC Starter physical commissioning", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md", "blobHash": "26364cd62adcf7c2ba60f9e192785491600f80a1" }, { "label": "FRC Starter hardware review", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FRC-Starter/docs/HARDWARE_REVIEW.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FRC-Starter/docs/HARDWARE_REVIEW.md", "blobHash": "ac6fc6ec692810b696d7c716e80441ca9dc0f394" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "testing-logs-replay",
       "title": "Compare Logs and Replay a Failure",
       "category": "Robotics & Engineering",
