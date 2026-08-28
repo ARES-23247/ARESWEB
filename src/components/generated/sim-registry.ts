@@ -69,6 +69,7 @@ const satstats = lazy(() => import("../../sims/satstats"));
 const satsystems = lazy(() => import("../../sims/satsystems"));
 const sattables = lazy(() => import("../../sims/sattables"));
 const sattriangles = lazy(() => import("../../sims/sattriangles"));
+const scoutingQualityLab = lazy(() => import("../../sims/scouting-quality-lab"));
 const sensorFusionLab = lazy(() => import("../../sims/sensor-fusion-lab"));
 const sensorSignalLab = lazy(() => import("../../sims/sensor-signal-lab"));
 const skiingCarvingForces = lazy(() => import("../../sims/skiing-carving-forces"));
@@ -203,6 +204,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   satsystems: satsystems,
   sattables: sattables,
   sattriangles: sattriangles,
+  scoutingQualityLab: scoutingQualityLab,
+  scoutingqualitylab: scoutingQualityLab,
   sensorFusionLab: sensorFusionLab,
   sensorfusionlab: sensorFusionLab,
   sensorSignalLab: sensorSignalLab,
@@ -292,6 +295,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   reduxstatetracer: reduxStateTracer,
   robotFlowTracer: robotFlowTracer,
   robotflowtracer: robotFlowTracer,
+  scoutingQualityLab: scoutingQualityLab,
+  scoutingqualitylab: scoutingQualityLab,
   sensorFusionLab: sensorFusionLab,
   sensorfusionlab: sensorFusionLab,
   sensorSignalLab: sensorSignalLab,
@@ -836,6 +841,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'scoutingQualityLab',
+    'name': 'Scouting Evidence Quality Lab',
+    'folder': 'scouting-quality-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'sensorFusionLab',

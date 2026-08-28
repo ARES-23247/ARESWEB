@@ -521,6 +521,14 @@
       "fidelity": null
     },
     {
+      "id": "scoutingQualityLab",
+      "name": "Scouting Evidence Quality Lab",
+      "path": "./scouting-quality-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "sensorFusionLab",
       "name": "Sensor Fusion Uncertainty Lab",
       "path": "./sensor-fusion-lab",

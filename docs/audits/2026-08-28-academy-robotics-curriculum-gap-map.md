@@ -25,10 +25,10 @@ a real photograph or annotated screenshot. Twenty lessons used one Mermaid
 diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
-Current bounded-phase status: the branch contains 53 catalog documents across
-12 populated paths. Forty-two substantial lessons now implement instructional
-contract version 2, and 58 approved interaction embeds appear in Academy
-content. Thirty-nine of 48 planned identities are authored. Every required
+Current bounded-phase status: the branch contains 54 catalog documents across
+12 populated paths. Forty-three substantial lessons now implement instructional
+contract version 2, and 60 approved interaction embeds appear in Academy
+content. Forty of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -269,6 +269,35 @@ Focused evidence on 2026-08-28:
 
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Thirty-sixth bounded implementation evidence
+
+The scouting batch adds `competition-scouting` and the approved Scouting
+Evidence Quality Lab. The interaction is also reused in the existing drive-team
+debrief. The lesson uses invented robot records and keeps the current team
+process and approved non-PII examples as an open review request.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 54 documents, with 15 existing-lesson
+  interaction candidates and 60 approved embeds;
+- the new lesson has 1,003 prose words, estimated grade 6.5, and a 20-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 40 authored identities and
+  8 remaining full-contract lesson identities out of 48;
+- all 84 unique pinned source URLs were remotely recomputed, including current
+  run-import, Guided Run Review, and deterministic replay contracts;
+- 39 focused rendering, navigation, content, readability, security, catalog,
+  and interaction tests pass; and
+- frontend TypeScript, focused lint, local catalog validation, readability,
+  and remote provenance pass. Targeted interaction coverage is 100% for
+  statements, branches, functions, and lines.
+
+The lab uses self-reported checks. It does not watch a match, read a log,
+verify a source, count events, remove private data, compare or rank robots,
+explain a result, judge people, or create strategy. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.
 
 ## Fifth bounded implementation evidence
 

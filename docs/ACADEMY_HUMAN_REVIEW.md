@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-one new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-two new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -145,6 +145,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Run SysId and a Bounded Tuning Experiment | Testing, Debugging & Commissioning | Physical robot | [`05-sysid-tuning.md`](../content/learning/testing-debugging/05-sysid-tuning.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
+| Collect Useful Scouting Evidence | Competition Operations | None | [`02-scouting-evidence.md`](../content/learning/competition-operations/02-scouting-evidence.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
 | Capstone 2: Build a Complete ARES Subsystem | Robotics Capstones | Physical robot | [`02-complete-subsystem.md`](../content/learning/robotics-capstones/02-complete-subsystem.md) |
 | Capstone 3: Complete a Simulated Autonomous Mission | Robotics Capstones | Simulation only | [`03-simulated-autonomous-mission.md`](../content/learning/robotics-capstones/03-simulated-autonomous-mission.md) |
@@ -260,6 +261,13 @@ Confirm that its self-reported choices do not read requirements, verify a data
 sheet, calculate load or electrical limits, choose a product, command hardware,
 or approve physical operation. Approved manufacturer specifications remain an
 open source request.
+The new scouting lesson and existing drive-team lesson share the Scouting
+Evidence Quality Lab. Review its ordered source, observation, context, sample,
+missing-data, and privacy checks; native controls; first-missing feedback;
+narrow layout; and deterministic reset. Confirm that self-reported boxes do
+not watch a match, read a log, verify a source, count events, remove personal
+data, compare or rank robots, judge people, or create strategy. The current
+team scouting process and approved non-PII examples remain open for review.
 The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
 and a full middle-school instructional contract. Review its finite-value and
 clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed

@@ -72,6 +72,12 @@ Use the evidence activity below to choose the next test level for the symptom. K
 
 <evidencelevelscenarios />
 
+Then use the scouting quality lab to review the mock observation before it leaves the debrief. It
+checks source, context, sample limits, missing data, and privacy. It cannot watch the rehearsal or
+decide what the result means.
+
+<scoutingqualitylab />
+
 Repeat the cycle with one changed fact, such as a different routine or a sensor marked unavailable.
 The second handoff must state that change aloud and in the record.
 
@@ -129,6 +135,7 @@ of facts that match, facts that differ, and items that need team review.
 
 ## Related and next
 
-Continue with scouting, evidence-based strategy, and post-match fault isolation. Use the FTC or FRC
-inspection lesson only after the current official rules are attached to its source request. Practice
-the complete cycle again before each event process changes.
+Continue with [Collect Useful Scouting Evidence](/academy/competition-scouting?path=competition-operations),
+then evidence-based strategy and post-match fault isolation. Use the FTC or FRC inspection lesson
+only after the current official rules are attached to its source request. Practice the complete
+cycle again before each event process changes.
