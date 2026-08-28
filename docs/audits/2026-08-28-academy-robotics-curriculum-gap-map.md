@@ -28,7 +28,7 @@ activity section.
 Current bounded-phase status: the branch contains 59 catalog documents across
 12 populated paths. Forty-eight substantial lessons now implement instructional
 contract version 2, and 69 approved interaction embeds appear in Academy
-content. Forty-five of 48 planned identities are authored. Every required
+content. Forty-six of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
 complete. Authentic media and official sources remain blocked on 19 explicit
 requests rather than being fabricated or remembered.
@@ -448,6 +448,33 @@ impact, fatigue, safety factor, joint capacity, traction, or stability. It
 cannot inspect a robot, choose material or geometry, authorize loading, or
 prove a structure safe. No draft was staged or published, no production data
 was written, and no branch was pushed or deployed during this batch.
+
+## Forty-second bounded implementation evidence
+
+The curriculum plan now names the existing
+`ftc-starter-physical-commissioning` lesson as its testing-track commissioning
+identity. That full-contract lesson already belongs to the testing path and
+already embeds the Commissioning Boundary Checklist. The duplicate interaction
+candidate and obsolete `testing-commissioning` request key were removed; the
+authentic commissioning-evidence request remains open under the real slug.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation remains at 59 documents and 69 approved embeds;
+- the curriculum architecture still contains 48 planned identities across all
+  seven required tracks and now records 14 genuine existing-lesson interaction
+  upgrades rather than counting commissioning twice;
+- the exact curriculum-plan comparison finds 46 authored identities and only
+  the two current-season inspection identities remain source-gated;
+- the existing FTC commissioning lesson retains its grade 6–8 full contract,
+  student-led physical verification language, immutable sources, and explicit
+  simulation/configuration/physical evidence boundaries; and
+- local catalog validation, readability, TypeScript, focused catalog tests,
+  and remote provenance pass.
+
+This reconciliation adds no duplicate lesson and does not claim authentic
+commissioning evidence exists. No draft was staged or published, no production
+data was written, and no branch was pushed or deployed during this batch.
 
 ## Fifth bounded implementation evidence
 

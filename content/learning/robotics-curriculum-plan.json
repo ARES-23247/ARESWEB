@@ -158,7 +158,7 @@
         { "id": "telemetry-and-control", "title": "Read Telemetry and Spot a Useful Pattern", "level": "beginner", "interaction": "telemetry-graph-lab", "sourceGap": null },
         { "id": "testing-logs-replay", "title": "Compare Logs and Replay a Failure", "level": "intermediate", "interaction": "log-comparison-lab", "sourceGap": null },
         { "id": "testing-fault-tree", "title": "Build a Fault Tree and Isolate a Cause", "level": "intermediate", "interaction": "fault-tree-lab", "sourceGap": null },
-        { "id": "testing-commissioning", "title": "Commission One Robot System", "level": "intermediate", "interaction": "commissioning-checklist-lab", "sourceGap": "authentic commissioning evidence required" },
+        { "id": "ftc-starter-physical-commissioning", "title": "Commission an FTC Starter Robot Safely", "level": "intermediate", "interaction": "commissioning-checklist-lab", "sourceGap": "authentic commissioning evidence required" },
         { "id": "testing-sysid-tuning", "title": "Run SysId and a Bounded Tuning Experiment", "level": "advanced", "interaction": "sysid-tuning-lab", "sourceGap": null }
       ]
     },
@@ -211,7 +211,6 @@
     { "slug": "robot-coordinate-contracts", "interaction": "coordinate-transform-lab", "purpose": "move a vector between robot and field frames" },
     { "slug": "redux-state-actions-reducers", "interaction": "redux-state-tracer", "purpose": "trace state changes without touching hardware" },
     { "slug": "ftc-starter-first-autonomous", "interaction": "autonomous-path-lab", "purpose": "inspect a bounded generated routine before simulation" },
-    { "slug": "ftc-starter-physical-commissioning", "interaction": "commissioning-checklist-lab", "purpose": "choose the next safe evidence boundary" },
     { "slug": "ftc-driver-input-shaping-and-frames", "interaction": "driver-input-curve-lab", "purpose": "compare deadband and response curves" },
     { "slug": "swerve-and-kinematics", "interaction": "swerve", "purpose": "connect chassis motion to module states" },
     { "slug": "telemetry-and-control", "interaction": "telemetry-graph-lab", "purpose": "separate control state from displayed telemetry" },
