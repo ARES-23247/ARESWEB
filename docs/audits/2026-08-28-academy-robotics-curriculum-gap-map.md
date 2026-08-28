@@ -404,8 +404,8 @@ Focused evidence on 2026-08-28:
   candidates, and 22 approved embeds;
 - the upgraded tutorial has 837 prose words, estimated grade 6.3, and an
   18-word longest sentence;
-- the exact curriculum-plan comparison now finds 16 authored identities and
-  32 remaining full-contract lesson identities out of 48;
+- the exact curriculum-plan comparison finds 15 authored identities and
+  33 remaining full-contract lesson identities out of 48;
 - all 40 unique pinned blobs were recomputed, including the reviewed ARES Store
   and FTC cached-hardware boundaries;
 - tests cover bounded stage selection, both scenarios, native step controls,
@@ -440,8 +440,8 @@ Focused evidence on 2026-08-28:
   candidates, and 23 approved embeds;
 - the upgraded tutorial has 842 prose words, estimated grade 7.5, and a
   19-word longest sentence;
-- the exact curriculum-plan comparison now finds 17 authored identities and
-  31 remaining full-contract lesson identities out of 48;
+- the exact curriculum-plan comparison finds 16 authored identities and
+  32 remaining full-contract lesson identities out of 48;
 - all 41 unique pinned blobs were recomputed, including the Lightbot guide,
   canonical indicator descriptor, and subsystem DSL;
 - the first focused test exposed an unstable slider name caused by a live
@@ -470,8 +470,8 @@ Focused evidence on 2026-08-28:
 - catalog validation reports 33 documents and 24 approved embeds;
 - the new lesson has 820 prose words, estimated grade 6.1, and an 18-word
   longest sentence;
-- the exact curriculum-plan comparison now finds 18 authored identities and
-  30 remaining full-contract lesson identities out of 48;
+- the exact curriculum-plan comparison finds 17 authored identities and
+  31 remaining full-contract lesson identities out of 48;
 - all 42 unique pinned blobs were recomputed, including architecture,
   `CachedHardware.kt`, and the SDK-free `MotorIO` contract;
 - tests cover changed, redundant, and hard-stop writes, invalid input, native
@@ -484,3 +484,31 @@ hardware, model the first-write sentinel, validate FTC SDK ranges, run a robot
 loop, measure bus traffic, or prove that a device stops. No draft was staged or
 published, no production data was written, and no branch was pushed or deployed
 during this batch.
+
+## Twelfth bounded implementation evidence
+
+The beginner-programming batch adds `programming-kotlin-basics` and the
+Academy-only Kotlin Expression Values Lab. It also places the upgraded
+`robot-input-to-output` tutorial at order 2 in the existing Programming with
+ARES path, so the new lesson leads into the stronger existing material instead
+of creating a parallel curriculum.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 34 documents, 14 existing-lesson interaction
+  candidates, and 25 approved embeds;
+- the new lesson has 703 prose words, estimated grade 5.3, and a 19-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 18 authored identities and
+  30 remaining full-contract lesson identities out of 48;
+- all 43 unique pinned blobs were recomputed, including
+  `StudentOnboardingTest.kt` and the synchronous ARES `Store`;
+- tests cover deterministic expression evaluation, invalid numeric inputs,
+  native number controls, the evaluation-order disclosure, reset, fidelity
+  limits, renderer security, and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The expression lab evaluates one fixed arithmetic rule. It does not parse,
+compile, or execute Kotlin; inspect ARES source; check units or overflow; change
+state; or command hardware. No draft was staged or published, no production
+data was written, and no branch was pushed or deployed during this batch.

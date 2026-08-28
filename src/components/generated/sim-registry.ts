@@ -25,6 +25,7 @@ const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
+const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
 const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
@@ -110,6 +111,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   hikinggradeenergy: hikingGradeEnergy,
   kayakingHydrodynamics: kayakingHydrodynamics,
   kayakinghydrodynamics: kayakingHydrodynamics,
+  kotlinExpressionLab: kotlinExpressionLab,
+  kotlinexpressionlab: kotlinExpressionLab,
   linearequations: linearequations,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
@@ -192,6 +195,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   coordinatetransformlab: coordinateTransformLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
+  kotlinExpressionLab: kotlinExpressionLab,
+  kotlinexpressionlab: kotlinExpressionLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
   mechanismRatioExplorer: mechanismRatioExplorer,
@@ -384,6 +389,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'kotlinExpressionLab',
+    'name': 'Kotlin Expression Values Lab',
+    'folder': 'kotlin-expression-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'linearequations',

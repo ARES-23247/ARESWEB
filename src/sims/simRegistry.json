@@ -169,6 +169,14 @@
       "fidelity": null
     },
     {
+      "id": "kotlinExpressionLab",
+      "name": "Kotlin Expression Values Lab",
+      "path": "./kotlin-expression-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "linearequations",
       "name": "Linear Equations",
       "path": "./linearequations",
