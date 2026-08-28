@@ -932,3 +932,32 @@ connect to Studio, apply a parameter, control a simulator or robot, prove
 causation, certify safety, or promote a tuning profile. No draft was staged or
 published, no production data was written, and no branch was pushed or deployed
 during this batch.
+
+## Twenty-seventh bounded implementation evidence
+
+The capstone batch adds `capstone-subsystem` and the Academy-only Capstone
+Evidence Board. The same board is embedded in the existing simulated-mechanism
+capstone because both projects require claim-labeled packets with visible
+limits; the subsystem lesson adds its more detailed contract in prose.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 45 documents, with 15 existing-lesson
+  interaction candidates and 42 approved embeds;
+- the new lesson has 974 prose words, estimated grade 8.4, and a 22-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 31 authored identities and
+  17 remaining full-contract lesson identities out of 48;
+- all 67 unique pinned source URLs were remotely recomputed, including current
+  FTC authoring, Studio builder, and ARESLib subsystem contracts;
+- tests cover ordered missing evidence, all-section readiness, native checks,
+  live results, reset, fidelity limits, reuse in the existing capstone,
+  renderer security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, readability, provenance,
+  and 34 focused Academy tests pass.
+
+The board uses self-reported boxes. It does not inspect a project, verify source
+links, run tests, review student work, approve website publication, authorize
+physical operation, or prove a capstone claim. No draft was staged or
+published, no production data was written, and no branch was pushed or deployed
+during this batch.

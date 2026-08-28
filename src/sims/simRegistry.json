@@ -49,6 +49,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "capstoneEvidenceBoard",
+      "name": "Capstone Evidence Board",
+      "path": "./capstone-evidence-board",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "climbingAnchorAngles",
       "name": "Anchor Vector Angles",
       "path": "./climbing-anchor-angles",

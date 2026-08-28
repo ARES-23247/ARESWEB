@@ -10,6 +10,7 @@ const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
 const battleship = lazy(() => import("../../sims/battleship"));
 const bee = lazy(() => import("../../sims/bee"));
 const busAddressTroubleshooter = lazy(() => import("../../sims/bus-address-troubleshooter"));
+const capstoneEvidenceBoard = lazy(() => import("../../sims/capstone-evidence-board"));
 const climbingAnchorAngles = lazy(() => import("../../sims/climbing-anchor-angles"));
 const climbingCapstanFriction = lazy(() => import("../../sims/climbing-capstan-friction"));
 const climbingCenterOfMass = lazy(() => import("../../sims/climbing-center-of-mass"));
@@ -99,6 +100,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   bee: bee,
   busAddressTroubleshooter: busAddressTroubleshooter,
   busaddresstroubleshooter: busAddressTroubleshooter,
+  capstoneEvidenceBoard: capstoneEvidenceBoard,
+  capstoneevidenceboard: capstoneEvidenceBoard,
   climbingAnchorAngles: climbingAnchorAngles,
   climbinganchorangles: climbingAnchorAngles,
   climbingCapstanFriction: climbingCapstanFriction,
@@ -230,6 +233,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   autonomouspathlab: autonomousPathLab,
   busAddressTroubleshooter: busAddressTroubleshooter,
   busaddresstroubleshooter: busAddressTroubleshooter,
+  capstoneEvidenceBoard: capstoneEvidenceBoard,
+  capstoneevidenceboard: capstoneEvidenceBoard,
   commissioningChecklistLab: commissioningChecklistLab,
   commissioningchecklistlab: commissioningChecklistLab,
   controlResponseLab: controlResponseLab,
@@ -331,6 +336,14 @@ const SIM_METADATA = [
     'id': 'busAddressTroubleshooter',
     'name': 'Bus and Address Troubleshooter',
     'folder': 'bus-address-troubleshooter',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'capstoneEvidenceBoard',
+    'name': 'Capstone Evidence Board',
+    'folder': 'capstone-evidence-board',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

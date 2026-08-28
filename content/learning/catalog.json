@@ -742,6 +742,26 @@
       "safetyScope": "simulation-only"
     },
     {
+      "slug": "capstone-subsystem",
+      "title": "Capstone 2: Build a Complete ARES Subsystem",
+      "category": "Robotics & Engineering",
+      "description": "Join immutable state, cached input, bounded control, shared IO, platform and simulated adapters, lifecycle safety, and parity tests in one evidence-backed subsystem.",
+      "contentFile": "robotics-capstones/02-complete-subsystem.md",
+      "subject": "robotics-engineering",
+      "topics": ["capstone", "subsystem", "Redux", "cached IO", "parity", "safety"],
+      "contentType": "guided-lab",
+      "level": "advanced",
+      "estimatedMinutes": 180,
+      "pathMemberships": [{ "pathId": "robotics-capstones", "order": 2 }],
+      "prerequisites": ["programming-code-subsystem", "programming-io-caching", "programming-tests-parity"],
+      "objectives": ["Design one capability across state, control, IO, platform, simulation, and lifecycle boundaries.", "Verify bounded commands, cached inputs, faults, neutral recovery, parity, and close behavior.", "Build a claim-labeled evidence packet that keeps physical verification separate."],
+      "platforms": ["simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "FTC subsystem generator and hand-authoring guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "8d1b872e71ddeb83cf07402cb9548b73fd11d6e3" }, { "label": "Studio Subsystem Builder", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/SUBSYSTEM_BUILDER.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md", "blobHash": "4c9c9439518f02d5333b097cb6039a712404b800" }, { "label": "ARESLib subsystem DSL contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/subsystem-dsl.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/subsystem-dsl.md", "blobHash": "d0be8011ebb0d2f43bfc061b09a7bd69c080017d" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "testing-logs-replay",
       "title": "Compare Logs and Replay a Failure",
       "category": "Robotics & Engineering",

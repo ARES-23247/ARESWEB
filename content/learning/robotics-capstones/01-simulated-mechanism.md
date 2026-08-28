@@ -116,6 +116,11 @@ Create one evidence packet with these parts:
 Add a final boundary statement. State that the project does not approve real materials, motors,
 gearing, wiring, current limits, guards, or physical operation.
 
+Use the evidence board to find the first missing packet section. Its checkboxes are a local
+self-check, not proof that the listed evidence exists.
+
+<capstoneevidenceboard />
+
 ## Short assessment
 
 1. Why does a capstone begin with a requirement?

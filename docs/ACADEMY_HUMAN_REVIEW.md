@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds twenty-two new robotics drafts and deepens selected existing lessons.
+This branch adds twenty-three new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -141,6 +141,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
+| Capstone 2: Build a Complete ARES Subsystem | Robotics Capstones | Physical robot | [`02-complete-subsystem.md`](../content/learning/robotics-capstones/02-complete-subsystem.md) |
 | Predict Motion with Feedforward | Controls, Localization & Autonomous | Simulation only | [`02-feedforward-response.md`](../content/learning/controls/02-feedforward-response.md) |
 | Tune Feedback with Evidence | Controls, Localization & Autonomous | Simulation only | [`03-pid-evidence.md`](../content/learning/controls/03-pid-evidence.md) |
 | Plan Smooth Motion with Limits | Controls, Localization & Autonomous | Simulation only | [`04-motion-profiles.md`](../content/learning/controls/04-motion-profiles.md) |
@@ -253,6 +254,11 @@ direction, exactly-one-change gate, improved/regressed/inconclusive result,
 native controls, live result, and deterministic reset. Confirm that the fixed
 numbers are not presented as SysId data and that the lab cannot apply a
 parameter, control a simulator or robot, certify safety, or promote a profile.
+The first two capstones share the Capstone Evidence Board. Review its ordered
+requirement, design, implementation, test, fault, safety, and limitation
+sections; first-missing action; native checks; live result; and deterministic
+reset. Confirm that each box is self-reported and cannot inspect source, run
+tests, review work, approve publication, authorize operation, or prove a claim.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
