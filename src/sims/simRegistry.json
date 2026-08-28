@@ -105,6 +105,14 @@
       "fidelity": null
     },
     {
+      "id": "drivetrainChoiceLab",
+      "name": "Drivetrain Starting-Point Lab",
+      "path": "./drivetrain-choice-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "elevatorpid",
       "name": "Elevator PID Tuning",
       "path": "./elevatorpid",

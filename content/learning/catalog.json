@@ -620,6 +620,26 @@
       "safetyScope": "none"
     },
     {
+      "slug": "mechanical-drivetrains",
+      "title": "Compare Mecanum, Differential, and Swerve Drivetrains",
+      "category": "Robotics & Engineering",
+      "description": "Compare ARES drivebase starting points, canonical geometry, localization, safety, simulation, and the evidence needed before a physical choice.",
+      "contentFile": "mechanical-design/02-compare-drivetrains.md",
+      "subject": "robotics-engineering",
+      "topics": ["mecanum", "differential drive", "swerve", "geometry", "localization"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 70,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 2 }],
+      "prerequisites": ["mechanical-gears-sprockets-belts", "robot-coordinate-contracts"],
+      "objectives": ["Compare the physical grouping and motion model of four ARES drivebase starting points.", "Identify canonical geometry, localization, safety, and simulation evidence for a practice design.", "Create a bounded drivetrain decision record without inventing physical validation."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Drivebase authoring contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/drivetrain-authoring.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }, { "label": "Drivebase Builder workflow", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/DRIVEBASE_BUILDER.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/DRIVEBASE_BUILDER.md", "blobHash": "7ce3fded54a1ddd3926fa51fc7688a6fe37952e3" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "capstone-simulated-mechanism",
       "title": "Capstone 1: Model and Test a Simulated Mechanism",
       "category": "Robotics & Engineering",

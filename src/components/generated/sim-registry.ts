@@ -17,6 +17,7 @@ const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger
 const controlResponseLab = lazy(() => import("../../sims/control-response-lab"));
 const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
+const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"));
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
 const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
 const fault = lazy(() => import("../../sims/fault"));
@@ -103,6 +104,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   coordinatetransformlab: coordinateTransformLab,
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
+  drivetrainChoiceLab: drivetrainChoiceLab,
+  drivetrainchoicelab: drivetrainChoiceLab,
   elevatorpid: elevatorpid,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
@@ -202,6 +205,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
   coordinatetransformlab: coordinateTransformLab,
+  drivetrainChoiceLab: drivetrainChoiceLab,
+  drivetrainchoicelab: drivetrainChoiceLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
   kotlinExpressionLab: kotlinExpressionLab,
@@ -340,6 +345,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'drivetrainChoiceLab',
+    'name': 'Drivetrain Starting-Point Lab',
+    'folder': 'drivetrain-choice-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'elevatorpid',

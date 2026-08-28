@@ -602,3 +602,34 @@ inspect test XML, control a clock, inject faults, compare real outputs, connect
 to a robot, or prove physical behavior. No draft was staged or published, no
 production data was written, and no branch was pushed or deployed during this
 batch.
+
+## Sixteenth bounded implementation evidence
+
+The drivetrain batch adds `mechanical-drivetrains` and the Academy-only
+Drivetrain Starting-Point Lab. It keeps the existing advanced
+`swerve-and-kinematics` reference as the detailed follow-up instead of turning
+that narrower page into a generic chooser.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 37 documents, 15 existing-lesson interaction
+  candidates, and 29 approved embeds;
+- the new lesson has 841 prose words, estimated grade 7.6, and a 24-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 22 authored identities and
+  26 remaining full-contract lesson identities out of 48;
+- all 51 unique pinned blobs were recomputed, including the reviewed drivebase
+  authoring contract and Drivebase Builder workflow;
+- the first focused test exposed that selected-detail text intentionally also
+  appears in the comparison table; the assertion now verifies both accessible
+  copies instead of assuming text is unique;
+- tests cover all four starting points, text-equivalent topology and motion,
+  native selection and evidence checks, the comparison table, deterministic
+  reset, fidelity limits, renderer security, and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The lab is a source-backed reference card. It does not choose a drivebase,
+measure geometry, solve wheel commands, inspect a document, validate vendor
+data, run simulation, command hardware, or prove safe motion. No draft was
+staged or published, no production data was written, and no branch was pushed
+or deployed during this batch.
