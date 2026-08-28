@@ -194,3 +194,20 @@ Open evidence limits:
   manual assistive-technology review; and
 - no draft was staged, published, migrated, pushed, or deployed during this
   bounded phase. No physical robot behavior was tested.
+
+## Second bounded implementation evidence
+
+The controls batch upgraded `robot-coordinate-contracts` to instructional
+contract version 2 and added the code-derived Coordinate Transform Lab. The
+lesson now teaches the ARES 11 robot-to-field rotation with explicit axis,
+angle, display-boundary, and physical-fidelity limits. The interaction uses
+native range controls, a live text result, deterministic reset, responsive
+layout, and no animation.
+
+Focused evidence:
+
+- catalog validation reports 10 approved embeds;
+- estimated reading grade is 5.6 with 787 prose words and a 17-word longest
+  sentence;
+- coordinate math, renderer security, and catalog contract tests all pass; and
+- frontend TypeScript validation passes.

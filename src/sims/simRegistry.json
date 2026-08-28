@@ -73,6 +73,14 @@
       "fidelity": null
     },
     {
+      "id": "coordinateTransformLab",
+      "name": "Coordinate Transform Lab",
+      "path": "./coordinate-transform-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "cyclingGearRatios",
       "name": "Cycling Gear Ratios & Cadence",
       "path": "./cycling-gear-ratios",

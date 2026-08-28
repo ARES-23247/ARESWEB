@@ -130,9 +130,10 @@ The files remain local review sources. They are not staged, published, or live.
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
 
-The review must also cover the upgraded Redux and simulation-evidence lessons,
-the telemetry interaction added to the ARESLib reference, and every approved
-interaction named in the generated registry. Missing authentic media and
+The review must also cover the upgraded coordinate, Redux, and
+simulation-evidence lessons, the telemetry interaction added to the ARESLib
+reference, and every approved interaction named in the generated registry.
+Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
 

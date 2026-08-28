@@ -13,6 +13,7 @@ const climbingCapstanFriction = lazy(() => import("../../sims/climbing-capstan-f
 const climbingCenterOfMass = lazy(() => import("../../sims/climbing-center-of-mass"));
 const climbingFallFactor = lazy(() => import("../../sims/climbing-fall-factor"));
 const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger-biomechanics"));
+const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
 const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
@@ -82,6 +83,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   climbingfallfactor: climbingFallFactor,
   climbingFingerBiomechanics: climbingFingerBiomechanics,
   climbingfingerbiomechanics: climbingFingerBiomechanics,
+  coordinateTransformLab: coordinateTransformLab,
+  coordinatetransformlab: coordinateTransformLab,
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
   elevatorpid: elevatorpid,
@@ -157,6 +160,8 @@ const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 // learning-purpose, fidelity, accessibility, and test review.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  coordinateTransformLab: coordinateTransformLab,
+  coordinatetransformlab: coordinateTransformLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
   mechanismRatioExplorer: mechanismRatioExplorer,
@@ -243,6 +248,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'coordinateTransformLab',
+    'name': 'Coordinate Transform Lab',
+    'folder': 'coordinate-transform-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'cyclingGearRatios',

@@ -131,7 +131,7 @@
         "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md"
       ],
       "lessons": [
-        { "id": "controls-frames-units", "title": "Use Units and Coordinate Frames", "level": "beginner", "interaction": "coordinate-transform-lab", "sourceGap": null },
+        { "id": "robot-coordinate-contracts", "title": "Use Units and Coordinate Frames", "level": "beginner", "interaction": "coordinate-transform-lab", "sourceGap": null },
         { "id": "controls-motor-model-feedforward", "title": "Predict Motion with a Motor Model and Feedforward", "level": "intermediate", "interaction": "feedforward-response-lab", "sourceGap": null },
         { "id": "controls-pid", "title": "Tune a PID Loop with Evidence", "level": "intermediate", "interaction": "pid-response-lab", "sourceGap": null },
         { "id": "controls-motion-profiles", "title": "Plan Smooth Motion with Limits", "level": "intermediate", "interaction": "motion-profile-lab", "sourceGap": null },
