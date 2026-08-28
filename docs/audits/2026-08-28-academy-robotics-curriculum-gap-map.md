@@ -512,3 +512,32 @@ The expression lab evaluates one fixed arithmetic rule. It does not parse,
 compile, or execute Kotlin; inspect ARES source; check units or overflow; change
 state; or command hardware. No draft was staged or published, no production
 data was written, and no branch was pushed or deployed during this batch.
+
+## Thirteenth bounded implementation evidence
+
+The subsystem-authoring batch adds `programming-code-subsystem` and the
+Academy-only Subsystem Ownership Decision Lab. It builds on the existing
+GUI-owned indicator-light tutorial. Students compare a generated starter,
+hybrid registration, and hand-authored code without being told that one path
+fits every mechanism.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 35 documents, 14 existing-lesson interaction
+  candidates, and 26 approved embeds;
+- the new lesson has 916 prose words, estimated grade 7.4, and a 20-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 19 authored identities and
+  29 remaining full-contract lesson identities out of 48;
+- all 45 unique pinned blobs were recomputed, including the FTC authoring
+  guide, shared subsystem DSL, and hand-authored subsystem prototype;
+- tests cover all three bounded recommendations, native checkboxes, the
+  ownership table, deterministic reset, fidelity limits, renderer security,
+  and the catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The ownership lab uses two questions to suggest a first review path. It does
+not inspect Kotlin, validate a descriptor, identify hazards, generate files,
+run tests, prove mock/hardware parity, or approve physical operation. No draft
+was staged or published, no production data was written, and no branch was
+pushed or deployed during this batch.

@@ -465,6 +465,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "subsystemOwnershipLab",
+      "name": "Subsystem Ownership Decision Lab",
+      "path": "./subsystem-ownership-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "swerve",
       "name": "Swerve Kinematics Playground",
       "path": "./swerve",

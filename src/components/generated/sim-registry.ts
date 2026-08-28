@@ -62,6 +62,7 @@ const skiingCarvingForces = lazy(() => import("../../sims/skiing-carving-forces"
 const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
 const subsystemDescriptorLab = lazy(() => import("../../sims/subsystem-descriptor-lab"));
+const subsystemOwnershipLab = lazy(() => import("../../sims/subsystem-ownership-lab"));
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
@@ -168,6 +169,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   statemachine: statemachine,
   subsystemDescriptorLab: subsystemDescriptorLab,
   subsystemdescriptorlab: subsystemDescriptorLab,
+  subsystemOwnershipLab: subsystemOwnershipLab,
+  subsystemownershiplab: subsystemOwnershipLab,
   swerve: swerve,
   sysid: sysid,
   telemetryGraphLab: telemetryGraphLab,
@@ -215,6 +218,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sensorfusionlab: sensorFusionLab,
   subsystemDescriptorLab: subsystemDescriptorLab,
   subsystemdescriptorlab: subsystemDescriptorLab,
+  subsystemOwnershipLab: subsystemOwnershipLab,
+  subsystemownershiplab: subsystemOwnershipLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
 };
@@ -682,6 +687,14 @@ const SIM_METADATA = [
     'id': 'subsystemDescriptorLab',
     'name': 'Subsystem Descriptor Independence Lab',
     'folder': 'subsystem-descriptor-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'subsystemOwnershipLab',
+    'name': 'Subsystem Ownership Decision Lab',
+    'folder': 'subsystem-ownership-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'

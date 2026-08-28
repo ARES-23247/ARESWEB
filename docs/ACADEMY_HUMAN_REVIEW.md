@@ -120,12 +120,13 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds twelve new robotics drafts and deepens selected existing lessons.
+This branch adds thirteen new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
 | --- | --- | --- | --- |
 | Read and Change Small Kotlin Programs | Programming with ARES | None | [`01-kotlin-basics.md`](../content/learning/programming/01-kotlin-basics.md) |
+| Author a Code-First or Hybrid Subsystem | Programming with ARES | Physical robot | [`05-code-first-subsystem.md`](../content/learning/programming/05-code-first-subsystem.md) |
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
@@ -161,6 +162,11 @@ The new Kotlin lesson begins the Programming with ARES path, followed by the
 upgraded input-to-output and Redux tutorials. Review its fixed expression lab
 for native number-input behavior, deterministic reset, arithmetic order, and
 the visible warning that it neither compiles Kotlin nor runs robot code.
+The code-first subsystem lesson follows the existing GUI-owned indicator-light
+tutorial rather than replacing it. Review the ownership lab's generated,
+hybrid, and hand-authored starting paths; its native controls and table; and
+its warning that two questions cannot inspect source, identify hazards, or
+approve physical operation.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

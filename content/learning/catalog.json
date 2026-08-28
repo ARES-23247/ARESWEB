@@ -149,6 +149,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "programming-code-subsystem",
+      "title": "Author a Code-First or Hybrid Subsystem",
+      "category": "Robotics & Engineering",
+      "description": "Choose a generated, hybrid, or hand-authored subsystem path while preserving explicit ownership, safety, simulation, and test boundaries.",
+      "contentFile": "programming/05-code-first-subsystem.md",
+      "subject": "robotics-engineering",
+      "topics": ["subsystems", "code generation", "source ownership", "I/O contracts", "testing"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 75,
+      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 6 }],
+      "prerequisites": ["programming-kotlin-basics", "programming-io-caching", "ftc-gui-owned-indicator-lights"],
+      "objectives": ["Choose a source-backed starting path for a subsystem without replacing proven user-owned code.", "Map domain, control, I/O, platform, simulation, lifecycle, and verification ownership.", "Create a bounded subsystem evidence and test plan before physical work."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "FTC subsystem generator and hand-authoring guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "8d1b872e71ddeb83cf07402cb9548b73fd11d6e3" }, { "label": "Shared subsystem DSL", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/subsystem-dsl.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/subsystem-dsl.md", "blobHash": "d0be8011ebb0d2f43bfc061b09a7bd69c080017d" }, { "label": "Hand-authored subsystem prototype", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/SUBSYSTEM_HAND_AUTHORED_PROTOTYPE.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/SUBSYSTEM_HAND_AUTHORED_PROTOTYPE.md", "blobHash": "9a9833362239353b9fc15e302d3223a5302a6f00" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "controls-motor-model-feedforward",
       "title": "Predict Motion with Feedforward",
       "category": "Robotics & Engineering",
