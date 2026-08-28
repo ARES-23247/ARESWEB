@@ -329,6 +329,14 @@
       "fidelity": null
     },
     {
+      "id": "robotFlowTracer",
+      "name": "Robot Input-to-Output Flow Tracer",
+      "path": "./robot-flow-tracer",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "satcircles",
       "name": "Coordinate Circles & Sectors",
       "path": "./satcircles",

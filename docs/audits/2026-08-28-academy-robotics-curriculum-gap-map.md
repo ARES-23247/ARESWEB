@@ -388,3 +388,39 @@ clearance and density evidence.
 
 No draft was staged or published, no production data was written, and no branch
 was pushed or deployed during this batch.
+
+## Ninth bounded implementation evidence
+
+The first programming batch upgrades the existing `robot-input-to-output`
+tutorial instead of adding the plan's parallel input/state/output page. The
+lesson now satisfies the full instructional contract and embeds the approved
+Robot Input-to-Output Flow Tracer. Students can compare a driver request with a
+sensor observation, step through the loop, and read the same data without a
+diagram.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation reports 32 documents, 13 existing-lesson interaction
+  candidates, and 22 approved embeds;
+- the upgraded tutorial has 837 prose words, estimated grade 6.3, and an
+  18-word longest sentence;
+- the exact curriculum-plan comparison now finds 16 authored identities and
+  32 remaining full-contract lesson identities out of 48;
+- all 40 unique pinned blobs were recomputed, including the reviewed ARES Store
+  and FTC cached-hardware boundaries;
+- tests cover bounded stage selection, both scenarios, native step controls,
+  deterministic reset, visible fidelity limits, renderer security, and the
+  catalog contract; and
+- frontend TypeScript, lint, readability, and provenance checks pass.
+
+The local ARES checkout was observed on unfinished refactor branch
+`codex/studio-project-session-refactor` at `3d10f63a`, with tracked architecture
+removals and untracked replacement starters. That tree was not accepted as a
+new curriculum authority. This batch remains pinned to the reviewed 11.1.0 /
+Studio 2.0.1 snapshot at `65351a27` until the replacement architecture is
+complete and reviewed.
+
+The flow tracer is fixed teaching content. It does not inspect a project,
+dispatch an action, read a device, run the scheduler, command hardware, or
+prove loop timing. No draft was staged or published, no production data was
+written, and no branch was pushed or deployed during this batch.

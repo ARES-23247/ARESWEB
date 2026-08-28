@@ -147,6 +147,10 @@ it is not an eleventh new draft. Review its Autonomous Path Clearance Lab and
 Motion Profile Lab together with the real Studio, project-verification, Local
 Simulator, and student-led physical-test boundaries. Confirm that neither web
 model is described as project, robot, or physical-clearance validation.
+The existing `robot-input-to-output` tutorial is upgraded in place as well.
+Review its Robot Input-to-Output Flow Tracer for keyboard order, touch targets,
+live step announcements, narrow-screen reflow, and the visible statement that
+the trace does not inspect code, run the scheduler, or command hardware.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

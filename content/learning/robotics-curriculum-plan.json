@@ -109,7 +109,7 @@
       ],
       "lessons": [
         { "id": "programming-kotlin-basics", "title": "Read and Change Small Kotlin Programs", "level": "beginner", "interaction": "kotlin-expression-lab", "sourceGap": null },
-        { "id": "programming-input-state-output", "title": "Trace Input, State, and Output", "level": "beginner", "interaction": "robot-flow-tracer", "sourceGap": null },
+        { "id": "robot-input-to-output", "title": "Follow a Robot Request from Input to Output", "level": "beginner", "interaction": "robot-flow-tracer", "sourceGap": null },
         { "id": "redux-state-actions-reducers", "title": "Use Actions and Pure Reducers", "level": "beginner", "interaction": "redux-state-tracer", "sourceGap": null },
         { "id": "programming-io-caching", "title": "Read Hardware Once and Write Safe Outputs", "level": "intermediate", "interaction": "loop-cache-lab", "sourceGap": null },
         { "id": "programming-gui-subsystem", "title": "Author a GUI-Owned Subsystem", "level": "intermediate", "interaction": "subsystem-descriptor-lab", "sourceGap": null },
@@ -202,6 +202,7 @@
     }
   ],
   "existingLessonInteractionCandidates": [
+    { "slug": "robot-input-to-output", "interaction": "robot-flow-tracer", "purpose": "trace driver and sensor paths through state and cached I/O" },
     { "slug": "rates-units-and-motion", "interaction": "mechanism-ratio-explorer", "purpose": "connect rate calculations to drivetrain speed and torque" },
     { "slug": "read-a-telemetry-graph", "interaction": "telemetry-graph-lab", "purpose": "practice observations before explanations" },
     { "slug": "camera-evidence-and-uncertainty", "interaction": "vision-uncertainty-lab", "purpose": "compare accepted and rejected measurements" },

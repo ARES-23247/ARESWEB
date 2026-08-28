@@ -45,6 +45,7 @@ const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"
 const powershedding = lazy(() => import("../../sims/powershedding"));
 const reduxStateTracer = lazy(() => import("../../sims/redux-state-tracer"));
 const risk = lazy(() => import("../../sims/risk"));
+const robotFlowTracer = lazy(() => import("../../sims/robot-flow-tracer"));
 const satcircles = lazy(() => import("../../sims/satcircles"));
 const satexponential = lazy(() => import("../../sims/satexponential"));
 const satgraphs = lazy(() => import("../../sims/satgraphs"));
@@ -141,6 +142,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
   risk: risk,
+  robotFlowTracer: robotFlowTracer,
+  robotflowtracer: robotFlowTracer,
   satcircles: satcircles,
   satexponential: satexponential,
   satgraphs: satgraphs,
@@ -193,6 +196,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
+  robotFlowTracer: robotFlowTracer,
+  robotflowtracer: robotFlowTracer,
   sensorFusionLab: sensorFusionLab,
   sensorfusionlab: sensorFusionLab,
   telemetryGraphLab: telemetryGraphLab,
@@ -529,6 +534,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'robotFlowTracer',
+    'name': 'Robot Input-to-Output Flow Tracer',
+    'folder': 'robot-flow-tracer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'satcircles',
