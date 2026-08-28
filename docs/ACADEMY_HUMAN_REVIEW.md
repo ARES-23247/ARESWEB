@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds seventeen new robotics drafts and deepens selected existing lessons.
+This branch adds eighteen new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -128,6 +128,7 @@ The files remain local review sources. They are not staged, published, or live.
 | Read and Change Small Kotlin Programs | Programming with ARES | None | [`01-kotlin-basics.md`](../content/learning/programming/01-kotlin-basics.md) |
 | Author a Code-First or Hybrid Subsystem | Programming with ARES | Physical robot | [`05-code-first-subsystem.md`](../content/learning/programming/05-code-first-subsystem.md) |
 | Test Robot Logic Across Mocks and Simulation | Programming with ARES | Physical robot | [`08-tests-parity.md`](../content/learning/programming/08-tests-parity.md) |
+| Measure, Sketch, and Record a Design | Mechanical Design & Fabrication | None | [`00-measurement-design-notebook.md`](../content/learning/mechanical-design/00-measurement-design-notebook.md) |
 | Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
 | Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
 | Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
@@ -216,6 +217,12 @@ clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed
 deterministic reset. Confirm that the one-axis calculation is not presented as
 a timed loop, complete gamepad adapter, drivetrain simulation, or physical
 driving validation.
+The new mechanical measurement lesson intentionally uses a described diagram
+and an open authentic-media request. Review its datum, repeatability,
+measured-versus-calculated labels, revision trace, privacy note, and
+student-repeat activity. Confirm that it does not fabricate a team photo,
+select a tool or tolerance without evidence, or treat a value from another
+robot as a measurement of the current robot.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

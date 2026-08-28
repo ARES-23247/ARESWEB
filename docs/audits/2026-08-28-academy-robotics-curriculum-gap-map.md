@@ -786,3 +786,29 @@ gamepad, advance repeated timed loops, shape rotation separately, use robot
 heading, run drivetrain kinematics, connect to a robot, or prove driving
 behavior. No draft was staged or published, no production data was written,
 and no branch was pushed or deployed during this batch.
+
+## Twenty-second bounded implementation evidence
+
+The measurement batch adds `mechanical-measurement-design-notebook` as the
+start of the Mechanical Design and Fabrication path. It deliberately does not
+add an interaction where a paper or local digital notebook, a real object, and
+independent repetition provide the more useful student activity.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 40 documents, with 15 existing-lesson
+  interaction candidates and 34 approved embeds;
+- the new lesson has 955 prose words, estimated grade 7.0, and a 25-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 26 authored identities and
+  22 remaining full-contract lesson identities out of 48;
+- the lesson reuses two of the 58 already recomputed pinned source URLs: the
+  current Hardware Setup workflow and drivetrain geometry contract;
+- focused tests cover page rendering, catalog validation, navigation metadata,
+  readability, and the instructional contract; and
+- frontend TypeScript and local catalog validation pass.
+
+The lesson does not select a physical tool, tolerance, or league limit. It
+does not fabricate a team photograph; the authentic measurement-photo request
+remains open. No draft was staged or published, no production data was written,
+and no branch was pushed or deployed during this batch.

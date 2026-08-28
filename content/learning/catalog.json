@@ -642,6 +642,26 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "mechanical-measurement-design-notebook",
+      "title": "Measure, Sketch, and Record a Design",
+      "category": "Robotics & Engineering",
+      "description": "Turn one design question into a repeatable datum, measurement, labeled sketch, revision, and traceable evidence record.",
+      "contentFile": "mechanical-design/00-measurement-design-notebook.md",
+      "subject": "robotics-engineering",
+      "topics": ["measurement", "design notebook", "datums", "dimensions", "revision control"],
+      "contentType": "guided-lab",
+      "level": "beginner",
+      "estimatedMinutes": 55,
+      "pathMemberships": [{ "pathId": "mechanical-design-fabrication", "order": 0 }],
+      "prerequisites": ["rates-units-and-motion"],
+      "objectives": ["Choose and communicate a repeatable measurement datum.", "Separate measured values, derived calculations, assumptions, and unknown facts.", "Create a revision-pinned design notebook entry another student can repeat."],
+      "platforms": ["hardware-neutral"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Hardware setup measurement workflow", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/start/HARDWARE_SETUP.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/start/HARDWARE_SETUP.md", "blobHash": "ddd412ded5bae5fef7f976479ff77141d2e495d6" }, { "label": "Drivebase geometry authoring contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/drivetrain-authoring.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/drivetrain-authoring.md", "blobHash": "6185c86784850b64393f8a9c88895a0aca345e12" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "none"
+    },
+    {
       "slug": "mechanical-gears-sprockets-belts",
       "title": "Gears, Sprockets, Belts, Speed, and Torque",
       "category": "Robotics & Engineering",
