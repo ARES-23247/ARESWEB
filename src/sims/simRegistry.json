@@ -585,6 +585,14 @@
       "fidelity": null
     },
     {
+      "id": "visionUncertaintyLab",
+      "name": "Vision Evidence Rejection Lab",
+      "path": "./vision-uncertainty-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "zeroallocation",
       "name": "Zero Allocation Memory Profiler",
       "path": "./zeroallocation",

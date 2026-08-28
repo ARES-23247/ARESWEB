@@ -47,13 +47,14 @@ that reveal private information.
 
 ## Optional robot-data connection
 
-Use the lab below to see one camera-quality decision beside an odometry estimate. Raise ambiguity
-until the lesson rejects vision. Open the table and record what stayed visible.
+Use the lab below to see the main camera-evidence gates in a fixed order. Turn off one check at a
+time and record the first visible rejection reason.
 
-<sensorfusionlab />
+<visionuncertaintylab />
 
-This lab uses one invented rule. It does not reproduce an AprilTag camera or the ARES estimator.
-Continue to the controls vision lesson for the full rejection checklist.
+The switches stand for evidence that another system would calculate. The lab does not reproduce an
+AprilTag camera or the ARES estimator. Continue to the controls vision lesson for the source-backed
+meaning of ambiguity, innovation, capture time, and history replay.
 
 ## Check your understanding
 

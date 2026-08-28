@@ -77,6 +77,7 @@ const triginverse = lazy(() => import("../../sims/triginverse"));
 const trigrobotics = lazy(() => import("../../sims/trigrobotics"));
 const troubleshooting = lazy(() => import("../../sims/troubleshooting"));
 const vision = lazy(() => import("../../sims/vision"));
+const visionUncertaintyLab = lazy(() => import("../../sims/vision-uncertainty-lab"));
 const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 
 // ── Sim Component Registry ───────────────────────────────────────────────
@@ -198,6 +199,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   trigrobotics: trigrobotics,
   troubleshooting: troubleshooting,
   vision: vision,
+  visionUncertaintyLab: visionUncertaintyLab,
+  visionuncertaintylab: visionUncertaintyLab,
   zeroallocation: zeroallocation,
 };
 
@@ -252,6 +255,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   superstructurestatelab: superstructureStateLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
+  visionUncertaintyLab: visionUncertaintyLab,
+  visionuncertaintylab: visionUncertaintyLab,
 };
 const ACADEMY_SIM_TAG_NAMES = Object.keys(ACADEMY_SIM_COMPONENTS);
 
@@ -840,6 +845,14 @@ const SIM_METADATA = [
     'requiresContext': true,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'visionUncertaintyLab',
+    'name': 'Vision Evidence Rejection Lab',
+    'folder': 'vision-uncertainty-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'zeroallocation',

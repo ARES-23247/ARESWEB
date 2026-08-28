@@ -725,3 +725,32 @@ inventory, verify the safety setup, connect to hardware, authorize motion,
 command an actuator, or prove physical behavior. No draft was staged or
 published, no production data was written, and no branch was pushed or deployed
 during this batch.
+
+## Twentieth bounded implementation evidence
+
+The vision-interaction batch adds the Academy-only Vision Evidence Rejection
+Lab to three existing pages: the beginner camera lesson, the ARES autonomous
+and vision reference, and the advanced controls vision lesson. It replaces the
+generic Sensor Fusion Lab in the two pages where a vision-specific checklist is
+more accurate and adds the missing interaction to the reference page.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation remains at 39 documents and 15 existing-lesson
+  interaction candidates, while approved embeds increase to 33;
+- the edited pages remain within the grade target: 6.4 for the beginner camera
+  page, 7.6 for the ARES reference, and 8.4 for the advanced controls lesson;
+- the exact curriculum-plan comparison remains at 25 authored identities and
+  23 remaining full-contract lesson identities out of 48;
+- the previously recomputed 57 pinned source URLs are unchanged by this batch;
+- tests cover all six rejection reasons, ordered first-failure reporting,
+  native checkboxes, live reasons, deterministic reset, fidelity limits,
+  renderer security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, readability, and focused
+  Academy tests pass.
+
+The lab switches represent named review stages. They do not process an image,
+solve an AprilTag pose, calculate ambiguity or innovation, model latency, run
+the estimator, connect to a camera, or prove field position. No draft was
+staged or published, no production data was written, and no branch was pushed
+or deployed during this batch.

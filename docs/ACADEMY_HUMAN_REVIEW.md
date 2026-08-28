@@ -203,6 +203,12 @@ and the visible statement that self-reported boxes cannot authorize motion or
 prove physical behavior. Confirm that students can run and document the team's
 robot-safety procedure without language requiring mentor approval; website
 publication remains the separate Lead Coach approval boundary.
+The beginner camera lesson, ARES vision reference, and advanced controls lesson
+now share the Vision Evidence Rejection Lab. Review all six named gates,
+ordered first-failure reporting, native checkboxes, deterministic reset, and
+the visible rejection reason. Confirm that the switches are not presented as
+image processing, AprilTag solving, ambiguity or innovation calculation,
+latency modeling, estimator execution, or proof of field position.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

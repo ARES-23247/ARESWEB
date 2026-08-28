@@ -50,6 +50,15 @@ Do not replace the estimate with simulator truth or force it to snap just to imp
 Simulation checks this data flow. It cannot prove camera position, focus, exposure, wiring,
 calibration, or field setup.
 
+Use the checklist below to make each rejection stage visible. Turn off two gates and note that the
+first failed stage is reported. A real diagnostic record should keep all failed evidence, even when
+the UI chooses one main reason.
+
+<visionuncertaintylab />
+
+The interaction does not load a routine, image, field layout, pose history, or estimator. Use the
+pinned source and real telemetry when investigating a project.
+
 ## Check your understanding
 
 1. Why should alliance mirroring happen only once?

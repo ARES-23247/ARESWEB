@@ -53,24 +53,17 @@ flowchart TD
 
 ## Hands-on activity
 
-Open the lab. Raise ambiguity slowly until the decision changes. Record the first rejected setting,
-the residual, and the result before and after rejection.
+Open the lab. Turn off ambiguity and record the rejection reason. Reset, then turn off capture-time
+history and compare the reason.
 
-<sensorfusionlab />
+<visionuncertaintylab />
 
-Reset. Keep ambiguity accepted and move vision farther from odometry. This lesson still accepts it
-because the model does not include the full innovation test. Write that missing check beside your
-result.
+Make a six-row decision table. Fail one represented gate in each of the first six rows. Predict the
+first reason before changing a checkbox. Then make a seventh row with two failed gates and explain
+why one displayed reason must not erase the other diagnostic evidence.
 
-Next, keep both positions fixed and change vision uncertainty. Explain how uncertainty and
-acceptance answer different questions.
-
-Make a six-row decision table. Use three accepted ambiguity values and three rejected values. Keep
-both positions fixed. Predict each decision before moving the slider. Record whether the result uses
-vision or stays at odometry.
-
-For one accepted row, list five real ARES checks missing from the lab. For one rejected row, explain
-why keeping the position and reason is better than deleting the row.
+For one accepted row, list five calculations or inputs the switches do not perform. For one rejected
+row, explain why keeping the measurement and reason is better than deleting the row.
 
 ## Checkpoints
 
@@ -96,8 +89,8 @@ platform can support, such as tag validity, finite data, field bounds, time, and
 
 ## Evidence artifact
 
-Submit six trials with positions, uncertainty, ambiguity, decision, residual, result, and reason.
-Add a rejection-flow diagram with one real ARES check that the lab omits.
+Submit seven trials with the six gate states, decision, and first reason. Add a rejection-flow
+diagram with one real ARES calculation that the lab omits.
 
 Below the diagram, write one sentence about privacy. Camera evidence should avoid faces, names,
 school records, or screens with student information unless the approved team process permits them.
