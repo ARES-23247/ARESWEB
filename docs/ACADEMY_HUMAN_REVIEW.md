@@ -163,9 +163,15 @@ The files remain local review sources. They are not staged, published, or live.
 | Combine Measurements without Hiding Uncertainty | Controls, Localization & Autonomous | Simulation only | [`06-sensor-fusion.md`](../content/learning/controls/06-sensor-fusion.md) |
 | Use AprilTags and Reject Bad Vision Measurements | Controls, Localization & Autonomous | Physical robot | [`07-vision-rejection.md`](../content/learning/controls/07-vision-rejection.md) |
 
-The review must also cover the upgraded coordinate, Redux, and
-simulation-evidence lessons, the telemetry interaction added to the ARESLib
-reference, and every approved interaction named in the generated registry. The
+The review must also cover the upgraded coordinate, Redux, simulation-evidence,
+and full-contract telemetry lessons, plus every approved interaction named in
+the generated registry. The telemetry reference now begins the testing path
+after the simulation-evidence lesson. Review its control/telemetry/log/import
+boundaries, fixed voltage/distance/missing-sample cases, observation-versus-
+explanation activity, privacy guidance, native controls, data table, and
+deterministic reset. Confirm that the lesson data is invented and cannot prove
+a real signal, timing behavior, network load, controller response, or failure
+cause. The
 Control Response Lab is intentionally reused in the existing telemetry-reading
 lesson as an optional graph exercise. Review that embed for age fit and verify
 that its conceptual-model warning remains visible in both lesson contexts.

@@ -26,7 +26,7 @@ diagram as their only visual. Only 11 contained a clearly named hands-on
 activity section.
 
 Current bounded-phase status: the branch contains 59 catalog documents across
-12 populated paths. Forty-eight substantial lessons now implement instructional
+12 populated paths. Forty-nine substantial lessons now implement instructional
 contract version 2, and 69 approved interaction embeds appear in Academy
 content. Forty-six of 48 planned identities are authored. Every required
 robotics track has at least one entry point, but the architecture is not yet
@@ -474,6 +474,34 @@ Focused evidence on 2026-08-28:
 
 This reconciliation adds no duplicate lesson and does not claim authentic
 commissioning evidence exists. No draft was staged or published, no production
+data was written, and no branch was pushed or deployed during this batch.
+
+## Forty-third bounded implementation evidence
+
+The existing `telemetry-and-control` ARESLib reference is now a full-contract
+beginner lesson rather than a short orientation page. It retains the approved
+Telemetry Graph Lab and now orders the testing path as simulation evidence,
+telemetry observation, log comparison, fault isolation, commissioning, and
+bounded tuning.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation remains at 59 documents and 69 approved embeds, while
+  full-contract documents increase to 49;
+- the upgraded lesson has 979 prose words, estimated grade 6.9, and a 24-word
+  longest sentence;
+- all 87 unique pinned source URLs were remotely recomputed, including the
+  retained telemetry contract, current run-comparison evidence boundary, and
+  local pit-log workflow;
+- 38 focused rendering, navigation, content, readability, security, catalog,
+  and interaction tests pass; and
+- frontend TypeScript, local catalog validation, readability, and remote
+  provenance pass. Existing interaction coverage is 100% for statements,
+  functions, and lines, with 90.9% branch coverage.
+
+The lesson's fixed data cannot prove a real signal, controller, network,
+timing, or failure cause. It preserves missing samples and keeps control
+independent from dashboard, cloud, and internet availability. No production
 data was written, and no branch was pushed or deployed during this batch.
 
 ## Fifth bounded implementation evidence
