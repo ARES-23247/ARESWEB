@@ -762,6 +762,26 @@
       "safetyScope": "none"
     },
     {
+      "slug": "testing-fault-tree",
+      "title": "Build a Fault Tree and Isolate a Cause",
+      "category": "Robotics & Engineering",
+      "description": "Turn one symptom into competing branches, choose the smallest safe discriminating test, and keep uncertainty visible until controlled evidence supports a cause.",
+      "contentFile": "testing-debugging/03-fault-tree.md",
+      "subject": "robotics-engineering",
+      "topics": ["fault tree", "diagnostics", "hypothesis", "evidence", "root cause"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [{ "pathId": "testing-debugging-commissioning", "order": 3 }],
+      "prerequisites": ["testing-logs-replay", "electrical-hardware-map-diagnostics"],
+      "objectives": ["Separate a visible symptom from possible causes.", "Choose a bounded test that distinguishes competing branches.", "Record removed and open branches without overstating a root cause."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Run comparison and guided diagnosis", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-Analytics/docs/RUN_COMPARISON_AND_GUIDED_DIAGNOSIS.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-Analytics/docs/RUN_COMPARISON_AND_GUIDED_DIAGNOSIS.md", "blobHash": "bbd64a44a854c00168084e31a78c079f498cec80" }, { "label": "FTC troubleshooting boundaries", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARES-FTC/docs/TROUBLESHOOTING.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARES-FTC/docs/TROUBLESHOOTING.md", "blobHash": "2845f480f7813cabe1e1db87828f8d54b551f9cc" }, { "label": "Pit operations and hardware evidence", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/65351a2721840ed3063a4a5a97c440b6fcc0d1b9/ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.1", "path": "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "blobHash": "23d61e0e3eaea01a20efc32042c816e8ba7a6889" }],
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.1",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "competition-drive-team",
       "title": "Run a Drive-Team Match Cycle",
       "category": "Robotics & Engineering",

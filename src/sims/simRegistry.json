@@ -161,6 +161,14 @@
       "fidelity": null
     },
     {
+      "id": "faultTreeLab",
+      "name": "Fault Tree Isolation Lab",
+      "path": "./fault-tree-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "field",
       "name": "PathPlanner Canvas Renderer",
       "path": "./field",

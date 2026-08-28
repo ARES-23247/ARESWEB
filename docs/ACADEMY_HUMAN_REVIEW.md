@@ -120,7 +120,7 @@ website editorial workflow and production migration are separately approved.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds twenty new robotics drafts and deepens selected existing lessons.
+This branch adds twenty-one new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
@@ -136,6 +136,7 @@ The files remain local review sources. They are not staged, published, or live.
 | USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
 | Map Hardware and Diagnose a Dead Device | Electrical Systems & Diagnostics | Physical robot | [`07-hardware-map-diagnostics.md`](../content/learning/electrical-systems/07-hardware-map-diagnostics.md) |
 | Compare Logs and Replay a Failure | Testing, Debugging & Commissioning | None | [`02-logs-replay.md`](../content/learning/testing-debugging/02-logs-replay.md) |
+| Build a Fault Tree and Isolate a Cause | Testing, Debugging & Commissioning | Physical robot | [`03-fault-tree.md`](../content/learning/testing-debugging/03-fault-tree.md) |
 | Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
 | Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
 | Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
@@ -239,6 +240,12 @@ choices, two-hypothesis evidence report, native controls, live table, and
 deterministic reset. Confirm that the fixed sample runs are not presented as
 imported team logs and that the lab does not infer a cause, prove a fault, or
 replace review in Studio or another real log tool.
+The fault-tree lesson and existing hardware-map diagnostic share the Fault Tree
+Isolation Lab. Review its request, output-write, motion, and current evidence
+order; competing open branches; smallest safe next test; native controls; live
+result; and deterministic reset. Confirm that its invented selections do not
+read robot state, inspect power or wiring, move a mechanism, authorize output,
+identify a root cause, or prove a repair.
 Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).

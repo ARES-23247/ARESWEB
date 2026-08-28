@@ -122,10 +122,14 @@ then, keep the authentic screenshot request open rather than drawing a fake Stud
 
 ## Extension challenge
 
-Create a fault tree for one device with four branches: configuration, communication, input evidence,
-and output evidence. Add power and physical mechanism as separate branches, but do not claim their
-checks are complete. For each leaf, name the smallest safe observation that would move the diagnosis
-forward.
+Create a fault tree for one device with configuration, communication, input, output, power, and
+physical-mechanism branches. Use the lab to practice separating evidence without claiming that a
+software selection proves a physical cause.
+
+<faulttreelab />
+
+For each leaf in your real tree, name the smallest safe observation that would move the diagnosis
+forward. Keep every untested physical branch visibly open.
 
 ## Related and next
 

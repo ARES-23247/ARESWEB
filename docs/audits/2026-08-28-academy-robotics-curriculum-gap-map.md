@@ -872,3 +872,32 @@ The lab compares two fixed invented runs. It does not import logs, verify their
 provenance, infer a cause, prove a fault, or replace review in Studio or another
 real log tool. No draft was staged or published, no production data was
 written, and no branch was pushed or deployed during this batch.
+
+## Twenty-fifth bounded implementation evidence
+
+The fault-isolation batch adds `testing-fault-tree` and the Academy-only Fault
+Tree Isolation Lab. The same interaction replaces the text-only fault-tree
+extension in the existing hardware-map diagnostic, where it directly advances
+that lesson's evidence-isolation objective.
+
+Focused evidence on 2026-08-28:
+
+- catalog validation increases to 43 documents, with 15 existing-lesson
+  interaction candidates and 38 approved embeds;
+- the new lesson has 891 prose words, estimated grade 6.7, and a 26-word
+  longest sentence;
+- the exact curriculum-plan comparison finds 29 authored identities and
+  19 remaining full-contract lesson identities out of 48;
+- all 64 unique pinned source URLs were remotely recomputed, including current
+  guided-diagnosis, FTC troubleshooting, and pit-operations boundaries;
+- tests cover evidence ordering, competing explanations, native controls, live
+  results, deterministic reset, fidelity limits, reuse in the existing lesson,
+  renderer security, and the catalog contract; and
+- frontend TypeScript, lint, local catalog validation, readability, provenance,
+  and 38 focused Academy tests pass.
+
+The lab uses one invented symptom and self-reported evidence. It does not read
+robot state, inspect wiring or power, move a mechanism, verify a sensor,
+identify a root cause, authorize output, or prove a repair. No draft was staged
+or published, no production data was written, and no branch was pushed or
+deployed during this batch.

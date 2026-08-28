@@ -24,6 +24,7 @@ const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
 const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
 const fault = lazy(() => import("../../sims/fault"));
+const faultTreeLab = lazy(() => import("../../sims/fault-tree-lab"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
@@ -123,6 +124,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
   fault: fault,
+  faultTreeLab: faultTreeLab,
+  faulttreelab: faultTreeLab,
   field: field,
   flywheelkv: flywheelkv,
   greatbee: greatbee,
@@ -236,6 +239,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   drivetrainchoicelab: drivetrainChoiceLab,
   evidenceLevelScenarios: evidenceLevelScenarios,
   evidencelevelscenarios: evidenceLevelScenarios,
+  faultTreeLab: faultTreeLab,
+  faulttreelab: faultTreeLab,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   kotlinExpressionLab: kotlinExpressionLab,
@@ -436,6 +441,14 @@ const SIM_METADATA = [
     'requiresContext': true,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'faultTreeLab',
+    'name': 'Fault Tree Isolation Lab',
+    'folder': 'fault-tree-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'field',
