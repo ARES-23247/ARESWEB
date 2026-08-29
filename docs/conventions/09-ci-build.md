@@ -70,6 +70,9 @@ File-level `/* eslint-disable @typescript-eslint/no-explicit-any */` permitted f
 Absolute byte budgets live in `config/bundle-budgets.json` and are enforced
 by `scripts/check-bundle-size.mjs` (raw and gzip per budget; there is no
 percentage threshold). Current headline budgets include `initialCss`,
-`initialJs`, `largestLazyJs`, `totalRouteJs`, `editorRuntimeJs`, and
-`largestEditorJs` — raise them consciously in review, never to make a check
-pass.
+`initialJs`, `largestLazyJs`, `totalRouteJs`, `academyInteractiveJs`,
+`largestAcademyInteractiveJs`, `editorRuntimeJs`, and `largestEditorJs` —
+raise them consciously in review, never to make a check pass. Academy
+interactives remain one lazy chunk per activity, then receive separate
+aggregate and largest-activity budgets. This preserves small per-lesson
+downloads without letting curriculum growth disappear from the bundle gate.

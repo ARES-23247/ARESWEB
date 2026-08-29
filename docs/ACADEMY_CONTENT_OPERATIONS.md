@@ -16,6 +16,14 @@ pnpm run content:prepare
 
 `content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, published-refresh, immutable commit-pinning, student-led robot-verification language, and middle-school readability checks. Every lesson must include clear sections and at least one code-native Mermaid diagram with a useful `%% aria:` summary. `content:readability` reports the estimated grade, word count, sentence average, and longest sentence. The estimate catches regressions but does not replace a student usability review.
 
+Substantial curriculum entries declare `instructionalContractVersion: 2`. The
+validator then requires purpose and prerequisites, vocabulary, a worked example,
+a purposeful visual, hands-on activity, checkpoints, troubleshooting, an
+evidence artifact, assessment, extension, and related/next navigation. Academy
+interactive tags execute only when their generated registry entry is explicitly
+approved and labeled `conceptual` or `code-derived`; other registered simulations
+render a truthful unavailable-for-Academy note.
+
 `content:verify` additionally downloads the exact pinned public source files, recomputes their Git blob hashes, and fails when the catalog's ARES, Studio, or starter version differs from the authoritative monorepo version file; CI runs this stronger check. The prepared artifact is `build/learning-content-import.json`. Every generated record remains `draft` with `approvalStatus: pending_approval`. None of these commands imports data or authenticates to Google Cloud.
 
 Preparation normalizes Markdown line endings to LF so the staged record and its
@@ -55,7 +63,10 @@ The supported phases are intentionally separate:
   `pending_approval`; slugs listed for published refresh are excluded. It never
   overwrites an existing slug. Use
   `--stage-slugs slug-one,slug-two` for a bounded subset when other catalog
-  lessons already exist or are published.
+  lessons already exist or are published. A prepared review artifact may hold
+  up to 100 documents, but every migration phase and approval remains capped at
+  25 changes. Split a larger curriculum release into separately reviewed
+  batches.
 - `publish-drafts` publishes only explicitly approved staged catalog drafts and
   refuses the batch if any reviewed content field changed after staging.
 - `refresh-published` updates only explicitly approved existing published

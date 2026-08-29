@@ -2,7 +2,7 @@ import React, { ReactNode, Suspense } from "react";
 import { Info, AlertTriangle, Lightbulb } from "lucide-react";
 import { safeContentImageUrl, safeContentLinkUrl } from "@/lib/contentUrls";
 import AuthenticatedImage from "@/components/media/AuthenticatedImage";
-import { SIM_COMPONENTS } from "./generated/sim-registry";
+import { ACADEMY_SIM_COMPONENTS, SIM_COMPONENTS } from "./generated/sim-registry";
 
 export interface ASTMark {
   type: string;
@@ -163,7 +163,16 @@ export default function TiptapRenderer({ node }: { node: ASTNode }) {
     case "interactiveComponent": {
       const componentName = boundedText(node.attrs?.componentName, 128);
       if (!componentName) return null;
-      const SimComponent = SIM_COMPONENTS[componentName] || SIM_COMPONENTS[componentName.toLowerCase()];
+      const knownComponent = SIM_COMPONENTS[componentName] || SIM_COMPONENTS[componentName.toLowerCase()];
+      const SimComponent = ACADEMY_SIM_COMPONENTS[componentName]
+        || ACADEMY_SIM_COMPONENTS[componentName.toLowerCase()];
+      if (knownComponent && !SimComponent) {
+        return (
+          <p role="note" className="my-4 border border-ares-gold/35 bg-ares-gold/10 p-3 text-sm text-white">
+            This simulation has not been approved as an Academy learning interaction.
+          </p>
+        );
+      }
       if (!SimComponent) {
         return (
           <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-marble/55 text-xs">

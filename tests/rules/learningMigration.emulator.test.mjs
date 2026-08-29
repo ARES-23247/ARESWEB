@@ -17,27 +17,41 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
   let app;
   let db;
   let directory;
-  let stageableDocuments;
+  let stageSlugs;
   let refreshPlanFile;
 
   beforeAll(async () => {
     const catalog = await validateLearningCatalog({ write: true });
-    stageableDocuments = catalog.stageableDocuments;
+    if (catalog.stageableDocuments < 1) throw new Error("Learning catalog has no stageable documents.");
     const preparedCatalog = JSON.parse(readFileSync(
       new URL("../../build/learning-content-import.json", import.meta.url),
       "utf8",
     ));
+    const legacyPlan = JSON.parse(readFileSync(
+      new URL("../../content/learning/legacy-migration-plan.json", import.meta.url),
+      "utf8",
+    ));
+    const refreshPlan = JSON.parse(readFileSync(
+      new URL("../../content/learning/published-refresh-plan.json", import.meta.url),
+      "utf8",
+    ));
+    const excludedStageSlugs = new Set([
+      ...legacyPlan.actions
+        .filter((action) => action.action === "replace-from-catalog-after-review")
+        .map((action) => action.catalogSlug),
+      ...refreshPlan.documents.map((document) => document.slug),
+    ]);
+    stageSlugs = preparedCatalog.documents
+      .map((document) => document.slug)
+      .filter((slug) => !excludedStageSlugs.has(slug))
+      .slice(0, 25);
+    if (stageSlugs.length < 1) throw new Error("Learning catalog has no bounded staging batch.");
     const indicatorDesired = preparedCatalog.documents.find(
       (document) => document.slug === "ftc-gui-owned-indicator-lights",
     )?.data;
     if (!indicatorDesired) throw new Error("Indicator-light lesson is missing from the prepared catalog.");
-    const indicatorPreviousContent = indicatorDesired.content.replace(
-      "Students can follow the team's robot-safety procedure to check the real lights.",
-      "A mentor must approve the real-light check before students may record evidence.",
-    );
-    if (indicatorPreviousContent === indicatorDesired.content) {
-      throw new Error("Indicator-light pre-refresh fixture could not be reconstructed.");
-    }
+    const indicatorPreviousContent = `${indicatorDesired.content.trim()}\n\n` +
+      "A mentor must approve the real-light check before students may record evidence.\n";
     app = initializeApp({ projectId: project }, `learning-migration-${Date.now()}`);
     db = getFirestore(app);
     directory = mkdtempSync(join(tmpdir(), "ares-learning-emulator-"));
@@ -72,6 +86,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
   });
 
   afterAll(async () => {
+    if (!db || !app || !directory) return;
     await db.recursiveDelete(db.collection("docs"));
     await db.recursiveDelete(db.collection("audit_logs"));
     await deleteApp(app);
@@ -100,15 +115,16 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
     const stage = await runLearningMigration({
       ...base,
       phase: "stage-drafts",
+      stageSlugs,
       batchId: "stage-emulator",
       rollbackManifest: join(directory, "stage.json"),
     }, { db });
     expect(stage).toMatchObject({
-      planned: stageableDocuments,
-      ready: stageableDocuments,
+      planned: stageSlugs.length,
+      ready: stageSlugs.length,
       blocked: 0,
-      applied: stageableDocuments,
-      verified: stageableDocuments,
+      applied: stageSlugs.length,
+      verified: stageSlugs.length,
     });
     const unchangedPublished = (await db.doc("docs/ftc-gui-owned-indicator-lights").get()).data();
     expect(unchangedPublished).toMatchObject({ status: "published", approvalStatus: "approved" });
@@ -144,7 +160,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       reviewedByLabel: "Emulator Coach",
       academyMigrationPhase: "refresh-published",
     });
-    expect(refreshed.content).toContain("Students can follow the team's robot-safety procedure");
+    expect(refreshed.content).toContain("Students may verify the real lights using the team's normal safety procedure");
     expect(refreshed.content).not.toContain("a mentor must");
     expect((await db.doc("audit_logs/academy_v2_refresh-published_ftc-gui-owned-indicator-lights").get()).data()).toMatchObject({
       reviewDigest: preparedApproval.template.reviewDigest,

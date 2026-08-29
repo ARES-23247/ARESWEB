@@ -26,6 +26,9 @@ For every item being approved, confirm:
 - language and exercises are suitable for the intended student audience;
 - links, headings, tables, lists, code, and instructions are understandable by
   keyboard and on a narrow screen;
+- each interaction serves a named learning objective, has a visible fidelity
+  limit and deterministic reset, exposes its result to assistive technology,
+  and remains usable with keyboard, touch, reduced motion, and narrow screens;
 - no student identity, private team data, credentials, unpublished hardware
   details, or fabricated accomplishments appear; and
 - the proposed subject and learning-path placement are useful and accurate.
@@ -63,7 +66,7 @@ reuse an old approval digest after changing any lesson.
 
 | Lesson | Safety scope | Public lesson | Canonical source file |
 | --- | --- | --- | --- |
-| Compose an FTC Season Robot That Fails Safe | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-season-composition-and-safe-lifecycle) | [`01-season-composition.md`](../content/learning/current-robot/01-season-composition.md) |
+| Coordinate Subsystems and Fail Safe | Physical robot | [Open lesson](https://aresfirst.org/academy/ftc-season-composition-and-safe-lifecycle) | [`01-season-composition.md`](../content/learning/current-robot/01-season-composition.md) |
 | Shape FTC Driver Input Without Losing the Frame | Simulation only | [Open lesson](https://aresfirst.org/academy/ftc-driver-input-shaping-and-frames) | [`02-driver-input-frames.md`](../content/learning/current-robot/02-driver-input-frames.md) |
 | Author GUI-Owned FTC Indicator Lights | Physical robot | [Open lesson](https://aresfirst.org/academy/ftc-gui-owned-indicator-lights) | [`03-gui-owned-indicator-lights.md`](../content/learning/current-robot/03-gui-owned-indicator-lights.md) |
 
@@ -114,6 +117,280 @@ website editorial workflow and production migration are separately approved.
 | Read a Telemetry Graph Like a Scientist | Math for Robotics | [`02-read-telemetry-graph.md`](../content/learning/middle-school-stem/02-read-telemetry-graph.md) |
 | Decide Whether Camera Evidence Is Trustworthy | AI & ML Foundations | [`03-camera-evidence.md`](../content/learning/middle-school-stem/03-camera-evidence.md) |
 | Measure, Test, and Improve a Design | Applied STEM in the Outdoors | [`04-measure-test-improve.md`](../content/learning/middle-school-stem/04-measure-test-improve.md) |
+
+## Robotics curriculum expansion awaiting review
+
+This branch adds thirty-seven new robotics drafts and deepens selected existing lessons.
+The files remain local review sources. They are not staged, published, or live.
+
+| Lesson | Path | Safety scope | Canonical source file |
+| --- | --- | --- | --- |
+| Read and Change Small Kotlin Programs | Programming with ARES | None | [`01-kotlin-basics.md`](../content/learning/programming/01-kotlin-basics.md) |
+| Author a Code-First or Hybrid Subsystem | Programming with ARES | Physical robot | [`05-code-first-subsystem.md`](../content/learning/programming/05-code-first-subsystem.md) |
+| Test Robot Logic Across Mocks and Simulation | Programming with ARES | Physical robot | [`08-tests-parity.md`](../content/learning/programming/08-tests-parity.md) |
+| Measure, Sketch, and Record a Design | Mechanical Design & Fabrication | None | [`00-measurement-design-notebook.md`](../content/learning/mechanical-design/00-measurement-design-notebook.md) |
+| Choose and Use Common Robot Tools | Mechanical Design & Fabrication | Physical robot | [`01-tool-evidence.md`](../content/learning/mechanical-design/01-tool-evidence.md) |
+| Fasteners, Threads, and Keeping Parts Together | Mechanical Design & Fabrication | Physical robot | [`02-fastener-evidence.md`](../content/learning/mechanical-design/02-fastener-evidence.md) |
+| Frames, Bracing, and Load Paths | Mechanical Design & Fabrication | Physical robot | [`03-load-path-evidence.md`](../content/learning/mechanical-design/03-load-path-evidence.md) |
+| Gears, Sprockets, Belts, Speed, and Torque | Mechanical Design & Fabrication | None | [`01-gears-sprockets-belts.md`](../content/learning/mechanical-design/01-gears-sprockets-belts.md) |
+| Compare Mecanum, Differential, and Swerve Drivetrains | Mechanical Design & Fabrication | Physical robot | [`02-compare-drivetrains.md`](../content/learning/mechanical-design/02-compare-drivetrains.md) |
+| Build Motion with Arms, Elevators, Intakes, and Linkages | Mechanical Design & Fabrication | Physical robot | [`03-mechanism-motion.md`](../content/learning/mechanical-design/03-mechanism-motion.md) |
+| From a CAD Model to a Buildable Part | Mechanical Design & Fabrication | Physical robot | [`04-cad-fabrication.md`](../content/learning/mechanical-design/04-cad-fabrication.md) |
+| Voltage, Current, Power, and Energy | Electrical Systems & Diagnostics | None | [`01-voltage-current-power.md`](../content/learning/electrical-systems/01-voltage-current-power.md) |
+| Batteries, Breakers, Fuses, and Brownouts | Electrical Systems & Diagnostics | Physical robot | [`02-battery-protection.md`](../content/learning/electrical-systems/02-battery-protection.md) |
+| Wire, Connectors, Polarity, and Strain Relief | Electrical Systems & Diagnostics | Physical robot | [`03-wiring-connectors.md`](../content/learning/electrical-systems/03-wiring-connectors.md) |
+| Choose Motors, Gearmotors, and Servos | Electrical Systems & Diagnostics | Physical robot | [`04-motors-servos.md`](../content/learning/electrical-systems/04-motors-servos.md) |
+| Choose and Read Robot Sensors | Electrical Systems & Diagnostics | Physical robot | [`02-choose-read-sensors.md`](../content/learning/electrical-systems/02-choose-read-sensors.md) |
+| USB, I2C, CAN, Addresses, and Device Identity | Electrical Systems & Diagnostics | Physical robot | [`03-buses-addresses.md`](../content/learning/electrical-systems/03-buses-addresses.md) |
+| Map Hardware and Diagnose a Dead Device | Electrical Systems & Diagnostics | Physical robot | [`07-hardware-map-diagnostics.md`](../content/learning/electrical-systems/07-hardware-map-diagnostics.md) |
+| Compare Logs and Replay a Failure | Testing, Debugging & Commissioning | None | [`02-logs-replay.md`](../content/learning/testing-debugging/02-logs-replay.md) |
+| Build a Fault Tree and Isolate a Cause | Testing, Debugging & Commissioning | Physical robot | [`03-fault-tree.md`](../content/learning/testing-debugging/03-fault-tree.md) |
+| Run SysId and a Bounded Tuning Experiment | Testing, Debugging & Commissioning | Physical robot | [`05-sysid-tuning.md`](../content/learning/testing-debugging/05-sysid-tuning.md) |
+| Read Hardware Once and Write Safe Outputs | Programming with ARES | Physical robot | [`04-cached-io.md`](../content/learning/programming/04-cached-io.md) |
+| Run a Drive-Team Match Cycle | Competition Operations | Physical robot | [`01-match-cycle.md`](../content/learning/competition-operations/01-match-cycle.md) |
+| Collect Useful Scouting Evidence | Competition Operations | None | [`02-scouting-evidence.md`](../content/learning/competition-operations/02-scouting-evidence.md) |
+| Turn Evidence into Match Strategy | Competition Operations | None | [`03-strategy-tradeoffs.md`](../content/learning/competition-operations/03-strategy-tradeoffs.md) |
+| Review, Repair, and Record after a Match | Competition Operations | Physical robot | [`04-post-match-triage.md`](../content/learning/competition-operations/04-post-match-triage.md) |
+| Capstone 1: Model and Test a Simulated Mechanism | Robotics Capstones | Simulation only | [`01-simulated-mechanism.md`](../content/learning/robotics-capstones/01-simulated-mechanism.md) |
+| Capstone 2: Build a Complete ARES Subsystem | Robotics Capstones | Physical robot | [`02-complete-subsystem.md`](../content/learning/robotics-capstones/02-complete-subsystem.md) |
+| Capstone 3: Complete a Simulated Autonomous Mission | Robotics Capstones | Simulation only | [`03-simulated-autonomous-mission.md`](../content/learning/robotics-capstones/03-simulated-autonomous-mission.md) |
+| Capstone 4: Commission a Physical Robot Feature | Robotics Capstones | Physical robot | [`04-physical-feature-commissioning.md`](../content/learning/robotics-capstones/04-physical-feature-commissioning.md) |
+| Capstone 5: Present Competition-Readiness Evidence | Robotics Capstones | Physical robot | [`05-competition-readiness-evidence.md`](../content/learning/robotics-capstones/05-competition-readiness-evidence.md) |
+| Predict Motion with Feedforward | Controls, Localization & Autonomous | Simulation only | [`02-feedforward-response.md`](../content/learning/controls/02-feedforward-response.md) |
+| Tune Feedback with Evidence | Controls, Localization & Autonomous | Simulation only | [`03-pid-evidence.md`](../content/learning/controls/03-pid-evidence.md) |
+| Plan Smooth Motion with Limits | Controls, Localization & Autonomous | Simulation only | [`04-motion-profiles.md`](../content/learning/controls/04-motion-profiles.md) |
+| Estimate Motion with Odometry | Controls, Localization & Autonomous | Physical robot | [`05-odometry-calibration.md`](../content/learning/controls/05-odometry-calibration.md) |
+| Combine Measurements without Hiding Uncertainty | Controls, Localization & Autonomous | Simulation only | [`06-sensor-fusion.md`](../content/learning/controls/06-sensor-fusion.md) |
+| Use AprilTags and Reject Bad Vision Measurements | Controls, Localization & Autonomous | Physical robot | [`07-vision-rejection.md`](../content/learning/controls/07-vision-rejection.md) |
+
+The review must also cover the upgraded coordinate, Redux, simulation-evidence,
+and full-contract telemetry lessons, plus every approved interaction named in
+the generated registry. The telemetry reference now begins the testing path
+after the simulation-evidence lesson. Review its control/telemetry/log/import
+boundaries, fixed voltage/distance/missing-sample cases, observation-versus-
+explanation activity, privacy guidance, native controls, data table, and
+deterministic reset. Confirm that the lesson data is invented and cannot prove
+a real signal, timing behavior, network load, controller response, or failure
+cause. The
+Control Response Lab is intentionally reused in the existing telemetry-reading
+lesson as an optional graph exercise. Review that embed for age fit and verify
+that its conceptual-model warning remains visible in both lesson contexts.
+The existing `ftc-starter-first-autonomous` tutorial is also upgraded in place;
+it is not an eleventh new draft. Review its Autonomous Path Clearance Lab and
+Motion Profile Lab together with the real Studio, project-verification, Local
+Simulator, and student-led physical-test boundaries. Confirm that neither web
+model is described as project, robot, or physical-clearance validation.
+The existing `robot-input-to-output` tutorial is upgraded in place as well.
+Review its Robot Input-to-Output Flow Tracer for keyboard order, touch targets,
+live step announcements, narrow-screen reflow, and the visible statement that
+the trace does not inspect code, run the scheduler, or command hardware.
+The existing `ftc-gui-owned-indicator-lights` tutorial now fills the planned
+GUI-owned subsystem lesson. Review its descriptor preview for independent
+targets, safe-off reset, stable slider names, text-equivalent results, and the
+clear separation between concept, generated tests, simulation, and hardware.
+The new Kotlin lesson begins the Programming with ARES path, followed by the
+upgraded input-to-output and Redux tutorials. Review its fixed expression lab
+for native number-input behavior, deterministic reset, arithmetic order, and
+the visible warning that it neither compiles Kotlin nor runs robot code.
+The code-first subsystem lesson follows the existing GUI-owned indicator-light
+tutorial rather than replacing it. Review the ownership lab's generated,
+hybrid, and hand-authored starting paths; its native controls and table; and
+its warning that two questions cannot inspect source, identify hazards, or
+approve physical operation.
+The existing season-composition tutorial now fills the planned superstructure
+lesson. Review its ordered disabled and health fallbacks, transient posture,
+measured guard, complete preset, deterministic steps, and physical-test
+boundary. Confirm that the invented three-posture model is not presented as the
+real ARES runtime or as proof of physical clearance.
+The parity lesson closes the current Programming with ARES path. Review all
+four evidence classifications, native selects, deterministic reset, and the
+rule that shared compile success is weaker than matching runtime behavior.
+Confirm that platform-adapter and mock tests are never labeled as physical
+robot evidence.
+The drivetrain comparison leads into the existing advanced swerve reference.
+Review its four source-backed ARES starting points, native design-evidence
+checks, comparison table, mobile overflow behavior, and warning that lesson
+marks do not select or validate physical hardware.
+The sensor lesson deliberately uses one distance-signal interaction instead of
+pretending to model every device type. Review its finite-value, identity,
+health, age, and range gates; native controls; visible blocked reasons; reset;
+and separation between a cached software sample and real physical sensing.
+The bus-and-address lesson follows that sensor page and compares only two
+invented connection records. Review its connection-type, normalized bus or
+parent, and numeric address gates; native controls; visible conflict reason;
+deterministic reset; and checklist. Confirm that “no duplicate” is never
+presented as project scanning, device discovery, valid vendor or league ranges,
+correct wiring, or proof of physical identity.
+The existing FTC physical-commissioning tutorial now contains the planned
+Commissioning Boundary Checklist instead of creating a second FTC-specific
+page. Review the ordered code, simulation, configuration, stop-readiness, and
+restrained-setup gates; the unexpected-result override; deterministic reset;
+and the visible statement that self-reported boxes cannot authorize motion or
+prove physical behavior. Confirm that students can run and document the team's
+robot-safety procedure without language requiring mentor approval; website
+publication remains the separate Lead Coach approval boundary.
+The beginner camera lesson, ARES vision reference, and advanced controls lesson
+now share the Vision Evidence Rejection Lab. Review all six named gates,
+ordered first-failure reporting, native checkboxes, deterministic reset, and
+the visible rejection reason. Confirm that the switches are not presented as
+image processing, AprilTag solving, ambiguity or innovation calculation,
+latency modeling, estimator execution, or proof of field position.
+The new mechanism lesson and existing gear lesson share the Mechanism Motion
+Explorer. Review its arm-angle, elevator-travel, and roller-surface calculations;
+finite-value and positive-ratio guards; unit-bearing results; native controls;
+live result; narrow layout; and deterministic reset. Confirm that the ideal
+model cannot choose hardware, solve linkage geometry, inspect clearance,
+command a robot, or prove safe motion. The authentic team mechanism-image
+request remains open.
+The new CAD/fabrication lesson and existing measurement lesson share the
+Tolerance Stack Lab. Review its nominal sum, one-direction worst-case range,
+required-range decision, invalid-value handling, unit-bearing native inputs,
+live result, narrow layout, and deterministic reset. Confirm that the model
+does not check hole position, angles, fit class, material, process capability,
+load, or a real part. The paired authentic team CAD and fabricated-part media
+request remains open.
+The new battery-protection lesson and existing voltage/current lesson share the
+Brownout State Sandbox. Review its healthy, warning, and critical transitions;
+linear warning scale; hysteresis recovery; invalid-value fail-closed behavior;
+native controls; live result; narrow layout; and deterministic reset. Confirm
+that its ARES example profile is not presented as current league rules, a
+component rating, a battery model, a current estimate, a protection-device
+choice, or physical proof. The official FTC/FRC electrical-rule request stays
+open.
+The new wiring lesson and existing hardware-map diagnostic share the Wiring
+Plan Diagnostic Lab. Review its ordered isolation, identity, polarity,
+connector, routing/strain-relief, and protection-source checks; native
+checkboxes; first-missing feedback; narrow layout; and deterministic reset.
+Confirm that its self-reported boxes do not inspect wiring, read a diagram,
+verify a source, identify a connector, choose a rating, energize a circuit, or
+prove correct wiring. The authentic team wiring-photo request remains open.
+The new actuator lesson and existing mechanism lesson share the Motor and Servo
+Evidence Sorter. Review its continuous-speed, bounded-angle, and multi-turn
+position paths; ordered source, feedback, homing, limit, and safe-neutral
+checks; native controls; live result; narrow layout; and deterministic reset.
+Confirm that its self-reported choices do not read requirements, verify a data
+sheet, calculate load or electrical limits, choose a product, command hardware,
+or approve physical operation. Approved manufacturer specifications remain an
+open source request.
+The new scouting lesson and existing drive-team lesson share the Scouting
+Evidence Quality Lab. Review its ordered source, observation, context, sample,
+missing-data, and privacy checks; native controls; first-missing feedback;
+narrow layout; and deterministic reset. Confirm that self-reported boxes do
+not watch a match, read a log, verify a source, count events, remove personal
+data, compare or rank robots, judge people, or create strategy. The current
+team scouting process and approved non-PII examples remain open for review.
+The new strategy lesson and scouting extension share the Strategy Tradeoff
+Lab. Review the visible zero-to-three ratings and weights, weighted scores,
+Plan A, Plan B, and tie outcomes, invalid-weight state, native controls,
+mobile table overflow, live result, and deterministic reset. Confirm that the
+matrix cannot read data, model current game rules or teams, predict a match,
+optimize a plan, or make a decision. The team strategy process remains open
+for review, and the ARES Match Strategy screen is correctly named as a
+sample-only developer preview rather than a source of real evidence.
+The new post-match lesson and existing fault-tree extension share the
+Post-Match Triage Lab. Review its ordered safe-state, symptom, source,
+inspection-boundary, owner/stop, next-test, and return-status checks; native
+controls; first-missing result; narrow layout; and deterministic reset. Confirm
+that self-reported boxes cannot inspect or disable a robot, preserve a log,
+diagnose damage, assign a person, approve repair, authorize motion, or return a
+robot to play. The current authentic team checklist remains an open request.
+The new common-tools lesson and existing CAD/fabrication extension share the
+Tool Task Evidence Lab. Review all five task categories, the ordered exact-tool,
+task/material, approved-instructions, work-area/workholding,
+training/protection, and isolation/stop checks; native controls; first-missing
+result; narrow layout; and deterministic reset. Confirm that the lab only
+organizes a paper review: it cannot identify a tool, inspect its condition,
+choose protection, verify training, secure work, authorize operation, or teach
+tool-specific operation. Official tool guidance and authentic team photos
+remain open source requests.
+The new fastener lesson contains the Fastener Joint Evidence Lab, and the tool
+and CAD lessons now link into that lesson where a joint decision begins.
+Review all four joint-purpose paths; the ordered job, exact-parts,
+standard-source, mating-interface, load/clearance, retention/tightening-source,
+and inspection/service checks; native controls; first-missing result; narrow
+layout; and deterministic reset. Confirm that the lab cannot inspect a joint,
+identify threads, verify compatibility, calculate strength or clamping force,
+choose hardware, set torque, detect loosening, supervise assembly, or approve
+physical use. Manufacturer fastener references remain an open request.
+The new structure lesson and existing drivetrain extension share the Load Path
+Evidence Explorer. Review its front-contact, arm-payload, side-mechanism, and
+hanging-support routes; ordered input, transfer-member, joint, reaction,
+direction-change, open-point, and later-test checks; semantic ordered path;
+native controls; first-missing result; narrow-screen reflow; and deterministic
+reset. Confirm that it cannot calculate force, stress, stiffness, bending,
+buckling, impact, fatigue, safety factor, joint capacity, traction, or
+stability; inspect a robot; choose material or geometry; authorize loading; or
+prove a structure safe. Authentic team structure images remain an open request.
+The existing FTC driver-input tutorial now contains the Driver Input Curve Lab
+and a full middle-school instructional contract. Review its finite-value and
+clamp rules, `0.05` deadband rescale, positive exponent and fallback, fixed
+`0.6`/`0.4` smoothing step, alliance/frame selection, native controls, and
+deterministic reset. Confirm that the one-axis calculation is not presented as
+a timed loop, complete gamepad adapter, drivetrain simulation, or physical
+driving validation.
+The new mechanical measurement lesson intentionally uses a described diagram
+and an open authentic-media request. Review its datum, repeatability,
+measured-versus-calculated labels, revision trace, privacy note, and
+student-repeat activity. Confirm that it does not fabricate a team photo,
+select a tool or tolerance without evidence, or treat a value from another
+robot as a measurement of the current robot.
+The hardware-map diagnostic follows the missing electrical lessons at its
+final planned path position; sensor and bus pages were renumbered to preserve
+room for those future source-gated lessons. Review the ordered inventory, name,
+connection, startup-health, cached-input, and output-write checks; native
+controls; first-failure result; and deterministic reset. Confirm that all boxes
+are self-reported and that a passing software sequence is not called a root
+cause, wiring check, physical operation, or proof that the device works.
+The log-comparison lesson follows the existing telemetry reference and
+simulation-limits lesson. Review its source identity and digest checks,
+baseline reason, timestamp-versus-shared-event alignment, unit-bearing signal
+choices, two-hypothesis evidence report, native controls, live table, and
+deterministic reset. Confirm that the fixed sample runs are not presented as
+imported team logs and that the lab does not infer a cause, prove a fault, or
+replace review in Studio or another real log tool.
+The fault-tree lesson and existing hardware-map diagnostic share the Fault Tree
+Isolation Lab. Review its request, output-write, motion, and current evidence
+order; competing open branches; smallest safe next test; native controls; live
+result; and deterministic reset. Confirm that its invented selections do not
+read robot state, inspect power or wiring, move a mechanism, authorize output,
+identify a root cause, or prove a repair.
+The bounded SysId and tuning lesson and existing PID lesson share the
+One-Change Tuning Experiment Lab. Review its prior threshold, intended
+direction, exactly-one-change gate, improved/regressed/inconclusive result,
+native controls, live result, and deterministic reset. Confirm that the fixed
+numbers are not presented as SysId data and that the lab cannot apply a
+parameter, control a simulator or robot, certify safety, or promote a profile.
+The first two capstones share the Capstone Evidence Board. Review its ordered
+requirement, design, implementation, test, fault, safety, and limitation
+sections; first-missing action; native checks; live result; and deterministic
+reset. Confirm that each box is self-reported and cannot inspect source, run
+tests, review work, approve publication, authorize operation, or prove a claim.
+The simulated autonomous capstone reuses the Autonomous Path Clearance Lab,
+Motion Profile Lab, and Capstone Evidence Board. Review the full-footprint and
+obstacle checks, conservative motion limits, typed-action and resource steps,
+Blue and Red cases, blocked case, neutral result, and packet limits. Confirm
+that previews, generation, and Local Sim are never called deployment, physical
+clearance, or competition-readiness evidence.
+The physical-feature capstone reuses the Commissioning Boundary Checklist and
+Capstone Evidence Board. Review the source and inventory identity, current
+simulation and configuration evidence, restrained setup, smallest output,
+stop readiness, unexpected-result rule, authentic student record, privacy
+boundary, and stale-evidence behavior. Confirm that the open physical-evidence
+request cannot be fulfilled by either checklist or simulation output.
+The competition-readiness capstone reuses the Capstone Evidence Board and adds
+a draft team rubric. Review narrow claims, exact source and inventory identity,
+evidence levels, stop and fallback results, stale evidence, pit and operations
+handoffs, privacy, go/limited-go/no-go decisions, and next actions. Students and
+the team own robot-process review; only website publication uses the editorial
+Lead Coach gate. Authentic evidence from each claimed boundary remains required.
+Missing authentic media and
+official event sources stay blocked in
+[`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
+
+The current reviewed source authority is ARES 11.1.0 / Studio 2.0.2 at commit
+`7cd2cf5f`. Existing 11.0.0 and 11.1.0/2.0.1 source links remain immutable historical pins until
+their individual lesson review is complete; a release-number change alone does
+not authorize silently replacing those references.
 
 ## Recording future decisions
 

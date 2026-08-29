@@ -41,6 +41,12 @@ export const LEARNING_PATHS = [
   { id: "math-for-robotics", label: "Math for Robotics", description: "Apply geometry, algebra, statistics, and measurement to robot problems.", beginnerGuidance: "Beginner-friendly math path" },
   { id: "ai-ml-foundations", label: "AI and Machine Learning Foundations", description: "Build a careful foundation for machine learning, vision, and generative AI.", beginnerGuidance: "Beginner-friendly computing path" },
   { id: "applied-stem-outdoors", label: "Applied STEM in the Outdoors", description: "Use climbing and outdoor activities to investigate physics, data, and engineering.", beginnerGuidance: "Beginner-friendly applied STEM path" },
+  { id: "mechanical-design-fabrication", label: "Mechanical Design & Fabrication", description: "Learn measurement, tools, structure, power transmission, mechanisms, CAD, and fabrication.", beginnerGuidance: "Physical systems path; begin after rates and units" },
+  { id: "electrical-systems-diagnostics", label: "Electrical Systems & Diagnostics", description: "Learn robot power, wiring, actuators, sensors, buses, and evidence-based electrical diagnosis.", beginnerGuidance: "Begin with power and safe measurement" },
+  { id: "programming-with-ares", label: "Programming with ARES", description: "Progress from small Kotlin programs through Redux, IO, subsystems, superstructures, and tests.", beginnerGuidance: "Programming path for FTC and FRC" },
+  { id: "testing-debugging-commissioning", label: "Testing, Debugging & Commissioning", description: "Build evidence through tests, telemetry, fault isolation, simulation, and bounded physical checks.", beginnerGuidance: "Use alongside every robot project" },
+  { id: "competition-operations", label: "Competition Operations", description: "Prepare for FTC and FRC inspection, pits, drive-team work, scouting, strategy, and match handoffs.", beginnerGuidance: "League operations and teamwork" },
+  { id: "robotics-capstones", label: "Robotics Capstones", description: "Combine mechanical, electrical, software, controls, and evidence skills in progressive projects.", beginnerGuidance: "Complete the prerequisite tracks first" },
 ] as const;
 
 export type LearningSubject = (typeof LEARNING_SUBJECTS)[number]["id"];

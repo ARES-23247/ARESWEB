@@ -6,23 +6,44 @@ import { lazy, type ComponentType } from "react";
 // ── Lazy-loaded Simulators ─────────────────────────────────────────────
 const armkg = lazy(() => import("../../sims/armkg"));
 const auto = lazy(() => import("../../sims/auto"));
+const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
 const battleship = lazy(() => import("../../sims/battleship"));
 const bee = lazy(() => import("../../sims/bee"));
+const brownoutSandbox = lazy(() => import("../../sims/brownout-sandbox"));
+const busAddressTroubleshooter = lazy(() => import("../../sims/bus-address-troubleshooter"));
+const capstoneEvidenceBoard = lazy(() => import("../../sims/capstone-evidence-board"));
 const climbingAnchorAngles = lazy(() => import("../../sims/climbing-anchor-angles"));
 const climbingCapstanFriction = lazy(() => import("../../sims/climbing-capstan-friction"));
 const climbingCenterOfMass = lazy(() => import("../../sims/climbing-center-of-mass"));
 const climbingFallFactor = lazy(() => import("../../sims/climbing-fall-factor"));
 const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger-biomechanics"));
+const commissioningChecklistLab = lazy(() => import("../../sims/commissioning-checklist-lab"));
+const controlResponseLab = lazy(() => import("../../sims/control-response-lab"));
+const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
+const driverInputCurveLab = lazy(() => import("../../sims/driver-input-curve-lab"));
+const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"));
 const elevatorpid = lazy(() => import("../../sims/elevatorpid"));
+const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scenarios"));
+const fastenerChoiceLab = lazy(() => import("../../sims/fastener-choice-lab"));
 const fault = lazy(() => import("../../sims/fault"));
+const faultTreeLab = lazy(() => import("../../sims/fault-tree-lab"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
+const hardwareTopologyDiagnostic = lazy(() => import("../../sims/hardware-topology-diagnostic"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
+const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
+const loadPathExplorer = lazy(() => import("../../sims/load-path-explorer"));
+const logComparisonLab = lazy(() => import("../../sims/log-comparison-lab"));
+const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
+const mechanismMotionExplorer = lazy(() => import("../../sims/mechanism-motion-explorer"));
+const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
+const motionProfileLab = lazy(() => import("../../sims/motion-profile-lab"));
+const motorServoSelector = lazy(() => import("../../sims/motor-servo-selector"));
 const nnActivation = lazy(() => import("../../sims/nn-activation"));
 const nnBiology = lazy(() => import("../../sims/nn-biology"));
 const nnCnn = lazy(() => import("../../sims/nn-cnn"));
@@ -32,10 +53,16 @@ const nnLlm = lazy(() => import("../../sims/nn-llm"));
 const nnPlayground = lazy(() => import("../../sims/nn-playground"));
 const nnRl = lazy(() => import("../../sims/nn-rl"));
 const nnVision = lazy(() => import("../../sims/nn-vision"));
+const odometryErrorLab = lazy(() => import("../../sims/odometry-error-lab"));
+const parityEvidenceLab = lazy(() => import("../../sims/parity-evidence-lab"));
 const performance = lazy(() => import("../../sims/performance"));
 const physics = lazy(() => import("../../sims/physics"));
+const postMatchTriageLab = lazy(() => import("../../sims/post-match-triage-lab"));
+const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"));
 const powershedding = lazy(() => import("../../sims/powershedding"));
+const reduxStateTracer = lazy(() => import("../../sims/redux-state-tracer"));
 const risk = lazy(() => import("../../sims/risk"));
+const robotFlowTracer = lazy(() => import("../../sims/robot-flow-tracer"));
 const satcircles = lazy(() => import("../../sims/satcircles"));
 const satexponential = lazy(() => import("../../sims/satexponential"));
 const satgraphs = lazy(() => import("../../sims/satgraphs"));
@@ -45,16 +72,29 @@ const satstats = lazy(() => import("../../sims/satstats"));
 const satsystems = lazy(() => import("../../sims/satsystems"));
 const sattables = lazy(() => import("../../sims/sattables"));
 const sattriangles = lazy(() => import("../../sims/sattriangles"));
+const scoutingQualityLab = lazy(() => import("../../sims/scouting-quality-lab"));
+const sensorFusionLab = lazy(() => import("../../sims/sensor-fusion-lab"));
+const sensorSignalLab = lazy(() => import("../../sims/sensor-signal-lab"));
 const skiingCarvingForces = lazy(() => import("../../sims/skiing-carving-forces"));
 const sotm = lazy(() => import("../../sims/sotm"));
 const statemachine = lazy(() => import("../../sims/statemachine"));
+const strategyTradeoffLab = lazy(() => import("../../sims/strategy-tradeoff-lab"));
+const subsystemDescriptorLab = lazy(() => import("../../sims/subsystem-descriptor-lab"));
+const subsystemOwnershipLab = lazy(() => import("../../sims/subsystem-ownership-lab"));
+const superstructureStateLab = lazy(() => import("../../sims/superstructure-state-lab"));
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
+const sysidTuningLab = lazy(() => import("../../sims/sysid-tuning-lab"));
+const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
+const toleranceStackLab = lazy(() => import("../../sims/tolerance-stack-lab"));
+const toolChoiceScenarios = lazy(() => import("../../sims/tool-choice-scenarios"));
 const trigbasics = lazy(() => import("../../sims/trigbasics"));
 const triginverse = lazy(() => import("../../sims/triginverse"));
 const trigrobotics = lazy(() => import("../../sims/trigrobotics"));
 const troubleshooting = lazy(() => import("../../sims/troubleshooting"));
 const vision = lazy(() => import("../../sims/vision"));
+const visionUncertaintyLab = lazy(() => import("../../sims/vision-uncertainty-lab"));
+const wiringDiagnosticLab = lazy(() => import("../../sims/wiring-diagnostic-lab"));
 const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 
 // ── Sim Component Registry ───────────────────────────────────────────────
@@ -65,8 +105,16 @@ const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   armkg: armkg,
   auto: auto,
+  autonomousPathLab: autonomousPathLab,
+  autonomouspathlab: autonomousPathLab,
   battleship: battleship,
   bee: bee,
+  brownoutSandbox: brownoutSandbox,
+  brownoutsandbox: brownoutSandbox,
+  busAddressTroubleshooter: busAddressTroubleshooter,
+  busaddresstroubleshooter: busAddressTroubleshooter,
+  capstoneEvidenceBoard: capstoneEvidenceBoard,
+  capstoneevidenceboard: capstoneEvidenceBoard,
   climbingAnchorAngles: climbingAnchorAngles,
   climbinganchorangles: climbingAnchorAngles,
   climbingCapstanFriction: climbingCapstanFriction,
@@ -77,19 +125,53 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   climbingfallfactor: climbingFallFactor,
   climbingFingerBiomechanics: climbingFingerBiomechanics,
   climbingfingerbiomechanics: climbingFingerBiomechanics,
+  commissioningChecklistLab: commissioningChecklistLab,
+  commissioningchecklistlab: commissioningChecklistLab,
+  controlResponseLab: controlResponseLab,
+  controlresponselab: controlResponseLab,
+  coordinateTransformLab: coordinateTransformLab,
+  coordinatetransformlab: coordinateTransformLab,
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
+  driverInputCurveLab: driverInputCurveLab,
+  driverinputcurvelab: driverInputCurveLab,
+  drivetrainChoiceLab: drivetrainChoiceLab,
+  drivetrainchoicelab: drivetrainChoiceLab,
   elevatorpid: elevatorpid,
+  evidenceLevelScenarios: evidenceLevelScenarios,
+  evidencelevelscenarios: evidenceLevelScenarios,
+  fastenerChoiceLab: fastenerChoiceLab,
+  fastenerchoicelab: fastenerChoiceLab,
   fault: fault,
+  faultTreeLab: faultTreeLab,
+  faulttreelab: faultTreeLab,
   field: field,
   flywheelkv: flywheelkv,
   greatbee: greatbee,
+  hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
+  hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   hikingGradeEnergy: hikingGradeEnergy,
   hikinggradeenergy: hikingGradeEnergy,
   kayakingHydrodynamics: kayakingHydrodynamics,
   kayakinghydrodynamics: kayakingHydrodynamics,
+  kotlinExpressionLab: kotlinExpressionLab,
+  kotlinexpressionlab: kotlinExpressionLab,
   linearequations: linearequations,
+  loadPathExplorer: loadPathExplorer,
+  loadpathexplorer: loadPathExplorer,
+  logComparisonLab: logComparisonLab,
+  logcomparisonlab: logComparisonLab,
+  loopCacheLab: loopCacheLab,
+  loopcachelab: loopCacheLab,
+  mechanismMotionExplorer: mechanismMotionExplorer,
+  mechanismmotionexplorer: mechanismMotionExplorer,
+  mechanismRatioExplorer: mechanismRatioExplorer,
+  mechanismratioexplorer: mechanismRatioExplorer,
   montyhall: montyhall,
+  motionProfileLab: motionProfileLab,
+  motionprofilelab: motionProfileLab,
+  motorServoSelector: motorServoSelector,
+  motorservoselector: motorServoSelector,
   nnActivation: nnActivation,
   nnactivation: nnActivation,
   nnBiology: nnBiology,
@@ -108,10 +190,22 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   nnrl: nnRl,
   nnVision: nnVision,
   nnvision: nnVision,
+  odometryErrorLab: odometryErrorLab,
+  odometryerrorlab: odometryErrorLab,
+  parityEvidenceLab: parityEvidenceLab,
+  parityevidencelab: parityEvidenceLab,
   performance: performance,
   physics: physics,
+  postMatchTriageLab: postMatchTriageLab,
+  postmatchtriagelab: postMatchTriageLab,
+  powerBudgetExplorer: powerBudgetExplorer,
+  powerbudgetexplorer: powerBudgetExplorer,
   powershedding: powershedding,
+  reduxStateTracer: reduxStateTracer,
+  reduxstatetracer: reduxStateTracer,
   risk: risk,
+  robotFlowTracer: robotFlowTracer,
+  robotflowtracer: robotFlowTracer,
   satcircles: satcircles,
   satexponential: satexponential,
   satgraphs: satgraphs,
@@ -121,22 +215,135 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   satsystems: satsystems,
   sattables: sattables,
   sattriangles: sattriangles,
+  scoutingQualityLab: scoutingQualityLab,
+  scoutingqualitylab: scoutingQualityLab,
+  sensorFusionLab: sensorFusionLab,
+  sensorfusionlab: sensorFusionLab,
+  sensorSignalLab: sensorSignalLab,
+  sensorsignallab: sensorSignalLab,
   skiingCarvingForces: skiingCarvingForces,
   skiingcarvingforces: skiingCarvingForces,
   sotm: sotm,
   statemachine: statemachine,
+  strategyTradeoffLab: strategyTradeoffLab,
+  strategytradeofflab: strategyTradeoffLab,
+  subsystemDescriptorLab: subsystemDescriptorLab,
+  subsystemdescriptorlab: subsystemDescriptorLab,
+  subsystemOwnershipLab: subsystemOwnershipLab,
+  subsystemownershiplab: subsystemOwnershipLab,
+  superstructureStateLab: superstructureStateLab,
+  superstructurestatelab: superstructureStateLab,
   swerve: swerve,
   sysid: sysid,
+  sysidTuningLab: sysidTuningLab,
+  sysidtuninglab: sysidTuningLab,
+  telemetryGraphLab: telemetryGraphLab,
+  telemetrygraphlab: telemetryGraphLab,
+  toleranceStackLab: toleranceStackLab,
+  tolerancestacklab: toleranceStackLab,
+  toolChoiceScenarios: toolChoiceScenarios,
+  toolchoicescenarios: toolChoiceScenarios,
   trigbasics: trigbasics,
   triginverse: triginverse,
   trigrobotics: trigrobotics,
   troubleshooting: troubleshooting,
   vision: vision,
+  visionUncertaintyLab: visionUncertaintyLab,
+  visionuncertaintylab: visionUncertaintyLab,
+  wiringDiagnosticLab: wiringDiagnosticLab,
+  wiringdiagnosticlab: wiringDiagnosticLab,
   zeroallocation: zeroallocation,
 };
 
 // Generate tag names and component mappings from SIM_COMPONENTS
 const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
+
+// Academy content may render only simulations that completed the explicit
+// learning-purpose, fidelity, accessibility, and test review.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  autonomousPathLab: autonomousPathLab,
+  autonomouspathlab: autonomousPathLab,
+  brownoutSandbox: brownoutSandbox,
+  brownoutsandbox: brownoutSandbox,
+  busAddressTroubleshooter: busAddressTroubleshooter,
+  busaddresstroubleshooter: busAddressTroubleshooter,
+  capstoneEvidenceBoard: capstoneEvidenceBoard,
+  capstoneevidenceboard: capstoneEvidenceBoard,
+  commissioningChecklistLab: commissioningChecklistLab,
+  commissioningchecklistlab: commissioningChecklistLab,
+  controlResponseLab: controlResponseLab,
+  controlresponselab: controlResponseLab,
+  coordinateTransformLab: coordinateTransformLab,
+  coordinatetransformlab: coordinateTransformLab,
+  driverInputCurveLab: driverInputCurveLab,
+  driverinputcurvelab: driverInputCurveLab,
+  drivetrainChoiceLab: drivetrainChoiceLab,
+  drivetrainchoicelab: drivetrainChoiceLab,
+  evidenceLevelScenarios: evidenceLevelScenarios,
+  evidencelevelscenarios: evidenceLevelScenarios,
+  fastenerChoiceLab: fastenerChoiceLab,
+  fastenerchoicelab: fastenerChoiceLab,
+  faultTreeLab: faultTreeLab,
+  faulttreelab: faultTreeLab,
+  hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
+  hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
+  kotlinExpressionLab: kotlinExpressionLab,
+  kotlinexpressionlab: kotlinExpressionLab,
+  loadPathExplorer: loadPathExplorer,
+  loadpathexplorer: loadPathExplorer,
+  logComparisonLab: logComparisonLab,
+  logcomparisonlab: logComparisonLab,
+  loopCacheLab: loopCacheLab,
+  loopcachelab: loopCacheLab,
+  mechanismMotionExplorer: mechanismMotionExplorer,
+  mechanismmotionexplorer: mechanismMotionExplorer,
+  mechanismRatioExplorer: mechanismRatioExplorer,
+  mechanismratioexplorer: mechanismRatioExplorer,
+  motionProfileLab: motionProfileLab,
+  motionprofilelab: motionProfileLab,
+  motorServoSelector: motorServoSelector,
+  motorservoselector: motorServoSelector,
+  odometryErrorLab: odometryErrorLab,
+  odometryerrorlab: odometryErrorLab,
+  parityEvidenceLab: parityEvidenceLab,
+  parityevidencelab: parityEvidenceLab,
+  postMatchTriageLab: postMatchTriageLab,
+  postmatchtriagelab: postMatchTriageLab,
+  powerBudgetExplorer: powerBudgetExplorer,
+  powerbudgetexplorer: powerBudgetExplorer,
+  reduxStateTracer: reduxStateTracer,
+  reduxstatetracer: reduxStateTracer,
+  robotFlowTracer: robotFlowTracer,
+  robotflowtracer: robotFlowTracer,
+  scoutingQualityLab: scoutingQualityLab,
+  scoutingqualitylab: scoutingQualityLab,
+  sensorFusionLab: sensorFusionLab,
+  sensorfusionlab: sensorFusionLab,
+  sensorSignalLab: sensorSignalLab,
+  sensorsignallab: sensorSignalLab,
+  strategyTradeoffLab: strategyTradeoffLab,
+  strategytradeofflab: strategyTradeoffLab,
+  subsystemDescriptorLab: subsystemDescriptorLab,
+  subsystemdescriptorlab: subsystemDescriptorLab,
+  subsystemOwnershipLab: subsystemOwnershipLab,
+  subsystemownershiplab: subsystemOwnershipLab,
+  superstructureStateLab: superstructureStateLab,
+  superstructurestatelab: superstructureStateLab,
+  sysidTuningLab: sysidTuningLab,
+  sysidtuninglab: sysidTuningLab,
+  telemetryGraphLab: telemetryGraphLab,
+  telemetrygraphlab: telemetryGraphLab,
+  toleranceStackLab: toleranceStackLab,
+  tolerancestacklab: toleranceStackLab,
+  toolChoiceScenarios: toolChoiceScenarios,
+  toolchoicescenarios: toolChoiceScenarios,
+  visionUncertaintyLab: visionUncertaintyLab,
+  visionuncertaintylab: visionUncertaintyLab,
+  wiringDiagnosticLab: wiringDiagnosticLab,
+  wiringdiagnosticlab: wiringDiagnosticLab,
+};
+const ACADEMY_SIM_TAG_NAMES = Object.keys(ACADEMY_SIM_COMPONENTS);
 
 // Full metadata for each sim (for management UI)
 const SIM_METADATA = [
@@ -144,314 +351,738 @@ const SIM_METADATA = [
     'id': 'armkg',
     'name': 'Arm Kinematics Gravity Model',
     'folder': 'armkg',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'auto',
     'name': 'Autonomous Visualizer',
     'folder': 'auto',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'autonomousPathLab',
+    'name': 'Autonomous Path Clearance Lab',
+    'folder': 'autonomous-path-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'battleship',
     'name': 'Battleship',
     'folder': 'battleship',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'bee',
     'name': 'Bee',
     'folder': 'bee',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'brownoutSandbox',
+    'name': 'Brownout State Sandbox',
+    'folder': 'brownout-sandbox',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'busAddressTroubleshooter',
+    'name': 'Bus and Address Troubleshooter',
+    'folder': 'bus-address-troubleshooter',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'capstoneEvidenceBoard',
+    'name': 'Capstone Evidence Board',
+    'folder': 'capstone-evidence-board',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'climbingAnchorAngles',
     'name': 'Anchor Vector Angles',
     'folder': 'climbing-anchor-angles',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingCapstanFriction',
     'name': 'Capstan Friction & Belay Dynamics',
     'folder': 'climbing-capstan-friction',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingCenterOfMass',
     'name': 'Center of Mass & Friction Vectors',
     'folder': 'climbing-center-of-mass',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingFallFactor',
     'name': 'Fall Factor & Impact Force',
     'folder': 'climbing-fall-factor',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'climbingFingerBiomechanics',
     'name': 'Finger Biomechanics & Pulley Strain',
     'folder': 'climbing-finger-biomechanics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'commissioningChecklistLab',
+    'name': 'Commissioning Boundary Checklist',
+    'folder': 'commissioning-checklist-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'controlResponseLab',
+    'name': 'Control Response Lab',
+    'folder': 'control-response-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'coordinateTransformLab',
+    'name': 'Coordinate Transform Lab',
+    'folder': 'coordinate-transform-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'cyclingGearRatios',
     'name': 'Cycling Gear Ratios & Cadence',
     'folder': 'cycling-gear-ratios',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'driverInputCurveLab',
+    'name': 'FTC Driver Input Curve Lab',
+    'folder': 'driver-input-curve-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'drivetrainChoiceLab',
+    'name': 'Drivetrain Starting-Point Lab',
+    'folder': 'drivetrain-choice-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'elevatorpid',
     'name': 'Elevator PID Tuning',
     'folder': 'elevatorpid',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'evidenceLevelScenarios',
+    'name': 'Evidence Level Scenarios',
+    'folder': 'evidence-level-scenarios',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'fastenerChoiceLab',
+    'name': 'Fastener Joint Evidence Lab',
+    'folder': 'fastener-choice-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'fault',
     'name': 'Fault Tolerant State Manager',
     'folder': 'fault',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'faultTreeLab',
+    'name': 'Fault Tree Isolation Lab',
+    'folder': 'fault-tree-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'field',
     'name': 'PathPlanner Canvas Renderer',
     'folder': 'field',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'flywheelkv',
     'name': 'Flywheel KV Optimization',
     'folder': 'flywheelkv',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'greatbee',
     'name': 'The Great Bee Adventure',
     'folder': 'greatbee',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'hardwareTopologyDiagnostic',
+    'name': 'Hardware Topology Diagnostic',
+    'folder': 'hardware-topology-diagnostic',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'hikingGradeEnergy',
     'name': 'Hiking Grade Energy Cost',
     'folder': 'hiking-grade-energy',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'kayakingHydrodynamics',
     'name': 'Kayaking Hydrodynamics',
     'folder': 'kayaking-hydrodynamics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'kotlinExpressionLab',
+    'name': 'Kotlin Expression Values Lab',
+    'folder': 'kotlin-expression-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'linearequations',
     'name': 'Linear Equations',
     'folder': 'linearequations',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'loadPathExplorer',
+    'name': 'Load Path Evidence Explorer',
+    'folder': 'load-path-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'logComparisonLab',
+    'name': 'Log Alignment and Comparison Lab',
+    'folder': 'log-comparison-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'loopCacheLab',
+    'name': 'Cached Output Decision Lab',
+    'folder': 'loop-cache-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'mechanismMotionExplorer',
+    'name': 'Mechanism Motion Explorer',
+    'folder': 'mechanism-motion-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'mechanismRatioExplorer',
+    'name': 'Mechanism Ratio Explorer',
+    'folder': 'mechanism-ratio-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'montyhall',
     'name': 'Monty Hall Problem',
     'folder': 'montyhall',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'motionProfileLab',
+    'name': 'Motion Profile Lab',
+    'folder': 'motion-profile-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'motorServoSelector',
+    'name': 'Motor and Servo Evidence Sorter',
+    'folder': 'motor-servo-selector',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'nnActivation',
     'name': 'Sim 1.5: Activation Functions',
     'folder': 'nn-activation',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnBiology',
     'name': 'Sim 0: The Single Neuron',
     'folder': 'nn-biology',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnCnn',
     'name': 'Sim 2.5: Convolutions',
     'folder': 'nn-cnn',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnDiffusion',
     'name': 'Sim 5: Generative AI (Diffusion)',
     'folder': 'nn-diffusion',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnIntro',
     'name': 'Sim 1: Neural Networks Basics',
     'folder': 'nn-intro',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnLlm',
     'name': 'Sim 3: LLM Attention',
     'folder': 'nn-llm',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnPlayground',
     'name': 'Sim 6: Neural Playground',
     'folder': 'nn-playground',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnRl',
     'name': 'Sim 4: Reinforcement Learning',
     'folder': 'nn-rl',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'nnVision',
     'name': 'Sim 2: Machine Vision',
     'folder': 'nn-vision',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'odometryErrorLab',
+    'name': 'Odometry Error Lab',
+    'folder': 'odometry-error-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'parityEvidenceLab',
+    'name': 'Adapter Parity Evidence Lab',
+    'folder': 'parity-evidence-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'performance',
     'name': 'AdvantageScope Telemetry Dashboard',
     'folder': 'performance',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'physics',
     'name': 'Dyn4j Physics Subsystem',
     'folder': 'physics',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'postMatchTriageLab',
+    'name': 'Post-Match Triage Lab',
+    'folder': 'post-match-triage-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'powerBudgetExplorer',
+    'name': 'Power Budget Explorer',
+    'folder': 'power-budget-explorer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'powershedding',
     'name': 'Brownout Protection Sandbox',
     'folder': 'powershedding',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'reduxStateTracer',
+    'name': 'Redux State Tracer',
+    'folder': 'redux-state-tracer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'risk',
     'name': 'Risk',
     'folder': 'risk',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'robotFlowTracer',
+    'name': 'Robot Input-to-Output Flow Tracer',
+    'folder': 'robot-flow-tracer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'satcircles',
     'name': 'Coordinate Circles & Sectors',
     'folder': 'satcircles',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satexponential',
     'name': 'Exponential Functions',
     'folder': 'satexponential',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satgraphs',
     'name': 'Scatterplots & Line of Best Fit',
     'folder': 'satgraphs',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satinequalities',
     'name': 'Systems of Inequalities',
     'folder': 'satinequalities',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satquadratic',
     'name': 'Quadratics & Parabolas',
     'folder': 'satquadratic',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satstats',
     'name': 'Statistics & Data Distributions',
     'folder': 'satstats',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'satsystems',
     'name': 'Systems of Linear Equations',
     'folder': 'satsystems',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sattables',
     'name': 'Two-Way Tables & Probability',
     'folder': 'sattables',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sattriangles',
     'name': 'Solving Right Triangles',
     'folder': 'sattriangles',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'scoutingQualityLab',
+    'name': 'Scouting Evidence Quality Lab',
+    'folder': 'scouting-quality-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'sensorFusionLab',
+    'name': 'Sensor Fusion Uncertainty Lab',
+    'folder': 'sensor-fusion-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'sensorSignalLab',
+    'name': 'Sensor Signal Evidence Lab',
+    'folder': 'sensor-signal-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'skiingCarvingForces',
     'name': 'Skiing Carving Forces',
     'folder': 'skiing-carving-forces',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sotm',
     'name': 'Shoot-on-the-Move Analytics',
     'folder': 'sotm',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'statemachine',
     'name': 'State Machine Hierarchy Visualizer',
     'folder': 'statemachine',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'strategyTradeoffLab',
+    'name': 'Strategy Tradeoff Lab',
+    'folder': 'strategy-tradeoff-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'subsystemDescriptorLab',
+    'name': 'Subsystem Descriptor Independence Lab',
+    'folder': 'subsystem-descriptor-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'subsystemOwnershipLab',
+    'name': 'Subsystem Ownership Decision Lab',
+    'folder': 'subsystem-ownership-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'superstructureStateLab',
+    'name': 'Superstructure State Coordination Lab',
+    'folder': 'superstructure-state-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'swerve',
     'name': 'Swerve Kinematics Playground',
     'folder': 'swerve',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'sysid',
     'name': 'System Identification Optimizer',
     'folder': 'sysid',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'sysidTuningLab',
+    'name': 'One-Change Tuning Experiment Lab',
+    'folder': 'sysid-tuning-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'telemetryGraphLab',
+    'name': 'Telemetry Graph Lab',
+    'folder': 'telemetry-graph-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'toleranceStackLab',
+    'name': 'Tolerance Stack Lab',
+    'folder': 'tolerance-stack-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
+    'id': 'toolChoiceScenarios',
+    'name': 'Tool Task Evidence Lab',
+    'folder': 'tool-choice-scenarios',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'trigbasics',
     'name': 'Trigonometry Basics',
     'folder': 'trigbasics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'triginverse',
     'name': 'Inverse Trigonometry',
     'folder': 'triginverse',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'trigrobotics',
     'name': 'Robotics Kinematics',
     'folder': 'trigrobotics',
-    'requiresContext': false
+    'requiresContext': false,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'troubleshooting',
     'name': 'MARSLib Error Triage Engine',
     'folder': 'troubleshooting',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   },
   {
     'id': 'vision',
     'name': 'PhotonVision Pose Estimator',
     'folder': 'vision',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
+  },
+  {
+    'id': 'visionUncertaintyLab',
+    'name': 'Vision Evidence Rejection Lab',
+    'folder': 'vision-uncertainty-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'wiringDiagnosticLab',
+    'name': 'Wiring Plan Diagnostic Lab',
+    'folder': 'wiring-diagnostic-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'zeroallocation',
     'name': 'Zero Allocation Memory Profiler',
     'folder': 'zeroallocation',
-    'requiresContext': true
+    'requiresContext': true,
+    'academyApproved': false,
+    'fidelity': null
   }
-];
+] as const;
 
-export { SIM_COMPONENTS, SIM_TAG_NAMES, SIM_METADATA };
+export { SIM_COMPONENTS, SIM_TAG_NAMES, SIM_METADATA, ACADEMY_SIM_COMPONENTS, ACADEMY_SIM_TAG_NAMES };

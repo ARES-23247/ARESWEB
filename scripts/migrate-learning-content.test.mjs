@@ -279,6 +279,32 @@ describe("learning content migration", () => {
     }, { db: store.db })).rejects.toThrow(/outside the stageable catalog/u);
   });
 
+  it("accepts a larger review artifact while keeping each migration batch bounded", async () => {
+    const draft = { title: "Lesson", status: "draft", approvalStatus: "pending_approval", content: "review me" };
+    const documents = Array.from({ length: 26 }, (_value, index) => ({
+      slug: `lesson-${index + 1}`,
+      data: { ...draft, title: `Lesson ${index + 1}` },
+    }));
+    const files = tempFiles({ documents });
+    const store = fakeFirestore();
+
+    const selected = await runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "stage-drafts",
+      stageSlugs: ["lesson-26"],
+    }, { db: store.db });
+    expect(selected).toMatchObject({ planned: 1, ready: 1, blocked: 0, readySlugs: ["lesson-26"] });
+
+    await expect(runLearningMigration({
+      ...files,
+      apply: false,
+      project: "aresweb-ci",
+      phase: "stage-drafts",
+    }, { db: store.db })).rejects.toThrow(/25-document bound/u);
+  });
+
   it("builds a bounded rollback manifest from hashes and paths", () => {
     const manifest = buildLearningRollbackManifest({
       project: "aresweb-ci",

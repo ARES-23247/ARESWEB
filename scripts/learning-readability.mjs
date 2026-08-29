@@ -59,13 +59,16 @@ export function analyzeLearningReadability(markdown) {
   const sentenceWordCounts = sentenceParts.map(
     (sentence) => sentence.match(/\b[A-Za-z][A-Za-z'-]*\b/gu)?.length ?? 0,
   );
+  const longestSentenceWords = Math.max(0, ...sentenceWordCounts);
+  const longestSentenceIndex = sentenceWordCounts.indexOf(longestSentenceWords);
   return {
     words: words.length,
     sentences,
     syllables,
     grade: Math.max(0, Number(grade.toFixed(1))),
     averageSentenceWords: Number((words.length / sentences).toFixed(1)),
-    longestSentenceWords: Math.max(0, ...sentenceWordCounts),
+    longestSentenceWords,
+    longestSentence: longestSentenceIndex >= 0 ? sentenceParts[longestSentenceIndex] : "",
   };
 }
 

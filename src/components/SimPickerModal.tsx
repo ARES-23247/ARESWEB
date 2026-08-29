@@ -14,10 +14,12 @@ export default function SimPickerModal({
 }) {
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const sims = registry.simulators.filter(sim =>
-    sim.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sim.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const sims = registry.simulators
+    .filter((sim) => sim.academyApproved)
+    .filter(sim =>
+      sim.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sim.id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -34,8 +36,8 @@ export default function SimPickerModal({
                 <TerminalSquare className="text-ares-red" size={20} aria-hidden="true" />
               </div>
               <div>
-                <Dialog.Title className="text-xl font-black text-white tracking-widest uppercase m-0">Inject Simulator</Dialog.Title>
-                <Dialog.Description className="text-xs text-white/60 font-mono m-0">Insert interactive React simulators directly into the page hierarchy.</Dialog.Description>
+                <Dialog.Title className="text-xl font-black text-white tracking-widest uppercase m-0">Insert Learning Interaction</Dialog.Title>
+                <Dialog.Description className="text-xs text-white/60 font-mono m-0">Choose a reviewed, accessible Academy interaction.</Dialog.Description>
               </div>
             </div>
             <Dialog.Close asChild>
@@ -55,7 +57,7 @@ export default function SimPickerModal({
              <input
                id="simSearch"
                type="text"
-               placeholder="Search active simulators (e.g., SwerveSim, PowerShedding, PhysicsCanvas)"
+               placeholder="Search approved learning interactions"
                className="w-full bg-transparent border-none text-white placeholder-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan font-mono text-sm"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
@@ -70,7 +72,7 @@ export default function SimPickerModal({
             {sims.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-white/60 gap-4">
                 <TerminalSquare size={48} className="opacity-50" aria-hidden="true" />
-                <p className="font-mono text-sm">No simulator matched the query &ldquo;{searchQuery}&rdquo;.</p>
+                <p className="font-mono text-sm">No approved learning interaction matched &ldquo;{searchQuery}&rdquo;.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -78,7 +80,7 @@ export default function SimPickerModal({
                     <button
                       key={sim.id}
                       onClick={() => onSelect(sim.id)}
-                      aria-label={`Inject ${sim.name} simulator`}
+                      aria-label={`Insert ${sim.name} learning interaction`}
                       className="group relative bg-white/5 border border-white/10 ares-cut-sm p-5 hover:border-ares-red transition-all flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan shadow-lg"
                     >
                       <div className="flex items-center gap-2 mb-3">

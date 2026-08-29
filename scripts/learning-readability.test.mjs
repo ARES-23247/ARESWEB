@@ -21,6 +21,7 @@ describe("Academy readability analysis", () => {
     const dense = analyzeLearningReadability("Deterministic computational architectures require comprehensive interoperability verification before operational deployment.");
     expect(simple.words).toBe(11);
     expect(simple.longestSentenceWords).toBe(4);
+    expect(simple.longestSentence).toBe("The robot is off.");
     expect(simple.grade).toBeLessThan(dense.grade);
   });
 });

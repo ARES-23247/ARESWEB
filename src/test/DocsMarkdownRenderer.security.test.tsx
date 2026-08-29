@@ -31,4 +31,13 @@ describe("DocsMarkdownRenderer embed policy", () => {
     expect(screen.queryByTitle("Embedded media")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("blocked");
   });
+
+  it("runs only interactions that completed Academy review", async () => {
+    const { rerender } = render(<DocsMarkdownRenderer content="<mechanismratioexplorer />" />);
+    expect(await screen.findByRole("heading", { name: "Mechanism Ratio Explorer" })).toBeVisible();
+
+    rerender(<DocsMarkdownRenderer content="<cyclinggearratios />" />);
+    expect(screen.getByRole("note")).toHaveTextContent("not been approved");
+    expect(screen.queryByText("Cycling Gear Ratios & Cadence")).not.toBeInTheDocument();
+  });
 });

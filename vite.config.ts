@@ -58,7 +58,6 @@ export default defineConfig({
           "assets/index.esm-*.js",
           "assets/{api,logger,preload-helper,firebaseAppCheck}-*.js",
           "assets/rolldown-runtime-*.js",
-          "assets/firebaseCore-*.js",
           "assets/vendor-{framer,radix,lucide}-*.js",
         ],
         // API and Firebase traffic must always reach the network. Only the
