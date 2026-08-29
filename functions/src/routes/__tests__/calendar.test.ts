@@ -165,6 +165,43 @@ describe("calendar API", () => {
   let documentRef: any;
   let batch: any;
 
+  it("preserves the calendar route contract and registration order", () => {
+    const routes = calendarRouter.stack.flatMap((layer) => {
+      if (!layer.route) return [];
+      return Object.entries(layer.route.methods)
+        .filter(([, enabled]) => enabled)
+        .map(([method]) => `${method.toUpperCase()} ${layer.route!.path}`);
+    });
+
+    expect(routes).toEqual([
+      "GET /events",
+      "GET /events/:id",
+      "GET /events/:id/photos",
+      "GET /events/:id/cover",
+      "GET /events/:id/photos/:photoId/media/:variant",
+      "POST /manage/:id/photos",
+      "PATCH /manage/:id/photos/:photoId/approve",
+      "DELETE /manage/:id/photos/:photoId",
+      "GET /manage",
+      "POST /manage",
+      "GET /manage/:id",
+      "PUT /manage/:id",
+      "DELETE /manage/:id",
+      "PATCH /manage/:id/restore",
+      "PATCH /manage/:id/publish",
+      "GET /manage/:id/occurrences",
+      "PUT /manage/:id/occurrences/:date",
+      "PATCH /manage/:id/occurrences/:date",
+      "PATCH /manage/:id/occurrences/:date/restore",
+      "GET /locations",
+      "POST /locations",
+      "PUT /locations/:id",
+      "DELETE /locations/:id",
+      "PATCH /locations/:id/restore",
+      "GET /feed",
+    ]);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     req = {
@@ -672,6 +709,36 @@ describe("calendar API", () => {
     next.mockClear();
     req.body = { photoId: "x".repeat(129) };
     await expectApiError("/manage/:id/photos", "post", 400, "VALIDATION_ERROR");
+  });
+
+  it("allows a calendar publisher to approve a pending event photo", async () => {
+    req.params = { id: "event-1", photoId: "photo-1" };
+    req.authorizationRole = "mentor";
+    (adminDb as any).__photo.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ publicationStatus: "pending", isDeleted: 0 }),
+    });
+
+    await handler("/manage/:id/photos/:photoId/approve", "patch")(req, res, next);
+
+    expect(batch.update).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        publicationStatus: "published",
+        approvedByUid: "member-1",
+      }),
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "calendar.photo.approved",
+        targetId: "event-1",
+        photoId: "photo-1",
+      }),
+    );
+    expect(batch.commit).toHaveBeenCalledOnce();
+    expect(res.json).toHaveBeenCalledWith({ success: true, approved: true });
+    expect(next).not.toHaveBeenCalled();
   });
 
   it("allows an owner or publisher to archive and denies another member", async () => {
@@ -1739,6 +1806,13 @@ describe("calendar recurrence", () => {
     collectionRef.get.mockResolvedValue({ docs: [thursday] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({
       docs: [
+        occurrenceExceptionDocument("weekly-1", "2026-09-10", {
+          overrides: {
+            title: "Later Practice",
+            dateStart: "2026-09-10T18:30:00.000Z",
+            dateEnd: "2026-09-10T20:30:00.000Z",
+          },
+        }),
         occurrenceExceptionDocument("weekly-1", "2026-09-03", {
             overrides: {
               title: "Scrimmage Practice",
@@ -1775,5 +1849,8 @@ describe("calendar recurrence", () => {
     expect(body).not.toContain("private recurrence notes");
     expect(body).not.toContain("Private home address");
     expect(body).toContain("LOCATION:Team Library\\, 123 Public Street");
+    expect(body.indexOf("RECURRENCE-ID:20260903T180000Z")).toBeLessThan(
+      body.indexOf("RECURRENCE-ID:20260910T180000Z"),
+    );
   });
 });

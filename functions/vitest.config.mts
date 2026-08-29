@@ -76,6 +76,30 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/routes/calendarFeedRoutes.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/calendarLocationRoutes.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/calendarManageRoutes.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/calendarOccurrenceRoutes.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/calendarPublicRoutes.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/calendarShared.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/routes/studioIntegrations.ts": {
           lines: 85,
           functions: 100,
