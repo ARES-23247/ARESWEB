@@ -14,12 +14,18 @@ function createBrowserHarness({
   attestationStatus = 200,
   attestationBody = "",
   securityAlert = "",
+  consoleErrors = [],
 } = {}) {
   let inquiryHandler;
   const close = vi.fn();
   const post = vi.fn().mockResolvedValue({ status: () => canaryStatus });
   const page = {
-    on: vi.fn(),
+    on: vi.fn((event, handler) => {
+      if (event !== "console") return;
+      for (const text of consoleErrors) {
+        handler({ type: () => "error", text: () => text });
+      }
+    }),
     url: vi.fn(() => pageUrl),
     route: vi.fn(async (_pattern, handler) => {
       inquiryHandler = handler;
@@ -113,6 +119,40 @@ describe("production browser security check", () => {
       serviceWorkers: "allow",
     });
     expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores only Google's report-only reCAPTCHA framing diagnostic", async () => {
+    const harness = createBrowserHarness({
+      consoleErrors: [
+        "Framing 'https://www.google.com/' violates the following report-only Content Security Policy directive: \"frame-ancestors 'self'\". The violation has been logged, but no further action has been taken.",
+      ],
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).resolves.toMatchObject({ appCheckVerified: true });
+  });
+
+  it("still fails on every other success-path browser error", async () => {
+    const harness = createBrowserHarness({
+      consoleErrors: [
+        "Failed to load resource: the server responded with a status of 403",
+      ],
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow(
+      "console.error: Failed to load resource: the server responded with a status of 403",
+    );
   });
 
   it("rejects the retired standard client and still closes the browser", async () => {
