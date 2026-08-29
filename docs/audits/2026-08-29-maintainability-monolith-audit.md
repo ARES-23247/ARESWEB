@@ -38,7 +38,7 @@ not evidence that the live site is currently broken.
 
 - Severity: Medium
 - Confidence: High
-- Status: Confirmed, live code
+- Status: Resolved by the calendar route-module release on 2026-08-29
 - Evidence:
   - `functions/src/routes/calendar.ts` is 1,294 physical lines.
   - The router begins at line 238 and registers 25 endpoints.
@@ -277,3 +277,20 @@ not rerun for this read-only audit.
    preserving changes.
 4. Decompose Academy and photo page coordinators (MT-04 and MT-05).
 5. Refactor interactive lessons only when they are already being changed (MT-06).
+
+## Remediation update — 2026-08-29
+
+- OPS-01 was resolved through reviewed curriculum release PR #216. The merged
+  release completed the production deployment workflow and production browser
+  security smoke.
+- MT-01 was resolved without changing the `/api/calendar` mount or any of its 25
+  ordered method/path contracts. `calendar.ts` is now a 37-line composition
+  root; public/media, managed lifecycle, occurrence, venue, feed, and shared
+  behavior live in focused modules.
+- The calendar regression suite now locks the complete ordered route contract,
+  exercises photo approval and recurrence-exception ordering, and passes 100%
+  function coverage plus at least 85% line coverage for every new module.
+- The complete repository gate passed after the refactor: 986 frontend tests,
+  806 Cloud Functions tests, 31 Firebase rules tests, 116 Playwright tests,
+  TypeScript and lint checks, production builds, bundle budgets, route-security
+  validation, and the high-severity production dependency audit.
