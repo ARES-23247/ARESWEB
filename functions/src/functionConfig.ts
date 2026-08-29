@@ -19,7 +19,7 @@ export const API_ROUTE_GROUPS = {
   core: ["/api/inquiries", "/api/profiles", "/api/content-admin"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
   drive: ["/api/drive"],
-  communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/zulip"],
+  communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/integrations/robotics-studio", "/api/zulip"],
 } as const;
 
 export const FUNCTION_SECRET_BINDINGS = {

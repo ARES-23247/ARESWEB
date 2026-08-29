@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -16,6 +16,16 @@ export default function LayoutWrapper({
   const isDashboard = pathname?.startsWith("/dashboard");
   const previousPath = useRef(pathname);
   const [routeAnnouncement, setRouteAnnouncement] = useState("");
+
+  useLayoutEffect(() => {
+    if (previousPath.current === pathname) return;
+
+    // React Router preserves the document scroll offset during client-side
+    // navigation. Links near the bottom of the tall mobile footer would
+    // otherwise leave the next page scrolled far below its heading, making the
+    // link appear unresponsive.
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
 
   useEffect(() => {
     if (previousPath.current === pathname) return;

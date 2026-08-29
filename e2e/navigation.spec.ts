@@ -147,6 +147,28 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     expect(targetHeights.every((height) => height >= 44)).toBe(true);
   });
 
+  test("mobile footer links open the destination at the top of the page", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+
+    const footer = page.getByRole("contentinfo", { name: "Site Footer" });
+    const westVirginiaLink = footer.getByRole("link", {
+      name: "Robotics in West Virginia",
+    });
+    await westVirginiaLink.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+    await westVirginiaLink.click();
+
+    await expect(page).toHaveURL(/\/robotics-west-virginia$/);
+    await expect(
+      page.getByRole("heading", { name: "Robotics in West Virginia" }),
+    ).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
   test("admin mobile navigation is an in-bounds modal and closes after navigation", async ({
     page,
     loginAs,
