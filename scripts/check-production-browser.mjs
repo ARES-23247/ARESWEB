@@ -12,6 +12,17 @@ const EXPECTED_HEADLESS_CONSOLE_FAILURES = [
   "console.error: [ERROR] Failed to retrieve App Check token:",
   "console.error: [ERROR] Join application submission failed.",
 ];
+const EXPECTED_GOOGLE_REPORT_ONLY_FAILURE =
+  "console.error: Framing 'https://www.google.com/' violates the following report-only Content Security Policy directive: \"frame-ancestors 'self'\".";
+
+function unexpectedClientFailures(failures, expectedFailures) {
+  return failures.filter(
+    (failure) =>
+      !expectedFailures.some((expected) =>
+        failure.startsWith(expected),
+      ),
+  );
+}
 
 export function readOption(argv, name, fallback) {
   const index = argv.indexOf(name);
@@ -188,8 +199,11 @@ export async function runProductionBrowserCheck({
           `App Check canary rejected the browser token with HTTP ${canaryResponse.status()}`,
         );
       }
-      if (clientFailures.length > 0) {
-        throw new Error(clientFailures.join("\n"));
+      const unexpectedFailures = unexpectedClientFailures(clientFailures, [
+        EXPECTED_GOOGLE_REPORT_ONLY_FAILURE,
+      ]);
+      if (unexpectedFailures.length > 0) {
+        throw new Error(unexpectedFailures.join("\n"));
       }
 
       return {
@@ -222,12 +236,10 @@ export async function runProductionBrowserCheck({
         `App Check canary accepted an unattested request with HTTP ${untrustedCanaryResponse.status()}`,
       );
     }
-    const unexpectedFailures = clientFailures.filter(
-      (failure) =>
-        !EXPECTED_HEADLESS_CONSOLE_FAILURES.some((expected) =>
-          failure.startsWith(expected),
-        ),
-    );
+    const unexpectedFailures = unexpectedClientFailures(clientFailures, [
+      ...EXPECTED_HEADLESS_CONSOLE_FAILURES,
+      EXPECTED_GOOGLE_REPORT_ONLY_FAILURE,
+    ]);
     if (unexpectedFailures.length > 0) {
       throw new Error(unexpectedFailures.join("\n"));
     }
