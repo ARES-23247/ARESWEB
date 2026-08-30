@@ -129,6 +129,14 @@
       "fidelity": "code-derived"
     },
     {
+      "id": "currentBudgetLab",
+      "name": "ARES FTC Current Budget Trace",
+      "path": "./current-budget-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "cyclingGearRatios",
       "name": "Cycling Gear Ratios & Cadence",
       "path": "./cycling-gear-ratios",

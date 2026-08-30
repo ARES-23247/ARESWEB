@@ -20,6 +20,7 @@ const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger
 const commissioningChecklistLab = lazy(() => import("../../sims/commissioning-checklist-lab"));
 const controlResponseLab = lazy(() => import("../../sims/control-response-lab"));
 const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
+const currentBudgetLab = lazy(() => import("../../sims/current-budget-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
 const driverInputCurveLab = lazy(() => import("../../sims/driver-input-curve-lab"));
 const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"));
@@ -132,6 +133,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
   coordinatetransformlab: coordinateTransformLab,
+  currentBudgetLab: currentBudgetLab,
+  currentbudgetlab: currentBudgetLab,
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
   driverInputCurveLab: driverInputCurveLab,
@@ -279,6 +282,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
   coordinatetransformlab: coordinateTransformLab,
+  currentBudgetLab: currentBudgetLab,
+  currentbudgetlab: currentBudgetLab,
   driverInputCurveLab: driverInputCurveLab,
   driverinputcurvelab: driverInputCurveLab,
   drivetrainChoiceLab: drivetrainChoiceLab,
@@ -476,6 +481,14 @@ const SIM_METADATA = [
     'id': 'coordinateTransformLab',
     'name': 'Coordinate Transform Lab',
     'folder': 'coordinate-transform-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'currentBudgetLab',
+    'name': 'ARES FTC Current Budget Trace',
+    'folder': 'current-budget-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'code-derived'

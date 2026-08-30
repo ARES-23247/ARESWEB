@@ -874,6 +874,34 @@ Students may inspect the source, run the focused test, and verify robot behavior
 normal safety process. Lead Coach review remains limited to publishing website posts. This local
 curriculum change does not publish or overwrite production data.
 
+## Continuous cycle: electrical units and current-budget boundaries
+
+This cycle improves the existing `electrical-voltage-current-power` lesson. Review the four source
+pins at ARES Robotics commit `f3de343a`: `CurrentBudgetManager.kt`,
+`CurrentBudgetManagerTest.kt`, `FtcPowerManager.kt`, and `FtcPowerManagerTest.kt`. The lesson now
+keeps ideal classroom unit math separate from the current ARES runtime path.
+
+Review the ideal explorer as a conceptual arithmetic tool. Its three invented currents add before
+voltage is multiplied by total current, and minutes are divided by 60 before watts are multiplied
+by hours. It must not claim to estimate a motor, reproduce the ARES current manager, read hardware,
+or approve a real electrical design.
+
+Review the new `currentBudgetLab` against `CurrentBudgetManager.ftcDefaults()`. The fixed profile is
+16 A warning, 20 A critical, 0.30 minimum scale, and 2 A hysteresis. From healthy, 16 A enters
+warning at scale 1.0. From warning, 17 A remains warning at scale 0.825 and 20 A enters critical at
+scale 0.30. Warning recovers only below 14 A, while critical leaves only below 18 A. Exact boundary
+values retain the more limited prior state because the source uses strict less-than recovery checks.
+
+Review the interaction at a narrow viewport and with keyboard-only input. It uses labeled native
+number and select controls, 44-pixel buttons, a live status message, deterministic reset, and a
+non-canvas text result. Its model limit must remain visible: it evaluates one source-derived state
+step with no registered motors and does not execute Kotlin, model voltage or heat, read a current
+sensor, apply output, or approve hardware.
+
+Students may inspect the source, run the focused test, and verify robot behavior through the team's
+normal safety process. Lead Coach review remains limited to publishing website posts. This local
+curriculum change does not publish or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
