@@ -49,15 +49,15 @@ describe("CurrentBudgetLab", () => {
     });
   });
 
-  it("supports accessible controls, presets, status, and reset", () => {
+  it("supports accessible controls, status, bounds, and reset", () => {
     render(<CurrentBudgetLab />);
     const state = screen.getByRole("combobox", { name: "Prior budget state" });
-    const current = screen.getByRole("spinbutton", { name: "Lesson current input" });
+    const current = screen.getByRole("spinbutton", { name: "Lesson current input (amps)" });
 
     fireEvent.change(state, { target: { value: "WARNING" } });
-    fireEvent.click(screen.getByRole("button", { name: "17.0 A" }));
+    fireEvent.change(current, { target: { value: "17" } });
     expect(screen.getByRole("status")).toHaveTextContent("warning zone");
-    expect(screen.getByText("82.5%")).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("82.5%");
 
     fireEvent.change(current, { target: { value: "30" } });
     expect(current).toHaveValue(24);
@@ -66,7 +66,7 @@ describe("CurrentBudgetLab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset trace" }));
     expect(state).toHaveValue("HEALTHY");
     expect(current).toHaveValue(16);
-    expect(screen.getByText("100.0%")).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("100.0%");
   });
 
   it("states the software and physical evidence limits", () => {

@@ -1,12 +1,13 @@
 import { gzipSync } from "node:zlib";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { collectEmbeddedAcademyInteractionFolders } from "./academy-interaction-bundles.mjs";
 
 const config = JSON.parse(
   readFileSync("config/bundle-budgets.json", "utf-8"),
 );
-const roboticsCurriculum = JSON.parse(
-  readFileSync("content/learning/robotics-curriculum-plan.json", "utf-8"),
+const simRegistry = JSON.parse(
+  readFileSync("src/sims/simRegistry.json", "utf-8"),
 );
 const distDir = join(process.cwd(), "dist");
 const assetsDir = join(distDir, "assets");
@@ -44,13 +45,15 @@ try {
   // some modes (for example `editor.api2-*` in the E2E build). Keep every
   // disambiguated editor API chunk in the optional-editor budget.
   const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor\.api\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|prettier|sucrase)-/;
-  const academyInteractionIds = new Set(
-    [
-      ...roboticsCurriculum.tracks.flatMap((track) => track.lessons.map((lesson) => lesson.interaction)),
-      ...roboticsCurriculum.existingLessonInteractionCandidates.map((candidate) => candidate.interaction),
-    ].filter(Boolean),
-  );
-  const builtAcademyInteractionIds = [...academyInteractionIds].filter((interaction) =>
+  const learningDocuments = [];
+  for (const file of readdirSync("content/learning", { recursive: true })) {
+    if (!String(file).endsWith(".md")) continue;
+    learningDocuments.push(readFileSync(join("content/learning", String(file)), "utf-8"));
+  }
+  const builtAcademyInteractionIds = collectEmbeddedAcademyInteractionFolders(
+    learningDocuments,
+    simRegistry.simulators,
+  ).filter((interaction) =>
     existsSync(join("src", "sims", interaction, "index.tsx")),
   );
   const academyInteractiveJs = lazyJs.filter((file) =>

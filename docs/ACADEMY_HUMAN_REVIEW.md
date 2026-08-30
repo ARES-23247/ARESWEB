@@ -986,6 +986,42 @@ Students may inspect the source, run the focused tests, and verify robot behavio
 normal safety process. Lead Coach review remains limited to publishing website posts. This local
 curriculum change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: existing workspace-ownership lesson depth
+
+This cycle improves the existing `ares-workspace-map` lesson; it does not add a replacement title.
+The protected `ARES-Robotics` monorepo at `1c92c61c` remains the authoritative source and identifies
+ARES 11.1.0 / Studio 2.0.2. Review the distinction between one source repository and the separate
+FTC, FRC, library, starter, simulator, and Studio runtimes and Gradle builds.
+
+The old embedded Subsystem Ownership Decision Lab did not match this lesson's activity. It asked
+about descriptor, generated-starter, and hand-authored subsystem paths instead of repository
+ownership. The new ARES Workspace Ownership Lab covers six reviewed boundaries: shared library,
+FTC, FRC, Studio, starter sources, and release/build policy. It gives an explicit consumer check,
+resets feedback when either selection changes, and uses native labeled selects and buttons with
+44-pixel targets and a live status result.
+
+The lab is a code-derived teaching aid. It does not inspect a local checkout, branch, file imports,
+generated output, build graph, or release artifacts. A correct answer proves only that the selected
+scenario matches the reviewed ownership map. Confirm keyboard operation, touch targets, narrow
+reflow, screen-reader labels and status, reduced-motion behavior, and deterministic reset.
+
+Four sources are pinned to the protected monorepo commit: the product map, release manifest,
+transition policy, and dependency-ordered build matrix. Remote catalog verification must recompute
+all four Git blob hashes. This local curriculum change does not stage, publish, or overwrite
+production data.
+
+The bundle check now measures the approved interactions that are actually embedded in lesson
+Markdown. The old curriculum-plan lookup could omit an authored interaction or count a proposed
+interaction that the lesson did not use. Review that every built, approved custom lesson tag has an
+independently lazy chunk and contributes to the Academy aggregate and per-interaction budgets. The
+aggregate allowance grows by the established one-interaction increment of 8 KB raw / 3 KB gzip for
+this lab; the 8 KB raw / 2.6 KB gzip per-interaction cap remains unchanged.
+
+To keep those budgets strict, the existing Current Budget and Task Sequence labs now use compact,
+labeled native inputs instead of repeated cards and preset grids. Their source-derived evaluation
+functions, bounded inputs, live results, reset behavior, and visible model limits are unchanged.
+Review both at a narrow viewport and with keyboard-only input before this release is approved.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

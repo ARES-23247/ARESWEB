@@ -2,13 +2,14 @@
 
 ## Purpose and prerequisites
 
-ARES keeps its main software in one **monorepo**, which means one Git repository holds several
-related projects. This lesson helps you find the right home for a change before you edit code.
-You do not need any earlier lesson. You only need the current ARES Robotics folder or its GitHub
-page and a place to record your answers.
+ARES keeps its authoritative source in one **monorepo**, which means one Git repository holds
+several related products. This lesson helps you find the right home for a change before you edit
+code. You do not need an earlier lesson. You only need the current ARES Robotics source tree or its
+GitHub page and a place to record your answers.
 
-The folder names below come from ARES 11.1.0. Each product still has its own Gradle build because
-FTC, FRC, the shared library, and the desktop app use different tools and run in different places.
+The protected release manifest currently names ARES 11.1.0 and Studio 2.0.2. Each product still has
+its own Gradle build because FTC, FRC, the shared library, and the desktop app use different tools
+and run in different places. One source repository does not mean one program or one runtime.
 
 ## Vocabulary
 
@@ -19,6 +20,7 @@ FTC, FRC, the shared library, and the desktop app use different tools and run in
 - **Generated file:** a result made by a tool from a canonical source.
 - **Runtime:** code that runs in a robot, simulator, or desktop app.
 - **Adapter:** code that connects a shared idea to one league or device.
+- **Release identity:** one version name tied to one exact source tree and set of artifacts.
 
 ## Worked example
 
@@ -30,6 +32,11 @@ league consumers should be checked because both use that shared behavior.
 Now suppose one screen in ARES Robotics Studio has the wrong label. That work belongs in
 `ARES-Analytics/`, which owns Studio, local analytics, replay, and its optional gateway. There is no
 reason to put a screen-only change in the robot library.
+
+A third example is a version shared by every product. That does not belong in one consumer's Gradle
+file. `release/ares-versions.properties` owns the release identity. `build.ps1` then tests the
+library first and the consumers against that same version. A changed library tree needs a new
+version; a packaging retry must not put different bytes under an old version.
 
 ## Visual model
 
@@ -46,7 +53,7 @@ flowchart LR
 ```
 
 The source monorepo does not turn FTC and FRC into one runtime. Their device adapters, lifecycle,
-build, and simulator remain separate.
+build, and simulator remain separate. The shared library points inward; league products consume it.
 
 ## Hands-on activity
 
@@ -64,12 +71,13 @@ Open the workspace and find these owners:
 | `build-logic/` and `release/` | Shared build rules and immutable release identity |
 
 Use the ownership lab below. Sort each proposed change by the product that should own it. The lab
-is a conceptual decision tool. It does not inspect the repository or prove that a file is correct.
+uses the reviewed monorepo map, but it does not inspect your branch or prove a file is correct.
 
-<subsystemownershiplab />
+<workspaceownershiplab />
 
-Then choose three real files from the workspace. For each file, record its path, likely owner, and
-one consumer that could be affected by a change.
+Try every scenario, including FRC, a starter, and release tooling. Then choose three real files from
+the workspace. For each file, record its path, likely owner, and one consumer that could be affected
+by a change.
 
 ## Checkpoints
 
@@ -86,6 +94,10 @@ Do not hand-edit generated output because the next generation step can replace i
 
 If two folders appear to contain similar code, check which one is the canonical source. The starter
 folders own the clean starter source, while public starter repositories are release mirrors.
+
+If a local folder contains older standalone component checkouts, do not assume they are current.
+Check the repository root and branch before editing. The protected monorepo is the source authority;
+legacy repositories remain readable for history and immutable releases during the transition.
 
 If a change seems to need edits in every product, pause and look for a shared contract. Copying the
 same fix into FTC, FRC, and Studio can hide a missing shared owner.
@@ -110,6 +122,7 @@ change is already correct.
 3. Which folder owns the ARES Robotics Studio user interface?
 4. Why should generated files not be edited by hand?
 5. What is the difference between a starter source and a public release mirror?
+6. Why must a changed source tree receive a new release identity?
 
 ## Extension challenge
 

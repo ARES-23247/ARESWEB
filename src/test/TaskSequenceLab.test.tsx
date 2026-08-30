@@ -55,7 +55,7 @@ describe("TaskSequenceLab", () => {
 
   it("supports native controls, live conflict feedback, and deterministic reset", () => {
     render(<TaskSequenceLab />);
-    fireEvent.click(screen.getByRole("radio", { name: "Parallel" }));
+    fireEvent.change(screen.getByLabelText("Task group"), { target: { value: "parallel" } });
     fireEvent.change(screen.getByLabelText("Task B resource"), {
       target: { value: "DRIVE" },
     });
@@ -65,13 +65,13 @@ describe("TaskSequenceLab", () => {
     fireEvent.change(screen.getByLabelText("Task B resource"), {
       target: { value: "INTAKE" },
     });
-    fireEvent.click(screen.getByRole("radio", { name: "One child fails" }));
+    fireEvent.change(screen.getByLabelText("Trace event"), { target: { value: "failure" } });
     expect(
       screen.getByText(/A failed child makes the group fail/u),
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    expect(screen.getByRole("radio", { name: "Sequence" })).toBeChecked();
+    expect(screen.getByLabelText("Task group")).toHaveValue("sequence");
     expect(screen.getByLabelText("Task A resource")).toHaveValue("DRIVE");
     expect(screen.getByLabelText("Task B resource")).toHaveValue("INTAKE");
     expect(screen.getByRole("status")).toHaveTextContent("Tree can be built");

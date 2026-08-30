@@ -86,7 +86,7 @@
         "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt"
       ],
       "lessons": [
-        { "id": "electrical-voltage-current-power", "title": "Voltage, Current, Power, and Energy", "level": "beginner", "interaction": "power-budget-explorer", "sourceGap": null },
+        { "id": "electrical-voltage-current-power", "title": "Voltage, Current, Power, and Energy", "level": "beginner", "interaction": "current-budget-lab", "sourceGap": null },
         { "id": "electrical-battery-protection", "title": "Batteries, Breakers, Fuses, and Brownouts", "level": "beginner", "interaction": "brownout-sandbox", "sourceGap": "official FTC and FRC electrical rules required" },
         { "id": "electrical-wiring-connectors", "title": "Wire, Connectors, Polarity, and Strain Relief", "level": "beginner", "interaction": "wiring-diagnostic-lab", "sourceGap": "authentic team wiring photos required" },
         { "id": "electrical-motors-servos", "title": "Choose Motors, Gearmotors, and Servos", "level": "intermediate", "interaction": "motor-servo-selector", "sourceGap": "approved manufacturer specifications required" },
@@ -118,7 +118,7 @@
         { "id": "ftc-gui-owned-indicator-lights", "title": "Author GUI-Owned FTC Indicator Lights", "level": "intermediate", "interaction": "subsystem-descriptor-lab", "sourceGap": null },
         { "id": "programming-code-subsystem", "title": "Author a Code-First or Hybrid Subsystem", "level": "intermediate", "interaction": "subsystem-ownership-lab", "sourceGap": null },
         { "id": "ftc-season-composition-and-safe-lifecycle", "title": "Coordinate Subsystems and Fail Safe", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
-        { "id": "programming-safe-task-sequences", "title": "Build Safe Task Sequences in ARESLib", "level": "advanced", "interaction": "superstructure-state-lab", "sourceGap": null },
+        { "id": "programming-safe-task-sequences", "title": "Build Safe Task Sequences in ARESLib", "level": "advanced", "interaction": "task-sequence-lab", "sourceGap": null },
         { "id": "programming-tests-parity", "title": "Test Robot Logic Across Mocks and Simulation", "level": "advanced", "interaction": "parity-evidence-lab", "sourceGap": null }
       ]
     },
@@ -206,6 +206,7 @@
     }
   ],
   "existingLessonInteractionCandidates": [
+    { "slug": "ares-workspace-map", "interaction": "workspace-ownership-lab", "purpose": "sort shared, league, Studio, starter, and release changes into the current monorepo ownership boundaries" },
     { "slug": "robot-input-to-output", "interaction": "robot-flow-tracer", "purpose": "trace driver and sensor paths through state and cached I/O" },
     { "slug": "ftc-gui-owned-indicator-lights", "interaction": "subsystem-descriptor-lab", "purpose": "trace independent targets and safe outputs from a real descriptor" },
     { "slug": "ftc-season-composition-and-safe-lifecycle", "interaction": "superstructure-state-lab", "purpose": "step through disabled, health, transient-posture, and measured-guard decisions" },
@@ -218,7 +219,6 @@
     { "slug": "redux-state-actions-reducers", "interaction": "redux-state-tracer", "purpose": "trace state changes without touching hardware" },
     { "slug": "ftc-starter-first-autonomous", "interaction": "autonomous-path-lab", "purpose": "inspect a bounded generated routine before simulation" },
     { "slug": "ftc-driver-input-shaping-and-frames", "interaction": "driver-input-curve-lab", "purpose": "compare deadband and response curves" },
-    { "slug": "swerve-and-kinematics", "interaction": "swerve", "purpose": "connect chassis motion to module states" },
     { "slug": "telemetry-and-control", "interaction": "telemetry-graph-lab", "purpose": "separate control state from displayed telemetry" },
     { "slug": "autonomous-and-vision", "interaction": "vision-uncertainty-lab", "purpose": "show delayed measurements and visible rejection reasons" },
     { "slug": "simulation-is-not-hardware-validation", "interaction": "evidence-level-scenarios", "purpose": "classify what each test boundary can prove" }

@@ -753,6 +753,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "workspaceOwnershipLab",
+      "name": "ARES Workspace Ownership Lab",
+      "path": "./workspace-ownership-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "zeroallocation",
       "name": "Zero Allocation Memory Profiler",
       "path": "./zeroallocation",

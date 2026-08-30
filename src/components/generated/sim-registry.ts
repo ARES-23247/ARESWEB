@@ -98,6 +98,7 @@ const troubleshooting = lazy(() => import("../../sims/troubleshooting"));
 const vision = lazy(() => import("../../sims/vision"));
 const visionUncertaintyLab = lazy(() => import("../../sims/vision-uncertainty-lab"));
 const wiringDiagnosticLab = lazy(() => import("../../sims/wiring-diagnostic-lab"));
+const workspaceOwnershipLab = lazy(() => import("../../sims/workspace-ownership-lab"));
 const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 
 // ── Sim Component Registry ───────────────────────────────────────────────
@@ -261,6 +262,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   visionuncertaintylab: visionUncertaintyLab,
   wiringDiagnosticLab: wiringDiagnosticLab,
   wiringdiagnosticlab: wiringDiagnosticLab,
+  workspaceOwnershipLab: workspaceOwnershipLab,
+  workspaceownershiplab: workspaceOwnershipLab,
   zeroallocation: zeroallocation,
 };
 
@@ -357,6 +360,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   visionuncertaintylab: visionUncertaintyLab,
   wiringDiagnosticLab: wiringDiagnosticLab,
   wiringdiagnosticlab: wiringDiagnosticLab,
+  workspaceOwnershipLab: workspaceOwnershipLab,
+  workspaceownershiplab: workspaceOwnershipLab,
 };
 const ACADEMY_SIM_TAG_NAMES = Object.keys(ACADEMY_SIM_COMPONENTS);
 
@@ -1113,6 +1118,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'
+  },
+  {
+    'id': 'workspaceOwnershipLab',
+    'name': 'ARES Workspace Ownership Lab',
+    'folder': 'workspace-ownership-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'zeroallocation',

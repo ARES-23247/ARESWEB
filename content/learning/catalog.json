@@ -34,7 +34,7 @@
       "slug": "ares-workspace-map",
       "title": "The ARES Software Workspace",
       "category": "Robotics & Engineering",
-      "description": "Learn which directory and build owns shared robotics behavior, league code, starters, and ARES Robotics Studio in the ARES monorepo.",
+      "description": "Place changes in the correct monorepo product, distinguish shared and league-owned behavior, and identify the release boundary and consumer checks.",
       "contentFile": "robotics-foundations/01-ares-workspace.md",
       "subject": "robotics-engineering",
       "topics": ["software architecture", "repository ownership", "FTC", "FRC"],
@@ -43,10 +43,15 @@
       "estimatedMinutes": 50,
       "pathMemberships": [{ "pathId": "robotics-foundations", "order": 1 }],
       "prerequisites": [],
-      "objectives": ["Identify the responsibility and boundary of each top-level ARES monorepo directory.", "Distinguish canonical documents, generated output, and league adapters.", "Choose the owner, build, and consumer checks for a proposed change."],
+      "objectives": ["Identify the current ARES source-monorepo folders and their owners.", "Sort shared, FTC, FRC, Studio, starter, and release changes into the correct source boundary.", "Explain why one monorepo still has separate Gradle builds, runtimes, and simulators.", "Choose the right build and consumer checks for a proposed change."],
       "platforms": ["hardware-neutral"],
       "instructionalContractVersion": 2,
-      "sourceReferences": [{ "label": "ARES Robotics monorepo map", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/README.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "README.md", "blobHash": "1d09ee87be6f702faa7c7ddc7289666545fcece0" }],
+      "sourceReferences": [
+        { "label": "Current monorepo product and dependency map", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/README.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "README.md", "blobHash": "1d09ee87be6f702faa7c7ddc7289666545fcece0" },
+        { "label": "Canonical protected release identity", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/release/ares-versions.properties", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "release/ares-versions.properties", "blobHash": "73b495cc17c99ce3a937cda2592c8f6ed71540e5" },
+        { "label": "Current source and legacy-repository transition policy", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/RELEASE_TRANSITION.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "RELEASE_TRANSITION.md", "blobHash": "45a99982db9a4bb418bfea58d865c21cd5823a95" },
+        { "label": "Dependency-ordered monorepo build matrix", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/build.ps1", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "build.ps1", "blobHash": "877eabdbc9f3cb4576a4c221094c2199451ddd36" }
+      ],
       "appliesToVersion": "ARES 11.1.0; Studio 2.0.2",
       "safetyScope": "none"
     },
