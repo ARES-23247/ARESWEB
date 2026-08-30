@@ -567,8 +567,8 @@ change does not stage, publish, or overwrite production data.
 
 This cycle improves the existing `controls-motion-profiles` lesson and its Motion Profile Lab. It
 does not add a replacement title. Review the grade 6-8 cruise-boundary calculation, phase and unit
-explanations, planned-versus-measured evidence activity, and description of the current ARES
-profile's reverse-motion, nonzero boundary-speed, and fail-closed behavior.
+explanations, planned-versus-measured evidence activity, and description of the current ARESLib
+profile's reverse-motion, nonzero boundary-speed, next-state, and invalid-input behavior.
 
 The interaction now exposes the exact rest-to-rest cruise boundary, speed-up time, and signed
 acceleration in its text table. Confirm native keyboard and touch controls, narrow-screen reflow,
@@ -578,10 +578,16 @@ boundary, it must report a trapezoidal profile with positive cruise time.
 
 The interaction plans only positive, one-dimensional, rest-to-rest motion. It does not run the ARES
 profile class, model reverse motion or nonzero start and goal speeds, control a mechanism, read a
-sensor, predict tracking error, or prove physical limits. The two reviewed sources are pinned to
-ARES Robotics commit `f3de343a` and the ARES 11.1.0 / Studio 2.0.3 identity. Their local files still
-hash to the listed reviewed Git blobs. Remote verification must recompute those hashes. This local
-curriculum change does not stage, publish, or overwrite production data.
+sensor, predict tracking error, or prove physical limits. The browser samples one whole profile;
+the current ARESLib method writes one next state per call. Review the fallback table carefully: bad
+time, constraints, or goal data copy a finite current state, while a non-finite current state writes
+position and velocity as zero. The profile result does not identify the fault, so the lesson must
+not imply that it replaces separate diagnostics.
+
+The implementation and focused behavior tests are pinned directly to ARESLib commit `13599358`
+and version 10.1.0. Their clean local files hash to the listed reviewed Git blobs. Remote
+verification must still recompute both hashes. This local curriculum change does not stage,
+publish, or overwrite production data.
 
 ## Continuous cycle: existing odometry lesson depth
 

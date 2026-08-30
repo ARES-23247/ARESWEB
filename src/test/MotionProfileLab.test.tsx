@@ -73,5 +73,6 @@ describe("MotionProfileLab", () => {
     expect(screen.getByRole("note")).toHaveTextContent(
       "reverse moves and nonzero boundary speeds",
     );
+    expect(screen.getByRole("note")).toHaveTextContent("does not execute ARES");
   });
 });

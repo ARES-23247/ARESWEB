@@ -323,7 +323,7 @@
       "slug": "controls-motion-profiles",
       "title": "Plan Smooth Motion with Limits",
       "category": "Robotics & Engineering",
-      "description": "Calculate the cruise boundary, inspect phase timing and acceleration evidence, and separate planned references from measured robot behavior.",
+      "description": "Calculate the cruise boundary, inspect phase timing and acceleration evidence, and compare the browser's full plan with ARESLib's next-state and fallback contract.",
       "contentFile": "controls/04-motion-profiles.md",
       "subject": "robotics-engineering",
       "topics": ["motion profiles", "velocity", "acceleration", "setpoints"],
@@ -332,13 +332,13 @@
       "estimatedMinutes": 90,
       "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 5 }],
       "prerequisites": ["controls-pid"],
-      "objectives": ["Calculate when a rest-to-rest profile becomes triangular or trapezoidal.", "Read planned position, velocity, acceleration, and phase timing evidence.", "Compare velocity and acceleration constraints through one-change trials.", "Separate a browser reference plan from measured robot evidence and the more general ARES contract."],
+      "objectives": ["Calculate when a rest-to-rest profile becomes triangular or trapezoidal.", "Read planned position, velocity, acceleration, and phase timing evidence.", "Compare velocity and acceleration constraints through one-change trials.", "Distinguish the browser's full sampled plan from ARESLib's one-step output and exact invalid-input fallbacks."],
       "platforms": ["hardware-neutral", "simulator"],
       "sourceReferences": [
-        { "label": "ARESLib trapezoid profile", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/profile/TrapezoidProfile.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/profile/TrapezoidProfile.kt", "blobHash": "09620235d35a047e17ff2cfc964bba31d260e47f" },
-        { "label": "Studio motion-profile teaching lab", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/MotionProfileLabCard.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/MotionProfileLabCard.kt", "blobHash": "4b4ec7e91f63048c986fbe01aa21f14e08027e5f" }
+        { "label": "Current ARESLib trapezoid profile", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/control/profile/TrapezoidProfile.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/control/profile/TrapezoidProfile.kt", "blobHash": "09620235d35a047e17ff2cfc964bba31d260e47f" },
+        { "label": "Motion-profile behavior and boundary tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/control/profile/TrapezoidProfileTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/control/profile/TrapezoidProfileTest.kt", "blobHash": "0f2569e70bd7e8af84182fa79be8b97d98520b2c" }
       ],
-      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
+      "appliesToVersion": "ARESLib 10.1.0",
       "safetyScope": "simulation-only",
       "instructionalContractVersion": 2
     },

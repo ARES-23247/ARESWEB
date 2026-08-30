@@ -91,16 +91,27 @@ The lower peak is not a failure. It is the speed that leaves enough distance to 
 ### How ARES goes beyond this example
 
 The ARES `TrapezoidProfile` accepts a current position and velocity, a goal position and velocity,
-the two constraints, a time step, and a reusable output state. It supports forward and reverse
-moves. It also supports nonzero start and goal velocities.
+the two constraints, a time step, and a reusable output state. Each call writes **one next state**.
+Robot code calls it again on the next loop. The browser lab is different: it samples and draws one
+whole classroom profile at once. ARES also supports forward and reverse moves and nonzero start and
+goal velocities.
 
 If the mechanism is already moving too fast to stop at a nearby goal, ARES can brake, pass the goal,
 reverse, and return. This prevents an impossible instant stop. The browser lab does not model that
 case.
 
-ARES checks every input. Invalid time steps, limits, or states cause it to hold the current valid
-state instead of jumping to the goal. A goal speed above the velocity limit also holds the current
-state. The browser lab throws an error for invalid inputs because its sliders never send them.
+ARES checks every input, but not every bad input has the same fallback:
+
+| Input problem | State written by current ARESLib |
+| --- | --- |
+| Bad time step, limit, or goal while the current state is finite | Copy the current state |
+| Non-finite current position or velocity | Write position `0` and velocity `0` |
+| Goal speed above the velocity limit | Copy the current state |
+| A profile distance calculation becomes invalid | Copy the current state |
+
+These fallbacks avoid jumping to the goal. The profile method does not return a fault reason, so
+robot diagnostics must report invalid inputs separately. The browser lab throws an error for bad
+inputs because its sliders never send them during normal use.
 
 ARES writes each result into a provided state object. That design avoids creating new objects in a
 fast robot loop. This memory detail matters to robot software, but it does not change the shape you
@@ -222,6 +233,11 @@ states, output, current, and voltage. Find the first time tracking error grows.
 If a real mechanism overshoots, do not blame the profile from one graph. Feedback gains,
 feedforward, load, backlash, saturation, sensor delay, and structure movement may also matter.
 
+If robot telemetry suddenly reports position `0` and velocity `0`, do not assume the mechanism
+really moved there. Check whether the current profile state contained `NaN` or infinity. A finite
+held state can instead point to a bad time step, constraint, goal, or goal speed. Add a separate
+diagnostic because the profile result does not say which fallback occurred.
+
 ## Evidence artifact
 
 Submit a 12-row trial table:
@@ -249,8 +265,9 @@ the separate Lead Coach review workflow.
 4. Why can a high velocity limit remain unreached?
 5. What does negative acceleration mean during a positive move?
 6. Why is a planned reference not proof of measured motion?
-7. How does the real ARES profile respond to invalid limits?
-8. Name two cases the real ARES profile supports that this browser lab omits.
+7. How does the real ARES profile respond to invalid limits when the current state is finite?
+8. What does it write when the current position or velocity is non-finite?
+9. Name two cases the real ARES profile supports that this browser lab omits.
 
 ## Extension challenge
 

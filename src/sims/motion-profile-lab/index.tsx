@@ -308,11 +308,11 @@ export default function MotionProfileLab() {
         role="note"
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
-        <strong>Model limit:</strong> This source-derived lab plans only
-        positive, one-dimensional, rest-to-rest motion. ARES also handles
-        reverse moves and nonzero boundary speeds. Neither model proves
-        traction, load, current, backlash, controller tracking, or safe physical
-        limits.
+        <strong>Model limit:</strong> This classroom lab uses the same basic
+        rest-to-rest motion math, but it does not execute ARES. It plans only
+        positive, one-dimensional motion. ARES also handles reverse moves and
+        nonzero boundary speeds. Neither model proves traction, load, current,
+        backlash, controller tracking, or safe physical limits.
       </p>
     </section>
   );
