@@ -402,11 +402,11 @@
     },
     {
       "id": "parityEvidenceLab",
-      "name": "Adapter Parity Evidence Lab",
+      "name": "Current ARES Parity Evidence Lab",
       "path": "./parity-evidence-lab",
       "requiresContext": false,
       "academyApproved": true,
-      "fidelity": "conceptual"
+      "fidelity": "code-derived"
     },
     {
       "id": "performance",

@@ -56,6 +56,18 @@
           "commit": "34845d750ebb69bea536d509538bf5cde3f8b478"
         }
       ]
+    },
+    "ARES-FTC": {
+      "current": {
+        "revision": "ares-ftc-10.1.0",
+        "commit": "0cb74896a60fd7a3b46bb70ca04440aaac91fc6a"
+      },
+      "approved": [
+        {
+          "revision": "ares-ftc-10.1.0",
+          "commit": "0cb74896a60fd7a3b46bb70ca04440aaac91fc6a"
+        }
+      ]
     }
   }
 }

@@ -715,6 +715,41 @@ Students retain authority to verify robot functionality. A mentor review request
 optional learning prompt. Mentor or Lead Coach approval remains limited to website publishing. This
 local curriculum change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: current adapter-parity evidence
+
+This cycle improves the existing `programming-tests-parity` lesson. It does not create a competing
+lesson. The earlier lesson sent students to a `simulation-foundation` contract that is absent from
+current ARESLib. Confirm that the revised lesson instead uses the live generated verification
+contract, generator, contract test, FTC simulator test, and simulator build boundary.
+
+Review the central correction carefully. Current `HARDWARE_SIMULATION_PARITY` has the evidence level
+`COMPILED_GENERATED_CODE`. It proves that generated physical and mock sources share a contract. It
+does not run both adapters. The current generated behavior tests construct `Mock...IO`; they test
+safe startup, failed writes, homing/current permits, limits, disabled stop, invalid feedback, and
+cleanup, plus checks selected by subsystem safety settings. They do not execute FTC hardware.
+
+The current FTC file named `GeneratedSubsystemSimulatorParityTest` registers one
+`RecordingSubsystem` and observes `read:1000`, `write:0.5`, and `close` on the same instance. Review
+the lesson and interaction for truthful lifecycle language. Neither may present this filename as
+proof of hardware-versus-mock output parity. A genuine paired runtime finding needs a team-authored
+case with equal input, units, initial state, clock, fault, expected result, and assertions.
+
+The revised code-derived interaction keeps compile evidence, generated mock behavior, FTC lifecycle
+integration, and a team-authored paired test separate. Adapter-result controls stay disabled until
+the paired test is selected. Check keyboard access, native labels, disabled-control explanation,
+44-pixel targets, live finding announcements, narrow-screen reflow, deterministic reset, and the
+explicit model limit. The interaction does not run Gradle or connect to a robot.
+
+ARESLib sources remain pinned to clean files at `13599358` (`areslib-10.1.0`). This cycle adds the
+current ARES-FTC repository at `0cb74896` (`ares-ftc-10.1.0`) as an approved authority. All five
+lesson references require exact remote Git blob verification. Unrelated dirty files in the local
+ARESLib and ARES-FTC worktrees were inspected but not changed or used as pinned source evidence.
+
+Students may verify robot functionality using the team's normal safety process. Software and
+simulation results stay in their own evidence columns. Website publishing continues through the
+separate Lead Coach review flow. This local curriculum change does not publish or overwrite
+production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

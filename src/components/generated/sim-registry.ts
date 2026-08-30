@@ -754,11 +754,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'parityEvidenceLab',
-    'name': 'Adapter Parity Evidence Lab',
+    'name': 'Current ARES Parity Evidence Lab',
     'folder': 'parity-evidence-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'performance',

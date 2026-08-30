@@ -194,20 +194,76 @@
       "slug": "programming-tests-parity",
       "title": "Test Robot Logic Across Mocks and Simulation",
       "category": "Robotics & Engineering",
-      "description": "Run the same bounded safety cases against platform and simulated adapters, preserve mismatches, and keep physical proof separate.",
+      "description": "Separate generated compile checks, mock behavior tests, FTC simulator lifecycle evidence, and a team-authored paired adapter test before making a narrow parity claim.",
       "contentFile": "programming/08-tests-parity.md",
       "subject": "robotics-engineering",
-      "topics": ["contract tests", "mock adapters", "simulation", "fault injection", "evidence"],
+      "topics": [
+        "contract tests",
+        "generated tests",
+        "mock adapters",
+        "simulation",
+        "lifecycle",
+        "evidence"
+      ],
       "contentType": "guided-lab",
       "level": "advanced",
-      "estimatedMinutes": 75,
+      "estimatedMinutes": 100,
       "pathMemberships": [{ "pathId": "programming-with-ares", "order": 9 }],
-      "prerequisites": ["ftc-season-composition-and-safe-lifecycle", "simulation-is-not-hardware-validation"],
-      "objectives": ["Design one contract-test case for both platform and simulated adapters.", "Classify aligned, incomplete, failed, and mismatched evidence without hiding errors.", "Separate adapter parity evidence from physical-robot verification."],
+      "prerequisites": [
+        "ftc-season-composition-and-safe-lifecycle",
+        "simulation-is-not-hardware-validation"
+      ],
+      "objectives": [
+        "Explain why the generated hardware-and-simulation parity item is compile evidence, not a paired runtime test.",
+        "Distinguish generated mock behavior tests from the current FTC simulator lifecycle test.",
+        "Design and classify one team-authored paired adapter case without hiding a mismatch.",
+        "Keep source, test, simulation, and student-led physical evidence separate."
+      ],
       "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
       "instructionalContractVersion": 2,
-      "sourceReferences": [{ "label": "Generated subsystem verification contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "blobHash": "e8329a476b140e87a5d2c9763e0a4a91ede72276" }, { "label": "Shared simulation device contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationDeviceContract.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationDeviceContract.kt", "blobHash": "4c504dab907d0dc876502e5006f2a7ed1aa87ac7" }, { "label": "FTC generated subsystem simulator parity test", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt", "blobHash": "f16e9785cb18bd8cdf43b1cc0fa52e6cb30622e4" }, { "label": "ARESLib module and simulator boundaries", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/docs/architecture.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/docs/architecture.md", "blobHash": "c096b51711c57f37d8da7799ccfceb07c0b1d2b0" }, { "label": "FTC build, test, and simulation workflow", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARES-FTC/docs/DEVELOPMENT.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARES-FTC/docs/DEVELOPMENT.md", "blobHash": "f3365bfcb8243e19f4064745b8fe5bf5bd9b4839" }],
-      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
+      "sourceReferences": [
+        {
+          "label": "Current generated verification categories and evidence levels",
+          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt",
+          "repository": "ARESLib-Kotlin",
+          "revision": "areslib-10.1.0",
+          "path": "core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt",
+          "blobHash": "e8329a476b140e87a5d2c9763e0a4a91ede72276"
+        },
+        {
+          "label": "Current verification-contract derivation tests",
+          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/subsystem/SubsystemVerificationContractTest.kt",
+          "repository": "ARESLib-Kotlin",
+          "revision": "areslib-10.1.0",
+          "path": "core/src/test/kotlin/com/areslib/subsystem/SubsystemVerificationContractTest.kt",
+          "blobHash": "4bdfec35aefb88fba7e5b56c957730371e54a0dd"
+        },
+        {
+          "label": "Current generated mock behavior tests",
+          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt",
+          "repository": "ARESLib-Kotlin",
+          "revision": "areslib-10.1.0",
+          "path": "codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt",
+          "blobHash": "f187d76638f18864cb5cdf2000931f857abe7e0b"
+        },
+        {
+          "label": "Current FTC generated-subsystem lifecycle test",
+          "url": "https://github.com/ARES-23247/ARES-FTC/blob/0cb74896a60fd7a3b46bb70ca04440aaac91fc6a/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt",
+          "repository": "ARES-FTC",
+          "revision": "ares-ftc-10.1.0",
+          "path": "simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt",
+          "blobHash": "f16e9785cb18bd8cdf43b1cc0fa52e6cb30622e4"
+        },
+        {
+          "label": "Current FTC simulator source and generated-registration boundary",
+          "url": "https://github.com/ARES-23247/ARES-FTC/blob/0cb74896a60fd7a3b46bb70ca04440aaac91fc6a/simulator/build.gradle.kts",
+          "repository": "ARES-FTC",
+          "revision": "ares-ftc-10.1.0",
+          "path": "simulator/build.gradle.kts",
+          "blobHash": "b6acb892f5c4baa726a15baf396d5f5a093b23c1"
+        }
+      ],
+      "appliesToVersion": "ARESLib 10.1.0; ARES-FTC 10.1.0",
       "safetyScope": "physical-robot"
     },
     {
