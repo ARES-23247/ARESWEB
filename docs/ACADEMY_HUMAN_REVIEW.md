@@ -642,6 +642,40 @@ than by changing or cleaning that dirty worktree. Remote catalog verification mu
 four Git blob hashes. This local curriculum change does not stage, publish, or overwrite production
 data.
 
+## Continuous cycle: existing task-sequence lesson depth
+
+This cycle improves the existing `programming-safe-task-sequences` lesson and replaces its unrelated
+posture interaction with the ARES Task Tree Planner. It does not add a replacement lesson. Review
+the current sequential, parallel, race, and deadline start and finish rules; direct-child resource
+conflict checks; bounded wait failure; executor cancellation; and caller-owned Redux action boundary.
+
+The revised worked example uses a race instead of a parallel group for an intake task and a bounded
+sensor wait. Confirm that the text requires the intake task to claim its resource and return a safe
+action from interrupted cleanup. A timeout must fail the group, cancel the remaining executor work,
+and prevent later success steps from running. The lesson must not imply that the explicit stop step
+after the race replaces interrupted cleanup.
+
+The source review also records a current preemption limit. At the pinned revision, `TaskExecutor`
+pauses its active task, while the task-group classes do not forward `pause` or `resume` to active
+children. Confirm that the lesson treats this as a design-review boundary and does not claim nested
+actuator outputs are neutralized merely because a child has a pause hook.
+
+The interaction mirrors a two-child subset of current group, resource, failure, and cancellation
+rules. Confirm native radio and select controls, 44-pixel targets, visible focus, keyboard access,
+narrow-screen reflow, live result announcements, and deterministic reset. Sequential resource reuse
+must pass. The same nonzero resource on either concurrent group must display a build conflict.
+
+The interaction does not build Kotlin, run `TaskExecutor`, inspect nested trees, dispatch actions,
+model time, connect to a simulator, command hardware, or prove cleanup. Students retain authority to
+perform the team's physical verification process. Website posts use the separate Lead Coach review
+flow.
+
+The five reviewed sources are pinned to ARES Robotics commit `f3de343a` and the ARES 11.1.0 /
+Studio 2.0.3 identity. The current release sources were read directly from the fetched immutable
+commit without changing the older dirty local ARES worktree. Remote catalog verification must
+recompute all five Git blob hashes. This local curriculum change does not stage, publish, or
+overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

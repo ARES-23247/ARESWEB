@@ -85,6 +85,7 @@ const superstructureStateLab = lazy(() => import("../../sims/superstructure-stat
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
 const sysidTuningLab = lazy(() => import("../../sims/sysid-tuning-lab"));
+const taskSequenceLab = lazy(() => import("../../sims/task-sequence-lab"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
 const toleranceStackLab = lazy(() => import("../../sims/tolerance-stack-lab"));
 const toolChoiceScenarios = lazy(() => import("../../sims/tool-choice-scenarios"));
@@ -237,6 +238,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sysid: sysid,
   sysidTuningLab: sysidTuningLab,
   sysidtuninglab: sysidTuningLab,
+  taskSequenceLab: taskSequenceLab,
+  tasksequencelab: taskSequenceLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
   toleranceStackLab: toleranceStackLab,
@@ -332,6 +335,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   superstructurestatelab: superstructureStateLab,
   sysidTuningLab: sysidTuningLab,
   sysidtuninglab: sysidTuningLab,
+  taskSequenceLab: taskSequenceLab,
+  tasksequencelab: taskSequenceLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
   toleranceStackLab: toleranceStackLab,
@@ -994,6 +999,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'
+  },
+  {
+    'id': 'taskSequenceLab',
+    'name': 'ARES Task Tree Planner',
+    'folder': 'task-sequence-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'telemetryGraphLab',

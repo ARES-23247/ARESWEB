@@ -2,39 +2,84 @@
 
 ## Purpose and prerequisites
 
-Robot code often needs several actions to happen in a clear order. One action may wait for a
-sensor. Two actions may run together. A stop request may interrupt everything. ARESLib represents
-this work as a tree of `Task` objects. The `robotSequence` builder makes that tree easier to read.
+Robot code often needs several jobs to happen in a safe order. A robot may drive while an intake
+runs. It may wait for a sensor. It must still stop if a task fails or the routine is cancelled.
+ARESLib describes this work as a tree of `Task` objects. The `robotSequence` builder makes the tree
+easier to read before it reaches a robot loop.
 
 Complete [State, Actions, and Reducers](/academy/redux-state-actions-reducers?path=programming-with-ares),
 [Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares),
 and [Build Your First FTC Autonomous Routine](/academy/ftc-starter-first-autonomous?path=controls-localization-autonomous)
-first. This activity reads code and runs bounded tests. It does not command a physical robot.
+first. This lesson reads source and runs bounded tests. It does not command a physical robot.
 
 ## Vocabulary
 
-- **Task:** one unit of work with a start, update, completion, and end lifecycle.
+- **Task:** one job with start, update, finish, and cleanup steps.
 - **Sequence:** tasks that run from first to last.
-- **Parallel group:** tasks that run at the same time and all finish.
-- **Race group:** tasks that run together until the first one finishes.
-- **Deadline group:** one main task decides when its companion tasks stop.
-- **Resource:** a named robot part, such as drive, intake, arm, or lighting.
-- **Timeout:** a time limit that changes an unfinished task into a failure.
-- **Preemption:** pausing current work so more urgent work can run.
+- **Parallel group:** tasks that start together and all must finish.
+- **Race group:** tasks that start together and stop when the first one finishes.
+- **Deadline group:** one named task decides when the group stops.
+- **Resource:** a bit that names owned robot work, such as drive, intake, arm, or lighting.
+- **Timeout:** a limit that changes an unfinished task into a failed task.
+- **Cancellation:** a stopped task that runs interrupted cleanup without becoming successful.
+- **Preemption:** higher-priority work temporarily replaces the executor's active task.
+
+## Four group rules
+
+The group name answers two questions: **what starts together** and **what ends the group**.
+
+| Group | What starts? | What ends the group? | What happens to unfinished children? |
+| --- | --- | --- | --- |
+| Sequence | One task at a time | The final task finishes | The next task never starts after failure or cancellation |
+| Parallel | Every child | Every child finishes | Failure or cancellation interrupts the group |
+| Race | Every child | The first child finishes | The remaining children are interrupted |
+| Deadline | The deadline and its companions | The deadline finishes | Unfinished companions are interrupted |
+
+A companion in a deadline group may finish early. The group still waits for the deadline. A race is
+different: any child can end the group.
+
+## Resources stop unsafe overlap
+
+Each task can expose a `requiredResources` bit mask. A path-following task claims `DRIVE`. A season
+intake task may claim `INTAKE`. The current `TaskResources` object also names flywheel, feeder,
+floor, elevator, arm, wrist, climber, lighting, and a shared superstructure resource. Generated and
+season code have separate custom-bit ranges.
+
+ARESLib checks direct children when it builds a parallel, race, or deadline group. Two children
+cannot claim the same nonzero bit. A sequence may reuse the same bit because only one child runs at
+a time. This check happens while the tree is built, not in the fast robot tick.
+
+`NONE` means the task does not claim an actuator resource. It does **not** mean “safe.” A task that
+commands hardware must advertise the correct resource. A wrong `NONE` can hide a real conflict.
+
+## Visual model
+
+```mermaid
+%% aria: A sequential group may reuse the drive resource. Concurrent groups reject two direct children that both claim drive. A race or deadline interrupts unfinished children when its finish rule is met.
+flowchart LR
+  A["Build typed task tree"] --> B{"Children run together?"}
+  B -->|"No: sequence"| C["Resource reuse allowed"]
+  B -->|"Yes"| D{"Resource bits overlap?"}
+  D -->|"Yes"| E["Reject tree before execution"]
+  D -->|"No"| F["Initialize concurrent children"]
+  F --> G{"Finish rule met?"}
+  G -->|"No"| H["Continue current update"]
+  G -->|"Yes"| I["End winner or deadline"]
+  I --> J["Interrupt unfinished children"]
+```
 
 ## Worked example
 
-Imagine an intake routine. The light turns blue. The intake runs while the robot waits for a piece
-sensor. The wait has a two-second timeout. Last, the intake stops and the light turns green.
+### Collect with a bounded sensor wait
 
-The order is important. The wait should not last forever. The intake task and another intake task
-should not run in parallel because both claim the same resource. ARES checks resource conflicts
-when the task tree is built. It checks before the robot tick loop starts.
+Imagine an intake routine. The light turns blue. The intake runs while the robot waits for a piece
+sensor. The wait may not last forever. When the sensor becomes true, the race ends and interrupts
+the still-running intake task. Its interrupted cleanup must return a safe stop action.
 
 ```kotlin
 val collectPiece = robotSequence {
     setIndicator("status", IndicatorLightColor.BLUE)
-    parallel {
+    race {
         task(runIntakeTask())
         waitUntil(2.seconds) { state -> state.intake.hasPiece }
     }
@@ -43,113 +88,173 @@ val collectPiece = robotSequence {
 }
 ```
 
-This sample is a teaching sketch. Your real state field and task factories may use different names.
-The current ARES builder does provide typed waits, groups, paths, named commands, and indicators.
+This is a teaching sketch. The current ARES builder provides `race`, typed waits, indicators, and
+existing-task support. The sample factory and state field are placeholders. Use the real season
+task, action, and state names from the project.
 
-## Visual model
+The intake task needs four behaviors:
+
+1. Claim the intake resource.
+2. Return the run action when it starts or updates.
+3. Return a safe stop action from `end(state, interrupted = true)`.
+4. Have a focused test proving that interrupted cleanup is returned.
+
+If the sensor becomes true, the wait wins normally. If the two-second timeout passes first, the wait
+fails. That failure makes the race fail. The executor then aborts queued and preempted work and
+collects cleanup actions. The green-light step does not run after failure.
+
+## Follow the lifecycle exactly
+
+`TaskExecutor.update` receives the latest immutable `RobotState` plus a timestamp. It may initialize,
+finish, and start several immediate tasks in one update. It limits this to 100 transitions so a bad
+queue cannot hold the loop forever.
+
+The executor does **not** dispatch actions into the Redux store. It returns a list to the robot
+lifecycle owner. That owner must dispatch every action, including actions returned by interrupted
+cleanup. Calling legacy `clear(state)` throws cleanup output away. New lifecycle code should call
+`cancelAll(state)` and dispatch its returned actions.
 
 ```mermaid
-%% aria: A task tree is checked for resource conflicts, placed in the executor, evaluated from current robot state, and converted into Redux actions or safe cleanup.
+%% aria: TaskExecutor reads a robot state snapshot, calls the active task lifecycle, returns Redux actions to the lifecycle owner, and the owner dispatches them. Failure or cancellation runs interrupted cleanup and clears queued and preempted work.
 flowchart LR
-  A["Typed task tree"] --> B["Resource conflict check"]
-  B --> C["TaskExecutor queue"]
-  C --> D["Read current RobotState"]
-  D --> E{"Complete, running, or failed?"}
-  E -->|"running"| F["Return Redux actions"]
-  E -->|"complete"| G["End and release state"]
-  E -->|"failed or cancelled"| H["Interrupted cleanup and cancel queue"]
+  A["Latest RobotState"] --> B["TaskExecutor update"]
+  B --> C["Task lifecycle methods"]
+  C --> D{"Status"}
+  D -->|"running"| E["Return work actions"]
+  D -->|"complete"| F["Normal end"]
+  D -->|"failed or cancelled"| G["Interrupted cleanup"]
+  G --> H["Clear queued and preempted work"]
+  E --> I["Lifecycle owner dispatches actions"]
+  F --> I
+  G --> I
 ```
 
-`TaskExecutor` does not dispatch actions into the store. It returns a list of actions to its caller.
-That boundary keeps task logic separate from store ownership.
+### Failure and cancellation are different
+
+A failed task stays failed for diagnostics and runs its failure callback once. A cancelled task
+stays cancelled and does not run success or failure callbacks. Both paths use interrupted cleanup.
+Both paths stop the rest of the executor instead of starting the next queued task.
+
+### Suspension preserves execution time
+
+`suspend()` stops executor updates. Time spent suspended does not count against the active task's
+elapsed duration or timeout. `resume()` shifts the task start time so the task continues from the
+same charged execution time.
+
+### Preemption needs a source review
+
+`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 11.1.0 source
+revision, the group classes do not forward `pause` and `resume` to their active children. A root
+sequence therefore must not rely only on a nested child's pause hook to neutralize hardware.
+
+Treat this as a design-review boundary. Before using preemption with actuator tasks, inspect the
+actual active task type, define an explicit safe action, and test the exact tree. Do not claim that
+preemption stopped a mechanism because a child has a `pause` method.
+
+## Task tree planner
+
+Use the lab to compare the four group rules. Give Task A and Task B the same resource in a sequence.
+Then switch to parallel, race, and deadline. Trace normal completion, one child failure, and one
+child cancellation.
+
+<tasksequencelab />
+
+The lab is a code-derived two-child model. It does not run the Kotlin executor or prove that cleanup
+actions reach a robot.
 
 ## Hands-on activity
 
-1. Open the pinned `RobotSequence.kt` source from this lesson's source list.
-2. Make a table for `sequence`, `parallel`, `race`, and `deadline`.
-3. Write what causes each group to finish.
-4. Find both forms of `waitUntil`.
-5. Circle the form that accepts a timeout.
-6. Open `TaskResources.kt` and list three built-in resource names.
-7. Sketch a task tree for **collect a piece, then show ready**.
-8. Label each task with the robot resource it owns.
-9. Check every parallel branch for duplicate resources.
-10. Add a finite timeout to every sensor wait.
-11. Predict what cleanup should happen after a failure.
-12. Open `TaskExecutor.kt` and trace the failed-task path.
-13. Write one unit test for a successful sequence.
-14. Write one unit test for a timeout or resource conflict.
-15. Run the focused test without connecting robot hardware.
+1. Open `RobotSequence.kt` from the pinned sources.
+2. Find `sequence`, `parallel`, `race`, and `deadline`.
+3. Write the finish rule beside each builder function.
+4. Find both `waitUntil` forms and circle the one with a timeout.
+5. Open `TaskResources.kt` and list five built-in bits.
+6. Explain why `NONE` cannot repair a missing hardware claim.
+7. Open `TaskGroupDispatcher.kt`.
+8. Find the constructor checks for concurrent groups.
+9. Find where race and deadline groups interrupt unfinished tasks.
+10. Open `TaskExecutor.kt`.
+11. Trace failure and cancellation to `cancelAll(state)`.
+12. Find the comment that says returned actions are caller-owned.
+13. Compare `cancelAll(state)` with `clear(state)`.
+14. Find `preempt`, then check whether group classes override `pause` or `resume`.
+15. Draw your own task tree and label every hardware resource.
 
-Use the concept lab below to explore ordered guards. Step through a healthy score request. Then make
-the ports unhealthy and compare the next state.
+Run the focused source tests from the ARES monorepo without robot hardware:
 
-<superstructurestatelab />
+```powershell
+cd ARESLib-Kotlin
+.\gradlew.bat :core:test --tests "com.areslib.sequencer.RobotSequenceDslTest" --tests "com.areslib.sequencer.TaskLifecycleRegressionTest"
+```
 
-The lab uses an invented three-posture model. It does not create an ARES task tree, measure a real
-mechanism, test resource masks, or prove physical clearance. It helps you reason about safe order.
+Record the revision, command, result, and one fact the tests cannot prove about a physical robot.
 
 ## Checkpoints
 
-- Can every task name explain one job?
-- Does each hardware-owning task claim the correct resource?
-- Do parallel branches avoid the same resource?
-- Does each sensor wait have a finite timeout?
-- Does failure stop queued and preempted work?
-- Are returned cleanup actions dispatched by the lifecycle owner?
-- Does the test keep simulation evidence separate from physical proof?
+- Can each task name explain one job?
+- Do concurrent children claim different resources?
+- Does every sensor wait have a finite timeout?
+- Does every actuator task return safe interrupted cleanup?
+- Does failure or cancellation prevent the next queued task from starting?
+- Does the lifecycle owner dispatch returned cleanup actions?
+- Have you tested the exact tree instead of only the child tasks?
+- Is simulated evidence kept separate from physical proof?
 
 ## Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
-| Parallel group will not build | Look for two child tasks that claim the same resource bit. |
-| Sequence never advances | Check the completion condition and add a bounded timeout. |
-| A task finishes at once | Inspect its `isCompleted` result after initialization. |
-| Cleanup output is missing | Confirm the caller dispatches actions returned by cancellation. |
-| Paused time counts against a task | Use executor suspension and preemption instead of a separate wall clock. |
-| A failure starts the next task | Trace status handling and confirm the queue is cancelled. |
-| A test changes between runs | Use the shared robot clock and fixed state snapshots. |
+| Concurrent group will not build | Look for an overlapping resource bit. |
+| Sequence never advances | Check the active child's completion rule. |
+| Race ends but a mechanism keeps moving | Inspect the losing task's interrupted `end` actions and caller dispatch. |
+| Timeout starts the next task | Trace failed status and executor cancellation. |
+| Cleanup action is missing | Use `cancelAll`, then dispatch its returned list. |
+| Paused time counts against a task | Use executor suspension instead of a separate wall clock. |
+| Preempted group does not neutralize a child | Do not assume group pause forwarding; review the exact source and add an explicit safe path. |
+| Test changes between runs | Use `RobotClock` and fixed state snapshots. |
 
-Keep the first failing result. It is evidence. Do not change several task rules at once.
+Keep the first failing result. It is evidence. Change one rule at a time.
 
 ## Evidence artifact
 
 Create a task-sequence review sheet with:
 
 - the routine goal in one sentence;
-- a tree showing sequence and parallel groups;
+- a tree showing every group and child;
 - one resource label beside each hardware task;
 - every wait condition and timeout;
-- the expected completion, failure, cancellation, and preemption paths;
+- expected success, failure, cancellation, and cleanup paths;
+- the lifecycle owner that dispatches returned actions;
 - the focused test command and result; and
 - one claim the test cannot prove about a physical robot.
 
 Students may verify robot functionality using the team's normal safety procedure. Record the robot,
-software revision, test boundary, stop method, observation, and remaining limits.
+software revision, test boundary, stop method, observation, and remaining limits. Website posts use
+the separate Lead Coach editorial workflow before publication.
 
 ## Short assessment
 
-1. How is a sequence different from a parallel group?
-2. Why can two intake tasks conflict even if both are valid alone?
-3. What should happen when a sensor wait reaches its timeout?
-4. Why does `TaskExecutor` return Redux actions instead of dispatching them?
-5. What does a passing unit test still not prove about the robot?
+1. Why may a sequence reuse one resource when a parallel group may not?
+2. How is a race different from a deadline group?
+3. What should happen when a bounded sensor wait fails?
+4. Why must the lifecycle owner dispatch actions returned by `cancelAll`?
+5. Why is a nested child `pause` method not enough proof for current group preemption?
+6. What does a passing unit test still not prove about the robot?
 
 ## Extension challenge
 
-Add an urgent stow task to your design. Show where preemption pauses the active work. Then show how
-the earlier task resumes. Include the elapsed-time rule: paused time does not count against the task.
+Design **collect a piece, then stow** as a task tree. Add a bounded sensor wait, resource labels,
+and a safe interrupted cleanup action. Write one success test and one timeout test.
 
-Next, design a deadline group. Choose one task as the deadline and two as companions. Explain why
-those three resources do not conflict. Add a test where the deadline ends first and companions clean
-up safely.
+Next, design a deadline group with one deadline and two companions. Explain why their resources do
+not overlap. Predict which children end normally and which are interrupted when the deadline ends.
+Do the same prediction for a child failure.
 
 ## Related and next
 
 Return to [Build Your First FTC Autonomous Routine](/academy/ftc-starter-first-autonomous?path=controls-localization-autonomous)
 to connect a Studio routine to its compiled task graph. Continue to
 [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
-to compare the same safety cases across adapters. Use
+to compare cleanup across adapters. Use
 [Telemetry and Local Log Retrieval](/academy/telemetry-and-local-logs?path=controls-localization-autonomous)
-when task status needs a clear evidence trail.
+when task status needs an evidence trail.

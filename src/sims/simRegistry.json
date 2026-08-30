@@ -649,6 +649,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "taskSequenceLab",
+      "name": "ARES Task Tree Planner",
+      "path": "./task-sequence-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "telemetryGraphLab",
       "name": "Telemetry Graph Lab",
       "path": "./telemetry-graph-lab",
