@@ -542,6 +542,27 @@ repository-wide comparison on 2026-08-30 also found all 126 historical catalog s
 and byte-for-byte unchanged at this release. Remote verification must still recompute each listed
 hash. This local curriculum change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: existing sensor-fusion lesson depth
+
+This cycle improves the existing `controls-sensor-fusion` lesson and its Sensor Fusion Uncertainty
+Lab. It does not add a replacement title. Review the grade 6-8 explanation of signed residuals,
+inverse-variance influence, process noise `Q`, measurement noise `R`, delayed updates, innovation
+tests, and estimator ownership. Confirm that the lesson separates a strong uncertainty claim from
+verified accuracy and keeps independent surveyed truth outside the fusion calculation.
+
+The interaction now displays each accepted source's influence, a signed residual, and error from an
+independent truth value. It keeps rejected vision evidence in the table and gives it zero influence.
+Confirm native keyboard and touch controls, narrow-screen reflow, visible focus, live result
+announcements, deterministic reset, and readable table overflow. Changing independent truth must
+change only the displayed error, never the fused result.
+
+The interaction is an invented one-dimensional weighted average. It does not run the ARES EKF,
+calculate matrix covariance or normalized innovation squared, replay pose history, inspect a camera,
+or prove a physical robot pose. The two reviewed lesson sources are pinned to ARES Robotics commit
+`f3de343a` and the ARES 11.1.0 / Studio 2.0.3 identity. Their Git blobs are unchanged from the earlier
+reviewed revision. Remote verification must still recompute each listed hash. This local curriculum
+change does not stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
