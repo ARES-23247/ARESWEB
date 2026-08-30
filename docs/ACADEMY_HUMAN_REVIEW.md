@@ -421,6 +421,51 @@ identity before review. The existing `refresh-published` entries retain hashes
 of the live short versions, so any later editorial change blocks migration
 instead of being overwritten.
 
+## Continuous cycle: existing beginner lesson depth
+
+This cycle improves five already-published beginner lessons rather than adding
+more titles: `ares-workspace-map`, `run-first-ftc-simulation`,
+`telemetry-and-local-logs`, `ftc-starter-project-identity`, and
+`ftc-starter-controller-bindings`. Each former short page now uses the full
+eleven-section instructional contract with a worked example, described visual,
+student activity, checkpoints, troubleshooting, evidence artifact, assessment,
+extension, and next-step links.
+
+Review the workspace lesson's current monorepo ownership map and Subsystem
+Ownership Lab. Confirm that the lab is only a conceptual sorter and does not
+claim to inspect the repository. Confirm that FTC and FRC keep separate builds,
+lifecycles, adapters, and simulators even though their source shares one Git
+history.
+
+Review the first-simulation lesson's explicit build, process, connection,
+OpMode, armed-control, movement-evidence, and stop boundaries. The
+Commissioning Boundary Checklist is a self-reported concept model. It does not
+launch Studio, run a build, send controls, inspect hardware, or authorize
+motion. Confirm that Live Robot remains outside the activity.
+
+Review the telemetry lesson's NT4 `5810` and local-log HTTP `5002` paths,
+offline-first boundary, completed-file rule, topic units, and public-network
+warning. The Telemetry Graph Lab uses fixed conceptual data. It does not
+connect to NT4, read a team log, diagnose a cause, or prove robot behavior.
+
+Review the project-identity lesson's staged creation, canonical `.ares`
+documents, generated output, lifecycle adapter, provenance, and intentionally
+empty mechanism and routine catalogs. The Hardware Topology Diagnostic cannot
+inspect a project, discover a device, validate wiring, or remove the
+simulation-first boundary.
+
+Review the controller-binding lesson's input, generated binding, action,
+reducer, state, controller, cached output, and adapter trace. The Redux State
+Tracer does not read a real binding, execute a reducer, command a simulator, or
+validate physical input or output. Confirm that rejected safety conditions are
+kept as evidence instead of bypassed.
+
+All five lessons pin reviewed facts to ARES Robotics commit
+`1c92c61c2faaca2a630e525a76e41d4f7657815c` and the ARES 11.1.0 / Studio 2.0.2
+release identity. Their existing `refresh-published` entries keep hashes of the
+current live short bodies. Review and guarded migration are still required;
+this source change alone does not publish or overwrite curriculum data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

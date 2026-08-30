@@ -1,57 +1,129 @@
 # Run your first FTC simulation
 
-A simulator lets you test robot code without moving a physical robot. A green connection light is
-not enough, though. You must also choose an OpMode, start it, and arm local controls.
+## Purpose and prerequisites
 
-## What you will learn
+A simulator lets you test robot software without moving a physical robot. This lab teaches you to
+verify an FTC workspace, launch its simulator, start a TeleOp, and collect evidence of movement.
+Complete [The ARES Software Workspace](/academy/ares-workspace-map?path=robotics-foundations) first.
+Use a clean ARES FTC Starter project. Keep **Live Robot** unselected for this entire lesson.
 
-- Check and build an FTC starter project.
-- Start a TeleOp in the right order.
-- Prove that the simulated robot moved.
+Simulation evidence is useful for software behavior. It does not prove that motors are wired,
+sensors are mounted, or a physical robot is safe.
 
-## Before you start
+## Vocabulary
 
-Use a clean FTC Starter project. In **Project Identity**, check the drive motors `fl`, `fr`, `rl`,
-and `rr`. Also check the Control Hub IMU named `imu`. These are project settings for generation and
-simulation. They are not measurements from a real robot.
+- **Local Sim:** the Studio target that connects only to a simulator on this computer.
+- **Loopback:** a network address such as `127.0.0.1` that points back to the same computer.
+- **OpMode:** an FTC program with INIT, START, loop, and STOP stages.
+- **Telemetry:** values sent from the running program to a display.
+- **NT4:** the live-data protocol used by ARES on port `5810`.
+- **True pose:** the simulator's ground-truth position, separate from the robot's estimate.
+- **Arm control:** the Studio step that allows local driver input to reach the simulator.
 
-From the project root, run:
+## Worked example
 
-```powershell
-.\gradlew.bat generateAresProject verifyAresProject :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug
-```
+A student selects **Launch Simulator** and sees “build successful.” The Local Sim dot turns green,
+but the field does not move. The build result only proves that the selected workspace compiled.
+The green dot only proves that Studio connected to a running local process. The student must still
+select the generated TeleOp, send INIT and START, arm control, and provide an input.
+
+A complete movement claim needs a changing value. For example, write down true pose X, press the
+forward control briefly, release it, and write down true pose X again. A changed value supports the
+claim that this simulated model moved.
+
+## Visual model
 
 ```mermaid
-%% aria: Build the project, launch the simulator, connect Studio, select a TeleOp, send INIT and START, then arm local control.
+%% aria: The student verifies and builds the selected project, launches the local simulator, waits for a local connection, selects a TeleOp, sends INIT and START, arms local control, and checks changing simulator evidence before stopping.
 flowchart LR
-    A["Verify and build"] --> B["Launch simulator"]
-    B --> C["Studio connects"]
-    C --> D["Choose TeleOp"]
-    D --> E["INIT"]
-    E --> F["START"]
-    F --> G["Arm control"]
+  A["Verify and build"] --> B["Launch Local Sim"]
+  B --> C["Wait for local connection"]
+  C --> D["Choose TeleOp"]
+  D --> E["INIT"]
+  E --> F["START"]
+  F --> G["Arm local control"]
+  G --> H["Move and record evidence"]
+  H --> I["STOP"]
 ```
 
-## Start the simulation
+Each arrow is a separate checkpoint. Skipping a checkpoint can leave a healthy simulator waiting
+for the next command.
 
-1. Open the project in ARES Robotics Studio.
-2. Choose **Local Simulator**. Use `127.0.0.1`, `localhost`, or another loopback name.
-3. Select **Launch simulator**. Keep the terminal drawer open while the build runs.
-4. Wait for the green Local Sim target and the connected message.
-5. Choose the generated TeleOp.
-6. Send **INIT**, then **START**.
-7. Arm local control.
-8. Press one drive control for a moment, then release it.
-9. Stop the OpMode and the simulator before closing Studio.
+## Hands-on activity
 
-Port `5810` being online only means the NT4 server is listening. It does not mean an OpMode is
-running or the robot can move.
+1. Open the FTC Starter workspace in ARES Robotics Studio.
+2. Select **Verify & build**. Keep the terminal drawer open until the build and tests finish.
+3. In the target selector, choose **Local Sim**.
+4. Select the monitor-shaped **Launch Simulator** control.
+5. Wait for both the green Local Sim dot and the connected message.
+6. Open one live widget. True pose or a telemetry chart is a useful first choice.
+7. Select the generated TeleOp, then send INIT and START.
+8. Arm local control. Press one drive input briefly, then release it.
+9. Record one pose value before input, during movement, and after release.
+10. Select STOP for the OpMode. Use Studio's square Stop control to end the simulator process.
 
-## Check your work
+Use the checklist lab below before you call the run complete. It is a conceptual checklist. It
+does not launch Studio, run your build, send controls, or inspect a physical robot.
 
-Record the OpMode name, INIT message, START message, armed state, and connection state. Also record
-the true simulated pose before and after the input. The pose should change, then stop changing when
-you release the control.
+<commissioningchecklistlab />
 
-A successful build or moving chart is not proof by itself. The true simulated pose is the evidence
-that the simulated robot moved.
+## Checkpoints
+
+Confirm the active workspace is the FTC project you meant to run. A valid project has the Gradle
+wrapper and the expected simulator task.
+
+Confirm **Local Sim** is selected before launch. Studio switches its live NT4 address to loopback
+for this target, so you do not need to replace the saved live-robot address.
+
+Confirm both process and data evidence. A running process without changing expected telemetry is
+not yet a successful run. State your mode clearly: “This is live simulator data. It is not replay,
+and it cannot move the physical robot.”
+
+## Troubleshooting
+
+If port `5810` is already in use, stop older simulator or NT4 processes. Launch only one new process.
+
+If the process runs but the dot stays gray, confirm Local Sim is selected. Read the terminal for an
+NT4 server startup line and check whether loopback traffic is blocked.
+
+If Studio connects but pose stays at zero, confirm the OpMode received INIT and START. Check a
+second known-changing topic before deciding that the connection failed.
+
+If controls do nothing, confirm the TeleOp is active and local control is armed. Release every
+input before retrying. Do not switch to Live Robot as a shortcut.
+
+If the terminal reports an unknown task, check the current project instructions. League simulator
+tasks are separate, and a saved workspace may use an explicit simulator command.
+
+## Evidence artifact
+
+Submit a run record with the workspace name, selected target, OpMode, build result, connection
+state, INIT state, START state, and armed state. Add a three-row table for pose before input, during
+movement, and after release. Include the topic name and units.
+
+Write one sentence stating what the run supports and one stating what it cannot support. A good
+limit is: “This run supports simulated control flow and motion; it does not validate wiring or
+physical hardware.”
+
+## Short assessment
+
+1. What does a successful build prove?
+2. What does a green Local Sim dot prove?
+3. Which stages must occur before driver input can move the model?
+4. What value can show that the simulated robot moved?
+5. Why must Live Robot stay unselected in this lesson?
+
+## Extension challenge
+
+Repeat the run with one intentional missing step, such as waiting after INIT without sending START.
+Record the visible evidence. Restore the step and explain what changed.
+
+Then compare true pose with estimated pose during one short movement. Do not expect exact equality.
+List two software or model reasons the estimate might differ from simulator ground truth.
+
+## Related and next
+
+Continue with [Robot Coordinates Without
+Guesswork](/academy/robot-coordinate-contracts?path=robotics-foundations). To save and compare the
+run, continue with [Telemetry and Local Log
+Retrieval](/academy/telemetry-and-local-logs?path=robotics-foundations).

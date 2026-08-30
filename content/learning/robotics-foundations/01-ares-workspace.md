@@ -1,62 +1,127 @@
 # Find your way around the ARES workspace
 
-ARES keeps its main software in one large folder called a **monorepo**. A monorepo lets one change
-update the library, robot code, and Studio together. Each part still has its own build so an FTC
-app does not get mixed with an FRC app or a desktop app.
+## Purpose and prerequisites
 
-## What you will learn
+ARES keeps its main software in one **monorepo**, which means one Git repository holds several
+related projects. This lesson helps you find the right home for a change before you edit code.
+You do not need any earlier lesson. You only need the current ARES Robotics folder or its GitHub
+page and a place to record your answers.
 
-- Name the main parts of the ARES workspace.
-- Pick the right place for a code change.
-- Tell source files apart from generated files.
+The folder names below come from ARES 11.1.0. Each product still has its own Gradle build because
+FTC, FRC, the shared library, and the desktop app use different tools and run in different places.
 
-## Key words
+## Vocabulary
 
 - **Monorepo:** one Git repository that holds several related projects.
-- **Shared library:** code that more than one robot can use.
-- **Generated file:** a file made by a tool from a saved project plan.
-- **Runtime:** the code that runs on a robot, simulator, or computer.
+- **Owner:** the project responsible for a behavior or file.
+- **Shared library:** code designed for more than one robot product.
+- **Canonical document:** the saved source that people and tools agree to edit.
+- **Generated file:** a result made by a tool from a canonical source.
+- **Runtime:** code that runs in a robot, simulator, or desktop app.
+- **Adapter:** code that connects a shared idea to one league or device.
 
-## Meet the main folders
+## Worked example
+
+Suppose both FTC and FRC show the same wrong geometry result. Start by asking where that shared
+math lives. `ARESLib-Kotlin/` owns shared math, project models, controls, hardware contracts, code
+generation, and simulation foundations. The first investigation belongs there. After a fix, both
+league consumers should be checked because both use that shared behavior.
+
+Now suppose one screen in ARES Robotics Studio has the wrong label. That work belongs in
+`ARES-Analytics/`, which owns Studio, local analytics, replay, and its optional gateway. There is no
+reason to put a screen-only change in the robot library.
+
+## Visual model
+
+```mermaid
+%% aria: Canonical dot-ares documents flow through the shared schema and compiler. They produce generated code and tests for either the FTC or FRC runtime. A league adapter then connects the selected runtime to its simulator or physical hardware.
+flowchart LR
+  A["Canonical .ares documents"] --> B["Shared schema and compiler"]
+  B --> C["Generated source and safety tests"]
+  C --> D{"League runtime"}
+  D --> E["FTC adapter"]
+  D --> F["FRC adapter"]
+  E --> G["FTC simulator or hardware"]
+  F --> H["FRC simulator or hardware"]
+```
+
+The source monorepo does not turn FTC and FRC into one runtime. Their device adapters, lifecycle,
+build, and simulator remain separate.
+
+## Hands-on activity
+
+Open the workspace and find these owners:
 
 | Folder | What it owns |
 | --- | --- |
-| `ARESLib-Kotlin/` | Shared math, state, controls, hardware rules, logging, and simulation tools |
-| `ARES-FTC/` | Team 23247 FTC robot code and the FTC simulator |
-| `ARES-FRC/` | FRC robot code and the FRC simulator |
-| `ARES-Analytics/` | ARES Robotics Studio, local data tools, and optional cloud tools |
-| `ARES-FTC-Starter/` and `ARES-FRC-Starter/` | Clean starter projects with no team robot tuning |
-| `templates/` | Templates used to create generated robot files |
-| `build-logic/` and `release/` | Shared build and release rules |
+| `ARESLib-Kotlin/` | Shared schema, controls, hardware rules, code generation, and simulation foundations |
+| `ARES-FTC/` | Team 23247 FTC robot code and the FTC simulator product |
+| `ARES-FRC/` | FRC robot code and the FRC simulator product |
+| `ARES-Analytics/` | ARES Robotics Studio, local data tools, replay, and the gateway |
+| `ARES-FTC-Starter/` | Canonical source for the clean FTC starter release mirror |
+| `ARES-FRC-Starter/` | Canonical source for the clean FRC starter release mirror |
+| `templates/` | Monorepo-owned runtime templates, not normal student source files |
+| `build-logic/` and `release/` | Shared build rules and immutable release identity |
 
-```mermaid
-%% aria: A saved ARES project moves through checks and code generation before it runs in an FTC or FRC robot project.
-flowchart LR
-    A["Saved .ares project"] --> B["Check the project"]
-    B --> C["Build a typed plan"]
-    C --> D["Generate code and tests"]
-    D --> E["FTC or FRC runtime"]
-    E --> F["Simulator or robot adapter"]
-```
+Use the ownership lab below. Sort each proposed change by the product that should own it. The lab
+is a conceptual decision tool. It does not inspect the repository or prove that a file is correct.
 
-## Choose where a change belongs
+<subsystemownershiplab />
 
-Ask, “Should more than one robot use this?” If yes, the change may belong in `ARESLib-Kotlin/`.
-A mechanism used by one season robot belongs in `ARES-FTC/` or `ARES-FRC/`. A screen or desktop
-workflow belongs in `ARES-Analytics/`.
+Then choose three real files from the workspace. For each file, record its path, likely owner, and
+one consumer that could be affected by a change.
 
-Studio saves the robot plan in `.ares` documents. It then makes code and tests in build folders.
-Edit the saved plan or an approved extension point. Do not hand-edit a generated file, because the
-next build will replace it.
+## Checkpoints
 
-## Check your understanding
+Before editing, ask three questions:
 
-For each idea below, name the owning folder and one project that should be retested.
+1. Is this behavior shared across leagues or limited to one product?
+2. Am I looking at a canonical source or at generated output under a build folder?
+3. Which isolated Gradle build and consumer tests could detect a mistake?
 
-1. A geometry fix used by FTC and FRC.
-2. A new intake for this season's FTC robot.
-3. A change to the Studio telemetry screen.
-4. A change to a clean FTC starter template.
+If a file was created from a `.ares` document, edit the document or an approved extension point.
+Do not hand-edit generated output because the next generation step can replace it.
 
-**Answer check:** shared geometry belongs in ARESLib. The intake belongs in FTC. The screen belongs
-in Analytics. The starter change begins in its monorepo starter or template source.
+## Troubleshooting
+
+If two folders appear to contain similar code, check which one is the canonical source. The starter
+folders own the clean starter source, while public starter repositories are release mirrors.
+
+If a change seems to need edits in every product, pause and look for a shared contract. Copying the
+same fix into FTC, FRC, and Studio can hide a missing shared owner.
+
+If you cannot find a project, confirm that you are viewing the current ARES Robotics monorepo. Old
+component repositories may remain for history, but they are not the current source of truth.
+
+## Evidence artifact
+
+Create a workspace map with at least six folders. For each folder, write one owned responsibility
+and one thing it does not own. Add three file examples with their paths. Mark each example as
+canonical source, generated output, or adapter code.
+
+Finish with one short change plan. Name the proposed change, its owner, the build you would run,
+and one consumer you would retest. This artifact shows your reasoning; it does not show that the
+change is already correct.
+
+## Short assessment
+
+1. Why can one monorepo still contain several Gradle builds?
+2. Where should shared FTC and FRC math usually live?
+3. Which folder owns the ARES Robotics Studio user interface?
+4. Why should generated files not be edited by hand?
+5. What is the difference between a starter source and a public release mirror?
+
+## Extension challenge
+
+Trace one `.ares` document from saved project data to generated code, then to an FTC or FRC
+adapter. Name each boundary. Explain which step is shared and which step depends on the league.
+
+Next, inspect `release/ares-versions.properties`. Explain why one version identity should point to
+one exact source tree instead of changing its contents after release.
+
+## Related and next
+
+Continue with [Follow a Robot Request from Input to
+Output](/academy/robot-input-to-output?path=robotics-foundations). If you want to create a clean FTC
+workspace, use [Start an FTC Project Without Inherited Robot
+Assumptions](/academy/ftc-starter-project-identity?path=ftc-robot-with-ares).
