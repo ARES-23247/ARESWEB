@@ -198,7 +198,7 @@
       ],
       "lessons": [
         { "id": "capstone-simulated-mechanism", "title": "Capstone 1: Model and Test a Simulated Mechanism", "level": "intermediate", "interaction": "capstone-evidence-board", "sourceGap": null },
-        { "id": "capstone-subsystem", "title": "Capstone 2: Build a Complete ARES Subsystem", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": null },
+        { "id": "capstone-subsystem", "title": "Capstone 2: Build a Complete ARES Subsystem", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "current Studio subsystem and generated-preview screenshots required" },
         { "id": "capstone-autonomous-mission", "title": "Capstone 3: Complete a Simulated Autonomous Mission", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null },
         { "id": "capstone-physical-commissioning", "title": "Capstone 4: Commission a Physical Feature", "level": "advanced", "interaction": "commissioning-checklist-lab", "sourceGap": "physical student evidence required" },
         { "id": "capstone-competition-readiness", "title": "Capstone 5: Present Competition-Readiness Evidence", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "team rubric review and authentic evidence required" }

@@ -1046,6 +1046,32 @@ levels and starter handoff contracts did not change during this release update. 
 11.1.0 / Studio 2.0.3 manifest is a fourth source pin. Remote verification must recompute all four
 hashes. This local curriculum change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: existing complete-subsystem capstone clarity
+
+This cycle improves the existing `capstone-subsystem` lesson. Review its four gates: choose the
+capability and ownership, design data and safety, connect adapters and tests, and build an honest
+evidence packet. The revision must not turn generated output into editable source or imply that a
+smaller file count is a complete subsystem.
+
+The new real-example table is derived from the current team-controlled
+`ARES-FTC/.ares/subsystems/indicator-lights.aressubsystem` document at protected monorepo commit
+`f3de343a`. Confirm that it stays a deliberately small output-only example: two optional indicators,
+two separate normalized targets, two bounded direct outputs, safe output zero, generated mock/test,
+and no claim of position feedback, homing, current monitoring, or moving hardware. The open media
+request asks for approved current Studio and preview screenshots; no screenshot was invented.
+
+The authoring, Builder, and ARESLib DSL source blobs are unchanged from the earlier Studio 2.0.1
+review. Their links now point to the current ARES 11.1.0 / Studio 2.0.3 commit, and the current team
+descriptor plus canonical release manifest add two new source pins. Remote verification must
+recompute all five hashes.
+
+One upstream authoring paragraph still names Intake/Flywheel production examples, but the current
+protected `origin/main` tree contains neither tracked FTC source file. This lesson does not repeat
+that example. Reviewers should rely on the pinned current Indicator Lights descriptor for the team
+artifact and treat the remaining authoring guide as contract guidance only. Students may review and
+verify code and simulation results; Lead Coach approval remains limited to website publication.
+This local curriculum change does not stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
