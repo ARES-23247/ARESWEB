@@ -815,6 +815,35 @@ Students may run and inspect the current unit test without mentor approval. Robo
 continues through the team's normal safety process. Lead Coach review remains limited to website
 publishing. This local curriculum change does not publish or overwrite production data.
 
+## Continuous cycle: current Kotlin deadband function
+
+This cycle improves the existing `programming-kotlin-basics` lesson. The prior lesson used an
+invented `raw * scale + offset` calculator that was useful for arithmetic order but was not current
+ARES source. Confirm that the revised lesson instead pins three clean files at monorepo commit
+`f3de343a`: `InputMath.kt`, `InputMathTest.kt`, and `StudentOnboardingTest.kt`.
+
+Review the central teaching boundary. `InputMath.applyDeadband` accepts a normalized joystick value
+and a deadband, both as Kotlin `Double` values. It first returns zero inside the quiet area, then
+guards a nearly zero denominator, and otherwise shifts by the signed deadband and divides by the
+remaining range. The documented valid contract is a value in `[-1, 1]` and a deadband in `[0, 1)`.
+The production function documents that range but does not reject every invalid caller argument; the
+lesson must not claim that it performs full input validation.
+
+The current focused tests prove the inside-deadband, positive and negative rescale, full-scale, and
+signed curve cases within a tolerance of `0.001`. They do not read a gamepad, test a Redux mapping,
+command hardware, or verify physical motion. Review that the lesson explains expected value,
+actual value, and tolerance without calling decimal equality exact.
+
+The revised code-derived interaction copies the current scalar branch math for documented valid
+inputs. Review the four source-test presets, exact guard order, native labeled number inputs,
+documented bounds, 44-pixel controls, visible focus, live branch result, narrow-screen reflow,
+deterministic reset, visible intermediate values, and explicit model limit. The interaction is
+TypeScript; it does not parse or compile Kotlin.
+
+Students may run the focused unit test and verify robot behavior through the team's normal safety
+process. Lead Coach review remains limited to publishing website posts. This local curriculum
+change does not publish or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

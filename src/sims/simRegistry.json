@@ -242,11 +242,11 @@
     },
     {
       "id": "kotlinExpressionLab",
-      "name": "Kotlin Expression Values Lab",
+      "name": "ARES Kotlin Deadband Function Lab",
       "path": "./kotlin-expression-lab",
       "requiresContext": false,
       "academyApproved": true,
-      "fidelity": "conceptual"
+      "fidelity": "code-derived"
     },
     {
       "id": "linearequations",

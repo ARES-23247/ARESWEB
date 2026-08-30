@@ -594,11 +594,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'kotlinExpressionLab',
-    'name': 'Kotlin Expression Values Lab',
+    'name': 'ARES Kotlin Deadband Function Lab',
     'folder': 'kotlin-expression-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'linearequations',
