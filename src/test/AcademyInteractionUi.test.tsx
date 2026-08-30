@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AcademyDatum,
   AcademyMetric,
+  AcademyNumberControl,
   AcademyRangeControl,
   AcademySelectControl,
 } from "@/sims/shared/academy-interaction-ui";
@@ -72,6 +73,31 @@ describe("AcademyRangeControl", () => {
       />,
     );
     expect(screen.getByText("0.10")).toBeVisible();
+  });
+});
+
+describe("AcademyNumberControl", () => {
+  it("exposes native numeric bounds while keeping the unit visible", () => {
+    let selected = 0;
+    render(
+      <AcademyNumberControl
+        id="wheel-speed"
+        label="Wheel speed"
+        unit="m/s"
+        value={1}
+        min={-2}
+        max={2}
+        step={0.1}
+        onChange={(value) => { selected = value; }}
+      />,
+    );
+
+    const control = screen.getByRole("spinbutton", { name: "Wheel speed" });
+    expect(control).toHaveAttribute("min", "-2");
+    expect(control).toHaveAttribute("max", "2");
+    expect(screen.getByText("m/s")).toBeVisible();
+    fireEvent.change(control, { target: { value: "1.5" } });
+    expect(selected).toBe(1.5);
   });
 });
 

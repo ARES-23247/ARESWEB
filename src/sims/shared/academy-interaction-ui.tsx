@@ -121,25 +121,39 @@ export function AcademySelectControl({
 export function AcademyNumberControl({
   id,
   label,
+  unit,
   value,
+  min,
+  max,
+  step = 0.01,
   onChange,
 }: {
   id: string;
   label: string;
+  unit?: string;
   value: number;
+  min?: number;
+  max?: number;
+  step?: number;
   onChange: (value: number) => void;
 }) {
   return (
     <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
       <span>{label}</span>
-      <input
-        id={id}
-        type="number"
-        step="0.01"
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
-        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-      />
+      <span className="flex items-center gap-2">
+        <input
+          id={id}
+          type="number"
+          inputMode="decimal"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
+          className="min-h-11 min-w-0 flex-1 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+        />
+        {unit && <span aria-hidden="true" className="text-xs text-marble/70">{unit}</span>}
+      </span>
     </label>
   );
 }

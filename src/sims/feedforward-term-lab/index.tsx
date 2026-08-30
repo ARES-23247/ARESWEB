@@ -1,5 +1,6 @@
 /** @sim {"name":"ARES FTC Feedforward Term Trace","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useMemo, useState } from "react";
+import { AcademyMetric, AcademyNumberControl } from "@/sims/shared/academy-interaction-ui";
 
 export type FeedforwardStepInput = {
   kS: number;
@@ -13,6 +14,8 @@ export type FeedforwardStepInput = {
 
 export type FeedforwardStepResult = {
   targetVelocityMps: number;
+  previousTargetVelocityMps: number;
+  maxWheelSpeedMps: number;
   usedDtSeconds: number;
   accelerationMps2: number;
   staticTerm: number;
@@ -32,7 +35,7 @@ export const TEAM_PROFILE_SNAPSHOT = {
   kA: 0.02,
 } as const;
 
-export const MAX_WHEEL_SPEED_MPS = 3.5;
+export const TEAM_MAX_WHEEL_SPEED_MPS = 1 / TEAM_PROFILE_SNAPSHOT.kV;
 
 const DEFAULT_INPUT: FeedforwardStepInput = {
   ...TEAM_PROFILE_SNAPSHOT,
@@ -46,11 +49,20 @@ function finiteOrZero(value: number): number {
   return Number.isFinite(value) ? value : 0;
 }
 
-export function calculateFeedforwardStep(input: FeedforwardStepInput): FeedforwardStepResult {
-  const targetVelocityMps = Number.isFinite(input.targetVelocityMps)
-    ? Math.min(MAX_WHEEL_SPEED_MPS, Math.max(-MAX_WHEEL_SPEED_MPS, input.targetVelocityMps))
+function maxWheelSpeedForKv(kV: number): number {
+  return Number.isFinite(kV) && kV > 0.0001 ? 1 / kV : TEAM_MAX_WHEEL_SPEED_MPS;
+}
+
+function finiteClampedSpeed(value: number, maxWheelSpeedMps: number): number {
+  return Number.isFinite(value)
+    ? Math.min(maxWheelSpeedMps, Math.max(-maxWheelSpeedMps, value))
     : 0;
-  const previousTargetVelocityMps = finiteOrZero(input.previousTargetVelocityMps);
+}
+
+export function calculateFeedforwardStep(input: FeedforwardStepInput): FeedforwardStepResult {
+  const maxWheelSpeedMps = maxWheelSpeedForKv(input.kV);
+  const targetVelocityMps = finiteClampedSpeed(input.targetVelocityMps, maxWheelSpeedMps);
+  const previousTargetVelocityMps = finiteClampedSpeed(input.previousTargetVelocityMps, maxWheelSpeedMps);
   const usedDtSeconds = Number.isFinite(input.dtSeconds) && input.dtSeconds > 0.0001
     ? input.dtSeconds
     : 0.02;
@@ -59,6 +71,8 @@ export function calculateFeedforwardStep(input: FeedforwardStepInput): Feedforwa
   if (!validBattery) {
     return {
       targetVelocityMps,
+      previousTargetVelocityMps,
+      maxWheelSpeedMps,
       usedDtSeconds,
       accelerationMps2: 0,
       staticTerm: 0,
@@ -76,6 +90,8 @@ export function calculateFeedforwardStep(input: FeedforwardStepInput): Feedforwa
   if (Math.abs(targetVelocityMps) < 0.0001) {
     return {
       targetVelocityMps,
+      previousTargetVelocityMps,
+      maxWheelSpeedMps,
       usedDtSeconds,
       accelerationMps2: 0,
       staticTerm: 0,
@@ -101,6 +117,8 @@ export function calculateFeedforwardStep(input: FeedforwardStepInput): Feedforwa
 
   return {
     targetVelocityMps,
+    previousTargetVelocityMps,
+    maxWheelSpeedMps,
     usedDtSeconds,
     accelerationMps2,
     staticTerm,
@@ -115,12 +133,13 @@ export function calculateFeedforwardStep(input: FeedforwardStepInput): Feedforwa
   };
 }
 
-type PresetName = "stop" | "start" | "low";
+type PresetName = "stop" | "start" | "low" | "invalid";
 
 const PRESETS: Record<PresetName, Pick<FeedforwardStepInput, "targetVelocityMps" | "previousTargetVelocityMps" | "batteryVolts">> = {
   stop: { targetVelocityMps: 0, previousTargetVelocityMps: 0, batteryVolts: 12 },
   start: { targetVelocityMps: 1, previousTargetVelocityMps: 0, batteryVolts: 12 },
   low: { targetVelocityMps: 1, previousTargetVelocityMps: 1, batteryVolts: 9 },
+  invalid: { targetVelocityMps: 1, previousTargetVelocityMps: 1, batteryVolts: 0 },
 };
 
 export default function FeedforwardTermLab() {
@@ -146,7 +165,7 @@ export default function FeedforwardTermLab() {
             Feedforward Term Trace
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Trace one wheel with the checked-in Team 23247 profile.
+            Trace one wheel with the checked-in Team 23247 profile from ARES 11.1.0.
           </p>
         </div>
         <button type="button" onClick={() => setInput(DEFAULT_INPUT)} className={buttonClass}>
@@ -155,8 +174,9 @@ export default function FeedforwardTermLab() {
       </div>
 
       <p className="mt-4 border-l-4 border-ares-red/70 bg-ares-red/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Open source-contract question:</strong> Declarations say volts, but runtime code
-        combines request terms before clamping. This lab says <strong>request units</strong>.
+        <strong>Open source-contract question:</strong> Drivebase files label these values as volts.
+        Runtime code treats their sum like a duty request, multiplies it by 12 ÷ battery, and then
+        clamps it. This lab therefore says <strong>request units</strong>.
       </p>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -164,28 +184,29 @@ export default function FeedforwardTermLab() {
           <fieldset className="grid gap-3">
             <legend className="text-sm font-bold text-ares-gold">Checked-in profile values</legend>
             <div className="grid gap-3 sm:grid-cols-3">
-              <NumberInput label="kS source value" value={input.kS} min={0} max={1} step={0.01} onChange={(value) => setNumber("kS", value)} />
-              <NumberInput label="kV source value" value={input.kV} min={0} max={2} step={0.001} onChange={(value) => setNumber("kV", value)} />
-              <NumberInput label="kA source value" value={input.kA} min={0} max={0.5} step={0.01} onChange={(value) => setNumber("kA", value)} />
+              <AcademyNumberControl id="feedforward-ks" label="kS source value" value={input.kS} min={0} max={1} step={0.01} onChange={(value) => setNumber("kS", value)} />
+              <AcademyNumberControl id="feedforward-kv" label="kV source value" value={input.kV} min={0.1} max={2} step={0.001} onChange={(value) => setNumber("kV", value)} />
+              <AcademyNumberControl id="feedforward-ka" label="kA source value" value={input.kA} min={0} max={0.5} step={0.01} onChange={(value) => setNumber("kA", value)} />
             </div>
           </fieldset>
 
           <fieldset className="grid gap-3">
             <legend className="text-sm font-bold text-ares-gold">One loop step</legend>
             <div className="grid gap-3 sm:grid-cols-2">
-              <NumberInput label="Target wheel speed" unit="m/s" value={input.targetVelocityMps} min={-3.5} max={3.5} step={0.1} onChange={(value) => setNumber("targetVelocityMps", value)} />
-              <NumberInput label="Previous target speed" unit="m/s" value={input.previousTargetVelocityMps} min={-3.5} max={3.5} step={0.1} onChange={(value) => setNumber("previousTargetVelocityMps", value)} />
-              <NumberInput label="Loop time" unit="s" value={input.dtSeconds} min={0.01} max={0.1} step={0.01} onChange={(value) => setNumber("dtSeconds", value)} />
-              <NumberInput label="Battery input" unit="V" value={input.batteryVolts} min={7.5} max={13.5} step={0.1} onChange={(value) => setNumber("batteryVolts", value)} />
+              <AcademyNumberControl id="feedforward-target" label="Target wheel speed" unit="m/s" value={input.targetVelocityMps} min={-result.maxWheelSpeedMps} max={result.maxWheelSpeedMps} step={0.1} onChange={(value) => setNumber("targetVelocityMps", value)} />
+              <AcademyNumberControl id="feedforward-previous" label="Previous target speed" unit="m/s" value={input.previousTargetVelocityMps} min={-result.maxWheelSpeedMps} max={result.maxWheelSpeedMps} step={0.1} onChange={(value) => setNumber("previousTargetVelocityMps", value)} />
+              <AcademyNumberControl id="feedforward-dt" label="Loop time" unit="s" value={input.dtSeconds} min={0.01} max={0.1} step={0.01} onChange={(value) => setNumber("dtSeconds", value)} />
+              <AcademyNumberControl id="feedforward-battery" label="Battery input" unit="V" value={input.batteryVolts} min={0} max={13.5} step={0.1} onChange={(value) => setNumber("batteryVolts", value)} />
             </div>
           </fieldset>
 
           <fieldset className="grid gap-2">
             <legend className="text-sm font-bold text-ares-gold">Trace presets</legend>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <PresetButton label="Stopped" onClick={() => applyPreset("stop")} />
               <PresetButton label="Start step" onClick={() => applyPreset("start")} />
               <PresetButton label="Lower voltage" onClick={() => applyPreset("low")} />
+              <PresetButton label="Invalid battery" onClick={() => applyPreset("invalid")} />
             </div>
           </fieldset>
         </div>
@@ -202,68 +223,34 @@ export default function FeedforwardTermLab() {
                 : "The calculated request stays inside the duty-cycle range."}
           </p>
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Result label="Target used" value={`${format(result.targetVelocityMps)} m/s`} />
-            <Result label="Acceleration" value={`${format(result.accelerationMps2)} m/s²`} />
-            <Result label="Static term" value={format(result.staticTerm)} />
-            <Result label="Velocity term" value={format(result.velocityTerm)} />
-            <Result label="Acceleration term" value={format(result.accelerationTerm)} />
-            <Result label="Raw request" value={format(result.rawRequest)} />
-            <Result label="12 V ÷ battery" value={format(result.voltageCompensationFactor)} />
-            <Result label="Final duty request" value={format(result.output)} />
+            <AcademyMetric label="Speed cap used" value={`${format(result.maxWheelSpeedMps)} m/s`} />
+            <AcademyMetric label="Target used" value={`${format(result.targetVelocityMps)} m/s`} />
+            <AcademyMetric label="Prior target used" value={`${format(result.previousTargetVelocityMps)} m/s`} />
+            <AcademyMetric label="Loop time used" value={`${format(result.usedDtSeconds)} s`} />
+            <AcademyMetric label="Acceleration" value={`${format(result.accelerationMps2)} m/s²`} />
+            <AcademyMetric label="Static term" value={format(result.staticTerm)} />
+            <AcademyMetric label="Velocity term" value={format(result.velocityTerm)} />
+            <AcademyMetric label="Acceleration term" value={format(result.accelerationTerm)} />
+            <AcademyMetric label="Raw request" value={format(result.rawRequest)} />
+            <AcademyMetric label="12 V ÷ battery" value={format(result.voltageCompensationFactor)} />
+            <AcademyMetric label="Before final clamp" value={format(result.unclampedOutput)} />
+            <AcademyMetric label="Final duty request" value={format(result.output)} />
           </dl>
         </div>
       </div>
 
       <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> This TypeScript trace does not run Kotlin, add feedback, slew,
-        or current limits, model a motor, read the robot, prove the profile, or approve physical use.
+        <strong>Model limit:</strong> This TypeScript trace copies one feedforward calculation and
+        the controller's positive-kV speed-cap rule. An invalid kV keeps the checked-in cap as the
+        known prior value. The trace does not run Kotlin, add feedback, slew, current limits, or
+        hardware scaling, model a motor, read the robot, prove the profile, or approve physical use.
       </p>
     </section>
   );
 }
 
-function NumberInput({ label, unit, value, min, max, step, onChange }: {
-  label: string;
-  unit?: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  const id = `feedforward-${label.toLowerCase().replace(/[^a-z0-9]+/gu, "-")}`;
-  return (
-    <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
-      {label}
-      <span className="flex items-center gap-2">
-        <input
-          id={id}
-          type="number"
-          inputMode="decimal"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
-          className="min-h-11 min-w-0 flex-1 rounded border border-white/20 bg-obsidian px-3 font-mono text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        />
-        {unit && <span aria-hidden="true" className="text-xs text-marble/70">{unit}</span>}
-      </span>
-    </label>
-  );
-}
-
 function PresetButton({ label, onClick }: { label: string; onClick: () => void }) {
   return <button type="button" onClick={onClick} className={buttonClass}>{label}</button>;
-}
-
-function Result({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-white/10 p-3">
-      <dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt>
-      <dd className="mt-1 break-words font-mono font-bold text-white">{value}</dd>
-    </div>
-  );
 }
 
 function format(value: number): string {

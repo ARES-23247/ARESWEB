@@ -11,8 +11,9 @@ and [Read a Telemetry Graph Like a Scientist](/academy/read-a-telemetry-graph?pa
 first. You should be able to label units, read a graph, and change one test value at a time.
 
 This lesson has two web activities. The first is an invented control model. The second traces one
-feedforward-only step from the current ARES FTC source. Neither activity runs a motor or approves a
-robot setting.
+feedforward-only step from ARES 11.1.0. Studio examples match Studio 2.0.3. The source links are
+pinned to the exact monorepo commit used for this lesson. Neither activity runs a motor or approves
+a robot setting.
 
 ## Vocabulary
 
@@ -112,6 +113,17 @@ Those statements do not define one clear voltage contract. Until the ARES source
 lesson calls the runtime results **request units**, not volts. Do not use the web tracer to convert
 the profile values into physical voltage.
 
+The current FTC controller also uses positive `kV` to set the modeled maximum wheel speed:
+
+```text
+modeled maximum = 1 ÷ kV
+modeled maximum = 1 ÷ 0.638
+modeled maximum = 1.567398... m/s
+```
+
+The checked-in drivebase geometry stores the same value. This is the current Team 23247 software
+cap, not a measured promise for every wheel, battery, floor, or robot.
+
 ## Worked example
 
 For one steady forward target, use `1.0 m/s` now and `1.0 m/s` on the prior step. With a `0.02 s`
@@ -143,14 +155,16 @@ include PID feedback or slew limiting.
 1. Choose **Reset trace**. Confirm the three terms add to `0.688`.
 2. Choose **Lower voltage**. Explain why the source factor and final request change.
 3. Choose **Start step**. Find the acceleration term and the clamped result.
-4. Choose **Stopped**. Confirm every term becomes zero.
-5. Enter `-1` for both speed fields. Explain why the static and velocity terms change sign.
-6. Change only `kA`. Compare steady forward with the start step.
-7. Reset the tracer before creating your evidence table.
+4. Choose **Invalid battery**. Confirm that the code-derived path leaves output at zero.
+5. Choose **Stopped**. Confirm every term becomes zero.
+6. Enter `-1` for both speed fields. Explain why the static and velocity terms change sign.
+7. Change only `kA`. Compare steady forward with the start step.
+8. Reset the tracer before creating your evidence table.
 
-The source clamps target wheel speed to `-3.5` through `3.5 m/s`. It also returns zero when the
-battery input is invalid. The browser controls use smaller learning bounds than the full source
-declarations.
+For this checked-in profile, the runtime clamps target wheel speed to about `-1.567` through
+`1.567 m/s`. It also returns zero when the battery input is invalid. The browser coefficient
+controls use smaller learning bounds than the full source declarations. When you change positive
+`kV`, the tracer also updates the cap with `1 ÷ kV`, matching the controller rule.
 
 ## Walk the source and run the focused test
 
@@ -162,6 +176,9 @@ rg -n "SimpleFeedforwardCoeffs|kS|kV|kA" `
 
 rg -n "applyFeedforward|voltageCompensationFactor|finiteClampedPower" `
   ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumDriveFeedforward.kt
+
+rg -n "driveFeedforward.kV|maxWheelSpeedMetersPerSecond" `
+  ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumKinematicsController.kt
 
 rg -n "ftc.drive.feedforward" `
   ARES-FTC/.ares/tuning/team23247.ftc.season2026.gobilda.profile.competition.arestuning `
@@ -186,6 +203,7 @@ that a physical drivetrain matches the model.
 - Can you explain feedback using a measured value?
 - Did you keep velocity, acceleration, loop time, and request units separate?
 - Can you find each feedforward term in the runtime source?
+- Can you show how the checked-in `kV` value sets the current speed cap?
 - Did you label the team profile values as checked-in source data?
 - Did you keep the unresolved unit contract visible?
 - Can you name runtime paths missing from the tracer?
@@ -198,15 +216,18 @@ that a physical drivetrain matches the model.
 | The start-step output stops at `1.0` | The source clamps the final duty request. |
 | Stopped still has a static term | The source returns zero when target speed is near zero. |
 | Reverse motion has a positive static term | Check the sign of target velocity. |
+| A larger target changes to about `1.567 m/s` | The current Team 23247 profile sets the runtime cap with `1 ÷ kV`. |
+| Invalid battery leaves every result at zero | The source fails closed when battery input is not finite or is at most `0.1 V`. |
 | A result is labeled volts | Use request units until the source contract is aligned. |
 | A profile value is called safe for another robot | Stop. The checked-in value is not general hardware approval. |
 | A browser result is treated as motor evidence | Separate source math, simulation, and physical measurement. |
 
 ## Evidence artifact
 
-Create one comparison table with at least seven trials. Include activity name, changed value,
-target, prior target, loop time, battery input, each feedforward term, raw request, final request,
-final modeled velocity when available, and model type.
+Create one comparison table with at least seven trials. Include the activity, changed value, target,
+target used after the speed cap, prior target, loop time, and battery input. Also include each
+feedforward term, raw request, request before the final clamp, final request, final modeled velocity
+when available, and model type.
 
 Label Activity 1 rows **invented conceptual model**. Label Activity 2 rows **pinned source arithmetic**.
 Add the source commit and focused test result to the Activity 2 rows.
@@ -225,9 +246,10 @@ Write four short claims:
 3. Why does the acceleration term depend on loop time?
 4. What is the steady-forward raw request with the checked-in profile values?
 5. Why does the start-step example clamp?
-6. Why does this lesson call the runtime terms request units?
-7. Does the checked-in team profile approve the same values for another robot?
-8. Name three runtime paths missing from the source tracer.
+6. How does the checked-in `kV` value set the current modeled speed cap?
+7. Why does this lesson call the runtime terms request units?
+8. Does the checked-in team profile approve the same values for another robot?
+9. Name three runtime paths missing from the source tracer.
 
 The numeric steady-forward answer is `0.688` request units. Good explanations keep source
 arithmetic, declared units, measured motion, and physical approval separate.
