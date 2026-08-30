@@ -1,6 +1,14 @@
 {
   "simulators": [
     {
+      "id": "aresPidTraceLab",
+      "name": "ARES PID Source Trace",
+      "path": "./ares-pid-trace-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "armkg",
       "name": "Arm Kinematics Gravity Model",
       "path": "./armkg",

@@ -311,7 +311,7 @@
       "slug": "controls-pid",
       "title": "Tune Feedback with Evidence",
       "category": "Robotics & Engineering",
-      "description": "Trace the current ARES PID calculation, compare it with a conceptual response model, and tune one change at a time against numeric goals.",
+      "description": "Trace the ARES 11.1.0 PID calculation, compare it with a clearly labeled conceptual response model, and tune one change at a time against numeric goals.",
       "contentFile": "controls/03-pid-evidence.md",
       "subject": "robotics-engineering",
       "topics": ["PID", "feedback", "control response", "evidence"],
@@ -320,16 +320,17 @@
       "estimatedMinutes": 95,
       "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 4 }],
       "prerequisites": ["controls-motor-model-feedforward"],
-      "objectives": ["Trace current ARES proportional, integral, filtered derivative-on-measurement, reset, deadzone, and limit behavior.", "Separate the classroom response model from current ARES executable behavior.", "Tune one conceptual gain at a time against a numeric goal.", "Design a bounded student-led physical verification plan without treating simulation as proof."],
+      "objectives": ["Trace ARES 11.1.0 proportional, integral, filtered derivative-on-measurement, reset, deadzone, invalid-input, and limit behavior.", "Separate the classroom response model from current ARES executable behavior.", "Tune one conceptual gain at a time against a numeric goal.", "Design a bounded student-led physical verification plan without treating simulation as proof."],
       "platforms": ["hardware-neutral", "simulator"],
       "sourceReferences": [
-        { "label": "Current ARES PID implementation", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt", "blobHash": "63b507503f609e56b43961368e6713cd3977bdce" },
-        { "label": "Derivative filter and reset tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/control/feedback/PIDControllerTest.kt", "blobHash": "5a0e4f96b7f5f162f328ea8d02db5aa16e53c3b8" },
-        { "label": "PID behavior and safety-boundary tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/control/PIDControllerTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/control/PIDControllerTest.kt", "blobHash": "7fc14157bbf0c910ee7aeb68df9ac51f64717054" },
-        { "label": "Tier-one clamping and continuous-input evidence", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt", "blobHash": "28ffa0815cb8efea14cf6fe3eea3da4566135b49" },
-        { "label": "Typed tuning declarations and profiles", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/docs/typed-tuning-profiles.md", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "docs/typed-tuning-profiles.md", "blobHash": "a3e8e6d736e6165cc63f96b553a0b79cc1adae3d" }
+        { "label": "ARES PID implementation", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt", "blobHash": "63b507503f609e56b43961368e6713cd3977bdce" },
+        { "label": "Derivative filter and reset tests", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerTest.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerTest.kt", "blobHash": "5a0e4f96b7f5f162f328ea8d02db5aa16e53c3b8" },
+        { "label": "PID behavior and safety-boundary tests", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/PIDControllerTest.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/PIDControllerTest.kt", "blobHash": "7fc14157bbf0c910ee7aeb68df9ac51f64717054" },
+        { "label": "Tier-one clamping and continuous-input evidence", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt", "blobHash": "28ffa0815cb8efea14cf6fe3eea3da4566135b49" },
+        { "label": "Typed tuning declarations and profiles", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/docs/typed-tuning-profiles.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/docs/typed-tuning-profiles.md", "blobHash": "a3e8e6d736e6165cc63f96b553a0b79cc1adae3d" },
+        { "label": "Canonical ARES release identity", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/release/ares-versions.properties", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "release/ares-versions.properties", "blobHash": "77420b3de671fa5a4db08e3afd0155a11aa5b598" }
       ],
-      "appliesToVersion": "ARESLib 10.1.0",
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
       "safetyScope": "simulation-only",
       "instructionalContractVersion": 2
     },

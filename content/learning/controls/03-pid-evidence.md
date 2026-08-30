@@ -10,6 +10,9 @@ Complete [Predict Motion with Feedforward](/academy/controls-motor-model-feedfor
 first. You should be able to read a time graph, name the units in a calculation, and explain why a
 prediction and a feedback correction are different jobs.
 
+This lesson follows ARES 11.1.0 and Studio 2.0.3. Its source links are pinned to the exact public
+monorepo commit used for review. The browser activities do not run the Kotlin controller.
+
 In this lesson, you will:
 
 - connect P, I, and D to the evidence each term uses;
@@ -93,10 +96,10 @@ behavior until the source documentation is corrected.
 
 ## Hands-on activity
 
-The response lab below is a small, invented plant for learning one-change trials. It uses the common
-classroom derivative-of-error formula, not the current ARES derivative filter. That difference is
-intentional and visible: use the graph to practice evidence collection, then use the source trace
-above to explain what would change in ARES.
+The response lab below has two parts. The first is a small, invented plant for learning one-change
+trials. It uses the common classroom derivative-of-error formula, not the current ARES derivative
+filter. The second copies selected arithmetic from the pinned ARES PID source. It uses fixed
+classroom cases and does not run Kotlin or a motor.
 
 <controlresponselab />
 
@@ -110,6 +113,19 @@ above to explain what would change in ARES.
 5. Write one sentence comparing the lab's derivative-of-error model with the current ARES
    derivative-on-measurement calculation.
 
+<arespidtracelab />
+
+Now use the **ARES 11.1.0 source trace** in the same activity:
+
+1. Choose **Worked step**. Confirm the final output is `0.155`.
+2. Choose **First after reset**. Explain why the D term is zero.
+3. Choose **Output limited**. Compare proposed stored error with stored error used.
+4. Choose **Inside deadzone**. Confirm output is zero even though stored error already exists.
+5. Choose **Invalid loop time**. Explain why returning zero is the safe result.
+
+These cases expose runtime boundaries that a smooth response graph can hide. They still do not
+include continuous angle wrapping, a live controller history, mechanism physics, or sensor noise.
+
 ## Checkpoints
 
 - Did you write a goal such as “final error below `0.10`” or “peak below `1.10`” before testing?
@@ -117,6 +133,7 @@ above to explain what would change in ARES.
 - Did you record all gains, including values that stayed at zero?
 - Did you mark trials that reached the output limit?
 - Can you point to the source evidence for ARES reset, deadzone, filter, and anti-windup behavior?
+- Can you explain why invalid inputs return zero without changing controller state?
 - Did you keep browser-model evidence separate from robot evidence?
 
 Current ARES output and integral limits are optional settings. If code does not call
@@ -144,6 +161,24 @@ the same derivative kick.
 If the controller returns zero, check for a non-finite measurement, setpoint, loop time, or gain, or
 a loop time at or below zero. Also check whether the error is inside a configured deadzone.
 
+## Walk the current source
+
+From the root of the ARES Robotics monorepo, run:
+
+```powershell
+rg -n "fun calculate|measurementDerivative|filteredDerivative|proposedError|isSaturated|deadzone" `
+  ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt
+
+rg -n "Derivative|deadzone|Integrator|Continuous|NaN|OutputLimits" `
+  ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/PIDControllerTest.kt `
+  ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerTest.kt `
+  ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt
+```
+
+The source file's opening formula describes derivative of error. The executable method and tests
+use filtered derivative on measurement. Keep that mismatch in your evidence instead of silently
+rewriting one behavior as the other.
+
 ## Evidence artifact
 
 Submit:
@@ -152,6 +187,8 @@ Submit:
   saturation;
 - the worked ARES step with error, proposed stored error, filtered measurement rate, each term, and
   final pre-limit output;
+- a five-row source-trace table with the selected case, proposed stored error, stored error used,
+  D term, final output, and the boundary that explains the result;
 - a two-column note labeled **browser model** and **current ARES source** that explains the D-term
   difference; and
 - a tuning decision that names the goal, chosen values, two supporting numbers, one missing physical
@@ -165,7 +202,8 @@ Submit:
 4. Why is the first derivative result zero after reset?
 5. When can the directional anti-windup rule freeze stored error?
 6. What does the deadzone do to output and stored derivative state?
-7. Why can the response lab not approve gains for a physical robot?
+7. What does current ARES return when the loop time is invalid?
+8. Why can the response lab not approve gains for a physical robot?
 
 A strong answer separates generic PID ideas, current ARES behavior, browser-model evidence, and
 physical evidence.

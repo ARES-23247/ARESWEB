@@ -4,6 +4,7 @@
 import { lazy, type ComponentType } from "react";
 
 // ── Lazy-loaded Simulators ─────────────────────────────────────────────
+const aresPidTraceLab = lazy(() => import("../../sims/ares-pid-trace-lab"));
 const armkg = lazy(() => import("../../sims/armkg"));
 const auto = lazy(() => import("../../sims/auto"));
 const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
@@ -107,6 +108,8 @@ const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 // Simulator props are supplied by authored content and validated by each component.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  aresPidTraceLab: aresPidTraceLab,
+  arespidtracelab: aresPidTraceLab,
   armkg: armkg,
   auto: auto,
   autonomousPathLab: autonomousPathLab,
@@ -274,6 +277,8 @@ const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 // learning-purpose, fidelity, accessibility, and test review.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  aresPidTraceLab: aresPidTraceLab,
+  arespidtracelab: aresPidTraceLab,
   autonomousPathLab: autonomousPathLab,
   autonomouspathlab: autonomousPathLab,
   brownoutSandbox: brownoutSandbox,
@@ -367,6 +372,14 @@ const ACADEMY_SIM_TAG_NAMES = Object.keys(ACADEMY_SIM_COMPONENTS);
 
 // Full metadata for each sim (for management UI)
 const SIM_METADATA = [
+  {
+    'id': 'aresPidTraceLab',
+    'name': 'ARES PID Source Trace',
+    'folder': 'ares-pid-trace-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
   {
     'id': 'armkg',
     'name': 'Arm Kinematics Gravity Model',
