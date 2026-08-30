@@ -610,6 +610,38 @@ runtime behavior remains present even though `FtcBaseRobot.kt` has a newer Git b
 verification must recompute all four pinned source hashes. This local curriculum change does not
 stage, publish, or overwrite production data.
 
+## Continuous cycle: existing subsystem-authoring lesson depth
+
+This cycle improves the existing `programming-code-subsystem` lesson and its Subsystem Ownership
+Decision Lab. It does not add a replacement title. Review the new comparison of the current
+`DECLARATIVE_GENERATED`, `GENERATED_STARTER`, and `HAND_AUTHORED` implementation kinds with their
+required `GENERATED_DO_NOT_EDIT`, `GENERATED_STARTER`, and `USER_OWNED` source ownership. Confirm
+that hand-authored registration names real modules, project-relative source files, runtime classes,
+simulation support, and catalog actions instead of claiming ARES can infer Kotlin ownership.
+
+Review the lesson's preview and replacement flow. A generated starter may be added when missing. A
+changed generated starter requires a current structured diff and the exact hash-bound confirmation
+token. User-owned or unknown source remains protected. Generated do-not-edit output stays under
+Gradle generated directories and is recreated from the canonical `.aressubsystem` document.
+
+The interaction now offers all three implementation paths and a five-part evidence checklist. It
+keeps missing units, cached-input rules, neutral recovery, simulation parity, and evidence-layer
+planning visible. Confirm native radio and checkbox controls, keyboard focus, 44-pixel targets,
+narrow-screen reflow, live result announcements, and deterministic reset.
+
+The lab is a conceptual planning form. It does not inspect Kotlin or a descriptor, validate schema
+11, identify hazards, create files, run tests, connect to a simulator, command hardware, or prove a
+subsystem safe. Its completed state means only that five planning boxes are checked. Students retain
+authority to perform the team's physical verification process. Website posts use the separate Lead
+Coach editorial workflow.
+
+The four reviewed sources are pinned to ARES Robotics commit `f3de343a` and the ARES 11.1.0 /
+Studio 2.0.3 identity. The local ARES worktree remains on the older `3d10f63a` development branch,
+so the current reviewed release files were read directly from the fetched immutable commit rather
+than by changing or cleaning that dirty worktree. Remote catalog verification must recompute all
+four Git blob hashes. This local curriculum change does not stage, publish, or overwrite production
+data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
