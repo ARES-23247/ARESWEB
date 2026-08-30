@@ -46,6 +46,10 @@ describe("OdometryErrorLab", () => {
       activeSource: "UNINITIALIZED",
       healthyRecoverySamples: 0,
     };
+    expect(updateOdometrySource(state, true, false)).toEqual({
+      activeSource: "DRIVETRAIN_FALLBACK",
+      healthyRecoverySamples: 0,
+    });
     expect(updateOdometrySource(state, false, false)).toEqual({
       activeSource: "DRIVETRAIN_FALLBACK",
       healthyRecoverySamples: 0,
@@ -78,6 +82,13 @@ describe("OdometryErrorLab", () => {
       healthyRecoverySamples: 0,
     });
     expect(updateOdometrySource(state, false, false)).toEqual({
+      activeSource: "DRIVETRAIN_FALLBACK",
+      healthyRecoverySamples: 0,
+    });
+    expect(updateOdometrySource({
+      activeSource: "DRIVETRAIN_FALLBACK",
+      healthyRecoverySamples: 4,
+    }, false, true)).toEqual({
       activeSource: "DRIVETRAIN_FALLBACK",
       healthyRecoverySamples: 0,
     });

@@ -29,6 +29,10 @@ This lesson will help you:
 
 The endpoint lab uses simple geometry. It does not reproduce the full ARES estimator.
 
+This lesson follows ARES 11.1.0, FTC SDK 11.1.0, and Studio 2.0.3. Its source links are pinned to
+the exact public monorepo commit used for review. The browser supplies ready-made health results. It
+does not read robot sensors or execute the Kotlin runtime.
+
 ## Vocabulary
 
 - **Pose:** field X, field Y, and heading together.
@@ -110,6 +114,35 @@ status, inspect the hardware, and repeat the route.
 ARES FRC uses a different platform boundary. Its CTRE estimator remains authoritative. The route
 and independent-truth ideas in this lesson still apply, but the FTC source buttons in the browser
 lab do not describe FRC source selection.
+
+### Read the exact ARES 11.1.0 boundaries
+
+The Pinpoint adapter tests four kinds of evidence before calling a packet healthy:
+
+| Check | Pinned ARES 11.1.0 rule |
+| --- | --- |
+| Finite values | X, Y, heading, linear velocity, and angular velocity must all be finite. |
+| Speed | Linear speed must be at most `8 m/s`. Angular speed must be at most `4π rad/s`. |
+| One-packet jump | Distance and heading changes must fit the speed bound plus a `0.75` tolerance. |
+| Sample age | A trusted packet must be from `0` through `100 ms` old. |
+
+An invalid packet changes the health label and keeps the last trusted pose. It does not publish the
+bad coordinates as healthy evidence.
+
+The source selector is a smaller state machine:
+
+| Starting source | New Pinpoint result | Next source | Recovery count |
+| --- | --- | --- | --- |
+| `UNINITIALIZED` | present and healthy | `PINPOINT` | `0` |
+| `UNINITIALIZED` | missing or unhealthy | `DRIVETRAIN_FALLBACK` | `0` |
+| `PINPOINT` | missing or unhealthy | `DRIVETRAIN_FALLBACK` | `0` |
+| `DRIVETRAIN_FALLBACK` | missing or unhealthy | `DRIVETRAIN_FALLBACK` | `0` |
+| `DRIVETRAIN_FALLBACK` | healthy samples one through four | `DRIVETRAIN_FALLBACK` | `1` through `4` |
+| `DRIVETRAIN_FALLBACK` | fifth healthy sample | `PINPOINT` | `0` |
+
+That last row is not the whole handoff. `FtcBaseRobot` next rebases Pinpoint to the fused pose and
+reads it again. Failed initialization or an unhealthy rebased sample forces fallback again. The
+browser buttons model the selector table, but they do not model that rebase attempt.
 
 ## Visual model
 
@@ -238,6 +271,24 @@ If the browser lab seems too clean, remember its limit. It applies exact scale a
 Real data includes noise, slip, curved motion, delayed samples, changing wheel contact, and setup
 error.
 
+## Walk the current source
+
+From the root of the ARES Robotics monorepo, run:
+
+```powershell
+rg -n "HealthStatus|DEFAULT_MAX_SAMPLE_AGE_MS|MAX_LINEAR_SPEED|isHealthy" `
+  ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/PinpointIO.kt
+
+rg -n "UNINITIALIZED|healthyRecoverySamples|forceFallback|reset" `
+  ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiter.kt
+
+rg -n "previousSource|initialize\(|forceFallback|applyControlHubGyroCorrection" `
+  ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt
+```
+
+Then open the pinned tests from the lesson source panel. Match each browser transition to one
+source branch and one test expectation. Record “not modeled” for the rebase and hardware checks.
+
 ## Evidence artifact
 
 Submit one packet with three parts:
@@ -264,7 +315,8 @@ cause as unproven. Add a route drawing with field axes and both endpoints.
 8. Why are five healthy recovery samples required in a row?
 9. What does rebase mean during a source handoff?
 10. Does the fallback source name prove that a valid IMU sample exists?
-11. Does this lab run the ARES estimator or prove physical robot accuracy?
+11. What happens if the fifth healthy sample is followed by a failed Pinpoint rebase?
+12. Does this lab run the ARES estimator or prove physical robot accuracy?
 
 A strong answer names the frame and units. It separates measured evidence from a possible cause and
 keeps calibration error separate from source-health behavior.
