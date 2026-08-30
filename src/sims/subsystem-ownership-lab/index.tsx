@@ -3,10 +3,17 @@ import { useMemo, useState } from "react";
 
 export type SubsystemStartingPoint = "descriptor" | "editable" | "existing";
 export type EvidenceKey =
-  "units" | "inputs" | "neutral" | "simulation" | "verification";
+  | "pathContract"
+  | "units"
+  | "inputs"
+  | "neutral"
+  | "simulation"
+  | "verification";
 export type EvidenceState = Record<EvidenceKey, boolean>;
 
-const EVIDENCE_ITEMS: { key: EvidenceKey; label: string; help: string }[] = [
+type EvidenceItem = { key: EvidenceKey; label: string; help: string };
+
+const COMMON_EVIDENCE_ITEMS: EvidenceItem[] = [
   {
     key: "units",
     label: "Units and direction",
@@ -34,6 +41,24 @@ const EVIDENCE_ITEMS: { key: EvidenceKey; label: string; help: string }[] = [
   },
 ];
 
+const PATH_EVIDENCE_ITEMS: Record<SubsystemStartingPoint, EvidenceItem> = {
+  descriptor: {
+    key: "pathContract",
+    label: "Declarative path rules",
+    help: "Do not supply source paths or action keys. Keep generated mock and tests on.",
+  },
+  editable: {
+    key: "pathContract",
+    label: "Starter path rules",
+    help: "Codegen sets source paths and actions. Replacements need a reviewed diff and exact token.",
+  },
+  existing: {
+    key: "pathContract",
+    label: "Hand-authored metadata",
+    help: "State module, files, classes, simulation, and exposed actions. Turn generated mock and tests off.",
+  },
+};
+
 const STARTING_POINTS: {
   value: SubsystemStartingPoint;
   label: string;
@@ -57,6 +82,7 @@ const STARTING_POINTS: {
 ];
 
 const EMPTY_EVIDENCE: EvidenceState = {
+  pathContract: false,
   units: false,
   inputs: false,
   neutral: false,
@@ -78,7 +104,11 @@ export function evaluateSubsystemPlan(
   startingPoint: SubsystemStartingPoint,
   evidence: EvidenceState,
 ): SubsystemPlan {
-  const missingEvidence = EVIDENCE_ITEMS.filter(
+  const evidenceItems = [
+    PATH_EVIDENCE_ITEMS[startingPoint],
+    ...COMMON_EVIDENCE_ITEMS,
+  ];
+  const missingEvidence = evidenceItems.filter(
     ({ key }) => !evidence[key],
   ).map(({ label }) => label);
   const path = {
@@ -122,6 +152,10 @@ export default function SubsystemOwnershipLab() {
     () => evaluateSubsystemPlan(startingPoint, evidence),
     [startingPoint, evidence],
   );
+  const evidenceItems = useMemo(
+    () => [PATH_EVIDENCE_ITEMS[startingPoint], ...COMMON_EVIDENCE_ITEMS],
+    [startingPoint],
+  );
   const reset = () => {
     setStartingPoint("descriptor");
     setEvidence(EMPTY_EVIDENCE);
@@ -134,12 +168,9 @@ export default function SubsystemOwnershipLab() {
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Ownership and evidence model
-          </p>
           <h3
             id="ownership-lab-title"
-            className="mt-1 text-xl font-black text-white"
+            className="text-xl font-black text-white"
           >
             Subsystem Ownership Decision Lab
           </h3>
@@ -173,7 +204,13 @@ export default function SubsystemOwnershipLab() {
                   name="subsystem-start"
                   value={item.value}
                   checked={startingPoint === item.value}
-                  onChange={() => setStartingPoint(item.value)}
+                  onChange={() => {
+                    setStartingPoint(item.value);
+                    setEvidence((current) => ({
+                      ...current,
+                      pathContract: false,
+                    }));
+                  }}
                   className="mt-0.5 h-5 w-5 shrink-0 accent-ares-red"
                 />
                 <span>
@@ -188,7 +225,7 @@ export default function SubsystemOwnershipLab() {
             <legend className="px-2 text-sm font-bold text-ares-gold">
               2. Mark evidence already written down
             </legend>
-            {EVIDENCE_ITEMS.map((item) => (
+            {evidenceItems.map((item) => (
               <label
                 key={item.key}
                 className="flex min-h-11 cursor-pointer items-start gap-3 rounded border border-white/10 p-3 text-sm text-white focus-within:ring-2 focus-within:ring-ares-cyan"
@@ -215,10 +252,7 @@ export default function SubsystemOwnershipLab() {
         </div>
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4 sm:p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-gold">
-            Source plan
-          </p>
-          <dl aria-live="polite" aria-atomic="true" className="mt-4 grid gap-3">
+          <dl aria-live="polite" aria-atomic="true" className="grid gap-3">
             <Datum label="Implementation" value={result.implementation} />
             <Datum label="Ownership" value={result.ownership} />
             <Datum label="Source treatment" value={result.sourceTreatment} />
@@ -249,7 +283,7 @@ export default function SubsystemOwnershipLab() {
         <strong>Model limit:</strong> This form does not inspect Kotlin or a
         descriptor, find hazards, generate files, run tests, connect to a
         simulator, command hardware, or prove that a subsystem is safe.
-        “Checklist filled in” means only that all five planning boxes are
+        “Checklist filled in” means only that all six planning boxes are
         checked.
       </p>
     </section>

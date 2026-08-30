@@ -627,35 +627,39 @@ production data.
 
 ## Continuous cycle: existing subsystem-authoring lesson depth
 
-This cycle improves the existing `programming-code-subsystem` lesson and its Subsystem Ownership
-Decision Lab. It does not add a replacement title. Review the new comparison of the current
+This refreshed cycle improves the existing `programming-code-subsystem` lesson and its Subsystem
+Ownership Decision Lab. It does not add a replacement title. Review the comparison of the current
 `DECLARATIVE_GENERATED`, `GENERATED_STARTER`, and `HAND_AUTHORED` implementation kinds with their
 required `GENERATED_DO_NOT_EDIT`, `GENERATED_STARTER`, and `USER_OWNED` source ownership. Confirm
-that hand-authored registration names real modules, project-relative source files, runtime classes,
-simulation support, and catalog actions instead of claiming ARES can infer Kotlin ownership.
+that schema 11 still defines all three paths in ARESLib 10.1.0. Hand-authored registration names
+real modules, project-relative source files, runtime classes, simulation support, and every exposed
+catalog action instead of claiming ARES can infer Kotlin ownership.
 
-Review the lesson's preview and replacement flow. A generated starter may be added when missing. A
-changed generated starter requires a current structured diff and the exact hash-bound confirmation
-token. User-owned or unknown source remains protected. Generated do-not-edit output stays under
-Gradle generated directories and is recreated from the canonical `.aressubsystem` document.
+Review the lesson's preview and replacement flow. `generateSubsystemStarters` may add a missing
+starter but refuses replacements. A changed generated starter requires the separate
+`replaceSubsystemStarters` task, a current structured diff, and the exact hash-bound confirmation
+token. The token binds the current and proposed file hashes. User-owned or unknown source remains
+protected. Generated do-not-edit output stays under Gradle generated directories and is recreated
+from the canonical `.aressubsystem` document.
 
-The interaction now offers all three implementation paths and a five-part evidence checklist. It
-keeps missing units, cached-input rules, neutral recovery, simulation parity, and evidence-layer
-planning visible. Confirm native radio and checkbox controls, keyboard focus, 44-pixel targets,
-narrow-screen reflow, live result announcements, and deterministic reset.
+The interaction offers all three implementation paths and a six-part evidence checklist. Its first
+item changes with the selected path: declarative generated rules, starter rules, or hand-authored
+metadata. Switching paths clears that path-specific check so a completed checklist cannot silently
+carry a different meaning. It also shows whether tests and actions are generated or project-owned.
+Confirm native radio and checkbox controls, keyboard focus, 44-pixel targets, narrow-screen reflow,
+live result announcements, and deterministic reset.
 
 The lab is a conceptual planning form. It does not inspect Kotlin or a descriptor, validate schema
 11, identify hazards, create files, run tests, connect to a simulator, command hardware, or prove a
-subsystem safe. Its completed state means only that five planning boxes are checked. Students retain
+subsystem safe. Its completed state means only that six planning boxes are checked. Students retain
 authority to perform the team's physical verification process. Website posts use the separate Lead
 Coach editorial workflow.
 
-The four reviewed sources are pinned to ARES Robotics commit `f3de343a` and the ARES 11.1.0 /
-Studio 2.0.3 identity. The local ARES worktree remains on the older `3d10f63a` development branch,
-so the current reviewed release files were read directly from the fetched immutable commit rather
-than by changing or cleaning that dirty worktree. Remote catalog verification must recompute all
-four Git blob hashes. This local curriculum change does not stage, publish, or overwrite production
-data.
+Four ARESLib sources are pinned to clean files at `13599358` (`areslib-10.1.0`). The current FTC
+authoring guide and Gradle tasks are pinned to clean files at `0cb74896` (`ares-ftc-10.1.0`). The
+unrelated dirty files in both robotics worktrees were left untouched. Remote catalog verification
+must recompute all six Git blob hashes. This local curriculum change does not stage, publish, or
+overwrite production data.
 
 ## Continuous cycle: existing task-sequence lesson depth
 

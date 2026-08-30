@@ -6,6 +6,7 @@ import SubsystemOwnershipLab, {
 } from "@/sims/subsystem-ownership-lab";
 
 const COMPLETE: EvidenceState = {
+  pathContract: true,
   units: true,
   inputs: true,
   neutral: true,
@@ -13,6 +14,7 @@ const COMPLETE: EvidenceState = {
   verification: true,
 };
 const EMPTY: EvidenceState = {
+  pathContract: false,
   units: false,
   inputs: false,
   neutral: false,
@@ -40,6 +42,7 @@ describe("SubsystemOwnershipLab", () => {
     const result = evaluateSubsystemPlan("existing", { ...EMPTY, units: true });
     expect(result.readyForPreview).toBe(false);
     expect(result.missingEvidence).toEqual([
+      "Hand-authored metadata",
       "Cached input contract",
       "Fault and neutral rules",
       "Simulation boundary",
@@ -57,6 +60,7 @@ describe("SubsystemOwnershipLab", () => {
     expect(screen.getByText("USER_OWNED", { selector: "dd" })).toBeVisible();
 
     for (const name of [
+      "Hand-authored metadata",
       "Units and direction",
       "Cached input contract",
       "Fault and neutral rules",
@@ -71,12 +75,22 @@ describe("SubsystemOwnershipLab", () => {
       "Checklist filled in for source preview",
     );
 
+    fireEvent.click(
+      screen.getByRole("radio", { name: /New editable Kotlin is needed/u }),
+    );
+    expect(
+      screen.getByRole("checkbox", { name: /Starter path rules/u }),
+    ).not.toBeChecked();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 evidence area still missing",
+    );
+
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(
       screen.getByText("DECLARATIVE_GENERATED", { selector: "dd" }),
     ).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "5 evidence areas still missing",
+      "6 evidence areas still missing",
     );
   });
 
@@ -87,7 +101,7 @@ describe("SubsystemOwnershipLab", () => {
     );
     expect(screen.getByRole("note")).toHaveTextContent("command hardware");
     expect(screen.getByRole("note")).toHaveTextContent(
-      "all five planning boxes",
+      "all six planning boxes",
     );
   });
 });
