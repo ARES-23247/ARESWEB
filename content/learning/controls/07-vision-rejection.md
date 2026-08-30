@@ -14,11 +14,13 @@ By the end, you will be able to:
 
 - explain why an image belongs to its capture time instead of its receipt time;
 - trace the main ARES vision checks in a sensible order;
-- read a rejection reason without hiding the rest of the evidence; and
+- separate the lab's teaching explanations from current ARES runtime reasons;
+- use a rejection reason without pretending it names every failed check; and
 - plan a private, repeatable camera test at surveyed field points.
 
-The lab uses a short checklist and straight-line math. ARES performs more checks and uses a full
-pose estimator. The lab does not solve an image or reproduce that estimator.
+The lab uses a short checklist and straight-line math. Its detailed gate explanations are teaching
+aids. Current ARES reports a generic reason for its first prefilter, then more specific reasons from
+the estimator. The lab does not solve an image or reproduce that estimator.
 
 ## Vocabulary
 
@@ -61,34 +63,42 @@ later motion. If the capture time is older than the stored history, ARES rejects
 
 ## How the ARES checks fit together
 
-ARES has two useful layers of checks. The hardware-facing filter asks whether the measurement is
-physically believable. It checks valid numbers, ambiguity when the camera supplies it, allowed tag
-IDs, camera distance, and the robot footprint inside field bounds. It also checks heading
-disagreement, fast turning, and a hard collision or shock.
+ARES uses two layers. First, the Store finds the saved pose at the image's capture time. A
+`VisionOutlierFilter` prefilter checks its configuration and all required finite values. It checks
+ambiguity only when the camera says ambiguity is available. It checks a tag ID only when the
+configured allowlist is not empty. It can also check reported tag distance, pose distance, target
+height, roll, pitch, heading disagreement, the rotated robot footprint, turn rate, and shock.
 
-The estimator then asks whether the measurement fits its saved state and uncertainty. It requires
-pose history, at least one tag, positive uncertainty values, a valid statistical threshold, and a
-capture time inside history. It scales camera uncertainty using distance, tag count, viewing angle,
-and ambiguity. Last, it compares the three-part innovation for `x`, `y`, and heading with the
-combined uncertainty.
+That prefilter returns only `true` or `false`. It does not publish the exact failed sub-check. If a
+non-empty batch has no frame left after this layer, the Store records `prefilter_rejected`. The
+lab keeps its specific gate explanations visible so students can reason about the checklist, but
+those explanations are not current ARES runtime strings.
 
-These checks answer different questions. Low ambiguity does not prove the tag ID, field map,
-timestamp, or pose is correct. A pose inside the field can still disagree too much with recent
-motion. Passing every gate means “usable by this policy,” not “perfect truth.”
+Next, the Store chooses uncertainty values. It uses each positive camera-reported standard
+deviation when available. Otherwise it uses configured values or defaults of `0.05 m`, `0.05 m`,
+and `0.1 rad`. MegaTag2 is treated as a translation-only update: heading gets almost no influence,
+and ARES uses the configured 2D NIS threshold.
 
-Some useful ARES reason names are:
+The EKF then checks history, tag count, uncertainty, covariance, capture time, and normalized
+innovation squared, or NIS. It scales uncertainty using distance, tag count, viewing angle, and
+ambiguity. These checks answer different questions. Low ambiguity does not prove the tag ID, field
+map, timestamp, or pose is correct. Passing every gate means “usable by this policy,” not “truth.”
 
-| ARES reason or status              | Plain-language meaning                                | First thing to inspect                        |
-| ---------------------------------- | ----------------------------------------------------- | --------------------------------------------- |
-| `REJ_INVALID` or `nan_measurement` | A required number is missing or not finite.           | Camera output and unit conversion             |
-| `REJ_AMBIG` or `high_ambiguity`    | The camera found a weak or competing solution.        | View angle, lighting, focus, and tag size     |
-| `REJ_BOUNDS`                       | The robot footprint would lie outside the field.      | Field frame, layout, and camera mount         |
-| `REJ_DIST`                         | The reported pose is farther than the policy allows.  | Distance units and current pose               |
-| `REJ_YAW`                          | Camera heading and robot heading differ too much.     | Heading frame and mount rotation              |
-| `REJ_RATE`                         | The robot is turning too fast for this update.        | Angular-rate telemetry and motion blur        |
-| `REJ_SHOCK`                        | A hard motion event makes the frame less trustworthy. | Acceleration data and collision timing        |
-| `vision_too_old`                   | Capture time is older than saved pose history.        | Camera clock, latency, and history length     |
-| `mahalanobis_rejected`             | Innovation is too large for the stated uncertainty.   | Residuals, uncertainty, and independent truth |
+These are current runtime reason names:
+
+| Runtime reason                                    | Plain-language meaning                                  |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| `prefilter_rejected`                              | The Boolean physical/configuration prefilter removed it. |
+| `empty_history`                                   | The Store has no pose sample for delayed replay.         |
+| `high_ambiguity` or `nan_measurement`             | Ambiguity is too high, or the pose contains `NaN`.       |
+| `no_tags`, `invalid_std_devs`, `invalid_threshold` | A required estimator input is not usable.                |
+| `vision_too_old`                                  | Capture time is older than saved pose history.           |
+| `non_positive_definite_innovation_covariance`     | The combined uncertainty cannot be used safely.          |
+| `invalid_innovation` or `mahalanobis_rejected`    | NIS is invalid or above the selected threshold.          |
+| `external_filter_rejected`                        | A platform-owned estimator rejected the frame.           |
+
+When a platform estimator already fused the frame, ARES can set `fuseIntoPoseEstimator = false`.
+ARES keeps filtered diagnostics without correcting its own pose a second time.
 
 Do not tune by raising every limit until all data passes. A rejection can reveal a bad frame,
 incorrect units, a stale clock, a wrong field map, or an uncertainty model that needs better tests.
@@ -100,20 +110,20 @@ incorrect units, a stale clock, a wrong field map, or an uncertainty model that 
 flowchart TD
   C["Image captured"] --> L["Camera processing and network delay"]
   L --> M["Pose result reaches robot"]
-  M --> P{"Identity, finite data, ambiguity, motion, and field checks pass?"}
-  P -->|No| R["Reject and keep reason plus evidence"]
+  M --> P{"Physical and configuration prefilter passes?"}
+  P -->|No| R["Record prefilter_rejected"]
   P -->|Yes| T{"Capture time exists in pose history?"}
   T -->|No| R
   T -->|Yes| H["Find predicted pose at capture time"]
   H --> I{"Innovation fits the uncertainty?"}
-  I -->|No| R
+  I -->|No| K["Record the EKF reason"]
   I -->|Yes| U["Correct the capture-time state"]
   U --> E["Replay later motion to the present"]
 ```
 
 Read it from top to bottom. The camera result arrives in the present, but the comparison moves back
-to capture time. Every failed branch keeps a reason. The accepted branch returns to the present by
-replaying later motion.
+to capture time. The prefilter reason is generic. The EKF reason is more specific. The accepted
+branch returns to the present by replaying later motion.
 
 ## Hands-on activity
 
@@ -124,23 +134,24 @@ Open the lab below. The controls are keyboard and touch friendly.
 ### Part 1: trace rejection order
 
 1. Start with every gate on. Record the accepted decision.
-2. Turn off only **Pose and uncertainty are finite**. Record the first reason.
-3. Reset. Repeat for each of the other five gates.
-4. Turn off the field-layout gate and the innovation gate together.
-5. Explain why the first reason stays stable while the second failed check remains visible.
+2. Turn off only **Pose and motion inputs are finite**. Record both explanations.
+3. Reset. Repeat for each of the other six gates.
+4. Turn off the ID-allowlist gate and the NIS gate together.
+5. Explain why the lab shows both failed checks while ARES publishes one last runtime reason.
 
 Make this evidence table:
 
-| Trial | Failed gate or gates        | Prediction | First reason | Other failed checks | Decision |
-| ----- | --------------------------- | ---------- | ------------ | ------------------- | -------- |
-| 1     | None                        |            |              |                     |          |
-| 2     | Finite data                 |            |              |                     |          |
-| 3     | Known target                |            |              |                     |          |
-| 4     | Ambiguity                   |            |              |                     |          |
-| 5     | Capture time                |            |              |                     |          |
-| 6     | Field bounds                |            |              |                     |          |
-| 7     | Innovation                  |            |              |                     |          |
-| 8     | Known target and innovation |            |              |                     |          |
+| Trial | Failed gate or gates | Learning explanation | Runtime reason | Other failed checks | Decision |
+| ----- | -------------------- | -------------------- | -------------- | ------------------- | -------- |
+| 1     | None                 |                      |                |                     |          |
+| 2     | Finite data          |                      |                |                     |          |
+| 3     | ID allowlist         |                      |                |                     |          |
+| 4     | Ambiguity            |                      |                |                     |          |
+| 5     | Distance/geometry    |                      |                |                     |          |
+| 6     | Turn rate/shock      |                      |                |                     |          |
+| 7     | Capture time         |                      |                |                     |          |
+| 8     | NIS                  |                      |                |                     |          |
+| 9     | ID allowlist and NIS |                      |                |                     |          |
 
 ### Part 2: test latency math
 
@@ -161,7 +172,7 @@ handled at the right time boundary.
 - Confirm that tag IDs match the reviewed field layout.
 - Confirm that all positions use the same field frame and meter units.
 - Keep ambiguity marked unavailable when the platform does not provide it. Do not invent zero.
-- Keep rejected rows and named reasons in the test record.
+- Keep rejected rows, runtime reasons, and your checked evidence in the test record.
 - Use surveyed points or another independent reference when judging accuracy.
 
 Before a physical test, inspect the camera mount and tag layout. Secure the robot on a clear field.
@@ -173,8 +184,9 @@ behavior through the normal team safety process.
 **Every frame says no target or stale frame.** Check camera connection, fresh frame IDs, timestamps,
 and whether the tag is visible. A repeated old frame is not new evidence.
 
-**Vision is always rejected for ambiguity.** Improve lighting, focus, tag size, and view angle.
-Confirm whether the camera actually reports ambiguity before changing policy.
+**Vision looks like it is always rejected for ambiguity.** Current Store diagnostics may show only
+`prefilter_rejected`. Confirm whether the camera reports ambiguity, then inspect lighting, focus,
+tag size, view angle, the ID allowlist, geometry, and motion evidence before changing policy.
 
 **Vision is rejected at field bounds.** Check meters versus inches, the field origin, alliance
 transforms, field-layout version, and camera mount. ARES checks the rotated robot footprint, not only
@@ -192,7 +204,7 @@ threshold. One surprising frame is not enough evidence for a new policy.
 
 ## Evidence artifact
 
-Submit the eight-row decision table and a latency table with at least four speed-delay pairs. Add:
+Submit the nine-row decision table and a latency table with at least four speed-delay pairs. Add:
 
 - capture time and receipt time;
 - tag ID and field-layout version;
@@ -202,8 +214,9 @@ Submit the eight-row decision table and a latency table with at least four speed
 - an independent surveyed position for a physical test.
 
 Add one paragraph that separates **observation** from **explanation**. For example, “Five far-angle
-frames had `REJ_AMBIG`” is an observation. “The camera exposure caused every rejection” is an
-explanation that still needs a controlled test.
+frames were prefilter rejected while reported ambiguity was above the configured limit” is an
+observation. “The camera exposure caused every rejection” is an explanation that still needs a
+controlled test.
 
 Do not put faces, student names, email addresses, school records, or screens with private data in the
 artifact. Crop or blur private details only when the approved team process allows the image to be
@@ -215,8 +228,9 @@ used.
 2. At `2.0 m/s`, how far can a robot move during `150 ms` of delay?
 3. Name four checks beyond ambiguity.
 4. Why can a low-ambiguity pose still be wrong?
-5. Why should rejected evidence and its reason remain visible?
-6. What independent evidence could test the final field pose?
+5. Why does `prefilter_rejected` not identify one exact physical check?
+6. How does MegaTag2 change heading influence and the NIS check?
+7. What independent evidence could test the final field pose?
 
 ## Extension challenge
 

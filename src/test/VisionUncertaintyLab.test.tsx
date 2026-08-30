@@ -10,8 +10,9 @@ const accepted = {
   finite: true,
   knownTarget: true,
   ambiguityAccepted: true,
-  captureTimeInHistory: true,
   insideField: true,
+  motionAccepted: true,
+  captureTimeInHistory: true,
   innovationAccepted: true,
 };
 
@@ -19,23 +20,28 @@ describe("VisionUncertaintyLab", () => {
   it("keeps each represented rejection reason distinct", () => {
     expect(classifyVisionEvidence(accepted).status).toContain("Accepted");
     expect(
-      classifyVisionEvidence({ ...accepted, finite: false }).reason,
+      classifyVisionEvidence({ ...accepted, finite: false }).learningReason,
     ).toContain("not finite");
     expect(
-      classifyVisionEvidence({ ...accepted, knownTarget: false }).reason,
-    ).toContain("field layout");
+      classifyVisionEvidence({ ...accepted, knownTarget: false }).learningReason,
+    ).toContain("not allowed");
     expect(
-      classifyVisionEvidence({ ...accepted, ambiguityAccepted: false }).reason,
-    ).toContain("ambiguous");
+      classifyVisionEvidence({ ...accepted, ambiguityAccepted: false }).learningReason,
+    ).toContain("ambiguity");
     expect(
       classifyVisionEvidence({ ...accepted, captureTimeInHistory: false })
-        .reason,
+        .learningReason,
     ).toContain("pose history");
     expect(
-      classifyVisionEvidence({ ...accepted, insideField: false }).reason,
-    ).toContain("field bounds");
+      classifyVisionEvidence({ ...accepted, insideField: false }).learningReason,
+    ).toContain("out of bounds");
     expect(
-      classifyVisionEvidence({ ...accepted, innovationAccepted: false }).reason,
+      classifyVisionEvidence({ ...accepted, motionAccepted: false })
+        .runtimeReason,
+    ).toBe("prefilter_rejected");
+    expect(
+      classifyVisionEvidence({ ...accepted, innovationAccepted: false })
+        .learningReason,
     ).toContain("disagrees");
   });
 
@@ -45,10 +51,13 @@ describe("VisionUncertaintyLab", () => {
       knownTarget: false,
       innovationAccepted: false,
     };
-    expect(classifyVisionEvidence(evidence).reason).toContain("field layout");
+    expect(classifyVisionEvidence(evidence).learningReason).toContain("not allowed");
+    expect(classifyVisionEvidence(evidence).runtimeReason).toBe(
+      "prefilter_rejected",
+    );
     expect(getFailedVisionGateLabels(evidence)).toEqual([
-      "Target appears in the reviewed field layout",
-      "Innovation passes the uncertainty-aware check",
+      "Target passes the configured ID allowlist",
+      "NIS passes the uncertainty-aware check",
     ]);
   });
 
@@ -67,13 +76,13 @@ describe("VisionUncertaintyLab", () => {
     expect(screen.getByText("Accepted by this checklist")).toBeVisible();
 
     fireEvent.click(
-      screen.getByLabelText("Capture time is inside stored pose history"),
+      screen.getByLabelText("Capture time is inside pose history"),
     );
     expect(
-      screen.getByText("The capture time is outside the stored pose history"),
+      screen.getByText("The capture time is older than stored pose history"),
     ).toBeVisible();
     fireEvent.click(
-      screen.getByLabelText("Innovation passes the uncertainty-aware check"),
+      screen.getByLabelText("NIS passes the uncertainty-aware check"),
     );
     expect(screen.getByText("Other failed checks stay visible:")).toBeVisible();
 
@@ -95,8 +104,9 @@ describe("VisionUncertaintyLab", () => {
   it("states that it neither processes images nor proves position", () => {
     render(<VisionUncertaintyLab />);
     expect(screen.getByRole("note")).toHaveTextContent(
-      "do not process an image",
+      "does not process an image",
     );
+    expect(screen.getByRole("note")).toHaveTextContent("prefilter_rejected");
     expect(screen.getByRole("note")).toHaveTextContent("prove field position");
   });
 });

@@ -1,19 +1,20 @@
 /** @sim {"name":"Vision Evidence Rejection Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useMemo, useState } from "react";
-import { Camera, Clock3, RotateCcw } from "lucide-react";
 
 export type VisionEvidence = {
   finite: boolean;
   knownTarget: boolean;
   ambiguityAccepted: boolean;
-  captureTimeInHistory: boolean;
   insideField: boolean;
+  motionAccepted: boolean;
+  captureTimeInHistory: boolean;
   innovationAccepted: boolean;
 };
 
 export type VisionDecision = {
   status: "Accepted by this checklist" | "Rejected";
-  reason: string;
+  learningReason: string;
+  runtimeReason: string | null;
 };
 
 export type VisionLatencyExample = {
@@ -28,50 +29,63 @@ export type VisionLatencyExample = {
 type VisionGate = {
   key: keyof VisionEvidence;
   label: string;
-  reason: string;
+  learningReason: string;
+  runtimeReason: string;
 };
 
 const DEFAULTS: VisionEvidence = {
   finite: true,
   knownTarget: true,
   ambiguityAccepted: true,
-  captureTimeInHistory: true,
   insideField: true,
+  motionAccepted: true,
+  captureTimeInHistory: true,
   innovationAccepted: true,
 };
 
 const GATES: VisionGate[] = [
   {
     key: "finite",
-    label: "Pose and uncertainty are finite",
-    reason: "The pose or uncertainty is not finite",
+    label: "Pose and motion inputs are finite",
+    learningReason: "A pose or motion input is not finite",
+    runtimeReason: "prefilter_rejected",
   },
   {
     key: "knownTarget",
-    label: "Target appears in the reviewed field layout",
-    reason: "The target identity is not in the reviewed field layout",
+    label: "Target passes the configured ID allowlist",
+    learningReason: "The target ID is not allowed by this configuration",
+    runtimeReason: "prefilter_rejected",
   },
   {
     key: "ambiguityAccepted",
-    label: "Target ambiguity passes the chosen policy",
-    reason:
-      "The reported target solution is too ambiguous for the chosen policy",
-  },
-  {
-    key: "captureTimeInHistory",
-    label: "Capture time is inside stored pose history",
-    reason: "The capture time is outside the stored pose history",
+    label: "Available ambiguity passes the policy",
+    learningReason: "Available ambiguity is above the policy limit",
+    runtimeReason: "prefilter_rejected",
   },
   {
     key: "insideField",
-    label: "Reported pose is inside checked field bounds",
-    reason: "The reported pose is outside the checked field bounds",
+    label: "Distance, pose, and robot footprint pass",
+    learningReason: "Distance or checked robot geometry is out of bounds",
+    runtimeReason: "prefilter_rejected",
+  },
+  {
+    key: "motionAccepted",
+    label: "Turn rate and shock guards pass",
+    learningReason: "Fast turning or a shock blocks this frame",
+    runtimeReason: "prefilter_rejected",
+  },
+  {
+    key: "captureTimeInHistory",
+    label: "Capture time is inside pose history",
+    learningReason: "The capture time is older than stored pose history",
+    runtimeReason: "vision_too_old",
   },
   {
     key: "innovationAccepted",
-    label: "Innovation passes the uncertainty-aware check",
-    reason:
+    label: "NIS passes the uncertainty-aware check",
+    learningReason:
       "The measurement disagrees too much with prediction for its stated uncertainty",
+    runtimeReason: "mahalanobis_rejected",
   },
 ];
 
@@ -80,12 +94,17 @@ export function classifyVisionEvidence(
 ): VisionDecision {
   const firstFailedGate = GATES.find((gate) => !evidence[gate.key]);
   if (firstFailedGate) {
-    return { status: "Rejected", reason: firstFailedGate.reason };
+    return {
+      status: "Rejected",
+      learningReason: firstFailedGate.learningReason,
+      runtimeReason: firstFailedGate.runtimeReason,
+    };
   }
   return {
     status: "Accepted by this checklist",
-    reason:
+    learningReason:
       "Every represented gate passed; keep uncertainty and later residuals visible",
+    runtimeReason: null,
   };
 }
 
@@ -140,12 +159,9 @@ export default function VisionUncertaintyLab() {
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Visible rejection path
-          </p>
           <h3
             id="vision-evidence-title"
-            className="mt-1 text-xl font-black text-white"
+            className="text-xl font-black text-white"
           >
             Vision Evidence Rejection Lab
           </h3>
@@ -159,7 +175,7 @@ export default function VisionUncertaintyLab() {
           onClick={reset}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
-          <RotateCcw aria-hidden="true" size={16} /> Reset
+          Reset
         </button>
       </div>
 
@@ -191,11 +207,15 @@ export default function VisionUncertaintyLab() {
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
           <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ares-gold">
-            <Camera aria-hidden="true" size={18} /> Checklist decision
+            Checklist decision
           </h4>
           <dl aria-live="polite" aria-atomic="true" className="mt-4 grid gap-3">
             <Datum label="Status" value={decision.status} />
-            <Datum label="First reason" value={decision.reason} />
+            <Datum label="Learning explanation" value={decision.learningReason} />
+            <Datum
+              label="Current ARES runtime reason"
+              value={decision.runtimeReason ?? "none"}
+            />
           </dl>
           {failedGateLabels.length > 1 ? (
             <div className="mt-3 rounded border border-ares-gold/30 bg-ares-gold/10 p-3 text-sm text-white">
@@ -216,7 +236,7 @@ export default function VisionUncertaintyLab() {
 
       <div className="mt-6 rounded-lg border border-white/10 bg-white/5 p-4">
         <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-ares-gold">
-          <Clock3 aria-hidden="true" size={18} /> Why capture time matters
+          Why capture time matters
         </h4>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
           This straight-line example keeps the predicted capture position at
@@ -291,9 +311,10 @@ export default function VisionUncertaintyLab() {
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
         <strong>Model limit:</strong> These controls mirror named ARES review
-        stages and simple capture-time math. They do not process an image, solve
-        an AprilTag pose, calculate covariance or Mahalanobis distance, run the
-        estimator, connect to a camera, or prove field position.
+        stages and simple capture-time math. Checklist explanations are teaching
+        text; the current prefilter reports only `prefilter_rejected`. The lab
+        does not process an image, calculate NIS, run the estimator, connect to
+        a camera, or prove field position.
       </p>
     </section>
   );

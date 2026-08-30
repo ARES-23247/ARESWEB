@@ -525,22 +525,23 @@ not publish or overwrite the live lesson.
 ## Continuous cycle: existing vision lesson depth
 
 This cycle improves the existing `controls-vision` lesson and its Vision Evidence Rejection Lab.
-It does not add a replacement title. Review the capture-time worked example, the two-layer ARES
-filter explanation, the plain-language rejection table, the expanded evidence activity, and the
+It does not add a replacement title. Review the capture-time worked example, the current Boolean
+prefilter and EKF boundary, the exact runtime-reason table, the expanded evidence activity, and the
 privacy-aware stationary and slow-motion test plans.
 
-The interaction now keeps later failed checks visible while preserving the ordered first reason. It
-also compares capture-time and receipt-time residuals with a simple straight-line model. Confirm
-native keyboard and touch controls, narrow-screen reflow, visible focus, live result announcements,
-deterministic reset, and readable labels. The interaction does not process an image, solve a tag
-pose, calculate covariance or Mahalanobis distance, run the ARES estimator, connect to a camera, or
-prove a physical field pose.
+The interaction keeps every failed teaching check visible while showing the one current ARES runtime
+reason that corresponds to the first represented failure. Confirm that physical/configuration
+failures show `prefilter_rejected`, an old capture time shows `vision_too_old`, and an NIS failure
+shows `mahalanobis_rejected`. It also compares capture-time and receipt-time residuals with a simple
+straight-line model. Confirm native keyboard and touch controls, narrow-screen reflow, visible focus,
+live result announcements, deterministic reset, and readable labels. The interaction does not
+process an image, calculate NIS, run the ARES estimator, connect to a camera, or prove a physical
+field pose.
 
-The three reviewed lesson sources are pinned to ARES Robotics commit `f3de343a` and the ARES 11.1.0
-/ Studio 2.0.3 identity. Their Git blobs are unchanged from the earlier reviewed revision. A
-repository-wide comparison on 2026-08-30 also found all 126 historical catalog source paths present
-and byte-for-byte unchanged at this release. Remote verification must still recompute each listed
-hash. This local curriculum change does not stage, publish, or overwrite production data.
+The five reviewed lesson sources are pinned directly to ARESLib commit `13599358` and version
+10.1.0. All five corresponding local files are clean and hash to the listed Git blobs. Remote
+catalog verification must still recompute every listed hash. This local curriculum change does not
+stage, publish, or overwrite production data.
 
 ## Continuous cycle: existing sensor-fusion lesson depth
 

@@ -400,7 +400,7 @@
       "slug": "controls-vision",
       "title": "Use AprilTags and Reject Bad Vision Measurements",
       "category": "Robotics & Engineering",
-      "description": "Trace ARES AprilTag checks, compare capture time with receipt time, and keep every rejected measurement useful as diagnostic evidence.",
+      "description": "Compare capture and receipt time, trace the current Boolean prefilter and EKF gates, and distinguish teaching explanations from actual ARES runtime reasons.",
       "contentFile": "controls/07-vision-rejection.md",
       "subject": "robotics-engineering",
       "topics": ["AprilTags", "vision", "outlier rejection", "latency"],
@@ -409,14 +409,16 @@
       "estimatedMinutes": 90,
       "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 8 }],
       "prerequisites": ["controls-sensor-fusion"],
-      "objectives": ["Calculate how camera delay changes a receipt-time comparison.", "Trace the physical, timing, and uncertainty checks in the ARES vision path.", "Keep the first rejection reason and remaining failed evidence visible.", "Design a privacy-aware camera test with surveyed truth."],
+      "objectives": ["Calculate how camera delay changes a receipt-time comparison.", "Trace current prefilter, history, uncertainty, NIS, and external-estimator boundaries.", "Distinguish a lab explanation from the runtime's generic prefilter reason.", "Design a privacy-aware camera test with surveyed truth."],
       "platforms": ["simulator", "ftc", "frc"],
       "sourceReferences": [
-        { "label": "ARES vision measurement update and rejection", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "blobHash": "e91d0e50787154eb18ef158e7a1b734121b94124" },
-        { "label": "ARES vision outlier metadata checks", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt", "blobHash": "94912abad7c6ddf689587ea527f7f05d4ef223ee" },
-        { "label": "ARES coordinate and delayed-vision contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/docs/math-and-coordinate-contracts.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md", "blobHash": "b360ef0eaa77d62bc681852227db7b5de5801307" }
+        { "label": "Boolean physical and configuration prefilter", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt", "blobHash": "94912abad7c6ddf689587ea527f7f05d4ef223ee" },
+        { "label": "Store prefilter, uncertainty selection, runtime reasons, and external routing", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/reducer/controller/VisionMeasurementController.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/reducer/controller/VisionMeasurementController.kt", "blobHash": "83c9ebf1b332bf7e10c3c47a1019b7ce193b49bd" },
+        { "label": "EKF rejection, NIS, and delayed replay", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "blobHash": "e91d0e50787154eb18ef158e7a1b734121b94124" },
+        { "label": "Prefilter finite, geometry, footprint, motion, and league-default tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/hardware/vision/VisionOutlierFilterTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/hardware/vision/VisionOutlierFilterTest.kt", "blobHash": "f7dcbf7ce81a741d2a7dd4ade3c2545f52383a2a" },
+        { "label": "Math, coordinate, and capture-time contract", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/docs/math-and-coordinate-contracts.md", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "docs/math-and-coordinate-contracts.md", "blobHash": "8552021b1c337dc8d2e07a03d4d371960d9946dc" }
       ],
-      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
+      "appliesToVersion": "ARESLib 10.1.0",
       "safetyScope": "physical-robot",
       "instructionalContractVersion": 2
     },
