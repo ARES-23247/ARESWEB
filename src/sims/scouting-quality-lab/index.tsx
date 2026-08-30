@@ -1,7 +1,5 @@
 /** @sim {"name":"Scouting Evidence Quality Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
-import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import { AcademyChecklistPanel } from "@/sims/shared/academy-interaction-ui";
+import { AcademyChecklistLab } from "@/sims/shared/academy-interaction-ui";
 
 export type ScoutingEvidence = {
   sourceRecorded: boolean;
@@ -52,37 +50,19 @@ export function reviewScoutingEvidence(evidence: ScoutingEvidence): ScoutingRevi
 }
 
 export default function ScoutingQualityLab() {
-  const [evidence, setEvidence] = useState<ScoutingEvidence>({ ...EMPTY_SCOUTING_EVIDENCE });
-  const result = useMemo(() => reviewScoutingEvidence(evidence), [evidence]);
-  const reset = () => setEvidence({ ...EMPTY_SCOUTING_EVIDENCE });
-
   return (
-    <section aria-labelledby="scouting-quality-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Evidence review</p>
-          <h3 id="scouting-quality-title" className="mt-1 text-xl font-black text-white">Scouting Evidence Quality Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Review one invented robot observation in a fixed order. The first missing check becomes the next editing task.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
-      <AcademyChecklistPanel
-        checks={CHECKS}
-        values={evidence}
-        onChange={(key, checked) => setEvidence((current) => ({ ...current, [key]: checked }))}
-        legend="Self-reported record evidence"
-        resultHeading="Next record step"
-        result={result}
-      />
-
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Evidence limit:</strong> Every box is self-reported. The lab cannot watch a match, read a log, verify a source, count events, remove private data, compare robots, explain a result, rank a team, or create a match strategy.
-      </p>
-    </section>
+    <AcademyChecklistLab
+      titleId="scouting-quality-title"
+      title="Scouting Evidence Quality Lab"
+      eyebrow="Evidence review"
+      description="Review one invented robot observation in a fixed order. The first missing check becomes the next editing task."
+      initialValues={EMPTY_SCOUTING_EVIDENCE}
+      checks={CHECKS}
+      legend="Self-reported record evidence"
+      resultHeading="Next record step"
+      review={reviewScoutingEvidence}
+      limitLabel="Evidence limit"
+      limit="Every box is self-reported. The lab cannot watch a match, read a log, verify a source, count events, remove private data, compare robots, explain a result, rank a team, or create a match strategy."
+    />
   );
 }

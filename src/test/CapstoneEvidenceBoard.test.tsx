@@ -6,13 +6,13 @@ const empty: CapstoneEvidence = { requirement: false, design: false, implementat
 
 describe("CapstoneEvidenceBoard", () => {
   it("reports the first missing section in evidence order", () => {
-    expect(reviewCapstoneEvidence(empty).next).toContain("measurable requirement");
-    expect(reviewCapstoneEvidence({ ...empty, requirement: true }).next).toContain("design");
+    expect(reviewCapstoneEvidence(empty).nextAction).toContain("measurable requirement");
+    expect(reviewCapstoneEvidence({ ...empty, requirement: true }).nextAction).toContain("design");
   });
 
   it("becomes ready only when every represented section is recorded", () => {
     const complete = Object.fromEntries(Object.keys(empty).map((key) => [key, true])) as CapstoneEvidence;
-    expect(reviewCapstoneEvidence(complete)).toMatchObject({ complete: 7, total: 7, status: "READY FOR REVIEW" });
+    expect(reviewCapstoneEvidence(complete)).toMatchObject({ ready: true, complete: 7, total: 7, title: "READY FOR REVIEW" });
   });
 
   it("supports native checks, live results, and deterministic reset", () => {

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AcademyDatum,
+  AcademyChecklistLab,
   AcademyLabShell,
   AcademyMetric,
   AcademyModelLimit,
@@ -54,6 +55,56 @@ describe("AcademyModelLimit", () => {
     const note = screen.getByRole("note");
     expect(note).toHaveTextContent("Model limit:");
     expect(note).toHaveTextContent("This activity cannot inspect a physical robot.");
+  });
+
+  it("supports an alternate evidence-limit label", () => {
+    render(<AcademyModelLimit label="Evidence limit">Only recorded checks are represented.</AcademyModelLimit>);
+    expect(screen.getByRole("note")).toHaveTextContent("Evidence limit: Only recorded checks are represented.");
+  });
+});
+
+describe("AcademyChecklistLab", () => {
+  it("provides native checks, live ordered feedback, summary content, and deterministic reset", () => {
+    const initial = { source: false, boundary: false };
+    const checks = [
+      { key: "source" as const, label: "Source recorded" },
+      { key: "boundary" as const, label: "Boundary recorded" },
+    ];
+    const review = (values: typeof initial) => {
+      const complete = Object.values(values).filter(Boolean).length;
+      const firstMissing = checks.find((check) => !values[check.key]);
+      return firstMissing
+        ? { ready: false, title: `Missing ${firstMissing.label}`, nextAction: "Record the next fact.", complete }
+        : { ready: true, title: "Ready for review", nextAction: "Preserve the record.", complete };
+    };
+
+    render(
+      <AcademyChecklistLab
+        titleId="evidence-lab-title"
+        title="Evidence lab"
+        eyebrow="Self-check"
+        description="Record both represented facts."
+        initialValues={initial}
+        checks={checks}
+        legend="Recorded facts"
+        resultHeading="Review"
+        review={review}
+        renderSummary={(result) => <p>Recorded: {result.complete} of 2</p>}
+        limitLabel="Evidence limit"
+        limit="This activity reads only the boxes you select."
+      />,
+    );
+
+    expect(screen.getByRole("region", { name: "Evidence lab" })).toBeVisible();
+    expect(screen.getByText("Missing Source recorded")).toBeVisible();
+    expect(screen.getByText("Recorded: 0 of 2")).toBeVisible();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Source recorded" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Boundary recorded" }));
+    expect(screen.getByText("Ready for review")).toBeVisible();
+    expect(screen.getByText("Recorded: 2 of 2")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByText("Missing Source recorded")).toBeVisible();
+    expect(screen.getByRole("note")).toHaveTextContent("Evidence limit");
   });
 });
 

@@ -1,7 +1,5 @@
 /** @sim {"name":"Post-Match Triage Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
-import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import { AcademyChecklistPanel } from "@/sims/shared/academy-interaction-ui";
+import { AcademyChecklistLab } from "@/sims/shared/academy-interaction-ui";
 
 export type PostMatchRecord = {
   safeStateRecorded: boolean;
@@ -55,37 +53,19 @@ export function reviewPostMatchRecord(record: PostMatchRecord): PostMatchResult 
 }
 
 export default function PostMatchTriageLab() {
-  const [record, setRecord] = useState<PostMatchRecord>({ ...EMPTY_POST_MATCH_RECORD });
-  const result = useMemo(() => reviewPostMatchRecord(record), [record]);
-  const reset = () => setRecord({ ...EMPTY_POST_MATCH_RECORD });
-
   return (
-    <section aria-labelledby="post-match-triage-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Ordered handoff</p>
-          <h3 id="post-match-triage-title" className="mt-1 text-xl font-black text-white">Post-Match Triage Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Build a paper handoff from safe return to one bounded next test. The first missing record stays visible.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
-      <AcademyChecklistPanel
-        checks={CHECKS}
-        values={record}
-        onChange={(key, checked) => setRecord((current) => ({ ...current, [key]: checked }))}
-        legend="Self-reported handoff evidence"
-        resultHeading="Next handoff step"
-        result={result}
-      />
-
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Evidence limit:</strong> Every box is self-reported. The lab cannot disable or inspect a robot, preserve a log, identify damage, diagnose a cause, assign a real person, approve a repair, authorize motion, or decide that a robot may return to play.
-      </p>
-    </section>
+    <AcademyChecklistLab
+      titleId="post-match-triage-title"
+      title="Post-Match Triage Lab"
+      eyebrow="Ordered handoff"
+      description="Build a paper handoff from safe return to one bounded next test. The first missing record stays visible."
+      initialValues={EMPTY_POST_MATCH_RECORD}
+      checks={CHECKS}
+      legend="Self-reported handoff evidence"
+      resultHeading="Next handoff step"
+      review={reviewPostMatchRecord}
+      limitLabel="Evidence limit"
+      limit="Every box is self-reported. The lab cannot disable or inspect a robot, preserve a log, identify damage, diagnose a cause, assign a real person, approve a repair, authorize motion, or decide that a robot may return to play."
+    />
   );
 }

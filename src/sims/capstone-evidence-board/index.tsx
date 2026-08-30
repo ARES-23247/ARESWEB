@@ -1,7 +1,5 @@
 /** @sim {"name":"Capstone Evidence Board","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
-import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import { AcademyChecklistPanel } from "@/sims/shared/academy-interaction-ui";
+import { AcademyChecklistLab } from "@/sims/shared/academy-interaction-ui";
 
 export type CapstoneEvidence = {
   requirement: boolean;
@@ -12,7 +10,13 @@ export type CapstoneEvidence = {
   safety: boolean;
   limits: boolean;
 };
-export type CapstoneReview = { complete: number; total: number; next: string; status: "INCOMPLETE" | "READY FOR REVIEW" };
+export type CapstoneReview = {
+  ready: boolean;
+  title: "INCOMPLETE" | "READY FOR REVIEW";
+  nextAction: string;
+  complete: number;
+  total: number;
+};
 
 const CHECKS: { key: keyof CapstoneEvidence; label: string; next: string }[] = [
   { key: "requirement", label: "Requirement has a number, unit, and constraints", next: "Write one measurable requirement with units and constraints." },
@@ -28,15 +32,30 @@ export function reviewCapstoneEvidence(evidence: CapstoneEvidence): CapstoneRevi
   const complete = CHECKS.filter((check) => evidence[check.key]).length;
   const missing = CHECKS.find((check) => !evidence[check.key]);
   return missing
-    ? { complete, total: CHECKS.length, next: missing.next, status: "INCOMPLETE" }
-    : { complete, total: CHECKS.length, next: "Ask a teammate to challenge one claim and one missing boundary before editorial review.", status: "READY FOR REVIEW" };
+    ? { ready: false, title: "INCOMPLETE", nextAction: missing.next, complete, total: CHECKS.length }
+    : { ready: true, title: "READY FOR REVIEW", nextAction: "Ask a teammate to challenge one claim and one missing boundary before editorial review.", complete, total: CHECKS.length };
 }
 
 const DEFAULTS: CapstoneEvidence = { requirement: false, design: false, implementation: false, tests: false, failure: false, safety: false, limits: false };
 
 export default function CapstoneEvidenceBoard() {
-  const [evidence, setEvidence] = useState(DEFAULTS);
-  const review = useMemo(() => reviewCapstoneEvidence(evidence), [evidence]);
-  const reset = () => setEvidence(DEFAULTS);
-  return <section aria-labelledby="capstone-board-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Local self-check</p><h3 id="capstone-board-title" className="mt-1 text-xl font-black text-white">Capstone Evidence Board</h3><p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">Mark only evidence that is actually in your packet. The first missing section becomes the next action.</p></div><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><RotateCcw aria-hidden="true" size={16} /> Reset</button></div><AcademyChecklistPanel checks={CHECKS} values={evidence} onChange={(key, checked) => setEvidence((current) => ({ ...current, [key]: checked }))} legend="Evidence packet sections" resultHeading="Review result" result={{ ready: review.status === "READY FOR REVIEW", title: review.status, nextAction: review.next }} summary={<p className="mt-4 text-sm text-marble/80">Sections recorded: <strong className="text-white">{review.complete} of {review.total}</strong></p>} /><p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"><strong>Model limit:</strong> These self-reported boxes do not inspect a project, verify source links, run tests, review student work, approve website publication, authorize physical operation, or prove a capstone claim.</p></section>;
+  return (
+    <AcademyChecklistLab
+      titleId="capstone-board-title"
+      title="Capstone Evidence Board"
+      eyebrow="Local self-check"
+      description="Mark only evidence that is actually in your packet. The first missing section becomes the next action."
+      initialValues={DEFAULTS}
+      checks={CHECKS}
+      legend="Evidence packet sections"
+      resultHeading="Review result"
+      review={reviewCapstoneEvidence}
+      renderSummary={(review) => (
+        <p className="mt-4 text-sm text-marble/80">
+          Sections recorded: <strong className="text-white">{review.complete} of {review.total}</strong>
+        </p>
+      )}
+      limit="These self-reported boxes do not inspect a project, verify source links, run tests, review student work, approve website publication, authorize physical operation, or prove a capstone claim."
+    />
+  );
 }

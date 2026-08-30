@@ -1,7 +1,5 @@
 /** @sim {"name":"Wiring Plan Diagnostic Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
-import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import { AcademyChecklistPanel } from "@/sims/shared/academy-interaction-ui";
+import { AcademyChecklistLab } from "@/sims/shared/academy-interaction-ui";
 
 export type WiringReview = {
   sourceIsolated: boolean;
@@ -52,37 +50,19 @@ export function reviewWiringPlan(review: WiringReview): WiringReviewResult {
 }
 
 export default function WiringDiagnosticLab() {
-  const [review, setReview] = useState<WiringReview>({ ...EMPTY_WIRING_REVIEW });
-  const result = useMemo(() => reviewWiringPlan(review), [review]);
-  const reset = () => setReview({ ...EMPTY_WIRING_REVIEW });
-
   return (
-    <section aria-labelledby="wiring-diagnostic-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Paper-plan checklist</p>
-          <h3 id="wiring-diagnostic-title" className="mt-1 text-xl font-black text-white">Wiring Plan Diagnostic Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Build an ordered evidence record for one invented connection. The first missing check becomes the next paper task.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
-      <AcademyChecklistPanel
-        checks={CHECKS}
-        values={review}
-        onChange={(key, checked) => setReview((current) => ({ ...current, [key]: checked }))}
-        legend="Self-reported plan evidence"
-        resultHeading="Next diagnostic step"
-        result={result}
-      />
-
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Evidence limit:</strong> Every box is self-reported. This lab cannot inspect a wire, identify a connector, verify polarity, find damage, measure continuity, choose a conductor or protection rating, energize a circuit, or prove that a robot is wired correctly.
-      </p>
-    </section>
+    <AcademyChecklistLab
+      titleId="wiring-diagnostic-title"
+      title="Wiring Plan Diagnostic Lab"
+      eyebrow="Paper-plan checklist"
+      description="Build an ordered evidence record for one invented connection. The first missing check becomes the next paper task."
+      initialValues={EMPTY_WIRING_REVIEW}
+      checks={CHECKS}
+      legend="Self-reported plan evidence"
+      resultHeading="Next diagnostic step"
+      review={reviewWiringPlan}
+      limitLabel="Evidence limit"
+      limit="Every box is self-reported. This lab cannot inspect a wire, identify a connector, verify polarity, find damage, measure continuity, choose a conductor or protection rating, energize a circuit, or prove that a robot is wired correctly."
+    />
   );
 }

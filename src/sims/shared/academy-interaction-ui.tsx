@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { RotateCcw } from "lucide-react";
 
 export function AcademyLabShell({
   titleId,
@@ -42,8 +43,9 @@ export function AcademyLabShell({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex min-h-11 items-center justify-center rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
+            <RotateCcw aria-hidden="true" size={16} />
             {resetLabel}
           </button>
         ) : null}
@@ -53,13 +55,13 @@ export function AcademyLabShell({
   );
 }
 
-export function AcademyModelLimit({ children }: { children: ReactNode }) {
+export function AcademyModelLimit({ children, label = "Model limit" }: { children: ReactNode; label?: string }) {
   return (
     <p
       role="note"
       className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
     >
-      <strong>Model limit:</strong> {children}
+      <strong>{label}:</strong> {children}
     </p>
   );
 }
@@ -67,6 +69,12 @@ export function AcademyModelLimit({ children }: { children: ReactNode }) {
 export type AcademyChecklistItem<Key extends string> = {
   key: Key;
   label: string;
+};
+
+export type AcademyChecklistResult = {
+  ready: boolean;
+  title: string;
+  nextAction: string;
 };
 
 export function AcademyCheckboxControl({
@@ -131,6 +139,64 @@ export function AcademyChecklistPanel<Key extends string>({
         </div>
       </div>
     </div>
+  );
+}
+
+export function AcademyChecklistLab<
+  Key extends string,
+  Result extends AcademyChecklistResult,
+>({
+  titleId,
+  title,
+  eyebrow,
+  description,
+  resetLabel = "Reset",
+  initialValues,
+  checks,
+  legend,
+  resultHeading,
+  review,
+  renderSummary,
+  limit,
+  limitLabel = "Model limit",
+}: {
+  titleId: string;
+  title: string;
+  eyebrow: string;
+  description: ReactNode;
+  resetLabel?: string;
+  initialValues: Record<Key, boolean>;
+  checks: Array<AcademyChecklistItem<Key>>;
+  legend: string;
+  resultHeading: string;
+  review: (values: Record<Key, boolean>) => Result;
+  renderSummary?: (result: Result) => ReactNode;
+  limit: ReactNode;
+  limitLabel?: string;
+}) {
+  const [values, setValues] = useState<Record<Key, boolean>>(() => ({ ...initialValues }));
+  const result = useMemo(() => review(values), [review, values]);
+
+  return (
+    <AcademyLabShell
+      titleId={titleId}
+      title={title}
+      eyebrow={eyebrow}
+      description={description}
+      onReset={() => setValues({ ...initialValues })}
+      resetLabel={resetLabel}
+    >
+      <AcademyChecklistPanel
+        checks={checks}
+        values={values}
+        onChange={(key, checked) => setValues((current) => ({ ...current, [key]: checked }))}
+        legend={legend}
+        resultHeading={resultHeading}
+        result={result}
+        summary={renderSummary?.(result)}
+      />
+      <AcademyModelLimit label={limitLabel}>{limit}</AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 
