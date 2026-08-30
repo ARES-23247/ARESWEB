@@ -195,7 +195,7 @@
       "contentType": "guided-lab",
       "level": "advanced",
       "estimatedMinutes": 105,
-      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 8 }, { "pathId": "controls-localization-autonomous", "order": 11 }],
+      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 9 }, { "pathId": "controls-localization-autonomous", "order": 11 }],
       "prerequisites": ["redux-state-actions-reducers", "ftc-season-composition-and-safe-lifecycle", "ftc-starter-first-autonomous"],
       "objectives": ["Predict the exact start, finish, and interrupted-child rules for sequential, parallel, race, and deadline groups.", "Apply resource ownership and finite timeouts before a task tree runs.", "Trace completion, failure, cancellation, and cleanup actions through TaskExecutor and its lifecycle owner.", "Explain why current group preemption needs an explicit source and safety review."],
       "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
@@ -222,7 +222,7 @@
       "contentType": "guided-lab",
       "level": "advanced",
       "estimatedMinutes": 100,
-      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 9 }],
+      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 10 }],
       "prerequisites": [
         "ftc-season-composition-and-safe-lifecycle",
         "simulation-is-not-hardware-validation"
@@ -790,6 +790,26 @@
       "sourceReferences": [{ "label": "Current FTC season telemetry helper", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresTelemetryHelper.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresTelemetryHelper.kt", "blobHash": "a798867345b26ac4598c3e0f79e2c2b0a48f08cd" }, { "label": "Current FTC season frame order", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt", "blobHash": "d6744bfce02b6f734527a660b8a177ddbc86a1de" }, { "label": "Shared FTC telemetry manager", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcTelemetryManager.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcTelemetryManager.kt", "blobHash": "717abc843a7afa3fe2eef97f7d611d0bab7c48e8" }],
       "appliesToVersion": "ARES 12.0.0; ARES-FTC 12.0.0; Studio 3.0.0",
       "safetyScope": "simulation-only"
+    },
+    {
+      "slug": "frc-mode-handoffs-and-safe-recovery",
+      "title": "Keep FRC Mode Changes Safe",
+      "category": "Robotics & Engineering",
+      "description": "Trace current FRC mode handoffs, commissioning health, persistent fault latches, guarded Disabled recovery, and separate simulation truth.",
+      "contentFile": "current-robot/05-frc-mode-handoffs.md",
+      "subject": "robotics-engineering",
+      "topics": ["FRC", "WPILib lifecycle", "mode handoffs", "fault recovery", "commissioning"],
+      "contentType": "guided-lab",
+      "level": "intermediate",
+      "estimatedMinutes": 75,
+      "pathMemberships": [{ "pathId": "programming-with-ares", "order": 8 }],
+      "prerequisites": ["redux-state-actions-reducers", "ftc-season-composition-and-safe-lifecycle"],
+      "objectives": ["Map Disabled, Teleop, Autonomous, Test, and Simulation callbacks to their owned cleanup and startup work.", "Explain why mechanism fault latches survive mode changes and when guarded Disabled recovery may clear them.", "Run the current FRC lifecycle regression test and separate its evidence from physical robot proof."],
+      "platforms": ["frc", "simulator"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Current FRC TimedRobot lifecycle", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt", "blobHash": "c2c4af4a7adcf8f55bb2e7ed774c921d815eeab4" }, { "label": "Current FRC mechanism commissioning boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FRC/src/main/kotlin/com/areslib/frc/FrcMechanismCommissioningController.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FRC/src/main/kotlin/com/areslib/frc/FrcMechanismCommissioningController.kt", "blobHash": "d5cf80989b10917e2eeb90e68b26e36e19b60539" }, { "label": "Current FRC lifecycle regression tests", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FRC/src/test/kotlin/com/areslib/frc/ARESRobotTimedBehaviorRegressionTest.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FRC/src/test/kotlin/com/areslib/frc/ARESRobotTimedBehaviorRegressionTest.kt", "blobHash": "9593ab8a6d8f3b503f82492133e857b6e38897c6" }],
+      "appliesToVersion": "ARES 12.0.0; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.0.0",
+      "safetyScope": "physical-robot"
     },
     {
       "slug": "ftc-driver-input-shaping-and-frames",
