@@ -43,9 +43,18 @@ describe("OdometryErrorLab", () => {
 
   it("matches the FTC immediate failover and consecutive-sample recovery rule", () => {
     let state: OdometrySourceState = {
-      activeSource: "PINPOINT",
+      activeSource: "UNINITIALIZED",
       healthyRecoverySamples: 0,
     };
+    expect(updateOdometrySource(state, false, false)).toEqual({
+      activeSource: "DRIVETRAIN_FALLBACK",
+      healthyRecoverySamples: 0,
+    });
+    state = updateOdometrySource(state, true, true);
+    expect(state).toEqual({
+      activeSource: "PINPOINT",
+      healthyRecoverySamples: 0,
+    });
     state = updateOdometrySource(state, true, false);
     expect(state).toEqual({
       activeSource: "DRIVETRAIN_FALLBACK",
@@ -89,20 +98,23 @@ describe("OdometryErrorLab", () => {
     expect(screen.getByText(/Surveyed \(-3\.00, 0\.00\) m/u)).toBeVisible();
     expect(screen.getByText(/Residual \(-0\.15, 0\.00\) m/u)).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset both labs" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(direction).toHaveValue("positive-x");
     expect(scale).toHaveValue("0");
   });
 
   it("lets students trace source failover and recovery", () => {
     render(<OdometryErrorLab />);
+    expect(screen.getByText("UNINITIALIZED")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Healthy sample" }));
     expect(screen.getByText("PINPOINT")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Send bad sample" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bad sample" }));
     expect(screen.getByText("DRIVETRAIN_FALLBACK")).toBeVisible();
     expect(screen.getByText(/Recovery 0\/5/u)).toBeVisible();
 
-    const healthy = screen.getByRole("button", { name: "Send healthy sample" });
+    const healthy = screen.getByRole("button", { name: "Healthy sample" });
     for (let sample = 0; sample < 4; sample += 1) fireEvent.click(healthy);
     expect(screen.getByText(/Recovery 4\/5/u)).toBeVisible();
     fireEvent.click(healthy);
@@ -116,6 +128,9 @@ describe("OdometryErrorLab", () => {
     );
     expect(screen.getByRole("note")).toHaveTextContent(
       "rebases each source during handoff",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "do not run the estimator, inspect Pinpoint or IMU hardware",
     );
     expect(screen.getByRole("note")).toHaveTextContent("prove accuracy");
   });

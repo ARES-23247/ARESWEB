@@ -41,7 +41,7 @@ const DEFAULTS = {
 
 const RECOVERY_SAMPLES_REQUIRED = 5;
 const DEFAULT_SOURCE_STATE: OdometrySourceState = {
-  activeSource: "PINPOINT",
+  activeSource: "UNINITIALIZED",
   healthyRecoverySamples: 0,
 };
 const SAMPLE_BUTTON_CLASS =
@@ -101,7 +101,6 @@ export function updateOdometrySource(
   state: OdometrySourceState,
   pinpointPresent: boolean,
   pinpointHealthy: boolean,
-  recoverySamplesRequired = RECOVERY_SAMPLES_REQUIRED,
 ): OdometrySourceState {
   if (!pinpointPresent || !pinpointHealthy) {
     return { activeSource: "DRIVETRAIN_FALLBACK", healthyRecoverySamples: 0 };
@@ -112,7 +111,7 @@ export function updateOdometrySource(
   }
 
   const nextHealthySamples = state.healthyRecoverySamples + 1;
-  return nextHealthySamples >= Math.max(1, recoverySamplesRequired)
+  return nextHealthySamples >= RECOVERY_SAMPLES_REQUIRED
     ? { activeSource: "PINPOINT", healthyRecoverySamples: 0 }
     : {
         activeSource: "DRIVETRAIN_FALLBACK",
@@ -186,7 +185,7 @@ export default function OdometryErrorLab() {
             Odometry Calibration and Source Lab
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Compare four field directions, then trace ARES FTC source recovery.
+            Compare field directions and trace FTC source recovery.
           </p>
         </div>
         <button
@@ -194,14 +193,14 @@ export default function OdometryErrorLab() {
           onClick={reset}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
-          Reset both labs
+          Reset
         </button>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]">
         <fieldset className="grid gap-5 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">
-            Choose one calibration trial
+            Calibration trial
           </legend>
           <div className="grid gap-2">
             <label
@@ -256,7 +255,7 @@ export default function OdometryErrorLab() {
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
           <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">
-            Top-down endpoint comparison
+            Endpoint comparison
           </h4>
           <svg
             viewBox="0 0 360 210"
@@ -344,11 +343,11 @@ export default function OdometryErrorLab() {
 
       <fieldset className="mt-6 rounded-lg border border-white/10 bg-white/5 p-4">
         <legend className="px-2 text-sm font-bold text-ares-gold">
-          Trace ARES FTC source recovery
+          FTC source recovery
         </legend>
         <p className="text-sm leading-relaxed text-marble/80">
-          A bad or missing sample starts fallback. Five healthy samples in a row
-          return to Pinpoint.
+          Start uninitialized. The first sample selects Pinpoint or fallback.
+          After a fault, five healthy samples in a row return to Pinpoint.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button
@@ -356,21 +355,21 @@ export default function OdometryErrorLab() {
             onClick={() => sendSourceSample(true, true)}
             className={`${SAMPLE_BUTTON_CLASS} border-ares-cyan/60`}
           >
-            Send healthy sample
+            Healthy sample
           </button>
           <button
             type="button"
             onClick={() => sendSourceSample(true, false)}
             className={`${SAMPLE_BUTTON_CLASS} border-ares-gold/60`}
           >
-            Send bad sample
+            Bad sample
           </button>
           <button
             type="button"
             onClick={() => sendSourceSample(false, false)}
             className={`${SAMPLE_BUTTON_CLASS} border-ares-red/70`}
           >
-            Mark Pinpoint unavailable
+            Pinpoint unavailable
           </button>
         </div>
         <div
@@ -394,8 +393,10 @@ export default function OdometryErrorLab() {
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
         <strong>Model limit:</strong> This exact-error model and source trace do
-        not run the estimator, inspect hardware, model noise or slip, or prove
-        accuracy. ARES rebases each source during handoff; this page does not.
+        not run the estimator, inspect Pinpoint or IMU hardware, calculate
+        sample health, model noise or slip, or prove accuracy. It uses five
+        healthy samples. ARES rebases each source during handoff; this page does
+        not.
       </p>
     </section>
   );

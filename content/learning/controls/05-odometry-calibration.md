@@ -24,7 +24,7 @@ This lesson will help you:
 - compare an odometry endpoint with surveyed truth in four field directions;
 - separate distance-scale error from heading error;
 - explain why one route is not enough for calibration;
-- trace the current ARES FTC primary-to-fallback source rule; and
+- trace the current ARES FTC startup, failover, and recovery rules; and
 - plan physical tests without claiming that a browser model proves robot accuracy.
 
 The endpoint lab uses simple geometry. It does not reproduce the full ARES estimator.
@@ -77,21 +77,31 @@ planned variable at a time.
 
 ## How current ARES FTC handles source health
 
-The current ARES FTC path normally reads a GoBilda Pinpoint computer. Its adapter converts the
-sample to meters and CCW-positive radians. It checks that position, velocity, heading, and time are
-finite and plausible. A sample can be marked starting, healthy, stale, nonfinite, implausible, or a
-communication failure. The last trusted pose is kept when a bad packet arrives, but the bad packet
-is not called healthy.
+The default ARES FTC setup reads a GoBilda Pinpoint computer when one is configured. Its adapter
+converts the sample to meters and CCW-positive radians. It checks that position, heading, linear
+velocity, and angular velocity are finite. It also rejects speeds and pose jumps beyond its bounds.
+A separate age check can mark an old or future-dated sample stale. A sample can be marked starting,
+healthy, stale, nonfinite, implausible, or a communication failure. The last trusted pose is kept
+when a bad packet arrives, but the bad packet is not called healthy.
+
+The source selector starts as `UNINITIALIZED`. Its first update chooses Pinpoint only when Pinpoint
+is present and healthy. Otherwise, it chooses drivetrain fallback. The browser trace now begins in
+that same startup state so you can test both first-sample paths.
 
 The source selector reacts in two different ways:
 
-- A bad or missing Pinpoint sample moves to drivetrain-plus-Control-Hub-IMU fallback at once.
+- A bad or missing Pinpoint sample moves to drivetrain fallback at once.
 - Pinpoint must then provide five healthy samples in a row before it can return.
 
 One bad recovery sample resets that count. This delay prevents a loose connection from switching
-back and forth each loop. When fallback begins, ARES starts it from the current fused pose. When
-Pinpoint returns, ARES rebases it to that same current pose before publishing the new source. That
-handoff is meant to avoid a sudden pose jump.
+back and forth each loop. When a valid Control Hub IMU is configured, its cached sample supplies
+heading information to the fallback. ARES applies that gyro correction only when the cached IMU
+sample is valid; the source name alone does not prove that an IMU sample exists.
+
+When fallback begins, ARES starts it from the current fused pose. When Pinpoint is ready to return,
+ARES first rebases it to that current pose. It publishes Pinpoint only if re-initialization succeeds
+and the next sample is healthy. Otherwise, it stays in fallback. That handoff avoids restoring an
+old raw pose from before the outage.
 
 The source name and Pinpoint health are diagnostic evidence. Fallback keeps localization moving,
 but it does not mean the failed sensor or calibration problem is fixed. A team should save the
@@ -159,15 +169,18 @@ Do not write “the robot turned wrong” unless a robot was measured. The brows
 estimated direction. Write exactly what the model shows: for example, “The estimated Y residual
 changed from positive to negative when the heading-bias sign changed.”
 
-### Part 4: trace source recovery
+### Part 4: trace startup and source recovery
 
-The source trace begins with Pinpoint active. Send one bad sample. Confirm that fallback becomes
-active at once. Send four healthy samples and record why fallback stays active. Send the fifth
+Reset both labs. Confirm that the source starts `UNINITIALIZED`. Send one healthy sample and confirm
+that Pinpoint becomes active. Reset again, mark Pinpoint unavailable, and confirm that fallback is
+selected on the first update.
+
+From fallback, send four healthy samples and record why fallback stays active. Send the fifth
 healthy sample and confirm that Pinpoint returns.
 
 Repeat the fault. Send two healthy samples, one bad sample, and then inspect the count. Explain why
-the count returns to zero. Finally, mark Pinpoint unavailable. State what the browser proves and
-what it does not prove.
+the count returns to zero. State what the browser proves and what it does not prove. In particular,
+the buttons supply a ready-made health result; they do not inspect Pinpoint or an IMU.
 
 ## Physical calibration plan
 
@@ -177,8 +190,9 @@ in-place turns in both directions. Use more than one distance or angle. Mark the
 a tape, laser, field marks, or another reviewed method.
 
 Save the route identity, surveyed start, surveyed end, estimated start, estimated end, active source,
-source health, battery condition, surface, and time. For a source fault, also save when fallback
-started and when the primary source recovered. Do not change constants during a trial set.
+source health, IMU availability, battery condition, surface, and time. For a source fault, also save
+when fallback started and when the primary source recovered. Do not change constants during a trial
+set.
 
 The calibration fitter can estimate process and camera noise from a reviewed data set. It does not
 change robot constants automatically. Students review the report, choose a correction, and repeat
@@ -196,6 +210,9 @@ camera result is not automatically truth either, especially when camera error is
 Check the sample status. A finite value can still be stale. A recent value can still be an
 implausible jump. Keep value, unit, time, health, and source identity together.
 
+Check startup separately from recovery. `UNINITIALIZED` means the selector has not accepted its
+first source yet. It is not the same as a recovered Pinpoint source.
+
 Check both route directions. Scale error often follows distance. Mounting offset, backlash, wheel
 slip, or a field setup problem may change with direction.
 
@@ -211,7 +228,11 @@ If source recovery never reaches five, look for intermittent health failures. Th
 to restart after one bad sample. Do not weaken the rule just to hide a connection problem.
 
 If pose jumps when a source returns, inspect whether the source was rebased to the current fused
-pose. A handoff should not restore an old raw pose from before the outage.
+pose and whether the first rebased sample was healthy. A failed re-initialization must stay in
+fallback rather than restore an old raw pose.
+
+If fallback heading does not change as expected, check whether a valid Control Hub IMU is configured
+and fresh. `DRIVETRAIN_FALLBACK` names the selected odometry source; it does not certify IMU health.
 
 If the browser lab seems too clean, remember its limit. It applies exact scale and heading errors.
 Real data includes noise, slip, curved motion, delayed samples, changing wheel contact, and setup
@@ -223,8 +244,8 @@ Submit one packet with three parts:
 
 1. A twelve-row endpoint table covering all four field directions, both scale signs, both heading
    signs, and at least three distances.
-2. A source trace showing immediate failover, four held recovery samples, the fifth-sample return,
-   and one count reset after a bad sample.
+2. A source trace showing first-sample startup selection, immediate failover, four held recovery
+   samples, the fifth-sample return, and one count reset after a bad sample.
 3. A physical test plan naming the truth method, routes, saved signals, safety boundary, and stop
    condition.
 
@@ -238,10 +259,12 @@ cause as unproven. Add a route drawing with field axes and both endpoints.
 3. How can a distance-scale error appear on positive-X and negative-X routes?
 4. Why are signed X and Y residuals more useful than endpoint error alone?
 5. What makes a Pinpoint sample unhealthy in the current ARES FTC boundary?
-6. What happens on the first unhealthy primary sample?
-7. Why are five healthy recovery samples required in a row?
-8. What does rebase mean during a source handoff?
-9. Does this lab run the ARES estimator or prove physical robot accuracy?
+6. How does the first source update leave `UNINITIALIZED`?
+7. What happens on the first unhealthy Pinpoint sample after Pinpoint is active?
+8. Why are five healthy recovery samples required in a row?
+9. What does rebase mean during a source handoff?
+10. Does the fallback source name prove that a valid IMU sample exists?
+11. Does this lab run the ARES estimator or prove physical robot accuracy?
 
 A strong answer names the frame and units. It separates measured evidence from a possible cause and
 keeps calibration error separate from source-health behavior.

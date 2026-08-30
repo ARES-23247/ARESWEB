@@ -346,7 +346,7 @@
       "slug": "controls-odometry",
       "title": "Estimate Motion with Odometry",
       "category": "Robotics & Engineering",
-      "description": "Compare signed endpoint residuals across field directions, then trace current ARES FTC odometry health, failover, and recovery behavior.",
+      "description": "Compare signed endpoint residuals across field directions, then trace current ARES FTC startup, failover, recovery, and optional-IMU boundaries.",
       "contentFile": "controls/05-odometry-calibration.md",
       "subject": "robotics-engineering",
       "topics": ["odometry", "localization", "calibration", "coordinate frames"],
@@ -355,15 +355,17 @@
       "estimatedMinutes": 95,
       "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 6 }],
       "prerequisites": ["robot-coordinate-contracts", "controls-motion-profiles"],
-      "objectives": ["Explain why odometry calibration needs independent surveyed truth.", "Compare signed distance-scale and heading-bias residuals across all four field directions.", "Trace current ARES FTC primary-source failover and five-sample recovery behavior.", "Design repeated physical calibration routes without treating a browser model as robot proof."],
+      "objectives": ["Explain why odometry calibration needs independent surveyed truth.", "Compare signed distance-scale and heading-bias residuals across all four field directions.", "Trace current ARES FTC startup selection, immediate failover, and five-sample recovery behavior.", "Separate the fallback source name from proof of a valid IMU sample or physical accuracy."],
       "platforms": ["simulator", "ftc", "frc"],
       "sourceReferences": [
-        { "label": "ARES localization calibration", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/docs/localization-calibration.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/docs/localization-calibration.md", "blobHash": "c76aff1338afe58dd2ff5b8f9fb4d8cba9496ffd" },
-        { "label": "FTC Pinpoint health boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/PinpointIO.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/PinpointIO.kt", "blobHash": "142c56a9e0dd40c42f5e17171faf83419083fc9f" },
-        { "label": "FTC odometry source selector", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiter.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiter.kt", "blobHash": "6e56b2a53ad80c7cd4d86628a449dc70bca50bba" },
-        { "label": "FTC odometry handoff and continuity", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt", "blobHash": "f93ae70db6d1494a7e86540a87ec4d136b932ea5" }
+        { "label": "Current ARESLib localization calibration guide", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/docs/localization-calibration.md", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "docs/localization-calibration.md", "blobHash": "c76aff1338afe58dd2ff5b8f9fb4d8cba9496ffd" },
+        { "label": "Current FTC Pinpoint health boundary", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/PinpointIO.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/PinpointIO.kt", "blobHash": "142c56a9e0dd40c42f5e17171faf83419083fc9f" },
+        { "label": "Pinpoint rejection and stale-sample tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/ftc-hardware/src/test/kotlin/com/areslib/ftc/PinpointIOTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "ftc-hardware/src/test/kotlin/com/areslib/ftc/PinpointIOTest.kt", "blobHash": "3afb991cf7fd08e49cb5d3a9b9a1434d40692244" },
+        { "label": "Current FTC odometry source selector", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiter.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiter.kt", "blobHash": "6e56b2a53ad80c7cd4d86628a449dc70bca50bba" },
+        { "label": "Source failover and recovery tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiterTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/FtcOdometrySourceArbiterTest.kt", "blobHash": "765fd658c427ec4d3d9647a1ab91366ac74a9255" },
+        { "label": "Released FTC odometry handoff and continuity", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt", "blobHash": "f93ae70db6d1494a7e86540a87ec4d136b932ea5" }
       ],
-      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
+      "appliesToVersion": "ARESLib 10.1.0; FTC SDK 11.1.0",
       "safetyScope": "physical-robot",
       "instructionalContractVersion": 2
     },
