@@ -937,6 +937,36 @@ Students may inspect the source, run the focused test, and verify robot behavior
 normal safety process. Lead Coach review remains limited to publishing website posts. This local
 curriculum change does not publish or overwrite production data.
 
+## Continuous cycle: current PID executable behavior
+
+This cycle improves the existing `controls-pid` lesson rather than creating a competing lesson.
+Review its five clean ARESLib 10.1.0 source pins at `13599358`: the controller, two focused test
+classes, the tier-one clamping test, and the typed tuning contract.
+
+Review the source disagreement explicitly. The opening KDoc in `PIDController.kt` still shows a
+finite difference of error. The executable `calculate` path and tests instead calculate measurement
+rate, blend 20% of the new rate with 80% of the prior filtered rate, and subtract the D term. The
+lesson must teach the tested executable behavior while naming the stale header formula. It must not
+quietly present either formula as if both were current ARES behavior.
+
+The lesson also makes current boundaries visible. The first derivative step after reset is zero.
+The deadzone returns zero, refreshes the measurement baseline, clears filtered derivative, and does
+not add integral error. Integral and output bounds are optional settings. Directional anti-windup
+freezes stored error only when an output bound exists and the error would push farther into that
+bound. Invalid measurements, setpoints, loop times, or gains return zero; that fallback is not proof
+that a mechanism is physically safe.
+
+The existing Control Response Lab remains a conceptual classroom model. Its invented plant and
+derivative-of-error formula are useful for one-change graph trials, but they do not reproduce the
+current ARES derivative filter. Review that the difference is stated before and inside the
+interaction, that students compare the two evidence layers, and that no gain is presented as a real
+robot value. The interaction remains keyboard and touch usable, exposes a numeric table, reflows on
+a narrow screen, resets deterministically, and keeps its model limit visible.
+
+Students may inspect the source, run the focused tests, and verify robot behavior through the team's
+normal safety process. Lead Coach review remains limited to publishing website posts. This local
+curriculum change does not stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
