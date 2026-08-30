@@ -546,22 +546,28 @@ hash. This local curriculum change does not stage, publish, or overwrite product
 
 This cycle improves the existing `controls-sensor-fusion` lesson and its Sensor Fusion Uncertainty
 Lab. It does not add a replacement title. Review the grade 6-8 explanation of signed residuals,
-inverse-variance influence, process noise `Q`, measurement noise `R`, delayed updates, innovation
-tests, and estimator ownership. Confirm that the lesson separates a strong uncertainty claim from
-verified accuracy and keeps independent surveyed truth outside the fusion calculation.
+inverse-variance influence, prior covariance `P`, process noise `Q`, measurement covariance `R`,
+delayed updates, normalized innovation squared, and estimator ownership. Confirm that the lesson
+separates a strong uncertainty claim from verified accuracy and keeps independent surveyed truth
+outside the fusion calculation.
 
-The interaction now displays each accepted source's influence, a signed residual, and error from an
-independent truth value. It keeps rejected vision evidence in the table and gives it zero influence.
-Confirm native keyboard and touch controls, narrow-screen reflow, visible focus, live result
-announcements, deterministic reset, and readable table overflow. Changing independent truth must
-change only the displayed error, never the fused result.
+The interaction now names its first input a prior prediction rather than a raw odometry sensor. It
+displays prediction and vision influence, a signed residual, and error from an independent truth
+value. It keeps rejected vision evidence in the table and gives it zero influence. Confirm native
+keyboard and touch controls, narrow-screen reflow, visible focus, live result announcements,
+deterministic reset, and readable table overflow. Changing independent truth must change only the
+displayed error, never the fused result.
 
 The interaction is an invented one-dimensional weighted average. It does not run the ARES EKF,
 calculate matrix covariance or normalized innovation squared, replay pose history, inspect a camera,
-or prove a physical robot pose. The two reviewed lesson sources are pinned to ARES Robotics commit
-`f3de343a` and the ARES 11.1.0 / Studio 2.0.3 identity. Their Git blobs are unchanged from the earlier
-reviewed revision. Remote verification must still recompute each listed hash. This local curriculum
-change does not stage, publish, or overwrite production data.
+or prove a physical robot pose. The lesson now distinguishes that model from the current Store-owned
+150-sample private runtime history, immutable Redux snapshot, prefilter, NIS gate, fractional
+capture-time replay, recorded diagnostics, and `fuseIntoPoseEstimator = false` route.
+
+The six reviewed references are pinned directly to ARESLib commit `13599358` and version 10.1.0.
+All six corresponding local files are clean and hash to the listed Git blobs. Remote catalog
+verification must recompute every listed hash. This local curriculum change does not stage, publish,
+or overwrite production data.
 
 ## Continuous cycle: existing motion-profile lesson depth
 

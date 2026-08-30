@@ -6,13 +6,13 @@ export type FusionTrial = {
   fusedPosition: number;
   residual: number;
   reason: string;
-  odometryInfluence: number;
+  predictionInfluence: number;
   visionInfluence: number;
 };
 
 const DEFAULTS = {
-  odometry: 2.8,
-  odometrySigma: 0.35,
+  prediction: 2.8,
+  predictionSigma: 0.35,
   vision: 3.3,
   visionSigma: 0.2,
   ambiguity: 0.1,
@@ -21,17 +21,17 @@ const DEFAULTS = {
 const AMBIGUITY_LIMIT = 0.2;
 
 export function calculateConceptFusion(
-  odometry: number,
-  odometrySigma: number,
+  prediction: number,
+  predictionSigma: number,
   vision: number,
   visionSigma: number,
   ambiguity: number,
 ): FusionTrial {
   if (
-    ![odometry, odometrySigma, vision, visionSigma, ambiguity].every(
+    ![prediction, predictionSigma, vision, visionSigma, ambiguity].every(
       Number.isFinite,
     ) ||
-    odometrySigma <= 0 ||
+    predictionSigma <= 0 ||
     visionSigma <= 0
   ) {
     throw new Error(
@@ -39,36 +39,36 @@ export function calculateConceptFusion(
     );
   }
 
-  const residual = vision - odometry;
+  const residual = vision - prediction;
   if (ambiguity > AMBIGUITY_LIMIT) {
     return {
       accepted: false,
-      fusedPosition: odometry,
+      fusedPosition: prediction,
       residual,
       reason: "high ambiguity",
-      odometryInfluence: 1,
+      predictionInfluence: 1,
       visionInfluence: 0,
     };
   }
 
-  const odometryWeight = 1 / odometrySigma ** 2;
+  const predictionWeight = 1 / predictionSigma ** 2;
   const visionWeight = 1 / visionSigma ** 2;
-  const totalWeight = odometryWeight + visionWeight;
+  const totalWeight = predictionWeight + visionWeight;
   return {
     accepted: true,
     fusedPosition:
-      (odometry * odometryWeight + vision * visionWeight) / totalWeight,
+      (prediction * predictionWeight + vision * visionWeight) / totalWeight,
     residual,
     reason: "accepted by this lesson rule",
-    odometryInfluence: odometryWeight / totalWeight,
+    predictionInfluence: predictionWeight / totalWeight,
     visionInfluence: visionWeight / totalWeight,
   };
 }
 
 export default function SensorFusionLab() {
-  const [odometry, setOdometry] = useState<number>(DEFAULTS.odometry);
-  const [odometrySigma, setOdometrySigma] = useState<number>(
-    DEFAULTS.odometrySigma,
+  const [prediction, setPrediction] = useState<number>(DEFAULTS.prediction);
+  const [predictionSigma, setPredictionSigma] = useState<number>(
+    DEFAULTS.predictionSigma,
   );
   const [vision, setVision] = useState<number>(DEFAULTS.vision);
   const [visionSigma, setVisionSigma] = useState<number>(DEFAULTS.visionSigma);
@@ -77,20 +77,20 @@ export default function SensorFusionLab() {
   const result = useMemo(
     () =>
       calculateConceptFusion(
-        odometry,
-        odometrySigma,
+        prediction,
+        predictionSigma,
         vision,
         visionSigma,
         ambiguity,
       ),
-    [ambiguity, odometry, odometrySigma, vision, visionSigma],
+    [ambiguity, prediction, predictionSigma, vision, visionSigma],
   );
   const resultError = Math.abs(result.fusedPosition - truth);
   const x = (value: number) => 35 + value * 66;
 
   const reset = () => {
-    setOdometry(DEFAULTS.odometry);
-    setOdometrySigma(DEFAULTS.odometrySigma);
+    setPrediction(DEFAULTS.prediction);
+    setPredictionSigma(DEFAULTS.predictionSigma);
     setVision(DEFAULTS.vision);
     setVisionSigma(DEFAULTS.visionSigma);
     setAmbiguity(DEFAULTS.ambiguity);
@@ -114,8 +114,7 @@ export default function SensorFusionLab() {
             Sensor Fusion Uncertainty Lab
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Explore a 1D weighted estimate, a visible rejection rule, and
-            independent truth that never enters the calculation.
+            Compare a 1D update, a rejection, and independent truth.
           </p>
         </div>
         <button
@@ -133,22 +132,22 @@ export default function SensorFusionLab() {
             Choose lesson measurements
           </legend>
           <NumberControl
-            label="Odometry position"
+            label="Predicted position"
             unit="m"
-            value={odometry}
+            value={prediction}
             min={0}
             max={5}
             step={0.1}
-            onChange={setOdometry}
+            onChange={setPrediction}
           />
           <NumberControl
-            label="Odometry uncertainty"
+            label="Prediction uncertainty"
             unit="m"
-            value={odometrySigma}
+            value={predictionSigma}
             min={0.1}
             max={1}
             step={0.05}
-            onChange={setOdometrySigma}
+            onChange={setPredictionSigma}
           />
           <NumberControl
             label="Vision position"
@@ -196,7 +195,7 @@ export default function SensorFusionLab() {
             viewBox="0 0 400 165"
             className="mt-3 h-auto w-full"
             role="img"
-            aria-label={`Odometry ${odometry.toFixed(2)} m; vision ${vision.toFixed(2)} m ${result.accepted ? "accepted" : "rejected"}; result ${result.fusedPosition.toFixed(2)} m; truth ${truth.toFixed(2)} m.`}
+            aria-label={`Prediction ${prediction.toFixed(2)} m; vision ${vision.toFixed(2)} m ${result.accepted ? "accepted" : "rejected"}; result ${result.fusedPosition.toFixed(2)} m; truth ${truth.toFixed(2)} m.`}
           >
             <line
               x1="35"
@@ -207,7 +206,7 @@ export default function SensorFusionLab() {
               className="text-white/40"
             />
             <circle
-              cx={x(odometry)}
+              cx={x(prediction)}
               cy="45"
               r="8"
               fill="currentColor"
@@ -268,8 +267,8 @@ export default function SensorFusionLab() {
               value={`${result.residual.toFixed(2)} m`}
             />
             <Result
-              label="Odometry influence"
-              value={`${(result.odometryInfluence * 100).toFixed(0)}%`}
+              label="Prediction influence"
+              value={`${(result.predictionInfluence * 100).toFixed(0)}%`}
             />
             <Result
               label="Vision influence"
@@ -303,10 +302,10 @@ export default function SensorFusionLab() {
             </thead>
             <tbody>
               <tr className="border-t border-white/10">
-                <td className="p-2">Odometry</td>
-                <td className="p-2">{odometry.toFixed(2)} m</td>
-                <td className="p-2">{odometrySigma.toFixed(2)} m</td>
-                <td className="p-2">Kept</td>
+                <td className="p-2">Prediction</td>
+                <td className="p-2">{prediction.toFixed(2)} m</td>
+                <td className="p-2">{predictionSigma.toFixed(2)} m</td>
+                <td className="p-2">Prior</td>
               </tr>
               <tr className="border-t border-white/10">
                 <td className="p-2">Vision</td>

@@ -373,7 +373,7 @@
       "slug": "controls-sensor-fusion",
       "title": "Combine Measurements without Hiding Uncertainty",
       "category": "Robotics & Engineering",
-      "description": "Test signed residuals, uncertainty claims, source influence, rejection evidence, and independent truth before tracing the real ARES estimator.",
+      "description": "Test prior-versus-measurement influence and independent truth, then trace current ARES Store ownership, NIS rejection, delayed replay, and external-estimator routing.",
       "contentFile": "controls/06-sensor-fusion.md",
       "subject": "robotics-engineering",
       "topics": ["sensor fusion", "uncertainty", "residuals", "localization"],
@@ -382,13 +382,17 @@
       "estimatedMinutes": 90,
       "pathMemberships": [{ "pathId": "controls-localization-autonomous", "order": 7 }],
       "prerequisites": ["controls-odometry"],
-      "objectives": ["Explain how stated uncertainty changes each accepted source's influence.", "Use a signed residual to describe the direction of sensor disagreement.", "Keep rejected measurements and their reasons visible as diagnostic evidence.", "Use independent truth to challenge uncertainty claims without feeding truth into the estimate."],
+      "objectives": ["Explain how prior covariance and measurement uncertainty change an accepted update.", "Use a signed residual to describe the direction of prediction-versus-measurement disagreement.", "Trace current ARES prefilter, NIS, delayed-replay, diagnostic, and Store-ownership boundaries.", "Explain why an external estimator's accepted vision frame must not be fused twice."],
       "platforms": ["hardware-neutral", "simulator"],
       "sourceReferences": [
-        { "label": "ARES pose estimator", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt", "blobHash": "47db762988e242972875fb76d8374ebf3d24578e" },
-        { "label": "ARES localization calibration", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/docs/localization-calibration.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/docs/localization-calibration.md", "blobHash": "c76aff1338afe58dd2ff5b8f9fb4d8cba9496ffd" }
+        { "label": "Current ARES pose-estimator state and public API", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt", "blobHash": "47db762988e242972875fb76d8374ebf3d24578e" },
+        { "label": "Per-Store estimator runtime and immutable snapshot boundary", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorRuntime.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorRuntime.kt", "blobHash": "d8084eb5f04dbba19dfc0a72e0f614eef347adda" },
+        { "label": "Vision covariance, NIS rejection, and delayed replay", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "blobHash": "e91d0e50787154eb18ef158e7a1b734121b94124" },
+        { "label": "Store vision prefilter, uncertainty, and diagnostics controller", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/reducer/controller/VisionMeasurementController.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/main/kotlin/com/areslib/reducer/controller/VisionMeasurementController.kt", "blobHash": "83c9ebf1b332bf7e10c3c47a1019b7ce193b49bd" },
+        { "label": "Fractional capture-time replay tests", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/math/estimation/FractionalTimestampReplayTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/math/estimation/FractionalTimestampReplayTest.kt", "blobHash": "4f753d2f93cd271b80f0762ac5311851e21cabe2" },
+        { "label": "External-estimator no-double-fusion test", "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/test/kotlin/com/areslib/reducer/ExternalEstimatorRoutingTest.kt", "repository": "ARESLib-Kotlin", "revision": "areslib-10.1.0", "path": "core/src/test/kotlin/com/areslib/reducer/ExternalEstimatorRoutingTest.kt", "blobHash": "9d0ef3397fab6e512f0f49163e9e3d794231b385" }
       ],
-      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
+      "appliesToVersion": "ARESLib 10.1.0",
       "safetyScope": "simulation-only",
       "instructionalContractVersion": 2
     },

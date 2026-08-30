@@ -1,7 +1,8 @@
 # Combine measurements without hiding uncertainty
 
-Odometry and vision can disagree. Sensor fusion does not pick a winner by sensor name. It uses
-timing, test results, and uncertainty to decide whether a measurement should change an estimate.
+An odometry-based prediction and vision can disagree. Sensor fusion does not pick a winner by
+sensor name. It uses timing, checks, and uncertainty to decide whether a measurement should change
+an estimate.
 
 ## Purpose and prerequisites
 
@@ -10,14 +11,15 @@ first. You should understand pose, coordinate frames, residuals, and independent
 
 In this lesson, you will:
 
-- compare the influence of two accepted measurements;
+- compare the influence of a prior prediction and an accepted measurement;
 - use a signed residual to show the direction of disagreement;
 - reject a vision measurement without deleting its evidence;
 - test the result against an independent truth value; and
 - connect a simple one-dimensional model to the real ARES estimator.
 
-The interactive lab uses a weighted average on one straight line. It helps you see one idea at a
-time. It is not the three-dimensional ARES Extended Kalman Filter, or EKF.
+The interactive lab uses a weighted average on one straight line. It is the one-dimensional form of
+a Kalman update when the two estimates are independent. It is not the full three-state ARES Extended
+Kalman Filter, or EKF.
 
 ## Vocabulary
 
@@ -27,7 +29,7 @@ time. It is not the three-dimensional ARES Extended Kalman Filter, or EKF.
 - **Variance:** uncertainty squared. The lesson uses it to calculate weight.
 - **Influence:** the share of an accepted result caused by one source.
 - **Residual:** new measurement minus earlier estimate. Its sign shows direction.
-- **Prediction:** the estimate before a new measurement arrives.
+- **Prior prediction:** the pose estimate and uncertainty before a new measurement arrives.
 - **Update:** a changed estimate after an accepted measurement arrives.
 - **Covariance:** a set of uncertainty values and relationships used by an estimator.
 - **Process noise, Q:** uncertainty added while the robot predicts its own motion.
@@ -41,24 +43,25 @@ A small uncertainty says, “Measurements like this usually land close to the re
 
 ## Worked example
 
-Odometry reports `2.0 m` with uncertainty `0.5 m`. Vision reports `4.0 m` with uncertainty `0.25 m`.
-The lesson gives greater influence to smaller uncertainty. It uses inverse variance.
+The prior prediction is `2.0 m` with uncertainty `0.5 m`. Vision reports `4.0 m` with uncertainty
+`0.25 m`. The lesson gives greater influence to smaller uncertainty. It uses inverse variance.
 
 ```text
-odometry weight = 1 ÷ 0.5² = 4
+prediction weight = 1 ÷ 0.5² = 4
 vision weight = 1 ÷ 0.25² = 16
 total weight = 4 + 16 = 20
 
-odometry influence = 4 ÷ 20 = 20%
+prediction influence = 4 ÷ 20 = 20%
 vision influence = 16 ÷ 20 = 80%
 
 weighted result = (2 × 4 + 4 × 16) ÷ 20
 weighted result = 3.6 m
-signed residual = vision - odometry = 4 - 2 = +2 m
+signed residual = vision - prediction = 4 - 2 = +2 m
 ```
 
-The result lies between the two accepted measurements. It is nearer vision because vision claimed
-less uncertainty. A positive residual means vision was farther along the number line than odometry.
+The result lies between the prediction and accepted measurement. It is nearer vision because vision
+claimed less uncertainty. A positive residual means vision was farther along the number line than
+the prediction.
 
 Now suppose independent truth is `2.2 m`. The fused result is `1.4 m` away from truth, even though
 the math was correct. That evidence suggests at least one uncertainty claim or measurement was poor.
@@ -66,26 +69,47 @@ Never tune uncertainty just to force one trial to look good. Repeat the test and
 
 ### How ARES goes beyond this example
 
-ARES predicts a full robot pose and its covariance. Motion adds process uncertainty, called `Q`.
-An outside measurement arrives with measurement uncertainty, called `R`. The estimator calculates a
-residual and a gain that controls the update.
+ARES predicts field X, field Y, heading, and their covariance. Motion adds process uncertainty,
+called `Q`. A vision measurement arrives with standard deviations in meters and radians. ARES
+squares and scales those values to build measurement covariance `R`. It then calculates a residual
+and a gain that controls the update.
 
-ARES also checks whether the residual is reasonable for the stated uncertainty. This is an
-innovation test. A measurement that fails the check is rejected and leaves a diagnostic reason.
+ARES checks whether the residual is reasonable for `P + R`. It uses normalized innovation squared,
+or NIS. A measurement that fails leaves the pose unchanged and records a reason. The direct
+estimator API defaults to a threshold of `12.0`; the Store path uses its configured threshold.
+That number is not meters, degrees, or “12 sigma.”
 
-Vision can arrive late. ARES keeps a short pose history so an accepted camera observation can update
-the matching capture time. It then carries that correction forward. Comparing delayed vision only
-with the newest pose would make a moving robot appear wrong.
+Vision can arrive late. Each ARES `Store` owns a private history of up to 150 pose samples. An
+accepted camera observation updates the matching capture time, including a point between two saved
+samples, and then replays later motion. Comparing delayed vision only with the newest pose would make
+a moving robot appear wrong. Redux publishes an immutable estimator snapshot; it does not expose the
+mutable replay history.
 
-Some FRC robots use an outside estimator as the authority. In that mode, ARES does not fuse the same
-measurement a second time. The lab does not model this ownership rule.
+The current vision path has more than one gate. It can reject a frame before the EKF, then reject it
+for empty or too-old history, bad values, no tags, invalid uncertainty, invalid covariance, or an NIS
+failure. The result keeps whether the last measurement was accepted, its rejection reason, residual
+components, NIS, gain, covariance, and accepted/rejected counts for diagnosis.
+
+Some FRC paths use a platform estimator as the authority. They set
+`fuseIntoPoseEstimator = false`. ARES still records filtered vision diagnostics, but it does not
+correct the ARES pose a second time. This avoids estimator-on-estimator feedback and double use of
+correlated evidence. The browser lab does not model this ownership rule.
+
+### Current ARES data path
+
+1. A drive observation predicts pose and covariance inside one Store-owned estimator runtime.
+2. A vision frame carries its capture timestamp and uncertainty claims.
+3. A prefilter checks the frame against the historical pose at capture time.
+4. The EKF checks history, values, uncertainty, covariance, and NIS.
+5. An accepted update is replayed forward. A rejected update keeps a reason.
+6. Redux receives an immutable pose, covariance, and diagnostic snapshot.
 
 ## Visual model
 
 ```mermaid
 %% aria: Odometry predicts a pose and uncertainty. A vision measurement and uncertainty pass through timing and innovation checks. Accepted evidence updates the estimate. Rejected evidence keeps a reason. Independent truth tests the result but never enters the update.
 flowchart LR
-  O["Odometry prediction plus Q"] --> P["Predicted estimate and covariance"]
+  O["Drive prediction plus Q"] --> P["Prior pose and covariance P"]
   V["Vision measurement plus R"] --> G{"Timing and evidence checks"}
   G -->|Pass| I{"Innovation test"}
   G -->|Fail| D["Keep rejection reason"]
@@ -109,11 +133,11 @@ evidence. Swap roles after Part 2.
 
 ### Part 1: Find each source's influence
 
-1. Reset the lab and keep ambiguity below `0.20`.
+1. Reset the lab and keep ambiguity at or below `0.20`.
 2. Record both positions, uncertainties, influence percentages, signed residual, and result.
 3. Change only vision uncertainty through four values.
 4. Predict which direction the result will move before each change.
-5. Reset. Change only odometry uncertainty through four values.
+5. Reset. Change only prediction uncertainty through four values.
 
 Explain why a smaller uncertainty creates a larger influence in this lesson. Confirm that the two
 influence percentages add to `100%` when vision is accepted.
@@ -126,9 +150,9 @@ stay the same while the influence changes.
 Next, create two trials with the same uncertainties but different positions. The influence should
 stay the same while the signed residual changes.
 
-Set ambiguity above `0.20`. Vision should be rejected. Check that odometry influence becomes `100%`
-and vision influence becomes `0%`. Open the measurement table. The rejected vision value must remain
-visible with its decision. Rejected evidence is still useful for debugging.
+Set ambiguity above `0.20`. Vision should be rejected. Check that prediction influence becomes
+`100%` and vision influence becomes `0%`. Open the measurement table. The rejected vision value must
+remain visible with its decision. Rejected evidence is still useful for debugging.
 
 ### Part 3: Challenge an uncertainty claim
 
@@ -165,15 +189,16 @@ small uncertainty is only a strong claim until independent evidence supports it.
 If the result does not move toward vision, check whether ambiguity rejected vision. Then compare the
 two uncertainty values. Smaller uncertainty gets more influence in this lab.
 
-If the residual sign seems backward, use the lesson rule: `vision - odometry`. A negative residual
+If the residual sign seems backward, use the lesson rule: `vision - prediction`. A negative residual
 means vision is lower on the number line. Other tools may choose a different sign, so read their
 contract before comparing logs.
 
 If truth changes the fused result, reset and repeat. In this model, truth is a judge, not an input.
 Report that behavior as a software defect if the result still moves.
 
-If a real robot estimate jumps, inspect timestamps, units, coordinate frames, and rejection details
-before changing noise values. Do not use larger uncertainty to hide loose hardware or a scale error.
+If a real robot estimate jumps, inspect capture timestamps, units, coordinate frames, prefilter
+results, NIS, and rejection details before changing noise values. Do not use larger uncertainty to
+hide loose hardware or a scale error.
 
 If one source always controls the result, compare both units and uncertainty values. Centimeters and
 meters cannot be mixed. Also check whether an outside estimator owns the final FRC pose.
@@ -183,7 +208,7 @@ meters cannot be mixed. Also check whether an outside estimator owns the final F
 Submit a table with at least 12 trials:
 
 - four vision-uncertainty trials;
-- four odometry-uncertainty trials;
+- four prediction-uncertainty trials;
 - one accepted and one rejected ambiguity trial; and
 - two independent-truth challenge trials.
 
@@ -202,9 +227,11 @@ Lead Coach review workflow.
 3. Why is zero uncertainty invalid?
 4. What evidence should remain after a vision measurement is rejected?
 5. Why must independent truth stay outside the fusion calculation?
-6. What do `Q` and `R` describe in the real estimator?
-7. Why does capture time matter for delayed vision?
-8. When should ARES avoid fusing an accepted measurement a second time?
+6. What do `P`, `Q`, and `R` describe in the real estimator?
+7. Why is an NIS threshold not a distance or “number of sigmas” by itself?
+8. Why does capture time matter for delayed vision?
+9. Why is mutable pose history private to one Store runtime?
+10. When should ARES avoid fusing an accepted measurement a second time?
 
 ## Extension challenge
 
