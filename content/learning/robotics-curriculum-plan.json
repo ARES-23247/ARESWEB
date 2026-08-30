@@ -5,7 +5,7 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d",
+    "commit": "1c92c61c2faaca2a630e525a76e41d4f7657815c",
     "aresVersion": "11.1.0",
     "studioVersion": "2.0.2"
   },

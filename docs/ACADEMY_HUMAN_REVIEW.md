@@ -388,9 +388,38 @@ official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
 
 The current reviewed source authority is ARES 11.1.0 / Studio 2.0.2 at commit
-`7cd2cf5f`. Existing 11.0.0 and 11.1.0/2.0.1 source links remain immutable historical pins until
+`1c92c61c`. Existing 11.0.0 and 11.1.0/2.0.1 source links remain immutable historical pins until
 their individual lesson review is complete; a release-number change alone does
 not authorize silently replacing those references.
+
+## Continuous cycle: existing ARESLib reference depth
+
+This cycle improves three already-published references instead of adding lesson
+count: `areslib-fundamentals`, `swerve-and-kinematics`, and
+`autonomous-and-vision`. Review each rendered page at narrow and wide widths.
+Confirm that it uses all eleven instructional sections, stays clear for a
+middle-school reader, and keeps source facts separate from student evidence.
+
+The fundamentals page adds the Robot Flow Tracer and an ownership-map activity.
+Confirm that the tracer is described as a fixed concept model. It must not claim
+to inspect a repository, run Redux, compile code, or command hardware.
+
+The drivebase page adds the Drivetrain Choice Lab and a measured-geometry
+activity. Confirm that topology and tuning stay separate, stable module identity
+crosses every layer, and a simulation result is never called physical proof.
+Student-led restrained checks must keep the team's robot-safety procedure.
+
+The autonomous page adds the Autonomous Path Clearance Lab beside the existing
+Vision Uncertainty Lab. Confirm that both have visible fidelity statements.
+They must not claim to read team routines, check a real field, calibrate a
+camera, run an estimator, compile code, or validate a physical robot.
+
+All three references pin their reviewed facts to ARES Robotics commit
+`1c92c61c2faaca2a630e525a76e41d4f7657815c`. Remote validation must recompute
+the listed Git blob hashes and confirm the ARES 11.1.0 / Studio 2.0.2 version
+identity before review. The existing `refresh-published` entries retain hashes
+of the live short versions, so any later editorial change blocks migration
+instead of being overwritten.
 
 ## Recording future decisions
 

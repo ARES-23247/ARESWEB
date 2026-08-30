@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertAresLibReferenceContract,
   assertMiddleSchoolLearningQuality,
   assertSubstantialLessonContract,
   assertStudentLedRobotVerificationLanguage,
@@ -139,6 +140,24 @@ describe("learning catalog preparation", () => {
       valid.replace("## Troubleshooting", "## More words"),
       "missing-support",
     )).toThrow(/missing the Troubleshooting section/u);
+  });
+
+  it("keeps every ARESLib reference on the substantial learning contract", () => {
+    expect(() => assertAresLibReferenceContract({
+      slug: "deep-reference",
+      contentFile: "areslib-reference/deep-reference.md",
+      instructionalContractVersion: 2,
+    })).not.toThrow();
+    expect(() => assertAresLibReferenceContract({
+      slug: "thin-reference",
+      contentFile: "areslib-reference/thin-reference.md",
+      instructionalContractVersion: 1,
+    })).toThrow(/instructionalContractVersion 2/u);
+    expect(() => assertAresLibReferenceContract({
+      slug: "academy-lesson",
+      contentFile: "robotics-foundations/academy-lesson.md",
+      instructionalContractVersion: 1,
+    })).not.toThrow();
   });
 
   it("ratchets the robotics expansion and validates existing-lesson interaction targets", () => {

@@ -4,7 +4,7 @@
     "ARES-Robotics": {
       "current": {
         "revision": "ares-11.1.0-studio-2.0.2",
-        "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d"
+        "commit": "1c92c61c2faaca2a630e525a76e41d4f7657815c"
       },
       "approved": [
         {
@@ -22,6 +22,10 @@
         {
           "revision": "ares-11.1.0-studio-2.0.2",
           "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d"
+        },
+        {
+          "revision": "ares-11.1.0-studio-2.0.2",
+          "commit": "1c92c61c2faaca2a630e525a76e41d4f7657815c"
         }
       ]
     }

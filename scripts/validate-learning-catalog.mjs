@@ -304,6 +304,14 @@ export function assertSubstantialLessonContract(content, slug) {
   return readability;
 }
 
+export function assertAresLibReferenceContract(document) {
+  if (!document.contentFile?.startsWith("areslib-reference/")) return;
+  assert(
+    document.instructionalContractVersion === 2,
+    `${document.slug}: ARESLib references must use instructionalContractVersion 2.`,
+  );
+}
+
 export function parseAresVersions(value) {
   const versions = {};
   for (const rawLine of value.replace(/\r\n?/gu, "\n").split("\n")) {
@@ -444,6 +452,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(SAFETY_SCOPES.has(document.safetyScope), `${slug}: invalid safetyScope.`);
     assert([1, 2].includes(document.instructionalContractVersion ?? 1),
       `${slug}: instructionalContractVersion must be 1 or 2.`);
+    assertAresLibReferenceContract(document);
     assert(Array.isArray(document.pathMemberships), `${slug}: pathMemberships must be an array.`);
     const assignedPaths = new Set();
     for (const membership of document.pathMemberships) {
