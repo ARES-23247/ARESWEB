@@ -29,6 +29,7 @@ const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scen
 const fastenerChoiceLab = lazy(() => import("../../sims/fastener-choice-lab"));
 const fault = lazy(() => import("../../sims/fault"));
 const faultTreeLab = lazy(() => import("../../sims/fault-tree-lab"));
+const feedforwardTermLab = lazy(() => import("../../sims/feedforward-term-lab"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
@@ -149,6 +150,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   fault: fault,
   faultTreeLab: faultTreeLab,
   faulttreelab: faultTreeLab,
+  feedforwardTermLab: feedforwardTermLab,
+  feedforwardtermlab: feedforwardTermLab,
   field: field,
   flywheelkv: flywheelkv,
   greatbee: greatbee,
@@ -294,6 +297,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   fastenerchoicelab: fastenerChoiceLab,
   faultTreeLab: faultTreeLab,
   faulttreelab: faultTreeLab,
+  feedforwardTermLab: feedforwardTermLab,
+  feedforwardtermlab: feedforwardTermLab,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   kotlinExpressionLab: kotlinExpressionLab,
@@ -556,6 +561,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'
+  },
+  {
+    'id': 'feedforwardTermLab',
+    'name': 'ARES FTC Feedforward Term Trace',
+    'folder': 'feedforward-term-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'field',

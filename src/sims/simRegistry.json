@@ -201,6 +201,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "feedforwardTermLab",
+      "name": "ARES FTC Feedforward Term Trace",
+      "path": "./feedforward-term-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "field",
       "name": "PathPlanner Canvas Renderer",
       "path": "./field",

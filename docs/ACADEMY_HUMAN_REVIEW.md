@@ -902,6 +902,41 @@ Students may inspect the source, run the focused test, and verify robot behavior
 normal safety process. Lead Coach review remains limited to publishing website posts. This local
 curriculum change does not publish or overwrite production data.
 
+## Continuous cycle: feedforward prediction and current FTC request terms
+
+This cycle improves the existing `controls-motor-model-feedforward` lesson. Review the current
+component authorities: ARESLib `13599358` and ARES-FTC `0cb74896`. The lesson retains the
+conceptual `controlResponseLab` for separating prediction from measured-error correction and adds
+the code-derived `feedforwardTermLab` for one feedforward-only FTC wheel step.
+
+Review the source-contract disagreement rather than hiding it. `SimpleFeedforwardCoeffs.kt` and the
+current `.aresdrivetrain` declaration describe `kS`, `kV`, and `kA` with voltage-based units.
+`MecanumDriveFeedforward.kt` describes `kS` as a normalized offset, sums all three terms into a
+request, multiplies the combined request by `12 / batteryVolts`, and clamps the final duty request.
+The lesson and interaction must call intermediate results **request units**, not volts, until ARES
+source and declaration contracts are aligned.
+
+The code-derived interaction starts from the checked-in Team 23247 competition profile values
+`kS = 0.05`, `kV = 0.638`, and `kA = 0.02`. These are authentic repository values. They must not be
+described as measured, universally safe, or suitable for another robot without separate evidence.
+At a steady `1 m/s` target and `12 V` input, the traced raw and final request is `0.688`. A start
+step from `0` to `1 m/s` in `0.02 s` produces a `1.0` acceleration term, a `1.688` raw request, and
+a clamped `1.0` final request. A zero target returns zero before terms are added.
+
+Review the interaction at a narrow viewport and with keyboard-only input. It uses labeled native
+number controls, 44-pixel preset buttons, a live text status, visible term-by-term results, and a
+deterministic reset. Its model limit must remain visible: it does not run Kotlin, add feedback,
+apply slew or current-budget limits, model a motor, read hardware, prove how the profile was
+measured, or approve physical use.
+
+The interaction remains independently lazy and below the unchanged 8 KB raw / 2.6 KB gzip
+per-interaction cap. The Academy aggregate budget grows by one existing interaction allowance only;
+initial-route and editor budgets remain unchanged.
+
+Students may inspect the source, run the focused test, and verify robot behavior through the team's
+normal safety process. Lead Coach review remains limited to publishing website posts. This local
+curriculum change does not publish or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
