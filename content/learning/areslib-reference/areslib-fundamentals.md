@@ -146,3 +146,5 @@ snapshot and check the requested output. The test should not need a robot, netwo
   a drivebase description.
 - Use [Autonomous paths, localization, and vision](/docs/autonomous-and-vision) when routines and
   delayed measurements enter the state flow.
+- Use [Task sequences, resources, and cleanup](/docs/sequencing-and-resources) when ordered or
+  concurrent robot work needs timeouts, resource ownership, and visible cleanup.

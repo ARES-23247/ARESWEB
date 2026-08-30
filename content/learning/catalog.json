@@ -612,6 +612,26 @@
       "safetyScope": "simulation-only"
     },
     {
+      "slug": "sequencing-and-resources",
+      "title": "Task Sequences, Resources, and Cleanup",
+      "category": "Architecture & Redux",
+      "description": "Reference typed task groups, construction-time resource checks, executor lifecycle, timeouts, cancellation, and caller-owned cleanup actions.",
+      "contentFile": "areslib-reference/sequencing-and-resources.md",
+      "subject": "robotics-engineering",
+      "topics": ["ARESLib", "task sequencing", "resource ownership", "timeouts", "cleanup"],
+      "contentType": "reference",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [],
+      "prerequisites": ["areslib-fundamentals"],
+      "objectives": ["Compare sequence, parallel, race, and deadline finish rules.", "Use resource bits and finite timeouts to reject unsafe task trees before execution.", "Trace normal, failed, cancelled, and preempted work through caller-owned Redux cleanup actions.", "Create a source-backed task review that separates software evidence from physical robot evidence."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "Typed ARES task-sequence builder", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/RobotSequence.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/RobotSequence.kt", "blobHash": "028813734470937d80a9965c19080311b260a10d" }, { "label": "Task and timeout lifecycle contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/Task.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/Task.kt", "blobHash": "c222a47060e59d0688851c263af1bc75391b7319" }, { "label": "Sequential and concurrent group lifecycle", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskGroupDispatcher.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskGroupDispatcher.kt", "blobHash": "3f4786cd3162eaaf05dfc0b213dff2ea891da67e" }, { "label": "ARES task executor lifecycle", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskExecutor.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskExecutor.kt", "blobHash": "cf8b5e623d971e5af3ae03c5175402c97ea5db0f" }, { "label": "ARES task resource validation", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskResources.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskResources.kt", "blobHash": "257f0ae7f93a4f31391b6001c44a958f1114c33f" }],
+      "appliesToVersion": "ARES 12.0.0",
+      "safetyScope": "simulation-only"
+    },
+    {
       "slug": "telemetry-and-control",
       "title": "Telemetry, Control State, and Offline Logs",
       "category": "Telemetry & Analytics",

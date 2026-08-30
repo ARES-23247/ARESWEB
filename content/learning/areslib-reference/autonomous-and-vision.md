@@ -146,6 +146,9 @@ change.
 
 ## Related and next
 
+Use [Task Sequences, Resources, and Cleanup](/docs/sequencing-and-resources) to review group finish
+rules, actuator resource conflicts, bounded waits, and interrupted cleanup before a routine runs.
+
 - Review [ARESLib architecture and ownership](/docs/areslib-fundamentals) when a routine crosses
   project, compiler, runtime, or adapter boundaries.
 - Review [Drivebase, swerve, and kinematics contracts](/docs/swerve-and-kinematics) for the robot
