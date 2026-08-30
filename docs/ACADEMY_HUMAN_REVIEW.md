@@ -1028,6 +1028,24 @@ labeled native inputs instead of repeated cards and preset grids. Their source-d
 functions, bounded inputs, live results, reset behavior, and visible model limits are unchanged.
 Review both at a narrow viewport and with keyboard-only input before this release is approved.
 
+## Continuous cycle: existing physical-commissioning capstone clarity
+
+This cycle improves the existing `capstone-physical-commissioning` lesson. It does not add a second
+commissioning capstone or claim that physical student evidence exists. Review the new four-gate path:
+code and simulation, robot setup, one small test, and a recorded result. Each gate must remain in
+order, and a missing or stale gate must stop the process.
+
+The lesson still reuses the Commissioning Boundary Checklist and Capstone Evidence Board. Confirm
+that their self-reported boxes do not authorize motion, prove robot behavior, approve a website post,
+or fill the open physical-evidence request. Students may run and record the team safety process. Lead
+Coach review remains limited to website publication.
+
+The three behavior sources are pinned to the authoritative `ARES-Robotics` monorepo commit
+`f3de343a`. Their Git blob hashes are unchanged from the earlier Studio 2.0.1 review, so the evidence
+levels and starter handoff contracts did not change during this release update. The canonical ARES
+11.1.0 / Studio 2.0.3 manifest is a fourth source pin. Remote verification must recompute all four
+hashes. This local curriculum change does not stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

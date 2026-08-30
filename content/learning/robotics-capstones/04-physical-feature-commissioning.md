@@ -2,21 +2,32 @@
 
 ## Purpose and prerequisites
 
-This capstone carries one tested subsystem from simulation evidence to a small physical procedure.
-Students can run and document the team safety process. Website publication remains a separate Lead
-Coach review step.
+This capstone takes one tested subsystem from a screen to a small robot test. Students can run and
+record the team's safety process. Lead Coach review is needed only if the work becomes a website
+post.
 
 Complete [Capstone 2: Build a Complete ARES Subsystem](/academy/capstone-subsystem?path=robotics-capstones),
 [Build a Fault Tree and Isolate a Cause](/academy/testing-fault-tree?path=testing-debugging-commissioning),
 and [Commission an FTC Starter Robot Safely](/academy/ftc-starter-physical-commissioning?path=testing-debugging-commissioning).
-Use only an approved current robot, current inventory hash, and the team's normal safety procedure.
+Use the current robot, its current inventory hash, and the team's normal safety steps.
+
+## Your four gates
+
+Do not jump from a green screen to robot motion. Move through four gates in order:
+
+1. **Code and simulation:** build the code and run the right fault tests.
+2. **Robot setup:** check names, wires, limits, direction, fresh sensor data, and neutral output.
+3. **One small test:** write the stop rule, restrain the robot, and use the smallest allowed output.
+4. **Record the result:** save what you saw, what you did not test, and what should happen next.
+
+A missing gate means stop. An old gate must be checked again after a related change.
 
 ## Vocabulary
 
-- **Commissioning:** a staged process that gathers evidence before wider use.
+- **Commissioning:** a set of small checks before wider use.
 - **Inventory hash:** an identity for the exact reviewed hardware configuration.
 - **Configuration reviewed:** wiring, names, addresses, directions, limits, and neutral were checked.
-- **Ready for physical validation:** current simulation and configuration evidence have no blocker.
+- **Ready for physical validation:** the current screen tests and setup review have no blocker.
 - **Physical procedure:** one named, bounded real-robot test.
 - **Observer:** the person who records what happened and the limits of that observation.
 - **Stop condition:** a result that ends the test at once.
@@ -26,14 +37,14 @@ Use only an approved current robot, current inventory hash, and the team's norma
 
 ## Worked example
 
-An invented elevator passed reducer, controller, stale-input, failed-write, neutral-recovery, and
-simulated limit tests. The current inventory was reviewed. That makes it ready for a planned physical
-check, not physically validated.
+Imagine an elevator that passed its code and screen tests. These tests covered old sensor data,
+failed output, stop recovery, and travel limits. The team also checked the current parts list. The
+elevator is now ready for one planned robot check. It is not yet proven on the robot.
 
-The first procedure keeps the robot restrained. It confirms the exact device names, powers the
-control system with outputs neutral, reads a fresh position, and checks the stop control. A later
-step uses the smallest allowed output for a short time. The observer records direction, position,
-current, stop result, and any unexpected sound or motion.
+The first plan keeps the robot restrained. The student checks each device name and powers the control
+system with all outputs neutral. The student reads a fresh position and tests the stop control. Only
+then does the plan use the smallest allowed output for a short time. The observer records direction,
+position, current, the stop result, and any odd sound or motion.
 
 If the descriptor changes, the inventory hash changes. The old review and physical result become
 stale. They stay in history, but they cannot prove the new configuration.
@@ -57,19 +68,29 @@ Studio separates these evidence levels. One green result must not hide a missing
 
 ## Hands-on activity
 
-1. Name one feature and one measurable behavior with units.
+### Gate 1: code and screen tests
+
+1. Name one feature and one behavior you can measure. Include the unit.
 2. Record the source revision and exact inventory hash.
-3. Attach current simulation, fault, parity, and neutral-recovery results.
-4. Review names, ports, buses, addresses, directions, units, limits, homing, and clearance.
-5. Use the checklist. Leave a box clear when its evidence is missing.
+3. Attach current build, simulation, fault, parity, and stop-recovery results.
+
+### Gate 2: robot setup
+
+4. Check names, ports, buses, addresses, direction, units, limits, homing, and clear space.
+5. Use the checklist. Leave a box clear when proof is missing.
 
 <commissioningchecklistlab />
 
-6. Write the restrained setup, smallest output, time limit, expected result, and stop conditions.
-7. Identify the accessible stop control and the person who will watch it.
-8. Run only the approved first physical step under the team safety process.
-9. Stop on any unexpected result. Preserve the evidence before changing the system.
-10. Record observed values, timestamps, units, result, limitations, and next safe step.
+### Gate 3: one small robot test
+
+6. Write the restrained setup, smallest output, time limit, expected result, and stop rules.
+7. Name the easy-to-reach stop control. Name the person who will watch it.
+8. Run only the first small step under the team safety process.
+9. Stop for any result you did not expect. Save the evidence before you change the system.
+
+### Gate 4: record the result
+
+10. Record values, times, units, the result, limits of the test, and the next safe step.
 11. Use the evidence board. Do not mark the packet complete without real student evidence.
 
 <capstoneevidenceboard />
@@ -104,10 +125,10 @@ request remains open. A student packet must supply the physical evidence before 
 
 ## Evidence artifact
 
-Create a physical-feature packet with the requirement, source revision, inventory hash, simulation
-results, and configuration review. Add the risk and stop plan, restrained setup, exact procedure,
-observer, timestamps, units, and expected and observed values. Record the neutral result, unexpected
-events, limits, repair, retest, and next step.
+Create one physical-feature packet. Start with the goal, source revision, inventory hash, screen-test
+results, and robot setup review. Add the risk and stop plan. Include the restrained setup, exact
+steps, observer, times, units, and expected and observed values. Record the neutral result, any odd
+event, each limit of the test, any repair, the retest, and the next step.
 
 Remove student names from public material unless an approved public identity policy applies. Remove
 emails, account IDs, credentials, private paths, and unrelated logs. Keep the private team record in
@@ -123,9 +144,10 @@ the approved system and publish only a reviewed, privacy-safe summary.
 
 ## Extension challenge
 
-Plan a second test that expands only one boundary, such as load, speed, range, or time. Name the
-baseline, one changed condition, metric, limit, stop condition, and result that would send the team
-back to fault isolation. Do not run it until the first packet supports that next step.
+Plan a second test that changes only one limit, such as load, speed, range, or time. Name the first
+result. Name the one change, what you will measure, the allowed limit, and the stop rule. State what
+result would send the team back to fault finding. Do not run it until the first packet supports the
+next step.
 
 ## Related and next
 
