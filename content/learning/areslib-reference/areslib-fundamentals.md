@@ -148,3 +148,5 @@ snapshot and check the requested output. The test should not need a robot, netwo
   delayed measurements enter the state flow.
 - Use [Task sequences, resources, and cleanup](/docs/sequencing-and-resources) when ordered or
   concurrent robot work needs timeouts, resource ownership, and visible cleanup.
+- Use [Subsystem ownership, I/O, and safety](/docs/subsystems-ownership-and-safety) when a mechanism
+  needs an explicit source owner, cached device boundary, safe lifecycle, and adapter parity.

@@ -612,6 +612,33 @@
       "safetyScope": "simulation-only"
     },
     {
+      "slug": "subsystems-ownership-and-safety",
+      "title": "Subsystem Ownership, I/O, and Safety",
+      "category": "Architecture & Redux",
+      "description": "Reference ARES subsystem implementation kinds, protected source ownership, cached I/O, fail-closed lifecycle rules, and physical/simulation parity.",
+      "contentFile": "areslib-reference/subsystems-ownership-and-safety.md",
+      "subject": "robotics-engineering",
+      "topics": ["ARESLib", "subsystems", "source ownership", "cached I/O", "safety", "simulation parity"],
+      "contentType": "reference",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [],
+      "prerequisites": ["areslib-fundamentals"],
+      "objectives": ["Choose declarative generated, generated starter, or hand-authored ownership from real project evidence.", "Trace requested intent and cached feedback through state, control, physical, and simulated boundaries.", "Review safe startup, output permits, fault latching, neutral recovery, disable, stop, and close behavior.", "Create a source-backed subsystem contract map that separates software evidence from student-led physical verification."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [
+        { "label": "Current schema 11 subsystem ownership and safety model", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt", "blobHash": "103cce91c64bc2f2402176cfce6c07923a8642a1" },
+        { "label": "Current schema 11 validation policy", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt", "blobHash": "1bbc13ecc88955d7868be73e483fd6281c4038bf" },
+        { "label": "Subsystem DSL and hand-authored metadata guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/docs/subsystem-dsl.md", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/docs/subsystem-dsl.md", "blobHash": "d0be8011ebb0d2f43bfc061b09a7bd69c080017d" },
+        { "label": "Protected starter diff and replacement-token contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemStarterReconciler.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemStarterReconciler.kt", "blobHash": "2bab2cea8ebb13b1d025b99c8d295f75b72c378d" },
+        { "label": "Generated subsystem verification evidence contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "blobHash": "e8329a476b140e87a5d2c9763e0a4a91ede72276" },
+        { "label": "Current FTC subsystem authoring and verification guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "8d1b872e71ddeb83cf07402cb9548b73fd11d6e3" }
+      ],
+      "appliesToVersion": "ARES 12.0.0; ARES FTC 12.0.0; Studio 3.0.0",
+      "safetyScope": "physical-robot"
+    },
+    {
       "slug": "sequencing-and-resources",
       "title": "Task Sequences, Resources, and Cleanup",
       "category": "Architecture & Redux",
