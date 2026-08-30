@@ -152,3 +152,5 @@ snapshot and check the requested output. The test should not need a robot, netwo
   needs an explicit source owner, cached device boundary, safe lifecycle, and adapter parity.
 - Use [Typed tuning profiles and safe experiments](/docs/typed-tuning-and-safe-experiments) when a
   declared value moves between a local proposal, guarded live request, and reviewed profile.
+- Use [Development, testing, and release validation](/docs/development-testing-and-release-validation)
+  when a shared library change needs a unique candidate and consumer-wide evidence.

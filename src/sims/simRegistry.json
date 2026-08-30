@@ -489,6 +489,14 @@
       "fidelity": "code-derived"
     },
     {
+      "id": "releaseValidationLab",
+      "name": "ARES Release Validation Lab",
+      "path": "./release-validation-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "risk",
       "name": "Risk",
       "path": "./risk",

@@ -667,6 +667,31 @@
       "safetyScope": "physical-robot"
     },
     {
+      "slug": "development-testing-and-release-validation",
+      "title": "Develop, Test, and Validate ARESLib Changes",
+      "category": "Architecture & Redux",
+      "description": "Reference focused tests, API review, immutable candidate versions, consumer-wide validation, protected releases, and clean student dependency resolution.",
+      "contentFile": "areslib-reference/development-testing-and-release-validation.md",
+      "subject": "robotics-engineering",
+      "topics": ["ARESLib", "testing", "release validation", "immutable artifacts", "Gradle", "BOM"],
+      "contentType": "reference",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [],
+      "prerequisites": ["areslib-fundamentals"],
+      "objectives": ["Match each source boundary to focused, module, API, consumer, or clean-release evidence.", "Build a unique isolated candidate and keep composite substitution off during consumer validation.", "Explain why one released coordinate must always identify one immutable file set.", "Create a privacy-safe validation packet that keeps software, simulation, and physical evidence separate."],
+      "platforms": ["hardware-neutral", "ftc", "frc", "simulator"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [
+        { "label": "ARESLib development, testing, and troubleshooting", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/docs/development.md", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/docs/development.md", "blobHash": "14c7b0f6d1113490105b19fe929e9479d70d77f0" },
+        { "label": "Immutable ARESLib publishing contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/docs/PUBLISHING.md", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/docs/PUBLISHING.md", "blobHash": "2f6f0cfb4ae3f135ef7ca7a5e35dcba73203938c" },
+        { "label": "Canonical ARES release identity", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/release/ares-versions.properties", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "release/ares-versions.properties", "blobHash": "535754b53cd834b6f903757465b8d88e79402596" },
+        { "label": "Current monorepo candidate and consumer matrix", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/.github/workflows/monorepo-ci.yml", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": ".github/workflows/monorepo-ci.yml", "blobHash": "9e1c1addfad7e94a9bb41aef8defd779613c5b74" }
+      ],
+      "appliesToVersion": "ARES 12.0.0; FTC Starter 12.0.0; FRC Starter 12.0.0; Studio 3.0.0",
+      "safetyScope": "none"
+    },
+    {
       "slug": "sequencing-and-resources",
       "title": "Task Sequences, Resources, and Cleanup",
       "category": "Architecture & Redux",

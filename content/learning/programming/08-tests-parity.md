@@ -244,5 +244,8 @@ Return to
 [Read Hardware Once and Write Safe Outputs](/academy/programming-io-caching?path=programming-with-ares)
 for the cached boundary under test. Review
 [Build Safe Task Sequences](/academy/programming-safe-task-sequences?path=programming-with-ares)
-for timeout and cleanup cases. Continue to testing, logs, commissioning, and capstone work. Keep
-software, simulation, and physical claims separate at every step.
+for timeout and cleanup cases. Library maintainers should use
+[Develop, Test, and Validate ARESLib Changes](/docs/development-testing-and-release-validation)
+when a shared change must pass through an isolated candidate and every consumer. Continue to
+testing, logs, commissioning, and capstone work. Keep software, simulation, and physical claims
+separate at every step.

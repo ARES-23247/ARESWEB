@@ -137,4 +137,6 @@ one exact source tree instead of changing its contents after release.
 Continue with [Follow a Robot Request from Input to
 Output](/academy/robot-input-to-output?path=robotics-foundations). If you want to create a clean FTC
 workspace, use [Start an FTC Project Without Inherited Robot
-Assumptions](/academy/ftc-starter-project-identity?path=ftc-robot-with-ares).
+Assumptions](/academy/ftc-starter-project-identity?path=ftc-robot-with-ares). Library maintainers
+can continue with [Develop, Test, and Validate ARESLib
+Changes](/docs/development-testing-and-release-validation) before assigning any release identity.

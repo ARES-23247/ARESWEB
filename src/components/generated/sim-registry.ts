@@ -65,6 +65,7 @@ const postMatchTriageLab = lazy(() => import("../../sims/post-match-triage-lab")
 const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"));
 const powershedding = lazy(() => import("../../sims/powershedding"));
 const reduxStateTracer = lazy(() => import("../../sims/redux-state-tracer"));
+const releaseValidationLab = lazy(() => import("../../sims/release-validation-lab"));
 const risk = lazy(() => import("../../sims/risk"));
 const robotFlowTracer = lazy(() => import("../../sims/robot-flow-tracer"));
 const satcircles = lazy(() => import("../../sims/satcircles"));
@@ -217,6 +218,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   powershedding: powershedding,
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
+  releaseValidationLab: releaseValidationLab,
+  releasevalidationlab: releaseValidationLab,
   risk: risk,
   robotFlowTracer: robotFlowTracer,
   robotflowtracer: robotFlowTracer,
@@ -340,6 +343,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
+  releaseValidationLab: releaseValidationLab,
+  releasevalidationlab: releaseValidationLab,
   robotFlowTracer: robotFlowTracer,
   robotflowtracer: robotFlowTracer,
   scoutingQualityLab: scoutingQualityLab,
@@ -861,6 +866,14 @@ const SIM_METADATA = [
     'id': 'reduxStateTracer',
     'name': 'Current ARES Redux State Tracer',
     'folder': 'redux-state-tracer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'releaseValidationLab',
+    'name': 'ARES Release Validation Lab',
+    'folder': 'release-validation-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'code-derived'
