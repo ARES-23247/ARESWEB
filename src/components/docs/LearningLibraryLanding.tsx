@@ -30,7 +30,7 @@ interface LearningLibraryLandingProps {
   };
 }
 
-const FILTER_QUERY_KEYS = ["search", "subject", "level", "type", "path", "platform", "topic", "duration"] as const;
+const FILTER_QUERY_KEYS = ["search", "subject", "level", "type", "path", "platform", "topic", "duration", "progress"] as const;
 
 export default function LearningLibraryLanding({ documents, library, progress }: LearningLibraryLandingProps) {
   const location = useLocation();
@@ -43,7 +43,9 @@ export default function LearningLibraryLanding({ documents, library, progress }:
   const updateFilters = (next: LearningFilters) => {
     const params = new URLSearchParams(location.search);
     FILTER_QUERY_KEYS.forEach((key) => params.delete(key));
-    const normalized = library === "academy" ? next : { ...next, pathId: "all" as const };
+    const normalized = library === "academy" && progress
+      ? next
+      : { ...next, pathId: "all" as const, progress: "all" as const };
     learningFiltersToSearchParams(normalized).forEach((value, key) => params.set(key, value));
     const search = params.toString();
     navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
@@ -54,8 +56,12 @@ export default function LearningLibraryLanding({ documents, library, progress }:
   };
 
   const filtered = useMemo(
-    () => filterLearningDocuments(documents, { ...filters, pathId }),
-    [documents, filters, pathId],
+    () => filterLearningDocuments(
+      documents,
+      { ...filters, pathId, progress: library === "academy" && progress ? filters.progress : "all" },
+      progress?.completedSlugs,
+    ),
+    [documents, filters, library, pathId, progress],
   );
   const topics = useMemo(() => learningTopics(documents), [documents]);
 
@@ -63,6 +69,12 @@ export default function LearningLibraryLanding({ documents, library, progress }:
     path.id,
     documents.filter((document) => document.pathMemberships.some((membership) => membership.pathId === path.id)).length,
   ])), [documents]);
+  const pathCompletedCounts = useMemo(() => new Map(LEARNING_PATHS.map((path) => [
+    path.id,
+    documents.filter((document) =>
+      document.pathMemberships.some((membership) => membership.pathId === path.id)
+      && progress?.completedSlugs.has(document.slug)).length,
+  ])), [documents, progress]);
 
   const selectedPath = pathId === "all" ? null : LEARNING_PATHS.find((path) => path.id === pathId) ?? null;
   const selectedPathDocuments = useMemo(
@@ -100,6 +112,7 @@ export default function LearningLibraryLanding({ documents, library, progress }:
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {LEARNING_PATHS.map((path) => {
               const count = pathCounts.get(path.id) ?? 0;
+              const completed = pathCompletedCounts.get(path.id) ?? 0;
               const active = pathId === path.id;
               return (
                 <button
@@ -117,6 +130,11 @@ export default function LearningLibraryLanding({ documents, library, progress }:
                   <span className="mt-4 block text-xs font-bold uppercase tracking-wider text-ares-gold">
                     {count > 0 ? `${count} ${count === 1 ? "lesson" : "lessons"}` : "Curriculum in preparation"}
                   </span>
+                  {progress && count > 0 && (
+                    <span className="mt-1 block text-xs font-bold text-ares-cyan">
+                      {completed} of {count} complete on this browser
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -196,6 +214,10 @@ export default function LearningLibraryLanding({ documents, library, progress }:
             { id: "30", label: "30 minutes or less" },
             { id: "60", label: "60 minutes or less" },
           ] as const} />
+          {library === "academy" && progress && <FilterSelect label="Progress" value={filters.progress} onChange={(value) => setFilter("progress", value as LearningFilters["progress"])} options={[
+            { id: "not-started", label: "Not started" },
+            { id: "completed", label: "Completed" },
+          ] as const} />}
           {library === "academy" && <FilterSelect label="Learning path" value={pathId} onChange={(value) => setFilter("pathId", value as LearningFilters["pathId"])} options={LEARNING_PATHS} />}
           <button
             type="button"

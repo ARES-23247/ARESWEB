@@ -72,7 +72,7 @@ const docs = [
 describe("learning experience utilities", () => {
   it("allowlists URL-backed filters and round-trips supported values", () => {
     const parsed = parseLearningFilters(new URLSearchParams(
-      "search=robot&subject=robotics-engineering&level=beginner&type=lesson&path=robotics-foundations&platform=ftc&topic=Safety&duration=30",
+      "search=robot&subject=robotics-engineering&level=beginner&type=lesson&path=robotics-foundations&platform=ftc&topic=Safety&duration=30&progress=not-started",
     ));
     expect(parsed).toMatchObject({
       search: "robot",
@@ -83,13 +83,14 @@ describe("learning experience utilities", () => {
       platform: "ftc",
       topic: "Safety",
       duration: "30",
+      progress: "not-started",
     });
     expect(parseLearningFilters(learningFiltersToSearchParams(parsed))).toEqual(parsed);
   });
 
   it("drops malformed, unknown, and reserved query values", () => {
     const parsed = parseLearningFilters(new URLSearchParams(
-      "subject=private&type=%3Cscript%3E&path=unknown&topic=%3Cimg%3E&duration=999&q=overlay",
+      "subject=private&type=%3Cscript%3E&path=unknown&topic=%3Cimg%3E&duration=999&progress=unknown&q=overlay",
     ));
     expect(parsed).toEqual(DEFAULT_LEARNING_FILTERS);
   });
@@ -112,6 +113,19 @@ describe("learning experience utilities", () => {
       ...DEFAULT_LEARNING_FILTERS,
       topic: "safety",
     }).map((item) => item.slug)).toEqual(["robot-intent", "safe-output"]);
+  });
+
+  it("filters local completion without sending progress to an account", () => {
+    const completed = new Set(["robot-intent"]);
+    expect(filterLearningDocuments(docs, {
+      ...DEFAULT_LEARNING_FILTERS,
+      progress: "completed",
+    }, completed).map((item) => item.slug)).toEqual(["robot-intent"]);
+
+    expect(filterLearningDocuments(docs, {
+      ...DEFAULT_LEARNING_FILTERS,
+      progress: "not-started",
+    }, completed).map((item) => item.slug)).toEqual(["mean-and-median", "safe-output"]);
   });
 
   it("derives bounded topics and path-aware previous/next navigation", () => {

@@ -13,6 +13,7 @@ import {
 } from "@/lib/learningContent";
 
 export type LearningDuration = "all" | "15" | "30" | "60";
+export type LearningProgressFilter = "all" | "completed" | "not-started";
 export type LearningFilterValue<T extends string> = "all" | T;
 
 export interface LearningFilters {
@@ -24,6 +25,7 @@ export interface LearningFilters {
   platform: LearningFilterValue<LearningPlatform>;
   topic: string;
   duration: LearningDuration;
+  progress: LearningProgressFilter;
 }
 
 export interface LearningPathNavigation {
@@ -43,6 +45,7 @@ export const DEFAULT_LEARNING_FILTERS: LearningFilters = {
   platform: "all",
   topic: "all",
   duration: "all",
+  progress: "all",
 };
 
 const SAFE_TOPIC = /^[\p{L}\p{N}][\p{L}\p{N} .+&/_-]{0,79}$/u;
@@ -60,6 +63,7 @@ export function parseLearningFilters(searchParams: URLSearchParams): LearningFil
   const rawSearch = searchParams.get("search")?.trim().slice(0, 120) ?? "";
   const rawTopic = searchParams.get("topic")?.trim().slice(0, 80) ?? "all";
   const rawDuration = searchParams.get("duration");
+  const rawProgress = searchParams.get("progress");
   return {
     search: rawSearch,
     subject: allowed(searchParams.get("subject"), LEARNING_SUBJECTS),
@@ -70,6 +74,9 @@ export function parseLearningFilters(searchParams: URLSearchParams): LearningFil
     topic: rawTopic === "all" || SAFE_TOPIC.test(rawTopic) ? rawTopic : "all",
     duration: rawDuration === "15" || rawDuration === "30" || rawDuration === "60"
       ? rawDuration
+      : "all",
+    progress: rawProgress === "completed" || rawProgress === "not-started"
+      ? rawProgress
       : "all",
   };
 }
@@ -84,6 +91,7 @@ export function learningFiltersToSearchParams(filters: LearningFilters): URLSear
   if (filters.platform !== "all") result.set("platform", filters.platform);
   if (filters.topic !== "all" && SAFE_TOPIC.test(filters.topic)) result.set("topic", filters.topic);
   if (filters.duration !== "all") result.set("duration", filters.duration);
+  if (filters.progress !== "all") result.set("progress", filters.progress);
   return result;
 }
 
@@ -111,10 +119,13 @@ export function learningTopics(documents: PublicDocument[]): string[] {
 export function filterLearningDocuments(
   documents: PublicDocument[],
   filters: LearningFilters,
+  completedSlugs: ReadonlySet<string> = new Set(),
 ): PublicDocument[] {
   const normalizedSearch = filters.search.toLocaleLowerCase();
   const maxMinutes = filters.duration === "all" ? null : Number(filters.duration);
   const matches = documents.filter((document) => {
+    if (filters.progress === "completed" && !completedSlugs.has(document.slug)) return false;
+    if (filters.progress === "not-started" && completedSlugs.has(document.slug)) return false;
     if (filters.subject !== "all" && document.subject !== filters.subject) return false;
     if (filters.level !== "all" && document.level !== filters.level) return false;
     if (filters.contentType !== "all" && document.contentType !== filters.contentType) return false;

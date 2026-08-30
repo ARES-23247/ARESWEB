@@ -163,6 +163,19 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   await expect(page.getByRole("heading", { level: 1, name: nextLesson.title })).toBeVisible();
   await expect(page.getByText("Completed locally", { exact: true })).toBeVisible();
 
+  await page.goto("/academy", { waitUntil: "networkidle" });
+  await expect(page.getByText("1 of 2 complete on this browser", { exact: true }).first()).toBeVisible();
+  await page.getByLabel("Progress").selectOption("completed");
+  await expect(page).toHaveURL(/progress=completed/u);
+  await expect(page.getByText("Showing 1 of 2 items.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Robot State Flow/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Safe Output Boundaries/i })).toHaveCount(0);
+
+  await page.getByLabel("Progress").selectOption("not-started");
+  await expect(page).toHaveURL(/progress=not-started/u);
+  await expect(page.getByRole("link", { name: /Safe Output Boundaries/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Robot State Flow/i })).toHaveCount(0);
+
   await expectNoHorizontalOverflow(page);
   const docsNavigationButton = page.getByRole("button", { name: "Open documentation navigation" });
   const buttonBox = await docsNavigationButton.boundingBox();
