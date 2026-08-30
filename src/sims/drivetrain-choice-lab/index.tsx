@@ -1,6 +1,7 @@
 /** @sim {"name":"Drivetrain Starting-Point Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { RotateCcw, Ruler } from "lucide-react";
+import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 type DriveType = "FTC_MECANUM" | "FRC_CTRE_SWERVE" | "DIFFERENTIAL" | "ADVANCED_CUSTOM";
 
@@ -54,4 +55,4 @@ export default function DrivetrainChoiceLab() {
 }
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) { return <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} className="h-5 w-5 accent-ares-red" /> {label}</label>; }
-function Datum({ label, value }: { label: string; value: string }) { return <div className="rounded border border-white/10 p-3"><dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt><dd className="mt-1 font-semibold leading-relaxed text-white">{value}</dd></div>; }
+const Datum = AcademyDatum;

@@ -1094,6 +1094,53 @@ the newest recorded values at or before the playhead and never fills a gap from 
 This local curriculum change does not install practice data, run replay, publish content, or mutate
 production curriculum records.
 
+## Continuous cycle: clean FTC project identity and ownership
+
+This cycle improves the existing `ftc-starter-project-identity` lesson. Review its three file jobs:
+canonical team plans under `.ares`, generated results under `TeamCode/build/generated/ares`, and the
+small runtime connectors under `TeamCode/src/main`. The lesson must not imply that Studio rewrites
+Kotlin during project personalization or that generated build output is student-owned source.
+
+Confirm the creation explanation matches current Studio behavior. Studio checks a hash-pinned
+starter in a private sibling staging folder, personalizes typed project and catalog documents,
+validates the result, and moves the complete directory without merging into an existing path. The
+starter remains generic and simulation-first. Its dimensions and tuning are not measurements from
+a physical team robot. Its reference-project provenance blocks physical deployment, while any
+deployable team project also needs real hardware records and commissioning evidence.
+
+The lesson now states the team authority boundary directly: students may inspect source, build and
+simulate, and carry out the team's safe physical verification process. Lead Coach approval applies
+only to publishing a website post. This statement does not bypass Studio's deployment block or
+claim that a classroom interaction proves physical hardware behavior.
+
+The existing Hardware Topology Diagnostic remains a conceptual ownership sorter. It does not read a
+workspace, discover hardware, verify wiring, or authorize motion. Confirm keyboard operation, touch
+targets, narrow reflow, visible focus, live feedback, and deterministic reset.
+
+The three sources are pinned to protected ARES Robotics commit `f3de343a` and the ARES 11.1.0 /
+Studio 2.0.3 identity. The two guide blobs are unchanged from the earlier review; the current
+`RobotProjectTemplateService` adds executable evidence for staging, personalization, provenance,
+and non-replacing publication. Remote verification must recompute all three Git blob hashes. This
+local curriculum change does not create a robot project, deploy hardware, publish the lesson, or
+mutate production curriculum records.
+
+## Continuous cycle: shared Academy interaction controls
+
+This cycle also extracts exact repeated datum, range, metric, and select controls into one shared
+lazy Academy interaction chunk. The extraction does not change any lesson model, evaluation rule,
+source claim, reset value, or result. The Subsystem Ownership Lab keeps its existing cyan-accented
+datum style through an explicit shared variant; the other labs keep their earlier compact style.
+
+Review the affected interactions with keyboard, touch, and a narrow viewport. The shared controls
+use native range and select elements, explicit accessible labels, associated outputs, visible focus,
+and the same bounded values and option text as before. Confirm that a control change still updates
+only its owning interaction and that every reset remains deterministic.
+
+The bundle gate counts the shared chunk once in the Academy aggregate rather than once for every
+consumer. Every interaction entry remains independently lazy and retains the unchanged 8 KB raw /
+2.6 KB gzip per-interaction cap. This is a delivery and maintainability refactor, not new evidence
+that any browser model runs ARES code, reads hardware, or verifies a physical robot.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

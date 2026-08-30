@@ -57,6 +57,7 @@ try {
     existsSync(join("src", "sims", interaction, "index.tsx")),
   );
   const academyInteractiveJs = lazyJs.filter((file) =>
+    file.startsWith("academy-interaction-ui-") ||
     builtAcademyInteractionIds.some((interaction) => file.startsWith(`${interaction}-`)),
   );
   const missingAcademyChunks = builtAcademyInteractionIds.filter((interaction) =>

@@ -1,5 +1,6 @@
 /** @sim {"name":"Subsystem Ownership Decision Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
+import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type SubsystemStartingPoint = "descriptor" | "editable" | "existing";
 export type EvidenceKey =
@@ -290,13 +291,6 @@ export default function SubsystemOwnershipLab() {
   );
 }
 
-function Datum({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-white/10 p-3">
-      <dt className="text-xs font-bold uppercase tracking-wide text-ares-cyan">
-        {label}
-      </dt>
-      <dd className="mt-1 text-sm leading-relaxed text-white">{value}</dd>
-    </div>
-  );
+function Datum(props: Parameters<typeof AcademyDatum>[0]) {
+  return <AcademyDatum {...props} accented />;
 }

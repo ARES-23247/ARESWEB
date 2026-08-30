@@ -1,6 +1,7 @@
 /** @sim {"name":"FTC Driver Input Curve Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useMemo, useState } from "react";
 import { Gamepad2, RotateCcw } from "lucide-react";
+import { AcademySelectControl } from "@/sims/shared/academy-interaction-ui";
 
 type Alliance = "RED" | "BLUE";
 type Frame = "FIELD_RELATIVE" | "ROBOT_RELATIVE";
@@ -32,5 +33,5 @@ export default function DriverInputCurveLab() {
 }
 
 function RangeField({ id, label, value, min, max, step, onChange }: { id: string; label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void }) { return <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white"><span>{label}: <output className="font-mono text-ares-cyan">{value.toFixed(2)}</output></span><input id={id} type="range" value={value} min={min} max={max} step={step} onChange={(event) => onChange(Number(event.currentTarget.value))} className="min-h-11 w-full accent-ares-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" /></label>; }
-function SelectField({ id, label, value, options, onChange }: { id: string; label: string; value: string; options: string[]; onChange: (value: string) => void }) { return <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white"><span>{label}</span><select id={id} value={value} onChange={(event) => onChange(event.currentTarget.value)} className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">{options.map((option) => <option key={option} value={option}>{option.replaceAll("_", " ").toLowerCase()}</option>)}</select></label>; }
+const SelectField = AcademySelectControl;
 function Datum({ label, value }: { label: string; value: string }) { return <div className="rounded border border-white/10 p-3"><dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt><dd className="mt-1 font-mono font-semibold text-white">{value}</dd></div>; }

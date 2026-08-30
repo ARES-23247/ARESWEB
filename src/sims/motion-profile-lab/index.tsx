@@ -1,5 +1,6 @@
 /** @sim {"name":"Motion Profile Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
+import { AcademyMetric, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
 import { RotateCcw } from "lucide-react";
 
 export type MotionProfileSample = {
@@ -323,59 +324,10 @@ export default function MotionProfileLab() {
   );
 }
 
-function NumberControl({
-  label,
-  unit,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  unit: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  const id = label.toLowerCase().replace(/[^a-z0-9]+/gu, "-");
-  return (
-    <div className="grid gap-2">
-      <label
-        htmlFor={id}
-        className="flex items-center justify-between gap-3 text-sm font-semibold text-white"
-      >
-        <span>{label}</span>
-        <output htmlFor={id} className="font-mono text-ares-cyan">
-          {value.toFixed(1)} {unit}
-        </output>
-      </label>
-      <input
-        id={id}
-        aria-label={label}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.currentTarget.value))}
-        className="min-h-11 w-full cursor-pointer accent-ares-red"
-      />
-    </div>
-  );
+function NumberControl(props: Parameters<typeof AcademyRangeControl>[0]) {
+  return <AcademyRangeControl {...props} decimals={1} />;
 }
 
-function Result({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-white/10 p-3">
-      <dt className="text-xs uppercase tracking-wide text-marble/70">
-        {label}
-      </dt>
-      <dd className="mt-1 font-mono text-lg font-bold capitalize text-white">
-        {value}
-      </dd>
-    </div>
-  );
+function Result(props: Parameters<typeof AcademyMetric>[0]) {
+  return <AcademyMetric {...props} capitalize />;
 }

@@ -1,5 +1,6 @@
 /** @sim {"name":"SysId and One-Change Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState, type ReactNode } from "react";
+import { AcademySelectControl } from "@/sims/shared/academy-interaction-ui";
 
 export type SysIdMechanism =
   "LINEAR" | "ANGULAR" | "FLYWHEEL" | "ELEVATOR" | "ARM" | "CUSTOM";
@@ -401,37 +402,7 @@ function NumberField({
   );
 }
 
-function SelectField({
-  id,
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
-      <span>{label}</span>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option.toLowerCase().replaceAll("_", " ")}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
+const SelectField = AcademySelectControl;
 
 function CheckField({
   label,

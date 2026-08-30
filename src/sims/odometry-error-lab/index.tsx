@@ -1,5 +1,6 @@
 /** @sim {"name":"Odometry Error Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
+import { AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
 
 export type RouteDirection =
   "positive-x" | "positive-y" | "negative-x" | "negative-y";
@@ -398,46 +399,6 @@ export default function OdometryErrorLab() {
   );
 }
 
-function NumberControl({
-  label,
-  unit,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  unit: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  const id = label.toLowerCase().replace(/[^a-z0-9]+/gu, "-");
-  return (
-    <div className="grid gap-2">
-      <label
-        htmlFor={id}
-        className="flex items-center justify-between gap-3 text-sm font-semibold text-white"
-      >
-        <span>{label}</span>
-        <output htmlFor={id} className="font-mono text-ares-cyan">
-          {value.toFixed(1)} {unit}
-        </output>
-      </label>
-      <input
-        id={id}
-        aria-label={label}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.currentTarget.value))}
-        className="min-h-11 w-full cursor-pointer accent-ares-red"
-      />
-    </div>
-  );
+function NumberControl(props: Parameters<typeof AcademyRangeControl>[0]) {
+  return <AcademyRangeControl {...props} decimals={1} />;
 }

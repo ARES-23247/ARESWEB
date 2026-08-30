@@ -1,5 +1,6 @@
 /** @sim {"name":"Current ARES Sensor Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState } from "react";
+import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type SensorEvidenceLayer =
   "RAW_INTERFACE" | "FTC_CACHE" | "GENERATED_SNAPSHOT";
@@ -370,13 +371,4 @@ function CheckField({
   );
 }
 
-function Datum({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-white/10 p-3">
-      <dt className="text-xs uppercase tracking-wide text-marble/70">
-        {label}
-      </dt>
-      <dd className="mt-1 font-semibold leading-relaxed text-white">{value}</dd>
-    </div>
-  );
-}
+const Datum = AcademyDatum;

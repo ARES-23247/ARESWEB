@@ -479,7 +479,7 @@
       "slug": "ftc-starter-project-identity",
       "title": "Start an FTC Project Without Inherited Robot Assumptions",
       "category": "Robotics & Engineering",
-      "description": "Configure project identity and understand which starter files are canonical, generated, or intentionally empty.",
+      "description": "Create a clean FTC workspace and sort its canonical plans, generated results, and runtime connectors.",
       "contentFile": "ftc-starter/01-project-identity.md",
       "subject": "robotics-engineering",
       "topics": ["FTC Starter", "project identity", "generated code", "hardware descriptor"],
@@ -488,11 +488,11 @@
       "estimatedMinutes": 60,
       "pathMemberships": [{ "pathId": "ftc-robot-with-ares", "order": 1 }],
       "prerequisites": ["ares-workspace-map"],
-      "objectives": ["Create and identify a clean FTC Starter workspace.", "Distinguish canonical .ares documents, generated output, and lifecycle adapters.", "Explain why starter geometry and tuning do not describe a physical robot."],
+      "objectives": ["Create and identify a clean FTC Starter workspace.", "Sort canonical .ares documents, generated output, and lifecycle adapters by ownership.", "Explain why starter geometry and tuning do not describe a physical robot.", "Separate student robot verification from Lead Coach website-post approval."],
       "platforms": ["simulator", "ftc"],
       "instructionalContractVersion": 2,
-      "sourceReferences": [{ "label": "Create a standalone robot project", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md", "blobHash": "625baed3cbbfd41428b23dd939bebdc7f680be26" }, { "label": "FTC Starter architecture", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/1c92c61c2faaca2a630e525a76e41d4f7657815c/ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.2", "path": "ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md", "blobHash": "8d84f8d7eb4424a4fbcb74639f1de12f3e2970e8" }],
-      "appliesToVersion": "ARES 11.1.0; FTC Starter 11.1.0; Studio 2.0.2",
+      "sourceReferences": [{ "label": "Create a standalone robot project", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md", "blobHash": "625baed3cbbfd41428b23dd939bebdc7f680be26" }, { "label": "FTC Starter architecture", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md", "blobHash": "8d84f8d7eb4424a4fbcb74639f1de12f3e2970e8" }, { "label": "Atomic project creation and personalization", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt", "blobHash": "adf91182b6d0eb3b0a38ff590e45e848a5d51a45" }],
+      "appliesToVersion": "ARES 11.1.0; FTC Starter 11.1.0; Studio 2.0.3",
       "safetyScope": "simulation-only"
     },
     {
