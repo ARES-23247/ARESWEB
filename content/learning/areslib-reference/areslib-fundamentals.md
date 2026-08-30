@@ -150,3 +150,5 @@ snapshot and check the requested output. The test should not need a robot, netwo
   concurrent robot work needs timeouts, resource ownership, and visible cleanup.
 - Use [Subsystem ownership, I/O, and safety](/docs/subsystems-ownership-and-safety) when a mechanism
   needs an explicit source owner, cached device boundary, safe lifecycle, and adapter parity.
+- Use [Typed tuning profiles and safe experiments](/docs/typed-tuning-and-safe-experiments) when a
+  declared value moves between a local proposal, guarded live request, and reviewed profile.

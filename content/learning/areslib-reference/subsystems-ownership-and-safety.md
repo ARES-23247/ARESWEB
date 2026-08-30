@@ -175,5 +175,7 @@ file count.
   subsystem jobs must share resources and clean up safely.
 - Use [Telemetry, Control State, and Offline Logs](/docs/telemetry-and-control) to record useful
   evidence without making the dashboard a second controller.
+- Use [Typed Tuning Profiles and Safe Experiments](/docs/typed-tuning-and-safe-experiments) when a
+  subsystem declares bounded values or supports a guarded live experiment.
 - Use [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
   to compare adapters against the same behavior table.

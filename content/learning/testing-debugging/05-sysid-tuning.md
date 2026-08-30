@@ -220,6 +220,10 @@ that the shared teaching model does not cover.
 
 ## Related and next
 
+Review [Typed Tuning Profiles and Safe Experiments](/docs/typed-tuning-and-safe-experiments) for the
+declaration, apply-policy, acknowledgement, consumer, rollback, and promotion contracts behind the
+guided comparison.
+
 Use [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
 to add failure cases. Continue to the capstones only after you can keep model evidence, Local Sim
 evidence, and physical evidence separate. Simulation does not certify hardware safety or competition

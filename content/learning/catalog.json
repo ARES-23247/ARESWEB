@@ -575,7 +575,7 @@
       "slug": "areslib-fundamentals",
       "title": "ARESLib Architecture and Ownership",
       "category": "Architecture & Redux",
-      "description": "Reference the ARES 11 schema, model, compiler, runtime, platform-adapter, code-generation, and simulation boundaries inside the monorepo.",
+      "description": "Reference the current ARES model, compiler, runtime, platform-adapter, code-generation, and simulation boundaries inside the monorepo.",
       "contentFile": "areslib-reference/areslib-fundamentals.md",
       "subject": "robotics-engineering",
       "topics": ["ARESLib", "architecture", "Redux", "module ownership"],
@@ -634,6 +634,34 @@
         { "label": "Protected starter diff and replacement-token contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemStarterReconciler.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemStarterReconciler.kt", "blobHash": "2bab2cea8ebb13b1d025b99c8d295f75b72c378d" },
         { "label": "Generated subsystem verification evidence contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemVerificationContract.kt", "blobHash": "e8329a476b140e87a5d2c9763e0a4a91ede72276" },
         { "label": "Current FTC subsystem authoring and verification guide", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md", "blobHash": "8d1b872e71ddeb83cf07402cb9548b73fd11d6e3" }
+      ],
+      "appliesToVersion": "ARES 12.0.0; ARES FTC 12.0.0; Studio 3.0.0",
+      "safetyScope": "physical-robot"
+    },
+    {
+      "slug": "typed-tuning-and-safe-experiments",
+      "title": "Typed Tuning Profiles and Safe Experiments",
+      "category": "Math & Controls",
+      "description": "Reference typed declarations, apply policies, guarded live requests, consumer acknowledgement and rollback, local evidence, and atomic profile promotion.",
+      "contentFile": "areslib-reference/typed-tuning-and-safe-experiments.md",
+      "subject": "robotics-engineering",
+      "topics": ["ARESLib", "typed tuning", "profiles", "live experiments", "provenance", "rollback"],
+      "contentType": "reference",
+      "level": "intermediate",
+      "estimatedMinutes": 65,
+      "pathMemberships": [],
+      "prerequisites": ["areslib-fundamentals"],
+      "objectives": ["Separate declarations, canonical profiles, local overlays, staged proposals, and live values.", "Apply each tuning policy without treating LIVE_SAFE as a physical safety claim.", "Trace one typed request through a newer nonce, runtime checks, consumer acknowledgement, and rollback.", "Build an evidence-backed promotion review that leaves live application separate from canonical source."],
+      "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
+      "instructionalContractVersion": 2,
+      "sourceReferences": [
+        { "label": "Canonical and local typed tuning profile contract", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/docs/typed-tuning-profiles.md", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/docs/typed-tuning-profiles.md", "blobHash": "a3e8e6d736e6165cc63f96b553a0b79cc1adae3d" },
+        { "label": "Typed profile schema and validation rules", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/tuning/TuningProfileDocument.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/tuning/TuningProfileDocument.kt", "blobHash": "60bb12cec99f50ced14aa91b24e8c2823ae08c79" },
+        { "label": "Robot-side policy, acknowledgement, and rollback runtime", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningRuntime.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningRuntime.kt", "blobHash": "2a2ca1fc0801fc745c419711bbe14ba1c58c2c2b" },
+        { "label": "Compiled tuning consumer boundary", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningConsumer.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningConsumer.kt", "blobHash": "e9df3f2428a2910ea70b8f5933f14dac6448c8f6" },
+        { "label": "Studio staging, live request, and promotion workflow", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewModel.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewModel.kt", "blobHash": "750e91127f5d874749ec55c8af9ab514b3ed446f" },
+        { "label": "Declaration-UID live tuning transport topics", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningTransport.kt", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningTransport.kt", "blobHash": "468b327fb78a54b10fcdb5fa44935bb59977d6f4" },
+        { "label": "Current team competition tuning profile", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/a02c4eb25d524b0c04974ac7d161601f5feb0895/ARES-FTC/.ares/tuning/team23247.ftc.season2026.gobilda.profile.competition.arestuning", "repository": "ARES-Robotics", "revision": "ares-12.0.0-studio-3.0.0", "path": "ARES-FTC/.ares/tuning/team23247.ftc.season2026.gobilda.profile.competition.arestuning", "blobHash": "750fe305d1fe8aa4c3a00c2fa4615a7552a4af01" }
       ],
       "appliesToVersion": "ARES 12.0.0; ARES FTC 12.0.0; Studio 3.0.0",
       "safetyScope": "physical-robot"
