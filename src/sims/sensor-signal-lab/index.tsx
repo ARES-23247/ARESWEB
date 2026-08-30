@@ -1,6 +1,6 @@
 /** @sim {"name":"Current ARES Sensor Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState } from "react";
-import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type SensorEvidenceLayer =
   "RAW_INTERFACE" | "FTC_CACHE" | "GENERATED_SNAPSHOT";
@@ -223,12 +223,12 @@ export default function SensorSignalLab() {
               minimum={0}
               onChange={(value) => update("maxAgeMs", value)}
             />
-            <CheckField
+        <AcademyCheckboxControl
               label="Refresh produced a valid snapshot"
               checked={input.feedbackValid}
               onChange={(checked) => update("feedbackValid", checked)}
             />
-            <CheckField
+        <AcademyCheckboxControl
               label="Device setup is healthy"
               checked={input.configured}
               onChange={(checked) => update("configured", checked)}
@@ -343,28 +343,6 @@ function NumberField({
         onChange={(event) => onChange(Number(event.currentTarget.value))}
         className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 font-mono text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-not-allowed"
       />
-    </label>
-  );
-}
-
-function CheckField({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.currentTarget.checked)}
-        className="h-5 w-5 accent-ares-red"
-      />
-      {label}
     </label>
   );
 }

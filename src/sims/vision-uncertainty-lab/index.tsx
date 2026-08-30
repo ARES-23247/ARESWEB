@@ -1,6 +1,6 @@
 /** @sim {"name":"Vision Evidence Rejection Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useMemo, useState } from "react";
-import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type VisionEvidence = {
   finite: boolean;
@@ -186,23 +186,15 @@ export default function VisionUncertaintyLab() {
             Learning scenario evidence
           </legend>
           {GATES.map((gate) => (
-            <label
+            <AcademyCheckboxControl
               key={gate.key}
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white"
-            >
-              <input
-                type="checkbox"
-                checked={evidence[gate.key]}
-                onChange={(event) =>
-                  setEvidence({
-                    ...evidence,
-                    [gate.key]: event.currentTarget.checked,
-                  })
-                }
-                className="h-5 w-5 accent-ares-red"
-              />
-              {gate.label}
-            </label>
+              label={gate.label}
+              checked={evidence[gate.key]}
+              onChange={(checked) => setEvidence((current) => ({
+                ...current,
+                [gate.key]: checked,
+              }))}
+            />
           ))}
         </fieldset>
 

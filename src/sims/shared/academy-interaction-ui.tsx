@@ -1,3 +1,75 @@
+import type { ReactNode } from "react";
+
+export type AcademyChecklistItem<Key extends string> = {
+  key: Key;
+  label: string;
+};
+
+export function AcademyCheckboxControl({
+  label,
+  checked,
+  onChange,
+}: {
+  label: ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded border border-white/10 p-3 text-sm leading-relaxed text-white focus-within:ring-2 focus-within:ring-ares-cyan">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+        className="mt-0.5 size-5 shrink-0 accent-ares-red"
+      />
+      <span className="font-semibold">{label}</span>
+    </label>
+  );
+}
+
+export function AcademyChecklistPanel<Key extends string>({
+  checks,
+  values,
+  onChange,
+  legend,
+  resultHeading,
+  result,
+  summary,
+}: {
+  checks: Array<AcademyChecklistItem<Key>>;
+  values: Record<Key, boolean>;
+  onChange: (key: Key, checked: boolean) => void;
+  legend: string;
+  resultHeading: string;
+  result: { ready: boolean; title: string; nextAction: string };
+  summary?: ReactNode;
+}) {
+  return (
+    <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.8fr)]">
+      <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
+        <legend className="px-2 text-sm font-bold text-ares-gold">{legend}</legend>
+        {checks.map((check) => (
+          <AcademyCheckboxControl
+            key={check.key}
+            label={check.label}
+            checked={values[check.key]}
+            onChange={(checked) => onChange(check.key, checked)}
+          />
+        ))}
+      </fieldset>
+
+      <div className="rounded-lg border border-white/10 bg-obsidian p-4">
+        <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">{resultHeading}</h4>
+        {summary}
+        <div aria-live="polite" aria-atomic="true">
+          <p className={`mt-4 border-l-4 p-3 text-sm font-bold ${result.ready ? "border-emerald-400 bg-emerald-400/10 text-emerald-100" : "border-ares-red bg-ares-red/10 text-white"}`}>{result.title}</p>
+          <p className="mt-4 text-sm leading-relaxed text-marble/80">{result.nextAction}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AcademyDatum({
   label,
   value,

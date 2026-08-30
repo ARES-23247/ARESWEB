@@ -1,6 +1,7 @@
 /** @sim {"name":"Post-Match Triage Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { RotateCcw } from "lucide-react";
+import { AcademyChecklistPanel } from "@/sims/shared/academy-interaction-ui";
 
 export type PostMatchRecord = {
   safeStateRecorded: boolean;
@@ -73,31 +74,14 @@ export default function PostMatchTriageLab() {
         </button>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.8fr)]">
-        <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
-          <legend className="px-2 text-sm font-bold text-ares-gold">Self-reported handoff evidence</legend>
-          {CHECKS.map((check) => (
-            <label key={check.key} className="flex min-h-11 items-start gap-3 rounded border border-white/10 p-3 text-sm leading-relaxed text-white">
-              <input
-                type="checkbox"
-                checked={record[check.key]}
-                onChange={(event) => {
-                  const checked = event.currentTarget.checked;
-                  setRecord((current) => ({ ...current, [check.key]: checked }));
-                }}
-                className="mt-0.5 size-5 shrink-0 accent-ares-red"
-              />
-              <span>{check.label}</span>
-            </label>
-          ))}
-        </fieldset>
-
-        <div aria-live="polite" aria-atomic="true" className="rounded-lg border border-white/10 bg-obsidian p-4">
-          <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">Next handoff step</h4>
-          <p className={`mt-4 border-l-4 p-3 text-sm font-bold ${result.ready ? "border-emerald-400 bg-emerald-400/10 text-emerald-100" : "border-ares-red bg-ares-red/10 text-white"}`}>{result.title}</p>
-          <p className="mt-4 text-sm leading-relaxed text-marble/80">{result.nextAction}</p>
-        </div>
-      </div>
+      <AcademyChecklistPanel
+        checks={CHECKS}
+        values={record}
+        onChange={(key, checked) => setRecord((current) => ({ ...current, [key]: checked }))}
+        legend="Self-reported handoff evidence"
+        resultHeading="Next handoff step"
+        result={result}
+      />
 
       <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
         <strong>Evidence limit:</strong> Every box is self-reported. The lab cannot disable or inspect a robot, preserve a log, identify damage, diagnose a cause, assign a real person, approve a repair, authorize motion, or decide that a robot may return to play.

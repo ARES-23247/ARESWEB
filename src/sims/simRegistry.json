@@ -305,6 +305,14 @@
       "fidelity": "code-derived"
     },
     {
+      "id": "matchCycleScenarios",
+      "name": "Match Cycle Handoff Scenarios",
+      "path": "./match-cycle-scenarios",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "mechanismMotionExplorer",
       "name": "Mechanism Motion Explorer",
       "path": "./mechanism-motion-explorer",

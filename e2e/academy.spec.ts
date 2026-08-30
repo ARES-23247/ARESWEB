@@ -84,6 +84,20 @@ const replayLesson = {
   appliesToVersion: "ARES 11.1.0; Studio 2.0.3",
 };
 
+const matchCycleLesson = {
+  ...lesson,
+  slug: "competition-drive-team",
+  title: "Run a Drive-Team Match Cycle",
+  description: "Practice bounded handoffs without inventing event rules.",
+  level: "intermediate",
+  pathMemberships: [{ pathId: "competition-operations", order: 3 }],
+  prerequisites: ["simulation-is-not-hardware-validation"],
+  objectives: ["Rehearse one explicit match-cycle handoff."],
+  platforms: ["ftc", "frc"],
+  appliesToVersion: "ARES 11.1.0; event-specific rules require current official review",
+  safetyScope: "physical-robot",
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -183,5 +197,43 @@ test("the replay comparison lab exposes held and missing evidence by keyboard at
   await expect(page.getByText("Missing before first sample")).toBeVisible();
   await expect(page.getByText("1.0 A (held 10 ms)")).toBeVisible();
   await expect(page.getByText("Not comparable: one run has no earlier sample")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the match-cycle handoff lab resets phase evidence by keyboard at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...matchCycleLesson, content: "# Run a drive-team match cycle\n\n<matchcyclescenarios />" } }
+        : { documents: [matchCycleLesson] }),
+    });
+  });
+
+  await page.goto("/academy/competition-drive-team?path=competition-operations", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Match Cycle Handoff Scenarios" })).toBeVisible();
+  const pitPhase = page.getByRole("radio", { name: "Pit to queue" });
+  const fieldPhase = page.getByRole("radio", { name: "Queue to field setup" });
+  await expect(pitPhase).toBeChecked();
+
+  await pitPhase.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(fieldPhase).toBeChecked();
+  await expect(page.getByText("Rehearse the last transfer before the practice match begins.")).toBeVisible();
+
+  const firstCheck = page.getByRole("checkbox").first();
+  await firstCheck.focus();
+  await page.keyboard.press("Space");
+  await expect(firstCheck).toBeChecked();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+
+  await page.getByRole("button", { name: "Reset rehearsal" }).click();
+  await expect(pitPhase).toBeChecked();
+  await expect(page.getByRole("checkbox").first()).not.toBeChecked();
+  await expect(page.getByRole("note")).toContainText("cannot read a robot or event system");
   await expectNoHorizontalOverflow(page);
 });

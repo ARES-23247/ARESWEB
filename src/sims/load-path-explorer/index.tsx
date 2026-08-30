@@ -1,6 +1,7 @@
 /** @sim {"name":"Load Path Evidence Explorer","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { ArrowRight, RotateCcw } from "lucide-react";
+import { AcademyCheckboxControl } from "@/sims/shared/academy-interaction-ui";
 
 export type LoadScenario = "frontContact" | "armPayload" | "sideMechanism" | "hangingSupport";
 
@@ -112,18 +113,7 @@ export default function LoadPathExplorer() {
         <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Self-reported path evidence</legend>
           {CHECKS.map((check) => (
-            <label key={check.key} className="flex min-h-11 items-start gap-3 rounded border border-white/10 p-3 text-sm leading-relaxed text-white">
-              <input
-                type="checkbox"
-                checked={evidence[check.key]}
-                onChange={(event) => {
-                  const checked = event.currentTarget.checked;
-                  setEvidence((current) => ({ ...current, [check.key]: checked }));
-                }}
-                className="mt-0.5 size-5 shrink-0 accent-ares-red"
-              />
-              <span>{check.label}</span>
-            </label>
+            <AcademyCheckboxControl key={check.key} label={check.label} checked={evidence[check.key]} onChange={(checked) => setEvidence((current) => ({ ...current, [check.key]: checked }))} />
           ))}
         </fieldset>
 

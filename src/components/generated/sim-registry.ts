@@ -42,6 +42,7 @@ const linearequations = lazy(() => import("../../sims/linearequations"));
 const loadPathExplorer = lazy(() => import("../../sims/load-path-explorer"));
 const logComparisonLab = lazy(() => import("../../sims/log-comparison-lab"));
 const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
+const matchCycleScenarios = lazy(() => import("../../sims/match-cycle-scenarios"));
 const mechanismMotionExplorer = lazy(() => import("../../sims/mechanism-motion-explorer"));
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
@@ -174,6 +175,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
+  matchCycleScenarios: matchCycleScenarios,
+  matchcyclescenarios: matchCycleScenarios,
   mechanismMotionExplorer: mechanismMotionExplorer,
   mechanismmotionexplorer: mechanismMotionExplorer,
   mechanismRatioExplorer: mechanismRatioExplorer,
@@ -317,6 +320,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
+  matchCycleScenarios: matchCycleScenarios,
+  matchcyclescenarios: matchCycleScenarios,
   mechanismMotionExplorer: mechanismMotionExplorer,
   mechanismmotionexplorer: mechanismMotionExplorer,
   mechanismRatioExplorer: mechanismRatioExplorer,
@@ -675,6 +680,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'code-derived'
+  },
+  {
+    'id': 'matchCycleScenarios',
+    'name': 'Match Cycle Handoff Scenarios',
+    'folder': 'match-cycle-scenarios',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'mechanismMotionExplorer',

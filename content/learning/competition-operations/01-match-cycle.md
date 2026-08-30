@@ -75,6 +75,12 @@ Run a timed practice cycle without powering the robot. The pit lead gives the qu
 drive lead repeats the routine and safe state. Pretend the match ends with one visible symptom. The
 recorder writes only observations.
 
+Use the match-cycle activity to rehearse one handoff at a time. Check only facts that are present in
+your paper record. Switching phases clears the boxes so facts from one handoff do not become proof
+for another handoff. A complete result still needs team review before event use.
+
+<matchcyclescenarios />
+
 Use the evidence activity below to choose the next test level for the symptom. Keep the test small.
 
 <evidencelevelscenarios />

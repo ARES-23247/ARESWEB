@@ -1,6 +1,7 @@
 /** @sim {"name":"SysId and One-Change Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState, type ReactNode } from "react";
 import {
+  AcademyCheckboxControl,
   AcademyNumberControl,
   AcademySelectControl,
 } from "@/sims/shared/academy-interaction-ui";
@@ -309,14 +310,14 @@ function SysIdPanel({
         />
       </div>
       <div className="mt-4 grid gap-2">
-        <CheckField
+        <AcademyCheckboxControl
           label="Runtime advertises mechanism"
           checked={value.capabilityAdvertised}
           onChange={(capabilityAdvertised) =>
             onChange({ ...value, capabilityAdvertised })
           }
         />
-        <CheckField
+        <AcademyCheckboxControl
           label="Position and velocity valid"
           checked={value.sampleValid}
           onChange={(sampleValid) => onChange({ ...value, sampleValid })}
@@ -408,28 +409,6 @@ function ExperimentPanel({
 
 const NumberField = AcademyNumberControl;
 const SelectField = AcademySelectControl;
-
-function CheckField({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white focus-within:ring-2 focus-within:ring-ares-cyan">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.currentTarget.checked)}
-        className="h-5 w-5 shrink-0 accent-ares-red"
-      />
-      {label}
-    </label>
-  );
-}
 
 function ResultBox({
   label,

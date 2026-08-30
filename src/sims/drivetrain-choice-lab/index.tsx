@@ -1,7 +1,7 @@
 /** @sim {"name":"Drivetrain Starting-Point Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { RotateCcw, Ruler } from "lucide-react";
-import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 type DriveType = "FTC_MECANUM" | "FRC_CTRE_SWERVE" | "DIFFERENTIAL" | "ADVANCED_CUSTOM";
 
@@ -35,10 +35,10 @@ export default function DrivetrainChoiceLab() {
         <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Reviewed design record</legend>
           <label htmlFor="drive-type" className="grid gap-2 text-sm font-bold text-white"><span>ARES starting point</span><select id="drive-type" value={driveType} onChange={(event) => setDriveType(event.currentTarget.value as DriveType)} className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">{Object.entries(DRIVE_TYPES).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}</select></label>
-          <Check label="Geometry was measured and recorded" checked={geometry} onChange={setGeometry} />
-          <Check label="Localization and heading sources are declared" checked={localization} onChange={setLocalization} />
-          <Check label="Safe neutral and fault recovery are defined" checked={neutral} onChange={setNeutral} />
-          <Check label="Simulation uses the canonical geometry and tuning" checked={simulation} onChange={setSimulation} />
+          <AcademyCheckboxControl label="Geometry was measured and recorded" checked={geometry} onChange={setGeometry} />
+          <AcademyCheckboxControl label="Localization and heading sources are declared" checked={localization} onChange={setLocalization} />
+          <AcademyCheckboxControl label="Safe neutral and fault recovery are defined" checked={neutral} onChange={setNeutral} />
+          <AcademyCheckboxControl label="Simulation uses the canonical geometry and tuning" checked={simulation} onChange={setSimulation} />
         </fieldset>
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
@@ -54,5 +54,4 @@ export default function DrivetrainChoiceLab() {
   );
 }
 
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) { return <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} className="h-5 w-5 accent-ares-red" /> {label}</label>; }
 const Datum = AcademyDatum;

@@ -1208,6 +1208,26 @@ publish curriculum, change a live lesson, or mutate production data. When the AR
 changes, update the catalog and every affected source hash in one reviewed change before replacing
 the sole current authority.
 
+## Continuous cycle: match-cycle handoff rehearsal
+
+This cycle adds the planned `match-cycle-scenarios` interaction to the existing
+`competition-drive-team` lesson. Review the three paper-rehearsal phases: pit to queue, queue to
+field setup, and match to pit return. Each phase must show five explicit facts, the first missing
+fact, and a deterministic reset. Switching phases must clear every evidence box so one phase cannot
+borrow another phase's self-reported evidence.
+
+Test native radio buttons and checkboxes with keyboard, touch, 200% zoom, and a 320-pixel viewport.
+The result must update without moving focus. The interaction is a conceptual checklist. It cannot
+read a robot or event system, verify a safe state, provide current game or queue rules, assign real
+roles, preserve a log, or approve an event procedure. The lesson's team-process source request
+remains open; adding this interaction does not claim that Team 23247 has approved these rehearsal
+roles or handoffs.
+
+The lesson keeps its protected ARES Robotics sources at commit `f3de343a` and does not add an event
+rule claim. Students may run and review the rehearsal. Lead Coach approval remains limited to
+publishing website content. This local change does not publish curriculum or mutate production
+records.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

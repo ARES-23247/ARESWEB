@@ -1,6 +1,7 @@
 /** @sim {"name":"Subsystem Descriptor Independence Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { RotateCcw, ShieldCheck } from "lucide-react";
+import { AcademyCheckboxControl, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
 
 export type IndicatorPreview = { leftApplied: number; rightApplied: number; decision: string };
 
@@ -30,9 +31,9 @@ export default function SubsystemDescriptorLab() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <fieldset className="grid gap-5 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Invented target state</legend>
-          <TargetControl id="left-target" label="Left target" value={left} onChange={setLeft} />
-          <TargetControl id="right-target" label="Right target" value={right} onChange={setRight} />
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} className="h-5 w-5 accent-ares-red" /> Outputs enabled in concept model</label>
+          <AcademyRangeControl label="Left target" value={left} min={0} max={1} step={0.001} decimals={3} onChange={setLeft} />
+          <AcademyRangeControl label="Right target" value={right} min={0} max={1} step={0.001} decimals={3} onChange={setRight} />
+          <AcademyCheckboxControl label="Outputs enabled in concept model" checked={enabled} onChange={setEnabled} />
         </fieldset>
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
@@ -54,10 +55,6 @@ export default function SubsystemDescriptorLab() {
       <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"><strong>Model limit:</strong> This invented preview does not load or validate an `.aressubsystem`, generate Kotlin, run Redux, call an FTC adapter, reproduce PWM color, detect a failed write, or prove physical wiring and safe-off behavior.</p>
     </section>
   );
-}
-
-function TargetControl({ id, label, value, onChange }: { id: string; label: string; value: number; onChange: (value: number) => void }) {
-  return <div className="grid gap-2"><label htmlFor={id} className="flex items-center justify-between gap-3 text-sm font-semibold text-white"><span>{label}</span><output htmlFor={id} className="font-mono text-ares-cyan">{value.toFixed(3)}</output></label><input id={id} aria-label={label} type="range" min="0" max="1" step="0.001" value={value} onChange={(event) => onChange(Number(event.currentTarget.value))} className="min-h-11 w-full cursor-pointer accent-ares-red" /></div>;
 }
 
 function Indicator({ label, value }: { label: string; value: number }) {

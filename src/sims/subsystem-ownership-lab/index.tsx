@@ -1,6 +1,6 @@
 /** @sim {"name":"Subsystem Ownership Decision Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useState } from "react";
-import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type SubsystemStartingPoint = "descriptor" | "editable" | "existing";
 export type EvidenceKey =
@@ -224,27 +224,20 @@ export default function SubsystemOwnershipLab() {
               2. Mark evidence already written down
             </legend>
             {evidenceItems.map((item) => (
-              <label
+              <AcademyCheckboxControl
                 key={item.key}
-                className="flex min-h-11 cursor-pointer items-start gap-3 rounded border border-white/10 p-3 text-sm text-white focus-within:ring-2 focus-within:ring-ares-cyan"
-              >
-                <input
-                  type="checkbox"
-                  checked={evidence[item.key]}
-                  onChange={(event) => {
-                    const checked = event.currentTarget.checked;
-                    setEvidence((current) => ({
-                      ...current,
-                      [item.key]: checked,
-                    }));
-                  }}
-                  className="mt-0.5 h-5 w-5 shrink-0 accent-ares-red"
-                />
-                <span>
+                checked={evidence[item.key]}
+                onChange={(checked) => setEvidence((current) => ({
+                  ...current,
+                  [item.key]: checked,
+                }))}
+                label={(
+                  <>
                   <strong className="block">{item.label}</strong>
                   <span className="mt-1 block text-marble/70">{item.help}</span>
-                </span>
-              </label>
+                  </>
+                )}
+              />
             ))}
           </fieldset>
         </div>
