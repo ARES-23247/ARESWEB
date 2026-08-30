@@ -29,6 +29,12 @@ describe("SensorFusionLab", () => {
     expect(() => calculateConceptFusion(2, 0, 4, 0.2, 0.1)).toThrow(
       "uncertainty must be positive",
     );
+    expect(() =>
+      calculateConceptFusion(Number.NaN, 0.5, 4, 0.2, 0.1),
+    ).toThrow("inputs must be finite");
+    expect(() =>
+      calculateConceptFusion(2, 0.5, 4, Number.POSITIVE_INFINITY, 0.1),
+    ).toThrow("inputs must be finite");
   });
 
   it("supports native controls, independent truth, table output, and reset", () => {

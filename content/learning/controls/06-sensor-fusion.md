@@ -17,6 +17,9 @@ In this lesson, you will:
 - test the result against an independent truth value; and
 - connect a simple one-dimensional model to the real ARES estimator.
 
+This lesson matches ARES 11.1.0 and Studio 2.0.3. Its source links point to one reviewed commit in
+the ARES Robotics monorepo.
+
 The interactive lab uses a weighted average on one straight line. It is the one-dimensional form of
 a Kalman update when the two estimates are independent. It is not the full three-state ARES Extended
 Kalman Filter, or EKF.
@@ -76,14 +79,20 @@ and a gain that controls the update.
 
 ARES checks whether the residual is reasonable for `P + R`. It uses normalized innovation squared,
 or NIS. A measurement that fails leaves the pose unchanged and records a reason. The direct
-estimator API defaults to a threshold of `12.0`; the Store path uses its configured threshold.
-That number is not meters, degrees, or “12 sigma.”
+estimator API defaults to `12.0`. The current Store defaults are `18.0` for a full three-part pose
+and about `9.21` for a MegaTag2 translation-only update. These are NIS limits, not meters, degrees,
+or a plain “number of sigmas.”
 
 Vision can arrive late. Each ARES `Store` owns a private history of up to 150 pose samples. An
 accepted camera observation updates the matching capture time, including a point between two saved
 samples, and then replays later motion. Comparing delayed vision only with the newest pose would make
 a moving robot appear wrong. Redux publishes an immutable estimator snapshot; it does not expose the
 mutable replay history.
+
+The camera adapter must subtract latency exactly once and send a capture timestamp. Subtracting it
+again shifts the frame too far into the past. Using receipt time moves it too far forward. Drive and
+vision observations must go through `Store.dispatch`; a direct reducer call has no private replay
+runtime and cannot perform this estimator update.
 
 The current vision path has more than one gate. It can reject a frame before the EKF, then reject it
 for empty or too-old history, bad values, no tags, invalid uncertainty, invalid covariance, or an NIS
@@ -103,6 +112,10 @@ correlated evidence. The browser lab does not model this ownership rule.
 4. The EKF checks history, values, uncertainty, covariance, and NIS.
 5. An accepted update is replayed forward. A rejected update keeps a reason.
 6. Redux receives an immutable pose, covariance, and diagnostic snapshot.
+
+One timing limit remains: the prefilter looks up pose at capture time, but its turn-rate and shock
+inputs come from the current drive state. The browser model does not replay those motion signals.
+Record this boundary when a fast turn or collision happens during camera delay.
 
 ## Visual model
 
@@ -232,6 +245,7 @@ Lead Coach review workflow.
 8. Why does capture time matter for delayed vision?
 9. Why is mutable pose history private to one Store runtime?
 10. When should ARES avoid fusing an accepted measurement a second time?
+11. Why must latency be removed exactly once before the frame reaches the Store?
 
 ## Extension challenge
 

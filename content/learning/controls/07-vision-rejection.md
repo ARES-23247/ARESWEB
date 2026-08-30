@@ -18,6 +18,9 @@ By the end, you will be able to:
 - use a rejection reason without pretending it names every failed check; and
 - plan a private, repeatable camera test at surveyed field points.
 
+This lesson matches ARES 11.1.0 and Studio 2.0.3. Its source links point to one reviewed commit in
+the ARES Robotics monorepo.
+
 The lab uses a short checklist and straight-line math. Its detailed gate explanations are teaching
 aids. Current ARES reports a generic reason for its first prefilter, then more specific reasons from
 the estimator. The lab does not solve an image or reproduce that estimator.
@@ -61,6 +64,10 @@ ARES finds the stored pose at capture time, applies the accepted correction ther
 later motion. If the capture time is older than the stored history, ARES rejects it as
 `vision_too_old`.
 
+The camera adapter subtracts latency once before dispatch. If another layer subtracts it again, the
+frame appears older than it was. If no layer subtracts it, receipt time can be mistaken for capture
+time.
+
 ## How the ARES checks fit together
 
 ARES uses two layers. First, the Store finds the saved pose at the image's capture time. A
@@ -76,13 +83,19 @@ those explanations are not current ARES runtime strings.
 
 Next, the Store chooses uncertainty values. It uses each positive camera-reported standard
 deviation when available. Otherwise it uses configured values or defaults of `0.05 m`, `0.05 m`,
-and `0.1 rad`. MegaTag2 is treated as a translation-only update: heading gets almost no influence,
-and ARES uses the configured 2D NIS threshold.
+and `0.1 rad`. MegaTag2 is treated as a translation-only update: heading gets almost no influence.
+The current default NIS limit is about `9.21` for this two-part update. A full three-part pose uses
+`18.0` by default in the Store. These values are software defaults, not proof that they fit a
+physical camera.
 
 The EKF then checks history, tag count, uncertainty, covariance, capture time, and normalized
 innovation squared, or NIS. It scales uncertainty using distance, tag count, viewing angle, and
 ambiguity. These checks answer different questions. Low ambiguity does not prove the tag ID, field
 map, timestamp, or pose is correct. Passing every gate means “usable by this policy,” not “truth.”
+
+The prefilter compares pose with saved pose at capture time. Its turn-rate and shock guards use the
+current drive state instead of replayed motion at capture time. Keep that boundary visible when
+diagnosing a delayed frame near a fast turn or impact.
 
 These are current runtime reason names:
 
@@ -231,6 +244,7 @@ used.
 5. Why does `prefilter_rejected` not identify one exact physical check?
 6. How does MegaTag2 change heading influence and the NIS check?
 7. What independent evidence could test the final field pose?
+8. Which prefilter inputs use capture-time history, and which motion inputs come from current state?
 
 ## Extension challenge
 

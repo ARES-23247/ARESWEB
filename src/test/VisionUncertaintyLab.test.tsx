@@ -69,6 +69,15 @@ describe("VisionUncertaintyLab", () => {
     expect(example.visionMeasurementMeters).toBeCloseTo(2.9);
     expect(example.captureTimeResidualMeters).toBeCloseTo(0.1);
     expect(example.receiptTimeResidualMeters).toBeCloseTo(-0.2);
+
+    const stopped = buildVisionLatencyExample(0, 500);
+    expect(stopped.distanceTraveledMeters).toBe(0);
+    expect(stopped.receiptEstimateMeters).toBe(
+      stopped.captureEstimateMeters,
+    );
+    expect(stopped.receiptTimeResidualMeters).toBe(
+      stopped.captureTimeResidualMeters,
+    );
   });
 
   it("supports native controls, live reasons, latency changes, and deterministic reset", () => {
