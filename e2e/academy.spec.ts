@@ -72,6 +72,18 @@ const nextLesson = {
   objectives: ["Explain a neutral-first recovery boundary."],
 };
 
+const replayLesson = {
+  ...lesson,
+  slug: "testing-logs-replay",
+  title: "Compare Logs and Replay a Failure",
+  description: "Read exact, held, and missing evidence without borrowing a future sample.",
+  level: "intermediate",
+  pathMemberships: [{ pathId: "testing-debugging-commissioning", order: 3 }],
+  prerequisites: ["read-a-telemetry-graph", "simulation-is-not-hardware-validation"],
+  objectives: ["Read exact, held, and missing replay evidence."],
+  appliesToVersion: "ARES 11.1.0; Studio 2.0.3",
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -142,4 +154,34 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   const buttonBox = await docsNavigationButton.boundingBox();
   expect(buttonBox?.width).toBeGreaterThanOrEqual(44);
   expect(buttonBox?.height).toBeGreaterThanOrEqual(44);
+});
+
+test("the replay comparison lab exposes held and missing evidence by keyboard at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...replayLesson, content: "# Compare logs and replay a failure\n\n<logcomparisonlab />" } }
+        : { documents: [replayLesson] }),
+    });
+  });
+
+  await page.goto("/academy/testing-logs-replay?path=testing-debugging-commissioning", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Log Alignment and Comparison Lab" })).toBeVisible();
+  await page.getByLabel("Alignment anchor").selectOption("SHARED_EVENT");
+
+  const playhead = page.getByRole("slider", { name: "Evidence time relative to anchor" });
+  await expect(playhead).toHaveValue("0");
+  await playhead.focus();
+  for (let step = 0; step < 5; step += 1) await page.keyboard.press("ArrowLeft");
+
+  await expect(playhead).toHaveValue("-50");
+  await expect(page.getByText("Missing before first sample")).toBeVisible();
+  await expect(page.getByText("1.0 A (held 10 ms)")).toBeVisible();
+  await expect(page.getByText("Not comparable: one run has no earlier sample")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
 });

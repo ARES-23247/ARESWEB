@@ -1072,6 +1072,28 @@ artifact and treat the remaining authoring guide as contract guidance only. Stud
 verify code and simulation results; Lead Coach approval remains limited to website publication.
 This local curriculum change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: exact, held, and missing replay evidence
+
+This cycle improves the existing `testing-logs-replay` lesson and its Log Alignment and Comparison
+Lab. Review the new playhead control at run-start and shared-event alignment. The readout must use
+the newest invented sample at or before the selected time. It must label an equal timestamp as an
+exact sample, an older timestamp as held with its age, and a time before the first sample as missing.
+It must never borrow a future sample or convert missing evidence to zero.
+
+The interaction remains a conceptual five-point model. It does not import a log, run the production
+replay engine, verify source identity, infer a cause, compare different robots, connect to hardware,
+or prove a physical fault. Confirm native select and range controls, keyboard use, touch targets,
+narrow reflow, the accessible table, polite result updates, and deterministic reset. Students may
+review replay evidence and choose a next test; Lead Coach approval remains limited to a website post.
+
+The three earlier source blobs are unchanged at protected monorepo commit `f3de343a`. Their links now
+point to ARES 11.1.0 / Studio 2.0.3. The current `ReplayEngineService` and bounded
+`RunComparisonService` add two implementation pins. Remote verification must recompute all five Git
+blob hashes. The lesson now reflects the production contract that one immutable replay frame uses
+the newest recorded values at or before the playhead and never fills a gap from live or future data.
+This local curriculum change does not install practice data, run replay, publish content, or mutate
+production curriculum records.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
