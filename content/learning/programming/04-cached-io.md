@@ -2,123 +2,250 @@
 
 ## Purpose and prerequisites
 
-Robot code runs the same loop many times each second. Surprise device reads can mix sensor samples
-from different times. Repeated device writes can waste bus work. In this lesson, you will trace the
-ARES cached-I/O boundary and test one simplified output-cache decision.
+Robot code repeats the same loop many times each second. If a getter secretly reads a device in the
+middle of that loop, two controllers may see samples from different times. If code sends the same
+output again and again, it may add needless work to the device bus.
+
+In this lesson, you will separate two ideas:
+
+1. input adapters refresh sensor values at a named loop boundary; and
+2. the current FTC `CachedDcMotorEx` wrapper skips some repeated output writes.
+
+Those ideas support the same loop, but they are not the same cache. You will trace the real motor
+wrapper and its focused test instead of treating every getter as a hardware-free read.
 
 Complete [Follow a Robot Request from Input to Output](/academy/robot-input-to-output?path=programming-with-ares)
 and [State, Actions, and Reducers](/academy/redux-state-actions-reducers?path=programming-with-ares).
-You can complete the source and concept work without a powered robot.
+You can complete this software lab without a powered robot.
 
 ## Vocabulary
 
-- **Robot loop:** the repeated sequence that reads, calculates, writes, and reports.
-- **Refresh:** the named point where an adapter updates cached inputs.
-- **Cached input:** a stored sensor sample shared during one loop.
-- **Requested output:** the checked command a controller asks an adapter to apply.
-- **Redundant write:** an output write that repeats nearly the same command.
-- **Epsilon:** the smallest change that causes a cached wrapper to write again.
-- **Hard stop:** an explicit zero command that must reach the output boundary.
-- **Adapter:** platform code that connects the shared contract to an SDK device or mock.
+- **Delegate:** the FTC SDK motor object wrapped by `CachedDcMotorEx`.
+- **Cache:** stored data that can be reused instead of asking the device again.
+- **Sentinel:** a private marker that means no command has been accepted yet.
+- **Requested output:** the power value assigned by the caller.
+- **Accepted command:** a request saved by the wrapper and sent to the delegate.
+- **Redundant write:** a request close enough to the last accepted command that the wrapper skips it.
+- **Epsilon:** the smallest absolute change that causes a normal write.
+- **Hard stop:** a changed zero command that must reach the delegate once.
+- **SDK-free contract:** an interface that does not import FTC, FRC, or vendor classes.
+- **Physical evidence:** an observation from the real wired robot, kept separate from software tests.
 
-## Worked example
+## Start with the robot loop
 
-Assume the last motor command was 0.400. A controller requests 0.410. If the output cache uses an
-epsilon of 0.020, the absolute change is 0.010. The concept decision skips that small repeated write.
+The current ARES architecture gives the loop this order:
 
-Now assume the controller requests zero. The cached FTC motor wrapper gives a zero command special
-treatment when the previous command was not zero. It writes the hard stop once. A later repeated
-zero may be skipped because the stop is already the cached command.
-
-This cache does not make an unsafe request safe. The controller and safety boundary still own
-range, health, and mechanism rules. The FTC SDK also keeps its normal validation duties.
+1. refresh hardware inputs once;
+2. dispatch observations and actions;
+3. run reducers to produce immutable state;
+4. calculate controller and safety outputs;
+5. write outputs; and
+6. publish telemetry and logs.
 
 ## Visual model
 
 ```mermaid
-%% aria: Each robot loop refreshes inputs once, updates state, calculates checked outputs, writes through adapters, and then publishes telemetry.
+%% aria: The robot loop refreshes input adapters, dispatches observations, reduces immutable state, calculates checked output, writes through an output adapter, and then publishes telemetry and logs.
 flowchart LR
-  A["Refresh inputs once"] --> B["Dispatch observations"]
-  B --> C["Reduce next state"]
-  C --> D["Controller and safety"]
-  D --> E["Cached output decision"]
-  E --> F["Device or mock write"]
-  F --> G["Telemetry and logs"]
+    A["Refresh input adapters"] --> B["Dispatch observations"]
+    B --> C["Reduce immutable state"]
+    C --> D["Controller and safety"]
+    D --> E["Write output adapters"]
+    E --> F["Telemetry and logs"]
 ```
 
-Every controller in one loop should see the same cached sensor sample. A getter should not hide a
-new bus read. This makes the loop easier to test and keeps timing ownership visible.
+An input adapter should store its sample during refresh. Its later getters should return that stored
+sample. The motor wrapper in this lesson has a different job: it remembers the last output command.
+Do not use it as proof that every sensor getter in a robot is cached correctly.
+
+## Read the current motor wrapper
+
+The current source starts with a private sentinel:
+
+```kotlin
+private var lastPower = -10.0
+```
+
+Motor power normally uses the range -1.0 through 1.0. The value -10.0 means **no accepted command
+yet**. The wrapper never sends -10.0 to the motor.
+
+The getter has two states:
+
+```kotlin
+get() = if (lastPower != -10.0) lastPower else delegate.power
+```
+
+- Before the first accepted command, a read asks the delegate for its power.
+- After the first accepted command, a read returns `lastPower` without reading the delegate.
+
+This means two reads before the first write can cause two delegate reads. The focused source test
+performs one early read and confirms its count. Do not claim that this wrapper makes every read
+hardware-free from construction time.
+
+The setter checks a hard stop before a normal change:
+
+```kotlin
+set(value) {
+    if (value == 0.0 && lastPower != 0.0) {
+        delegate.power = 0.0
+        lastPower = 0.0
+    } else if (abs(value - lastPower) >= epsilon) {
+        delegate.power = value
+        lastPower = value
+    }
+}
+```
+
+The order matters. A changed zero request writes once even when its change is smaller than epsilon.
+A repeated zero is skipped because `lastPower` is already zero.
+
+The wrapper does not clamp power or validate epsilon. Its documentation leaves range and validation
+work to callers and the FTC SDK. An output cache is not a safety controller.
+
+## Worked example
+
+The current `CachedHardwareContractTest` uses a counting delegate. It starts with hardware power
+0.25 and epsilon 0.05. Trace the operations in order:
+
+| Step | Operation | Delegate reads | Delegate writes | Cached power | Why |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 1 | read power | 1 | 0 | not set | no command has been accepted |
+| 2 | write 0.40 | 1 | 1 | 0.40 | first valid command is far from the sentinel |
+| 3 | write 0.44 | 1 | 1 | 0.40 | change 0.04 is below epsilon 0.05 |
+| 4 | read power | 1 | 1 | 0.40 | getter returns the accepted command |
+| 5 | write 0.00 | 1 | 2 | 0.00 | changed zero is a hard stop |
+| 6 | write 0.00 | 1 | 2 | 0.00 | repeated zero is skipped |
+| 7 | write -0.10 | 1 | 3 | -0.10 | change is large enough |
+
+The test proves the wrapper's delegate calls for this sequence. It does not measure REV bus timing,
+motor voltage, current draw, shaft motion, or a mechanism stop.
 
 ## Hands-on activity
 
-1. Open the pinned ARES architecture document.
-2. Write the six robot-loop stages in order.
-3. Find one SDK-free I/O contract, such as `MotorIO`.
-4. Identify its safe-output behavior.
-5. Find one physical FTC adapter or cached wrapper.
-6. Mark where a device read may happen.
-7. Mark which getters return cached values.
-8. Find the output write and any redundant-write threshold.
-9. Find a mock or unit test that uses the same contract.
-10. Record what happens when an output is zero, non-finite, stale, or unhealthy.
-
-Use the concept lab below to compare the previous command, next request, and threshold. Try a small
-change, a large change, a sign change, and a hard stop.
+Open the pinned `CachedHardware.kt` and `CachedHardwareContractTest.kt` files. Then use the
+code-derived tracer below.
 
 <loopcachelab />
 
-The lab models one output comparison. It does not run the robot loop or read a device. Use the pinned
-source and automated tests for ARES behavior.
+1. Reset the tracer. Confirm that the cache says **No accepted command**.
+2. Select **Read power** twice. Each read reaches the delegate because the sentinel is still active.
+3. Reset and select **Read power** once to match the source test.
+4. Enter 0.40 and select **Write request**. Confirm one delegate write.
+5. Enter 0.44 and write again. Predict the result before reading the event message.
+6. Select **Read power**. Confirm that the delegate read count does not increase.
+7. Enter 0.00 and write twice. Explain why only the first zero reaches the delegate.
+8. Enter -0.10 and write. Confirm the final write count is three.
+9. Compare your trace with the table and focused Kotlin test.
+
+The tracer copies the current wrapper's sentinel, getter, and setter decisions for documented motor
+power and epsilon values. It does not execute Kotlin or connect to an FTC device.
+
+## Walk the source and run the test.
+
+Use these commands from the ARES monorepo root. They locate the wrapper and its test.
+
+```powershell
+rg -n "class CachedDcMotorEx|lastPower|override var power" `
+  ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt
+
+rg -n "motor suppresses|delegate.readCount|delegate.writeCount" `
+  ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedHardwareContractTest.kt
+```
+
+Run only the focused contract test from `ARESLib-Kotlin`.
+
+```powershell
+Set-Location ARESLib-Kotlin
+.\gradlew.bat :ftc-hardware:test `
+  --tests "com.areslib.ftc.hardware.CachedHardwareContractTest"
+```
+
+Save the repository commit, exact command, pass or fail result, and test name. A passing result is
+software evidence for the wrapper at that commit.
+
+## Connect the wrapper to `MotorIO`
+
+The shared `MotorIO` interface is SDK-free. Its `safe()` function requests zero power:
+
+```kotlin
+override fun safe() {
+    power = 0.0
+}
+```
+
+That contract expresses the safe request. The platform adapter and wrapper must carry it to the
+device boundary. The cached wrapper's hard-stop branch prevents a changed zero request from being
+lost as a small redundant write. A repeated zero can then be skipped.
+
+This still does not prove a physical motor stopped. Wiring, device health, controller state, load,
+and mechanism motion remain physical facts.
 
 ## Checkpoints
 
-- Are sensor reads owned by one named refresh boundary?
-- Do getters return cached samples during the loop?
-- Does state update before controllers calculate outputs?
-- Can an explicit zero reach the adapter after a nonzero command?
-- Are range, health, and safe-state checks separate from write deduplication?
+- Can you explain what -10.0 means without calling it a motor command?
+- Which reads reach the delegate before the first accepted command?
+- Why does 0.44 get skipped after an accepted 0.40 when epsilon is 0.05?
+- Why does the setter check changed zero before the normal epsilon rule?
+- What safety and validation work does this wrapper not own?
+- What does the focused test prove, and what physical facts remain unknown?
 
 ## Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
-| Two controllers see different samples | Look for a hidden device read outside refresh. |
-| Motor does not receive a changed command | Compare the absolute change with epsilon. |
-| Stop appears delayed | Trace the zero request through safety, cache, and adapter. |
-| Getter causes timing spikes | Check whether it delegates to hardware after initialization. |
-| Mock passes but robot differs | Compare the physical adapter and mock against the same contract. |
-| Telemetry changes robot behavior | Remove control work from the reporting path. |
+| Early getter still reads the device | The sentinel remains active until the first accepted command. |
+| Small request does not reach the delegate | Compare its absolute change with epsilon and the last accepted command. |
+| Displayed power differs from a skipped request | The getter returns the last accepted command, not the skipped request. |
+| First zero does not look special | Compare zero with the sentinel; it enters the hard-stop branch first. |
+| Repeated zero is skipped | The delegate already received zero and `lastPower` is zero. |
+| Invalid power seems accepted by the model | Use the documented range. The source wrapper does not perform full validation. |
+| Mock test passes but robot differs | Check wiring, polarity, SDK setup, load, device health, and actual mechanism motion. |
+| Telemetry changes control timing | Keep reporting work outside the control and output-write path. |
 
 ## Evidence artifact
 
-Create a loop-boundary table. Include refresh, observation, reducer, controller, safety, output write,
-and telemetry. Add the owning source path for each row. For one cached output, record the previous
-command, requested command, epsilon, decision, and reason.
+Create an operation table with these columns:
 
-Add one automated test result that covers a changed command and a hard stop. Label it as source and
-test evidence. It does not prove physical bus timing, device response, current draw, or motion.
+- operation number;
+- read or write request;
+- sentinel active or accepted command;
+- absolute change when a normal write is checked;
+- delegate read count;
+- delegate write count; and
+- reason for the result.
 
-Students may verify a physical output through the team's normal safety procedure. Start disabled,
-use a bounded hold-to-run command, and keep an emergency stop within reach. Website posts use a
-separate Lead Coach editorial workflow.
+Fill it using the seven source-test steps. Add your focused Gradle result and the pinned source
+commit. End with two separate claims:
+
+1. what the software test shows about delegate calls; and
+2. what a restrained physical check would still need to observe.
+
+Students may review the source, run the test, and verify robot functionality through the team's
+normal safety process. Start disabled, clear the mechanism, use a bounded hold-to-run request, and
+keep stop control ready. Website posts use the separate Lead Coach review flow.
 
 ## Short assessment
 
-1. Why should a sensor getter avoid a surprise bus read?
-2. What problem does an output epsilon reduce?
-3. Why does a hard stop need special attention?
-4. What safety work is not owned by the output cache?
-5. What evidence separates a mock contract from physical device behavior?
+1. What state does the -10.0 sentinel represent?
+2. When does the getter read the FTC delegate?
+3. What is the difference between a requested command and an accepted command?
+4. Why is a changed zero checked before the epsilon rule?
+5. Does `CachedDcMotorEx` clamp power or validate epsilon?
+6. What does `MotorIO.safe()` request?
+7. Why is a passing unit test not proof of physical motion?
 
 ## Extension challenge
 
-Write a unit test table for five output pairs. Include no change, a small change, a large change, a
-sign change, and a hard stop. Predict each write decision before running the test. If the real
-contract differs from the concept lab, record the source-backed difference instead of changing the
-evidence.
+Read the `CachedServo` source and its focused test in the same files. Compare it with the motor
+wrapper. The servo also uses a sentinel and epsilon, but it has no special hard-stop branch.
+
+Build a two-column trace for the first command, a small repeated command, a larger command, and a
+getter after initialization. State which behavior is shared and which is motor-only. Do not invent a
+servo safety rule that the current source does not contain.
 
 ## Related and next
 
-Continue to GUI-owned or code-first subsystem authoring. A subsystem should own its cached inputs,
-checked outputs, safe state, mock, and tests. Study parity testing before claiming that a physical
-adapter and simulator mock behave the same.
+Continue to [Author a Code-First or Hybrid Subsystem](/academy/programming-code-subsystem?path=programming-with-ares)
+to place I/O behind a subsystem controller. Then study
+[Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
+before making a parity claim. Keep source, test, simulation, and physical evidence separate.

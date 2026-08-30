@@ -626,11 +626,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'loopCacheLab',
-    'name': 'Cached Output Decision Lab',
+    'name': 'ARES FTC Cached Motor Trace',
     'folder': 'loop-cache-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'mechanismMotionExplorer',

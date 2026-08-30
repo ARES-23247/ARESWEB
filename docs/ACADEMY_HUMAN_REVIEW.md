@@ -844,6 +844,36 @@ Students may run the focused unit test and verify robot behavior through the tea
 process. Lead Coach review remains limited to publishing website posts. This local curriculum
 change does not publish or overwrite production data.
 
+## Continuous cycle: current FTC motor output cache
+
+This cycle improves the existing `programming-io-caching` lesson. Review its four pinned files at
+monorepo commit `f3de343a`: `docs/architecture.md`, `CachedHardware.kt`,
+`CachedHardwareContractTest.kt`, and `MotorIO.kt`. The three unchanged production blobs retain their
+earlier hashes; the focused contract test adds direct evidence that the old lesson did not pin.
+
+Review the corrected boundary. ARES input adapters should refresh sensor samples at a named loop
+stage. `CachedDcMotorEx` is instead an FTC output-write wrapper. Its private `lastPower = -10.0`
+sentinel means no command has been accepted. Before the first accepted command, its `power` getter
+delegates to the FTC motor; after that command, the getter returns the cached command. The lesson
+must not claim that this wrapper makes every read hardware-free from construction time.
+
+Review the exact setter order. A changed zero request writes once before the normal epsilon rule is
+checked. Other requests write when `abs(value - lastPower) >= epsilon`; a skipped request does not
+replace the last accepted command. The wrapper does not clamp power or validate epsilon. The
+interaction therefore bounds its native inputs to documented values and states that it does not
+model invalid callers.
+
+The focused source test begins with delegate power 0.25 and epsilon 0.05. It proves one early
+delegate read, a 0.40 write, a skipped 0.44 request, a cached getter, one changed zero write, one
+skipped repeated zero, and a -0.10 write. Review that the code-derived interaction reproduces those
+counts and decisions, exposes the sentinel state, uses labeled native inputs and 44-pixel controls,
+reflows on a narrow screen, announces each operation, resets deterministically, and names its model
+limits. It does not execute Kotlin, connect to an FTC device, measure bus timing, or prove motion.
+
+Students may inspect the source, run the focused test, and verify robot behavior through the team's
+normal safety process. Lead Coach review remains limited to publishing website posts. This local
+curriculum change does not publish or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
