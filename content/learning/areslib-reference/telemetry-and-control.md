@@ -152,4 +152,6 @@ Continue with [Compare Logs and Replay a Failure](/academy/testing-logs-replay?p
 to align complete records by source identity and shared events. Use [Read a Telemetry Graph Like a
 Scientist](/academy/read-a-telemetry-graph?path=math-for-robotics) for more graph-reading practice.
 Use [Build a Fault Tree and Isolate a Cause](/academy/testing-fault-tree?path=testing-debugging-commissioning)
-before turning one pattern into a diagnostic test.
+before turning one pattern into a diagnostic test. Use [Build Bounded FTC Driver Station
+Telemetry](/academy/ftc-driver-station-telemetry?path=testing-debugging-commissioning) to trace the
+current season helper, shared snapshot cadence, and non-blocking display boundary.

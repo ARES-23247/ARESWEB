@@ -233,6 +233,14 @@
       "fidelity": null
     },
     {
+      "id": "ftcTelemetryCadenceLab",
+      "name": "FTC Telemetry Cadence Lab",
+      "path": "./ftc-telemetry-cadence-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "greatbee",
       "name": "The Great Bee Adventure",
       "path": "./greatbee",

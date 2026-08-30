@@ -33,6 +33,7 @@ const faultTreeLab = lazy(() => import("../../sims/fault-tree-lab"));
 const feedforwardTermLab = lazy(() => import("../../sims/feedforward-term-lab"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
+const ftcTelemetryCadenceLab = lazy(() => import("../../sims/ftc-telemetry-cadence-lab"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
 const hardwareTopologyDiagnostic = lazy(() => import("../../sims/hardware-topology-diagnostic"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
@@ -160,6 +161,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   feedforwardtermlab: feedforwardTermLab,
   field: field,
   flywheelkv: flywheelkv,
+  ftcTelemetryCadenceLab: ftcTelemetryCadenceLab,
+  ftctelemetrycadencelab: ftcTelemetryCadenceLab,
   greatbee: greatbee,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
@@ -313,6 +316,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   faulttreelab: faultTreeLab,
   feedforwardTermLab: feedforwardTermLab,
   feedforwardtermlab: feedforwardTermLab,
+  ftcTelemetryCadenceLab: ftcTelemetryCadenceLab,
+  ftctelemetrycadencelab: ftcTelemetryCadenceLab,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   kotlinExpressionLab: kotlinExpressionLab,
@@ -613,6 +618,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'ftcTelemetryCadenceLab',
+    'name': 'FTC Telemetry Cadence Lab',
+    'folder': 'ftc-telemetry-cadence-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'greatbee',

@@ -129,4 +129,6 @@ which values must be measured on the robot before the route can be used.
 Review [Read Hardware Once and Write Safe Outputs](/academy/programming-io-caching?path=programming-with-ares)
 to see where cached ports begin. Next, use
 [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
-to separate shared contract evidence from physical proof.
+to separate shared contract evidence from physical proof. Continue with
+[Build Bounded FTC Driver Station Telemetry](/academy/ftc-driver-station-telemetry?path=ftc-robot-with-ares)
+to trace the display work that follows the shared season update.
