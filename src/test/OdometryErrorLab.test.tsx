@@ -124,13 +124,13 @@ describe("OdometryErrorLab", () => {
   it("states its missing estimator, handoff, and hardware behavior", () => {
     render(<OdometryErrorLab />);
     expect(screen.getByRole("note")).toHaveTextContent(
-      "do not run the estimator",
+      "does not run the estimator",
     );
     expect(screen.getByRole("note")).toHaveTextContent(
       "rebases each source during handoff",
     );
     expect(screen.getByRole("note")).toHaveTextContent(
-      "do not run the estimator, inspect Pinpoint or IMU hardware",
+      "does not run the estimator, inspect Pinpoint or IMU hardware",
     );
     expect(screen.getByRole("note")).toHaveTextContent("prove accuracy");
   });

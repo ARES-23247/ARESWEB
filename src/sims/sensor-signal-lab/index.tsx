@@ -152,26 +152,19 @@ export default function SensorSignalLab() {
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Three current source layers
-          </p>
           <h3
             id="sensor-signal-title"
-            className="mt-1 text-xl font-black text-white"
+            className="text-xl font-black text-white"
           >
-            Current ARES Sensor Evidence Lab
+            Sensor Evidence Lab
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Compare evidence from a raw value, FTC cache, and generated
-            snapshot.
-          </p>
         </div>
         <button
           type="button"
           onClick={() => setInput(DEFAULTS)}
           className="inline-flex min-h-11 items-center justify-center rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
         >
-          Reset evidence
+          Reset
         </button>
       </div>
 
@@ -215,7 +208,7 @@ export default function SensorSignalLab() {
             </legend>
             <NumberField
               id="sample-age"
-              label="Snapshot age (milliseconds)"
+              label="Age (ms)"
               value={input.ageMs}
               step={1}
               minimum={0}
@@ -223,19 +216,19 @@ export default function SensorSignalLab() {
             />
             <NumberField
               id="maximum-age"
-              label="Maximum allowed age (milliseconds)"
+              label="Max age (ms)"
               value={input.maxAgeMs}
               step={1}
               minimum={0}
               onChange={(value) => update("maxAgeMs", value)}
             />
             <CheckField
-              label="Generated refresh produced a valid snapshot"
+              label="Refresh produced a valid snapshot"
               checked={input.feedbackValid}
               onChange={(checked) => update("feedbackValid", checked)}
             />
             <CheckField
-              label="Required device configuration is healthy"
+              label="Device setup is healthy"
               checked={input.configured}
               onChange={(checked) => update("configured", checked)}
             />
@@ -244,7 +237,7 @@ export default function SensorSignalLab() {
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
           <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">
-            Evidence finding
+            Finding
           </h4>
           <dl
             role="status"
@@ -252,29 +245,27 @@ export default function SensorSignalLab() {
             aria-atomic="true"
             className="mt-4 grid gap-3"
           >
-            <Datum label="Selected layer" value={LAYER_LABELS[input.layer]} />
+            <Datum label="Layer" value={LAYER_LABELS[input.layer]} />
             <Datum label="Status" value={result.status} />
             <Datum label="Reason" value={result.reason} />
-            <Datum label="Still missing" value={result.missing} />
+            <Datum label="Missing" value={result.missing} />
           </dl>
         </div>
       </div>
 
       <details className="mt-5 rounded border border-white/10 bg-white/5 p-3 text-sm text-white">
         <summary className="min-h-11 cursor-pointer font-bold text-ares-cyan">
-          Read the current source boundary
+          Read the source boundary
         </summary>
         <ol className="mt-3 list-decimal space-y-2 pl-6 text-marble/80">
-          <li>The raw interface exposes meters and failure sentinels.</li>
+          <li>The raw interface gives meters and failure sentinels.</li>
           <li>
-            The FTC adapter polls in the background and returns its cached
-            number.
+            The FTC adapter polls in the background and returns a cached value.
           </li>
           <li>
-            Generated code adds a default 0–10 meter range plus validity, time,
-            and configuration evidence.
+            Generated code adds a default 0–10 meter range, validity, time, and
+            setup evidence.
           </li>
-          <li>The generated subsystem rejects an old snapshot.</li>
         </ol>
       </details>
 
@@ -282,10 +273,10 @@ export default function SensorSignalLab() {
         role="note"
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
-        <strong>Model limit:</strong> This code-derived model does not read a
-        sensor or run robot code. It cannot prove wiring, placement, accuracy,
-        or behavior. The 0–10 meter range is a scaffold default, not a promise
-        about every real sensor.
+        <strong>Model limit:</strong> This model does not read a sensor or run
+        robot code. It cannot prove wiring, placement, accuracy, or behavior.
+        The 0–10 meter range is a scaffold default, not a promise for every
+        real sensor.
       </p>
     </section>
   );

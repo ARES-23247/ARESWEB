@@ -184,9 +184,6 @@ export default function OdometryErrorLab() {
           >
             Odometry Calibration and Source Lab
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Compare field directions and trace FTC source recovery.
-          </p>
         </div>
         <button
           type="button"
@@ -255,7 +252,7 @@ export default function OdometryErrorLab() {
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
           <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">
-            Endpoint comparison
+            Endpoints
           </h4>
           <svg
             viewBox="0 0 360 210"
@@ -392,11 +389,10 @@ export default function OdometryErrorLab() {
         role="note"
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
-        <strong>Model limit:</strong> This exact-error model and source trace do
-        not run the estimator, inspect Pinpoint or IMU hardware, calculate
-        sample health, model noise or slip, or prove accuracy. It uses five
-        healthy samples. ARES rebases each source during handoff; this page does
-        not.
+        <strong>Model limit:</strong> This model does not run the estimator,
+        inspect Pinpoint or IMU hardware, calculate sample health, or prove
+        accuracy. It uses five healthy samples. ARES rebases each source during
+        handoff; this page does not.
       </p>
     </section>
   );

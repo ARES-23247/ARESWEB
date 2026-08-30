@@ -74,9 +74,14 @@ try {
   const largestLazy = routeLazyJs
     .map((file) => ({ file, ...assetSize(file) }))
     .sort((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0, gzip: 0 };
-  const largestAcademyInteractive = academyInteractiveJs
-    .map((file) => ({ file, ...assetSize(file) }))
-    .sort((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0, gzip: 0 };
+  const academyInteractionSizes = academyInteractiveJs.map((file) => ({
+    file,
+    ...assetSize(file),
+  }));
+  const largestAcademyRaw = academyInteractionSizes
+    .toSorted((a, b) => b.raw - a.raw)[0] ?? { file: "none", raw: 0 };
+  const largestAcademyGzip = academyInteractionSizes
+    .toSorted((a, b) => b.gzip - a.gzip)[0] ?? { file: "none", gzip: 0 };
 
   const measurements = {
     initialJs: sumAssets(initialJs),
@@ -84,7 +89,10 @@ try {
     largestLazyJs: largestLazy,
     totalRouteJs: sumAssets([...initialJs, ...routeLazyJs]),
     academyInteractiveJs: sumAssets(academyInteractiveJs),
-    largestAcademyInteractiveJs: largestAcademyInteractive,
+    largestAcademyInteractiveJs: {
+      raw: largestAcademyRaw.raw,
+      gzip: largestAcademyGzip.gzip,
+    },
     editorRuntimeJs: sumAssets(editorRuntimeJs),
     largestEditorJs: largestEditor,
   };
@@ -97,7 +105,7 @@ try {
     const label = name === "largestLazyJs"
       ? `${name} (${largestLazy.file})`
       : name === "largestAcademyInteractiveJs"
-        ? `${name} (${largestAcademyInteractive.file})`
+        ? `${name} (raw: ${largestAcademyRaw.file}; gzip: ${largestAcademyGzip.file})`
       : name === "largestEditorJs"
         ? `${name} (${largestEditor.file})`
         : name;

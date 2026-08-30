@@ -132,7 +132,7 @@ describe("SysIdTuningLab", () => {
 
     fireEvent.click(
       screen.getByRole("checkbox", {
-        name: "Runtime advertises this mechanism",
+        name: "Runtime advertises mechanism",
       }),
     );
     expect(

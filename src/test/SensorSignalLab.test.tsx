@@ -62,16 +62,16 @@ describe("SensorSignalLab", () => {
 
   it("enables snapshot evidence only for the generated layer", () => {
     render(<SensorSignalLab />);
-    expect(screen.getByLabelText("Snapshot age (milliseconds)")).toBeDisabled();
+    expect(screen.getByLabelText("Age (ms)")).toBeDisabled();
     expect(screen.getByText("Raw value only")).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Evidence layer"), {
       target: { value: "GENERATED_SNAPSHOT" },
     });
-    expect(screen.getByLabelText("Snapshot age (milliseconds)")).toBeEnabled();
+    expect(screen.getByLabelText("Age (ms)")).toBeEnabled();
     expect(screen.getByText("Usable generated snapshot")).toBeVisible();
 
-    fireEvent.change(screen.getByLabelText("Snapshot age (milliseconds)"), {
+    fireEvent.change(screen.getByLabelText("Age (ms)"), {
       target: { value: "120" },
     });
     expect(
@@ -87,7 +87,7 @@ describe("SensorSignalLab", () => {
     expect(
       screen.getByText(/uses this value as failed or out-of-range evidence/),
     ).toBeVisible();
-    fireEvent.click(screen.getByText("Read the current source boundary"));
+    fireEvent.click(screen.getByText("Read the source boundary"));
     expect(
       screen.getByText(/FTC adapter polls in the background/),
     ).toBeVisible();
@@ -95,7 +95,7 @@ describe("SensorSignalLab", () => {
       "does not read a sensor",
     );
     expect(screen.getByRole("note")).toHaveTextContent(
-      "not a promise about every real sensor",
+      "not a promise for every real sensor",
     );
   });
 
@@ -108,7 +108,7 @@ describe("SensorSignalLab", () => {
       target: { value: "11" },
     });
     expect(screen.getByText(/accepts 0 through 10 meters/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Reset evidence" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByLabelText("Evidence layer")).toHaveValue(
       "RAW_INTERFACE",
     );

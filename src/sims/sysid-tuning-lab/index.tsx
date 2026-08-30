@@ -72,7 +72,7 @@ function stopSysId(
 
 export function previewSysId(input: SysIdScenario): SysIdPreview {
   if (!input.capabilityAdvertised) {
-    return stopSysId("Capability not advertised.", "BLOCKED");
+    return stopSysId("Capability missing.", "BLOCKED");
   }
   if (!input.armed) {
     return stopSysId("Arm boundary not acknowledged.", "BLOCKED");
@@ -83,10 +83,10 @@ export function previewSysId(input: SysIdScenario): SysIdPreview {
     !Number.isFinite(input.travel) ||
     input.elapsedSeconds < 0
   ) {
-    return stopSysId("Sample or time is invalid.");
+    return stopSysId("Invalid sample/time.");
   }
   if (input.elapsedSeconds > 5) {
-    return stopSysId("Five-second limit exceeded.");
+    return stopSysId("Past five seconds.");
   }
 
   const travelLimit = {
@@ -120,7 +120,7 @@ export function previewSysId(input: SysIdScenario): SysIdPreview {
   return {
     status: "RUNNING",
     voltage: Math.max(-12, Math.min(12, voltage)),
-    reason: "Shown checks are in bounds.",
+    reason: "Checks pass.",
   };
 }
 
@@ -189,7 +189,7 @@ export default function SysIdTuningLab() {
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <h3 id="sysid-tuning-lab-title" className="text-xl font-black text-white">
-          SysId and One-Change Evidence Lab
+          SysId Evidence Lab
         </h3>
         <button
           type="button"
@@ -213,10 +213,9 @@ export default function SysIdTuningLab() {
         role="note"
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
-        <strong>Model limit:</strong> No Studio or hardware connection, gain fit,
-        current test, robot motion, safety proof, or profile promotion. Current
-        FTC/FRC callers do not pass measured current here, so no current trip is
-        claimed.
+        <strong>Model limit:</strong> No Studio, hardware link, gain fit,
+        current check, motion, safety proof, or profile promotion. Callers
+        do not pass measured current, so no current trip is claimed.
       </p>
     </section>
   );
@@ -234,7 +233,7 @@ function SysIdPanel({
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-4">
       <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">
-        Part 1: shared SysId envelope
+        Part 1: SysId envelope
       </h4>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <SelectField
@@ -264,7 +263,7 @@ function SysIdPanel({
         />
         <NumberField
           id="sysid-time"
-          label="Elapsed time (s)"
+          label="Time (s)"
           value={value.elapsedSeconds}
           onChange={(elapsedSeconds) => onChange({ ...value, elapsedSeconds })}
         />
@@ -277,19 +276,19 @@ function SysIdPanel({
       </div>
       <div className="mt-4 grid gap-2">
         <CheckField
-          label="Runtime advertises this mechanism"
+          label="Runtime advertises mechanism"
           checked={value.capabilityAdvertised}
           onChange={(capabilityAdvertised) =>
             onChange({ ...value, capabilityAdvertised })
           }
         />
         <CheckField
-          label="Required arm boundary is acknowledged"
+          label="Arm boundary acknowledged"
           checked={value.armed}
           onChange={(armed) => onChange({ ...value, armed })}
         />
         <CheckField
-          label="Position and velocity sample is valid"
+          label="Position and velocity valid"
           checked={value.sampleValid}
           onChange={(sampleValid) => onChange({ ...value, sampleValid })}
         />
@@ -315,24 +314,24 @@ function ExperimentPanel({
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-4">
       <h4 className="text-sm font-bold uppercase tracking-wider text-ares-gold">
-        Part 2: one-change comparison
+        Part 2: one change
       </h4>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <NumberField
           id="tune-baseline"
-          label="Baseline metric (s)"
+          label="Baseline (s)"
           value={value.baseline}
           onChange={(baseline) => onChange({ ...value, baseline })}
         />
         <NumberField
           id="tune-candidate"
-          label="Candidate metric (s)"
+          label="Candidate (s)"
           value={value.candidate}
           onChange={(candidate) => onChange({ ...value, candidate })}
         />
         <NumberField
           id="tune-threshold"
-          label="Prior threshold (%)"
+          label="Threshold (%)"
           value={value.thresholdPercent}
           onChange={(thresholdPercent) =>
             onChange({ ...value, thresholdPercent })
@@ -349,7 +348,7 @@ function ExperimentPanel({
         />
         <SelectField
           id="tune-count"
-          label="Parameters changed"
+          label="Changes"
           value={value.changeCount}
           options={["ONE", "MULTIPLE"]}
           onChange={(changeCount) =>
@@ -369,7 +368,7 @@ function ExperimentPanel({
       <ResultBox label="Experiment result" tone={result.classification}>
         <strong>{result.classification}</strong>
         <span>
-          Improvement toward goal: {formatPercent(result.improvementPercent)}
+          Goal improvement: {formatPercent(result.improvementPercent)}
         </span>
       </ResultBox>
     </div>
