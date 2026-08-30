@@ -583,6 +583,33 @@ ARES Robotics commit `f3de343a` and the ARES 11.1.0 / Studio 2.0.3 identity. The
 hash to the listed reviewed Git blobs. Remote verification must recompute those hashes. This local
 curriculum change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: existing odometry lesson depth
+
+This cycle improves the existing `controls-odometry` lesson and its Odometry Calibration and
+Source Lab. It does not add a replacement title. Review the grade 6-8 explanations of signed X/Y
+residuals, independent surveyed truth, four field directions, repeated calibration routes, sample
+health, immediate FTC failover, five-consecutive-sample recovery, and source rebasing.
+
+The interaction now supports field positive X, positive Y, negative X, and negative Y routes. It
+shows surveyed and estimated coordinates, signed residuals, and total endpoint error in both visual
+and complete text-result forms. A second keyboard and touch workflow traces one bad primary sample, held
+fallback recovery, a bad-sample count reset, and the fifth-sample return to Pinpoint. Confirm
+narrow-screen reflow, visible focus, live result announcements, deterministic reset, readable table
+overflow, and no dependence on pointer-only gestures.
+
+The endpoint model applies exact scale and heading errors to straight routes. The source trace copies
+only the ARES FTC selector state rules. It does not run the ARES pose estimator, integrate drivetrain
+wheels, inspect a physical sensor, model noise or slip, or prove robot accuracy. It also does not
+calculate the fused pose used to rebase either source during a handoff.
+
+The reviewed web references are pinned to ARES Robotics commit `f3de343a` and the ARES 11.1.0 /
+Studio 2.0.3 identity. That snapshot contains the same Pinpoint health states, immediate failover,
+five-sample recovery, and pose-continuity handoff described by the lesson. The current local ARES
+checkout was also inspected at commit `3d10f63a`; its relevant source files are clean, and the same
+runtime behavior remains present even though `FtcBaseRobot.kt` has a newer Git blob. Remote catalog
+verification must recompute all four pinned source hashes. This local curriculum change does not
+stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
