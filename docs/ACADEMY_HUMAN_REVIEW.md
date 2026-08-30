@@ -1168,6 +1168,32 @@ physical verification process. Lead Coach approval remains limited to publishing
 This local curriculum change does not generate robot source, replace a starter, publish the lesson,
 or mutate production curriculum records.
 
+## Continuous cycle: current SysId arming and tuning evidence
+
+This cycle refreshes `testing-sysid-tuning` from the retired split repositories to protected ARES
+Robotics commit `f3de343a`, ARES 11.1.0, and Studio 2.0.3. Recompute all six Git blob hashes. Confirm
+that the shared SysId manager still uses its five-second routine limit and mechanism travel checks,
+and that current FTC and FRC callers still omit measured current from `checkSafety`. The lesson must
+not present the unused shared current watchdog as active platform protection.
+
+The FTC teaching model now exposes the full current network boundary. A supported mechanism alone
+is not enough. A new token and a newer numeric lease must arrive while STOP is selected. After
+arming, the lease must continue advancing within 500 milliseconds. A changed token, invalid lease,
+expired lease, or unknown command disarms calibration and neutralizes the output owned by that
+controller. Confirm that 500 milliseconds still runs and 501 milliseconds stops in the browser
+model. The model does not connect to Studio or hardware and cannot prove that a real stop occurred.
+
+Review native number inputs, selects, and checkboxes with keyboard, touch, 200% zoom, and a narrow
+viewport. Every input needs a visible label and focus state. Result changes must be announced
+without moving focus. Reset must restore the LINEAR quasistatic example, the complete handshake, a
+100 millisecond lease age, and eligible one-change evidence. The invented 1.20-to-1.05-second
+comparison remains a math example, not team telemetry or a recommended gain.
+
+Students may carry out the team's safe physical verification process. Peer or mentor feedback in a
+tuning report is optional collaboration, not robot permission. Lead Coach approval remains limited
+to publishing a website post. This local change does not run SysId, stage a tuning proposal, change
+a canonical `.arestuning` file, publish curriculum, or mutate production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

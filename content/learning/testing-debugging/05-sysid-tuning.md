@@ -9,6 +9,9 @@ small, declared value change improve one recorded result?
 This lesson keeps those jobs separate. You will trace a SysId safety envelope, then judge one
 invented tuning comparison. You will not move a robot or change a real tuning profile.
 
+The source examples match ARES 11.1.0 and Studio 2.0.3. The links below are pinned to the exact
+monorepo commit used for this lesson.
+
 Complete [Build a Fault Tree and Isolate a Cause](/academy/testing-fault-tree?path=testing-debugging-commissioning),
 [Predict Motion with Feedforward](/academy/controls-motor-model-feedforward?path=controls-localization-autonomous),
 and [Tune Feedback with Evidence](/academy/controls-pid?path=controls-localization-autonomous).
@@ -23,7 +26,9 @@ mechanical limits, and a student who watches the whole run. This page does not a
 - **Quasistatic:** a voltage ramp that rises slowly.
 - **Dynamic:** a short voltage step used to study acceleration.
 - **Mechanism capability:** a mechanism the connected runtime says it can test.
-- **Arm boundary:** a fresh, acknowledged permission boundary for a motion command.
+- **STOP-first handshake:** a fresh enable token and a newer lease sequence sent while the command
+  is STOP.
+- **Lease:** a short-lived heartbeat that must keep advancing during FTC calibration control.
 - **Parameter:** one named value with a type, unit, bounds, and apply policy.
 - **Baseline:** the unchanged run used for comparison.
 - **Candidate:** the run made after one proposed change.
@@ -44,9 +49,10 @@ shared routine stops after five seconds. Linear, angular, elevator, and arm test
 checks. Invalid position, heading, velocity, or time data stops the shared routine.
 
 Those checks are not the whole platform safety system. Studio first requires the connected runtime
-to advertise the selected mechanism. FTC motion also needs its fresh STOP-first arm lease. The
-current FTC controller neutralizes output when the lease changes, expires, or receives an invalid
-command.
+to advertise the selected mechanism. FTC motion also needs a STOP-first handshake. The enable token
+must be new, and the lease sequence must move forward while STOP is selected. The controller then
+expects a newer valid lease within 500 milliseconds. A changed token, bad lease, expired lease, or
+unknown command disarms calibration and neutralizes its output.
 
 One current limit must stay visible: the FTC and FRC callers do not pass measured current into the
 shared `checkSafety` call. The manager contains a current watchdog, but those callers do not provide
@@ -56,7 +62,9 @@ must use verified platform limits and its real safety process.
 | Check | What the current source does | What this proves |
 | --- | --- | --- |
 | Capability missing | Blocks the start in Studio | The runtime did not claim support |
-| FTC arm missing or expired | Blocks or neutralizes motion | The network motion boundary is closed |
+| STOP-first token or lease missing | Blocks arming | Retained controls cannot start a new session |
+| Lease older than 500 ms | Disarms and neutralizes | A stopped heartbeat closes the motion boundary |
+| Token changes after arming | Disarms and neutralizes | Another session cannot reuse the old arm state |
 | Invalid motion sample | Stops the shared routine | The manager failed closed for that sample |
 | More than five seconds | Stops the shared routine | The shared time limit fired |
 | Travel beyond the mechanism limit | Stops the shared routine | The shared travel limit fired |
@@ -89,9 +97,9 @@ it moved the wrong way and is **regressed**.
 %% aria: SysId and tuning are separate evidence paths. The SysId path checks an advertised capability and arm boundary before a bounded routine records voltage and motion. The tuning path starts from a compatible baseline, snapshots configuration, stages one bounded value, records a newer Local Sim candidate, compares a percentage against a prior threshold, and preserves a decision. Neither path silently edits canonical tuning.
 flowchart TB
   subgraph S["SysId evidence"]
-    C["Runtime advertises mechanism"] --> A["Required arm boundary is acknowledged"]
+    C["Runtime advertises mechanism"] --> A["Fresh token and lease arrive during STOP"]
     A --> R["Run bounded voltage pattern"]
-    R --> G["Check valid samples, time, and travel"]
+    R --> G["Refresh lease; check samples, time, and travel"]
     G --> L["Record voltage and motion"]
   end
   subgraph T["One-change tuning evidence"]
@@ -114,18 +122,19 @@ structured diff, evidence links, history, and atomic replacement.
 
 1. Open the lab and read both result panels before changing a control.
 2. In the SysId panel, clear **Runtime advertises this mechanism**. Explain why voltage becomes zero.
-3. Reset. Clear the arm check. Explain why a supported mechanism still cannot start.
-4. Reset. Set elapsed time to 5.01 seconds. Record the stop reason.
-5. Reset. Set linear travel to 1.51 meters. Record the stop reason.
-6. Compare the quasistatic command at 1.00 and 3.00 seconds.
-7. Select flywheel and dynamic. Compare its one-way step with the linear dynamic result.
-8. In the tuning panel, confirm the default result is 12.5% improved.
-9. Set the candidate to 1.15 seconds. Confirm the result is inconclusive.
-10. Set the candidate to 1.30 seconds. Confirm the result is regressed.
-11. Set the threshold to zero. Explain why the plan is blocked before comparison.
-12. Reset. Change candidate evidence to **not simulation**. Explain why Studio would filter it out.
-13. Set parameters changed to multiple. Explain why the result cannot test one cause.
-14. Reset and write an accept, revise, reject, or rollback decision with one reason.
+3. Reset. Select each failed STOP-first handshake mode. Record each blocked reason.
+4. Reset. Set lease age to 501 milliseconds. Explain why the preview stops at zero volts.
+5. Reset. Set elapsed time to 5.01 seconds. Record the stop reason.
+6. Reset. Set linear travel to 1.51 meters. Record the stop reason.
+7. Compare the quasistatic command at 1.00 and 3.00 seconds.
+8. Select flywheel and dynamic. Compare its one-way step with the linear dynamic result.
+9. In the tuning panel, confirm the default result is 12.5% improved.
+10. Set the candidate to 1.15 seconds. Confirm the result is inconclusive.
+11. Set the candidate to 1.30 seconds. Confirm the result is regressed.
+12. Set the threshold to zero. Explain why the plan is blocked before comparison.
+13. Reset. Change candidate evidence to **not simulation**. Explain why Studio filters it out.
+14. Set parameters changed to multiple. Explain why the result cannot test one cause.
+15. Reset and write an accept, revise, reject, or rollback decision with one reason.
 
 <sysidtuninglab />
 
@@ -136,7 +145,8 @@ model, or a tuning recommendation.
 
 - Can you explain the difference between SysId and a tuning experiment?
 - Did the runtime explicitly advertise the mechanism?
-- Is the required platform arm boundary acknowledged?
+- Did a fresh token and newer lease arrive during STOP?
+- Is the FTC lease still within its 500 millisecond window?
 - Are position, heading, velocity, and time samples valid?
 - Did you stop at the first failed safety boundary?
 - Did you avoid claiming that the current callers use the manager's current watchdog?
@@ -154,7 +164,9 @@ model, or a tuning recommendation.
 | Problem | Better move |
 | --- | --- |
 | The mechanism is not advertised | Do not start. Check the runtime capability list. |
-| FTC is not freshly armed | Send STOP, complete the fresh lease process, and wait for acknowledgement. |
+| FTC is not freshly armed | Send STOP, complete the new token and lease handshake, and wait for acknowledgement. |
+| The lease stops advancing | Stop. The controller disarms after 500 milliseconds and must be armed again. |
+| The enable token changes | Stop. Treat it as a new session boundary and complete a fresh handshake. |
 | A sample is invalid or time moves backward | Stop and fix the data path before another test. |
 | You expected current protection from this manager | Stop. Verify a real platform current limit instead of assuming one. |
 | The system has an unresolved fault | Return to fault isolation before tuning. |
@@ -174,9 +186,9 @@ workspace identity, and snapshot digest. Record one parameter, unit, bounds, app
 and candidate IDs, metric statistic, percentage threshold, result, other changes, limits, decision,
 and next test.
 
-For SysId evidence, also record the advertised mechanism, routine, start and stop reason, source
-topics, data units, and every platform boundary that was actually active. Do not list a guard that
-the caller did not supply with data.
+For SysId evidence, record the advertised mechanism, routine, start and stop reason, source topics,
+and data units. Add the STOP-first handshake, lease result, and every platform boundary that was
+actually active. Do not list a guard that the caller did not supply with data.
 
 Remove student identity, credentials, private paths, and unrelated details before sharing. Keep
 rejected and rolled-back evidence. A failed prediction can prevent the same mistake later.
@@ -189,10 +201,11 @@ the separate Lead Coach review flow.
 
 1. Why are SysId and a one-change tuning experiment different jobs?
 2. Why must the runtime advertise a mechanism before Studio starts live SysId?
-3. Why can this lesson not claim current protection from the shared watchdog?
-4. Why is the tuning threshold a percentage rather than a number of seconds?
-5. What makes a candidate run eligible for the current guided workflow?
-6. Why does improved evidence not silently change canonical tuning?
+3. Why do FTC arming and the continuing 500 millisecond lease solve different problems?
+4. Why can this lesson not claim current protection from the shared watchdog?
+5. Why is the tuning threshold a percentage rather than a number of seconds?
+6. What makes a candidate run eligible for the current guided workflow?
+7. Why does improved evidence not silently change canonical tuning?
 
 ## Extension challenge
 
@@ -201,9 +214,9 @@ apply policy, baseline maneuver, metric statistic, percentage threshold, held co
 and a second metric that could reveal a regression. Add the workspace, simulation-tag, and snapshot
 time checks. Do not run a physical test as part of this plan.
 
-Then sketch a separate SysId record. Choose one supported mechanism and routine. List the platform
-arm boundary, valid samples, time and travel limits, stop action, and one real-world risk that the
-shared teaching model does not cover.
+Then sketch a separate SysId record. Choose one supported mechanism and routine. List the STOP-first
+handshake, lease timeout, valid samples, time and travel limits, stop action, and one real-world risk
+that the shared teaching model does not cover.
 
 ## Related and next
 

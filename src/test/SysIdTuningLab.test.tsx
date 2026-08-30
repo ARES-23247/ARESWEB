@@ -20,7 +20,8 @@ const sysId: SysIdScenario = {
   mechanism: "LINEAR",
   routine: "QUASISTATIC",
   capabilityAdvertised: true,
-  armed: true,
+  handshake: "COMPLETE",
+  leaseAgeMs: 100,
   sampleValid: true,
   elapsedSeconds: 1,
   travel: 0.4,
@@ -76,13 +77,28 @@ describe("SysIdTuningLab", () => {
     ).toBe("INCONCLUSIVE");
   });
 
-  it("requires advertised capability and an acknowledged arm boundary", () => {
+  it("requires capability and the complete STOP-first handshake", () => {
     expect(
       previewSysId({ ...sysId, capabilityAdvertised: false }),
     ).toMatchObject({ status: "BLOCKED", voltage: 0 });
-    expect(previewSysId({ ...sysId, armed: false })).toMatchObject({
-      status: "BLOCKED",
+    for (const handshake of [
+      "STOP_MISSING",
+      "TOKEN_STALE",
+      "LEASE_STALE",
+    ] as const) {
+      expect(previewSysId({ ...sysId, handshake })).toMatchObject({
+        status: "BLOCKED",
+        voltage: 0,
+      });
+    }
+  });
+
+  it("stops when the 500 ms FTC enable lease expires", () => {
+    expect(previewSysId({ ...sysId, leaseAgeMs: 500 }).status).toBe("RUNNING");
+    expect(previewSysId({ ...sysId, leaseAgeMs: 501 })).toMatchObject({
+      status: "STOPPED",
       voltage: 0,
+      reason: "Enable lease expired.",
     });
   });
 
@@ -147,6 +163,8 @@ describe("SysIdTuningLab", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByLabelText("Mechanism")).toHaveValue("LINEAR");
+    expect(screen.getByLabelText("STOP-first handshake")).toHaveValue("COMPLETE");
+    expect(screen.getByLabelText("Lease age (ms)")).toHaveValue(100);
     expect(screen.getByLabelText("Candidate evidence")).toHaveValue("ELIGIBLE");
   });
 
@@ -154,7 +172,7 @@ describe("SysIdTuningLab", () => {
     render(<SysIdTuningLab />);
     const note = screen.getByRole("note");
     expect(note).toHaveTextContent("No Studio");
-    expect(note).toHaveTextContent("do not pass measured current");
+    expect(note).toHaveTextContent("omit current data");
     expect(note).toHaveTextContent("no current trip is claimed");
     expect(note).toHaveTextContent("profile promotion");
   });

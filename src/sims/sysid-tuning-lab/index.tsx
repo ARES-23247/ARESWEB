@@ -1,10 +1,15 @@
 /** @sim {"name":"SysId and One-Change Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState, type ReactNode } from "react";
-import { AcademySelectControl } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyNumberControl,
+  AcademySelectControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type SysIdMechanism =
   "LINEAR" | "ANGULAR" | "FLYWHEEL" | "ELEVATOR" | "ARM" | "CUSTOM";
 export type SysIdRoutine = "QUASISTATIC" | "DYNAMIC";
+export type SysIdHandshake =
+  "COMPLETE" | "STOP_MISSING" | "TOKEN_STALE" | "LEASE_STALE";
 export type ExperimentDirection = "LOWER" | "HIGHER";
 export type ChangeCount = "ONE" | "MULTIPLE";
 export type CandidateEvidence =
@@ -14,7 +19,8 @@ export type SysIdScenario = {
   mechanism: SysIdMechanism;
   routine: SysIdRoutine;
   capabilityAdvertised: boolean;
-  armed: boolean;
+  handshake: SysIdHandshake;
+  leaseAgeMs: number;
   sampleValid: boolean;
   elapsedSeconds: number;
   travel: number;
@@ -44,7 +50,8 @@ const SYSID_DEFAULTS: SysIdScenario = {
   mechanism: "LINEAR",
   routine: "QUASISTATIC",
   capabilityAdvertised: true,
-  armed: true,
+  handshake: "COMPLETE",
+  leaseAgeMs: 100,
   sampleValid: true,
   elapsedSeconds: 1,
   travel: 0.4,
@@ -75,8 +82,19 @@ export function previewSysId(input: SysIdScenario): SysIdPreview {
   if (!input.capabilityAdvertised) {
     return stopSysId("Capability missing.", "BLOCKED");
   }
-  if (!input.armed) {
-    return stopSysId("Arm boundary not acknowledged.", "BLOCKED");
+  if (input.handshake !== "COMPLETE") {
+    const reason = {
+      STOP_MISSING: "STOP-first handshake missing.",
+      TOKEN_STALE: "Fresh enable token missing.",
+      LEASE_STALE: "Fresh lease sequence missing.",
+    }[input.handshake];
+    return stopSysId(reason, "BLOCKED");
+  }
+  if (!Number.isFinite(input.leaseAgeMs) || input.leaseAgeMs < 0) {
+    return stopSysId("Invalid lease age.");
+  }
+  if (input.leaseAgeMs > 500) {
+    return stopSysId("Enable lease expired.");
   }
   if (
     !input.sampleValid ||
@@ -216,7 +234,7 @@ export default function SysIdTuningLab() {
       >
         <strong>Model limit:</strong> No Studio, hardware link, gain fit,
         current check, motion, safety proof, or profile promotion. Callers
-        do not pass measured current, so no current trip is claimed.
+        omit current data, so no current trip is claimed.
       </p>
     </section>
   );
@@ -274,6 +292,21 @@ function SysIdPanel({
           value={value.travel}
           onChange={(travel) => onChange({ ...value, travel })}
         />
+        <NumberField
+          id="sysid-lease-age"
+          label="Lease age (ms)"
+          value={value.leaseAgeMs}
+          onChange={(leaseAgeMs) => onChange({ ...value, leaseAgeMs })}
+        />
+        <SelectField
+          id="sysid-handshake"
+          label="STOP-first handshake"
+          value={value.handshake}
+          options={["COMPLETE", "STOP_MISSING", "TOKEN_STALE", "LEASE_STALE"]}
+          onChange={(handshake) =>
+            onChange({ ...value, handshake: handshake as SysIdHandshake })
+          }
+        />
       </div>
       <div className="mt-4 grid gap-2">
         <CheckField
@@ -282,11 +315,6 @@ function SysIdPanel({
           onChange={(capabilityAdvertised) =>
             onChange({ ...value, capabilityAdvertised })
           }
-        />
-        <CheckField
-          label="Arm boundary acknowledged"
-          checked={value.armed}
-          onChange={(armed) => onChange({ ...value, armed })}
         />
         <CheckField
           label="Position and velocity valid"
@@ -369,39 +397,16 @@ function ExperimentPanel({
       <ResultBox label="Experiment result" tone={result.classification}>
         <strong>{result.classification}</strong>
         <span>
-          Goal improvement: {formatPercent(result.improvementPercent)}
+          Goal improvement: {result.improvementPercent === null
+            ? "not available"
+            : `${result.improvementPercent.toFixed(1)}%`}
         </span>
       </ResultBox>
     </div>
   );
 }
 
-function NumberField({
-  id,
-  label,
-  value,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
-      <span>{label}</span>
-      <input
-        id={id}
-        type="number"
-        step="0.01"
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
-        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-      />
-    </label>
-  );
-}
-
+const NumberField = AcademyNumberControl;
 const SelectField = AcademySelectControl;
 
 function CheckField({
@@ -451,8 +456,4 @@ function ResultBox({
       {children}
     </div>
   );
-}
-
-function formatPercent(value: number | null): string {
-  return value === null ? "not available" : `${value.toFixed(1)}%`;
 }
