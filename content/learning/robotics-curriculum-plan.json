@@ -210,6 +210,7 @@
     { "slug": "ftc-gui-owned-indicator-lights", "interaction": "subsystem-descriptor-lab", "purpose": "trace independent targets and safe outputs from a real descriptor" },
     { "slug": "ftc-season-composition-and-safe-lifecycle", "interaction": "superstructure-state-lab", "purpose": "step through disabled, health, transient-posture, and measured-guard decisions" },
     { "slug": "programming-safe-task-sequences", "interaction": "superstructure-state-lab", "purpose": "compare ordered guards with typed task ordering, timeouts, resources, and failure cleanup" },
+    { "slug": "programming-tests-parity", "interaction": "parity-evidence-lab", "purpose": "compare adapter results while keeping compile, unit, simulation, and physical evidence boundaries visible" },
     { "slug": "rates-units-and-motion", "interaction": "mechanism-ratio-explorer", "purpose": "connect rate calculations to drivetrain speed and torque" },
     { "slug": "read-a-telemetry-graph", "interaction": "telemetry-graph-lab", "purpose": "practice observations before explanations" },
     { "slug": "camera-evidence-and-uncertainty", "interaction": "vision-uncertainty-lab", "purpose": "compare accepted and rejected measurements" },

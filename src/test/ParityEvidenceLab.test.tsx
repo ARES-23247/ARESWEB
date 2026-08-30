@@ -14,6 +14,9 @@ describe("ParityEvidenceLab", () => {
     render(<ParityEvidenceLab />);
     fireEvent.change(screen.getByLabelText("Contract case"), { target: { value: "write-fault" } });
     expect(screen.getByText("Attempt neutral and latch the fault")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Evidence stage"), { target: { value: "simulation" } });
+    expect(screen.getByText(/real season logic and mock adapters/u)).toBeVisible();
+    expect(screen.getByText(/Real wiring, radio traffic/u)).toBeVisible();
     fireEvent.change(screen.getByLabelText("Platform adapter test"), { target: { value: "matches" } });
     fireEvent.change(screen.getByLabelText("Simulated adapter test"), { target: { value: "differs" } });
     expect(screen.getByText("Adapter mismatch")).toBeVisible();
@@ -21,6 +24,7 @@ describe("ParityEvidenceLab", () => {
     expect(screen.getByText(/same input, units, clock/u)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByLabelText("Contract case")).toHaveValue("startup");
+    expect(screen.getByLabelText("Evidence stage")).toHaveValue("unit");
     expect(screen.getByText("Incomplete evidence")).toBeVisible();
   });
 

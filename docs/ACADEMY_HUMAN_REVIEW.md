@@ -504,6 +504,24 @@ release identity. Their existing `refresh-published` entries keep hashes of the
 current live short bodies. Review and guarded migration are still required;
 this source change alone does not publish or overwrite curriculum data.
 
+## Continuous cycle: existing testing and parity lesson
+
+This cycle improves the existing `programming-tests-parity` lesson and its Adapter Parity Evidence
+Lab. Review the source-backed test ladder from configuration and compilation through unit tests,
+desktop simulation, and restrained physical checks. Confirm that each stage states both what its
+evidence can support and what remains unknown.
+
+The lesson now gives the current ARES-FTC unit and simulator task names, records the generated
+verification categories, and explains the FTC lifecycle parity test without calling it motor or
+hardware proof. The interaction remains a conceptual planning form: it does not run Gradle, inspect
+test output, inject a fault, connect to a robot, or prove physical behavior. Verify native keyboard
+and touch operation, narrow-screen reflow, visible focus, live result announcements, deterministic
+reset, and reduced-motion behavior.
+
+All five lesson sources are pinned to ARES Robotics commit `f3de343a` and the ARES 11.1.0 / Studio
+2.0.3 identity. Remote verification must recompute each blob hash. This local curriculum edit does
+not publish or overwrite the live lesson.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
