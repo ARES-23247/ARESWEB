@@ -10,6 +10,7 @@ const COMPLETE: EvidenceState = {
   units: true,
   inputs: true,
   neutral: true,
+  tuningAndActions: true,
   simulation: true,
   verification: true,
 };
@@ -18,6 +19,7 @@ const EMPTY: EvidenceState = {
   units: false,
   inputs: false,
   neutral: false,
+  tuningAndActions: false,
   simulation: false,
   verification: false,
 };
@@ -45,10 +47,11 @@ describe("SubsystemOwnershipLab", () => {
       "Hand-authored metadata",
       "Cached input contract",
       "Fault and neutral rules",
+      "Tuning and actions",
       "Simulation boundary",
       "Evidence ladder",
     ]);
-    expect(result.sourceTreatment).toContain("Name the module");
+    expect(result.guidance).toContain("Name the module");
   });
 
   it("supports native source and evidence controls with deterministic reset", () => {
@@ -64,6 +67,7 @@ describe("SubsystemOwnershipLab", () => {
       "Units and direction",
       "Cached input contract",
       "Fault and neutral rules",
+      "Tuning and actions",
       "Simulation boundary",
       "Evidence ladder",
     ]) {
@@ -90,7 +94,7 @@ describe("SubsystemOwnershipLab", () => {
       screen.getByText("DECLARATIVE_GENERATED", { selector: "dd" }),
     ).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "6 evidence areas still missing",
+      "7 evidence areas still missing",
     );
   });
 
@@ -101,7 +105,16 @@ describe("SubsystemOwnershipLab", () => {
     );
     expect(screen.getByRole("note")).toHaveTextContent("command hardware");
     expect(screen.getByRole("note")).toHaveTextContent(
-      "all six planning boxes",
+      "all seven planning boxes",
+    );
+  });
+
+  it("explains path-specific capability action ownership", () => {
+    expect(evaluateSubsystemPlan("descriptor", COMPLETE).guidance).toContain(
+      "target fields",
+    );
+    expect(evaluateSubsystemPlan("existing", COMPLETE).guidance).toContain(
+      "catalog action keys",
     );
   });
 });

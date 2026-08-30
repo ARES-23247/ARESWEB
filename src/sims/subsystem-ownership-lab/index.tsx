@@ -1,5 +1,5 @@
 /** @sim {"name":"Subsystem Ownership Decision Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type SubsystemStartingPoint = "descriptor" | "editable" | "existing";
@@ -8,6 +8,7 @@ export type EvidenceKey =
   | "units"
   | "inputs"
   | "neutral"
+  | "tuningAndActions"
   | "simulation"
   | "verification";
 export type EvidenceState = Record<EvidenceKey, boolean>;
@@ -29,6 +30,11 @@ const COMMON_EVIDENCE_ITEMS: EvidenceItem[] = [
     key: "neutral",
     label: "Fault and neutral rules",
     help: "Failed writes latch safely, and recovery requires the declared successful neutral.",
+  },
+  {
+    key: "tuningAndActions",
+    label: "Tuning and actions",
+    help: "The tuning list is present. Generated paths derive actions; hand-authored paths name catalog actions.",
   },
   {
     key: "simulation",
@@ -87,6 +93,7 @@ const EMPTY_EVIDENCE: EvidenceState = {
   units: false,
   inputs: false,
   neutral: false,
+  tuningAndActions: false,
   simulation: false,
   verification: false,
 };
@@ -95,8 +102,7 @@ export type SubsystemPlan = {
   implementation:
     "DECLARATIVE_GENERATED" | "GENERATED_STARTER" | "HAND_AUTHORED";
   ownership: "GENERATED_DO_NOT_EDIT" | "GENERATED_STARTER" | "USER_OWNED";
-  sourceTreatment: string;
-  nextStep: string;
+  guidance: string;
   missingEvidence: string[];
   readyForPreview: boolean;
 };
@@ -116,26 +122,20 @@ export function evaluateSubsystemPlan(
     descriptor: {
       implementation: "DECLARATIVE_GENERATED" as const,
       ownership: "GENERATED_DO_NOT_EDIT" as const,
-      sourceTreatment:
-        "Keep runtime, mock, and baseline tests in generated folders. Edit the descriptor instead.",
-      nextStep:
-        "Review the descriptor and generated preview. Do not edit build/generated files.",
+      guidance:
+        "Edit the descriptor. Keep runtime, mock, and tests generated. ARES derives actions from target fields.",
     },
     editable: {
       implementation: "GENERATED_STARTER" as const,
       ownership: "GENERATED_STARTER" as const,
-      sourceTreatment:
-        "Create missing editable starters. Replacements require a current structured diff and token.",
-      nextStep:
-        "Preview every starter file before creating it or confirming a replacement.",
+      guidance:
+        "Preview each starter. Only its reviewed token may replace it. ARES derives actions from target fields.",
     },
     existing: {
       implementation: "HAND_AUTHORED" as const,
       ownership: "USER_OWNED" as const,
-      sourceTreatment:
-        "Name the module, source files, runtime classes, simulation support, and action keys. Generate no starter implementation.",
-      nextStep:
-        "Compare the descriptor metadata with real source and project-owned tests.",
+      guidance:
+        "Name the module, files, classes, simulation, teaching notes, and existing catalog action keys. Generate no starter.",
     },
   }[startingPoint];
   return {
@@ -149,14 +149,11 @@ export default function SubsystemOwnershipLab() {
   const [startingPoint, setStartingPoint] =
     useState<SubsystemStartingPoint>("descriptor");
   const [evidence, setEvidence] = useState<EvidenceState>(EMPTY_EVIDENCE);
-  const result = useMemo(
-    () => evaluateSubsystemPlan(startingPoint, evidence),
-    [startingPoint, evidence],
-  );
-  const evidenceItems = useMemo(
-    () => [PATH_EVIDENCE_ITEMS[startingPoint], ...COMMON_EVIDENCE_ITEMS],
-    [startingPoint],
-  );
+  const result = evaluateSubsystemPlan(startingPoint, evidence);
+  const evidenceItems = [
+    PATH_EVIDENCE_ITEMS[startingPoint],
+    ...COMMON_EVIDENCE_ITEMS,
+  ];
   const reset = () => {
     setStartingPoint("descriptor");
     setEvidence(EMPTY_EVIDENCE);
@@ -256,8 +253,7 @@ export default function SubsystemOwnershipLab() {
           <dl aria-live="polite" aria-atomic="true" className="grid gap-3">
             <Datum label="Implementation" value={result.implementation} />
             <Datum label="Ownership" value={result.ownership} />
-            <Datum label="Source treatment" value={result.sourceTreatment} />
-            <Datum label="Next source step" value={result.nextStep} />
+            <Datum label="Path plan" value={result.guidance} />
           </dl>
           <div
             role="status"
@@ -284,7 +280,7 @@ export default function SubsystemOwnershipLab() {
         <strong>Model limit:</strong> This form does not inspect Kotlin or a
         descriptor, find hazards, generate files, run tests, connect to a
         simulator, command hardware, or prove that a subsystem is safe.
-        “Checklist filled in” means only that all six planning boxes are
+        “Checklist filled in” means only that all seven planning boxes are
         checked.
       </p>
     </section>

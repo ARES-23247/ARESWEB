@@ -1,9 +1,9 @@
-# Author a code-first or hybrid subsystem
+# Choose and author an ARES subsystem
 
 ## Purpose and prerequisites
 
 A subsystem owns one robot job, such as moving an arm or reading a beam-break sensor. ARES has three
-implementation paths. Each path says who owns the Kotlin and what ARES may create. Every path still
+ways to build one. Each path says who owns the Kotlin and what ARES may create. Every path still
 needs safe outputs, clear units, cached inputs, simulation evidence, and tests.
 
 Complete [Read and Change Small Kotlin Programs](/academy/programming-kotlin-basics?path=programming-with-ares),
@@ -22,6 +22,10 @@ This lesson uses source review and hardware-free tests. It does not require a po
 - **I/O contract:** the units, cached inputs, outputs, safe state, and cleanup rules.
 - **Lifecycle:** the ordered refresh, state update, output, stop, and close behavior.
 - **Parity:** matching observable rules across a physical adapter and a simulator or mock.
+- **Tuning declaration:** a typed value, unit, range, default, owner, and apply rule named by the
+  subsystem document.
+- **Tuning profile:** the named `.arestuning` file that holds reviewed values for a robot.
+- **Capability action:** a named command that controller bindings or autonomous routines may call.
 
 Think of source ownership as a lock. The header says who may change a file. The preview shows the
 exact change ARES wants to make. A review token proves that a person saw that version of the change.
@@ -29,7 +33,7 @@ If the file changes again, the old token no longer fits.
 
 ## Worked example
 
-Start with the ownership question, not a file-count goal. Current ARESLib 10.1.0 uses subsystem
+Start with the ownership question, not a file-count goal. Current ARES 11.1.0 uses subsystem
 document schema 11. It names three implementation kinds:
 
 You do not need to memorize the long names at first. Ask three short questions. Can the document own
@@ -46,15 +50,22 @@ descriptor can express the state, hardware, control, and safety policy. The seco
 students editable state, controller, I/O, platform, and mock files. The third path connects proven
 project Kotlin to ARES. Teams sometimes call that a hybrid registration.
 
+Every schema 11 subsystem document includes a `tuningParameters` list. An empty list is valid. Each
+real parameter belongs to one component. It states its type, unit, bounds, default, plain-language
+help, and apply rule. Reviewed values belong in a named `.arestuning` profile. A temporary
+experiment belongs under `.ares/local/tuning` until the team reviews and promotes it.
+
 Suppose a project already has a tested flywheel controller. Replacing it with a starter would throw
 away source history and test evidence. A hand-authored document keeps that Kotlin `USER-OWNED`. It
-must name the Gradle module, project-relative source files, subsystem class, I/O contract class,
-hardware adapter, and simulation support. It also names each capability action key that it exposes.
-ARES does not scan arbitrary Kotlin and guess these facts.
+must name the Gradle module and project-relative source files. It also names the subsystem class,
+I/O contract, hardware adapter, simulation support, and teaching notes. It lists each capability key
+that it exposes. Each key must already exist in the project action catalog. ARES does not scan
+arbitrary Kotlin and guess these facts.
 
 Now suppose a new elevator fits a position-control template but needs custom game logic. A generated
-starter may be a good beginning. Students first state the position unit, positive direction, soft
-limits, homing rule, safe neutral, feedback age, output bounds, and fault recovery. They preview the
+starter may be a good beginning. Students first state the position unit, positive direction, and
+soft limits. They also state the homing rule, safe neutral, feedback age, output bounds, and fault
+recovery. They preview the
 files before writing them. Students may edit a created starter. Its `GENERATED STARTER` header stays
 in place so ARES cannot replace it without a new review token.
 
@@ -63,12 +74,14 @@ in place so ARES cannot replace it without a new review token.
 The schema rejects path combinations that make ownership unclear:
 
 - A declarative subsystem does not list source files or class names. Its generated mock and baseline
-  safety tests must stay enabled. Its actions come from target-state fields.
+  safety tests must stay enabled. ARES derives its actions from target-state fields.
 - A generated starter also lets codegen choose source locations. Mock support follows the
-  `generateMockIo` setting. Its actions also come from target-state fields.
+  `generateMockIo` setting. ARES also derives its actions from target-state fields.
 - A hand-authored subsystem names its module, source files, runtime classes, and simulation support.
   It cannot request generated mock or test files. It uses existing action-catalog keys for any
   capabilities it exposes.
+- All three paths include the required `tuningParameters` list. The list may be empty, but missing
+  or ownerless entries are invalid.
 
 These are source-contract rules. They do not prove that a mechanism is wired or safe to move.
 When in doubt, stop at preview. A preview does not move a robot or write a starter file.
@@ -131,10 +144,10 @@ team has written its requirements. Do not invent hardware, source, or test resul
 
 1. Find its `.aressubsystem` file, or record that the canonical document is missing.
 2. State the mechanism purpose, physical units, positive direction, and safe neutral.
-3. List existing Kotlin, actions, adapters, mocks, tests, and documentation.
+3. List existing Kotlin, actions, adapters, mocks, tests, tuning values, and documentation.
 4. Decide whether the descriptor can own all runtime policy.
 5. Decide whether useful project Kotlin must stay user-owned.
-6. Check the path-specific schema rules for that choice.
+6. Check the path-specific schema rules for that choice, including tuning and action ownership.
 7. Use the lab below to expose missing evidence.
 8. Compare the result with the pinned source references below the lesson.
 9. Trace requested intent separately from observed feedback and validity.
@@ -144,7 +157,7 @@ team has written its requirements. Do not invent hardware, source, or test resul
 
 <subsystemownershiplab />
 
-The lab is a planning model. A green result means only that its six-item checklist is filled in. It
+The lab is a planning model. A cyan result means only that its seven-item checklist is filled in. It
 does not validate a descriptor or approve code, simulation, or physical motion.
 
 ### Build an evidence ladder
@@ -167,6 +180,8 @@ process. Website posts follow the separate Lead Coach editorial workflow.
 - Does the chosen path match the current source ownership?
 - Can a reviewer tell which files students may edit?
 - Does a hand-authored document name every source file and runtime class instead of guessing?
+- Is the tuning list present, with each parameter owned by a real component?
+- Do generated paths derive actions while hand-authored paths name existing catalog actions?
 - Are requested intent and observed feedback separate?
 - Does each input have a unit, validity rule, and one refresh owner?
 - Can every output reach neutral after disable, stop, close, or a failed write?
@@ -184,6 +199,7 @@ process. Website posts follow the separate Lead Coach editorial workflow.
 | Existing Kotlin is invisible in Studio | Add accurate hand-authored metadata; do not scan imports or guess class names. |
 | A hand-authored document requests generated tests | Turn off generated mock and test requests. Name the project's own test and simulation evidence. |
 | A generated action name was typed by hand | Generated paths derive actions from target state fields. Hand-authored paths declare existing catalog keys. |
+| A tuning value changes only on one laptop | Keep temporary experiments in the local overlay, then review and promote accepted values to a named profile. |
 | The mock allows behavior that hardware blocks | Compare both adapters against one contract-test table. |
 | Output fault clears on the next move command | Require an explicit successful neutral before re-arming. |
 | The build passes but the robot is untested | Keep the physical layer not run and follow the student safety checklist. |
@@ -212,6 +228,8 @@ sensor's physical scale. Keep unknown items visible as gaps.
 5. Which facts must a hand-authored descriptor state explicitly?
 6. Which task may replace a changed generated starter, and what proof does it require?
 7. Why can a passing build be ready for physical validation without proving physical behavior?
+8. Where do reviewed tuning values live, and where should a temporary experiment stay?
+9. How does capability-action ownership differ between generated and hand-authored paths?
 
 ## Extension challenge
 

@@ -1141,6 +1141,33 @@ consumer. Every interaction entry remains independently lazy and retains the unc
 2.6 KB gzip per-interaction cap. This is a delivery and maintainability refactor, not new evidence
 that any browser model runs ARES code, reads hardware, or verifies a physical robot.
 
+## Continuous cycle: current subsystem ownership, tuning, and actions
+
+This cycle improves the existing `programming-code-subsystem` lesson instead of adding a competing
+subsystem-authoring page. Review its three schema 11 paths: declarative generated, generated
+starter, and hand-authored. Confirm that every path keeps its matching ownership value and that the
+lesson does not suggest rewriting proven user-owned Kotlin merely to reduce file count.
+
+The lesson now teaches the required `tuningParameters` list. An empty list is valid. A real entry
+belongs to a subsystem component and declares its type, unit, bounds, default, explanation, and
+apply policy. Reviewed values belong in a named `.arestuning` profile; local experiments stay in
+the local tuning overlay until review. Generated paths derive capability actions from target state
+fields. Hand-authored paths list only existing project action-catalog keys.
+
+The Subsystem Ownership Decision Lab adds one tuning-and-action evidence check and a path-specific
+capability-action result. Confirm native radio and checkbox behavior, keyboard use, touch targets,
+narrow reflow, visible focus, live result updates, and deterministic reset. Changing paths must
+clear only the path-contract box. The lab remains a seven-box planning form: it does not parse a
+descriptor, inspect Kotlin, generate files, run tests, connect to a simulator, command hardware, or
+prove that a subsystem is safe.
+
+The seven lesson sources are pinned to protected ARES Robotics commit `f3de343a` and the ARES 11.1.0 /
+Studio 2.0.3 identity. Remote verification must recompute every Git blob hash, including the current
+FTC Gradle task definitions. Students may review, build, simulate, and carry out the team's safe
+physical verification process. Lead Coach approval remains limited to publishing a website post.
+This local curriculum change does not generate robot source, replace a starter, publish the lesson,
+or mutate production curriculum records.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
