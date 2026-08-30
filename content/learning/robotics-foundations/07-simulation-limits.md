@@ -79,6 +79,11 @@ the direction of a powered motor.
 Keep a visible stop result. An error, mismatch, or unexpected movement is evidence. Do not change a
 display or delete a failed trial just to make the result look clean.
 
+Current ARES physical checks include facts a simulator cannot see. With the robot disabled, confirm
+the expected device topology and loaded swerve-offset source. During bounded motion checks, a
+counter-clockwise turn must increase heading, and forward or left motion must use the expected local
+axis. Record cached sensor values instead of adding getters that read hardware again.
+
 ## Troubleshooting
 
 If every claim ends at simulation, check for words that describe a real object. Real wiring,
@@ -91,6 +96,13 @@ the model before physical motion.
 If a physical test feels too broad, split the claim. Check one device, direction, sensor, or limit
 at a time. Use the team safety procedure and keep the emergency stop easy to reach.
 
+If software passes but heading is reversed, inspect the physical mounting and the `PinpointIO`
+polarity setting. Do not repair that boundary with a second sign change in the estimator or display.
+
+If a value changes when extra telemetry is added, check whether the new getter reads CAN or I2C
+hardware directly. ARES expects one cached hardware refresh per loop so diagnosis does not change
+bus timing.
+
 ## Evidence artifact
 
 Make an evidence table with four columns: claim, lowest useful level, result, and next question. Add
@@ -101,6 +113,9 @@ Include one sentence that states a simulation limit. Include one sentence that e
 failed test stays in the record. If you later add a physical result, identify who performed the
 student review and which team procedure was followed.
 
+For an ARES hardware claim, record the expected topology, loaded calibration source, local axis,
+heading sign, cached sensor freshness, stop condition, and observed result.
+
 ## Short assessment
 
 1. What can a unit test prove about a reducer?
@@ -108,6 +123,7 @@ student review and which team procedure was followed.
 3. What can a disabled inspection observe?
 4. Why should earlier evidence stay in the record?
 5. What should happen after an unexpected physical result?
+6. Why can a telemetry getter that reads hardware directly change the system being diagnosed?
 
 A strong answer names the exact claim and the tool boundary. Avoid saying that one test proves the
 whole robot works.

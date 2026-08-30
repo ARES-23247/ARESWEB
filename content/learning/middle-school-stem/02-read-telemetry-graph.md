@@ -38,6 +38,10 @@ A stronger next test records motor command, motor current, and battery voltage o
 If the signals change together during repeated trials, the cause has better support. It is still
 important to check wiring, battery condition, and test setup.
 
+ARES also reports logger health. `Diagnostics/Logging/DroppedFrames` counts accepted samples that
+could not be saved, while `Diagnostics/Logging/QueueDepth` shows the current backlog. Those signals
+can support or weaken a logger-overload explanation, but they do not identify a sensor fault.
+
 ## Visual model
 
 ```mermaid
@@ -65,6 +69,9 @@ value, highest value, and one visible pattern.
 Choose the statement that is an observation. If you choose an explanation, read the feedback and
 name one extra signal that could test the cause. Do not fill a missing sample with a guess. Keep the
 gap visible unless a documented method explains how a value was estimated.
+
+For the missing-sample data set, add two requested signals to your evidence note: dropped frames and
+queue depth. Write what each result could show and what it still could not prove.
 
 Next, make a paper graph. Record room temperature once each minute for five minutes, or use another
 safe measurement. Draw time on the horizontal axis. Draw the measurement and its unit on the
@@ -104,6 +111,9 @@ If two signals use different clocks, do not claim they happened at the same mome
 timestamps first. If a sample is missing, show a gap. A line across the gap can falsely suggest that
 the system measured every value between the two known points.
 
+If the logger health signals stay normal, keep other explanations open. A missing sensor sample,
+display filter, import problem, or source mismatch can still create a visible gap.
+
 ## Evidence artifact
 
 Submit one marked graph and one evidence note. The graph needs a title, labeled axes, units, points,
@@ -114,6 +124,9 @@ Include the original value table beside the graph. Another student should be abl
 graph from that table. This artifact shows that you can read data. It does not prove a physical robot
 fault or repair.
 
+Add a small logger-health table with dropped frames, queue depth, time basis, and source revision.
+Mark the values as requested evidence unless they came from a reviewed real log.
+
 ## Short assessment
 
 1. Which axis usually shows time in a time-series graph?
@@ -121,6 +134,7 @@ fault or repair.
 3. Why should a missing sample remain visible?
 4. A voltage graph dips while a robot drives. Write one observation and one possible explanation.
 5. Name one extra signal that would help test your explanation.
+6. What could dropped-frame and queue-depth signals tell you about a missing sample?
 
 Check that every observation points to a visible value, range, shape, or gap. Explanations should use
 careful words until another source of evidence supports the cause.

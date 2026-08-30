@@ -34,6 +34,10 @@ the expected starting position and one stop signal.
 At the field, one person gives the final setup call. Other students report only facts that change
 the plan. After the match, the operator disables the robot and the team returns to the pit.
 
+The evidence recorder confirms that the run stopped cleanly before asking ARES Robotics Studio to
+pull the completed log. If data looks incomplete, the first checks are dropped-frame count, queue
+depth, and whether the writer closed. The team verifies the laptop copy before deleting robot logs.
+
 The debrief records that the intake stopped during the second cycle. The team does not write “bad
 motor” because that cause was not tested. It records the time, visible result, driver command, and
 next bounded check.
@@ -64,6 +68,9 @@ Create a five-item preflight list from verified project facts. Include the chose
 safe state, battery check, one visible hardware check, and the planned starting condition. Do not
 copy event-specific values from memory.
 
+Add a separate ARES evidence check before the rehearsal: confirm local log access on port `5002`.
+This check does not replace the five event-facing items, and it must not require internet access.
+
 Run a timed practice cycle without powering the robot. The pit lead gives the queue handoff. The
 drive lead repeats the routine and safe state. Pretend the match ends with one visible symptom. The
 recorder writes only observations.
@@ -92,6 +99,9 @@ not introduce an untested change. If a required fact is unknown, stop and ask fo
 During the debrief, separate observation from cause. A mechanism that did not move is an observation.
 A failed motor controller is one possible cause that still needs evidence.
 
+Complete the data handoff before cleanup. Stop the run, inspect logger health, pull the named file,
+and verify the copy. Delete a robot log only after the saved copy opens and matches the run identity.
+
 ## Troubleshooting
 
 If several people give commands, assign one final call for each phase. Other team members should
@@ -103,6 +113,9 @@ state. Diagnosis belongs in a bounded pit test after the robot is safe.
 If the group cannot repeat what changed, repair the handoff. Use one sentence with the old state,
 new state, and reason. Keep the written record visible.
 
+If no completed log appears, do not add robot-side cloud upload. Check whether the writer closed,
+whether the file is still active, and whether the laptop can reach the local log service.
+
 ## Evidence artifact
 
 Submit a one-page match-cycle packet. Include the role table, five-item preflight list, queue
@@ -110,6 +123,9 @@ handoff, field setup statement, mock match observation, and next-test choice.
 
 Add a debrief table with time, command, observed result, supported claim, and next question. Mark
 all practice results as mock or rehearsal evidence. Do not present them as a real event record.
+
+Add a log handoff row with run identity, completed file, dropped-frame count, queue result, laptop
+copy check, and deletion decision. Mark unavailable fields honestly instead of inventing values.
 
 List the event documents that still need review. Include the current game manual, inspection list,
 schedule or queue process, and final team role assignment.
@@ -121,6 +137,7 @@ schedule or queue process, and final team role assignment.
 3. Why should a debrief record an observation before a cause?
 4. What should happen when a required fact is unknown?
 5. Why must rehearsal data be labeled as rehearsal data?
+6. Why should robot logs remain local until the laptop copy is verified?
 
 A strong answer shows how each role shares one robot state. It does not invent a rule or hide an
 unexpected result.

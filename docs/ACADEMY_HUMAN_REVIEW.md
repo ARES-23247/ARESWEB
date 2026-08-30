@@ -407,6 +407,21 @@ The current reviewed source authority is ARES 11.1.0 / Studio 2.0.3 at commit
 their individual lesson review is complete; a release-number change alone does
 not authorize silently replacing those references.
 
+### Current-source drift review
+
+The 2026-08-30 source-drift audit compared all 142 pinned source paths with
+ARES-Robotics commit `f3de343a`. Of those references, 136 still point to content
+that is byte-for-byte current. Six references had changed and were reviewed
+against their current files rather than being advanced by version number alone.
+
+The refreshed existing lessons cover rates and time units, robot-local odometry
+and capture time, logger health and canonical pose topics, physical validation
+and cached hardware reads, and the drive-team local-log handoff. The published
+rates, graph, coordinate, simulation-limit, and telemetry lessons have guarded
+refresh entries based on the current live bodies. `competition-drive-team`
+remains a draft, so it is intentionally absent from the published refresh plan.
+No production document was changed by this source review.
+
 ## Continuous cycle: existing ARESLib reference depth
 
 This cycle improves three already-published references instead of adding lesson

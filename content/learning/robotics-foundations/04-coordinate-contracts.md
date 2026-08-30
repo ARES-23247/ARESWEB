@@ -41,6 +41,10 @@ field motion = (X 0 m, Y 1 m)
 The local command did not change. The robot's heading changed how that command points on the field.
 This is why a field-relative controller needs the current heading.
 
+ARES odometry accepts each motion sample in the robot frame: forward, left, and counter-clockwise
+turn. The estimator forms the local curved motion and rotates it into the field frame. Sending an
+already rotated sample would apply the transform twice and produce a believable but wrong path.
+
 ## Visual model
 
 ```mermaid
@@ -94,6 +98,10 @@ forward points along field positive Y.
 Keep degrees and radians labeled. The lab accepts degrees for easier exploration and shows the
 radian value. ARES runtime math uses radians unless an API says otherwise.
 
+Keep position and time frames together. A delayed camera pose uses the field frame and the moment
+the image was captured. Receipt time is later and must not replace capture time. A pose reset must
+also begin a matching estimator history instead of joining a new pose to old motion.
+
 ## Troubleshooting
 
 If a 90-degree forward move points toward field negative Y, check whether the angle sign was
@@ -105,6 +113,9 @@ of the robot and Y through its left side.
 If a dashboard looks mirrored but the robot math is correct, inspect the display transform. Alliance
 mirroring and field-to-pixel drawing belong at named boundaries. They should not silently change the
 stored pose.
+
+If odometry bends or rotates twice, inspect the estimator input. ARES expects robot-local motion and
+performs the field rotation itself. Do not pre-rotate the sample in the hardware adapter.
 
 ## Evidence artifact
 
@@ -122,6 +133,7 @@ ideal model.
 3. Where does robot forward point at a positive 90-degree heading?
 4. Why should a screen transform not change stored robot pose?
 5. What physical effects are missing from this vector model?
+6. Why does a delayed camera measurement need capture time instead of receipt time?
 
 A strong answer names both the source and destination frame. It does not add a sign change without
 a named boundary.

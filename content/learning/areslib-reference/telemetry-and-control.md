@@ -10,9 +10,9 @@ design a small evidence record. Complete [Simulation Is Not Hardware
 Validation](/academy/simulation-is-not-hardware-validation?path=testing-debugging-commissioning)
 first. No physical robot is needed.
 
-The ARES telemetry source used here is an approved historical contract. Current run-review and pit
-sources confirm the evidence and local-log boundaries. Exact topics still need review against the
-project that produced a real log.
+The topic and logging examples are pinned to the current ARES 11.1.0 contract. A real review must
+still confirm the source identity and version stored with that run. Never copy a topic meaning from
+one robot or simulator into another record without checking its contract.
 
 ## Vocabulary
 
@@ -41,6 +41,11 @@ step is to compare a second source-aligned signal rather than repeat the explana
 ARES keeps control, telemetry, and logs separate. Control reads current owned state. Telemetry copies
 selected facts. The local logger stores bounded records. A dashboard or internet failure must not
 become a robot-control failure.
+
+For pose, `ARES/EstimatedPose` is one atomic `[x, y, heading]` array. The scalar
+`ARES/EstimatedPose/0..2` values and `Drive/Pose_X`, `Drive/Pose_Y`, and `Drive/Pose_Heading` must
+describe the same field frame and counter-clockwise-positive heading. A display must not choose one
+source only because it arrived last and hide a disagreement.
 
 ## Visual model
 
@@ -87,6 +92,9 @@ signal changed.
 - Are explanations labeled as hypotheses?
 - Does the next step request a useful second signal or bounded test?
 - Is control independent from dashboard, cloud, and internet availability?
+- Do topic names omit a transport-only leading slash?
+- Does a pose comparison keep the atomic and scalar sources in the same frame and units?
+- Do logger checks include dropped frames, queue depth, and a cleanly closed file?
 - Does the record avoid student names, emails, and other personal data?
 
 ## Troubleshooting
@@ -98,8 +106,10 @@ signal changed.
 | A line crosses a missing sample | Break the line and preserve the gap. |
 | The graph proves a cause | Rewrite the claim as an observation, then request another signal or test. |
 | Robot and simulator disagree | Check whether both use the same topic meaning, units, sign, geometry, and source revision. |
-| A completed log is not listed | Confirm the writer closed cleanly and review the local log service boundary. |
-| A log is missing data | Check dropped-frame evidence, queue growth, source freshness, and session completion. |
+| A completed log is not listed | Confirm the writer closed cleanly. Active `.csv.gz.active` files stay hidden until a successful close. |
+| A log is missing data | Check `Diagnostics/Logging/DroppedFrames`, `QueueDepth`, source freshness, and session completion. |
+| Pose appears twice or flickers | Compare the atomic and scalar pose sources. Do not hide a frame or sign mismatch with last-arrival wins. |
+| A topic works only with a leading slash | Fix the publisher or subscriber; ARES normalizes topic names without the slash. |
 | A dashboard disconnect stops control | Treat that as a design defect; control must not depend on the display path. |
 
 ## Evidence artifact
@@ -112,6 +122,9 @@ Create a second table with control, telemetry, local log, laptop import, and opt
 For each row, state what it owns, what may fail, and what must keep working offline. Do not include
 personal data, credentials, raw private identifiers, or claims copied from a different robot.
 
+Add the local-log handoff. Stop the run cleanly, inspect logger health, and list completed logs on
+port `5002`. Pull the named file to the laptop and verify the copy before considering deletion.
+
 ## Short assessment
 
 1. How is control different from telemetry?
@@ -119,6 +132,7 @@ personal data, credentials, raw private identifiers, or claims copied from a dif
 3. What is the difference between an observation and an explanation?
 4. Why should a missing sample stay visible?
 5. Why are ARES logs local first?
+6. Why should atomic and scalar pose topics use the same frame and heading sign?
 
 Good answers keep current control state, displayed copies, stored evidence, and optional network
 services as separate boundaries.

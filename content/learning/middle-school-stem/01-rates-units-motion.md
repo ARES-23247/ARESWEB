@@ -93,6 +93,10 @@ unit. Pause after the gear model. A larger driven gear should lower output speed
 torque. Pause after the walking trials. The three results should be close, but they do not need to be
 identical.
 
+Robot data may use elapsed seconds or an absolute `RobotClock` time in milliseconds. Read the label
+before calculating a rate. Convert `1,000 ms` to `1 s`; do not divide distance by an unconverted
+millisecond value or confuse one timestamp with an elapsed duration.
+
 Ask a partner to trace one calculation. They should be able to point to the distance, time, math
 operation, and final unit. If any part is missing, repair the record before moving on.
 
@@ -113,6 +117,9 @@ Create one table with these columns: trial, distance, time, calculated speed, an
 three walking trials. Under the table, add two gear model setups with their output speed and ideal
 torque. Finish with a two-sentence claim about the pattern you observed.
 
+Label the time basis as elapsed seconds. Add one example that starts with milliseconds, converts the
+duration to seconds, and then calculates speed with the correct unit.
+
 Do not write only the final answer. Another student should be able to repeat your steps and find the
 same pattern. This evidence proves that you completed the math activity. It does not prove that a
 physical robot mechanism is safe, strong, or ready to run.
@@ -124,6 +131,7 @@ physical robot mechanism is safe, strong, or ready to run.
 3. What happens to ideal output speed when the driven gear becomes larger?
 4. Name one reason a real gear system will not match the ideal torque value.
 5. What evidence would let another student repeat your walking test?
+6. Why must milliseconds be converted before using a formula that expects seconds?
 
 Check your answers after you finish. The first answer is 1.5 meters per second. The others should use
 your own clear words and evidence from the lesson.
