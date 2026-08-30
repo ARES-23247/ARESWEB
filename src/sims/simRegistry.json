@@ -450,7 +450,7 @@
     },
     {
       "id": "reduxStateTracer",
-      "name": "Redux State Tracer",
+      "name": "Current ARES Redux State Tracer",
       "path": "./redux-state-tracer",
       "requiresContext": false,
       "academyApproved": true,

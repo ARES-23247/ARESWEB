@@ -1,147 +1,272 @@
 # State, actions, and reducers
 
-Robot software must remember what the robot knows and what the team wants it to do. ARES uses a
-Redux pattern for that job. Redux gives each decision a visible input and result. That makes the
-logic easier to test before a controller sends an output.
+Robot software must remember facts and requests. ARES uses a Redux pattern for this job. Each
+change starts with an action and produces a new state snapshot. That makes a decision easier to
+trace and test before any controller can request an output.
 
 ## Purpose and prerequisites
 
-This lesson teaches you to trace one state change at a time. Complete [From Driver Input to Motor
-Output](/academy/robot-input-to-output?path=robotics-foundations) first. You should know that a
-driver request travels through software before an output reaches hardware.
+This lesson teaches you to trace current ARES state changes one action at a time. Complete [Follow a
+Robot Request from Input to Output](/academy/robot-input-to-output?path=robotics-foundations) first.
+You should know that software state is not a motor command.
 
-You will use the released ARES 11 action names in a small code-derived model. You will not connect
-to a robot or command a motor. The model focuses only on state, actions, and a reducer.
+You will use action names and reducer rules from ARES 11.1. The activity does not connect to a
+robot, run an OpMode, or command hardware. Students can verify the software transitions with the
+current unit test. A physical robot still needs the team's normal safety and testing process.
 
 ## Vocabulary
 
-- **State:** one snapshot of what the robot knows and wants.
-- **Action:** a message that describes an event or request.
+- **State:** one snapshot of what the software knows and requests.
+- **Action:** a typed message that describes an event or request.
 - **Reducer:** a pure function that returns the next state.
 - **Pure function:** code that gives the same result for the same inputs.
-- **Immutable:** replaced with a new value instead of changed in place.
-- **Dispatch:** send one action to the store.
-- **Store:** the object that keeps the current state.
-- **Controller:** code that may read state and calculate an output later.
+- **Immutable:** replaced by a new value instead of changed in place.
+- **Dispatch:** send an action to the store.
+- **Store:** the object that owns and publishes the current state.
+- **Slice:** one focused part of the root state, such as drive state.
+- **Controller:** later code that may turn valid state into an output request.
+
+## Read the current source boundary
+
+The current source separates five jobs:
+
+| Source            | What it proves                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------- |
+| `RobotState.kt`   | The default drive mode is `TELEOP`. The heading target starts as `null`.                            |
+| `RobotAction.kt`  | `SetHeadingLockTarget` accepts radians or `null`. `SetDriveMode` carries a drive mode.              |
+| `DriveReducer.kt` | Each of those actions copies one drive field. Clearing the target does not change the mode.         |
+| `RootReducer.kt`  | The root reducer combines slice results and copies the action time into root state.                 |
+| `Store.kt`        | Dispatches are serialized, state is published as a new snapshot, and listeners run after reduction. |
+
+The current modes are `TELEOP`, `HEADING_HOLD`, `POSITION_HOLD`, and `X_BRAKE`. There is no
+`OPEN_LOOP` mode. There is also no action named `ClearHeadingLockTarget`. Current code clears the
+target by dispatching `SetHeadingLockTarget(null)`.
+
+That detail matters. A tutorial must not invent an action or silently join two independent state
+changes.
 
 ## Worked example
 
-Imagine that the current drive mode is `OPEN_LOOP` and there is no heading target. The first action
-stores a target of 90 degrees. The reducer returns a new state with that target.
+Trace four real transitions from the current reducer.
+
+Start with this reduced view of `RobotState`:
+
+```text
+driveMode = TELEOP
+headingLockTargetRadians = null
+timestampMs = 0
+```
+
+First, set a target of positive 90 degrees. ARES stores headings in radians, so the real action uses
+`Math.PI / 2.0`.
 
 ```kotlin
 val withTarget = rootReducer(
     RobotState(),
-    RobotAction.SetHeadingLockTarget(Math.PI / 2.0)
+    RobotAction.SetHeadingLockTarget(
+        targetRadians = Math.PI / 2.0,
+        timestampMs = 20L
+    )
 )
 ```
 
-The next action changes the drive mode. It does not need to repeat the target because the target is
-already in state.
+The drive mode stays `TELEOP`. The target becomes `Math.PI / 2.0`. The root timestamp becomes 20.
+The drive reducer does not enable heading hold as a side effect.
+
+Next, select heading hold.
 
 ```kotlin
 val holding = rootReducer(
     withTarget,
-    RobotAction.SetDriveMode(DriveMode.HEADING_HOLD)
+    RobotAction.SetDriveMode(
+        mode = DriveMode.HEADING_HOLD,
+        timestampMs = 40L
+    )
 )
 ```
 
-The reducer gets two inputs: the current state and one action. It returns a new state. It does not
-read an encoder, wait for time, use a network request, or set motor voltage.
+The mode becomes `HEADING_HOLD`, and the target stays at positive 90 degrees. The root timestamp
+becomes 40.
+
+Now clear only the target.
+
+```kotlin
+val targetCleared = rootReducer(
+    holding,
+    RobotAction.SetHeadingLockTarget(
+        targetRadians = null,
+        timestampMs = 60L
+    )
+)
+```
+
+The target becomes `null`, but the mode remains `HEADING_HOLD`. This may be an incomplete request
+for later control code. The reducer reports the exact requested state. It does not invent a second
+action or decide whether hardware can move.
+
+Finally, return the mode to `TELEOP` with a separate `SetDriveMode` action. If you want both changes,
+dispatch both actions. `Store.dispatchAll` can reduce a group without another dispatch entering
+between them. The reducer still handles the actions in order.
 
 ## Visual model
 
 ```mermaid
-%% aria: The store gives current state and one action to a reducer. The reducer returns new state. A controller may read that state later.
+%% aria: An action and current immutable state enter the root reducer. The root reducer sends the action through focused slice reducers, creates a new root state, and the store publishes that snapshot. A controller may read it later.
 flowchart LR
-    S["Current state"] --> R["Pure reducer"]
-    A["One action"] --> R
-    R --> N["New state"]
-    N --> T["Store"]
-    T --> C["Controller reads state later"]
+    A["Typed action"] --> R["Root reducer"]
+    S["Current immutable state"] --> R
+    R --> D["Drive slice reducer"]
+    R --> V["Other slice reducers"]
+    D --> N["New root state"]
+    V --> N
+    N --> T["Store publishes snapshot"]
+    T --> C["Controller may read it later"]
 ```
 
-The arrows show data flow, not electrical flow. State is a software record. An action is a software
-message. Neither item is proof that a mechanism moved.
+The arrows show software data flow. They do not show electrical current or motor motion. A state
+request can be incomplete, stale, unsafe, or blocked by later code.
 
 ## Hands-on activity
 
-Use the tracer below. Select **Set target to 90°**. Compare the previous and new state cards. Only
-the target should change. Next, select **Enable heading hold**. The target should stay at 90 degrees
-while the drive mode changes.
+Use the tracer below. It models only the current drive mode, heading target, and root timestamp.
 
 <reduxstatetracer />
 
-Reset the tracer. Enable heading hold before setting a target. Record the state, but do not call it a
-good robot command. Redux can store an incomplete request. Other code must decide whether the state
-is ready and safe to use.
+1. Select **Set target to 90°**.
+2. Confirm that the target changes while the mode remains `TELEOP`.
+3. Select **Enable heading hold**.
+4. Confirm that the target stays at 90 degrees.
+5. Select **Clear target**.
+6. Confirm that the mode remains `HEADING_HOLD`.
+7. Read the incomplete-request message. Explain why the reducer does not fix the state for you.
+8. Select **Use teleop drive**.
+9. Reset the lab and try the actions in another order.
 
-Now clear the target. Explain why the lesson reducer also returns to open-loop drive. That is a rule
-of this small model. Find the matching action in the displayed trace and name both fields that
-changed.
+After each action, compare the previous and new cards. The previous card must not change. That is
+the evidence for an immutable transition in this small model.
 
-## Checkpoints
+## Walk the source
 
-After each button press, name the current state, the action, and the new state. Use those three
-labels in that order. If you skip the current state, you cannot fully explain the result.
-
-Check that the earlier state card does not change after a new action. This is the main idea behind
-immutable state. A new snapshot lets tests compare what happened before and after one action.
-
-Run the released onboarding test from `ARESLib-Kotlin` when you have the ARES source workspace:
+Open the ARES monorepo. Run these searches from its root:
 
 ```powershell
+rg -n "data class SetHeadingLockTarget|data class SetDriveMode" `
+  ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/RobotAction.kt
+
+rg -n "driveMode: DriveMode|headingLockTargetRadians" `
+  ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotState.kt
+
+rg -n "SetHeadingLockTarget|SetDriveMode" `
+  ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/DriveReducer.kt
+```
+
+Record the exact property names and units. The target is radians in production source. The lab
+shows degrees because students can read them quickly. The conversion is a display boundary, not a
+change to the robot contract.
+
+Then run the current onboarding test:
+
+```powershell
+Set-Location ARESLib-Kotlin
 .\gradlew.bat :core:test --tests "com.areslib.student.StudentOnboardingTest"
 ```
 
-Passing that test confirms the checked source follows its tested Redux behavior. It does not prove
-a physical robot is ready.
+That test checks the target and mode transition in source. Passing it verifies the tested software
+behavior. It does not prove that a controller, adapter, wire, motor, or robot is ready.
+
+## Store and reducer are not identical
+
+The onboarding test calls `rootReducer` directly for simple control actions. The real robot usually
+dispatches through `Store`.
+
+The current store serializes dispatches and publishes the new immutable snapshot. It also owns
+mutable estimator history. Drive and vision observations must go through the store so its estimator
+runtime can prepare the correct reducer actions.
+
+Do not use a direct reducer call as a replacement for the store when testing pose estimation. This
+lesson uses direct calls only because the two heading actions are stateless reducer transitions.
+
+## Checkpoints
+
+After every lab action, name these items in order:
+
+1. previous state;
+2. action and its data;
+3. new state;
+4. fields that changed;
+5. fields that stayed the same.
+
+Include the root timestamp in your comparison. A drive-slice field may stay the same while root
+state still receives the action time.
+
+Ask one more question: does this state prove that the robot moved? The answer is no. There is no
+controller output, adapter result, sensor reading, or physical observation in this activity.
 
 ## Troubleshooting
 
-If you think the action moved a motor, return to the visual model. There is no hardware arrow from
-the reducer. A controller and hardware adapter belong later in the flow.
+If you see `OPEN_LOOP`, you are reading an old example. Use `TELEOP` for the current default and
+normal driver-controlled mode.
 
-If the same action seems to give two results, compare the starting state for each case. A reducer
-may return different results from different state inputs. A pure reducer must match when both the
-state and action match.
+If you look for `ClearHeadingLockTarget`, search for `SetHeadingLockTarget` instead. A `null` target
+is the current clear request.
 
-If you changed an old object instead of making a new one, tests may lose the before snapshot. Use a
-copy operation that changes only the named field. Do not put a clock, random value, device read, or
-network call inside a reducer.
+If clearing the target also changes the mode in your code, check whether you added a policy outside
+the current drive reducer. Name that policy and test it. Do not describe it as built-in reducer
+behavior.
+
+If the same action gives two results, compare both starting states and action data. Pure behavior
+requires the same state and the same action. An action timestamp is part of the action data.
+
+If an earlier card changes after a later action, you mutated the old snapshot. Current ARES reducers
+normally use Kotlin data-class `copy` to create the next value.
 
 ## Evidence artifact
 
-Create a four-row trace table. Include these columns: step, previous state, action, and new state.
-Use the actions that set the target, enable heading hold, return to open loop, and clear the target.
+Create a four-row trace table with these columns:
 
-Below the table, write one sentence that explains why state is not a motor output. Write a second
-sentence that explains why pure reducers are easier to test. Include a screenshot of the tracer only
-if your class process allows it. The table is the required evidence.
+| Step | Previous mode and target | Exact action | New mode and target | Root time | What did not change? |
+| ---- | ------------------------ | ------------ | ------------------- | --------- | -------------------- |
+
+Use the four actions from the worked trace. Write radians in the exact-action column. You may add
+degrees in parentheses for display.
+
+Below the table, write three short claims:
+
+- why clearing a target does not select `TELEOP`;
+- why a Redux action is not a motor output;
+- why the previous snapshot must remain unchanged.
+
+Link each claim to one current source file. A screenshot of the tracer is optional. The source-backed
+table and claims are the required evidence.
 
 ## Short assessment
 
 1. What are the two inputs to a reducer?
 2. What does a reducer return?
-3. Why should a reducer not read an encoder?
-4. Is a target angle the same as motor voltage?
-5. What does immutable state help a test compare?
+3. What is the current default drive mode?
+4. How does current ARES code clear the heading target?
+5. Does clearing the target also change the drive mode?
+6. Why should a reducer not read an encoder?
+7. When must a pose observation go through `Store` instead of only `rootReducer`?
+8. What does immutable state help a test compare?
 
-A strong answer says that state describes a request or fact. It also says that another part of the
-software may use that state later. Do not claim that an action alone controls hardware.
+A strong answer separates an action, a state transition, a controller decision, and physical proof.
+It uses `TELEOP`, `SetHeadingLockTarget(null)`, and radians when describing current source.
 
 ## Extension challenge
 
-Add a paper action named `CancelHeadingHold`. Write the current state before the action and the state
-you expect after it. Decide whether the target should be kept or cleared. Explain your choice as a
-rule that another student could test.
+Compare two calls to `Store.dispatch` with one call to `Store.dispatchAll`. Use a target action and a
+mode action. Predict the final state in both cases.
 
-Then write two test cases. One should start in heading hold. The other should start in open-loop
-drive. Use the same cancel action in both cases and predict each result.
+Then predict how many times a subscriber is notified. Check `Store.kt` before answering. Explain why
+`dispatchAll` can publish one final snapshot while each action still gets reduced in order.
+
+This is a software concurrency exercise. It does not approve a combined action policy for a robot.
 
 ## Related and next
 
-Continue with input, state, and output tracing in the Programming with ARES path. Then learn how
-cached hardware reads stay outside reducers. Revisit [Telemetry and Local Log
+Continue with [Read Hardware Once and Write Safe
+Outputs](/academy/programming-io-caching?path=programming-with-ares). That lesson keeps device reads
+and writes outside reducers. Use [Telemetry and Local Log
 Retrieval](/academy/telemetry-and-local-logs?path=robotics-foundations) when you want to observe
-state changes during a simulation.
+published state during a simulation.

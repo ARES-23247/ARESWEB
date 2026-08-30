@@ -782,6 +782,39 @@ process. Software checks and physical checks stay in separate evidence sections.
 remains limited to website publishing. This local curriculum change does not stage, publish, or
 overwrite production data.
 
+## Continuous cycle: current Redux heading transitions
+
+This cycle improves the existing `redux-state-actions-reducers` lesson. The prior lesson and
+interaction used `OPEN_LOOP`, an invented `ClearHeadingLockTarget` action, and a coupled clear
+behavior. None matches the current ARES 11.1 source. Confirm that the revised lesson instead pins
+six files at monorepo commit `f3de343a`: Store, RobotAction, RobotState, RootReducer, DriveReducer,
+and StudentOnboardingTest.
+
+Review the central correction. `DriveState` starts in `TELEOP` with a null heading target.
+`SetHeadingLockTarget` accepts radians or null. `SetDriveMode` changes the mode. The current drive
+reducer handles those fields independently. Clearing the target with
+`SetHeadingLockTarget(null)` does not select `TELEOP`; returning to teleop requires a separate
+`SetDriveMode(TELEOP)` action.
+
+The root reducer also copies each action timestamp into root state. The interaction shows that
+timestamp so a reviewer can verify that a drive field may stay unchanged while root state still
+changes. Confirm that the previous snapshot remains unchanged after every transition.
+
+The lesson now separates direct reducer calls from Store dispatch. The current Store serializes
+dispatches, publishes immutable snapshots, owns estimator history, and prepares derived estimator
+actions. The direct calls in this lesson are appropriate only for the stateless heading actions.
+The lesson must not suggest direct `rootReducer` calls for testing pose-estimator behavior.
+
+Review the code-derived interaction for the four current actions, 20 ms deterministic lesson
+timestamps, exact incomplete-state warning, native buttons, 44-pixel targets, visible focus,
+narrow-screen reflow, live announcements, deterministic reset, and explicit fidelity limit. The
+model includes only two drive fields and root time. It does not run Store middleware, a controller,
+an adapter, simulation, or physical hardware.
+
+Students may run and inspect the current unit test without mentor approval. Robot verification
+continues through the team's normal safety process. Lead Coach review remains limited to website
+publishing. This local curriculum change does not publish or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

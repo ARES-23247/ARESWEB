@@ -802,7 +802,7 @@ const SIM_METADATA = [
   },
   {
     'id': 'reduxStateTracer',
-    'name': 'Redux State Tracer',
+    'name': 'Current ARES Redux State Tracer',
     'folder': 'redux-state-tracer',
     'requiresContext': false,
     'academyApproved': true,
