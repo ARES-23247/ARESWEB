@@ -5,14 +5,15 @@
 A sensor turns a physical condition into data. A number by itself is not enough evidence. Robot
 code also needs to know what the number means, where it came from, and whether it is safe to use.
 
-This lesson compares three current ARES source boundaries:
+This lesson compares two current ARES source paths and one design pattern:
 
 1. a raw sensor value,
-2. a hand-authored cached FTC adapter, and
-3. a separate generated subsystem adapter and snapshot with explicit health evidence.
+2. a hand-authored subsystem snapshot that your team designs on purpose, and
+3. a generated subsystem adapter and snapshot with explicit health evidence.
 
-These are not three steps in one runtime pipe. The cached adapter implements the small raw
-interface. Generated subsystem code reads the FTC SDK sensor through its own `refresh` path.
+These are not three steps in one runtime pipe. ARES 12 no longer includes the old background
+`FtcDistanceSensor` wrapper. Hand-authored code must own its snapshot fields and update them once
+per robot loop. Generated subsystem code reads the FTC SDK sensor through its own `refresh` path.
 
 Complete [Voltage, Current, Power, and Energy](/academy/electrical-voltage-current-power?path=electrical-systems-diagnostics)
 and [Read Hardware Once and Write Safe Outputs](/academy/programming-io-caching?path=programming-with-ares)
@@ -21,27 +22,27 @@ first. No powered robot is required for the source and model work.
 By the end, you will be able to explain what each path proves, choose a sensor for one robot
 question, and plan a student-led physical check.
 
-This lesson matches ARES 11.1.0 and Studio 2.0.3. Its source links point to one reviewed commit in
+This lesson matches ARES 12.0.0 and Studio 3.0.0. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
-## The important correction: three different evidence paths
+## The important correction: two source paths and one design pattern
 
 Current ARESLib does not attach a timestamp and health report to every raw sensor property. Those
 fields appear at a higher subsystem layer. Keep the layers separate.
 
-| Layer                        | Current ARES example              | What it provides                                                                                | What is still missing                                                                             |
-| ---------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Raw interface                | `DistanceSensorIO.distanceMeters` | One value in meters; `NaN` or positive infinity may mean offline or out of range                | Age, configuration health, useful range, and physical accuracy                                    |
-| FTC cache                    | `FtcDistanceSensor`               | A background read about every 20 ms and the latest cached meter value; read errors become `NaN` | A public last-update time, a separate health field, and proof that the target is sensed correctly |
-| Generated adapter and snapshot | Generated IO and immutable state | One direct SDK read per refresh, finite/range checks, `feedbackValid`, `feedbackTimestampMs`, and `configurationHealthy` | Physical placement, wiring, surface effects, and proof on the actual robot |
+| Layer | Current ARES example | What it provides | What is still missing |
+| --- | --- | --- | --- |
+| Raw interface | `DistanceSensorIO.distanceMeters` | One value in meters; `NaN` or positive infinity may mean offline or out of range | Age, setup health, useful range, and physical accuracy |
+| Hand-authored snapshot pattern | Team subsystem IO and immutable state | Whatever cached value, validity, time, and setup fields the team deliberately implements and tests | Proof that the design was implemented correctly and works on the robot |
+| Generated adapter and snapshot | Generated FTC IO and subsystem state | One SDK read per refresh, finite/range checks, `feedbackValid`, `feedbackTimestampMs`, and `configurationHealthy` | Physical placement, wiring, surface effects, and proof on the actual robot |
 
-A finite cached number is useful, but it is not automatically fresh. A generated subsystem can
-make the stronger freshness claim because it records when a complete snapshot was received and
-compares that time with its allowed age.
+A finite cached number is useful, but it is not automatically fresh. A snapshot can support a
+freshness decision only when its code records a sample time and compares that time with an allowed
+age.
 
-Hand-authored code must build the same evidence on purpose. It does not receive generated snapshot
-fields merely because it implements `DistanceSensorIO`. The generated adapter does not wrap
-`FtcDistanceSensor`; it owns a different read path.
+Hand-authored code does not receive generated snapshot fields merely because it implements
+`DistanceSensorIO`. Generated code creates those fields and its own FTC read path. Neither path
+should poll hardware from an ordinary property getter.
 
 ## Vocabulary
 
@@ -65,9 +66,10 @@ infinity when the target is out of range or the sensor is offline.
 That contract does **not** expose `lastUpdatedMs`, `connected`, or `configured`. Code that needs
 those facts must own them at another boundary.
 
-The current FTC adapter polls in a background thread. It catches a device-read exception and stores
-`NaN`. Its getter returns the cached value instead of making another I2C call. This reduces blocking
-in the robot loop, but its public contract still has no sample timestamp.
+ARES 12 removed the earlier background-thread distance wrapper. Do not copy a lesson, snippet, or
+diagram that tells you to instantiate `FtcDistanceSensor`. For hand-authored subsystem code, read
+the SDK device once in the subsystem's owned refresh step, then serve cached fields to the rest of
+the loop. If the team needs freshness or setup evidence, add and test those fields explicitly.
 
 The generated distance-sensor scaffold declares a distance measurement in meters with a default
 accepted range from 0 through 10 meters. Its FTC adapter reads the SDK `DistanceSensor` when
@@ -80,13 +82,14 @@ with the subsystem feedback timeout. A failed or old snapshot remains visible as
 ## Visual model
 
 ```mermaid
-%% aria: The physical sensor produces a raw meter value. An FTC adapter caches the latest value without adding a public timestamp. A generated subsystem validates the value and stores validity, timestamp, and configuration health. A control rule uses the snapshot only when all required evidence passes. Physical testing remains separate.
+%% aria: The physical sensor can feed a small raw distance interface, a hand-authored subsystem snapshot, or a generated subsystem adapter. Hand-authored code must deliberately add validity, time, and setup health. Generated code reads once during refresh and stores those fields. A control rule uses a snapshot only when all required evidence passes. Physical testing remains separate.
 flowchart LR
   A["Physical sensor"] --> B["DistanceSensorIO"]
-  B --> C["FtcDistanceSensor background cache"]
+  A --> C["Hand-authored refresh and snapshot"]
   A --> D["Generated FTC adapter refresh"]
-  D --> E["Range and finite checks"]
-  E --> F["Immutable snapshot"]
+  C --> F["Owned cached fields"]
+  D --> E["Finite and range checks"]
+  E --> F
   F --> G{"Valid, fresh, and configured?"}
   G -- Yes --> H["Use bounded result"]
   G -- No --> I["Block and report reason"]
@@ -103,8 +106,9 @@ Suppose a distance sensor shows `0.75`.
 At the raw interface, you know only that the reported value is 0.75 meters. It is finite, so it is
 not one of the documented offline or out-of-range sentinels. You still do not know its age.
 
-At the FTC cache, you know the value came from the adapter's latest background read. You still
-cannot calculate age from the public cached value alone.
+For a hand-authored snapshot, assume the team stores the value, validity, sample time, and setup
+health. Those facts support a software decision only after the implementation and tests show that
+one refresh owns them. Writing the field names on a plan does not make the runtime behavior true.
 
 On the separate generated adapter path, assume the snapshot contains these facts:
 
@@ -134,8 +138,9 @@ records the reason. Swap roles halfway through.
 7. Open the lab and select **Raw distance interface**.
 8. Enter `0.75 m`. Explain why it is a value-only result.
 9. Try a blank or non-number field. Record why it is blocked.
-10. Select **FTC cached adapter**. Explain why caching does not create a timestamp.
-11. Select **Generated subsystem snapshot**.
+10. Select **Hand-authored snapshot plan**. Explain which fields your code would need to own and
+    which tests would prove they change together.
+11. Select **Generated snapshot**.
 12. Test a healthy `0.75 m` sample at age `20 ms` with a `100 ms` limit.
 13. Make the snapshot stale.
 14. Restore the age, then turn off configuration health.
@@ -156,14 +161,13 @@ the same boundaries with:
 
 ```powershell
 rg -n "distanceMeters|feedbackValid|feedbackTimestampMs|configurationHealthy" `
-  ARESLib-Kotlin/core/src/main ARESLib-Kotlin/codegen/src/main ARESLib-Kotlin/ftc-hardware/src/main
+  ARESLib-Kotlin/core/src/main ARESLib-Kotlin/codegen/src/main
 ```
 
 Run focused library checks without a robot:
 
 ```powershell
 Set-Location ARESLib-Kotlin
-.\gradlew.bat :core:test --tests "com.areslib.hardware.sensor.ThreadedSensorsTest"
 .\gradlew.bat :codegen:test --tests "com.areslib.codegen.SubsystemKotlinGeneratorTest"
 ```
 
@@ -196,7 +200,7 @@ and uses the Lead Coach review flow.
 ## Checkpoints
 
 - Can you name the evidence path you are using?
-- Are you treating the cached and generated adapters as separate paths?
+- Are you treating hand-authored and generated snapshots as separate paths?
 - Does the sensor answer the actual robot question?
 - Are value and unit explicit?
 - Is the read cached instead of hidden inside a getter?
@@ -209,11 +213,11 @@ and uses the Lead Coach review flow.
 
 | Symptom                                         | Check                                                                                                     |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Finite number is treated as automatically fresh | Find the timestamp owner. The raw and FTC cached distance contracts do not expose one.                    |
+| Finite number is treated as automatically fresh | Find the timestamp owner. The raw distance contract does not expose one.                                    |
 | Offline sensor appears as a real distance       | Reject `NaN`, infinity, and failed snapshot validity.                                                     |
 | Old value survives after a read problem         | Keep the prior value for diagnosis, but set validity false and do not use it for control.                 |
 | Two parts of a loop see different values        | Remove hidden device reads and use one owned snapshot.                                                    |
-| Generated path seems to use the background cache | Trace the generated `refresh` method. It reads the SDK device through a separate adapter.                |
+| A lesson mentions `FtcDistanceSensor`             | Remove the stale ARES 11 wrapper guidance and trace the ARES 12 refresh owner instead.             |
 | Generated range rejects a real device value     | Review the descriptor range against the sensor datasheet and actual task. Do not simply remove the check. |
 | Wrong device answers on a shared bus            | Check stable identity, address, bus, and parent controller.                                               |
 | Color changes with room light                   | Record lighting, surface, range, and a physical calibration test.                                         |
@@ -229,7 +233,7 @@ and uses the Lead Coach review flow.
 5. Why are validity and configuration health separate?
 6. What should happen when a required generated snapshot is stale?
 7. Which facts still require a student physical check?
-8. Why should you not draw the cached adapter and generated adapter as one pipeline?
+8. Why should you not draw hand-authored and generated snapshots as one pipeline?
 
 ## Extension challenge
 

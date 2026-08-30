@@ -10,7 +10,7 @@ design a small evidence record. Complete [Simulation Is Not Hardware
 Validation](/academy/simulation-is-not-hardware-validation?path=testing-debugging-commissioning)
 first. No physical robot is needed.
 
-The topic and logging examples are pinned to the current ARES 11.1.0 contract. A real review must
+The topic and logging examples are pinned to the current ARES 12.0.0 contract. A real review must
 still confirm the source identity and version stored with that run. Never copy a topic meaning from
 one robot or simulator into another record without checking its contract.
 

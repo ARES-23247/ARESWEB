@@ -9,7 +9,7 @@ small, declared value change improve one recorded result?
 This lesson keeps those jobs separate. You will trace a SysId safety envelope, then judge one
 invented tuning comparison. You will not move a robot or change a real tuning profile.
 
-The source examples match ARES 11.1.0 and Studio 2.0.3. The links below are pinned to the exact
+The source examples match ARES 12.0.0 and Studio 3.0.0. The links below are pinned to the exact
 monorepo commit used for this lesson.
 
 Complete [Build a Fault Tree and Isolate a Cause](/academy/testing-fault-tree?path=testing-debugging-commissioning),

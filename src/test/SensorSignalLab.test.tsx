@@ -16,16 +16,10 @@ const BASE: SensorEvidenceInput = {
 };
 
 describe("SensorSignalLab", () => {
-  it("keeps raw and FTC cached values below snapshot-level evidence", () => {
+  it("keeps the raw interface below snapshot-level evidence", () => {
     expect(classifySensorEvidence(BASE)).toMatchObject({
       status: "Raw value only",
       reason: expect.stringContaining("not age"),
-    });
-    expect(
-      classifySensorEvidence({ ...BASE, layer: "FTC_CACHE" }),
-    ).toMatchObject({
-      status: "Cached value only",
-      reason: expect.stringContaining("no sample time"),
     });
     expect(
       classifySensorEvidence({ ...BASE, readingKind: "NOT_A_NUMBER" }).status,
@@ -35,7 +29,7 @@ describe("SensorSignalLab", () => {
     ).toContain("negative");
   });
 
-  it("classifies every represented generated-snapshot boundary", () => {
+  it("classifies every represented snapshot boundary", () => {
     const generated: SensorEvidenceInput = {
       ...BASE,
       layer: "GENERATED_SNAPSHOT",
@@ -43,6 +37,15 @@ describe("SensorSignalLab", () => {
     expect(classifySensorEvidence(generated).status).toBe(
       "Usable generated snapshot",
     );
+    expect(
+      classifySensorEvidence({
+        ...generated,
+        layer: "HAND_AUTHORED_SNAPSHOT",
+      }),
+    ).toMatchObject({
+      status: "Usable hand-authored snapshot",
+      missing: expect.stringContaining("Implemented code"),
+    });
     expect(
       classifySensorEvidence({ ...generated, valueMeters: 10.1 }).reason,
     ).toContain("0–10");
@@ -69,10 +72,16 @@ describe("SensorSignalLab", () => {
     ).toContain("finite");
   });
 
-  it("enables snapshot evidence only for the generated layer", () => {
+  it("enables snapshot evidence for hand-authored and generated paths", () => {
     render(<SensorSignalLab />);
     expect(screen.getByLabelText("Age (ms)")).toBeDisabled();
     expect(screen.getByText("Raw value only")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Evidence path"), {
+      target: { value: "HAND_AUTHORED_SNAPSHOT" },
+    });
+    expect(screen.getByLabelText("Age (ms)")).toBeEnabled();
+    expect(screen.getByText("Usable hand-authored snapshot")).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Evidence path"), {
       target: { value: "GENERATED_SNAPSHOT" },
@@ -97,9 +106,7 @@ describe("SensorSignalLab", () => {
       screen.getByText(/marks this as failed or out-of-range evidence/),
     ).toBeVisible();
     fireEvent.click(screen.getByText("Read the source boundary"));
-    expect(
-      screen.getByText(/FTC adapter caches background reads/),
-    ).toBeVisible();
+    expect(screen.getByText(/must deliberately own cached values/)).toBeVisible();
     expect(screen.getByRole("note")).toHaveTextContent(
       "does not read or run a robot",
     );

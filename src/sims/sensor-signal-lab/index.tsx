@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type SensorEvidenceLayer =
-  "RAW_INTERFACE" | "FTC_CACHE" | "GENERATED_SNAPSHOT";
+  "RAW_INTERFACE" | "HAND_AUTHORED_SNAPSHOT" | "GENERATED_SNAPSHOT";
 export type SensorReadingKind = "FINITE" | "NOT_A_NUMBER" | "POSITIVE_INFINITY";
 
 export type SensorEvidenceInput = {
@@ -20,7 +20,7 @@ export type SignalFinding = {
   status:
     | "Blocked"
     | "Raw value only"
-    | "Cached value only"
+    | "Usable hand-authored snapshot"
     | "Usable generated snapshot";
   reason: string;
   missing: string;
@@ -38,7 +38,7 @@ const DEFAULTS: SensorEvidenceInput = {
 
 const LAYER_LABELS: Record<SensorEvidenceLayer, string> = {
   RAW_INTERFACE: "Raw interface",
-  FTC_CACHE: "FTC cache",
+  HAND_AUTHORED_SNAPSHOT: "Hand-authored snapshot plan",
   GENERATED_SNAPSHOT: "Generated snapshot",
 };
 
@@ -82,17 +82,12 @@ export function classifySensorEvidence(
       "Freshness, setup health, and physical accuracy.",
     );
   }
-  if (input.layer === "FTC_CACHE") {
-    return finding(
-      "Cached value only",
-      "FtcDistanceSensor caches a value but exposes no sample time.",
-      "Known age, setup health, and physical accuracy.",
-    );
-  }
   if (value > 10) {
     return finding(
       "Blocked",
-      "The generated scaffold defaults to 0–10 meters.",
+      input.layer === "GENERATED_SNAPSHOT"
+        ? "The generated scaffold defaults to 0–10 meters."
+        : "This hand-authored exercise accepts 0–10 meters.",
       "An in-range sample or a reviewed range for the real device.",
     );
   }
@@ -128,17 +123,23 @@ export function classifySensorEvidence(
       "A newer valid snapshot.",
     );
   }
-  return finding(
-    "Usable generated snapshot",
-    "The snapshot is finite, in range, valid, configured, and fresh.",
-    "Physical wiring, placement, target, noise, and robot behavior.",
-  );
+  return input.layer === "GENERATED_SNAPSHOT"
+    ? finding(
+        "Usable generated snapshot",
+        "The generated snapshot is finite, in range, valid, configured, and fresh.",
+        "Physical wiring, placement, target, noise, and robot behavior.",
+      )
+    : finding(
+        "Usable hand-authored snapshot",
+        "The proposed snapshot represents a finite, in-range, valid, configured, and fresh sample.",
+        "Implemented code, tests, physical wiring, placement, target, noise, and robot behavior.",
+      );
 }
 
 export default function SensorSignalLab() {
   const [input, setInput] = useState<SensorEvidenceInput>(DEFAULTS);
   const result = classifySensorEvidence(input);
-  const isGenerated = input.layer === "GENERATED_SNAPSHOT";
+  const hasSnapshotEvidence = input.layer !== "RAW_INTERFACE";
   const update = <Key extends keyof SensorEvidenceInput>(
     key: Key,
     value: SensorEvidenceInput[Key],
@@ -201,11 +202,11 @@ export default function SensorSignalLab() {
           />
 
           <fieldset
-            disabled={!isGenerated}
+            disabled={!hasSnapshotEvidence}
             className="grid gap-4 rounded border border-white/10 p-4 disabled:opacity-55"
           >
             <legend className="px-2 text-sm font-bold text-ares-gold">
-              Generated snapshot evidence
+              Snapshot evidence
             </legend>
             <NumberField
               id="sample-age"
@@ -260,10 +261,13 @@ export default function SensorSignalLab() {
         </summary>
         <ol className="mt-3 list-decimal space-y-2 pl-6 text-marble/80">
           <li>The raw interface gives meters and failure sentinels.</li>
-          <li>One FTC adapter caches background reads.</li>
           <li>
-            Generated adapters read separately on refresh and add range, time,
-            and setup evidence.
+            Hand-authored subsystem code must deliberately own cached values,
+            validity, sample time, and setup health.
+          </li>
+          <li>
+            Generated adapters read once during refresh and add range, time,
+            validity, and setup evidence.
           </li>
         </ol>
       </details>

@@ -165,7 +165,7 @@ export default function FeedforwardTermLab() {
             Feedforward Term Trace
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Trace one wheel with the checked-in Team 23247 profile from ARES 11.1.0.
+            Trace one wheel with the checked-in Team 23247 profile from ARES 12.0.0.
           </p>
         </div>
         <button type="button" onClick={() => setInput(DEFAULT_INPUT)} className={buttonClass}>

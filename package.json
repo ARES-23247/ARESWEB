@@ -31,6 +31,7 @@
     "content:validate": "node scripts/validate-learning-catalog.mjs",
     "content:readability": "node scripts/learning-readability.mjs",
     "content:verify": "node scripts/validate-learning-catalog.mjs --verify-remote",
+    "content:refresh-sources": "node scripts/refresh-learning-source-authority.mjs",
     "content:prepare": "node scripts/validate-learning-catalog.mjs --write",
     "content:approval": "node scripts/migrate-learning-content.mjs --prepare-approval",
     "content:migrate": "node scripts/migrate-learning-content.mjs",

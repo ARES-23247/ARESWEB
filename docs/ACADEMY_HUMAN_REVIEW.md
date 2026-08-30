@@ -1228,6 +1228,56 @@ rule claim. Students may run and review the rehearsal. Lead Coach approval remai
 publishing website content. This local change does not publish curriculum or mutate production
 records.
 
+## Continuous cycle: local log lifecycle and read-only retrieval
+
+This cycle deepens the existing `telemetry-and-local-logs` lesson. Review the new lifecycle from
+an active writer reservation through normal close or rotation to a completed log. An old unlocked
+reservation may move to `.abandoned` quarantine after 12 hours. Neither an active reservation nor
+an abandoned file may be presented as completed evidence. The new diagram and activity remain a
+paper-and-browser explanation; they do not start a logger, import a file, run replay, or inspect a
+robot.
+
+The hands-on path remains read-only. Students list and download a completed local file but do not
+configure, request, copy, or enter the deletion token. Confirm that the lesson explains the
+operator boundary: deletion is disabled until a token of at least 16 characters is configured,
+while listing and download remain trusted-LAN operations. The lesson must not expose a secret or
+suggest publishing port `5002` to the internet.
+
+Review the bounded-health explanation. `QueueDepth` and `DroppedFrames` can limit an evidence
+claim; they do not prove a cause. `SIMULATION`, `COMPETITION`, and `FORENSIC` are current logging
+profiles with different sample and storage goals. The lesson does not choose a physical-team
+profile, change a runtime setting, delete a file, or claim that retention validates a robot run.
+
+The existing telemetry guide plus current `LogManagerServer` and `ARESDataLogger` sources are
+pinned to protected ARES Robotics commit `a02c4eb2`, ARES 12.0.0, and Studio 3.0.0. Remote
+verification must recompute all three Git blob hashes. The reused Telemetry Graph Lab remains a
+fixed conceptual model and does not read the retrieved file. Students may inspect their own
+simulation evidence. Lead Coach approval remains limited to publishing website content. This
+local curriculum change does not publish a lesson or mutate production curriculum data.
+
+## Continuous cycle: ARES 12 sensor evidence correction
+
+ARES 12.0.0 removed the old background-thread `FtcDistanceSensor` wrapper. Review the updated
+`electrical-sensors` lesson and Sensor Evidence Lab to confirm that neither presents that removed
+class as current. The lesson now separates the small raw `DistanceSensorIO` contract, a
+student-designed hand-authored subsystem snapshot, and the generated FTC snapshot path.
+
+For the hand-authored path, confirm that the lesson describes a design responsibility, not a
+built-in ARES class. A team implementation must deliberately own its cached value, validity,
+sample time, setup health, once-per-loop refresh, and tests. Selecting a complete plan in the
+interactive does not prove that Kotlin code exists or that a sensor works.
+
+For the generated path, compare the lesson with `SubsystemFtcIoRenderer` and
+`SubsystemControllerRenderer` at protected ARES Robotics commit `a02c4eb2`. The generator reads the
+FTC SDK device during `refresh`, performs finite and declared-range checks, records
+`feedbackTimestampMs`, and exposes validity and configuration state. The controller applies its
+feedback timeout. The model's 0–10 meter limit is the reviewed scaffold example, not a promise for
+every physical sensor.
+
+Students may design, implement, test, and physically verify sensor behavior under the team's normal
+safety process. Lead Coach approval remains limited to publishing website content. This local
+curriculum change does not publish a lesson or mutate production curriculum data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

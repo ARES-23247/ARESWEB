@@ -111,8 +111,8 @@ queue cannot hold the loop forever.
 
 The executor does **not** dispatch actions into the Redux store. It returns a list to the robot
 lifecycle owner. That owner must dispatch every action, including actions returned by interrupted
-cleanup. Calling legacy `clear(state)` throws cleanup output away. New lifecycle code should call
-`cancelAll(state)` and dispatch its returned actions.
+cleanup. Current ARES exposes `cancelAll(state)` for this job. The lifecycle owner must dispatch its
+returned actions instead of clearing task state by hand.
 
 ```mermaid
 %% aria: TaskExecutor reads a robot state snapshot, calls the active task lifecycle, returns Redux actions to the lifecycle owner, and the owner dispatches them. Failure or cancellation runs interrupted cleanup and clears queued and preempted work.
@@ -143,7 +143,7 @@ same charged execution time.
 
 ### Preemption needs a source review
 
-`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 11.1.0 source
+`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 12.0.0 source
 revision, the group classes do not forward `pause` and `resume` to their active children. A root
 sequence therefore must not rely only on a nested child's pause hook to neutralize hardware.
 
@@ -176,7 +176,7 @@ actions reach a robot.
 10. Open `TaskExecutor.kt`.
 11. Trace failure and cancellation to `cancelAll(state)`.
 12. Find the comment that says returned actions are caller-owned.
-13. Compare `cancelAll(state)` with `clear(state)`.
+13. Confirm that there is no public `clear(state)` shortcut in the current class.
 14. Find `preempt`, then check whether group classes override `pause` or `resume`.
 15. Draw your own task tree and label every hardware resource.
 
