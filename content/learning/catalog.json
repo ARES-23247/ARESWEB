@@ -2,10 +2,10 @@
   "catalogVersion": 1,
   "generatedFrom": {
     "sourceRepository": "ARES-Robotics",
-    "sourceRevision": "ares-11.1.0-studio-2.0.2",
-    "sourceCommit": "1c92c61c2faaca2a630e525a76e41d4f7657815c",
+    "sourceRevision": "ares-11.1.0-studio-2.0.3",
+    "sourceCommit": "f3de343ac79a62de0a2592d793da84fd82407718",
     "aresVersion": "11.1.0",
-    "studioVersion": "2.0.2",
+    "studioVersion": "2.0.3",
     "ftcStarterVersion": "11.1.0",
     "frcStarterVersion": "11.1.0"
   },
@@ -1180,13 +1180,14 @@
       "topics": ["camera", "uncertainty", "evidence", "AI foundations"],
       "contentType": "lesson",
       "level": "beginner",
-      "estimatedMinutes": 25,
+      "estimatedMinutes": 55,
       "pathMemberships": [{ "pathId": "ai-ml-foundations", "order": 1 }],
       "prerequisites": [],
-      "objectives": ["Name common sources of camera uncertainty.", "Explain why rejected measurements should stay visible."],
+      "objectives": ["Separate visible camera evidence from a possible explanation.", "Trace a measurement through ordered quality, timing, plausibility, and innovation checks.", "Explain why rejected measurements and their reasons should stay visible."],
       "platforms": ["hardware-neutral"],
-      "sourceReferences": [{ "label": "ARES localization calibration", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARESLib-Kotlin/docs/localization-calibration.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/localization-calibration.md", "blobHash": "c76aff1338afe58dd2ff5b8f9fb4d8cba9496ffd" }],
-      "appliesToVersion": "General STEM; ARES 11.0.0 examples",
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "ARES vision metadata and physical plausibility checks", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt", "blobHash": "94912abad7c6ddf689587ea527f7f05d4ef223ee" }, { "label": "ARES capture-time update and innovation rejection", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt", "blobHash": "e91d0e50787154eb18ef158e7a1b734121b94124" }],
+      "appliesToVersion": "General STEM; ARES 11.1.0 examples",
       "safetyScope": "none"
     },
     {
@@ -1199,13 +1200,14 @@
       "topics": ["engineering cycle", "experiment", "measurement", "outdoors"],
       "contentType": "guided-lab",
       "level": "beginner",
-      "estimatedMinutes": 40,
+      "estimatedMinutes": 65,
       "pathMemberships": [{ "pathId": "applied-stem-outdoors", "order": 1 }],
       "prerequisites": [],
-      "objectives": ["Plan a fair comparison by changing one factor.", "Record evidence that another student can review."],
+      "objectives": ["Plan a fair comparison with one independent variable and one measured response.", "Record repeatable evidence, competing conditions, and a revision decision.", "Limit a conclusion to the evidence level produced by the test."],
       "platforms": ["hardware-neutral"],
-      "sourceReferences": [{ "label": "ARES evidence and hardware operations", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/439f2a36855aa6d00010c0d4ada255511626d1af/ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "repository": "ARES-Robotics", "revision": "ares-11.0.0-studio-2.0.0", "path": "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "blobHash": "d9ca9478618f132c98d2e890663ab58f7ec47019" }],
-      "appliesToVersion": "General STEM; ARES 11.0.0 evidence practices",
+      "instructionalContractVersion": 2,
+      "sourceReferences": [{ "label": "ARES bounded evidence and hardware-operation checks", "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "repository": "ARES-Robotics", "revision": "ares-11.1.0-studio-2.0.3", "path": "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md", "blobHash": "23d61e0e3eaea01a20efc32042c816e8ba7a6889" }],
+      "appliesToVersion": "General STEM; ARES 11.1.0 evidence practices",
       "safetyScope": "none"
     }
   ]

@@ -1,49 +1,131 @@
 # Measure, test, and improve a design
 
-Engineering is a cycle. You name a goal, make a plan, test it, and use evidence to choose the next
-change. This activity works without a robot or computer.
+## Purpose and prerequisites
 
-## What you will learn
+Engineering is a cycle: name a goal, plan a change, test it, and use evidence to choose the next
+step. This lesson uses a paper shade and two ice cubes, so you can practice without a robot or
+computer. You do not need an earlier lesson.
 
-- how to write a testable goal;
-- why changing one thing at a time helps; and
-- how to record a result that another student can check.
+You need two similar ice cubes, two plates, paper, tape, a timer, a ruler, and a sunny window or
+safe outdoor space. Keep meltwater away from electronics. Wipe spills as soon as they happen.
+
+## Vocabulary
+
+- **Goal:** the result a design is meant to improve.
+- **Variable:** a factor that can change during a test.
+- **Independent variable:** the one factor you choose to change.
+- **Response variable:** the result you measure.
+- **Comparison:** a setup used as a fair baseline.
+- **Trial:** one complete run of the test.
+- **Repeatability:** how close results are when a test is repeated the same way.
+- **Revision:** a recorded design change linked to new evidence.
+
+## Worked example
+
+The goal is to slow melting for ten minutes. One ice cube sits under a paper shade. A similar cube
+sits on an equal plate without shade. Shade is the independent variable. The measured width or
+remaining mass is the response variable. Starting cube size, plate type, place, and start time
+should stay as similar as possible.
+
+After ten minutes, the shaded cube measures 24 millimeters across and the comparison measures 19
+millimeters. That result supports a narrow claim for this trial: the shaded setup kept a larger
+measured width. It does not yet prove every paper shade works in every kind of weather.
+
+## Visual model
 
 ```mermaid
-%% aria: Students define a goal, plan one change, run a safe test, record evidence, and then keep, revise, or reject the change before repeating the cycle.
+%% aria: Students define a measurable goal, record a baseline, choose one design change, predict a result, run the same safe test, record evidence, compare it with the baseline, and then keep, revise, or reject the change before the next cycle.
 flowchart LR
-  A["Define a goal"] --> B["Plan one change"]
-  B --> C["Run a safe test"]
-  C --> D["Record evidence"]
-  D --> E["Keep, revise, or reject"]
-  E --> B
+  A["Define a measurable goal"] --> B["Record a baseline"]
+  B --> C["Choose one change"]
+  C --> D["Predict"]
+  D --> E["Run the same safe test"]
+  E --> F["Record evidence"]
+  F --> G["Compare with baseline"]
+  G --> H{"Keep, revise, or reject"}
+  H --> C
 ```
 
-## Build a paper shade test
+The cycle repeats, but the record preserves each version. Do not erase a result because it differs
+from your prediction.
 
-You need two equal ice cubes, two plates, paper, tape, a timer, and a safe outdoor or sunny-window
-space. Keep water away from electronics and clean spills at once.
+## Hands-on activity
 
 1. Write the goal: slow the melting of one ice cube for ten minutes.
-2. Put one cube on each plate.
-3. Use paper to shade one cube. Leave the other setup unchanged.
-4. Predict which cube will keep more mass or size.
-5. Start both trials at the same time.
-6. Record a simple size measure every two minutes.
-7. Compare the final results.
-8. Change one part of the shade and repeat with new equal cubes.
+2. Choose one response measure. Width in millimeters is simple; mass is better if a safe scale is available.
+3. Measure both starting cubes and record any difference.
+4. Put one cube on each equal plate in the same place.
+5. Build a paper shade over one cube without touching it. Leave the comparison unshaded.
+6. Predict which cube will keep the larger response value and explain why.
+7. Start both trials at the same time.
+8. Measure each cube every two minutes using the same method.
+9. Record sun, wind, room or air temperature, and any unexpected change.
+10. Compare the final values. Change one part of the shade and repeat with new similar cubes.
 
-The unshaded cube is the **comparison**. It helps show whether the paper shade mattered. Weather can
-change between trials, so record sun, wind, and air temperature when possible.
+Use the evidence lab below to classify claims from your work. It is a conceptual sorter. It does
+not observe your experiment, verify measurements, or prove why a result occurred.
 
-## Make your evidence useful
+<evidencelevelscenarios />
 
-Record the setup, the one change, each measurement, and any problem. A photo can show the setup, but
-numbers and notes explain what happened. Never change or remove a result just because it disagrees
-with your prediction.
+## Checkpoints
 
-## Check your understanding
+Write the measurement method before the test. “Looks smaller” is hard to repeat. “Measure the widest
+part in millimeters from the same camera-facing side” gives another student a clearer method.
 
-1. Why should the two starting ice cubes be as equal as possible?
-2. Why do engineers change one part at a time?
-3. What weather facts could affect this test?
+Change only one planned factor. If you change shade color, height, and paper shape together, the
+result cannot show which change mattered.
+
+Keep the comparison useful. Both cubes should start at the same time, on similar plates, in the
+same place. Record differences you cannot remove instead of pretending the setups are identical.
+
+Label measured, calculated, and estimated values. A photo can show the setup, but numbers and notes
+are needed to explain what happened.
+
+## Troubleshooting
+
+If cubes start at different sizes, measure and record both. Use new cubes for the next trial if the
+difference is large enough to weaken the comparison.
+
+If a cube changes shape and width becomes misleading, record a second dimension or use mass in a
+later trial. Do not switch methods halfway through without marking the change.
+
+If clouds, wind, or indoor temperature change, note the time. Weather and room conditions are
+possible competing causes, so repeat before making a broad claim.
+
+If the result disagrees with your prediction, keep it. Check the setup, units, and method. A
+surprising valid result is evidence, not a failure of the experiment.
+
+## Evidence artifact
+
+Submit a test plan with goal, independent variable, response variable, comparison, constants, and
+safety notes. Add a data table with time, shaded result, comparison result, units, and observations.
+
+Include a labeled sketch or privacy-safe setup photo. Add a revision record with version, one
+change, prediction, result, decision, and next test. Another student should be able to follow the
+record without asking what you changed.
+
+## Short assessment
+
+1. Why should the starting ice cubes be similar?
+2. What is the independent variable in this test?
+3. Why do engineers change one planned factor at a time?
+4. What conditions could weaken the comparison?
+5. Why should a result remain in the record when it disagrees with a prediction?
+
+## Extension challenge
+
+Repeat the best design at least three times. Find the range of the final shaded measurements. A
+small range supports repeatability for this method, while a large range points to uncontrolled
+variables or a weak measurement method.
+
+Then write a robot version of the same plan without running it. Choose one safe software or
+simulation change, one response signal, one baseline, and one stop condition. State which evidence
+would still be needed before making a physical-robot claim.
+
+## Related and next
+
+Continue with [Measure, Sketch, and Record a
+Design](/academy/mechanical-measurement-design-notebook?path=mechanical-design-fabrication) for robot
+design records. Use [Compare Logs and Replay a
+Failure](/academy/testing-logs-replay?path=testing-debugging-commissioning) for the same comparison
+cycle with software data.

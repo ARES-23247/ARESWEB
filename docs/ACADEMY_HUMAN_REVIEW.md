@@ -104,12 +104,12 @@ The completed batch is `academy-cross-links-20260825-01`, with digest
 The missing Math for Robotics order 5 is intentionally filled by the published
 `robot-coordinate-contracts` lesson.
 
-## Middle-school expansion awaiting review
+## Published middle-school expansion and pending refreshes
 
-The current proposal refreshes the 18 source-pinned robotics lessons with grade
-6-8 language and described Mermaid diagrams. It also stages four new,
-hardware-neutral lessons. None of these proposal files are live until the
-website editorial workflow and production migration are separately approved.
+The four hardware-neutral middle-school lessons below are published. Their
+canonical files remain the source for reviewed future refreshes; changing a
+file does not change the public lesson until the editorial workflow and a
+guarded production migration are separately approved.
 
 | Lesson | Path | Canonical source file |
 | --- | --- | --- |
@@ -117,6 +117,21 @@ website editorial workflow and production migration are separately approved.
 | Read a Telemetry Graph Like a Scientist | Math for Robotics | [`02-read-telemetry-graph.md`](../content/learning/middle-school-stem/02-read-telemetry-graph.md) |
 | Decide Whether Camera Evidence Is Trustworthy | AI & ML Foundations | [`03-camera-evidence.md`](../content/learning/middle-school-stem/03-camera-evidence.md) |
 | Measure, Test, and Improve a Design | Applied STEM in the Outdoors | [`04-measure-test-improve.md`](../content/learning/middle-school-stem/04-measure-test-improve.md) |
+
+The current cycle deepens the camera-evidence and measure/test lessons from
+short introductions into the complete eleven-section instructional contract.
+Review the camera lesson's observation-versus-explanation language, privacy-safe
+photo exercise, capture-time boundary, ordered rejections, and visible reasons.
+The Vision Evidence Rejection Lab is code-derived but does not process images,
+solve AprilTags, run the estimator, or locate a robot.
+
+Review the shade experiment's independent and response variables, baseline,
+measurement method, competing conditions, repeatability, and revision record.
+The Evidence Level Scenarios interaction is only a conceptual sorter. It does
+not observe the experiment, verify a measurement, or prove a cause. Both pages
+pin their ARES examples to commit
+`f3de343ac79a62de0a2592d793da84fd82407718`; their new guarded-refresh entries
+use hashes read from the current public bodies.
 
 ## Robotics curriculum expansion awaiting review
 
@@ -387,8 +402,8 @@ Missing authentic media and
 official event sources stay blocked in
 [`curriculum-source-requests.json`](../content/learning/curriculum-source-requests.json).
 
-The current reviewed source authority is ARES 11.1.0 / Studio 2.0.2 at commit
-`1c92c61c`. Existing 11.0.0 and 11.1.0/2.0.1 source links remain immutable historical pins until
+The current reviewed source authority is ARES 11.1.0 / Studio 2.0.3 at commit
+`f3de343a`. Existing 11.0.0, 11.1.0/2.0.1, and 11.1.0/2.0.2 source links remain immutable historical pins until
 their individual lesson review is complete; a release-number change alone does
 not authorize silently replacing those references.
 
