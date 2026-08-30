@@ -53,10 +53,14 @@ test("public routes render with their titles and a main landmark", async ({ page
     });
   });
   await context.route("https://firestore.googleapis.com/**", (route) => route.abort("blockedbyclient"));
+  await context.route(
+    /^https:\/\/(?:www\.)?(?:youtube\.com|youtube-nocookie\.com)\//u,
+    (route) => route.abort("blockedbyclient"),
+  );
   for (const { path, titlePart } of publicRoutes) {
     // Let route effects and their stubbed API requests settle before replacing
-    // the document. WebKit otherwise reports a navigation-aborted fetch as a
-    // CORS page error even though the request never reaches production code.
+    // the document. The YouTube embed is blocked above so third-party background
+    // requests cannot make this local network-idle check nondeterministic.
     await page.goto(path, { waitUntil: "networkidle" });
     await expect(page).toHaveTitle(new RegExp(titlePart), { timeout: 15_000 });
     await expect(page.locator("main").first()).toBeVisible();
