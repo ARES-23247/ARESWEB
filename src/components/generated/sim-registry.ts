@@ -994,11 +994,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'sysidTuningLab',
-    'name': 'One-Change Tuning Experiment Lab',
+    'name': 'SysId and One-Change Evidence Lab',
     'folder': 'sysid-tuning-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'taskSequenceLab',

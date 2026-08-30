@@ -32,6 +32,30 @@
           "commit": "f3de343ac79a62de0a2592d793da84fd82407718"
         }
       ]
+    },
+    "ARESLib-Kotlin": {
+      "current": {
+        "revision": "areslib-10.1.0",
+        "commit": "13599358be7fb87d44e9804e798c7f27c6e84b21"
+      },
+      "approved": [
+        {
+          "revision": "areslib-10.1.0",
+          "commit": "13599358be7fb87d44e9804e798c7f27c6e84b21"
+        }
+      ]
+    },
+    "ARES-Analytics": {
+      "current": {
+        "revision": "studio-1.7.0",
+        "commit": "34845d750ebb69bea536d509538bf5cde3f8b478"
+      },
+      "approved": [
+        {
+          "revision": "studio-1.7.0",
+          "commit": "34845d750ebb69bea536d509538bf5cde3f8b478"
+        }
+      ]
     }
   }
 }

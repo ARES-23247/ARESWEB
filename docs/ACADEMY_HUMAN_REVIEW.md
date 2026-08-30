@@ -676,6 +676,45 @@ commit without changing the older dirty local ARES worktree. Remote catalog veri
 recompute all five Git blob hashes. This local curriculum change does not stage, publish, or
 overwrite production data.
 
+## Continuous cycle: current SysId and tuning evidence
+
+This cycle improves the existing `testing-sysid-tuning` lesson. It does not add a replacement
+lesson. Review the separation between SysId data collection and a one-change tuning experiment.
+The lesson must not imply that running SysId changes a tuning profile or that an improved tuning
+comparison proves cause.
+
+The earlier interaction used an absolute threshold in seconds. Current Studio source stores
+`successThresholdPercent` and classifies the signed percentage toward the declared goal. Confirm
+that the revised example produces 12.5% improvement from 1.20 seconds to 1.05 seconds, treats about
+4.2% as inconclusive against a 10% threshold, and treats movement in the wrong direction as a
+regression. Candidate evidence must be blocked when it belongs to another workspace, lacks the
+explicit simulation tag, predates the experiment snapshot, or follows more than one change.
+
+The SysId panel mirrors the shared ARESLib mechanism list, quasistatic and dynamic voltage shapes,
+five-second limit, and mechanism travel boundaries. It also keeps the current Studio capability and
+arm gates visible. The interaction is a single-sample learning model. It does not connect to Studio,
+fit gains, model the full FTC lease, or command hardware.
+
+One source limitation is intentionally visible. The shared `SysIdManager` accepts a current sample,
+but the current FTC and FRC callers invoke its safety check without measured current. Reviewers must
+confirm that neither the lesson nor the interaction claims that the manager's current watchdog is
+active in those paths. Physical verification must use the team's actual student-led procedure and
+verified platform limits.
+
+Check native labeled inputs, checkbox and select semantics, 44-pixel targets, visible focus, keyboard
+access, narrow-screen reflow, live result announcements, and deterministic reset. The model must
+state that its values are invented and that it cannot certify safety or promote canonical tuning.
+
+This cycle also adds the current product repositories as approved curriculum authorities. ARESLib
+sources are pinned to `13599358` (`areslib-10.1.0`). Studio sources are pinned to the published
+`34845d75` lineage (`studio-1.7.0`). All six lesson references require exact remote blob-hash
+verification. Older consolidated ARES-Robotics pins remain approved historical sources for lessons
+that have not yet been refreshed; this cycle does not silently relabel their versions.
+
+Students retain authority to verify robot functionality. A mentor review request inside Studio is an
+optional learning prompt. Mentor or Lead Coach approval remains limited to website publishing. This
+local curriculum change does not stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
