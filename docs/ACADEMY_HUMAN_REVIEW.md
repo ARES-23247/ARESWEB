@@ -1194,6 +1194,20 @@ tuning report is optional collaboration, not robot permission. Lead Coach approv
 to publishing a website post. This local change does not run SysId, stage a tuning proposal, change
 a canonical `.arestuning` file, publish curriculum, or mutate production data.
 
+## Continuous cycle: current-only curriculum provenance
+
+On 2026-08-30, all 202 Academy source references, covering 118 unique pinned files, were verified
+against the current protected `ARES-Robotics` monorepo authority at commit `f3de343a` for ARES
+11.1.0 and Studio 2.0.3. The source-authority policy now accepts exactly one current monorepo
+identity. It rejects historical commit approvals and the retired `ARESLib-Kotlin`, `ARES-FTC`, and
+`ARES-Analytics` split-repository authorities. Git history still preserves the older evidence and
+review record.
+
+This is a validation-policy change only. It does not rewrite the historical review notes below,
+publish curriculum, change a live lesson, or mutate production data. When the ARES release line
+changes, update the catalog and every affected source hash in one reviewed change before replacing
+the sole current authority.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

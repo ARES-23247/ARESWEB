@@ -218,11 +218,14 @@ export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan)
 
 export function validateSourceAuthorities(authorities) {
   assert(authorities?.schemaVersion === 1, "source-authorities.json schemaVersion must be 1.");
+  assert(authorities.mode === "current-only",
+    "source-authorities.json must use current-only mode.");
   assert(authorities.repositories && typeof authorities.repositories === "object", "Source-authority repositories are required.");
   for (const [repository, policy] of Object.entries(authorities.repositories)) {
     assert(/^[A-Za-z0-9._-]+$/u.test(repository), `${repository}: invalid authority repository name.`);
     assert(policy?.current && typeof policy.current === "object", `${repository}: current authority is required.`);
-    assert(Array.isArray(policy.approved) && policy.approved.length > 0, `${repository}: at least one approved authority is required.`);
+    assert(Array.isArray(policy.approved) && policy.approved.length === 1,
+      `${repository}: current-only mode requires exactly one approved authority.`);
     assertCommit(policy.current.commit, `${repository}.current.commit`);
     assert(typeof policy.current.revision === "string" && policy.current.revision.trim(), `${repository}.current.revision is required.`);
     const approvedKeys = new Set();
@@ -415,6 +418,8 @@ async function verifyRemoteSource(source, cache) {
 export async function validateLearningCatalog({ write = false, verifyRemote = false } = {}) {
   const catalog = JSON.parse(await readFile(CATALOG_PATH, "utf8"));
   const authorities = validateSourceAuthorities(JSON.parse(await readFile(SOURCE_AUTHORITIES_PATH, "utf8")));
+  assert(Object.keys(authorities.repositories).length === 1 && authorities.repositories["ARES-Robotics"],
+    "Academy curriculum accepts only the current ARES-Robotics monorepo authority.");
   const academySims = validateAcademySimRegistry(JSON.parse(await readFile(SIM_REGISTRY_PATH, "utf8")));
   assert(catalog.catalogVersion === 1, "catalogVersion must be 1.");
   assert(catalog.generatedFrom && typeof catalog.generatedFrom === "object", "generatedFrom release provenance is required.");
@@ -517,6 +522,8 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
       },
     });
   }
+  assert(remoteSources.every((source) => source.current),
+    "Academy curriculum source references must use the current ARES-Robotics monorepo authority.");
 
   const legacyPlan = JSON.parse(await readFile(LEGACY_PLAN_PATH, "utf8"));
   assert(legacyPlan.planVersion === 1 && legacyPlan.mode === "proposal-only", "Legacy migration plan must remain proposal-only version 1.");
@@ -610,7 +617,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     proposedCrossLinks: crossLinkPlan.documents.length,
     proposedPublishedRefreshes: publishedRefreshPlan.documents.length,
     verifiedSources: verifyRemote ? new Set(remoteSources.map((source) => source.url)).size : 0,
-    historicalSources: remoteSources.filter((source) => !source.current).length,
+    currentSources: remoteSources.length,
     plannedRoboticsTracks: roboticsCurriculum.tracks,
     plannedRoboticsLessons: roboticsCurriculum.lessons,
     plannedExistingInteractions: roboticsCurriculum.existingInteractionCandidates,
@@ -627,5 +634,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   });
   const interactionVerb = result.embeddedInteractions === 1 ? "is" : "are";
   const interactionNoun = result.embeddedInteractions === 1 ? "interaction" : "interactions";
-  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. The robotics expansion contract contains ${result.plannedRoboticsLessons} lessons across ${result.plannedRoboticsTracks} tracks and ${result.plannedExistingInteractions} existing-lesson interaction upgrades; ${result.embeddedInteractions} reviewed ${interactionNoun} ${interactionVerb} currently embedded. ${result.curriculumSourceRequests} evidence gaps have tracked requests. ${result.historicalSources} source references intentionally retain reviewed historical pins.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
+  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. The robotics expansion contract contains ${result.plannedRoboticsLessons} lessons across ${result.plannedRoboticsTracks} tracks and ${result.plannedExistingInteractions} existing-lesson interaction upgrades; ${result.embeddedInteractions} reviewed ${interactionNoun} ${interactionVerb} currently embedded. ${result.curriculumSourceRequests} evidence gaps have tracked requests. All ${result.currentSources} source references use the current ARES-Robotics monorepo authority.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
 }

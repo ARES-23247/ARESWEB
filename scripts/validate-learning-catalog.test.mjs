@@ -58,17 +58,18 @@ describe("learning catalog preparation", () => {
     expect(() => parseAresVersions("not-a-property")).toThrow(/Invalid ARES version-property line/u);
   });
 
-  it("accepts current and historical pins but rejects undeclared source identities", () => {
+  it("accepts only the current pin and rejects undeclared source identities", () => {
     const current = { revision: "v2.0.0", commit: "b".repeat(40) };
     const historical = { revision: "v1.0.0", commit: "a".repeat(40) };
     const authorities = validateSourceAuthorities({
       schemaVersion: 1,
+      mode: "current-only",
       repositories: {
-        example: { current, approved: [historical, current] },
+        example: { current, approved: [current] },
       },
     });
 
-    expect(resolveApprovedAuthority(authorities, "example", historical.revision, historical.commit)).toEqual(historical);
+    expect(resolveApprovedAuthority(authorities, "example", historical.revision, historical.commit)).toBeNull();
     expect(resolveApprovedAuthority(authorities, "example", current.revision, current.commit)).toEqual(current);
     expect(resolveApprovedAuthority(authorities, "example", "v3.0.0", "c".repeat(40))).toBeNull();
     expect(resolveApprovedAuthority(authorities, "unknown", current.revision, current.commit)).toBeNull();
@@ -77,6 +78,7 @@ describe("learning catalog preparation", () => {
   it("requires the current source identity to be an approved immutable pin", () => {
     expect(() => validateSourceAuthorities({
       schemaVersion: 1,
+      mode: "current-only",
       repositories: {
         example: {
           current: { revision: "v2.0.0", commit: "b".repeat(40) },
@@ -86,10 +88,30 @@ describe("learning catalog preparation", () => {
     })).toThrow(/current authority must also be approved/u);
   });
 
+  it("rejects historical approvals and policies that are not current-only", () => {
+    const current = { revision: "v2.0.0", commit: "b".repeat(40) };
+    const historical = { revision: "v1.0.0", commit: "a".repeat(40) };
+    expect(() => validateSourceAuthorities({
+      schemaVersion: 1,
+      mode: "current-only",
+      repositories: {
+        example: { current, approved: [historical, current] },
+      },
+    })).toThrow(/exactly one approved authority/u);
+    expect(() => validateSourceAuthorities({
+      schemaVersion: 1,
+      mode: "historical-and-current",
+      repositories: {
+        example: { current, approved: [current] },
+      },
+    })).toThrow(/current-only mode/u);
+  });
+
   it("rejects mutable links and repositories outside the reviewed authority list", () => {
     const commit = "a".repeat(40);
     const authorities = validateSourceAuthorities({
       schemaVersion: 1,
+      mode: "current-only",
       repositories: {
         example: {
           current: { revision: "v1.0.0", commit },

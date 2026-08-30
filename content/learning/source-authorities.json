@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "mode": "current-only",
   "repositories": {
     "ARES-Robotics": {
       "current": {
@@ -8,64 +9,8 @@
       },
       "approved": [
         {
-          "revision": "ares-11.0.0-studio-2.0.0",
-          "commit": "1810d74e8f3b260116df68fd8c1b0854b2d61493"
-        },
-        {
-          "revision": "ares-11.0.0-studio-2.0.0",
-          "commit": "439f2a36855aa6d00010c0d4ada255511626d1af"
-        },
-        {
-          "revision": "ares-11.1.0-studio-2.0.1",
-          "commit": "65351a2721840ed3063a4a5a97c440b6fcc0d1b9"
-        },
-        {
-          "revision": "ares-11.1.0-studio-2.0.2",
-          "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d"
-        },
-        {
-          "revision": "ares-11.1.0-studio-2.0.2",
-          "commit": "1c92c61c2faaca2a630e525a76e41d4f7657815c"
-        },
-        {
           "revision": "ares-11.1.0-studio-2.0.3",
           "commit": "f3de343ac79a62de0a2592d793da84fd82407718"
-        }
-      ]
-    },
-    "ARESLib-Kotlin": {
-      "current": {
-        "revision": "areslib-10.1.0",
-        "commit": "13599358be7fb87d44e9804e798c7f27c6e84b21"
-      },
-      "approved": [
-        {
-          "revision": "areslib-10.1.0",
-          "commit": "13599358be7fb87d44e9804e798c7f27c6e84b21"
-        }
-      ]
-    },
-    "ARES-Analytics": {
-      "current": {
-        "revision": "studio-1.7.0",
-        "commit": "34845d750ebb69bea536d509538bf5cde3f8b478"
-      },
-      "approved": [
-        {
-          "revision": "studio-1.7.0",
-          "commit": "34845d750ebb69bea536d509538bf5cde3f8b478"
-        }
-      ]
-    },
-    "ARES-FTC": {
-      "current": {
-        "revision": "ares-ftc-10.1.0",
-        "commit": "0cb74896a60fd7a3b46bb70ca04440aaac91fc6a"
-      },
-      "approved": [
-        {
-          "revision": "ares-ftc-10.1.0",
-          "commit": "0cb74896a60fd7a3b46bb70ca04440aaac91fc6a"
         }
       ]
     }
