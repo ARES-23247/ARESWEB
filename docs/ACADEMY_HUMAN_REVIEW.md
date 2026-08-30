@@ -36,6 +36,14 @@ For every item being approved, confirm:
 Record exceptions by slug. Approval may cover a subset; unapproved items remain
 unchanged and non-public.
 
+The dashboard's **Review** action loads a bounded, explicit lesson DTO from the
+authenticated review API before it opens the modal. Reviewers therefore see the
+same server-authoritative title, body, learning metadata, source links, version,
+and safety scope that produced the approval digest. The final action sends that
+digest back to a transaction; if the saved record changed, publication stops and
+the reviewer must load the new version. The DTO omits author identity and other
+operational fields that are not needed for content review.
+
 ## Eleven published Academy lessons
 
 These exact records were reviewed and published under batch

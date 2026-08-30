@@ -2,12 +2,14 @@
 
 import React from "react";
 import { Plus, Shield, BookOpen } from "lucide-react";
-import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
+import {
+  useDashboardDocController,
+  type DocumentationApprovalReview,
+} from "@/hooks/dashboard/useDashboardDocController";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 import DocumentApprovalReviewDialog from "@/components/dashboard/DocumentApprovalReviewDialog";
-import type { DocRecord } from "@/hooks/useDocumentSync";
 
 const ARESLIB_CATEGORIES = [
   "Architecture & Redux",
@@ -46,7 +48,9 @@ export default function AreslibManagementPage() {
     handleCloseEditor,
     handleSave,
     isApprover,
-    handleApproveAndPublish,
+    loadDocumentationApprovalReview,
+    handleApproveDocumentationReview,
+    reviewingSlug,
     approvingSlug,
     approvalNotice,
     dismissApprovalNotice,
@@ -59,7 +63,7 @@ export default function AreslibManagementPage() {
     archiveError,
   } = useDashboardDocController("docs", (d) => d.isDeleted !== 1 && d.displayInAreslib === 1);
   const [showArchived, setShowArchived] = React.useState(false);
-  const [reviewItem, setReviewItem] = React.useState<DocRecord | null>(null);
+  const [approvalReview, setApprovalReview] = React.useState<DocumentationApprovalReview | null>(null);
 
   return (
     <div className="space-y-10 w-full text-left">
@@ -116,10 +120,12 @@ export default function AreslibManagementPage() {
         loadingList={loadingList}
         canEdit={canEdit}
         isApprover={isApprover}
-        onApprove={(item) => {
+        onApprove={async (item) => {
           dismissApprovalNotice();
-          setReviewItem(item);
+          const review = await loadDocumentationApprovalReview(item, "areslib");
+          if (review) setApprovalReview(review);
         }}
+        reviewingSlug={reviewingSlug}
         approvingSlug={approvingSlug}
         variant="docs"
         onEdit={handleOpenEdit}
@@ -139,16 +145,17 @@ export default function AreslibManagementPage() {
       />
 
       <DocumentApprovalReviewDialog
-        item={reviewItem}
+        item={approvalReview?.document ?? null}
         categories={ARESLIB_CATEGORIES}
         defaultCategory="Architecture & Redux"
         libraryLabel="ARESLib"
-        isApproving={Boolean(reviewItem && approvingSlug === reviewItem.slug)}
+        isApproving={Boolean(approvalReview && approvingSlug === approvalReview.document.slug)}
         errorMessage={approvalNotice?.kind === "error" ? approvalNotice.message : null}
-        onClose={() => setReviewItem(null)}
-        onApprove={async (item) => {
-          const approved = await handleApproveAndPublish(item, "areslib");
-          if (approved) setReviewItem(null);
+        onClose={() => setApprovalReview(null)}
+        onApprove={async () => {
+          if (!approvalReview) return;
+          const approved = await handleApproveDocumentationReview(approvalReview);
+          if (approved) setApprovalReview(null);
         }}
       />
 

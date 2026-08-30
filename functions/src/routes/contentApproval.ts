@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import express, { type NextFunction, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
+import { reviewableDocumentDto } from "../lib/contentDtos";
 import { publicLearningMetadata } from "../lib/learningContent";
 import { asyncHandler } from "../lib/utils";
 import { ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
@@ -135,6 +136,7 @@ router.get(
         updatedAt: typeof data.updatedAt === "string" ? data.updatedAt.slice(0, 80) : "",
         library: requestedLibrary,
         digest: contentReviewDigest(data),
+        document: reviewableDocumentDto(contentSlug, data, requestedLibrary),
       },
     });
   }),

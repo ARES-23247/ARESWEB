@@ -56,6 +56,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/contentDtos.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/aiControls.ts": {
           lines: 85,
           functions: 100,

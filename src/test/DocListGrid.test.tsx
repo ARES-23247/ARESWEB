@@ -126,6 +126,29 @@ describe("DocListGrid archive confirmation", () => {
     expect(onApprove).toHaveBeenCalledWith(expect.objectContaining({ slug: "safety-guide" }));
   });
 
+  it("prevents overlapping documentation review loads", () => {
+    render(
+      <DocListGrid
+        items={[
+          { ...record, status: "pending_approval", approvalStatus: "pending_approval" },
+          { ...record, slug: "second-guide", title: "Second Guide", status: "pending_approval", approvalStatus: "pending_approval" },
+        ]}
+        loadingList={false}
+        canEdit
+        isApprover
+        reviewingSlug="safety-guide"
+        onApprove={vi.fn()}
+        variant="docs"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Review and approve Safety Guide" })).toHaveTextContent("Loading review");
+    expect(screen.getByRole("button", { name: "Review and approve Safety Guide" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Review and approve Second Guide" })).toBeDisabled();
+  });
+
   it("offers published blog approvers an explicit crosspost or retry action", () => {
     const onSyndicate = vi.fn();
     render(
