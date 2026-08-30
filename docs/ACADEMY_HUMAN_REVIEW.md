@@ -563,6 +563,26 @@ or prove a physical robot pose. The two reviewed lesson sources are pinned to AR
 reviewed revision. Remote verification must still recompute each listed hash. This local curriculum
 change does not stage, publish, or overwrite production data.
 
+## Continuous cycle: existing motion-profile lesson depth
+
+This cycle improves the existing `controls-motion-profiles` lesson and its Motion Profile Lab. It
+does not add a replacement title. Review the grade 6-8 cruise-boundary calculation, phase and unit
+explanations, planned-versus-measured evidence activity, and description of the current ARES
+profile's reverse-motion, nonzero boundary-speed, and fail-closed behavior.
+
+The interaction now exposes the exact rest-to-rest cruise boundary, speed-up time, and signed
+acceleration in its text table. Confirm native keyboard and touch controls, narrow-screen reflow,
+visible focus, live result announcements, deterministic reset, and horizontal table overflow.
+At the exact boundary, the lesson must report a triangular profile with zero cruise time. Above the
+boundary, it must report a trapezoidal profile with positive cruise time.
+
+The interaction plans only positive, one-dimensional, rest-to-rest motion. It does not run the ARES
+profile class, model reverse motion or nonzero start and goal speeds, control a mechanism, read a
+sensor, predict tracking error, or prove physical limits. The two reviewed sources are pinned to
+ARES Robotics commit `f3de343a` and the ARES 11.1.0 / Studio 2.0.3 identity. Their local files still
+hash to the listed reviewed Git blobs. Remote verification must recompute those hashes. This local
+curriculum change does not stage, publish, or overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
