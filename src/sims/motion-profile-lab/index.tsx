@@ -114,6 +114,7 @@ export default function MotionProfileLab() {
     () => calculateConceptMotionProfile(distance, maxVelocity, maxAcceleration),
     [distance, maxVelocity, maxAcceleration],
   );
+  const boundaryMargin = distance - profile.cruiseThresholdDistance;
 
   const reset = () => {
     setDistance(DEFAULTS.distance);
@@ -265,6 +266,10 @@ export default function MotionProfileLab() {
             <Result
               label="Cruise boundary"
               value={`${profile.cruiseThresholdDistance.toFixed(2)} m`}
+            />
+            <Result
+              label="Boundary margin"
+              value={`${boundaryMargin >= 0 ? "+" : ""}${boundaryMargin.toFixed(2)} m`}
             />
           </dl>
         </div>

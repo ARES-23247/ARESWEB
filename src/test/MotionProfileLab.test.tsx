@@ -20,6 +20,7 @@ describe("MotionProfileLab", () => {
       ),
     ).toBe(true);
     expect(trapezoid.cruiseThresholdDistance).toBeCloseTo(8 / 3);
+    expect(3 - trapezoid.cruiseThresholdDistance).toBeCloseTo(1 / 3);
     expect(
       trapezoid.samples.find((sample) => sample.phase === "accelerate")
         ?.acceleration,
@@ -40,7 +41,9 @@ describe("MotionProfileLab", () => {
   });
 
   it("uses the exact rest-to-rest cruise boundary", () => {
-    expect(calculateConceptMotionProfile(4, 2, 1).kind).toBe("triangular");
+    const boundary = calculateConceptMotionProfile(4, 2, 1);
+    expect(boundary.kind).toBe("triangular");
+    expect(4 - boundary.cruiseThresholdDistance).toBe(0);
     expect(calculateConceptMotionProfile(4.1, 2, 1).kind).toBe("trapezoidal");
   });
 
@@ -55,9 +58,11 @@ describe("MotionProfileLab", () => {
 
   it("supports native controls, a text table, and deterministic reset", () => {
     render(<MotionProfileLab />);
+    expect(screen.getByText("+0.33 m")).toBeVisible();
     const distance = screen.getByRole("slider", { name: "Move distance" });
     fireEvent.change(distance, { target: { value: "1.5" } });
     expect(distance).toHaveValue("1.5");
+    expect(screen.getByText("-1.17 m")).toBeVisible();
     fireEvent.click(screen.getByText("Open the numeric result table"));
     expect(screen.getByRole("table")).toBeVisible();
     expect(

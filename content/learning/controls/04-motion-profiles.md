@@ -78,6 +78,11 @@ cruise boundary distance = 2.67 m
 A move longer than `2.67 m` includes a cruise phase in this model. A move at or below that distance
 is triangular. At the exact boundary, cruise time is zero.
 
+The lab also reports a **boundary margin**. A positive margin means the move has that much distance
+left for cruising. A negative margin means the move is that far short of the boundary, so it must
+begin slowing down before it reaches the velocity limit. A zero margin is exactly on the boundary.
+This signed difference is often easier to compare than two rounded numbers.
+
 For a `1 m` move with the same limits, the profile cannot reach `2 m/s`. Its peak speed is:
 
 ```text
@@ -165,6 +170,8 @@ Keep both limits at their default values. Move only the distance control.
 3. Find a distance above the boundary.
 4. Record its trapezoidal shape and positive cruise time.
 5. Move as close to the boundary as the slider allows.
+6. Read the boundary margin after each move. Confirm that a negative margin matches triangular and
+   a positive margin matches trapezoidal.
 
 Explain why peak speed changes below the boundary but stays at the velocity limit above it. Do not
 add a cruise phase to a triangular move.

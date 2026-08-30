@@ -591,10 +591,16 @@ time, constraints, or goal data copy a finite current state, while a non-finite 
 position and velocity as zero. The profile result does not identify the fault, so the lesson must
 not imply that it replaces separate diagnostics.
 
-The implementation and focused behavior tests are pinned directly to ARESLib commit `13599358`
-and version 10.1.0. Their clean local files hash to the listed reviewed Git blobs. Remote
-verification must still recompute both hashes. This local curriculum change does not stage,
-publish, or overwrite production data.
+The implementation and focused behavior tests are now pinned to the authoritative `ARES-Robotics`
+monorepo commit `f3de343a` and ARES 11.1.0 / Studio 2.0.3. Their Git blob hashes are unchanged from
+the reviewed ARESLib 10.1.0 files, which confirms the executable profile contract did not change
+during the repository migration. The canonical release manifest is a third source pin so the
+version claim can be checked independently. Remote verification must recompute all three hashes.
+
+The lab now exposes the cruise-boundary subtraction as a signed boundary margin. Confirm that a
+negative margin is short of the boundary, a positive margin is beyond it, and zero still reports
+zero cruise time. This is an explanation of the existing mathematics, not a new physical claim.
+This local curriculum change does not stage, publish, or overwrite production data.
 
 ## Continuous cycle: existing odometry lesson depth
 
