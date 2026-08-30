@@ -135,13 +135,14 @@ use hashes read from the current public bodies.
 
 ## Robotics curriculum expansion awaiting review
 
-This branch adds thirty-seven new robotics drafts and deepens selected existing lessons.
+This branch adds thirty-eight new robotics drafts and deepens selected existing lessons.
 The files remain local review sources. They are not staged, published, or live.
 
 | Lesson | Path | Safety scope | Canonical source file |
 | --- | --- | --- | --- |
 | Read and Change Small Kotlin Programs | Programming with ARES | None | [`01-kotlin-basics.md`](../content/learning/programming/01-kotlin-basics.md) |
 | Author a Code-First or Hybrid Subsystem | Programming with ARES | Physical robot | [`05-code-first-subsystem.md`](../content/learning/programming/05-code-first-subsystem.md) |
+| Build Safe Task Sequences in ARESLib | Programming with ARES | Simulation only | [`07-safe-task-sequences.md`](../content/learning/programming/07-safe-task-sequences.md) |
 | Test Robot Logic Across Mocks and Simulation | Programming with ARES | Physical robot | [`08-tests-parity.md`](../content/learning/programming/08-tests-parity.md) |
 | Measure, Sketch, and Record a Design | Mechanical Design & Fabrication | None | [`00-measurement-design-notebook.md`](../content/learning/mechanical-design/00-measurement-design-notebook.md) |
 | Choose and Use Common Robot Tools | Mechanical Design & Fabrication | Physical robot | [`01-tool-evidence.md`](../content/learning/mechanical-design/01-tool-evidence.md) |
@@ -193,8 +194,10 @@ that its conceptual-model warning remains visible in both lesson contexts.
 The existing `ftc-starter-first-autonomous` tutorial is also upgraded in place;
 it is not an eleventh new draft. Review its Autonomous Path Clearance Lab and
 Motion Profile Lab together with the real Studio, project-verification, Local
-Simulator, and student-led physical-test boundaries. Confirm that neither web
-model is described as project, robot, or physical-clearance validation.
+Simulator, and student-led physical-test boundaries. Review the new typed
+RoutineDocument, task-tree compilation, resource-conflict, and bounded-wait
+explanations against ARES 11.1.0 and Studio 2.0.3. Confirm that neither web model
+is described as project, robot, or physical-clearance validation.
 The existing `robot-input-to-output` tutorial is upgraded in place as well.
 Review its Robot Input-to-Output Flow Tracer for keyboard order, touch targets,
 live step announcements, narrow-screen reflow, and the visible statement that
@@ -217,6 +220,11 @@ lesson. Review its ordered disabled and health fallbacks, transient posture,
 measured guard, complete preset, deterministic steps, and physical-test
 boundary. Confirm that the invented three-posture model is not presented as the
 real ARES runtime or as proof of physical clearance.
+The task-sequence lesson now follows season composition. Review its group
+completion rules, finite waits, resource ownership, preemption, cancellation,
+and failure cleanup against the pinned `RobotSequence`, `TaskExecutor`, and
+`TaskResources` source. Its reused Superstructure State Coordination Lab is an
+invented guard-order model, not an ARES task-tree runner or hardware test.
 The parity lesson closes the current Programming with ARES path. Review all
 four evidence classifications, native selects, deterministic reset, and the
 rule that shared compile success is weaker than matching runtime behavior.
