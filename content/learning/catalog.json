@@ -794,7 +794,7 @@
       "slug": "electrical-sensors",
       "title": "Choose and Read Robot Sensors",
       "category": "Robotics & Engineering",
-      "description": "Separate the raw distance interface, FTC cache, and generated subsystem snapshot before making a freshness or health claim.",
+      "description": "Compare the raw interface, a cached FTC adapter, and the separate ARES 11.1.0 generated refresh path before making a freshness or health claim.",
       "contentFile": "electrical-systems/02-choose-read-sensors.md",
       "subject": "robotics-engineering",
       "topics": ["sensors", "raw I/O", "cached inputs", "generated snapshots", "freshness", "signal health"],
@@ -803,52 +803,60 @@
       "estimatedMinutes": 95,
       "pathMemberships": [{ "pathId": "electrical-systems-diagnostics", "order": 5 }],
       "prerequisites": ["electrical-voltage-current-power", "programming-io-caching"],
-      "objectives": ["Explain what the raw distance interface and FTC cache provide without inventing timestamp or health fields.", "Classify a generated sensor snapshot using range, validity, configuration health, and freshness evidence.", "Design a sensor decision card that keeps source, software, simulation, and student physical checks separate."],
+      "objectives": ["Explain what the raw distance interface and cached FTC adapter provide without inventing timestamp or health fields.", "Trace why the cached adapter and generated subsystem adapter are separate runtime paths.", "Classify a generated sensor snapshot using range, validity, configuration health, and freshness evidence.", "Design a sensor decision card that keeps source, software, simulation, and student physical checks separate."],
       "platforms": ["hardware-neutral", "simulator", "ftc", "frc"],
       "instructionalContractVersion": 2,
       "sourceReferences": [
         {
           "label": "Current raw distance-sensor interface",
-          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt",
-          "repository": "ARESLib-Kotlin",
-          "revision": "areslib-10.1.0",
-          "path": "core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt",
+          "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt",
+          "repository": "ARES-Robotics",
+          "revision": "ares-11.1.0-studio-2.0.3",
+          "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt",
           "blobHash": "39d25769ec5fb175a448d1d2d1406d2b10ac66c3"
         },
         {
           "label": "Current FTC background distance cache",
-          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcDistanceSensor.kt",
-          "repository": "ARESLib-Kotlin",
-          "revision": "areslib-10.1.0",
-          "path": "ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcDistanceSensor.kt",
+          "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcDistanceSensor.kt",
+          "repository": "ARES-Robotics",
+          "revision": "ares-11.1.0-studio-2.0.3",
+          "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcDistanceSensor.kt",
           "blobHash": "8df845d91215d211225301e4c8fc5cd5610e4418"
         },
         {
           "label": "Current generated distance-sensor scaffold",
-          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/subsystem/SubsystemHardwareScaffolding.kt",
-          "repository": "ARESLib-Kotlin",
-          "revision": "areslib-10.1.0",
-          "path": "core/src/main/kotlin/com/areslib/subsystem/SubsystemHardwareScaffolding.kt",
+          "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemHardwareScaffolding.kt",
+          "repository": "ARES-Robotics",
+          "revision": "ares-11.1.0-studio-2.0.3",
+          "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemHardwareScaffolding.kt",
           "blobHash": "0c2e2348f8181aa194e79a23b0c092dc0fcd06ab"
         },
         {
           "label": "Current generated snapshot validity and timestamp logic",
-          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt",
-          "repository": "ARESLib-Kotlin",
-          "revision": "areslib-10.1.0",
-          "path": "codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt",
+          "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt",
+          "repository": "ARES-Robotics",
+          "revision": "ares-11.1.0-studio-2.0.3",
+          "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemKotlinGenerator.kt",
           "blobHash": "f187d76638f18864cb5cdf2000931f857abe7e0b"
         },
         {
           "label": "Current once-per-loop subsystem sensor lifecycle",
-          "url": "https://github.com/ARES-23247/ARESLib-Kotlin/blob/13599358be7fb87d44e9804e798c7f27c6e84b21/core/src/main/kotlin/com/areslib/subsystem/AresRobot.kt",
-          "repository": "ARESLib-Kotlin",
-          "revision": "areslib-10.1.0",
-          "path": "core/src/main/kotlin/com/areslib/subsystem/AresRobot.kt",
+          "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/AresRobot.kt",
+          "repository": "ARES-Robotics",
+          "revision": "ares-11.1.0-studio-2.0.3",
+          "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/AresRobot.kt",
           "blobHash": "0306adef994dfb768b367dea887fb3f40431c969"
+        },
+        {
+          "label": "Canonical ARES release identity",
+          "url": "https://github.com/ARES-23247/ARES-Robotics/blob/f3de343ac79a62de0a2592d793da84fd82407718/release/ares-versions.properties",
+          "repository": "ARES-Robotics",
+          "revision": "ares-11.1.0-studio-2.0.3",
+          "path": "release/ares-versions.properties",
+          "blobHash": "77420b3de671fa5a4db08e3afd0155a11aa5b598"
         }
       ],
-      "appliesToVersion": "ARESLib 10.1.0",
+      "appliesToVersion": "ARES 11.1.0; Studio 2.0.3",
       "safetyScope": "physical-robot"
     },
     {

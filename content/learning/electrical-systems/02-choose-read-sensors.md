@@ -5,20 +5,26 @@
 A sensor turns a physical condition into data. A number by itself is not enough evidence. Robot
 code also needs to know what the number means, where it came from, and whether it is safe to use.
 
-This lesson separates three current ARES layers:
+This lesson compares three current ARES source boundaries:
 
 1. a raw sensor value,
-2. a cached FTC value, and
-3. a generated subsystem snapshot with explicit health evidence.
+2. a hand-authored cached FTC adapter, and
+3. a separate generated subsystem adapter and snapshot with explicit health evidence.
+
+These are not three steps in one runtime pipe. The cached adapter implements the small raw
+interface. Generated subsystem code reads the FTC SDK sensor through its own `refresh` path.
 
 Complete [Voltage, Current, Power, and Energy](/academy/electrical-voltage-current-power?path=electrical-systems-diagnostics)
 and [Read Hardware Once and Write Safe Outputs](/academy/programming-io-caching?path=programming-with-ares)
 first. No powered robot is required for the source and model work.
 
-By the end, you will be able to explain what each layer proves, choose a sensor for one robot
+By the end, you will be able to explain what each path proves, choose a sensor for one robot
 question, and plan a student-led physical check.
 
-## The important correction: three different evidence layers
+This lesson matches ARES 11.1.0 and Studio 2.0.3. Its source links point to one reviewed commit in
+the ARES Robotics monorepo.
+
+## The important correction: three different evidence paths
 
 Current ARESLib does not attach a timestamp and health report to every raw sensor property. Those
 fields appear at a higher subsystem layer. Keep the layers separate.
@@ -27,14 +33,15 @@ fields appear at a higher subsystem layer. Keep the layers separate.
 | ---------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Raw interface                | `DistanceSensorIO.distanceMeters` | One value in meters; `NaN` or positive infinity may mean offline or out of range                | Age, configuration health, useful range, and physical accuracy                                    |
 | FTC cache                    | `FtcDistanceSensor`               | A background read about every 20 ms and the latest cached meter value; read errors become `NaN` | A public last-update time, a separate health field, and proof that the target is sensed correctly |
-| Generated subsystem snapshot | Generated IO and immutable state  | Finite/range checks, `feedbackValid`, `feedbackTimestampMs`, and `configurationHealthy`         | Physical placement, wiring, surface effects, and proof on the actual robot                        |
+| Generated adapter and snapshot | Generated IO and immutable state | One direct SDK read per refresh, finite/range checks, `feedbackValid`, `feedbackTimestampMs`, and `configurationHealthy` | Physical placement, wiring, surface effects, and proof on the actual robot |
 
 A finite cached number is useful, but it is not automatically fresh. A generated subsystem can
 make the stronger freshness claim because it records when a complete snapshot was received and
 compares that time with its allowed age.
 
 Hand-authored code must build the same evidence on purpose. It does not receive generated snapshot
-fields merely because it implements `DistanceSensorIO`.
+fields merely because it implements `DistanceSensorIO`. The generated adapter does not wrap
+`FtcDistanceSensor`; it owns a different read path.
 
 ## Vocabulary
 
@@ -62,10 +69,10 @@ The current FTC adapter polls in a background thread. It catches a device-read e
 `NaN`. Its getter returns the cached value instead of making another I2C call. This reduces blocking
 in the robot loop, but its public contract still has no sample timestamp.
 
-The generated distance-sensor scaffold is stronger. It declares a distance measurement in meters
-with a default accepted range from 0 through 10 meters. Generated physical and mock adapters require
-the reading to be finite and inside that configured range before committing the cached snapshot.
-They then set `feedbackValid` and record `feedbackTimestampMs` with `RobotClock`.
+The generated distance-sensor scaffold declares a distance measurement in meters with a default
+accepted range from 0 through 10 meters. Its FTC adapter reads the SDK `DistanceSensor` when
+`refresh` runs. It requires a finite, in-range result before committing the cached snapshot. It then
+sets `feedbackValid` and records `feedbackTimestampMs` with `RobotClock`.
 
 When the subsystem copies the IO snapshot into immutable state, it also compares the snapshot age
 with the subsystem feedback timeout. A failed or old snapshot remains visible as invalid state.
@@ -75,14 +82,15 @@ with the subsystem feedback timeout. A failed or old snapshot remains visible as
 ```mermaid
 %% aria: The physical sensor produces a raw meter value. An FTC adapter caches the latest value without adding a public timestamp. A generated subsystem validates the value and stores validity, timestamp, and configuration health. A control rule uses the snapshot only when all required evidence passes. Physical testing remains separate.
 flowchart LR
-  A["Physical condition"] --> B["Raw meter value"]
-  B --> C["FTC background cache"]
-  C --> D["Generated range and finite checks"]
-  D --> E["Immutable snapshot"]
-  E --> F{"Valid, fresh, and configured?"}
-  F -- Yes --> G["Use bounded result"]
-  F -- No --> H["Block and report reason"]
-  I["Student physical check"] -. separate evidence .-> A
+  A["Physical sensor"] --> B["DistanceSensorIO"]
+  B --> C["FtcDistanceSensor background cache"]
+  A --> D["Generated FTC adapter refresh"]
+  D --> E["Range and finite checks"]
+  E --> F["Immutable snapshot"]
+  F --> G{"Valid, fresh, and configured?"}
+  G -- Yes --> H["Use bounded result"]
+  G -- No --> I["Block and report reason"]
+  J["Student physical check"] -. separate evidence .-> A
 ```
 
 The dashed path matters. A source review or simulation cannot prove that a real beam, surface, wire,
@@ -98,7 +106,7 @@ not one of the documented offline or out-of-range sentinels. You still do not kn
 At the FTC cache, you know the value came from the adapter's latest background read. You still
 cannot calculate age from the public cached value alone.
 
-At a generated subsystem snapshot, assume these facts:
+On the separate generated adapter path, assume the snapshot contains these facts:
 
 - distance: `0.75 m`,
 - feedback valid: `true`,
@@ -143,17 +151,18 @@ distinguishable from a valid zero reading.
 
 ## Source walk and hardware-free checks
 
-Use the pinned source links for this lesson. In a current ARESLib checkout, locate the same
-boundaries with:
+Use the pinned source links for this lesson. From the current ARES Robotics monorepo root, locate
+the same boundaries with:
 
 ```powershell
 rg -n "distanceMeters|feedbackValid|feedbackTimestampMs|configurationHealthy" `
-  core/src/main codegen/src/main ftc-hardware/src/main
+  ARESLib-Kotlin/core/src/main ARESLib-Kotlin/codegen/src/main ARESLib-Kotlin/ftc-hardware/src/main
 ```
 
 Run focused library checks without a robot:
 
 ```powershell
+Set-Location ARESLib-Kotlin
 .\gradlew.bat :core:test --tests "com.areslib.hardware.sensor.ThreadedSensorsTest"
 .\gradlew.bat :codegen:test --tests "com.areslib.codegen.SubsystemKotlinGeneratorTest"
 ```
@@ -186,7 +195,8 @@ and uses the Lead Coach review flow.
 
 ## Checkpoints
 
-- Can you name the evidence layer you are using?
+- Can you name the evidence path you are using?
+- Are you treating the cached and generated adapters as separate paths?
 - Does the sensor answer the actual robot question?
 - Are value and unit explicit?
 - Is the read cached instead of hidden inside a getter?
@@ -203,6 +213,7 @@ and uses the Lead Coach review flow.
 | Offline sensor appears as a real distance       | Reject `NaN`, infinity, and failed snapshot validity.                                                     |
 | Old value survives after a read problem         | Keep the prior value for diagnosis, but set validity false and do not use it for control.                 |
 | Two parts of a loop see different values        | Remove hidden device reads and use one owned snapshot.                                                    |
+| Generated path seems to use the background cache | Trace the generated `refresh` method. It reads the SDK device through a separate adapter.                |
 | Generated range rejects a real device value     | Review the descriptor range against the sensor datasheet and actual task. Do not simply remove the check. |
 | Wrong device answers on a shared bus            | Check stable identity, address, bus, and parent controller.                                               |
 | Color changes with room light                   | Record lighting, surface, range, and a physical calibration test.                                         |
@@ -218,6 +229,7 @@ and uses the Lead Coach review flow.
 5. Why are validity and configuration health separate?
 6. What should happen when a required generated snapshot is stale?
 7. Which facts still require a student physical check?
+8. Why should you not draw the cached adapter and generated adapter as one pipeline?
 
 ## Extension challenge
 

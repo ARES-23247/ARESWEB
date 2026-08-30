@@ -64,8 +64,8 @@ export function classifySensorEvidence(
   if (!Number.isFinite(value)) {
     return finding(
       "Blocked",
-      "The raw distance contract uses this value as failed or out-of-range evidence.",
-      "A usable distance and physical evidence.",
+      "The raw contract marks this as failed or out-of-range evidence.",
+      "A usable distance plus physical evidence.",
     );
   }
   if (value < 0) {
@@ -78,28 +78,28 @@ export function classifySensorEvidence(
   if (input.layer === "RAW_INTERFACE") {
     return finding(
       "Raw value only",
-      "DistanceSensorIO reports meters but does not report age or configuration health.",
-      "Freshness, configuration health, and physical accuracy.",
+      "DistanceSensorIO reports meters, not age or setup health.",
+      "Freshness, setup health, and physical accuracy.",
     );
   }
   if (input.layer === "FTC_CACHE") {
     return finding(
       "Cached value only",
-      "FtcDistanceSensor returns its cached value but exposes no public sample time.",
-      "Known age, configuration health, and physical accuracy.",
+      "FtcDistanceSensor caches a value but exposes no sample time.",
+      "Known age, setup health, and physical accuracy.",
     );
   }
   if (value > 10) {
     return finding(
       "Blocked",
-      "The generated distance scaffold accepts 0 through 10 meters by default.",
+      "The generated scaffold defaults to 0–10 meters.",
       "An in-range sample or a reviewed range for the real device.",
     );
   }
   if (!input.feedbackValid) {
     return finding(
       "Blocked",
-      "The generated refresh did not produce a valid complete snapshot.",
+      "The refresh did not produce a valid snapshot.",
       "A successful finite, in-range refresh.",
     );
   }
@@ -117,21 +117,21 @@ export function classifySensorEvidence(
   ) {
     return finding(
       "Blocked",
-      "Snapshot ages must be finite and non-negative.",
+      "Ages must be finite and non-negative.",
       "A valid age and maximum age.",
     );
   }
   if (input.ageMs > input.maxAgeMs) {
     return finding(
       "Blocked",
-      "The complete snapshot is older than its allowed age.",
+      "The snapshot is older than its allowed age.",
       "A newer valid snapshot.",
     );
   }
   return finding(
     "Usable generated snapshot",
     "The snapshot is finite, in range, valid, configured, and fresh.",
-    "Physical placement, wiring, target, noise, and robot behavior.",
+    "Physical wiring, placement, target, noise, and robot behavior.",
   );
 }
 
@@ -173,7 +173,7 @@ export default function SensorSignalLab() {
         <div className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <SelectField
             id="sensor-layer"
-            label="Evidence layer"
+            label="Evidence path"
             value={input.layer}
             options={Object.entries(LAYER_LABELS)}
             onChange={(value) => update("layer", value as SensorEvidenceLayer)}
@@ -246,7 +246,7 @@ export default function SensorSignalLab() {
             aria-atomic="true"
             className="mt-4 grid gap-3"
           >
-            <Datum label="Layer" value={LAYER_LABELS[input.layer]} />
+            <Datum label="Path" value={LAYER_LABELS[input.layer]} />
             <Datum label="Status" value={result.status} />
             <Datum label="Reason" value={result.reason} />
             <Datum label="Missing" value={result.missing} />
@@ -260,12 +260,10 @@ export default function SensorSignalLab() {
         </summary>
         <ol className="mt-3 list-decimal space-y-2 pl-6 text-marble/80">
           <li>The raw interface gives meters and failure sentinels.</li>
+          <li>One FTC adapter caches background reads.</li>
           <li>
-            The FTC adapter polls in the background and returns a cached value.
-          </li>
-          <li>
-            Generated code adds a default 0–10 meter range, validity, time, and
-            setup evidence.
+            Generated adapters read separately on refresh and add range, time,
+            and setup evidence.
           </li>
         </ol>
       </details>
@@ -274,8 +272,8 @@ export default function SensorSignalLab() {
         role="note"
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
-        <strong>Model limit:</strong> This model does not read a sensor or run
-        robot code. It cannot prove wiring, placement, accuracy, or behavior.
+        <strong>Model limit:</strong> This model does not read or run a robot.
+        It cannot prove wiring, placement, accuracy, or behavior.
         The 0–10 meter range is a scaffold default, not a promise for every
         real sensor.
       </p>
