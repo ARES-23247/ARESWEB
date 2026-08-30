@@ -26,6 +26,21 @@ describe("ParityEvidenceLab", () => {
     });
   });
 
+  it("ignores adapter outcome selections for non-paired evidence", () => {
+    expect(
+      classifyParityEvidence("generated-contract", "differs", "matches"),
+    ).toMatchObject({
+      status: "Compile evidence only",
+      supports: "Physical and mock source share the generated contract.",
+    });
+    expect(
+      classifyParityEvidence("generated-behavior", "untested", "differs"),
+    ).toMatchObject({
+      status: "Mock behavior evidence",
+      limit: "The FTC or FRC platform adapter did not run.",
+    });
+  });
+
   it("classifies every paired runtime outcome without hiding gaps", () => {
     expect(
       classifyParityEvidence("paired-runtime", "untested", "matches").status,

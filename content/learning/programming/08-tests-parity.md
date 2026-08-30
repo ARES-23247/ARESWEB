@@ -6,9 +6,9 @@ Two files can use the same interface and still act differently. That is why a co
 the same as a behavior test. In this lesson, you will sort current ARES evidence into the right
 level. Then you will design one fair test that can reveal an adapter mismatch.
 
-This lesson matches ARESLib 10.1.0 and ARES-FTC 10.1.0. The source links are pinned to the current
-product repositories. An older lesson named a `simulation-foundation` contract that is not in the
-current ARESLib repository. Do not look for that removed file.
+This lesson matches ARES 11.1.0, FTC SDK 11.1.0, and Studio 2.0.3. Every source link is pinned to
+one reviewed commit in the ARES Robotics monorepo. An older lesson named a `simulation-foundation`
+contract that is not in the current monorepo. Do not look for that removed file.
 
 Complete
 [Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares)
@@ -63,6 +63,14 @@ The contract also includes the hardware-and-simulation parity item. Its evidence
 `COMPILED_GENERATED_CODE`. That wording matters. It says both generated adapters share a contract.
 It does not say both adapters passed the same runtime case.
 
+ARES 11.1.0 has one more compile-level item when `zeroAllocationPeriodic` is selected. It records
+that generated periodic code follows the zero-allocation policy. It does not measure allocated
+bytes. The source explains that byte-allocation regression remains a separate ARES platform test.
+
+Generated verification also has an ownership rule. A declarative runtime document cannot turn the
+generated checks off. An editable `GENERATED_STARTER` may omit them because students own and revise
+that source. In either case, a missing generated test is not evidence that the behavior passed.
+
 ## Worked example
 
 ### A failed write
@@ -108,36 +116,39 @@ column. A simulator result cannot fill a physical column.
 
 ## Hands-on activity
 
-1. Open the pinned `SubsystemVerificationContract.kt` source.
+1. Open the pinned monorepo `SubsystemVerificationContract.kt` source.
 2. Find `HARDWARE_SIMULATION_PARITY`.
 3. Record its `COMPILED_GENERATED_CODE` evidence level.
 4. List the six base generated behavior checks.
-5. Pick one optional safety setting. Record which extra check it adds.
-6. Open the pinned generator source. Find the generated `Mock...IO` tests.
-7. Mark which tests use `RobotClock` mock time.
-8. Open the pinned FTC lifecycle test.
-9. Record the exact instance and the three events that test observes.
-10. Choose one case: startup, failed write, homing/current, output limit, disabled stop, or invalid cleanup.
-11. Write one expected result using a number and unit when the case has a numeric value.
-12. Choose two real test boundaries. Do not call a compile check a runtime boundary.
-13. Give both sides the same input, units, initial state, clock, fault, and assertion.
-14. Include `NaN`, infinity, stale data, or a failed write when that fault fits the contract.
-15. Run the focused current-source checks from the ARESLib repository:
+5. Pick one optional safety setting. Record which extra check it adds and its evidence level.
+6. Find the zero-allocation check. Explain why it is compile evidence, not a byte measurement.
+7. Find the rule that lets an editable generated starter omit generated tests but rejects that choice
+   for a declarative runtime document.
+8. Open the pinned generator source. Find the generated `Mock...IO` tests.
+9. Mark which tests use `RobotClock` mock time and restore system time in `finally`.
+10. Open the pinned FTC lifecycle test.
+11. Record the exact instance and the three events that test observes.
+12. Choose one case: startup, failed write, homing/current, output limit, disabled stop, or invalid cleanup.
+13. Write one expected result using a number and unit when the case has a numeric value.
+14. Choose two real test boundaries. Do not call a compile check a runtime boundary.
+15. Give both sides the same input, units, initial state, clock, fault, and assertion.
+16. Include `NaN`, infinity, stale data, or a failed write when that fault fits the contract.
+17. From the monorepo root, enter `ARESLib-Kotlin` and run the focused current-source checks:
 
 ```powershell
 .\gradlew.bat :core:test --tests "com.areslib.subsystem.SubsystemVerificationContractTest"
 .\gradlew.bat :codegen:test --tests "com.areslib.codegen.SubsystemKotlinGeneratorTest"
 ```
 
-16. Run the relevant FTC checks from the ARES-FTC repository:
+18. Return to the monorepo root, enter `ARES-FTC`, and run the relevant FTC checks:
 
 ```powershell
 .\gradlew.bat :TeamCode:testDebugUnitTest
 .\gradlew.bat :simulator:test --tests "org.firstinspires.ftc.teamcode.GeneratedSubsystemSimulatorParityTest"
 ```
 
-17. Save the repository commit, Gradle command, test name, result, and time.
-18. Classify the evidence in the lab below.
+19. Save the monorepo commit, Gradle command, test name, result, and time.
+20. Classify the evidence in the lab below.
 
 <parityevidencelab />
 
@@ -178,6 +189,8 @@ missing case with a different case and call it parity.
 | You cannot find `simulation-foundation`                     | That old module reference is stale. Use the current generated contract, generator tests, and FTC simulator source. |
 | `HARDWARE_SIMULATION_PARITY` is treated as a runtime pass   | Read its evidence value. It is `COMPILED_GENERATED_CODE`.                                                          |
 | A generated test seems to prove FTC hardware behavior       | Find the constructed I/O class. Current generated behavior tests use `Mock...IO`.                                  |
+| A zero-allocation row is treated as a measured pass         | Its evidence is compiled generated code. Find the separate platform allocation test before claiming measured bytes. |
+| Generated tests are missing from a declarative runtime      | Check `generateTest`. Only an editable generated starter may omit generated evidence.                              |
 | The FTC parity-named test seems broader than its assertions | Read its event list. It checks one instance and lifecycle order.                                                   |
 | Same number has a different meaning                         | Check units, sign, range, coordinate frame, and sample time.                                                       |
 | A test uses real wall time                                  | Use `RobotClock` mock time where production code uses robot time. Restore system time in `finally`.                |
@@ -214,6 +227,7 @@ failed source, unit, or simulator row.
 5. How should you label a platform pass and mock failure?
 6. Why should a shared failure remain visible?
 7. What physical facts remain unknown after every software test passes?
+8. Why does selecting the zero-allocation policy not prove that a measured run allocated zero bytes?
 
 ## Extension challenge
 
