@@ -914,11 +914,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'sensorSignalLab',
-    'name': 'Sensor Signal Evidence Lab',
+    'name': 'Current ARES Sensor Evidence Lab',
     'folder': 'sensor-signal-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'skiingCarvingForces',

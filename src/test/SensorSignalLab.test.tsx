@@ -1,32 +1,118 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import SensorSignalLab, { classifyDistanceSignal } from "@/sims/sensor-signal-lab";
+import SensorSignalLab, {
+  classifySensorEvidence,
+  type SensorEvidenceInput,
+} from "@/sims/sensor-signal-lab";
+
+const BASE: SensorEvidenceInput = {
+  layer: "RAW_INTERFACE",
+  readingKind: "FINITE",
+  valueMeters: 0.75,
+  feedbackValid: true,
+  configured: true,
+  ageMs: 20,
+  maxAgeMs: 100,
+};
 
 describe("SensorSignalLab", () => {
-  it("requires finite, configured, healthy, fresh, in-range evidence", () => {
-    expect(classifyDistanceSignal(1, 10, 100, "HEALTHY", true).status).toContain("Usable");
-    expect(classifyDistanceSignal(Number.NaN, 10, 100, "HEALTHY", true).status).toBe("Blocked");
-    expect(classifyDistanceSignal(1, 10, 100, "HEALTHY", false).reason).toContain("configuration");
-    expect(classifyDistanceSignal(1, 10, 100, "INVALID", true).reason).toContain("invalid");
-    expect(classifyDistanceSignal(1, 101, 100, "HEALTHY", true).reason).toContain("older");
-    expect(classifyDistanceSignal(-1, 10, 100, "HEALTHY", true).reason).toContain("outside");
+  it("keeps raw and FTC cached values below snapshot-level evidence", () => {
+    expect(classifySensorEvidence(BASE)).toMatchObject({
+      status: "Raw value only",
+      reason: expect.stringContaining("does not report age"),
+    });
+    expect(
+      classifySensorEvidence({ ...BASE, layer: "FTC_CACHE" }),
+    ).toMatchObject({
+      status: "Cached value only",
+      reason: expect.stringContaining("no public sample time"),
+    });
+    expect(
+      classifySensorEvidence({ ...BASE, readingKind: "NOT_A_NUMBER" }).status,
+    ).toBe("Blocked");
+    expect(
+      classifySensorEvidence({ ...BASE, valueMeters: -0.1 }).reason,
+    ).toContain("negative");
   });
 
-  it("rejects negative age bounds", () => { expect(() => classifyDistanceSignal(1, -1, 100, "HEALTHY", true)).toThrow("must not be negative"); });
-
-  it("supports native controls, disclosure, visible reasons, and reset", () => {
-    render(<SensorSignalLab />);
-    fireEvent.change(screen.getByLabelText("Reported health"), { target: { value: "DISCONNECTED" } });
-    expect(screen.getByText("Health is disconnected")).toBeVisible();
-    fireEvent.click(screen.getByText("Open the signal checklist"));
-    expect(screen.getByText("Keep the value, unit, timestamp, and health together.")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    expect(screen.getByText("Usable in this concept frame")).toBeVisible();
+  it("classifies every represented generated-snapshot boundary", () => {
+    const generated: SensorEvidenceInput = {
+      ...BASE,
+      layer: "GENERATED_SNAPSHOT",
+    };
+    expect(classifySensorEvidence(generated).status).toBe(
+      "Usable generated snapshot",
+    );
+    expect(
+      classifySensorEvidence({ ...generated, valueMeters: 10.1 }).reason,
+    ).toContain("0 through 10");
+    expect(
+      classifySensorEvidence({ ...generated, feedbackValid: false }).reason,
+    ).toContain("valid complete snapshot");
+    expect(
+      classifySensorEvidence({ ...generated, configured: false }).reason,
+    ).toContain("configuration");
+    expect(
+      classifySensorEvidence({ ...generated, ageMs: 101 }).reason,
+    ).toContain("older");
+    expect(
+      classifySensorEvidence({ ...generated, ageMs: -1 }).reason,
+    ).toContain("non-negative");
   });
 
-  it("states that it reads no sensor and proves no physical sensing", () => {
+  it("enables snapshot evidence only for the generated layer", () => {
     render(<SensorSignalLab />);
-    expect(screen.getByRole("note")).toHaveTextContent("does not read a sensor");
-    expect(screen.getByRole("note")).toHaveTextContent("prove physical sensing");
+    expect(screen.getByLabelText("Snapshot age (milliseconds)")).toBeDisabled();
+    expect(screen.getByText("Raw value only")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Evidence layer"), {
+      target: { value: "GENERATED_SNAPSHOT" },
+    });
+    expect(screen.getByLabelText("Snapshot age (milliseconds)")).toBeEnabled();
+    expect(screen.getByText("Usable generated snapshot")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Snapshot age (milliseconds)"), {
+      target: { value: "120" },
+    });
+    expect(
+      screen.getByText("The complete snapshot is older than its allowed age."),
+    ).toBeVisible();
+  });
+
+  it("shows sentinel, source-boundary, and physical-fidelity explanations", () => {
+    render(<SensorSignalLab />);
+    fireEvent.change(screen.getByLabelText("Reported reading"), {
+      target: { value: "POSITIVE_INFINITY" },
+    });
+    expect(
+      screen.getByText(/uses this value as failed or out-of-range evidence/),
+    ).toBeVisible();
+    fireEvent.click(screen.getByText("Read the current source boundary"));
+    expect(
+      screen.getByText(/FTC adapter polls in the background/),
+    ).toBeVisible();
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "does not read a sensor",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "not a promise about every real sensor",
+    );
+  });
+
+  it("resets the evidence layer and represented value", () => {
+    render(<SensorSignalLab />);
+    fireEvent.change(screen.getByLabelText("Evidence layer"), {
+      target: { value: "GENERATED_SNAPSHOT" },
+    });
+    fireEvent.change(screen.getByLabelText("Distance (meters)"), {
+      target: { value: "11" },
+    });
+    expect(screen.getByText(/accepts 0 through 10 meters/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Reset evidence" }));
+    expect(screen.getByLabelText("Evidence layer")).toHaveValue(
+      "RAW_INTERFACE",
+    );
+    expect(screen.getByLabelText("Distance (meters)")).toHaveValue(0.75);
+    expect(screen.getByText("Raw value only")).toBeVisible();
   });
 });

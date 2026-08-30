@@ -750,6 +750,38 @@ simulation results stay in their own evidence columns. Website publishing contin
 separate Lead Coach review flow. This local curriculum change does not publish or overwrite
 production data.
 
+## Continuous cycle: current sensor evidence layers
+
+This cycle improves the existing `electrical-sensors` lesson. It removes the lesson's reference to
+`simulation-foundation/SimulationDeviceContract.kt`, which is absent from current ARESLib. Confirm
+that the replacement pins five clean ARESLib 10.1.0 files at `13599358`: the raw distance interface,
+FTC background cache, generated distance scaffold, Kotlin generator, and once-per-loop subsystem
+lifecycle.
+
+Review the central correction. `DistanceSensorIO.distanceMeters` provides a meter value and documents
+`NaN` or positive infinity as offline or out-of-range evidence. It does not provide a public
+timestamp, connection flag, or configuration flag. `FtcDistanceSensor` catches read failures as
+`NaN` and caches a background sample, but its public contract still has no sample age. The lesson and
+interaction must not describe either layer as a complete fresh-and-healthy snapshot.
+
+The generated distance scaffold adds a 0–10 meter default range. The generator checks finite and
+configured range values before committing a cached input, then records `feedbackValid`,
+`feedbackTimestampMs`, and `configurationHealthy`. The generated subsystem applies its feedback
+timeout when copying the IO snapshot into immutable state. Hand-authored code must build equivalent
+evidence intentionally; implementing the raw interface alone does not add these fields.
+
+The revised code-derived interaction keeps the three layers separate. Snapshot age, refresh
+validity, and configuration controls remain disabled until the generated layer is selected. Review
+native labels, disabled-control explanation, 44-pixel targets, visible focus, narrow-screen reflow,
+live result announcements, deterministic reset, sentinel cases, and the explicit model limit. The
+model does not read a sensor, run an FTC thread, inspect a descriptor, execute Kotlin, or prove a
+physical range.
+
+Students retain authority to verify sensor and robot behavior through the team's normal safety
+process. Software checks and physical checks stay in separate evidence sections. Lead Coach review
+remains limited to website publishing. This local curriculum change does not stage, publish, or
+overwrite production data.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the
