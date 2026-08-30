@@ -6,6 +6,8 @@ import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocCont
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
+import DocumentApprovalReviewDialog from "@/components/dashboard/DocumentApprovalReviewDialog";
+import type { DocRecord } from "@/hooks/useDocumentSync";
 
 const ACADEMY_CATEGORIES = [
   "Robotics & Engineering",
@@ -57,6 +59,7 @@ export default function AcademyManagementPage() {
     archiveError,
   } = useDashboardDocController("docs", (d) => d.isDeleted !== 1 && (d.displayInMathCorner === 1 || d.displayInScienceCorner === 1));
   const [showArchived, setShowArchived] = React.useState(false);
+  const [reviewItem, setReviewItem] = React.useState<DocRecord | null>(null);
 
   return (
     <div className="space-y-10 w-full text-left">
@@ -113,7 +116,10 @@ export default function AcademyManagementPage() {
         loadingList={loadingList}
         canEdit={canEdit}
         isApprover={isApprover}
-        onApprove={(item) => handleApproveAndPublish(item, "academy")}
+        onApprove={(item) => {
+          dismissApprovalNotice();
+          setReviewItem(item);
+        }}
         approvingSlug={approvingSlug}
         variant="docs"
         onEdit={handleOpenEdit}
@@ -130,6 +136,20 @@ export default function AcademyManagementPage() {
         onLoadMore={loadMore}
         searchPlaceholder="Search academy lessons by title, category, or summary..."
         noItemsMessage="No academy lessons indexed. Click New Lesson to get started."
+      />
+
+      <DocumentApprovalReviewDialog
+        item={reviewItem}
+        categories={ACADEMY_CATEGORIES}
+        defaultCategory="Robotics & Engineering"
+        libraryLabel="Academy"
+        isApproving={Boolean(reviewItem && approvingSlug === reviewItem.slug)}
+        errorMessage={approvalNotice?.kind === "error" ? approvalNotice.message : null}
+        onClose={() => setReviewItem(null)}
+        onApprove={async (item) => {
+          const approved = await handleApproveAndPublish(item, "academy");
+          if (approved) setReviewItem(null);
+        }}
       />
 
       {/* Drawer Article Editor */}

@@ -327,7 +327,7 @@ export function useDashboardDocController(
     docItem: DocRecord,
     library?: "academy" | "areslib",
   ) => {
-    if (!isApprover) return;
+    if (!isApprover) return false;
     setApprovalNotice(null);
     setApprovingSlug(docItem.slug);
     try {
@@ -365,7 +365,7 @@ export function useDashboardDocController(
           throw new Error(typeof approvePayload.error === "string" ? approvePayload.error : "The draft was not approved.");
         }
         setApprovalNotice({ kind: "success", message: `${docItem.title} was approved from its exact reviewed version.` });
-        return;
+        return true;
       }
 
       const { slug, ...existingPayload } = docItem;
@@ -382,10 +382,12 @@ export function useDashboardDocController(
         await runSocialAnnouncement(slug);
       }
       setApprovalNotice({ kind: "success", message: `${docItem.title} was approved and published.` });
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Approval failed. Review the latest draft and try again.";
       logger.error("Content approval failed", { collectionName, slug: docItem.slug });
       setApprovalNotice({ kind: "error", message });
+      return false;
     } finally {
       setApprovingSlug(null);
     }

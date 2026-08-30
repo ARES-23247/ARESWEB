@@ -12,12 +12,14 @@ interface DocumentDraftPreviewProps {
   draft: DocumentEditorDraft;
   variant: DocumentEditorVariant;
   defaultCategory: string;
+  context?: "editor" | "approval";
 }
 
 export default function DocumentDraftPreview({
   draft,
   variant,
   defaultCategory,
+  context = "editor",
 }: DocumentDraftPreviewProps) {
   const built = buildDocumentSave(draft, variant, defaultCategory);
   if ("error" in built) {
@@ -49,8 +51,14 @@ export default function DocumentDraftPreview({
   return (
     <article aria-labelledby="draft-preview-title" className="mx-auto w-full max-w-5xl overflow-y-auto border border-white/10 bg-obsidian p-5 sm:p-8">
       <div className="mb-6 border-b border-ares-gold/25 pb-4">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-ares-gold">Unsaved draft preview</p>
-        <p className="mt-1 text-xs text-marble/60">This is a visual preview only. It does not save, approve, or publish the record.</p>
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-ares-gold">
+          {context === "approval" ? "Saved review preview" : "Unsaved draft preview"}
+        </p>
+        <p className="mt-1 text-xs text-marble/60">
+          {context === "approval"
+            ? "Review the lesson and its source details below. Publishing still requires an exact-version server check."
+            : "This is a visual preview only. It does not save, approve, or publish the record."}
+        </p>
       </div>
       <h2 id="draft-preview-title" className="break-words font-heading text-3xl font-black text-white sm:text-4xl">
         {payload.title}
