@@ -1,6 +1,11 @@
 /** @sim {"name":"Subsystem Ownership Decision Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useState } from "react";
-import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyCheckboxControl,
+  AcademyDatum,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type SubsystemStartingPoint = "descriptor" | "editable" | "existing";
 export type EvidenceKey =
@@ -160,32 +165,12 @@ export default function SubsystemOwnershipLab() {
   };
 
   return (
-    <section
-      aria-labelledby="ownership-lab-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="ownership-lab-title"
+      title="Subsystem Ownership Decision Lab"
+      description="Choose a source starting point, then expose the evidence still missing before a code preview."
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3
-            id="ownership-lab-title"
-            className="text-xl font-black text-white"
-          >
-            Subsystem Ownership Decision Lab
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Choose a source starting point, then expose the evidence still
-            missing before a code preview.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="grid gap-5">
           <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
@@ -266,17 +251,14 @@ export default function SubsystemOwnershipLab() {
         </div>
       </div>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> This form does not inspect Kotlin or a
+      <AcademyModelLimit>
+        This form does not inspect Kotlin or a
         descriptor, find hazards, generate files, run tests, connect to a
         simulator, command hardware, or prove that a subsystem is safe.
         “Checklist filled in” means only that all seven planning boxes are
         checked.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

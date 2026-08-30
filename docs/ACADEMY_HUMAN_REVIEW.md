@@ -1278,6 +1278,25 @@ Students may design, implement, test, and physically verify sensor behavior unde
 safety process. Lead Coach approval remains limited to publishing website content. This local
 curriculum change does not publish a lesson or mutate production curriculum data.
 
+## Continuous cycle: inspection-readiness drafts without invented rules
+
+Review the new `competition-ftc-inspection-pit` and `competition-frc-inspection-pit` drafts as
+process lessons, not season rule summaries. Each draft teaches students to identify the official
+authority, record its revision, map checklist rows to bounded evidence, preserve unknown results,
+and recheck evidence after a robot or document change. Both lessons keep ARES readiness checks
+separate from an event inspector's decision.
+
+The current official-source requests remain open. At the recorded source check, the 2026–2027 FTC
+inspection checklist was still listed as coming soon, and the 2027 FRC challenge materials were
+not yet the current inspection authority. Confirm that the lessons do not copy limits or checklist
+text from an older season. When FIRST publishes the current materials, attach their exact titles,
+revision dates, and access dates before replacing either open source request.
+
+The lessons are intentionally diagram-and-paper activities. An interactive pass/fail checklist
+would look authoritative while the official rows are unavailable, so this release does not add one.
+Students own the evidence and robot-verification work allowed by the team's safety process. This
+local change does not publish either draft or mutate production curriculum records.
+
 ## Recording future decisions
 
 The grade 6-8 refresh uses the approval-gated `refresh-published` phase for the

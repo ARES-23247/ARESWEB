@@ -1,6 +1,7 @@
 /** @sim {"name":"Log Alignment and Comparison Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { ChartNoAxesCombined, RotateCcw } from "lucide-react";
+import { AcademyModelLimit } from "@/sims/shared/academy-interaction-ui";
 
 type Anchor = "RUN_START" | "SHARED_EVENT";
 type Signal = "CURRENT" | "POSITION";
@@ -169,9 +170,7 @@ export default function LogComparisonLab() {
         </div>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> These five-point runs are invented. The lab models exact, held, and missing values, but it does not import a log, run the production replay engine, verify source identity, infer a cause, compare different robots, connect to hardware, or prove a physical fault.
-      </p>
+      <AcademyModelLimit>These five-point runs are invented. The lab models exact, held, and missing values, but it does not import a log, run the production replay engine, verify source identity, infer a cause, compare different robots, connect to hardware, or prove a physical fault.</AcademyModelLimit>
     </section>
   );
 }

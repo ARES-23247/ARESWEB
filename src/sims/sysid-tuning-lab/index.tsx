@@ -2,6 +2,8 @@
 import { useState, type ReactNode } from "react";
 import {
   AcademyCheckboxControl,
+  AcademyLabShell,
+  AcademyModelLimit,
   AcademyNumberControl,
   AcademySelectControl,
 } from "@/sims/shared/academy-interaction-ui";
@@ -203,23 +205,11 @@ export default function SysIdTuningLab() {
   };
 
   return (
-    <section
-      aria-labelledby="sysid-tuning-lab-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="sysid-tuning-lab-title"
+      title="SysId Evidence Lab"
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <h3 id="sysid-tuning-lab-title" className="text-xl font-black text-white">
-          SysId Evidence Lab
-        </h3>
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <SysIdPanel value={sysId} onChange={setSysId} result={sysIdResult} />
         <ExperimentPanel
@@ -229,15 +219,12 @@ export default function SysIdTuningLab() {
         />
       </div>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> No Studio, hardware link, gain fit,
+      <AcademyModelLimit>
+        No Studio, hardware link, gain fit,
         current check, motion, safety proof, or profile promotion. Callers
         omit current data, so no current trip is claimed.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

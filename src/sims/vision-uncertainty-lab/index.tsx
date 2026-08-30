@@ -1,6 +1,11 @@
 /** @sim {"name":"Vision Evidence Rejection Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useMemo, useState } from "react";
-import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyCheckboxControl,
+  AcademyDatum,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type VisionEvidence = {
   finite: boolean;
@@ -154,32 +159,12 @@ export default function VisionUncertaintyLab() {
   };
 
   return (
-    <section
-      aria-labelledby="vision-evidence-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="vision-evidence-title"
+      title="Vision Evidence Rejection Lab"
+      description="Change one evidence gate at a time. The lab shows the first failed gate and keeps every other failed check visible."
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3
-            id="vision-evidence-title"
-            className="text-xl font-black text-white"
-          >
-            Vision Evidence Rejection Lab
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Change one evidence gate at a time. The lab shows the first failed
-            gate and keeps every other failed check visible.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">
@@ -299,17 +284,14 @@ export default function VisionUncertaintyLab() {
         </dl>
       </div>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> These controls mirror named ARES review
+      <AcademyModelLimit>
+        These controls mirror named ARES review
         stages and simple capture-time math. Checklist explanations are teaching
         text; the current prefilter reports only `prefilter_rejected`. The lab
         does not process an image, calculate NIS, run the estimator, connect to
         a camera, or prove field position.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

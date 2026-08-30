@@ -1,6 +1,6 @@
 /** @sim {"name":"Odometry Error Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
+import { AcademyModelLimit, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
 
 export type RouteDirection =
   "positive-x" | "positive-y" | "negative-x" | "negative-y";
@@ -386,15 +386,12 @@ export default function OdometryErrorLab() {
         </div>
       </fieldset>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> This model does not run the estimator,
+      <AcademyModelLimit>
+        This model does not run the estimator,
         inspect Pinpoint or IMU hardware, calculate sample health, or prove
         accuracy. It uses five healthy samples. ARES rebases each source during
         handoff; this page does not.
-      </p>
+      </AcademyModelLimit>
     </section>
   );
 }

@@ -2,11 +2,60 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AcademyDatum,
+  AcademyLabShell,
   AcademyMetric,
+  AcademyModelLimit,
   AcademyNumberControl,
   AcademyRangeControl,
   AcademySelectControl,
 } from "@/sims/shared/academy-interaction-ui";
+
+describe("AcademyLabShell", () => {
+  it("connects the section title and exposes the optional reset action", () => {
+    let resets = 0;
+    render(
+      <AcademyLabShell
+        titleId="signal-lab-title"
+        eyebrow="Practice lab"
+        title="Read the signal"
+        description="Change one input and compare the result."
+        resetLabel="Reset trace"
+        onReset={() => { resets += 1; }}
+      >
+        <p>Lab controls</p>
+      </AcademyLabShell>,
+    );
+
+    const title = screen.getByRole("heading", { name: "Read the signal" });
+    expect(title).toHaveAttribute("id", "signal-lab-title");
+    expect(screen.getByRole("region", { name: "Read the signal" })).toBeVisible();
+    expect(screen.getByText("Practice lab")).toBeVisible();
+    expect(screen.getByText("Change one input and compare the result.")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Reset trace" }));
+    expect(resets).toBe(1);
+  });
+
+  it("renders a simple titled region without optional controls", () => {
+    render(
+      <AcademyLabShell titleId="simple-lab-title" title="Simple lab">
+        <p>One bounded activity</p>
+      </AcademyLabShell>,
+    );
+
+    expect(screen.getByRole("region", { name: "Simple lab" })).toBeVisible();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});
+
+describe("AcademyModelLimit", () => {
+  it("marks a model warning as an accessible note", () => {
+    render(<AcademyModelLimit>This activity cannot inspect a physical robot.</AcademyModelLimit>);
+
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent("Model limit:");
+    expect(note).toHaveTextContent("This activity cannot inspect a physical robot.");
+  });
+});
 
 describe("AcademyDatum", () => {
   it("renders a labeled result with the optional wide layout", () => {

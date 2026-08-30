@@ -1,6 +1,11 @@
 /** @sim {"name":"Current ARES Sensor Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState } from "react";
-import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyCheckboxControl,
+  AcademyDatum,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type SensorEvidenceLayer =
   "RAW_INTERFACE" | "HAND_AUTHORED_SNAPSHOT" | "GENERATED_SNAPSHOT";
@@ -148,28 +153,11 @@ export default function SensorSignalLab() {
   };
 
   return (
-    <section
-      aria-labelledby="sensor-signal-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="sensor-signal-title"
+      title="Sensor Evidence Lab"
+      onReset={() => setInput(DEFAULTS)}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3
-            id="sensor-signal-title"
-            className="text-xl font-black text-white"
-          >
-            Sensor Evidence Lab
-          </h3>
-        </div>
-        <button
-          type="button"
-          onClick={() => setInput(DEFAULTS)}
-          className="inline-flex min-h-11 items-center justify-center rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <SelectField
@@ -224,12 +212,12 @@ export default function SensorSignalLab() {
               minimum={0}
               onChange={(value) => update("maxAgeMs", value)}
             />
-        <AcademyCheckboxControl
+            <AcademyCheckboxControl
               label="Refresh produced a valid snapshot"
               checked={input.feedbackValid}
               onChange={(checked) => update("feedbackValid", checked)}
             />
-        <AcademyCheckboxControl
+            <AcademyCheckboxControl
               label="Device setup is healthy"
               checked={input.configured}
               onChange={(checked) => update("configured", checked)}
@@ -272,16 +260,13 @@ export default function SensorSignalLab() {
         </ol>
       </details>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> This model does not read or run a robot.
+      <AcademyModelLimit>
+        This model does not read or run a robot.
         It cannot prove wiring, placement, accuracy, or behavior.
         The 0–10 meter range is a scaffold default, not a promise for every
         real sensor.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

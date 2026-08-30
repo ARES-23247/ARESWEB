@@ -1,7 +1,6 @@
 /** @sim {"name":"Match Cycle Handoff Scenarios","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import { AcademyChecklistPanel } from "@/sims/shared/academy-interaction-ui";
+import { AcademyChecklistPanel, AcademyLabShell } from "@/sims/shared/academy-interaction-ui";
 
 export type MatchCyclePhase = "pit-to-queue" | "field-setup" | "post-match-return";
 export type MatchCycleCheckKey =
@@ -117,20 +116,14 @@ export default function MatchCycleScenarios() {
   };
 
   return (
-    <section aria-labelledby="match-cycle-scenarios-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Rehearsal handoffs</p>
-          <h3 id="match-cycle-scenarios-title" className="mt-1 text-xl font-black text-white">Match Cycle Handoff Scenarios</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Choose one phase. Check only facts your paper rehearsal actually contains. The first missing fact stays visible.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset rehearsal
-        </button>
-      </div>
-
+    <AcademyLabShell
+      titleId="match-cycle-scenarios-title"
+      title="Match Cycle Handoff Scenarios"
+      eyebrow="Rehearsal handoffs"
+      description="Choose one phase. Check only facts your paper rehearsal actually contains. The first missing fact stays visible."
+      onReset={reset}
+      resetLabel="Reset rehearsal"
+    >
       <fieldset className="mt-6 grid gap-3 sm:grid-cols-3">
         <legend className="mb-2 text-sm font-bold text-ares-gold">Choose a handoff phase</legend>
         {MATCH_CYCLE_SCENARIOS.map((item) => (
@@ -176,6 +169,6 @@ export default function MatchCycleScenarios() {
       <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
         <strong>Evidence limit:</strong> This conceptual lab reads only the boxes you select. It cannot read a robot or event system, verify a safe state, supply current game or queue rules, assign real team roles, preserve a log, or approve an event procedure.
       </p>
-    </section>
+    </AcademyLabShell>
   );
 }

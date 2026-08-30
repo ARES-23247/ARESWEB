@@ -84,9 +84,6 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, "/");
-          if (normalizedId.endsWith("/src/sims/shared/academy-interaction-ui.tsx")) {
-            return "academy-interaction-ui";
-          }
           if (normalizedId.includes("node_modules")) {
             if (
               normalizedId.includes("react-markdown") ||

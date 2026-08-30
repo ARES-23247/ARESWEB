@@ -1,6 +1,11 @@
 /** @sim {"name":"ARES FTC Feedforward Term Trace","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useMemo, useState } from "react";
-import { AcademyMetric, AcademyNumberControl } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyLabShell,
+  AcademyMetric,
+  AcademyModelLimit,
+  AcademyNumberControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type FeedforwardStepInput = {
   kS: number;
@@ -155,24 +160,13 @@ export default function FeedforwardTermLab() {
   };
 
   return (
-    <section
-      aria-labelledby="feedforward-term-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="feedforward-term-title"
+      title="Feedforward Term Trace"
+      description="Trace one wheel with the checked-in Team 23247 profile from ARES 12.0.0."
+      onReset={() => setInput(DEFAULT_INPUT)}
+      resetLabel="Reset trace"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 id="feedforward-term-title" className="text-xl font-black text-white">
-            Feedforward Term Trace
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Trace one wheel with the checked-in Team 23247 profile from ARES 12.0.0.
-          </p>
-        </div>
-        <button type="button" onClick={() => setInput(DEFAULT_INPUT)} className={buttonClass}>
-          Reset trace
-        </button>
-      </div>
-
       <p className="mt-4 border-l-4 border-ares-red/70 bg-ares-red/10 p-3 text-sm leading-relaxed text-white">
         <strong>Open source-contract question:</strong> Drivebase files label these values as volts.
         Runtime code treats their sum like a duty request, multiplies it by 12 ÷ battery, and then
@@ -239,13 +233,13 @@ export default function FeedforwardTermLab() {
         </div>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> This TypeScript trace copies one feedforward calculation and
+      <AcademyModelLimit>
+        This TypeScript trace copies one feedforward calculation and
         the controller's positive-kV speed-cap rule. An invalid kV keeps the checked-in cap as the
         known prior value. The trace does not run Kotlin, add feedback, slew, current limits, or
         hardware scaling, model a motor, read the robot, prove the profile, or approve physical use.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

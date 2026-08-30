@@ -1,5 +1,69 @@
 import type { ReactNode } from "react";
 
+export function AcademyLabShell({
+  titleId,
+  title,
+  description,
+  eyebrow,
+  onReset,
+  resetLabel = "Reset",
+  children,
+}: {
+  titleId: string;
+  title: string;
+  description?: ReactNode;
+  eyebrow?: string;
+  onReset?: () => void;
+  resetLabel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          {eyebrow ? (
+            <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
+              {eyebrow}
+            </p>
+          ) : null}
+          <h3 id={titleId} className={eyebrow ? "mt-1 text-xl font-black text-white" : "text-xl font-black text-white"}>
+            {title}
+          </h3>
+          {description ? (
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {onReset ? (
+          <button
+            type="button"
+            onClick={onReset}
+            className="inline-flex min-h-11 items-center justify-center rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            {resetLabel}
+          </button>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function AcademyModelLimit({ children }: { children: ReactNode }) {
+  return (
+    <p
+      role="note"
+      className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
+    >
+      <strong>Model limit:</strong> {children}
+    </p>
+  );
+}
+
 export type AcademyChecklistItem<Key extends string> = {
   key: Key;
   label: string;
