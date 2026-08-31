@@ -36,6 +36,13 @@ export interface LearningPathNavigation {
   next: PublicDocument | null;
 }
 
+export interface LearningPathStepStatus {
+  document: PublicDocument;
+  completed: boolean;
+  missingPrerequisites: string[];
+  ready: boolean;
+}
+
 export const DEFAULT_LEARNING_FILTERS: LearningFilters = {
   search: "",
   subject: "all",
@@ -108,6 +115,25 @@ export function orderedPathDocuments(
         ?? Number.MAX_SAFE_INTEGER;
       return leftOrder - rightOrder || left.title.localeCompare(right.title);
     });
+}
+
+export function learningPathStepStatuses(
+  documents: PublicDocument[],
+  pathId: LearningPathId,
+  completedSlugs: ReadonlySet<string> = new Set(),
+): LearningPathStepStatus[] {
+  return orderedPathDocuments(documents, pathId).map((document) => {
+    const completed = completedSlugs.has(document.slug);
+    const missingPrerequisites = document.prerequisites.filter(
+      (prerequisite) => !completedSlugs.has(prerequisite),
+    );
+    return {
+      document,
+      completed,
+      missingPrerequisites,
+      ready: !completed && missingPrerequisites.length === 0,
+    };
+  });
 }
 
 export function learningTopics(documents: PublicDocument[]): string[] {

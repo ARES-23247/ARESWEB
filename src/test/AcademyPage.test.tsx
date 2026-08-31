@@ -151,8 +151,33 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
       "href",
       "/academy/ai-101-intro?path=ai-ml-foundations",
     );
+    expect(screen.getByText("Ready next", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("1 prerequisite remaining", { exact: true })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Search titles and topics"), { target: { value: "not present" } });
     expect(screen.getByRole("heading", { name: "No matching lessons" })).toBeInTheDocument();
+  });
+
+  it("continues at the next prerequisite-ready lesson using local progress", async () => {
+    window.localStorage.setItem(
+      "ares-academy-progress-v1",
+      JSON.stringify({ version: 1, completedSlugs: ["ai-101-intro"] }),
+    );
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
+
+    render(
+      <MemoryRouter initialEntries={["/academy?path=ai-ml-foundations"]}>
+        <Routes>
+          <Route path="/academy" element={<AcademyPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("link", { name: /Continue path/i })).toHaveAttribute(
+      "href",
+      "/academy/neural-networks-basics?path=ai-ml-foundations",
+    );
+    expect(screen.getByText("Lesson completed", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("Ready next", { exact: true })).toBeInTheDocument();
   });
 
   it("loads doc list and displays the active lesson with author lifecycle and navigation links", async () => {

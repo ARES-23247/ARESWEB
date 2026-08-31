@@ -143,6 +143,8 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   await pathButton.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("link", { name: /Start path/i })).toBeVisible();
+  await expect(page.getByText("Ready next", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 prerequisite remaining", { exact: true })).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
 
@@ -165,16 +167,25 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
 
   await page.goto("/academy", { waitUntil: "networkidle" });
   await expect(page.getByText("1 of 2 complete on this browser", { exact: true }).first()).toBeVisible();
+  await pathButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("link", { name: /Continue path/i })).toHaveAttribute(
+    "href",
+    `/academy/${nextLesson.slug}?path=robotics-foundations`,
+  );
+  await expect(page.getByText("Lesson completed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ready next", { exact: true })).toBeVisible();
   await page.getByLabel("Progress").selectOption("completed");
   await expect(page).toHaveURL(/progress=completed/u);
   await expect(page.getByText("Showing 1 of 2 items.")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Robot State Flow/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Safe Output Boundaries/i })).toHaveCount(0);
+  const browseLibrary = page.locator('section[aria-labelledby="browse-library-heading"]');
+  await expect(browseLibrary.getByRole("link", { name: /Robot State Flow/i })).toBeVisible();
+  await expect(browseLibrary.getByRole("link", { name: /Safe Output Boundaries/i })).toHaveCount(0);
 
   await page.getByLabel("Progress").selectOption("not-started");
   await expect(page).toHaveURL(/progress=not-started/u);
-  await expect(page.getByRole("link", { name: /Safe Output Boundaries/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Robot State Flow/i })).toHaveCount(0);
+  await expect(browseLibrary.getByRole("link", { name: /Safe Output Boundaries/i })).toBeVisible();
+  await expect(browseLibrary.getByRole("link", { name: /Robot State Flow/i })).toHaveCount(0);
 
   await expectNoHorizontalOverflow(page);
   const docsNavigationButton = page.getByRole("button", { name: "Open documentation navigation" });

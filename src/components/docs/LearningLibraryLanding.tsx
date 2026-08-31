@@ -14,8 +14,8 @@ import {
   DEFAULT_LEARNING_FILTERS,
   filterLearningDocuments,
   learningFiltersToSearchParams,
+  learningPathStepStatuses,
   learningTopics,
-  orderedPathDocuments,
   parseLearningFilters,
   type LearningFilters,
 } from "@/lib/learningExperience";
@@ -77,14 +77,22 @@ export default function LearningLibraryLanding({ documents, library, progress }:
   ])), [documents, progress]);
 
   const selectedPath = pathId === "all" ? null : LEARNING_PATHS.find((path) => path.id === pathId) ?? null;
-  const selectedPathDocuments = useMemo(
-    () => pathId === "all" ? [] : orderedPathDocuments(documents, pathId),
-    [documents, pathId],
+  const selectedPathSteps = useMemo(
+    () => pathId === "all"
+      ? []
+      : learningPathStepStatuses(documents, pathId, progress?.completedSlugs),
+    [documents, pathId, progress?.completedSlugs],
   );
-  const completedInPath = selectedPathDocuments.filter((document) => progress?.completedSlugs.has(document.slug)).length;
-  const continueDocument = selectedPathDocuments.find((document) => !progress?.completedSlugs.has(document.slug))
-    ?? selectedPathDocuments[0]
+  const completedInPath = selectedPathSteps.filter((step) => step.completed).length;
+  const continueDocument = selectedPathSteps.find((step) => step.ready)?.document
+    ?? selectedPathSteps.find((step) => !step.completed)?.document
+    ?? selectedPathSteps[0]?.document
     ?? null;
+  const pathActionLabel = completedInPath === selectedPathSteps.length && selectedPathSteps.length > 0
+    ? "Review path"
+    : completedInPath > 0
+      ? "Continue path"
+      : "Start path";
 
   return (
     <div className="w-full max-w-6xl pb-20">
@@ -153,7 +161,7 @@ export default function LearningLibraryLanding({ documents, library, progress }:
                   </p>
                   {progress && (
                     <p className="mt-3 text-sm font-bold text-ares-cyan">
-                      {completedInPath} of {selectedPathDocuments.length} complete on this browser
+                      {completedInPath} of {selectedPathSteps.length} complete on this browser
                     </p>
                   )}
                 </div>
@@ -162,23 +170,33 @@ export default function LearningLibraryLanding({ documents, library, progress }:
                     to={`${basePath}/${continueDocument.slug}?path=${selectedPath.id}`}
                     className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-red px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                   >
-                    {completedInPath > 0 ? "Continue path" : "Start path"}
+                    {pathActionLabel}
                     <ArrowRight aria-hidden="true" size={16} />
                   </Link>
                 )}
               </div>
-              {selectedPathDocuments.length > 0 && (
+              {selectedPathSteps.length > 0 && (
                 <ol className="mt-5 grid gap-2 border-t border-white/10 pt-5 md:grid-cols-2">
-                  {selectedPathDocuments.map((document, index) => {
-                    const completed = progress?.completedSlugs.has(document.slug) ?? false;
+                  {selectedPathSteps.map((step, index) => {
+                    const { document } = step;
+                    const status = step.completed
+                      ? "Lesson completed"
+                      : step.ready
+                        ? "Ready next"
+                        : `${step.missingPrerequisites.length} ${step.missingPrerequisites.length === 1 ? "prerequisite" : "prerequisites"} remaining`;
                     return (
-                      <li key={document.slug} className="flex items-center gap-3 text-sm text-marble/75">
-                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${completed ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white"}`}>
-                          {completed ? <Check aria-label="Completed" size={15} /> : index + 1}
+                      <li key={document.slug} className="flex items-start gap-3 text-sm text-marble/75">
+                        <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${step.completed ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white"}`}>
+                          {step.completed ? <Check aria-hidden="true" size={15} /> : index + 1}
                         </span>
-                        <Link to={`${basePath}/${document.slug}?path=${selectedPath.id}`} className="hover:text-white hover:underline focus-visible:ring-2 focus-visible:ring-ares-cyan">
-                          {document.title}
-                        </Link>
+                        <span className="min-w-0">
+                          <Link to={`${basePath}/${document.slug}?path=${selectedPath.id}`} className="hover:text-white hover:underline focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                            {document.title}
+                          </Link>
+                          <span className={`mt-0.5 block text-xs font-bold ${step.ready ? "text-ares-gold" : "text-marble/55"}`}>
+                            {status}
+                          </span>
+                        </span>
                       </li>
                     );
                   })}

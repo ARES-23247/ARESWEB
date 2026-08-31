@@ -5,6 +5,7 @@ import {
   filterLearningDocuments,
   learningFiltersToSearchParams,
   learningPathNavigation,
+  learningPathStepStatuses,
   learningTopics,
   parseLearningFilters,
   relatedLearningDocuments,
@@ -126,6 +127,32 @@ describe("learning experience utilities", () => {
       ...DEFAULT_LEARNING_FILTERS,
       progress: "not-started",
     }, completed).map((item) => item.slug)).toEqual(["mean-and-median", "safe-output"]);
+  });
+
+  it("identifies the next ready path step without hiding blocked lessons", () => {
+    expect(learningPathStepStatuses(docs, "robotics-foundations")).toMatchObject([
+      {
+        document: { slug: "robot-intent" },
+        completed: false,
+        missingPrerequisites: [],
+        ready: true,
+      },
+      {
+        document: { slug: "safe-output" },
+        completed: false,
+        missingPrerequisites: ["robot-intent"],
+        ready: false,
+      },
+    ]);
+
+    expect(learningPathStepStatuses(
+      docs,
+      "robotics-foundations",
+      new Set(["robot-intent"]),
+    )).toMatchObject([
+      { document: { slug: "robot-intent" }, completed: true, ready: false },
+      { document: { slug: "safe-output" }, missingPrerequisites: [], ready: true },
+    ]);
   });
 
   it("derives bounded topics and path-aware previous/next navigation", () => {
