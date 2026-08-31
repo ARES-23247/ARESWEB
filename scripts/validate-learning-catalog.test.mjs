@@ -7,6 +7,7 @@ import {
   normalizeLearningMarkdown,
   parseAresVersions,
   registerPathOrder,
+  validateLearningPathAllowlistContract,
   validateLearningPathContract,
   resolveApprovedAuthority,
   validateSourceReference,
@@ -17,6 +18,24 @@ import {
 } from "./validate-learning-catalog.mjs";
 
 describe("learning catalog preparation", () => {
+  it("keeps frontend, Functions, and catalog learning-path allowlists aligned", () => {
+    const frontend = `export const LEARNING_PATHS = [
+      { id: "robotics-foundations", label: "Foundations" },
+      { id: "ftc-robot-with-ares", label: "FTC" },
+    ] as const;`;
+    const functions = `export const LEARNING_PATH_IDS = [
+      "robotics-foundations",
+      "ftc-robot-with-ares",
+    ] as const;`;
+
+    expect(() => validateLearningPathAllowlistContract(frontend, functions))
+      .toThrow(/Catalog PATH_IDS must exactly match/u);
+    expect(() => validateLearningPathAllowlistContract(
+      frontend,
+      functions.replace("ftc-robot-with-ares", "frc-robot-with-ares"),
+    )).toThrow(/Functions LEARNING_PATH_IDS must exactly match/u);
+  });
+
   it("normalizes Markdown line endings deterministically across operating systems", () => {
     expect(normalizeLearningMarkdown("  # Lesson\r\n\rBody\rMore\n  ")).toBe("# Lesson\n\nBody\nMore");
   });

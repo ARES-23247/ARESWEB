@@ -19,6 +19,7 @@ export const LEARNING_SAFETY_SCOPES = ["none", "simulation-only", "bench-testing
 export const LEARNING_PATH_IDS = [
   "robotics-foundations",
   "ftc-robot-with-ares",
+  "frc-robot-with-ares",
   "controls-localization-autonomous",
   "math-for-robotics",
   "ai-ml-foundations",

@@ -15,6 +15,8 @@ const PUBLISHED_REFRESH_PLAN_PATH = path.join(CONTENT_ROOT, "published-refresh-p
 const ROBOTICS_CURRICULUM_PLAN_PATH = path.join(CONTENT_ROOT, "robotics-curriculum-plan.json");
 const SIM_REGISTRY_PATH = path.join(ROOT, "src", "sims", "simRegistry.json");
 const CURRICULUM_SOURCE_REQUESTS_PATH = path.join(CONTENT_ROOT, "curriculum-source-requests.json");
+const FRONTEND_LEARNING_CONTENT_PATH = path.join(ROOT, "src", "lib", "learningContent.ts");
+const FUNCTIONS_LEARNING_CONTENT_PATH = path.join(ROOT, "functions", "src", "lib", "learningContent.ts");
 const OUTPUT_PATH = path.join(ROOT, "build", "learning-content-import.json");
 const SUBJECTS = new Set(["robotics-engineering", "mathematics-data", "computing-ai", "physics-applied-science"]);
 const CONTENT_TYPES = new Set(["lesson", "guided-lab", "tutorial", "reference", "interactive"]);
@@ -48,6 +50,35 @@ const ROBOTICS_TRACK_IDS = new Set([
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function constArrayBody(source, declarationName) {
+  const declaration = new RegExp(
+    `export const ${declarationName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as const;`,
+    "u",
+  ).exec(source);
+  assert(declaration, `Could not find the ${declarationName} const array.`);
+  return declaration[1];
+}
+
+export function validateLearningPathAllowlistContract(frontendSource, functionsSource) {
+  const frontendIds = [...constArrayBody(frontendSource, "LEARNING_PATHS")
+    .matchAll(/\bid:\s*"([a-z0-9-]+)"/gu)]
+    .map((match) => match[1]);
+  const functionsIds = [...constArrayBody(functionsSource, "LEARNING_PATH_IDS")
+    .matchAll(/"([a-z0-9-]+)"/gu)]
+    .map((match) => match[1]);
+  const validatorIds = [...PATH_IDS];
+
+  assert(frontendIds.length > 0, "Frontend LEARNING_PATHS must not be empty.");
+  assert(new Set(frontendIds).size === frontendIds.length, "Frontend LEARNING_PATHS contains duplicate IDs.");
+  assert(new Set(functionsIds).size === functionsIds.length, "Functions LEARNING_PATH_IDS contains duplicate IDs.");
+  assert(JSON.stringify(functionsIds) === JSON.stringify(frontendIds),
+    "Functions LEARNING_PATH_IDS must exactly match frontend LEARNING_PATHS order and IDs.");
+  assert(JSON.stringify(validatorIds) === JSON.stringify(frontendIds),
+    "Catalog PATH_IDS must exactly match frontend LEARNING_PATHS order and IDs.");
+
+  return { pathIds: frontendIds };
 }
 
 function assertStringList(value, field, slug, maxItems) {
@@ -446,6 +477,10 @@ async function verifyRemoteSource(source, cache) {
 }
 
 export async function validateLearningCatalog({ write = false, verifyRemote = false } = {}) {
+  const learningPathAllowlist = validateLearningPathAllowlistContract(
+    await readFile(FRONTEND_LEARNING_CONTENT_PATH, "utf8"),
+    await readFile(FUNCTIONS_LEARNING_CONTENT_PATH, "utf8"),
+  );
   const catalog = JSON.parse(await readFile(CATALOG_PATH, "utf8"));
   const authorities = validateSourceAuthorities(JSON.parse(await readFile(SOURCE_AUTHORITIES_PATH, "utf8")));
   assert(Object.keys(authorities.repositories).length === 1 && authorities.repositories["ARES-Robotics"],
@@ -657,6 +692,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     plannedExistingInteractions: roboticsCurriculum.existingInteractionCandidates,
     curriculumSourceRequests: curriculumSourceRequests.requests,
     embeddedInteractions,
+    learningPathIds: learningPathAllowlist.pathIds.length,
     frcPathLessons: frcPath.documents,
     output: write ? OUTPUT_PATH : null,
   };
