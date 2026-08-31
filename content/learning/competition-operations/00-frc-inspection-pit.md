@@ -90,6 +90,13 @@ Rehearse three change cards. Card one says that FIRST posted a newer manual revi
 a hardware device changed. Card three says a calibration file changed. For each card, name the
 records and checks that become stale. Keep unaffected evidence instead of restarting blindly.
 
+Use the practice lab below to audit the FRC packet. Check only facts that are written in it.
+
+<inspectionpacketlab />
+
+The lab does not load the current manual, read calibration files, or inspect a robot. Its complete
+state means the six packet facts are present. It does not mean the robot passed inspection.
+
 Finally, write a one-sentence pit handoff: current build identity, current document revision, open
 items, and the next bounded action. A partner repeats the handoff in their own words.
 

@@ -85,6 +85,13 @@ While the current checklist is pending, rehearse the packet process with three n
 change such as “a newer revision appeared” or “the robot configuration changed.” State which packet
 rows must be checked again.
 
+Use the practice lab below to audit the FTC packet. Check only facts that are written in it.
+
+<inspectionpacketlab />
+
+The lab does not load the current checklist or inspect a robot. Its complete state means the six
+packet facts are present. It does not mean the robot passed inspection.
+
 Add a separate ARES preflight page. Include expected hardware topology, finite battery reading,
 tested stop states, sensor freshness, and local log access. Label this page **team readiness, not FTC
 inspection authority**.

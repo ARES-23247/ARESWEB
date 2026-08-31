@@ -180,8 +180,8 @@
         "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md"
       ],
       "lessons": [
-        { "id": "competition-ftc-inspection-pit", "title": "Prepare an FTC Robot for Inspection and the Pit", "level": "intermediate", "interaction": null, "sourceGap": "current official FTC inspection rules required" },
-        { "id": "competition-frc-inspection-pit", "title": "Prepare an FRC Robot for Inspection and the Pit", "level": "intermediate", "interaction": null, "sourceGap": "current official FRC inspection rules required" },
+        { "id": "competition-ftc-inspection-pit", "title": "Prepare an FTC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-packet-lab", "sourceGap": "current official FTC inspection rules required" },
+        { "id": "competition-frc-inspection-pit", "title": "Prepare an FRC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-packet-lab", "sourceGap": "current official FRC inspection rules required" },
         { "id": "competition-drive-team", "title": "Run a Drive-Team Match Cycle", "level": "intermediate", "interaction": "match-cycle-scenarios", "sourceGap": "team process review required" },
         { "id": "competition-scouting", "title": "Collect Useful Scouting Evidence", "level": "beginner", "interaction": "scouting-quality-lab", "sourceGap": "team scouting process and non-PII examples required" },
         { "id": "competition-strategy", "title": "Turn Evidence into Match Strategy", "level": "intermediate", "interaction": "strategy-tradeoff-lab", "sourceGap": "team process review required" },

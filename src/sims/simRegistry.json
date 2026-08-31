@@ -265,6 +265,14 @@
       "fidelity": null
     },
     {
+      "id": "inspectionPacketLab",
+      "name": "Inspection Packet Evidence Lab",
+      "path": "./inspection-packet-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "kayakingHydrodynamics",
       "name": "Kayaking Hydrodynamics",
       "path": "./kayaking-hydrodynamics",

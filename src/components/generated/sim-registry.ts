@@ -37,6 +37,7 @@ const ftcTelemetryCadenceLab = lazy(() => import("../../sims/ftc-telemetry-caden
 const greatbee = lazy(() => import("../../sims/greatbee"));
 const hardwareTopologyDiagnostic = lazy(() => import("../../sims/hardware-topology-diagnostic"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
+const inspectionPacketLab = lazy(() => import("../../sims/inspection-packet-lab"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
 const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
@@ -168,6 +169,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   hikingGradeEnergy: hikingGradeEnergy,
   hikinggradeenergy: hikingGradeEnergy,
+  inspectionPacketLab: inspectionPacketLab,
+  inspectionpacketlab: inspectionPacketLab,
   kayakingHydrodynamics: kayakingHydrodynamics,
   kayakinghydrodynamics: kayakingHydrodynamics,
   kotlinExpressionLab: kotlinExpressionLab,
@@ -320,6 +323,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   ftctelemetrycadencelab: ftcTelemetryCadenceLab,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
+  inspectionPacketLab: inspectionPacketLab,
+  inspectionpacketlab: inspectionPacketLab,
   kotlinExpressionLab: kotlinExpressionLab,
   kotlinexpressionlab: kotlinExpressionLab,
   loadPathExplorer: loadPathExplorer,
@@ -650,6 +655,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'inspectionPacketLab',
+    'name': 'Inspection Packet Evidence Lab',
+    'folder': 'inspection-packet-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
   },
   {
     'id': 'kayakingHydrodynamics',

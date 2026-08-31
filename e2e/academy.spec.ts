@@ -98,6 +98,15 @@ const matchCycleLesson = {
   safetyScope: "physical-robot",
 };
 
+const inspectionLesson = {
+  ...matchCycleLesson,
+  slug: "competition-ftc-inspection-pit",
+  title: "Prepare an FTC Robot for Inspection and the Pit",
+  description: "Build a source-backed practice packet without claiming an inspection result.",
+  pathMemberships: [{ pathId: "competition-operations", order: 1 }],
+  objectives: ["Audit the evidence in a practice inspection packet."],
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -259,5 +268,37 @@ test("the match-cycle handoff lab resets phase evidence by keyboard at 320px", a
   await expect(pitPhase).toBeChecked();
   await expect(page.getByRole("checkbox").first()).not.toBeChecked();
   await expect(page.getByRole("note")).toContainText("cannot read a robot or event system");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the inspection packet lab preserves evidence limits at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...inspectionLesson, content: "# Prepare an FTC robot for inspection\n\n<inspectionpacketlab />" } }
+        : { documents: [inspectionLesson] }),
+    });
+  });
+
+  await page.goto("/academy/competition-ftc-inspection-pit?path=competition-operations", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Inspection Packet Evidence Lab" })).toBeVisible();
+  const checks = page.getByRole("checkbox");
+  await checks.first().focus();
+  await page.keyboard.press("Space");
+  await expect(checks.first()).toBeChecked();
+  await expect(page.getByText(/record the current document identity/i)).toBeVisible();
+
+  for (let index = 1; index < await checks.count(); index += 1) await checks.nth(index).check();
+  await expect(page.getByText("Ready for a practice handoff")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("does not load FIRST rules");
+  await expect(page.getByRole("note")).toContainText("approve inspection");
+
+  await page.getByRole("button", { name: "Reset packet" }).click();
+  for (let index = 0; index < await checks.count(); index += 1) await expect(checks.nth(index)).not.toBeChecked();
   await expectNoHorizontalOverflow(page);
 });
