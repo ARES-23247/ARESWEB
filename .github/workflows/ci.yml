@@ -24,6 +24,7 @@ env:
 jobs:
   verify:
     name: Verify, Test & Build
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -114,18 +115,9 @@ jobs:
       - name: Verify Hosting route status behavior
         run: pnpm exec firebase emulators:exec --only hosting,functions --project aresweb-ci "node scripts/check-hosting-emulator.mjs"
 
-      - name: Upload immutable release artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: release-${{ github.sha }}
-          path: |
-            dist/
-            functions/lib/
-          if-no-files-found: error
-          retention-days: 3
-
   rules-tests:
     name: Firebase Rules Emulator Tests
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -169,6 +161,7 @@ jobs:
 
   e2e-tests:
     name: Playwright E2E Tests
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     # The official image ships every browser and its system libraries, so the
     # job never touches apt — hosted-runner package mirrors stalled three
@@ -220,7 +213,7 @@ jobs:
     name: Required Test Gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: always()
+    if: always() && github.event_name != 'push'
     needs:
       - verify
       - rules-tests
@@ -238,14 +231,86 @@ jobs:
           fi
           echo "All required validation jobs passed."
 
+  release-build:
+    name: Build Protected Master Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require a protected pull-request merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          merged_pr_count="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+              --jq "[.[] | select(.merged_at != null and .base.ref == \"master\" and .merge_commit_sha == \"${GITHUB_SHA}\")] | length"
+          )"
+
+          if [ "$merged_pr_count" != "1" ]; then
+            echo "Release refused: ${GITHUB_SHA} must be the result of exactly one merged pull request into master."
+            exit 1
+          fi
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify public security configuration
+        env:
+          NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
+          NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
+        run: |
+          test -n "$NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY"
+          test -n "$NEXT_PUBLIC_GOOGLE_PICKER_API_KEY"
+
+      - name: Build frontend release
+        env:
+          NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
+          NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
+        run: pnpm run build
+
+      - name: Enforce release bundle budgets
+        run: node scripts/check-bundle-size.mjs
+
+      - name: Build Cloud Functions release
+        run: pnpm --filter functions build
+
+      - name: Upload immutable release artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            dist/
+            functions/lib/
+          if-no-files-found: error
+          retention-days: 3
+
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs:
-      - verify
-      - test-gate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.test-gate.result == 'success'
+      - release-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.release-build.result == 'success'
     environment:
       name: production
       url: https://aresfirst.org
@@ -378,7 +443,7 @@ jobs:
       - name: Install browser-smoke dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify production App Check without storing inquiry data
+      - name: Verify production GA4 and App Check without storing inquiry data
         run: >-
           node scripts/check-production-browser.mjs
           --deployment-id "${{ github.sha }}"

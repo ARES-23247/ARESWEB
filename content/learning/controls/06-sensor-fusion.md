@@ -17,7 +17,7 @@ In this lesson, you will:
 - test the result against an independent truth value; and
 - connect a simple one-dimensional model to the real ARES estimator.
 
-This lesson matches ARES 13.0.1 and Studio 3.1.2. Its source links point to one reviewed commit in
+This lesson matches ARES 14.0.0 and Studio 4.0.0. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The interactive lab uses a weighted average on one straight line. It is the one-dimensional form of

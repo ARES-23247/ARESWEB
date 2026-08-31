@@ -46,11 +46,19 @@ describe("learning source-authority refresh", () => {
   });
 
   it("moves retired source references to their current monorepo boundary", () => {
-    expect(migrateCurrentSourcePaths(
+    expect(migrateCurrentSourcePaths([
       "Canonical hardware topology models: ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt",
-    )).toBe(
+      "ARES path safety evaluator: ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/PathSafetyEvaluator.kt",
+      "ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt",
+      "ARES-FRC/src/main/kotlin/com/areslib/frc/FrcMechanismCommissioningController.kt",
+      "ARES-FRC/src/test/kotlin/com/areslib/frc/ARESRobotTimedBehaviorRegressionTest.kt",
+    ].join("\n"))).toBe([
       "Canonical hardware topology wire schema: ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
-    );
+      "ARES autonomous path task builder: ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/AutoBuilder.kt",
+      "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt",
+      "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt",
+      "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotTimedBehaviorRegressionTest.kt",
+    ].join("\n"));
   });
 
   it("refreshes provenance, URLs, revisions, versions, and blob identities", () => {

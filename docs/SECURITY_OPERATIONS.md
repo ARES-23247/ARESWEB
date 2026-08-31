@@ -383,7 +383,10 @@ the publishing user's ID or other Firestore metadata.
 
 - Pull-request jobs must not receive Firebase or Google Cloud credentials.
 - Production deploys must reference the protected GitHub `production`
-  environment and run only from `master` after the required test gate.
+  environment and run only from `master` after the required PR test gate and
+  CodeQL. The `master` release job must fail closed unless the pushed commit is
+  associated with exactly one merged pull request into `master`; it rebuilds
+  and budgets the release artifact without repeating the PR test suites.
 - Probe both the canonical domain and Firebase Hosting origin after a deploy.
   The source-controlled production contract checks success routes, raw metadata,
   genuine page/API 404s, sitemap caching, and critical security headers with

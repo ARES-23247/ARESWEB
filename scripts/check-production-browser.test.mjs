@@ -15,6 +15,8 @@ function createBrowserHarness({
   attestationBody = "",
   securityAlert = "",
   consoleErrors = [],
+  analyticsRequestUrl =
+    "https://www.google-analytics.com/g/collect?tid=G-0KKZT6G3TG",
 } = {}) {
   let inquiryHandler;
   const close = vi.fn();
@@ -32,6 +34,16 @@ function createBrowserHarness({
     }),
     goto: vi.fn(),
     waitForFunction: vi.fn(),
+    waitForRequest: vi.fn(async (predicate) => {
+      if (!analyticsRequestUrl) {
+        throw new Error("analytics request timed out");
+      }
+      const request = { url: () => analyticsRequestUrl };
+      if (!predicate(request)) {
+        throw new Error("analytics request did not match");
+      }
+      return request;
+    }),
     waitForResponse: vi.fn(async () => ({
       status: () => attestationStatus,
       text: async () => attestationBody,
@@ -108,6 +120,7 @@ describe("production browser security check", () => {
     ).resolves.toEqual({
       origin: "https://aresfirst-portal.web.app",
       enterpriseClient: true,
+      analyticsVerified: true,
       appCheckVerified: true,
       headlessRejectionVerified: false,
     });
@@ -204,6 +217,7 @@ describe("production browser security check", () => {
     ).resolves.toEqual({
       origin: "https://aresfirst-portal.web.app",
       enterpriseClient: true,
+      analyticsVerified: true,
       appCheckVerified: false,
       headlessRejectionVerified: true,
     });
@@ -235,6 +249,51 @@ describe("production browser security check", () => {
     ).rejects.toThrow(
       "Join form did not become ready at https://aresfirst-portal.web.app/join\npageerror: boot failed",
     );
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails when the deployed page emits no GA4 collection request", async () => {
+    const harness = createBrowserHarness({ analyticsRequestUrl: "" });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow("analytics request timed out");
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails when GA4 uses a different measurement ID", async () => {
+    const harness = createBrowserHarness({
+      analyticsRequestUrl:
+        "https://www.google-analytics.com/g/collect?tid=G-WRONGSTREAM",
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow("unexpected measurement ID G-WRONGSTREAM");
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a deceptive hostname ending in the Analytics domain text", async () => {
+    const harness = createBrowserHarness({
+      analyticsRequestUrl:
+        "https://evilgoogle-analytics.com/g/collect?tid=G-0KKZT6G3TG",
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow("analytics request did not match");
     expect(harness.close).toHaveBeenCalledTimes(1);
   });
 });
