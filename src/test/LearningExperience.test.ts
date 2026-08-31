@@ -157,6 +157,33 @@ describe("learning experience utilities", () => {
     expect(learningPathNavigation([multiPath], "multi-path", null).pathId).toBe("ai-ml-foundations");
   });
 
+  it("keeps FRC path filtering and next-lesson navigation available", () => {
+    const frcStart = document({
+      slug: "frc-start",
+      title: "FRC Start",
+      pathMemberships: [{ pathId: "frc-robot-with-ares", order: 1 }],
+      platforms: ["frc"],
+    });
+    const frcNext = document({
+      slug: "frc-next",
+      title: "FRC Next",
+      prerequisites: ["frc-start"],
+      pathMemberships: [{ pathId: "frc-robot-with-ares", order: 2 }],
+      platforms: ["frc"],
+    });
+    const filters = parseLearningFilters(new URLSearchParams("path=frc-robot-with-ares&platform=frc"));
+
+    expect(filterLearningDocuments([frcNext, frcStart, ...docs], filters).map((item) => item.slug))
+      .toEqual(["frc-start", "frc-next"]);
+    expect(learningPathNavigation([frcNext, frcStart], "frc-start", "frc-robot-with-ares"))
+      .toMatchObject({
+        pathId: "frc-robot-with-ares",
+        position: 0,
+        previous: null,
+        next: { slug: "frc-next" },
+      });
+  });
+
   it("ranks prerequisites and shared path/topic relationships without returning the current lesson", () => {
     expect(relatedLearningDocuments(docs, "robot-intent", 2).map((item) => item.slug))
       .toEqual(["safe-output"]);

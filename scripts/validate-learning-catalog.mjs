@@ -24,6 +24,7 @@ const SAFETY_SCOPES = new Set(["none", "simulation-only", "bench-testing", "phys
 const PATH_IDS = new Set([
   "robotics-foundations",
   "ftc-robot-with-ares",
+  "frc-robot-with-ares",
   "controls-localization-autonomous",
   "math-for-robotics",
   "ai-ml-foundations",
@@ -369,6 +370,35 @@ export function registerPathOrder(pathOrders, pathId, order, slug) {
   pathOrders.set(pathOrderKey, slug);
 }
 
+export function validateLearningPathContract(
+  catalog,
+  pathId,
+  { minimumDocuments = 1, requireSelfContained = false } = {},
+) {
+  const sequence = catalog.documents
+    .flatMap((document) => {
+      const membership = document.pathMemberships.find((item) => item.pathId === pathId);
+      return membership ? [{ document, order: membership.order }] : [];
+    })
+    .sort((left, right) => left.order - right.order || left.document.slug.localeCompare(right.document.slug));
+
+  assert(sequence.length >= minimumDocuments,
+    `${pathId}: expected at least ${minimumDocuments} lessons, found ${sequence.length}.`);
+  const seen = new Set();
+  sequence.forEach(({ document, order }, index) => {
+    assert(order === index + 1,
+      `${pathId}: ${document.slug} must use contiguous path order ${index + 1}, found ${order}.`);
+    if (requireSelfContained) {
+      for (const prerequisite of document.prerequisites) {
+        assert(seen.has(prerequisite),
+          `${pathId}: ${document.slug} prerequisite ${prerequisite} must appear earlier in the same path.`);
+      }
+    }
+    seen.add(document.slug);
+  });
+  return { documents: sequence.length, slugs: sequence.map(({ document }) => document.slug) };
+}
+
 async function verifyCurrentAresVersions(authorities, generatedFrom) {
   const current = authorities.repositories["ARES-Robotics"]?.current;
   assert(current, "ARES-Robotics current authority is required for remote version verification.");
@@ -581,6 +611,10 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   for (const document of catalog.documents) {
     for (const prerequisite of document.prerequisites) assert(slugs.has(prerequisite), `${document.slug}: prerequisite ${prerequisite} is absent from this catalog.`);
   }
+  const frcPath = validateLearningPathContract(catalog, "frc-robot-with-ares", {
+    minimumDocuments: 12,
+    requireSelfContained: true,
+  });
 
   const roboticsCurriculumPlan = JSON.parse(await readFile(ROBOTICS_CURRICULUM_PLAN_PATH, "utf8"));
   const roboticsCurriculum = validateRoboticsCurriculumPlan(roboticsCurriculumPlan, catalog);
@@ -623,6 +657,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     plannedExistingInteractions: roboticsCurriculum.existingInteractionCandidates,
     curriculumSourceRequests: curriculumSourceRequests.requests,
     embeddedInteractions,
+    frcPathLessons: frcPath.documents,
     output: write ? OUTPUT_PATH : null,
   };
 }
@@ -634,5 +669,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   });
   const interactionVerb = result.embeddedInteractions === 1 ? "is" : "are";
   const interactionNoun = result.embeddedInteractions === 1 ? "interaction" : "interactions";
-  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. The robotics expansion contract contains ${result.plannedRoboticsLessons} lessons across ${result.plannedRoboticsTracks} tracks and ${result.plannedExistingInteractions} existing-lesson interaction upgrades; ${result.embeddedInteractions} reviewed ${interactionNoun} ${interactionVerb} currently embedded. ${result.curriculumSourceRequests} evidence gaps have tracked requests. All ${result.currentSources} source references use the current ARES-Robotics monorepo authority.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
+  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. The self-contained FRC path contains ${result.frcPathLessons} lessons. The robotics expansion contract contains ${result.plannedRoboticsLessons} lessons across ${result.plannedRoboticsTracks} tracks and ${result.plannedExistingInteractions} existing-lesson interaction upgrades; ${result.embeddedInteractions} reviewed ${interactionNoun} ${interactionVerb} currently embedded. ${result.curriculumSourceRequests} evidence gaps have tracked requests. All ${result.currentSources} source references use the current ARES-Robotics monorepo authority.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
 }

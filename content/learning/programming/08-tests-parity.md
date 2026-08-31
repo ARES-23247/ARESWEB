@@ -10,11 +10,11 @@ This lesson matches ARES 12.0.0, FTC SDK 11.1.0, and Studio 3.0.0. Every source 
 one reviewed commit in the ARES Robotics monorepo. An older lesson named a `simulation-foundation`
 contract that is not in the current monorepo. Do not look for that removed file.
 
-Complete
-[Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares)
-and
-[Simulation Is Not Hardware Validation](/academy/simulation-is-not-hardware-validation?path=testing-debugging-commissioning).
-You should also know the subsystem's units, safe output, and cached input fields.
+Complete [Read Hardware Once and Write Safe Outputs](/academy/programming-io-caching?path=programming-with-ares)
+and [Simulation Is Not Hardware Validation](/academy/simulation-is-not-hardware-validation?path=testing-debugging-commissioning).
+You should know the subsystem's units, safe output, and cached input fields. FTC students may also
+review [Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares)
+for the current season composition pattern, but that FTC lesson is not required for an FRC test.
 
 ## Vocabulary
 

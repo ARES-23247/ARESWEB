@@ -7,8 +7,8 @@ not only a screen label. The robot must stop old work, keep real faults latched,
 health, and start only the controller that belongs to the new mode.
 
 In this lesson, you will trace those handoffs in the current ARES FRC season code. Complete
-[State, Actions, and Reducers](/academy/redux-state-actions-reducers?path=programming-with-ares)
-and [Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares)
+[State, Actions, and Reducers](/academy/redux-state-actions-reducers?path=frc-robot-with-ares)
+and [Read Hardware Once and Write Safe Outputs](/academy/programming-io-caching?path=frc-robot-with-ares)
 first. The software activity does not prove that a physical mechanism is wired, homed, clear, or
 safe to move.
 
@@ -206,9 +206,10 @@ Do not invent a service or claim that a software test checked physical hardware.
 
 ## Related and next
 
-Compare this WPILib lifecycle with
-[Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares).
-Continue to [Build Safe Task Sequences in ARESLib](/academy/programming-safe-task-sequences?path=programming-with-ares)
-to trace cancellation and cleanup inside autonomous work. Then use
-[Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
-to design a narrow parity claim.
+Continue to [Simulation Is Not Hardware Validation](/academy/simulation-is-not-hardware-validation?path=frc-robot-with-ares)
+to separate software, simulator, and physical evidence. Then use [Telemetry, Control State, and
+Offline Logs](/academy/telemetry-and-control?path=frc-robot-with-ares) and [Test Robot Logic Across
+Mocks and Simulation](/academy/programming-tests-parity?path=frc-robot-with-ares) to design a narrow
+claim. Compare the lifecycle with [Coordinate Subsystems and Fail
+Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=programming-with-ares) only when you
+also need the FTC season pattern.

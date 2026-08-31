@@ -7,6 +7,7 @@ import {
   normalizeLearningMarkdown,
   parseAresVersions,
   registerPathOrder,
+  validateLearningPathContract,
   resolveApprovedAuthority,
   validateSourceReference,
   validateSourceAuthorities,
@@ -138,6 +139,25 @@ describe("learning catalog preparation", () => {
     registerPathOrder(orders, "robotics-foundations", 1, "first");
     expect(() => registerPathOrder(orders, "robotics-foundations", 1, "second")).toThrow(/duplicates first/u);
     expect(() => registerPathOrder(orders, "another-path", 1, "second")).not.toThrow();
+  });
+
+  it("requires a self-contained learning path to be contiguous and prerequisite ordered", () => {
+    const catalog = { documents: [
+      { slug: "start", prerequisites: [], pathMemberships: [{ pathId: "frc-robot-with-ares", order: 1 }] },
+      { slug: "finish", prerequisites: ["start"], pathMemberships: [{ pathId: "frc-robot-with-ares", order: 2 }] },
+    ] };
+    expect(validateLearningPathContract(catalog, "frc-robot-with-ares", {
+      minimumDocuments: 2,
+      requireSelfContained: true,
+    })).toEqual({ documents: 2, slugs: ["start", "finish"] });
+    expect(() => validateLearningPathContract({ documents: [
+      catalog.documents[0],
+      { ...catalog.documents[1], pathMemberships: [{ pathId: "frc-robot-with-ares", order: 3 }] },
+    ] }, "frc-robot-with-ares", { requireSelfContained: true })).toThrow(/contiguous path order 2/u);
+    expect(() => validateLearningPathContract({ documents: [
+      catalog.documents[0],
+      { ...catalog.documents[1], prerequisites: ["outside"] },
+    ] }, "frc-robot-with-ares", { requireSelfContained: true })).toThrow(/must appear earlier/u);
   });
 
   it("measures substantial lesson structure instead of relying on word count alone", () => {
