@@ -20,6 +20,9 @@ This page applies to ARES 13.0.0 and Studio 3.1.0.
 - **Latency:** the delay between capture and use of a measurement.
 - **Uncertainty:** a numeric description of how unsure a measurement is.
 - **Rejection gate:** a check that keeps unsafe or unusable evidence out of the estimator.
+- **PathPlanner asset:** an external `.path` or `.auto` JSON file that describes path data or an
+  autonomous task tree.
+- **Named command:** a registered action name that a PathPlanner event marker may request.
 
 ARES path X and Y values use field-relative meters. Headings use radians. Positive turns go
 counter-clockwise. Alliance mirroring happens once at the stated runtime boundary. A screen may
@@ -62,6 +65,26 @@ External path files can provide reviewed points. They are inputs to the canonica
 second source of robot meaning. Empty paths, values that are not finite, broken endpoints, unsafe
 intersections, and conflicting limits should stop loading or execution.
 
+### When a path starts in PathPlanner
+
+Current ARES keeps file editing, path parsing, and robot deployment in separate owners:
+
+1. ARES Robotics Studio or PathPlanner creates the `.path` or `.auto` asset.
+2. `DynamicPathLoader` or `PathPlannerParser` reads the JSON outside the fast control loop.
+3. The parser rejects an empty result or values that are not finite.
+4. `AutoBuilder` needs a configured `HolonomicPathFollower` before it can build a named path or
+   `.auto` task tree.
+5. Every event-marker name must be registered in `NamedCommands` before the auto is built.
+6. The FTC or FRC product decides how the reviewed asset reaches the robot and owns mode startup,
+   alliance choice, motor limits, and safe stop behavior.
+
+Path X and Y stay in field-relative meters. Heading stays in CCW-positive radians. Do not apply the
+dashboard's field-to-canvas swap or sign change to the robot path; that transform is only for drawing
+on a screen. Alliance mirroring still happens once when the path is loaded for the selected alliance.
+
+This external pipeline does not replace `.aresroutine`. A routine may point to a reviewed path, while
+the canonical project model still owns stable subsystem, ability, resource, and task identities.
+
 ## Hands-on activity
 
 First, use the path lab to compare waypoint spacing and turn shape.
@@ -70,6 +93,10 @@ First, use the path lab to compare waypoint spacing and turn shape.
 
 This interaction draws a teaching path. It does not read a team routine, check field obstacles,
 compile generated code, or prove that a robot can follow the path.
+
+Open the pinned pathing integration guide. Build a six-row trace with the asset, parser, follower,
+named commands, safety checks, and platform owner. Then use the lab to create one Clear result and
+one Blocked result. For each result, state which real pipeline checks the lab does not perform.
 
 Next, use the uncertainty lab. Change one measurement condition at a time. Record the first gate
 that rejects the sample and the evidence needed to resolve it.

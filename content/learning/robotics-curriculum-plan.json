@@ -134,6 +134,7 @@
         "ARESLib-Kotlin/docs/typed-tuning-profiles.md",
         "ARESLib-Kotlin/docs/localization-calibration.md",
         "ARESLib-Kotlin/docs/routines-controls-and-codegen.md",
+        "ARESLib-Kotlin/docs/onboarding/03_pathing_and_analytics.md",
         "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md",
         "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md"
       ],

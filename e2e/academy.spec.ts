@@ -132,6 +132,19 @@ const measurementLesson = {
   safetyScope: "none",
 };
 
+const autonomousReferenceLesson = {
+  ...lesson,
+  slug: "autonomous-and-vision",
+  title: "Autonomous Paths, Localization, and Vision",
+  description: "Trace canonical routines, external paths, localization, and delayed vision evidence.",
+  level: "advanced",
+  pathMemberships: [{ pathId: "areslib-engineering-reference", order: 7 }],
+  prerequisites: ["areslib-fundamentals"],
+  objectives: ["Trace a reviewed PathPlanner asset into the current ARES path runtime."],
+  platforms: ["ftc", "frc", "simulator"],
+  appliesToVersion: "ARES 13.0.0; Studio 3.1.0",
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -394,5 +407,38 @@ test("the measurement lesson separates nominal values and tolerance limits at 32
   await expect(page.getByText("The arithmetic range does not fit the lesson requirement.")).toBeVisible();
   await expect(page.getByRole("note")).toContainText("measurement uncertainty");
   await expect(page.getByRole("note")).toContainText("cannot approve a CAD model");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the autonomous reference exposes path clearance evidence without page overflow at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...autonomousReferenceLesson, content: "# Autonomous paths, localization, and vision\n\n<autonomouspathlab />" } }
+        : { documents: [autonomousReferenceLesson] }),
+    });
+  });
+
+  await page.goto("/academy/autonomous-and-vision?path=areslib-engineering-reference", {
+    waitUntil: "networkidle",
+  });
+  await expect(page.getByRole("heading", { name: "Autonomous Path Clearance Lab" })).toBeVisible();
+  await expect(page.getByText("Blocked", { exact: true })).toBeVisible();
+
+  const goalY = page.getByRole("slider", { name: "Goal field Y" });
+  await goalY.focus();
+  await page.keyboard.press("Home");
+  await expect(goalY).toHaveValue("0.2");
+  await expect(page.getByText("Clear", { exact: true })).toBeVisible();
+
+  await page.getByText("Open the path data table").click();
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("does not parse `.aresroutine` files");
+  await expect(page.getByRole("note")).toContainText("validate physical clearance");
   await expectNoHorizontalOverflow(page);
 });
