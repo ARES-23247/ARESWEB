@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "mode": "review-candidate",
+  "requiresHumanReview": true,
+  "sourceAuthority": {
+    "repository": "ARES-Robotics",
+    "revision": "ares-13.0.1-studio-3.1.2",
+    "commit": "8b002d539df84ad1407e81fcc8cc5a70bd4456a4"
+  },
+  "batches": [
+    {
+      "id": "new-drafts-construction-programming",
+      "phase": "publish-drafts",
+      "reviewDigest": "f4e55a3028fead6c7bf847f593b68b0d1bc418ff08d8eda82159bd401da6158a",
+      "approvedSlugs": [
+        "development-testing-and-release-validation",
+        "electrical-battery-protection",
+        "electrical-buses-addresses",
+        "electrical-hardware-map-diagnostics",
+        "electrical-motors-servos",
+        "electrical-sensors",
+        "electrical-voltage-current-power",
+        "electrical-wiring-connectors",
+        "frc-mode-handoffs-and-safe-recovery",
+        "mechanical-cad-fabrication",
+        "mechanical-drivetrains",
+        "mechanical-fasteners",
+        "mechanical-gears-sprockets-belts",
+        "mechanical-measurement-design-notebook",
+        "mechanical-mechanisms",
+        "mechanical-structure-load-paths",
+        "mechanical-tools-safe-work",
+        "programming-code-subsystem",
+        "programming-io-caching",
+        "programming-kotlin-basics",
+        "programming-safe-task-sequences",
+        "programming-tests-parity",
+        "sequencing-and-resources",
+        "subsystems-ownership-and-safety",
+        "typed-tuning-and-safe-experiments"
+      ]
+    },
+    {
+      "id": "new-drafts-controls-competition-capstones",
+      "phase": "publish-drafts",
+      "reviewDigest": "f20591249b577c19569cf2d3792182c7b762d7a81ba137787fa6ca06624b255d",
+      "approvedSlugs": [
+        "capstone-autonomous-mission",
+        "capstone-competition-readiness",
+        "capstone-physical-commissioning",
+        "capstone-simulated-mechanism",
+        "capstone-subsystem",
+        "competition-drive-team",
+        "competition-frc-inspection-pit",
+        "competition-ftc-inspection-pit",
+        "competition-post-match",
+        "competition-scouting",
+        "competition-strategy",
+        "controls-motion-profiles",
+        "controls-motor-model-feedforward",
+        "controls-odometry",
+        "controls-pid",
+        "controls-sensor-fusion",
+        "controls-vision",
+        "ftc-driver-station-telemetry",
+        "testing-fault-tree",
+        "testing-logs-replay",
+        "testing-sysid-tuning"
+      ]
+    },
+    {
+      "id": "guarded-published-refresh",
+      "phase": "refresh-published",
+      "reviewDigest": "a63678bc03b93228b5abcdf634ff39ca7d62d22651a0719a683a8cdfd1940143",
+      "approvedSlugs": [
+        "ares-workspace-map",
+        "areslib-fundamentals",
+        "autonomous-and-vision",
+        "camera-evidence-and-uncertainty",
+        "ftc-driver-input-shaping-and-frames",
+        "ftc-gui-owned-indicator-lights",
+        "ftc-season-composition-and-safe-lifecycle",
+        "ftc-starter-controller-bindings",
+        "ftc-starter-first-autonomous",
+        "ftc-starter-physical-commissioning",
+        "ftc-starter-project-identity",
+        "measure-test-and-improve",
+        "rates-units-and-motion",
+        "read-a-telemetry-graph",
+        "redux-state-actions-reducers",
+        "robot-coordinate-contracts",
+        "robot-input-to-output",
+        "run-first-ftc-simulation",
+        "simulation-is-not-hardware-validation",
+        "swerve-and-kinematics",
+        "telemetry-and-control",
+        "telemetry-and-local-logs"
+      ]
+    }
+  ]
+}

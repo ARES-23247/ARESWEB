@@ -35,6 +35,7 @@
     "content:audit-source-worktree": "node scripts/learning-source-worktree.mjs",
     "content:refresh-sources": "node scripts/refresh-learning-source-authority.mjs",
     "content:prepare": "node scripts/validate-learning-catalog.mjs --write",
+    "content:release-validate": "pnpm run content:prepare && node scripts/validate-learning-release-candidate.mjs",
     "content:approval": "node scripts/migrate-learning-content.mjs --prepare-approval",
     "content:migrate": "node scripts/migrate-learning-content.mjs",
     "test:content-migration": "vitest run --config vitest.learning-migration.config.mts"

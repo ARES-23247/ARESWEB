@@ -19,15 +19,20 @@ This branch is ready for human review, not automatic publication. It contains
 source references, and 20 explicitly tracked evidence gaps. The prepared
 records remain drafts with `approvalStatus: pending_approval`.
 
+The exact machine-readable counterpart to this report is
+`content/learning/release-candidate.json`. CI regenerates the prepared artifact
+and refuses source-authority, slug-partition, refresh-scope, or review-digest
+drift before this candidate can be merged.
+
 No approval template in this document is an approval. The displayed digests
 only fingerprint the current exact content and slug scopes. A Lead Coach must
 review the rendered current candidate and then provide a public reviewer label
 and real review date. Production backup, deployment, and every Firestore write
 still require the owner's explicit authorization immediately before execution.
 
-Compared with `origin/master` at review time, the candidate changes 179 files
-with 18,643 insertions and 3,338 deletions. The curriculum portion is 54 files
-with 7,088 insertions and 1,948 deletions. Do not add another content batch
+Compared with `origin/master` at review time, the candidate changes 184 files
+with 19,193 insertions and 3,339 deletions. The curriculum portion is 55 files
+with 7,189 insertions and 1,948 deletions. Do not add another content batch
 before this candidate is reviewed and released.
 
 ## Exact proposed production scopes

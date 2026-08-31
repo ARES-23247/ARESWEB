@@ -63,6 +63,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: pnpm run content:verify
 
+      - name: Validate exact Academy release batches and review digests
+        run: pnpm run content:release-validate
+
       - name: Validate production deployment contract
         run: node scripts/verify-production-deployment.mjs --validate-contract
 
