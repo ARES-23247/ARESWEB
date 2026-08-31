@@ -44,9 +44,13 @@ does not contain the separate ARES Robotics worktree.
 
 ## CI Gates
 
-The required test gate aggregates all of these on every PR; deploys run only
-from master after they pass (see `docs/SECURITY_OPERATIONS.md` for the deploy
-contract):
+The required test gate aggregates all of these on every PR. Branch protection
+requires that gate and CodeQL before `master` can advance. After merge, the
+release job refuses commits that are not associated with exactly one merged PR
+into `master`, rebuilds the frontend and Functions from the merged tree, checks
+the release bundle budgets, and deploys that immutable artifact. It does not
+repeat the PR's lint, coverage, rules-emulator, or E2E suites (see
+`docs/SECURITY_OPERATIONS.md` for the deploy contract):
 
 1. `pnpm install --frozen-lockfile` and `pnpm run validate:agents`
 2. `pnpm run lint` and `pnpm --filter functions lint`
