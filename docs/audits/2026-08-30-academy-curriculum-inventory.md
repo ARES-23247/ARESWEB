@@ -14,6 +14,31 @@ Current fetched authority: ARES Robotics `099e5188f35c639d49e78a3c80309841e91920
 
 Validation runtime: Node 24.18.0, pnpm 11.21.0, Java 21.0.12
 
+## Continuation checkpoint — 2026-08-31
+
+This is a dated addendum, not a rewrite of the original audit state below. The
+release candidate is now 77 commits ahead of `origin/master` and changes 184
+files overall. It contains 68 learning documents, 14 populated paths, about
+88.5 hours of material, 90 reviewed interaction placements, 244 source
+references, and 20 tracked evidence requests. The average estimated reading
+grade remains 6.9 and no lesson exceeds 8.9.
+
+The candidate now pins ARES Robotics
+`890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93`, ARES 13.0.1, and Studio 3.1.2.
+The only upstream change after the prior `8b002d53` snapshot is a Logback
+dependency update in two Studio Gradle files. It changes no referenced lesson
+source, product workflow, version line, or available screenshot. The guarded
+refresh still advanced all exact source URLs and review digests so the release
+manifest identifies the current immutable monorepo snapshot.
+
+The current monorepo still provides no new authentic artifact that closes the
+remaining evidence register: 19 requests remain missing and one is partial.
+The expansion phase should therefore stop. Continued work is worthwhile only
+for human curriculum review, controlled release, approved team-media intake,
+future-season official-reference updates, and periodic source-drift or
+usability maintenance. Adding another broad lesson batch before release would
+increase review and rollback risk without closing the highest-value gaps.
+
 ## Decision
 
 Continuing is worthwhile, but additional broad lesson creation is not the best

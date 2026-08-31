@@ -8,7 +8,7 @@ Core curriculum implementation baseline: `01582f8a`. The mechanical
 source-authority refresh to the release below is part of this review candidate.
 
 Source authority: ARES Robotics
-`8b002d539df84ad1407e81fcc8cc5a70bd4456a4`, ARES 13.0.1, Studio 3.1.2
+`890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93`, ARES 13.0.1, Studio 3.1.2
 
 Production project: `aresfirst-portal`
 
@@ -35,6 +35,27 @@ with 19,193 insertions and 3,339 deletions. The curriculum portion is 55 files
 with 7,189 insertions and 1,948 deletions. Do not add another content batch
 before this candidate is reviewed and released.
 
+## Active-goal completion audit
+
+| Requirement | Current evidence | State |
+| --- | --- | --- |
+| Current ARES monorepo provenance | 244 source references and 142 Git blob hashes resolve at `890ef593`; `content:verify` passes. | Prepared |
+| Beginner-to-advanced robotics breadth | 68 documents and 14 paths cover mechanical, electrical, programming, controls, autonomous/vision, testing/debugging, competition operations, capstones, and ARESLib reference material. | Prepared |
+| Grades 6–8 language | Automated estimate averages grade 6.9; no lesson exceeds 8.9. Technical terms still require human age-suitability review. | Prepared, review required |
+| Visual and interactive instruction | Every lesson has a Mermaid model; 90 reviewed placements use 49 interactions; five authentic Studio images are used in six placements. | Prepared, evidence gaps remain |
+| Authentic team evidence | The dated register contains 19 missing requests and one partial request. Current ARES sources add no new approved team hardware, physical-test, or process artifact. | Incomplete by design |
+| Academy discovery and continuity | Search/filtering, path order, prerequisites, related/previous/next navigation, and local no-login progress exist in active source and browser coverage. | Implemented |
+| Editorial review | Saved-version previews and exact approval digests bind each proposed production scope. | Implemented; human review pending |
+| Student authority boundary | Catalog validation rejects language that makes mentor approval a condition of robot verification; Lead Coach approval applies to website publication. | Implemented |
+| Release discipline | CI validates the exact candidate, but the branch has not been pushed, reviewed, merged, deployed, or migrated. Production backup and staged review remain outstanding. | Pending authorization and review |
+| Branch cleanup | The active 77-commit release branch must remain available through production verification and rollback window. | Not yet appropriate |
+
+The curriculum-expansion portion of the goal is complete enough to stop adding
+scope. The whole goal is not complete until the candidate receives human
+review, is released through the guarded process, and the remaining authentic
+evidence requests are either fulfilled or intentionally retained for periodic
+maintenance.
+
 ## Exact proposed production scopes
 
 ### New-draft batch A — construction and ARES programming
@@ -42,7 +63,7 @@ before this candidate is reviewed and released.
 Count: 25 (the migration maximum)
 
 Candidate review digest:
-`f4e55a3028fead6c7bf847f593b68b0d1bc418ff08d8eda82159bd401da6158a`
+`c5632bb4c9ceca827f51bc8dd95e7295134a8455e98572012174ac6a6d8376f0`
 
 - `development-testing-and-release-validation`
 - `electrical-battery-protection`
@@ -75,7 +96,7 @@ Candidate review digest:
 Count: 21
 
 Candidate review digest:
-`f20591249b577c19569cf2d3792182c7b762d7a81ba137787fa6ca06624b255d`
+`f5960ab335d1f37ccd56ef62dace21edfb17dc231fd1016bb3b2228242682fe2`
 
 - `capstone-autonomous-mission`
 - `capstone-competition-readiness`
@@ -104,7 +125,7 @@ Candidate review digest:
 Count: 22 (one bounded phase)
 
 Candidate review digest:
-`a63678bc03b93228b5abcdf634ff39ca7d62d22651a0719a683a8cdfd1940143`
+`7aaf305f01c0eb582712548d1fca29a45e6c0b1aea689c2d245614c1c8bcae24`
 
 - `ares-workspace-map`
 - `areslib-fundamentals`
@@ -222,7 +243,7 @@ the exact approved subset.
 - average estimated reading grade 6.9, with no lesson over 8.9;
 - 90 reviewed interaction placements within aggregate and per-interaction
   bundle budgets;
-- 1,090 frontend tests, 807 Functions tests, and 31 Firebase rules tests;
+- 1,093 frontend tests, 807 Functions tests, and 31 Firebase rules tests;
 - 151 Playwright tests across Chromium, mobile Chromium, mobile WebKit,
   Firefox, WebKit, and the production PWA path;
 - lint, TypeScript, Functions build, production build, prerendering, and
