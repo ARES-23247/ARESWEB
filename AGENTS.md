@@ -54,7 +54,7 @@ pnpm run check:route-security
 pnpm run validate:functions-deploy-lock
 pnpm run lint
 pnpm --filter functions lint
-pnpm exec tsc --noEmit
+pnpm run typecheck
 pnpm run test:coverage
 pnpm --filter functions build
 pnpm --filter functions test:coverage

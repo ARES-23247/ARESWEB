@@ -15,7 +15,7 @@ pipeline).
 | `pnpm run dev` | Vite dev server |
 | `pnpm run lint` | ESLint (`--max-warnings 0`) |
 | `pnpm --filter functions lint` | ESLint for Cloud Functions |
-| `pnpm exec tsc --noEmit` | Type check only |
+| `pnpm run typecheck` | Type check only through the cross-platform project script |
 | `pnpm run validate:agents` | Workspace/agent configuration checks |
 | `pnpm run test:coverage` | Frontend Vitest with coverage ratchets |
 | `pnpm --filter functions build` | Functions TypeScript build |
@@ -34,7 +34,7 @@ contract):
 
 1. `pnpm install --frozen-lockfile` and `pnpm run validate:agents`
 2. `pnpm run lint` and `pnpm --filter functions lint`
-3. `pnpm exec tsc --noEmit`
+3. `pnpm run typecheck`
 4. `pnpm run test:coverage` (frontend; ratchets include a mechanical
    new-file inventory check)
 5. `pnpm --filter functions build` and `pnpm --filter functions test:coverage`

@@ -19,6 +19,7 @@
     "validate:functions-deploy-lock": "node scripts/verify-functions-npm-lock.mjs",
     "generate:sims": "node --experimental-strip-types scripts/generate-sim-registry.ts",
     "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:rules": "firebase emulators:exec --project aresweb-ci --only firestore,storage \"node node_modules/vitest/vitest.mjs run --config vitest.rules.config.ts\"",
