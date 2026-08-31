@@ -19,8 +19,12 @@ export default function AnalyticsTracker() {
 
     if (!window.gtag) {
       window.dataLayer = window.dataLayer || [];
-      window.gtag = (...args: unknown[]) => {
-        window.dataLayer.push(args);
+      window.gtag = function () {
+        // gtag.js expects its queue entries to be the Arguments object from
+        // each call. Plain arrays look similar but are not processed as gtag
+        // commands, so the library loads without emitting collection pings.
+        // eslint-disable-next-line prefer-rest-params
+        window.dataLayer.push(arguments);
       };
 
       // Use Google's supported Consent Mode instead of a custom client ID.
