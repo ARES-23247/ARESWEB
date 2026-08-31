@@ -100,7 +100,8 @@ export async function runProductionBrowserCheck({
       (request) => {
         const url = new URL(request.url());
         return (
-          url.hostname.endsWith("google-analytics.com") &&
+          (url.hostname === "google-analytics.com" ||
+            url.hostname.endsWith(".google-analytics.com")) &&
           url.pathname === "/g/collect"
         );
       },

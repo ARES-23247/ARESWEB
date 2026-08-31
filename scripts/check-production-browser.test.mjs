@@ -280,4 +280,20 @@ describe("production browser security check", () => {
     ).rejects.toThrow("unexpected measurement ID G-WRONGSTREAM");
     expect(harness.close).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects a deceptive hostname ending in the Analytics domain text", async () => {
+    const harness = createBrowserHarness({
+      analyticsRequestUrl:
+        "https://evilgoogle-analytics.com/g/collect?tid=G-0KKZT6G3TG",
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow("analytics request did not match");
+    expect(harness.close).toHaveBeenCalledTimes(1);
+  });
 });
