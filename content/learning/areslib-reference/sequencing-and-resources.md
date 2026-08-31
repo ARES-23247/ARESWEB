@@ -7,7 +7,7 @@ action, follow a path, or wrap other tasks. This reference explains how task gro
 resource bits prevent unsafe overlap, and how cleanup actions return to Redux.
 
 Read [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. You should know what
-an action, reducer, controller, and immutable state are. This page is pinned to ARES 13.0.1. It can
+an action, reducer, controller, and immutable state are. This page is pinned to ARES 14.0.0. It can
 support source review and software tests, but it cannot prove that a physical mechanism is safe.
 
 ## Vocabulary

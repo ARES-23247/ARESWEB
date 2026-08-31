@@ -5,9 +5,9 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93",
-    "aresVersion": "13.0.1",
-    "studioVersion": "3.1.2"
+    "commit": "6c107e38c31e8b7dae323b8a39a69c84d0374304",
+    "aresVersion": "14.0.0",
+    "studioVersion": "4.0.0"
   },
   "instructionalContract": {
     "targetReadingGrades": [6, 8],
@@ -108,8 +108,8 @@
         "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskResources.kt",
         "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md",
         "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md",
-        "ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt",
-        "ARES-FRC/src/main/kotlin/com/areslib/frc/FrcMechanismCommissioningController.kt",
+        "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt",
+        "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt",
         "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md"
       ],
       "lessons": [

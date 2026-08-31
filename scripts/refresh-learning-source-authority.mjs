@@ -17,6 +17,22 @@ const SOURCE_PATH_MIGRATIONS = new Map([
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt",
     "ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
   ],
+  [
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/PathSafetyEvaluator.kt",
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/AutoBuilder.kt",
+  ],
+  [
+    "ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt",
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt",
+  ],
+  [
+    "ARES-FRC/src/main/kotlin/com/areslib/frc/FrcMechanismCommissioningController.kt",
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt",
+  ],
+  [
+    "ARES-FRC/src/test/kotlin/com/areslib/frc/ARESRobotTimedBehaviorRegressionTest.kt",
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotTimedBehaviorRegressionTest.kt",
+  ],
 ]);
 
 function assert(condition, message) {
@@ -69,7 +85,8 @@ export function migrateCurrentSourcePaths(source) {
   }
   return updated
     .replaceAll("Canonical hardware topology models", "Canonical hardware topology wire schema")
-    .replaceAll("Hardware topology models", "Hardware topology wire schema");
+    .replaceAll("Hardware topology models", "Hardware topology wire schema")
+    .replaceAll("ARES path safety evaluator", "ARES autonomous path task builder");
 }
 
 export function refreshCatalogText(source, snapshot, blobHashes) {
