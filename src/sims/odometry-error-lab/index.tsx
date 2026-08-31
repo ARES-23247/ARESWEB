@@ -1,6 +1,11 @@
 /** @sim {"name":"Odometry Error Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { AcademyModelLimit, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyLabShell,
+  AcademyModelLimit,
+  AcademyRangeControl,
+  AcademySelectControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type RouteDirection =
   "positive-x" | "positive-y" | "negative-x" | "negative-y";
@@ -170,83 +175,55 @@ export default function OdometryErrorLab() {
   };
 
   return (
-    <section
-      aria-labelledby="odometry-error-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="odometry-error-title"
+      title="Odometry Calibration and Source Lab"
+      eyebrow="Concept model"
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Concept model
-          </p>
-          <h3
-            id="odometry-error-title"
-            className="mt-1 text-xl font-black text-white"
-          >
-            Odometry Calibration and Source Lab
-          </h3>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]">
         <fieldset className="grid gap-5 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">
             Calibration trial
           </legend>
-          <div className="grid gap-2">
-            <label
-              htmlFor="route-direction"
-              className="text-sm font-semibold text-white"
-            >
-              Surveyed route direction
-            </label>
-            <select
-              id="route-direction"
-              value={routeDirection}
-              onChange={(event) =>
-                setRouteDirection(event.currentTarget.value as RouteDirection)
-              }
-              className="min-h-11 rounded border border-white/20 bg-obsidian px-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              {Object.entries(ROUTES).map(([value, option]) => (
-                <option key={value} value={value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <NumberControl
+          <AcademySelectControl
+            id="route-direction"
+            label="Surveyed route direction"
+            value={routeDirection}
+            options={Object.entries(ROUTES).map(([value, option]) => ({
+              value,
+              label: option.label,
+            }))}
+            onChange={(value) => setRouteDirection(value as RouteDirection)}
+          />
+          <AcademyRangeControl
             label="Surveyed distance"
             unit="m"
             value={distance}
             min={1}
             max={6}
             step={0.1}
+            decimals={1}
             onChange={setDistance}
           />
-          <NumberControl
+          <AcademyRangeControl
             label="Distance scale error"
             unit="%"
             value={scaleErrorPercent}
             min={-10}
             max={10}
             step={0.5}
+            decimals={1}
             onChange={setScaleErrorPercent}
           />
-          <NumberControl
+          <AcademyRangeControl
             label="Heading bias"
             unit="°"
             value={headingBiasDegrees}
             min={-15}
             max={15}
             step={1}
+            decimals={1}
             onChange={setHeadingBiasDegrees}
           />
         </fieldset>
@@ -392,10 +369,6 @@ export default function OdometryErrorLab() {
         accuracy. It uses five healthy samples. ARES rebases each source during
         handoff; this page does not.
       </AcademyModelLimit>
-    </section>
+    </AcademyLabShell>
   );
-}
-
-function NumberControl(props: Parameters<typeof AcademyRangeControl>[0]) {
-  return <AcademyRangeControl {...props} decimals={1} />;
 }

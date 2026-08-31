@@ -240,3 +240,24 @@ official references, three current-season releases, two current product
 screenshots, three physical student evidence sets, and four team process
 reviews. A request may have more than one blocker. These counts explain why
 further autonomous prose would not close the remaining gaps.
+
+## Post-inventory interaction bundle stabilization
+
+The production bundle check found only 37 gzip bytes between the 90 approved
+Academy interaction chunks and their aggregate budget. This was a confirmed
+maintainability constraint rather than a reason to raise the budget: several of
+the largest independently lazy labs repeated the title/reset shell, model-limit
+notice, select control, and result-card markup already present in the counted
+Academy shared chunk.
+
+The bounded refactor moved those repeated contracts onto the existing shared
+components in eleven labs and extended the shared select control to accept
+explicit option labels plus disabled-state help. It did not combine the lazy
+interaction chunks or move code outside the bundle accounting boundary.
+
+The measured Academy interaction total fell from 252,862 raw / 94,963 gzip
+bytes to 241,964 raw / 92,122 gzip bytes. The aggregate budget remains 261,000
+raw / 95,000 gzip bytes, leaving 2,878 gzip bytes of headroom—enough for one
+interaction at the separately enforced 2,600-byte per-interaction maximum.
+Eleven focused test files pass with 59 tests, including the generalized select
+contract and the affected interaction behavior.

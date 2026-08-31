@@ -1,7 +1,12 @@
 /** @sim {"name":"Log Alignment and Comparison Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { ChartNoAxesCombined, RotateCcw } from "lucide-react";
-import { AcademyModelLimit } from "@/sims/shared/academy-interaction-ui";
+import { ChartNoAxesCombined } from "lucide-react";
+import {
+  AcademyDatum,
+  AcademyLabShell,
+  AcademyModelLimit,
+  AcademySelectControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 type Anchor = "RUN_START" | "SHARED_EVENT";
 type Signal = "CURRENT" | "POSITION";
@@ -73,35 +78,24 @@ export default function LogComparisonLab() {
   };
 
   return (
-    <section aria-labelledby="log-comparison-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Synthetic run comparison</p>
-          <h3 id="log-comparison-title" className="mt-1 text-xl font-black text-white">Log Alignment and Comparison Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Compare two tiny invented runs. Alignment moves timestamps. The evidence readout uses the newest sample at or before the selected time.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
+    <AcademyLabShell
+      titleId="log-comparison-title"
+      title="Log Alignment and Comparison Lab"
+      eyebrow="Synthetic run comparison"
+      description="Compare two tiny invented runs. Alignment moves timestamps. The evidence readout uses the newest sample at or before the selected time."
+      onReset={reset}
+    >
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Comparison choices</legend>
-          <SelectField
+          <AcademySelectControl
             id="log-anchor"
             label="Alignment anchor"
             value={anchor}
             options={["RUN_START", "SHARED_EVENT"]}
             onChange={changeAnchor}
           />
-          <SelectField
+          <AcademySelectControl
             id="log-signal"
             label="One signal"
             value={signal}
@@ -130,14 +124,14 @@ export default function LogComparisonLab() {
             Negative time is before the chosen anchor. Time zero is the anchor itself.
           </p>
 
-          <div aria-live="polite" className="grid gap-3">
-            <Datum label="Baseline evidence" value={formatSample(baselineSample, unit)} />
-            <Datum label="Incident evidence" value={formatSample(incidentSample, unit)} />
-            <Datum
+          <dl aria-live="polite" className="grid gap-3">
+            <AcademyDatum label="Baseline evidence" value={formatSample(baselineSample, unit)} />
+            <AcademyDatum label="Incident evidence" value={formatSample(incidentSample, unit)} />
+            <AcademyDatum
               label="Difference at this evidence time"
               value={difference === null ? "Not comparable: one run has no earlier sample" : `${difference.toFixed(1)} ${unit}`}
             />
-          </div>
+          </dl>
         </fieldset>
 
         <div className="overflow-x-auto rounded-lg border border-white/10 bg-obsidian p-4">
@@ -171,7 +165,7 @@ export default function LogComparisonLab() {
       </div>
 
       <AcademyModelLimit>These five-point runs are invented. The lab models exact, held, and missing values, but it does not import a log, run the production replay engine, verify source identity, infer a cause, compare different robots, connect to hardware, or prove a physical fault.</AcademyModelLimit>
-    </section>
+    </AcademyLabShell>
   );
 }
 
@@ -184,41 +178,4 @@ function formatSample(sample: HeldSample | null, unit: string): string {
   if (!sample) return "Missing before first sample";
   const state = sample.status === "EXACT" ? "exact sample" : `held ${sample.ageMs} ms`;
   return `${sample.point.value.toFixed(1)} ${unit} (${state})`;
-}
-
-function SelectField({
-  id,
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
-      <span>{label}</span>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-      >
-        {options.map((option) => <option key={option} value={option}>{option.replaceAll("_", " ").toLowerCase()}</option>)}
-      </select>
-    </label>
-  );
-}
-
-function Datum({ label, value }: { label: string; value: string }) {
-  return (
-    <dl className="rounded border border-white/10 p-3">
-      <dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt>
-      <dd className="mt-1 font-mono font-semibold text-white">{value}</dd>
-    </dl>
-  );
 }

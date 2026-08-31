@@ -229,4 +229,29 @@ describe("AcademySelectControl", () => {
     fireEvent.change(control, { target: { value: "RUNNING" } });
     expect(selected).toBe("RUNNING");
   });
+
+  it("supports explicit labels and disabled explanatory text", () => {
+    render(
+      <>
+        <AcademySelectControl
+          id="evidence-source"
+          label="Evidence source"
+          value="paired-runtime"
+          options={[
+            { value: "compile", label: "Compile result" },
+            { value: "paired-runtime", label: "Paired runtime result" },
+          ]}
+          onChange={() => undefined}
+          disabled
+          describedBy="evidence-help"
+        />
+        <p id="evidence-help">Available after a paired run.</p>
+      </>,
+    );
+
+    const control = screen.getByRole("combobox", { name: "Evidence source" });
+    expect(control).toBeDisabled();
+    expect(control).toHaveAccessibleDescription("Available after a paired run.");
+    expect(screen.getByRole("option", { name: "Paired runtime result" })).toBeVisible();
+  });
 });

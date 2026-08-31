@@ -1,6 +1,11 @@
 /** @sim {"name":"Current ARES Parity Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState } from "react";
-import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyDatum,
+  AcademyLabShell,
+  AcademyModelLimit,
+  AcademySelectControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type EvidenceArtifact =
   | "generated-contract"
@@ -138,29 +143,17 @@ export default function ParityEvidenceLab() {
   };
 
   return (
-    <section
-      aria-labelledby="parity-lab-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="parity-lab-title"
+      title="Current ARES Parity Evidence Lab"
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <h3 id="parity-lab-title" className="text-xl font-black text-white">
-          Current ARES Parity Evidence Lab
-        </h3>
-        <button
-          type="button"
-          onClick={reset}
-          className="min-h-11 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">
             Recorded evidence
           </legend>
-          <SelectControl
+          <AcademySelectControl
             id="parity-artifact"
             label="Evidence artifact"
             value={artifact}
@@ -170,7 +163,7 @@ export default function ParityEvidenceLab() {
               label: item.label,
             }))}
           />
-          <SelectControl
+          <AcademySelectControl
             id="parity-case"
             label="Contract case"
             value={caseId}
@@ -186,7 +179,7 @@ export default function ParityEvidenceLab() {
           >
             Adapter results apply only to a team-authored paired runtime test.
           </p>
-          <SelectControl
+          <AcademySelectControl
             id="platform-result"
             label="Platform boundary"
             value={platform}
@@ -195,7 +188,7 @@ export default function ParityEvidenceLab() {
             disabled={!paired}
             describedBy="paired-help"
           />
-          <SelectControl
+          <AcademySelectControl
             id="simulated-result"
             label="Mock or simulated boundary"
             value={simulated}
@@ -216,10 +209,10 @@ export default function ParityEvidenceLab() {
             Bounded finding
           </h4>
           <dl className="mt-4 grid gap-3">
-            <Datum label="Expected rule" value={CASES[caseId].expected} />
-            <Datum label="Classification" value={finding.status} />
-            <Datum label="This supports" value={finding.supports} />
-            <Datum label="This does not prove" value={finding.limit} />
+            <AcademyDatum label="Expected rule" value={CASES[caseId].expected} />
+            <AcademyDatum label="Classification" value={finding.status} />
+            <AcademyDatum label="This supports" value={finding.supports} />
+            <AcademyDatum label="This does not prove" value={finding.limit} />
           </dl>
         </div>
       </div>
@@ -239,15 +232,12 @@ export default function ParityEvidenceLab() {
         </ul>
       </details>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> This code-derived planner does not run
+      <AcademyModelLimit>
+        This code-derived planner does not run
         Gradle, load adapters, inject faults, connect to a robot, or prove
         physical behavior.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 
@@ -256,43 +246,3 @@ const RESULT_OPTIONS = [
   { value: "matches", label: "Matches expected rule" },
   { value: "differs", label: "Differs from expected rule" },
 ];
-
-function SelectControl({
-  id,
-  label,
-  value,
-  onChange,
-  options,
-  disabled = false,
-  describedBy,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  disabled?: boolean;
-  describedBy?: string;
-}) {
-  return (
-    <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
-      <span>{label}</span>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        disabled={disabled}
-        aria-describedby={describedBy}
-        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-const Datum = AcademyDatum;

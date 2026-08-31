@@ -1,6 +1,11 @@
 /** @sim {"name":"Sensor Fusion Uncertainty Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { AcademyMetric, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyLabShell,
+  AcademyMetric,
+  AcademyModelLimit,
+  AcademyRangeControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type FusionTrial = {
   accepted: boolean;
@@ -99,34 +104,13 @@ export default function SensorFusionLab() {
   };
 
   return (
-    <section
-      aria-labelledby="sensor-fusion-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="sensor-fusion-title"
+      title="Sensor Fusion Uncertainty Lab"
+      eyebrow="Concept"
+      description="Compare a 1D update, a rejection, and independent truth."
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Concept
-          </p>
-          <h3
-            id="sensor-fusion-title"
-            className="mt-1 text-xl font-black text-white"
-          >
-            Sensor Fusion Uncertainty Lab
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Compare a 1D update, a rejection, and independent truth.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          <span aria-hidden="true">↺</span> Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(17rem,0.9fr)_minmax(0,1.1fr)]">
         <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">
@@ -327,17 +311,14 @@ export default function SensorFusionLab() {
         </div>
       </details>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> This invented 1D weighted average is not
+      <AcademyModelLimit>
+        This invented 1D weighted average is not
         the ARES EKF. Its single ambiguity rule omits field bounds, timestamps,
         tag count, viewing angle, covariance matrices, history replay,
         innovation tests, and physical camera behavior. Independent truth checks
         the displayed result but never changes it.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

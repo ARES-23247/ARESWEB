@@ -1,7 +1,11 @@
 /** @sim {"name":"Motion Profile Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { AcademyMetric, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
-import { RotateCcw } from "lucide-react";
+import {
+  AcademyLabShell,
+  AcademyMetric,
+  AcademyModelLimit,
+  AcademyRangeControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type MotionProfileSample = {
   time: number;
@@ -130,64 +134,46 @@ export default function MotionProfileLab() {
     .join(" ");
 
   return (
-    <section
-      aria-labelledby="motion-profile-title"
-      className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6"
+    <AcademyLabShell
+      titleId="motion-profile-title"
+      title="Motion Profile Lab"
+      eyebrow="Concept model"
+      description="Plan a rest-to-rest move with bounded velocity and acceleration."
+      onReset={reset}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Concept model
-          </p>
-          <h3
-            id="motion-profile-title"
-            className="mt-1 text-xl font-black text-white"
-          >
-            Motion Profile Lab
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Plan a rest-to-rest move with bounded velocity and acceleration.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]">
         <fieldset className="grid gap-5 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">
             Choose motion limits
           </legend>
-          <NumberControl
+          <AcademyRangeControl
             label="Move distance"
             unit="m"
             value={distance}
             min={0.5}
             max={5}
             step={0.1}
+            decimals={1}
             onChange={setDistance}
           />
-          <NumberControl
+          <AcademyRangeControl
             label="Maximum velocity"
             unit="m/s"
             value={maxVelocity}
             min={0.5}
             max={4}
             step={0.1}
+            decimals={1}
             onChange={setMaxVelocity}
           />
-          <NumberControl
+          <AcademyRangeControl
             label="Maximum acceleration"
             unit="m/s²"
             value={maxAcceleration}
             min={0.5}
             max={5}
             step={0.1}
+            decimals={1}
             onChange={setMaxAcceleration}
           />
         </fieldset>
@@ -247,30 +233,36 @@ export default function MotionProfileLab() {
             aria-atomic="true"
             className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           >
-            <Result label="Profile shape" value={profile.kind} />
-            <Result
+            <AcademyMetric label="Profile shape" value={profile.kind} capitalize />
+            <AcademyMetric
               label="Peak velocity"
               value={`${profile.peakVelocity.toFixed(2)} m/s`}
+              capitalize
             />
-            <Result
+            <AcademyMetric
               label="Speed-up time"
               value={`${profile.accelerationTime.toFixed(2)} s`}
+              capitalize
             />
-            <Result
+            <AcademyMetric
               label="Cruise time"
               value={`${profile.cruiseTime.toFixed(2)} s`}
+              capitalize
             />
-            <Result
+            <AcademyMetric
               label="Total time"
               value={`${profile.totalTime.toFixed(2)} s`}
+              capitalize
             />
-            <Result
+            <AcademyMetric
               label="Cruise boundary"
               value={`${profile.cruiseThresholdDistance.toFixed(2)} m`}
+              capitalize
             />
-            <Result
+            <AcademyMetric
               label="Boundary margin"
               value={`${boundaryMargin >= 0 ? "+" : ""}${boundaryMargin.toFixed(2)} m`}
+              capitalize
             />
           </dl>
         </div>
@@ -310,24 +302,13 @@ export default function MotionProfileLab() {
         </div>
       </details>
 
-      <p
-        role="note"
-        className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
-      >
-        <strong>Model limit:</strong> This classroom lab uses the same basic
+      <AcademyModelLimit>
+        This classroom lab uses the same basic
         rest-to-rest motion math, but it does not execute ARES. It plans only
         positive, one-dimensional motion. ARES also handles reverse moves and
         nonzero boundary speeds. Neither model proves traction, load, current,
         backlash, controller tracking, or safe physical limits.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
-}
-
-function NumberControl(props: Parameters<typeof AcademyRangeControl>[0]) {
-  return <AcademyRangeControl {...props} decimals={1} />;
-}
-
-function Result(props: Parameters<typeof AcademyMetric>[0]) {
-  return <AcademyMetric {...props} capitalize />;
 }

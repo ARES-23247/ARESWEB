@@ -288,18 +288,24 @@ export function AcademyMetric({
   );
 }
 
+export type AcademySelectOption = string | { value: string; label: string };
+
 export function AcademySelectControl({
   id,
   label,
   value,
   options,
   onChange,
+  disabled = false,
+  describedBy,
 }: {
   id: string;
   label: string;
   value: string;
-  options: string[];
+  options: readonly AcademySelectOption[];
   onChange: (value: string) => void;
+  disabled?: boolean;
+  describedBy?: string;
 }) {
   return (
     <label htmlFor={id} className="grid gap-2 text-sm font-bold text-white">
@@ -308,13 +314,21 @@ export function AcademySelectControl({
         id={id}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
-        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+        disabled={disabled}
+        aria-describedby={describedBy}
+        className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
       >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option.replaceAll("_", " ").toLowerCase()}
-          </option>
-        ))}
+        {options.map((option) => {
+          const optionValue = typeof option === "string" ? option : option.value;
+          const optionLabel = typeof option === "string"
+            ? option.replaceAll("_", " ").toLowerCase()
+            : option.label;
+          return (
+            <option key={optionValue} value={optionValue}>
+              {optionLabel}
+            </option>
+          );
+        })}
       </select>
     </label>
   );

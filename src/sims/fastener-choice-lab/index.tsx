@@ -1,7 +1,10 @@
 /** @sim {"name":"Fastener Joint Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import { AcademyCheckboxControl } from "@/sims/shared/academy-interaction-ui";
+import {
+  AcademyCheckboxControl,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type JointPurpose = "removablePanel" | "fixedBracket" | "rotatingPivot" | "serviceCover";
 
@@ -76,19 +79,13 @@ export default function FastenerChoiceLab() {
   };
 
   return (
-    <section aria-labelledby="fastener-lab-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Paper joint review</p>
-          <h3 id="fastener-lab-title" className="mt-1 text-xl font-black text-white">Fastener Joint Evidence Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Start from the joint's job, then collect the evidence needed to review a real fastener proposal.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
+    <AcademyLabShell
+      titleId="fastener-lab-title"
+      title="Fastener Joint Evidence Lab"
+      eyebrow="Paper joint review"
+      description="Start from the joint's job, then collect the evidence needed to review a real fastener proposal."
+      onReset={reset}
+    >
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.8fr)]">
         <div className="grid gap-5">
@@ -118,9 +115,7 @@ export default function FastenerChoiceLab() {
         </div>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Evidence limit:</strong> The lab does not inspect a joint, identify thread size, verify compatibility, calculate strength or clamping force, choose a fastener, set torque, detect loosening, supervise assembly, or approve physical use.
-      </p>
-    </section>
+      <AcademyModelLimit label="Evidence limit">The lab does not inspect a joint, identify thread size, verify compatibility, calculate strength or clamping force, choose a fastener, set torque, detect loosening, supervise assembly, or approve physical use.</AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
