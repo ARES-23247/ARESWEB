@@ -286,3 +286,36 @@ raw / 95,000 gzip bytes, leaving 2,878 gzip bytes of headroom—enough for one
 interaction at the separately enforced 2,600-byte per-interaction maximum.
 Eleven focused test files pass with 59 tests, including the generalized select
 contract and the affected interaction behavior.
+
+## Continuation semantic audit — 2026-08-31
+
+Audited ARESWEB baseline: `477222c027c7c6455447fa2cc0e49f6604b21bac`.
+The worktree was clean before this bounded pass. The source authority remained
+ARES Robotics `890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93`, ARES 13.0.1, and
+Studio 3.1.2.
+
+### ACAD-INV-06 — One lesson retained a stale ARES FTC version
+
+- Severity: medium for release correctness
+- Confidence: high
+- Evidence: `content/learning/current-robot/04-driver-station-telemetry.md:10`
+  named the “current FTC 12.0.0 season source,” while
+  `release/ares-versions.properties` at the pinned monorepo commit declares
+  `ftcStarterVersion=13.0.1`. No pinned ARES-FTC source contains `12.0.0`.
+- Impact: students and reviewers could reasonably interpret the telemetry
+  lesson as describing an older season layer even though every source link and
+  the rest of the lesson point to ARES 13.0.1.
+- Remediation: identify both boundaries explicitly as the ARES 13.0.1 shared
+  library and ARES FTC 13.0.1 season source. Validate every named ARES, ARESLib,
+  ARES FTC/FRC, starter, and Studio version against the catalog authority.
+- Acceptance test: the catalog-validator regression rejects `current FTC
+  12.0.0` and `Studio 3.1.1` when the declared authority is ARES 13.0.1 and
+  Studio 3.1.2; all 68 current documents pass.
+
+The same pass found no email address, phone number, local user path, API key,
+secret, refresh token, password assignment, or bearer credential in the lesson
+Markdown. Mentor/coach matches either reserve approval for website publication
+or explicitly state that robot verification remains student-led. Matches for
+mock, fake, invented, physical validation, and approved evidence are bounded
+teaching labels or warnings rather than fabricated team claims. Exact source
+links all use the current `890ef593` commit.

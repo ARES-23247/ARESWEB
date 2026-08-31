@@ -96,7 +96,7 @@ Candidate review digest:
 Count: 21
 
 Candidate review digest:
-`f5960ab335d1f37ccd56ef62dace21edfb17dc231fd1016bb3b2228242682fe2`
+`5826ab9dd3bd23a7f5d95ab049b9f6dd1cf5ebd102b98b3070f6d874dab78e9c`
 
 - `capstone-autonomous-mission`
 - `capstone-competition-readiness`

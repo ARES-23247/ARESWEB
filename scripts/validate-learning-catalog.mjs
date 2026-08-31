@@ -331,6 +331,35 @@ export function assertStudentLedRobotVerificationLanguage(content, slug) {
   );
 }
 
+export function assertCurrentNamedAresVersions(content, slug, generatedFrom) {
+  const namedVersions = [
+    {
+      pattern: /\b(ARES(?:Lib|\s+FTC|\s+FRC)?|FTC Starter|FRC Starter|(?:ARES Robotics )?Studio)\s+v?(\d+\.\d+\.\d+)\b/giu,
+      expectedVersion(name) {
+        if (/Studio$/iu.test(name)) return generatedFrom.studioVersion;
+        if (/^(?:ARES\s+)?FTC|^FTC Starter$/iu.test(name)) return generatedFrom.ftcStarterVersion;
+        if (/^(?:ARES\s+)?FRC|^FRC Starter$/iu.test(name)) return generatedFrom.frcStarterVersion;
+        return generatedFrom.aresVersion;
+      },
+    },
+    {
+      pattern: /\bcurrent\s+(FTC|FRC)\s+v?(\d+\.\d+\.\d+)\b/giu,
+      expectedVersion(name) {
+        return /^FTC$/iu.test(name) ? generatedFrom.ftcStarterVersion : generatedFrom.frcStarterVersion;
+      },
+    },
+  ];
+  for (const { pattern, expectedVersion } of namedVersions) {
+    for (const match of content.matchAll(pattern)) {
+      const expected = expectedVersion(match[1]);
+      assert(
+        match[2] === expected,
+        `${slug}: ${match[0]} is stale; the current source authority declares ${expected}.`,
+      );
+    }
+  }
+}
+
 export function assertMiddleSchoolLearningQuality(content, slug) {
   const readability = analyzeLearningReadability(content);
   const sectionCount = content.match(/^##\s+/gmu)?.length ?? 0;
@@ -593,6 +622,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(content.startsWith("# "), `${slug}: Markdown must begin with one level-one heading.`);
     assert(content.length >= 300, `${slug}: Markdown is too short to be a useful lesson draft.`);
     assert(!/\bTODO\b|lorem ipsum|placeholder content/i.test(content), `${slug}: unresolved placeholder text is not allowed.`);
+    assertCurrentNamedAresVersions(content, slug, catalog.generatedFrom);
     assertMiddleSchoolLearningQuality(content, slug);
     for (const image of validateLocalLearningImageReferences(content, slug)) {
       const imagePath = path.resolve(PUBLIC_ROOT, `.${image.pathname}`);

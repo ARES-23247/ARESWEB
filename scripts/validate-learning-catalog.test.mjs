@@ -4,6 +4,7 @@ import {
   assertMiddleSchoolLearningQuality,
   assertSubstantialLessonContract,
   assertStudentLedRobotVerificationLanguage,
+  assertCurrentNamedAresVersions,
   normalizeLearningMarkdown,
   parseAresVersions,
   registerPathOrder,
@@ -107,6 +108,30 @@ describe("learning catalog preparation", () => {
         },
       },
     })).toThrow(/current authority must also be approved/u);
+  });
+
+  it("rejects named ARES and Studio versions that drift behind the catalog authority", () => {
+    const generatedFrom = {
+      aresVersion: "13.0.1",
+      studioVersion: "3.1.2",
+      ftcStarterVersion: "13.1.0",
+      frcStarterVersion: "13.2.0",
+    };
+    expect(() => assertCurrentNamedAresVersions(
+      "ARES 13.0.1, ARES FTC 13.1.0, current FRC 13.2.0, and Studio 3.1.2 are current.",
+      "current-lesson",
+      generatedFrom,
+    )).not.toThrow();
+    expect(() => assertCurrentNamedAresVersions(
+      "This lesson uses the current FTC 12.0.0 season source.",
+      "stale-ftc-lesson",
+      generatedFrom,
+    )).toThrow(/current FTC 12\.0\.0 is stale/u);
+    expect(() => assertCurrentNamedAresVersions(
+      "Open ARES Robotics Studio 3.1.1.",
+      "stale-studio-lesson",
+      generatedFrom,
+    )).toThrow(/Studio 3\.1\.1 is stale/u);
   });
 
   it("requires accessible, bounded local Academy image references", () => {
