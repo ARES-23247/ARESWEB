@@ -11,7 +11,7 @@
     {
       "id": "new-drafts-construction-programming",
       "phase": "publish-drafts",
-      "reviewDigest": "c5632bb4c9ceca827f51bc8dd95e7295134a8455e98572012174ac6a6d8376f0",
+      "reviewDigest": "f10a35710ab0801625f06feab583aa708c6de1e940bc1fe682799fa9c551a28f",
       "approvedSlugs": [
         "development-testing-and-release-validation",
         "electrical-battery-protection",
@@ -43,7 +43,7 @@
     {
       "id": "new-drafts-controls-competition-capstones",
       "phase": "publish-drafts",
-      "reviewDigest": "5826ab9dd3bd23a7f5d95ab049b9f6dd1cf5ebd102b98b3070f6d874dab78e9c",
+      "reviewDigest": "8ee33e5d45260b9a5c5781e245f159a7fc337160dc2f35d84ca66668249577a8",
       "approvedSlugs": [
         "capstone-autonomous-mission",
         "capstone-competition-readiness",
@@ -71,7 +71,7 @@
     {
       "id": "guarded-published-refresh",
       "phase": "refresh-published",
-      "reviewDigest": "7aaf305f01c0eb582712548d1fca29a45e6c0b1aea689c2d245614c1c8bcae24",
+      "reviewDigest": "3346ec466d97cdab4b2de989ca0cfcb1ecef61c0cf9eda9cc62f747c0c8b2f75",
       "approvedSlugs": [
         "ares-workspace-map",
         "areslib-fundamentals",
