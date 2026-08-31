@@ -1,6 +1,6 @@
 /** @sim {"name":"Telemetry Graph Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useId, useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { AcademyLabShell, AcademyModelLimit } from "@/sims/shared/academy-interaction-ui";
 
 type DataPoint = { time: number; value: number | null };
 type DataSet = {
@@ -81,20 +81,13 @@ export default function TelemetryGraphLab() {
   };
 
   return (
-    <section aria-labelledby={titleId} className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Concept data</p>
-          <h3 id={titleId} className="mt-1 text-xl font-black text-white">Telemetry Graph Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Read the axes and values. Then choose the statement that reports evidence without guessing a cause.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
+    <AcademyLabShell
+      titleId={titleId}
+      title="Telemetry Graph Lab"
+      eyebrow="Concept data"
+      description="Read the axes and values. Then choose the statement that reports evidence without guessing a cause."
+      onReset={reset}
+    >
       <fieldset className="mt-5">
         <legend className="text-sm font-bold text-ares-gold">Choose a data set</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -151,10 +144,10 @@ export default function TelemetryGraphLab() {
         </div>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> These short data sets were written for this lesson. They are not logs from a team robot and do not prove any real failure cause.
-      </p>
-    </section>
+      <AcademyModelLimit>
+        These short data sets were written for this lesson. They are not logs from a team robot and do not prove any real failure cause.
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 

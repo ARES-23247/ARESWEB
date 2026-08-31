@@ -5,9 +5,9 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d",
-    "aresVersion": "11.1.0",
-    "studioVersion": "2.0.2"
+    "commit": "890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93",
+    "aresVersion": "13.0.1",
+    "studioVersion": "3.1.2"
   },
   "instructionalContract": {
     "targetReadingGrades": [6, 8],
@@ -64,7 +64,7 @@
         "ARES-FRC/docs/DRIVEBASE_CONFIGURATION.md"
       ],
       "lessons": [
-        { "id": "mechanical-measurement-design-notebook", "title": "Measure, Sketch, and Record a Design", "level": "beginner", "interaction": null, "sourceGap": "authentic team measurement photos required" },
+        { "id": "mechanical-measurement-design-notebook", "title": "Measure, Sketch, and Record a Design", "level": "beginner", "interaction": "tolerance-stack-lab", "sourceGap": "authentic team measurement photos required" },
         { "id": "mechanical-tools-safe-work", "title": "Choose and Use Common Robot Tools", "level": "beginner", "interaction": "tool-choice-scenarios", "sourceGap": "official tool guidance and authentic team photos required" },
         { "id": "mechanical-fasteners", "title": "Fasteners, Threads, and Keeping Parts Together", "level": "beginner", "interaction": "fastener-choice-lab", "sourceGap": "official manufacturer references required" },
         { "id": "mechanical-structure-load-paths", "title": "Frames, Bracing, and Load Paths", "level": "beginner", "interaction": "load-path-explorer", "sourceGap": "authentic team structure examples required" },
@@ -81,12 +81,12 @@
       "sourceRoots": [
         "ARES-Analytics/docs/start/HARDWARE_SETUP.md",
         "ARES-Analytics/docs/GUIDED_COMMISSIONING.md",
-        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt",
+        "ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
         "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt",
         "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt"
       ],
       "lessons": [
-        { "id": "electrical-voltage-current-power", "title": "Voltage, Current, Power, and Energy", "level": "beginner", "interaction": "power-budget-explorer", "sourceGap": null },
+        { "id": "electrical-voltage-current-power", "title": "Voltage, Current, Power, and Energy", "level": "beginner", "interaction": "current-budget-lab", "sourceGap": null },
         { "id": "electrical-battery-protection", "title": "Batteries, Breakers, Fuses, and Brownouts", "level": "beginner", "interaction": "brownout-sandbox", "sourceGap": "official FTC and FRC electrical rules required" },
         { "id": "electrical-wiring-connectors", "title": "Wire, Connectors, Polarity, and Strain Relief", "level": "beginner", "interaction": "wiring-diagnostic-lab", "sourceGap": "authentic team wiring photos required" },
         { "id": "electrical-motors-servos", "title": "Choose Motors, Gearmotors, and Servos", "level": "intermediate", "interaction": "motor-servo-selector", "sourceGap": "approved manufacturer specifications required" },
@@ -103,8 +103,13 @@
         "ARESLib-Kotlin/docs/onboarding/01_redux_basics.md",
         "ARESLib-Kotlin/docs/subsystem-dsl.md",
         "ARESLib-Kotlin/docs/superstructure-runtime.md",
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/RobotSequence.kt",
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskExecutor.kt",
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskResources.kt",
         "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md",
         "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md",
+        "ARES-FRC/src/main/kotlin/com/areslib/frc/ARESRobot.kt",
+        "ARES-FRC/src/main/kotlin/com/areslib/frc/FrcMechanismCommissioningController.kt",
         "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md"
       ],
       "lessons": [
@@ -115,6 +120,8 @@
         { "id": "ftc-gui-owned-indicator-lights", "title": "Author GUI-Owned FTC Indicator Lights", "level": "intermediate", "interaction": "subsystem-descriptor-lab", "sourceGap": null },
         { "id": "programming-code-subsystem", "title": "Author a Code-First or Hybrid Subsystem", "level": "intermediate", "interaction": "subsystem-ownership-lab", "sourceGap": null },
         { "id": "ftc-season-composition-and-safe-lifecycle", "title": "Coordinate Subsystems and Fail Safe", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
+        { "id": "frc-mode-handoffs-and-safe-recovery", "title": "Keep FRC Mode Changes Safe", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
+        { "id": "programming-safe-task-sequences", "title": "Build Safe Task Sequences in ARESLib", "level": "advanced", "interaction": "task-sequence-lab", "sourceGap": null },
         { "id": "programming-tests-parity", "title": "Test Robot Logic Across Mocks and Simulation", "level": "advanced", "interaction": "parity-evidence-lab", "sourceGap": null }
       ]
     },
@@ -127,17 +134,18 @@
         "ARESLib-Kotlin/docs/typed-tuning-profiles.md",
         "ARESLib-Kotlin/docs/localization-calibration.md",
         "ARESLib-Kotlin/docs/routines-controls-and-codegen.md",
+        "ARESLib-Kotlin/docs/onboarding/03_pathing_and_analytics.md",
         "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md",
         "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md"
       ],
       "lessons": [
         { "id": "robot-coordinate-contracts", "title": "Use Units and Coordinate Frames", "level": "beginner", "interaction": "coordinate-transform-lab", "sourceGap": null },
-        { "id": "controls-motor-model-feedforward", "title": "Predict Motion with a Motor Model and Feedforward", "level": "intermediate", "interaction": "control-response-lab", "sourceGap": null },
+        { "id": "controls-motor-model-feedforward", "title": "Predict Motion with a Motor Model and Feedforward", "level": "intermediate", "interaction": "feedforward-term-lab", "sourceGap": null },
         { "id": "controls-pid", "title": "Tune a PID Loop with Evidence", "level": "intermediate", "interaction": "control-response-lab", "sourceGap": null },
         { "id": "controls-motion-profiles", "title": "Plan Smooth Motion with Limits", "level": "intermediate", "interaction": "motion-profile-lab", "sourceGap": null },
         { "id": "controls-odometry", "title": "Estimate Motion with Encoders and Odometry", "level": "intermediate", "interaction": "odometry-error-lab", "sourceGap": null },
         { "id": "controls-sensor-fusion", "title": "Combine Measurements without Hiding Uncertainty", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
-        { "id": "controls-vision", "title": "Use AprilTags and Reject Bad Vision Measurements", "level": "advanced", "interaction": "sensor-fusion-lab", "sourceGap": null },
+        { "id": "controls-vision", "title": "Use AprilTags and Reject Bad Vision Measurements", "level": "advanced", "interaction": "vision-uncertainty-lab", "sourceGap": null },
         { "id": "ftc-starter-first-autonomous", "title": "Build and Verify Your First FTC Autonomous Routine", "level": "intermediate", "interaction": "autonomous-path-lab", "sourceGap": null }
       ]
     },
@@ -173,8 +181,8 @@
         "ARESLib-Kotlin/docs/onboarding/04_pit_operations_and_hardware.md"
       ],
       "lessons": [
-        { "id": "competition-ftc-inspection-pit", "title": "Prepare an FTC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-readiness-lab", "sourceGap": "current official FTC inspection rules required" },
-        { "id": "competition-frc-inspection-pit", "title": "Prepare an FRC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-readiness-lab", "sourceGap": "current official FRC inspection rules required" },
+        { "id": "competition-ftc-inspection-pit", "title": "Prepare an FTC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-packet-lab", "sourceGap": "current official FTC inspection rules required" },
+        { "id": "competition-frc-inspection-pit", "title": "Prepare an FRC Robot for Inspection and the Pit", "level": "intermediate", "interaction": "inspection-packet-lab", "sourceGap": "current official FRC inspection rules required" },
         { "id": "competition-drive-team", "title": "Run a Drive-Team Match Cycle", "level": "intermediate", "interaction": "match-cycle-scenarios", "sourceGap": "team process review required" },
         { "id": "competition-scouting", "title": "Collect Useful Scouting Evidence", "level": "beginner", "interaction": "scouting-quality-lab", "sourceGap": "team scouting process and non-PII examples required" },
         { "id": "competition-strategy", "title": "Turn Evidence into Match Strategy", "level": "intermediate", "interaction": "strategy-tradeoff-lab", "sourceGap": "team process review required" },
@@ -194,7 +202,7 @@
       ],
       "lessons": [
         { "id": "capstone-simulated-mechanism", "title": "Capstone 1: Model and Test a Simulated Mechanism", "level": "intermediate", "interaction": "capstone-evidence-board", "sourceGap": null },
-        { "id": "capstone-subsystem", "title": "Capstone 2: Build a Complete ARES Subsystem", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": null },
+        { "id": "capstone-subsystem", "title": "Capstone 2: Build a Complete ARES Subsystem", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "current Studio subsystem and generated-preview screenshots required" },
         { "id": "capstone-autonomous-mission", "title": "Capstone 3: Complete a Simulated Autonomous Mission", "level": "advanced", "interaction": "autonomous-path-lab", "sourceGap": null },
         { "id": "capstone-physical-commissioning", "title": "Capstone 4: Commission a Physical Feature", "level": "advanced", "interaction": "commissioning-checklist-lab", "sourceGap": "physical student evidence required" },
         { "id": "capstone-competition-readiness", "title": "Capstone 5: Present Competition-Readiness Evidence", "level": "advanced", "interaction": "capstone-evidence-board", "sourceGap": "team rubric review and authentic evidence required" }
@@ -202,9 +210,12 @@
     }
   ],
   "existingLessonInteractionCandidates": [
+    { "slug": "ares-workspace-map", "interaction": "workspace-ownership-lab", "purpose": "sort shared, league, Studio, starter, and release changes into the current monorepo ownership boundaries" },
     { "slug": "robot-input-to-output", "interaction": "robot-flow-tracer", "purpose": "trace driver and sensor paths through state and cached I/O" },
     { "slug": "ftc-gui-owned-indicator-lights", "interaction": "subsystem-descriptor-lab", "purpose": "trace independent targets and safe outputs from a real descriptor" },
     { "slug": "ftc-season-composition-and-safe-lifecycle", "interaction": "superstructure-state-lab", "purpose": "step through disabled, health, transient-posture, and measured-guard decisions" },
+    { "slug": "programming-safe-task-sequences", "interaction": "superstructure-state-lab", "purpose": "compare ordered guards with typed task ordering, timeouts, resources, and failure cleanup" },
+    { "slug": "programming-tests-parity", "interaction": "parity-evidence-lab", "purpose": "compare adapter results while keeping compile, unit, simulation, and physical evidence boundaries visible" },
     { "slug": "rates-units-and-motion", "interaction": "mechanism-ratio-explorer", "purpose": "connect rate calculations to drivetrain speed and torque" },
     { "slug": "read-a-telemetry-graph", "interaction": "telemetry-graph-lab", "purpose": "practice observations before explanations" },
     { "slug": "camera-evidence-and-uncertainty", "interaction": "vision-uncertainty-lab", "purpose": "compare accepted and rejected measurements" },
@@ -212,7 +223,6 @@
     { "slug": "redux-state-actions-reducers", "interaction": "redux-state-tracer", "purpose": "trace state changes without touching hardware" },
     { "slug": "ftc-starter-first-autonomous", "interaction": "autonomous-path-lab", "purpose": "inspect a bounded generated routine before simulation" },
     { "slug": "ftc-driver-input-shaping-and-frames", "interaction": "driver-input-curve-lab", "purpose": "compare deadband and response curves" },
-    { "slug": "swerve-and-kinematics", "interaction": "swerve", "purpose": "connect chassis motion to module states" },
     { "slug": "telemetry-and-control", "interaction": "telemetry-graph-lab", "purpose": "separate control state from displayed telemetry" },
     { "slug": "autonomous-and-vision", "interaction": "vision-uncertainty-lab", "purpose": "show delayed measurements and visible rejection reasons" },
     { "slug": "simulation-is-not-hardware-validation", "interaction": "evidence-level-scenarios", "purpose": "classify what each test boundary can prove" }

@@ -1,6 +1,7 @@
 /** @sim {"name":"Superstructure State Coordination Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { RotateCcw, StepForward } from "lucide-react";
+import { AcademyCheckboxControl, AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 export type Posture = "STOWED" | "CLEARANCE" | "SCORE";
 export type RequestedPosture = "STOWED" | "SCORE";
@@ -52,9 +53,9 @@ export default function SuperstructureStateLab() {
         <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">One cached frame</legend>
           <label className="grid gap-2 text-sm font-bold text-white" htmlFor="posture-request"><span>Requested posture</span><select id="posture-request" value={request} onChange={(event) => setRequest(event.currentTarget.value as RequestedPosture)} className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="SCORE">Score</option><option value="STOWED">Stow</option></select></label>
-          <Toggle label="Robot is disabled" checked={disabled} onChange={setDisabled} />
-          <Toggle label="Cached ports are healthy" checked={healthy} onChange={setHealthy} />
-          <Toggle label="Measured clearance guard is ready" checked={clearance} onChange={setClearance} />
+          <AcademyCheckboxControl label="Robot is disabled" checked={disabled} onChange={setDisabled} />
+          <AcademyCheckboxControl label="Cached ports are healthy" checked={healthy} onChange={setHealthy} />
+          <AcademyCheckboxControl label="Measured clearance guard is ready" checked={clearance} onChange={setClearance} />
           <button type="button" onClick={() => setPosture(decision.next)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded bg-ares-red px-4 py-2 text-sm font-black text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><StepForward aria-hidden="true" size={18} /> Evaluate next tick</button>
         </fieldset>
 
@@ -76,10 +77,4 @@ export default function SuperstructureStateLab() {
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded border border-white/10 p-3 text-sm font-bold text-white"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} className="h-5 w-5 accent-ares-red" /> {label}</label>;
-}
-
-function Datum({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
-  return <div className={`rounded border border-white/10 p-3 ${wide ? "sm:col-span-2" : ""}`}><dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt><dd className="mt-1 font-semibold leading-relaxed text-white">{value}</dd></div>;
-}
+const Datum = AcademyDatum;

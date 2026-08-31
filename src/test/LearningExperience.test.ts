@@ -5,6 +5,7 @@ import {
   filterLearningDocuments,
   learningFiltersToSearchParams,
   learningPathNavigation,
+  learningPathStepStatuses,
   learningTopics,
   parseLearningFilters,
   relatedLearningDocuments,
@@ -72,7 +73,7 @@ const docs = [
 describe("learning experience utilities", () => {
   it("allowlists URL-backed filters and round-trips supported values", () => {
     const parsed = parseLearningFilters(new URLSearchParams(
-      "search=robot&subject=robotics-engineering&level=beginner&type=lesson&path=robotics-foundations&platform=ftc&topic=Safety&duration=30",
+      "search=robot&subject=robotics-engineering&level=beginner&type=lesson&path=robotics-foundations&platform=ftc&topic=Safety&duration=30&progress=not-started",
     ));
     expect(parsed).toMatchObject({
       search: "robot",
@@ -83,13 +84,14 @@ describe("learning experience utilities", () => {
       platform: "ftc",
       topic: "Safety",
       duration: "30",
+      progress: "not-started",
     });
     expect(parseLearningFilters(learningFiltersToSearchParams(parsed))).toEqual(parsed);
   });
 
   it("drops malformed, unknown, and reserved query values", () => {
     const parsed = parseLearningFilters(new URLSearchParams(
-      "subject=private&type=%3Cscript%3E&path=unknown&topic=%3Cimg%3E&duration=999&q=overlay",
+      "subject=private&type=%3Cscript%3E&path=unknown&topic=%3Cimg%3E&duration=999&progress=unknown&q=overlay",
     ));
     expect(parsed).toEqual(DEFAULT_LEARNING_FILTERS);
   });
@@ -112,6 +114,45 @@ describe("learning experience utilities", () => {
       ...DEFAULT_LEARNING_FILTERS,
       topic: "safety",
     }).map((item) => item.slug)).toEqual(["robot-intent", "safe-output"]);
+  });
+
+  it("filters local completion without sending progress to an account", () => {
+    const completed = new Set(["robot-intent"]);
+    expect(filterLearningDocuments(docs, {
+      ...DEFAULT_LEARNING_FILTERS,
+      progress: "completed",
+    }, completed).map((item) => item.slug)).toEqual(["robot-intent"]);
+
+    expect(filterLearningDocuments(docs, {
+      ...DEFAULT_LEARNING_FILTERS,
+      progress: "not-started",
+    }, completed).map((item) => item.slug)).toEqual(["mean-and-median", "safe-output"]);
+  });
+
+  it("identifies the next ready path step without hiding blocked lessons", () => {
+    expect(learningPathStepStatuses(docs, "robotics-foundations")).toMatchObject([
+      {
+        document: { slug: "robot-intent" },
+        completed: false,
+        missingPrerequisites: [],
+        ready: true,
+      },
+      {
+        document: { slug: "safe-output" },
+        completed: false,
+        missingPrerequisites: ["robot-intent"],
+        ready: false,
+      },
+    ]);
+
+    expect(learningPathStepStatuses(
+      docs,
+      "robotics-foundations",
+      new Set(["robot-intent"]),
+    )).toMatchObject([
+      { document: { slug: "robot-intent" }, completed: true, ready: false },
+      { document: { slug: "safe-output" }, missingPrerequisites: [], ready: true },
+    ]);
   });
 
   it("derives bounded topics and path-aware previous/next navigation", () => {
@@ -141,6 +182,33 @@ describe("learning experience utilities", () => {
       ],
     });
     expect(learningPathNavigation([multiPath], "multi-path", null).pathId).toBe("ai-ml-foundations");
+  });
+
+  it("keeps FRC path filtering and next-lesson navigation available", () => {
+    const frcStart = document({
+      slug: "frc-start",
+      title: "FRC Start",
+      pathMemberships: [{ pathId: "frc-robot-with-ares", order: 1 }],
+      platforms: ["frc"],
+    });
+    const frcNext = document({
+      slug: "frc-next",
+      title: "FRC Next",
+      prerequisites: ["frc-start"],
+      pathMemberships: [{ pathId: "frc-robot-with-ares", order: 2 }],
+      platforms: ["frc"],
+    });
+    const filters = parseLearningFilters(new URLSearchParams("path=frc-robot-with-ares&platform=frc"));
+
+    expect(filterLearningDocuments([frcNext, frcStart, ...docs], filters).map((item) => item.slug))
+      .toEqual(["frc-start", "frc-next"]);
+    expect(learningPathNavigation([frcNext, frcStart], "frc-start", "frc-robot-with-ares"))
+      .toMatchObject({
+        pathId: "frc-robot-with-ares",
+        position: 0,
+        previous: null,
+        next: { slug: "frc-next" },
+      });
   });
 
   it("ranks prerequisites and shared path/topic relationships without returning the current lesson", () => {

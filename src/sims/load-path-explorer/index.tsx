@@ -1,6 +1,11 @@
 /** @sim {"name":"Load Path Evidence Explorer","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import {
+  AcademyCheckboxControl,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type LoadScenario = "frontContact" | "armPayload" | "sideMechanism" | "hangingSupport";
 
@@ -75,19 +80,13 @@ export default function LoadPathExplorer() {
   };
 
   return (
-    <section aria-labelledby="load-path-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Conceptual force route</p>
-          <h3 id="load-path-title" className="mt-1 text-xl font-black text-white">Load Path Evidence Explorer</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Trace where a force may enter, cross members and joints, and reach a support. Keep every strength claim open.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
+    <AcademyLabShell
+      titleId="load-path-title"
+      title="Load Path Evidence Explorer"
+      eyebrow="Conceptual force route"
+      description="Trace where a force may enter, cross members and joints, and reach a support. Keep every strength claim open."
+      onReset={reset}
+    >
 
       <label className="mt-6 grid max-w-xl gap-2 text-sm font-semibold text-white">
         Practice scenario
@@ -112,18 +111,7 @@ export default function LoadPathExplorer() {
         <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Self-reported path evidence</legend>
           {CHECKS.map((check) => (
-            <label key={check.key} className="flex min-h-11 items-start gap-3 rounded border border-white/10 p-3 text-sm leading-relaxed text-white">
-              <input
-                type="checkbox"
-                checked={evidence[check.key]}
-                onChange={(event) => {
-                  const checked = event.currentTarget.checked;
-                  setEvidence((current) => ({ ...current, [check.key]: checked }));
-                }}
-                className="mt-0.5 size-5 shrink-0 accent-ares-red"
-              />
-              <span>{check.label}</span>
-            </label>
+            <AcademyCheckboxControl key={check.key} label={check.label} checked={evidence[check.key]} onChange={(checked) => setEvidence((current) => ({ ...current, [check.key]: checked }))} />
           ))}
         </fieldset>
 
@@ -133,9 +121,9 @@ export default function LoadPathExplorer() {
         </div>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> This explorer does not calculate force, stress, stiffness, bending, buckling, impact, fatigue, safety factor, joint capacity, traction, or stability. It cannot inspect a robot, choose material or geometry, authorize loading, or prove a structure safe.
-      </p>
-    </section>
+      <AcademyModelLimit>
+        This explorer does not calculate force, stress, stiffness, bending, buckling, impact, fatigue, safety factor, joint capacity, traction, or stability. It cannot inspect a robot, choose material or geometry, authorize loading, or prove a structure safe.
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }

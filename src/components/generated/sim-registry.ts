@@ -4,6 +4,7 @@
 import { lazy, type ComponentType } from "react";
 
 // ── Lazy-loaded Simulators ─────────────────────────────────────────────
+const aresPidTraceLab = lazy(() => import("../../sims/ares-pid-trace-lab"));
 const armkg = lazy(() => import("../../sims/armkg"));
 const auto = lazy(() => import("../../sims/auto"));
 const autonomousPathLab = lazy(() => import("../../sims/autonomous-path-lab"));
@@ -20,6 +21,7 @@ const climbingFingerBiomechanics = lazy(() => import("../../sims/climbing-finger
 const commissioningChecklistLab = lazy(() => import("../../sims/commissioning-checklist-lab"));
 const controlResponseLab = lazy(() => import("../../sims/control-response-lab"));
 const coordinateTransformLab = lazy(() => import("../../sims/coordinate-transform-lab"));
+const currentBudgetLab = lazy(() => import("../../sims/current-budget-lab"));
 const cyclingGearRatios = lazy(() => import("../../sims/cycling-gear-ratios"));
 const driverInputCurveLab = lazy(() => import("../../sims/driver-input-curve-lab"));
 const drivetrainChoiceLab = lazy(() => import("../../sims/drivetrain-choice-lab"));
@@ -28,17 +30,21 @@ const evidenceLevelScenarios = lazy(() => import("../../sims/evidence-level-scen
 const fastenerChoiceLab = lazy(() => import("../../sims/fastener-choice-lab"));
 const fault = lazy(() => import("../../sims/fault"));
 const faultTreeLab = lazy(() => import("../../sims/fault-tree-lab"));
+const feedforwardTermLab = lazy(() => import("../../sims/feedforward-term-lab"));
 const field = lazy(() => import("../../sims/field"));
 const flywheelkv = lazy(() => import("../../sims/flywheelkv"));
+const ftcTelemetryCadenceLab = lazy(() => import("../../sims/ftc-telemetry-cadence-lab"));
 const greatbee = lazy(() => import("../../sims/greatbee"));
 const hardwareTopologyDiagnostic = lazy(() => import("../../sims/hardware-topology-diagnostic"));
 const hikingGradeEnergy = lazy(() => import("../../sims/hiking-grade-energy"));
+const inspectionPacketLab = lazy(() => import("../../sims/inspection-packet-lab"));
 const kayakingHydrodynamics = lazy(() => import("../../sims/kayaking-hydrodynamics"));
 const kotlinExpressionLab = lazy(() => import("../../sims/kotlin-expression-lab"));
 const linearequations = lazy(() => import("../../sims/linearequations"));
 const loadPathExplorer = lazy(() => import("../../sims/load-path-explorer"));
 const logComparisonLab = lazy(() => import("../../sims/log-comparison-lab"));
 const loopCacheLab = lazy(() => import("../../sims/loop-cache-lab"));
+const matchCycleScenarios = lazy(() => import("../../sims/match-cycle-scenarios"));
 const mechanismMotionExplorer = lazy(() => import("../../sims/mechanism-motion-explorer"));
 const mechanismRatioExplorer = lazy(() => import("../../sims/mechanism-ratio-explorer"));
 const montyhall = lazy(() => import("../../sims/montyhall"));
@@ -61,6 +67,7 @@ const postMatchTriageLab = lazy(() => import("../../sims/post-match-triage-lab")
 const powerBudgetExplorer = lazy(() => import("../../sims/power-budget-explorer"));
 const powershedding = lazy(() => import("../../sims/powershedding"));
 const reduxStateTracer = lazy(() => import("../../sims/redux-state-tracer"));
+const releaseValidationLab = lazy(() => import("../../sims/release-validation-lab"));
 const risk = lazy(() => import("../../sims/risk"));
 const robotFlowTracer = lazy(() => import("../../sims/robot-flow-tracer"));
 const satcircles = lazy(() => import("../../sims/satcircles"));
@@ -85,6 +92,7 @@ const superstructureStateLab = lazy(() => import("../../sims/superstructure-stat
 const swerve = lazy(() => import("../../sims/swerve"));
 const sysid = lazy(() => import("../../sims/sysid"));
 const sysidTuningLab = lazy(() => import("../../sims/sysid-tuning-lab"));
+const taskSequenceLab = lazy(() => import("../../sims/task-sequence-lab"));
 const telemetryGraphLab = lazy(() => import("../../sims/telemetry-graph-lab"));
 const toleranceStackLab = lazy(() => import("../../sims/tolerance-stack-lab"));
 const toolChoiceScenarios = lazy(() => import("../../sims/tool-choice-scenarios"));
@@ -95,6 +103,7 @@ const troubleshooting = lazy(() => import("../../sims/troubleshooting"));
 const vision = lazy(() => import("../../sims/vision"));
 const visionUncertaintyLab = lazy(() => import("../../sims/vision-uncertainty-lab"));
 const wiringDiagnosticLab = lazy(() => import("../../sims/wiring-diagnostic-lab"));
+const workspaceOwnershipLab = lazy(() => import("../../sims/workspace-ownership-lab"));
 const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 
 // ── Sim Component Registry ───────────────────────────────────────────────
@@ -103,6 +112,8 @@ const zeroallocation = lazy(() => import("../../sims/zeroallocation"));
 // Simulator props are supplied by authored content and validated by each component.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  aresPidTraceLab: aresPidTraceLab,
+  arespidtracelab: aresPidTraceLab,
   armkg: armkg,
   auto: auto,
   autonomousPathLab: autonomousPathLab,
@@ -131,6 +142,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
   coordinatetransformlab: coordinateTransformLab,
+  currentBudgetLab: currentBudgetLab,
+  currentbudgetlab: currentBudgetLab,
   cyclingGearRatios: cyclingGearRatios,
   cyclinggearratios: cyclingGearRatios,
   driverInputCurveLab: driverInputCurveLab,
@@ -145,13 +158,19 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   fault: fault,
   faultTreeLab: faultTreeLab,
   faulttreelab: faultTreeLab,
+  feedforwardTermLab: feedforwardTermLab,
+  feedforwardtermlab: feedforwardTermLab,
   field: field,
   flywheelkv: flywheelkv,
+  ftcTelemetryCadenceLab: ftcTelemetryCadenceLab,
+  ftctelemetrycadencelab: ftcTelemetryCadenceLab,
   greatbee: greatbee,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
   hikingGradeEnergy: hikingGradeEnergy,
   hikinggradeenergy: hikingGradeEnergy,
+  inspectionPacketLab: inspectionPacketLab,
+  inspectionpacketlab: inspectionPacketLab,
   kayakingHydrodynamics: kayakingHydrodynamics,
   kayakinghydrodynamics: kayakingHydrodynamics,
   kotlinExpressionLab: kotlinExpressionLab,
@@ -163,6 +182,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
+  matchCycleScenarios: matchCycleScenarios,
+  matchcyclescenarios: matchCycleScenarios,
   mechanismMotionExplorer: mechanismMotionExplorer,
   mechanismmotionexplorer: mechanismMotionExplorer,
   mechanismRatioExplorer: mechanismRatioExplorer,
@@ -203,6 +224,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   powershedding: powershedding,
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
+  releaseValidationLab: releaseValidationLab,
+  releasevalidationlab: releaseValidationLab,
   risk: risk,
   robotFlowTracer: robotFlowTracer,
   robotflowtracer: robotFlowTracer,
@@ -237,6 +260,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   sysid: sysid,
   sysidTuningLab: sysidTuningLab,
   sysidtuninglab: sysidTuningLab,
+  taskSequenceLab: taskSequenceLab,
+  tasksequencelab: taskSequenceLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
   toleranceStackLab: toleranceStackLab,
@@ -252,6 +277,8 @@ const SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   visionuncertaintylab: visionUncertaintyLab,
   wiringDiagnosticLab: wiringDiagnosticLab,
   wiringdiagnosticlab: wiringDiagnosticLab,
+  workspaceOwnershipLab: workspaceOwnershipLab,
+  workspaceownershiplab: workspaceOwnershipLab,
   zeroallocation: zeroallocation,
 };
 
@@ -262,6 +289,8 @@ const SIM_TAG_NAMES = Object.keys(SIM_COMPONENTS);
 // learning-purpose, fidelity, accessibility, and test review.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
+  aresPidTraceLab: aresPidTraceLab,
+  arespidtracelab: aresPidTraceLab,
   autonomousPathLab: autonomousPathLab,
   autonomouspathlab: autonomousPathLab,
   brownoutSandbox: brownoutSandbox,
@@ -276,6 +305,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   controlresponselab: controlResponseLab,
   coordinateTransformLab: coordinateTransformLab,
   coordinatetransformlab: coordinateTransformLab,
+  currentBudgetLab: currentBudgetLab,
+  currentbudgetlab: currentBudgetLab,
   driverInputCurveLab: driverInputCurveLab,
   driverinputcurvelab: driverInputCurveLab,
   drivetrainChoiceLab: drivetrainChoiceLab,
@@ -286,8 +317,14 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   fastenerchoicelab: fastenerChoiceLab,
   faultTreeLab: faultTreeLab,
   faulttreelab: faultTreeLab,
+  feedforwardTermLab: feedforwardTermLab,
+  feedforwardtermlab: feedforwardTermLab,
+  ftcTelemetryCadenceLab: ftcTelemetryCadenceLab,
+  ftctelemetrycadencelab: ftcTelemetryCadenceLab,
   hardwareTopologyDiagnostic: hardwareTopologyDiagnostic,
   hardwaretopologydiagnostic: hardwareTopologyDiagnostic,
+  inspectionPacketLab: inspectionPacketLab,
+  inspectionpacketlab: inspectionPacketLab,
   kotlinExpressionLab: kotlinExpressionLab,
   kotlinexpressionlab: kotlinExpressionLab,
   loadPathExplorer: loadPathExplorer,
@@ -296,6 +333,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   logcomparisonlab: logComparisonLab,
   loopCacheLab: loopCacheLab,
   loopcachelab: loopCacheLab,
+  matchCycleScenarios: matchCycleScenarios,
+  matchcyclescenarios: matchCycleScenarios,
   mechanismMotionExplorer: mechanismMotionExplorer,
   mechanismmotionexplorer: mechanismMotionExplorer,
   mechanismRatioExplorer: mechanismRatioExplorer,
@@ -314,6 +353,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   powerbudgetexplorer: powerBudgetExplorer,
   reduxStateTracer: reduxStateTracer,
   reduxstatetracer: reduxStateTracer,
+  releaseValidationLab: releaseValidationLab,
+  releasevalidationlab: releaseValidationLab,
   robotFlowTracer: robotFlowTracer,
   robotflowtracer: robotFlowTracer,
   scoutingQualityLab: scoutingQualityLab,
@@ -332,6 +373,8 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   superstructurestatelab: superstructureStateLab,
   sysidTuningLab: sysidTuningLab,
   sysidtuninglab: sysidTuningLab,
+  taskSequenceLab: taskSequenceLab,
+  tasksequencelab: taskSequenceLab,
   telemetryGraphLab: telemetryGraphLab,
   telemetrygraphlab: telemetryGraphLab,
   toleranceStackLab: toleranceStackLab,
@@ -342,11 +385,21 @@ const ACADEMY_SIM_COMPONENTS: Record<string, ComponentType<any>> = {
   visionuncertaintylab: visionUncertaintyLab,
   wiringDiagnosticLab: wiringDiagnosticLab,
   wiringdiagnosticlab: wiringDiagnosticLab,
+  workspaceOwnershipLab: workspaceOwnershipLab,
+  workspaceownershiplab: workspaceOwnershipLab,
 };
 const ACADEMY_SIM_TAG_NAMES = Object.keys(ACADEMY_SIM_COMPONENTS);
 
 // Full metadata for each sim (for management UI)
 const SIM_METADATA = [
+  {
+    'id': 'aresPidTraceLab',
+    'name': 'ARES PID Source Trace',
+    'folder': 'ares-pid-trace-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
   {
     'id': 'armkg',
     'name': 'Arm Kinematics Gravity Model',
@@ -476,6 +529,14 @@ const SIM_METADATA = [
     'fidelity': 'code-derived'
   },
   {
+    'id': 'currentBudgetLab',
+    'name': 'ARES FTC Current Budget Trace',
+    'folder': 'current-budget-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
     'id': 'cyclingGearRatios',
     'name': 'Cycling Gear Ratios & Cadence',
     'folder': 'cycling-gear-ratios',
@@ -540,6 +601,14 @@ const SIM_METADATA = [
     'fidelity': 'conceptual'
   },
   {
+    'id': 'feedforwardTermLab',
+    'name': 'ARES FTC Feedforward Term Trace',
+    'folder': 'feedforward-term-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
     'id': 'field',
     'name': 'PathPlanner Canvas Renderer',
     'folder': 'field',
@@ -554,6 +623,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': false,
     'fidelity': null
+  },
+  {
+    'id': 'ftcTelemetryCadenceLab',
+    'name': 'FTC Telemetry Cadence Lab',
+    'folder': 'ftc-telemetry-cadence-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'greatbee',
@@ -580,6 +657,14 @@ const SIM_METADATA = [
     'fidelity': null
   },
   {
+    'id': 'inspectionPacketLab',
+    'name': 'Inspection Packet Evidence Lab',
+    'folder': 'inspection-packet-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'conceptual'
+  },
+  {
     'id': 'kayakingHydrodynamics',
     'name': 'Kayaking Hydrodynamics',
     'folder': 'kayaking-hydrodynamics',
@@ -589,11 +674,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'kotlinExpressionLab',
-    'name': 'Kotlin Expression Values Lab',
+    'name': 'ARES Kotlin Deadband Function Lab',
     'folder': 'kotlin-expression-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'linearequations',
@@ -621,8 +706,16 @@ const SIM_METADATA = [
   },
   {
     'id': 'loopCacheLab',
-    'name': 'Cached Output Decision Lab',
+    'name': 'ARES FTC Cached Motor Trace',
     'folder': 'loop-cache-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'matchCycleScenarios',
+    'name': 'Match Cycle Handoff Scenarios',
+    'folder': 'match-cycle-scenarios',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'
@@ -749,11 +842,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'parityEvidenceLab',
-    'name': 'Adapter Parity Evidence Lab',
+    'name': 'Current ARES Parity Evidence Lab',
     'folder': 'parity-evidence-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'performance',
@@ -797,8 +890,16 @@ const SIM_METADATA = [
   },
   {
     'id': 'reduxStateTracer',
-    'name': 'Redux State Tracer',
+    'name': 'Current ARES Redux State Tracer',
     'folder': 'redux-state-tracer',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'releaseValidationLab',
+    'name': 'ARES Release Validation Lab',
+    'folder': 'release-validation-lab',
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'code-derived'
@@ -909,11 +1010,11 @@ const SIM_METADATA = [
   },
   {
     'id': 'sensorSignalLab',
-    'name': 'Sensor Signal Evidence Lab',
+    'name': 'Current ARES Sensor Evidence Lab',
     'folder': 'sensor-signal-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
   },
   {
     'id': 'skiingCarvingForces',
@@ -989,11 +1090,19 @@ const SIM_METADATA = [
   },
   {
     'id': 'sysidTuningLab',
-    'name': 'One-Change Tuning Experiment Lab',
+    'name': 'SysId and One-Change Evidence Lab',
     'folder': 'sysid-tuning-lab',
     'requiresContext': false,
     'academyApproved': true,
-    'fidelity': 'conceptual'
+    'fidelity': 'code-derived'
+  },
+  {
+    'id': 'taskSequenceLab',
+    'name': 'ARES Task Tree Planner',
+    'folder': 'task-sequence-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'telemetryGraphLab',
@@ -1074,6 +1183,14 @@ const SIM_METADATA = [
     'requiresContext': false,
     'academyApproved': true,
     'fidelity': 'conceptual'
+  },
+  {
+    'id': 'workspaceOwnershipLab',
+    'name': 'ARES Workspace Ownership Lab',
+    'folder': 'workspace-ownership-lab',
+    'requiresContext': false,
+    'academyApproved': true,
+    'fidelity': 'code-derived'
   },
   {
     'id': 'zeroallocation',

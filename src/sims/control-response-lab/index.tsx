@@ -1,6 +1,6 @@
 /** @sim {"name":"Control Response Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { AcademyMetric, AcademyRangeControl } from "@/sims/shared/academy-interaction-ui";
 
 type Sample = { time: number; target: number; measured: number; output: number };
 
@@ -62,18 +62,18 @@ export default function ControlResponseLab() {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Concept model</p>
           <h3 id="control-response-title" className="mt-1 text-xl font-black text-white">Feedforward and Feedback Response Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">Compare a predicted base output with proportional and derivative error correction in one invented velocity model.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">Compare a predicted base output with proportional, integral, and derivative error correction in one invented velocity model.</p>
         </div>
-        <button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><RotateCcw aria-hidden="true" size={16} /> Reset</button>
+        <button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Reset</button>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]">
         <fieldset className="grid gap-5 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Choose lesson gains</legend>
-          <NumberControl label="Feedforward output" value={feedforward} min={0} max={2} step={0.1} onChange={setFeedforward} />
-          <NumberControl label="Proportional gain" value={proportional} min={0} max={3} step={0.1} onChange={setProportional} />
-          <NumberControl label="Integral gain" value={integral} min={0} max={1} step={0.05} onChange={setIntegral} />
-          <NumberControl label="Derivative gain" value={derivative} min={0} max={1} step={0.05} onChange={setDerivative} />
+          <AcademyRangeControl label="Feedforward output" value={feedforward} min={0} max={2} step={0.1} onChange={setFeedforward} />
+          <AcademyRangeControl label="Proportional gain" value={proportional} min={0} max={3} step={0.1} onChange={setProportional} />
+          <AcademyRangeControl label="Integral gain" value={integral} min={0} max={1} step={0.05} onChange={setIntegral} />
+          <AcademyRangeControl label="Derivative gain" value={derivative} min={0} max={1} step={0.05} onChange={setDerivative} />
         </fieldset>
 
         <div className="rounded-lg border border-white/10 bg-obsidian p-4">
@@ -87,9 +87,9 @@ export default function ControlResponseLab() {
             <text x="310" y="198" fill="currentColor" className="text-[11px] text-white">time</text>
           </svg>
           <dl aria-live="polite" aria-atomic="true" className="mt-4 grid gap-3 sm:grid-cols-3">
-            <Result label="Final velocity" value={final.measured.toFixed(2)} />
-            <Result label="Final error" value={(final.target - final.measured).toFixed(2)} />
-            <Result label="Peak velocity" value={peak.toFixed(2)} />
+            <AcademyMetric label="Final velocity" value={final.measured.toFixed(2)} />
+            <AcademyMetric label="Final error" value={(final.target - final.measured).toFixed(2)} />
+            <AcademyMetric label="Peak velocity" value={peak.toFixed(2)} />
           </dl>
         </div>
       </div>
@@ -99,16 +99,7 @@ export default function ControlResponseLab() {
         <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[28rem] text-left"><thead><tr><th className="p-2">Time</th><th className="p-2">Target</th><th className="p-2">Measured</th><th className="p-2">Output</th></tr></thead><tbody>{samples.filter((_sample, index) => index % 10 === 0).map((sample) => <tr key={sample.time} className="border-t border-white/10"><td className="p-2">{sample.time.toFixed(1)} s</td><td className="p-2">{sample.target.toFixed(2)}</td><td className="p-2">{sample.measured.toFixed(2)}</td><td className="p-2">{sample.output.toFixed(2)}</td></tr>)}</tbody></table></div>
       </details>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"><strong>Model limit:</strong> Every plant value and gain in this activity is invented for learning. It shows control patterns, not an ARES tuning profile, real motor, safe gain, or physical robot response.</p>
+      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"><strong>Model limit:</strong> Every plant value and gain is invented. This classroom model uses change in error for D. Current ARES instead subtracts a filtered change in measurement. This is not an ARES tuning profile, real motor, safe gain, or physical robot response.</p>
     </section>
   );
-}
-
-function NumberControl({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void }) {
-  const id = label.toLowerCase().replace(/[^a-z0-9]+/gu, "-");
-  return <div className="grid gap-2"><label htmlFor={id} className="flex items-center justify-between gap-3 text-sm font-semibold text-white"><span>{label}</span><output htmlFor={id} className="font-mono text-ares-cyan">{value.toFixed(2)}</output></label><input id={id} aria-label={label} type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.currentTarget.value))} className="min-h-11 w-full cursor-pointer accent-ares-red" /></div>;
-}
-
-function Result({ label, value }: { label: string; value: string }) {
-  return <div className="rounded border border-white/10 p-3"><dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt><dd className="mt-1 font-mono text-lg font-bold text-white">{value}</dd></div>;
 }

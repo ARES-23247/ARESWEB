@@ -1,115 +1,211 @@
 # Voltage, current, power, and energy
 
-Electrical words can sound alike, but they answer different questions. Voltage describes an
-electrical difference. Current describes charge flow. Power describes how fast electrical energy is
-being transferred. Energy adds that transfer over time. Keeping the ideas separate makes later
-wiring and diagnostic work easier.
-
 ## Purpose and prerequisites
 
-The purpose is to build a safe math model before working near a robot electrical system. Complete
-[Use rates and units to describe motion](/academy/rates-units-and-motion?path=math-for-robotics)
-first. You should be able to multiply decimals and read a value with its unit.
+Voltage, current, power, and energy answer different questions. Mixing them up can make a robot
+test hard to explain. In this lesson, you will first use ideal classroom math. Then you will trace
+one current-budget step from the current ARES source.
 
-This lesson uses invented values. You will not connect a battery, probe a wire, or choose a real
-protection device. Those tasks need current league rules, component specifications, the correct
-tools, and a bounded physical procedure.
+Complete [Use Rates and Units to Describe Motion](/academy/rates-units-and-motion?path=math-for-robotics)
+first. You should be able to multiply decimals and convert minutes to part of an hour.
+
+You can complete this software lesson without touching a battery or powered robot. The numbers in
+the first activity are invented lesson data. The ARES activity copies one pinned software profile.
+Neither activity approves a battery, wire, connector, fuse, breaker, or motor.
 
 ## Vocabulary
 
-- **Voltage:** electrical potential difference, measured in volts.
-- **Current:** electrical charge flow, measured in amperes or amps.
-- **Power:** energy transfer rate, measured in watts.
-- **Energy:** power added over time, often measured in watt-hours.
+- **Voltage:** electrical potential difference, measured in volts (V).
+- **Current:** electrical charge flow, measured in amperes or amps (A).
+- **Power:** the rate of electrical energy transfer, measured in watts (W).
+- **Energy:** power added over time, often measured in watt-hours (Wh).
 - **Load:** a device or group of devices that uses electrical power.
-- **Circuit:** a complete path for electrical current.
-- **Voltage sag:** a drop in measured voltage while a source is under load.
-- **Stall current:** high motor current when the shaft is not turning.
-- **Budget:** an estimate that combines expected values before a test.
+- **Voltage sag:** a voltage drop while a source is under load.
+- **Stall:** a motor condition where the shaft is not turning.
+- **Current budget:** a software estimate or measurement used to limit total demand.
+- **Power scale:** a unitless number from zero to one that reduces an output request.
+- **Hysteresis:** a recovery margin that prevents fast state changes near a boundary.
+- **Evidence boundary:** a clear statement of what a calculation or test does and does not prove.
 
 ## Worked example
 
-An invented lesson system uses 12 volts. Its three example loads use 8 amps, 4 amps, and 1 amp. Add
-the currents because the model treats them as active at the same time.
+An invented lesson system uses 12 volts. Its three loads use 8 amps, 4 amps, and 1 amp at the same
+time. Add the currents first.
 
 ```text
 total current = 8 A + 4 A + 1 A = 13 A
 power = voltage × current
 power = 12 V × 13 A = 156 W
-energy for 5 minutes = 156 W × (5 ÷ 60) hours = 13 Wh
+time = 5 min ÷ 60 min/h = 0.0833 h
+energy = power × time
+energy = 156 W × 0.0833 h = 13 Wh
 ```
 
-The power value is a rate. It says how fast energy is transferred at that moment. The energy value
-includes time. Running the same ideal load for ten minutes would use twice the watt-hours.
+Power is a rate at one moment. Energy includes time. If the ideal load stays unchanged for ten
+minutes, it uses twice the watt-hours.
 
-This does not mean a real 12-volt battery will stay at exactly 12 volts. It also does not mean every
-load holds one current. Motors can change current as speed and load change.
+The calculation does not mean a real battery stays at 12 volts. It also does not mean each motor
+holds one current. Motor current changes with command, speed, load, wiring, and battery voltage.
 
 ## Visual model
 
 ```mermaid
-%% aria: Three lesson-only load currents add to total current. Voltage times total current gives power. Power times time in hours gives energy.
+%% aria: Three lesson-only currents add to total current. Voltage times total current gives ideal power. Ideal power times time in hours gives energy. A separate arrow sends current evidence into the ARES current-budget state machine, which produces a unitless power scale.
 flowchart LR
-  A["drive current"] --> T["total current"]
-  B["mechanism current"] --> T
-  C["controls current"] --> T
-  V["voltage"] --> P["power in watts"]
-  T --> P
-  P --> E["energy in watt-hours"]
-  H["time in hours"] --> E
+    D["drive current"] --> T["total current in amps"]
+    M["mechanism current"] --> T
+    C["controls current"] --> T
+    V["voltage in volts"] --> P["ideal power in watts"]
+    T --> P
+    P --> E["energy in watt-hours"]
+    H["time in hours"] --> E
+    T -. "separate software path" .-> B["ARES current-budget state"]
+    B --> S["unitless power scale"]
 ```
 
-The model moves from measurements to calculations. It does not contain wire size, connector rating,
-heat, fuse behavior, battery condition, or legal robot rules. Those facts belong in later lessons and
-real evidence records.
+The solid path is ideal unit math. The dotted path is a bridge to robot software. A power scale is
+not a measurement in amps or watts. It is an output limit chosen by a software state machine.
 
 ## Hands-on activity
 
-Open the explorer below. Keep the default values and copy the total current, power, and energy. Then
-change only drive current from 8 amps to 10 amps. Explain which outputs changed and why. Reset the
-model before the next trial.
+Open the explorer below. Keep the default values and copy the total current, power, and energy.
 
 <powerbudgetexplorer />
 
-Next, set all three currents to zero. Power should become zero even though voltage is still present in
-the model. This shows that voltage and current are different measurements. Restore one current and
-observe the result.
+1. Change only drive current from 8 amps to 10 amps.
+2. Predict the new total current before reading the result.
+3. Explain why both watts and watt-hours change.
+4. Reset the explorer.
+5. Set every current to zero. Confirm that power becomes zero while voltage remains present.
+6. Restore one current. Explain why voltage and current are different inputs.
+7. Create one more invented setup and label every input as lesson data.
 
-Create a third invented setup. Label every number as lesson data. Predict the result before moving a
-control. Compare the prediction with the displayed calculation. If they differ, show the arithmetic
-that explains the difference.
+This explorer performs arithmetic only. It does not estimate a motor, read an FTC device, or run
+the ARES current-budget code.
+
+## Bridge to the current ARES source
+
+The pinned `CurrentBudgetManager.ftcDefaults()` profile uses these software values:
+
+| Source value | Pinned value | Meaning in this source profile |
+| --- | ---: | --- |
+| warning current | 16.0 A | enter warning from healthy |
+| critical current | 20.0 A | enter critical from healthy or warning |
+| minimum power scale | 0.30 | scale used in critical |
+| hysteresis | 2.0 A | extra recovery margin |
+
+These are values in one ARES source revision. They are not current league rules, a fuse approval,
+or a hardware rating for your robot.
+
+The focused source test steps through 16, 17, and 20 amps with no registered motor slots. It passes
+each value as the optional measured-current contribution:
+
+| Prior state | Current input | Next state | Power scale | Source behavior |
+| --- | ---: | --- | ---: | --- |
+| healthy | 16.0 A | warning | 1.000 | warning begins at the boundary |
+| warning | 17.0 A | warning | 0.825 | scale falls across the warning band |
+| warning | 20.0 A | critical | 0.300 | critical uses the minimum scale |
+
+At exactly 16 amps, the state is warning while the scale is still 1.0. State and scale answer
+different questions. The state records the budget zone. The scale records the output limit.
+
+Recovery depends on the prior state. Warning returns to healthy only below 14 amps. Critical moves
+to warning only below 18 amps. At exactly 14 or 18 amps, the source keeps the more limited state.
+
+### Activity 2: trace the ARES state machine
+
+Use the code-derived tracer below. It copies the fixed FTC profile and state transition order from
+the pinned `CurrentBudgetManager` source.
+
+<currentbudgetlab />
+
+1. Start with prior state **Healthy** and choose 16 amps.
+2. Record the warning state and 100% scale.
+3. Change the prior state to **Warning** and choose 17 amps.
+4. Predict the scale, then compare it with 82.5%.
+5. Keep warning and try 14 amps, then 13.5 amps.
+6. Explain why only the lower value returns to healthy.
+7. Choose prior state **Critical** and compare 18 amps with 17.5 amps.
+8. End with prior state **Warning** and 20 amps.
+
+The tracer evaluates one step at a time. Select the displayed next state as the next prior state if
+you want to build a longer trace.
+
+## Walk the source and run the focused test
+
+From the ARES monorepo root, locate the fixed FTC profile and its test.
+
+```powershell
+rg -n "ftcDefaults|warningCurrentAmps|criticalCurrentAmps|hysteresisAmps" `
+  ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/CurrentBudgetManager.kt
+
+rg -n "FTC defaults enforce" `
+  ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/safety/CurrentBudgetManagerTest.kt
+```
+
+Run the focused test class from `ARESLib-Kotlin`.
+
+```powershell
+Set-Location ARESLib-Kotlin
+.\gradlew.bat :core:test `
+  --tests "com.areslib.control.safety.CurrentBudgetManagerTest"
+```
+
+Record the repository commit, command, test class, and pass or fail result. A passing test is
+software evidence for that source revision. It is not a current measurement from the team robot.
+
+## How FTC connects the evidence
+
+The pinned `FtcPowerManager` samples battery voltage at a bounded rate. It also advances the
+software current budget and can use a plausible installed current sensor. It applies the strictest
+available power scale to registered motors.
+
+That runtime path is more detailed than either web activity. It includes a brownout guard, motor
+current estimates, optional current evidence, cached reads, and output scaling. The ideal explorer
+does not reproduce it. The current-budget tracer covers only the fixed state-machine step.
 
 ## Checkpoints
 
-After adding current, confirm that the result uses amps. After multiplying voltage and current,
-confirm that the result uses watts. Convert minutes to a fraction of an hour before calculating
-watt-hours.
-
-Ask a partner to point to every input in your power result. Then ask which real facts are missing.
-Your answer should include at least voltage change under load, current changes, wiring loss, and a
-component or rule limit.
+- Can you name the unit for voltage, current, power, and energy?
+- Did you convert minutes to hours before calculating watt-hours?
+- Can you explain why a power scale has no electrical unit?
+- Can you separate invented lesson values from pinned source-profile values?
+- Can you explain why 16 amps can mean warning with a 100% scale?
+- Can you explain why recovery depends on the prior state?
+- Can you name physical facts that neither web activity proves?
 
 ## Troubleshooting
 
-If the energy value is too large, check the time conversion. Five minutes is 5 divided by 60 hours,
-not 5 hours. If power has the unit watt-hours, separate power from energy and repair the unit.
-
-If turning current to zero does not make power zero, check whether another load remains above zero.
-If two students get different totals, compare which loads were treated as active at the same time.
-
-Never repair a concept-model mismatch by inventing a real component rating. Record the missing fact
-as a source request. Use current official rules and manufacturer documentation before a later lesson
-makes a real hardware choice.
+| Symptom | Check |
+| --- | --- |
+| Energy is far too large | Divide minutes by 60 before multiplying by watts. |
+| Power is labeled Wh | Power uses watts. Energy over time can use watt-hours. |
+| Zero current does not make ideal power zero | Check whether another load is still above zero. |
+| Warning is treated as measured current | Warning is a software state; current is measured in amps. |
+| Warning will not recover at 14 A | The source uses a strict less-than check; try below 14 A. |
+| Critical will not recover at 18 A | The source uses a strict less-than check; try below 18 A. |
+| A source profile is treated as a legal rating | Stop and attach current official rules and component data. |
+| A unit test is treated as robot proof | Separate software, simulation, and physical evidence. |
 
 ## Evidence artifact
 
-Submit three power-budget records. Each record needs voltage, the three currents, total current,
-power, time, and energy. Mark all values as invented lesson data. Add one sentence that describes the
-math pattern and one sentence that lists a model limit.
+Submit two records.
 
-Finish with this boundary statement: “This calculation does not approve real robot hardware.” List
-a battery, wire, connector, breaker, fuse, and motor as examples. That keeps the classroom model
-separate from a physical electrical decision.
+The first record is an ideal unit table. Include voltage, each current, total current, power, time
+in hours, and energy. Label every input as invented lesson data.
+
+The second record is an ARES state trace. Include prior state, current input, next state, scale,
+source commit, and focused test result. Label the values as a source-pinned software profile.
+
+End with three evidence boundaries:
+
+1. what the ideal calculation proves;
+2. what the ARES source test proves; and
+3. what a restrained physical test would still need to measure or observe.
+
+Students may inspect the source, run the test, and verify robot functionality through the team's
+normal safety process. Start disabled, keep the work area clear, and use bounded commands. Website
+posts use the separate Lead Coach review flow.
 
 ## Short assessment
 
@@ -117,28 +213,26 @@ separate from a physical electrical decision.
 2. What unit measures current?
 3. A 10-volt lesson source supplies 3 amps. What is ideal power?
 4. Why does energy need a time value?
-5. Name three facts missing from this concept model.
+5. What is the pinned ARES state at 16 amps when the prior state is healthy?
+6. Why is the scale still 1.0 at that boundary?
+7. What current must warning fall below to recover to healthy in this profile?
+8. Name three facts missing from both web activities.
 
-The numeric answer is 30 watts. Your final answer should explain why the same voltage does not always
-mean the same power and why a real system needs measured evidence.
+The numeric power answer is 30 watts. Good explanations keep units, software state, official
+requirements, and physical evidence separate.
 
 ## Extension challenge
 
-Create two invented setups with the same power but different voltage and current values. Show the
-multiplication for both. Explain why equal calculated power does not make the real systems equal.
+Create two invented setups with the same power but different voltage and current. Show both
+multiplications. Explain why equal ideal power does not make the real systems equal.
 
-Then compare one setup for two minutes and ten minutes. Keep power fixed. Predict the energy ratio
-before using the explorer, and explain the result with units.
-
-Use the optional brownout sandbox below to see how one source-pinned software guard responds to a
-voltage sample. Keep its state and output scale separate from the ideal power budget above. The
-example thresholds are not current league rules or real hardware ratings.
-
-<brownoutsandbox />
+Then build a five-row current-budget trace. Begin healthy, enter warning, reach critical, recover to
+warning, and recover to healthy. Record every prior state, input, next state, and scale. Explain how
+hysteresis changes the recovery path.
 
 ## Related and next
 
-Continue with [Batteries, Breakers, Fuses, and Brownouts](/academy/electrical-battery-protection?path=electrical-systems-diagnostics).
-Revisit [Read a telemetry
-graph like a scientist](/academy/read-a-telemetry-graph?path=math-for-robotics) before diagnosing
-voltage sag. A graph can show the drop, but another signal is needed to support its cause.
+Continue to [Batteries, Breakers, Fuses, and Brownouts](/academy/electrical-battery-protection?path=electrical-systems-diagnostics)
+to compare voltage evidence, current evidence, and physical protection. Revisit
+[Read a Telemetry Graph Like a Scientist](/academy/read-a-telemetry-graph?path=math-for-robotics)
+before diagnosing voltage sag from a real run.

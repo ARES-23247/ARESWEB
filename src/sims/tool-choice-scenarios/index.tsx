@@ -1,6 +1,10 @@
 /** @sim {"name":"Tool Task Evidence Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import {
+  AcademyCheckboxControl,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type ToolTask = "measure" | "hold" | "shape" | "assemble" | "electrical";
 
@@ -73,19 +77,13 @@ export default function ToolChoiceScenarios() {
   };
 
   return (
-    <section aria-labelledby="tool-task-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Paper preflight</p>
-          <h3 id="tool-task-title" className="mt-1 text-xl font-black text-white">Tool Task Evidence Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Match a task to a review category, then collect the evidence needed before the team's current tool process begins.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
+    <AcademyLabShell
+      titleId="tool-task-title"
+      title="Tool Task Evidence Lab"
+      eyebrow="Paper preflight"
+      description="Match a task to a review category, then collect the evidence needed before the team's current tool process begins."
+      onReset={reset}
+    >
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.8fr)]">
         <div className="grid gap-5">
@@ -103,18 +101,7 @@ export default function ToolChoiceScenarios() {
           <fieldset className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
             <legend className="px-2 text-sm font-bold text-ares-gold">Self-reported preflight evidence</legend>
             {CHECKS.map((check) => (
-              <label key={check.key} className="flex min-h-11 items-start gap-3 rounded border border-white/10 p-3 text-sm leading-relaxed text-white">
-                <input
-                  type="checkbox"
-                  checked={evidence[check.key]}
-                  onChange={(event) => {
-                    const checked = event.currentTarget.checked;
-                    setEvidence((current) => ({ ...current, [check.key]: checked }));
-                  }}
-                  className="mt-0.5 size-5 shrink-0 accent-ares-red"
-                />
-                <span>{check.label}</span>
-              </label>
+              <AcademyCheckboxControl key={check.key} label={check.label} checked={evidence[check.key]} onChange={(checked) => setEvidence((current) => ({ ...current, [check.key]: checked }))} />
             ))}
           </fieldset>
         </div>
@@ -127,9 +114,7 @@ export default function ToolChoiceScenarios() {
         </div>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Evidence limit:</strong> The lab does not identify a real tool, inspect its condition, read instructions, choose protective equipment, verify training, secure work, remove energy, supervise work, or authorize tool use.
-      </p>
-    </section>
+      <AcademyModelLimit label="Evidence limit">The lab does not identify a real tool, inspect its condition, read instructions, choose protective equipment, verify training, secure work, remove energy, supervise work, or authorize tool use.</AcademyModelLimit>
+    </AcademyLabShell>
   );
 }

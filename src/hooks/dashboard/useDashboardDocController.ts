@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentSync, type DocRecord } from "@/hooks/useDocumentSync";
+import { normalizeLearningMetadata } from "@/lib/learningContent";
 
 type BufferChannelOutcome =
   | "submitted"
@@ -25,6 +26,12 @@ interface SyndicationResponse {
   bufferChannels?: unknown;
 }
 
+export interface DocumentationApprovalReview {
+  digest: string;
+  library: "academy" | "areslib";
+  document: DocRecord;
+}
+
 const BUFFER_CHANNEL_LABELS = {
   facebook: "Facebook",
   instagram: "Instagram",
@@ -33,6 +40,73 @@ const BUFFER_CHANNEL_LABELS = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function isFlag(value: unknown): value is 0 | 1 {
+  return value === 0 || value === 1;
+}
+
+export function parseDocumentationApprovalReview(
+  value: unknown,
+): DocumentationApprovalReview | null {
+  if (!isRecord(value) || !isRecord(value.review)) return null;
+  const review = value.review;
+  const document = review.document;
+  if (
+    typeof review.digest !== "string"
+    || !/^[a-f0-9]{64}$/u.test(review.digest)
+    || (review.library !== "academy" && review.library !== "areslib")
+    || typeof review.slug !== "string"
+    || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,299}$/u.test(review.slug)
+    || !isRecord(document)
+    || document.slug !== review.slug
+    || typeof document.title !== "string"
+    || document.title.length > 200
+    || typeof document.category !== "string"
+    || document.category.length > 120
+    || typeof document.description !== "string"
+    || document.description.length > 4_000
+    || typeof document.content !== "string"
+    || document.content.length > 750_000
+    || typeof document.status !== "string"
+    || typeof document.sortOrder !== "number"
+    || !Number.isFinite(document.sortOrder)
+    || !isFlag(document.isDeleted)
+    || !isFlag(document.displayInAreslib)
+    || !isFlag(document.displayInMathCorner)
+    || !isFlag(document.displayInScienceCorner)
+    || !isFlag(document.isPortfolio)
+    || !isFlag(document.isExecutiveSummary)
+  ) return null;
+
+  const metadata = normalizeLearningMetadata(document, {
+    category: document.category,
+    reference: review.library === "areslib",
+  });
+  if (metadata.metadataStatus !== "complete") return null;
+
+  return {
+    digest: review.digest,
+    library: review.library,
+    document: {
+      slug: review.slug,
+      title: document.title,
+      category: document.category,
+      description: document.description,
+      content: document.content,
+      status: document.status,
+      sortOrder: Math.trunc(document.sortOrder),
+      isDeleted: document.isDeleted,
+      displayInAreslib: document.displayInAreslib,
+      displayInMathCorner: document.displayInMathCorner,
+      displayInScienceCorner: document.displayInScienceCorner,
+      isPortfolio: document.isPortfolio,
+      isExecutiveSummary: document.isExecutiveSummary,
+      ...(typeof document.approvalStatus === "string" ? { approvalStatus: document.approvalStatus } : {}),
+      ...(typeof document.updatedAt === "string" ? { updatedAt: document.updatedAt } : {}),
+      ...metadata,
+    },
+  };
 }
 
 export function syndicationChannelDetails(
@@ -115,6 +189,7 @@ export function useDashboardDocController(
   const [pendingArchiveSlug, setPendingArchiveSlug] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [reviewingSlug, setReviewingSlug] = useState<string | null>(null);
   const [approvingSlug, setApprovingSlug] = useState<string | null>(null);
   const [approvalNotice, setApprovalNotice] = useState<{
     kind: "success" | "error";
@@ -323,50 +398,75 @@ export function useDashboardDocController(
     }
   };
 
-  const handleApproveAndPublish = async (
+  const loadDocumentationApprovalReview = async (
     docItem: DocRecord,
-    library?: "academy" | "areslib",
+    library: "academy" | "areslib",
   ) => {
-    if (!isApprover) return;
+    if (!isApprover || collectionName !== "docs" || reviewingSlug) return null;
+    setApprovalNotice(null);
+    setReviewingSlug(docItem.slug);
+    try {
+      const { authenticatedFetch } = await import("@/lib/api");
+      const response = await authenticatedFetch(
+        `/api/content-admin/docs/${encodeURIComponent(docItem.slug)}/review?library=${library}`,
+      );
+      const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
+      if (!response.ok) {
+        throw new Error(typeof payload.error === "string" ? payload.error : "The draft could not be loaded for review.");
+      }
+      const review = parseDocumentationApprovalReview(payload);
+      if (!review || review.library !== library || review.document.slug !== docItem.slug) {
+        throw new Error("The review service returned an invalid response.");
+      }
+      return review;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The draft could not be loaded for review.";
+      logger.error("Documentation review load failed", { collectionName, slug: docItem.slug });
+      setApprovalNotice({ kind: "error", message });
+      return null;
+    } finally {
+      setReviewingSlug(null);
+    }
+  };
+
+  const handleApproveDocumentationReview = async (
+    review: DocumentationApprovalReview,
+  ) => {
+    if (!isApprover || collectionName !== "docs") return false;
+    const docItem = review.document;
     setApprovalNotice(null);
     setApprovingSlug(docItem.slug);
     try {
-      if (collectionName === "docs") {
-        if (!library) throw new Error("Choose the Academy or ARESLib review queue before approving.");
-        const { authenticatedFetch } = await import("@/lib/api");
-        const reviewResponse = await authenticatedFetch(
-          `/api/content-admin/docs/${encodeURIComponent(docItem.slug)}/review?library=${library}`,
-        );
-        const reviewPayload = await reviewResponse.json().catch(() => ({})) as {
-          review?: { digest?: unknown; updatedAt?: unknown; title?: unknown };
-          error?: unknown;
-        };
-        if (!reviewResponse.ok) {
-          throw new Error(typeof reviewPayload.error === "string" ? reviewPayload.error : "The draft could not be loaded for review.");
-        }
-        const review = reviewPayload.review;
-        if (!review || typeof review.digest !== "string"
-          || typeof review.updatedAt !== "string" || typeof review.title !== "string") {
-          throw new Error("The review service returned an invalid response.");
-        }
-        if ((docItem.updatedAt || "") !== review.updatedAt || docItem.title !== review.title) {
-          throw new Error("This draft changed after it appeared in the list. Wait for the latest version, review it, and try again.");
-        }
-        const approveResponse = await authenticatedFetch(
-          `/api/content-admin/docs/${encodeURIComponent(docItem.slug)}/approve`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ library, digest: review.digest }),
-          },
-        );
-        const approvePayload = await approveResponse.json().catch(() => ({})) as { error?: unknown };
-        if (!approveResponse.ok) {
-          throw new Error(typeof approvePayload.error === "string" ? approvePayload.error : "The draft was not approved.");
-        }
-        setApprovalNotice({ kind: "success", message: `${docItem.title} was approved from its exact reviewed version.` });
-        return;
+      const { authenticatedFetch } = await import("@/lib/api");
+      const approveResponse = await authenticatedFetch(
+        `/api/content-admin/docs/${encodeURIComponent(docItem.slug)}/approve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ library: review.library, digest: review.digest }),
+        },
+      );
+      const approvePayload = await approveResponse.json().catch(() => ({})) as { error?: unknown };
+      if (!approveResponse.ok) {
+        throw new Error(typeof approvePayload.error === "string" ? approvePayload.error : "The draft was not approved.");
       }
+      setApprovalNotice({ kind: "success", message: `${docItem.title} was approved from its exact reviewed version.` });
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Approval failed. Review the latest draft and try again.";
+      logger.error("Content approval failed", { collectionName, slug: docItem.slug });
+      setApprovalNotice({ kind: "error", message });
+      return false;
+    } finally {
+      setApprovingSlug(null);
+    }
+  };
+
+  const handleApproveAndPublish = async (docItem: DocRecord) => {
+    if (!isApprover || collectionName === "docs") return false;
+    setApprovalNotice(null);
+    setApprovingSlug(docItem.slug);
+    try {
 
       const { slug, ...existingPayload } = docItem;
       const finalPayload: Omit<DocRecord, "slug"> = {
@@ -382,10 +482,12 @@ export function useDashboardDocController(
         await runSocialAnnouncement(slug);
       }
       setApprovalNotice({ kind: "success", message: `${docItem.title} was approved and published.` });
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Approval failed. Review the latest draft and try again.";
       logger.error("Content approval failed", { collectionName, slug: docItem.slug });
       setApprovalNotice({ kind: "error", message });
+      return false;
     } finally {
       setApprovingSlug(null);
     }
@@ -466,7 +568,10 @@ export function useDashboardDocController(
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
+    loadDocumentationApprovalReview,
+    handleApproveDocumentationReview,
     handleApproveAndPublish,
+    reviewingSlug,
     approvingSlug,
     approvalNotice,
     dismissApprovalNotice: () => setApprovalNotice(null),

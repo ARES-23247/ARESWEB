@@ -1,6 +1,11 @@
 /** @sim {"name":"Robot Input-to-Output Flow Tracer","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  AcademyDatum,
+  AcademyLabShell,
+  AcademyModelLimit,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type FlowScenario = "driver" | "sensor";
 export type FlowStage = { title: string; input: string; work: string; output: string };
@@ -42,18 +47,13 @@ export default function RobotFlowTracer() {
   };
 
   return (
-    <section aria-labelledby="robot-flow-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Concept trace</p>
-          <h3 id="robot-flow-title" className="mt-1 text-xl font-black text-white">Robot Input-to-Output Flow Tracer</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">Follow one request or observation through a simplified ARES robot loop.</p>
-        </div>
-        <button type="button" onClick={() => { setScenario("driver"); setIndex(0); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
-
+    <AcademyLabShell
+      titleId="robot-flow-title"
+      title="Robot Input-to-Output Flow Tracer"
+      eyebrow="Concept trace"
+      description="Follow one request or observation through a simplified ARES robot loop."
+      onReset={() => { setScenario("driver"); setIndex(0); }}
+    >
       <fieldset className="mt-5 grid gap-3 sm:grid-cols-2">
         <legend className="mb-2 text-sm font-bold text-ares-gold">Choose what enters the loop</legend>
         <ScenarioButton active={scenario === "driver"} onClick={() => chooseScenario("driver")} label="Driver request" description="Start with a stick or button." />
@@ -73,9 +73,9 @@ export default function RobotFlowTracer() {
         <p className="text-xs font-bold uppercase tracking-widest text-ares-gold">Step {current.index + 1} of {current.count}</p>
         <h4 className="mt-1 text-lg font-black text-white">{current.stage.title}</h4>
         <dl className="mt-4 grid gap-3 md:grid-cols-3">
-          <FlowDatum label="Input" value={current.stage.input} />
-          <FlowDatum label="Work" value={current.stage.work} />
-          <FlowDatum label="Output" value={current.stage.output} />
+          <AcademyDatum label="Input" value={current.stage.input} accented />
+          <AcademyDatum label="Work" value={current.stage.work} accented />
+          <AcademyDatum label="Output" value={current.stage.output} accented />
         </dl>
       </div>
 
@@ -88,15 +88,13 @@ export default function RobotFlowTracer() {
         </button>
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"><strong>Model limit:</strong> This fixed teaching trace does not inspect project code, dispatch an action, read a controller or sensor, run the ARES scheduler, command hardware, or prove loop timing.</p>
-    </section>
+      <AcademyModelLimit>
+        This fixed teaching trace does not inspect project code, dispatch an action, read a controller or sensor, run the ARES scheduler, command hardware, or prove loop timing.
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 
 function ScenarioButton({ active, onClick, label, description }: { active: boolean; onClick: () => void; label: string; description: string }) {
   return <button type="button" aria-pressed={active} onClick={onClick} className={`min-h-14 rounded border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-cyan bg-ares-cyan/15 text-white" : "border-white/15 bg-white/5 text-marble/80 hover:border-white/30"}`}><span className="block font-bold">{label}</span><span className="mt-1 block text-sm">{description}</span></button>;
-}
-
-function FlowDatum({ label, value }: { label: string; value: string }) {
-  return <div className="rounded border border-white/10 p-3"><dt className="text-xs font-bold uppercase tracking-wide text-ares-cyan">{label}</dt><dd className="mt-1 text-sm leading-relaxed text-white">{value}</dd></div>;
 }

@@ -29,7 +29,9 @@ describe("ControlResponseLab", () => {
 
   it("labels every value as invented and rejects hardware claims", () => {
     render(<ControlResponseLab />);
-    expect(screen.getByRole("note")).toHaveTextContent("invented for learning");
+    expect(screen.getByRole("note")).toHaveTextContent("Every plant value and gain is invented");
+    expect(screen.getByRole("note")).toHaveTextContent("change in error for D");
+    expect(screen.getByRole("note")).toHaveTextContent("Current ARES instead subtracts a filtered change in measurement");
     expect(screen.getByRole("note")).toHaveTextContent("not an ARES tuning profile");
   });
 });

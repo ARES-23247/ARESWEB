@@ -51,4 +51,16 @@ describe("DocumentDraftPreview", () => {
     expect(screen.getByTestId("tiptap-preview")).toHaveTextContent("doc");
     expect(screen.queryByTestId("markdown-preview")).not.toBeInTheDocument();
   });
+
+  it("labels a saved approval preview without calling it an unsaved draft", () => {
+    render(<DocumentDraftPreview
+      draft={{ ...draft(), title: "Review lesson", slug: "review-lesson", content: "Review me" }}
+      variant="docs"
+      defaultCategory="Robotics & Engineering"
+      context="approval"
+    />);
+    expect(screen.getByText("Saved review preview")).toBeVisible();
+    expect(screen.getByText(/exact-version server check/i)).toBeVisible();
+    expect(screen.queryByText("Unsaved draft preview")).not.toBeInTheDocument();
+  });
 });

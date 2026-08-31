@@ -1,6 +1,14 @@
 {
   "simulators": [
     {
+      "id": "aresPidTraceLab",
+      "name": "ARES PID Source Trace",
+      "path": "./ares-pid-trace-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "armkg",
       "name": "Arm Kinematics Gravity Model",
       "path": "./armkg",
@@ -129,6 +137,14 @@
       "fidelity": "code-derived"
     },
     {
+      "id": "currentBudgetLab",
+      "name": "ARES FTC Current Budget Trace",
+      "path": "./current-budget-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "cyclingGearRatios",
       "name": "Cycling Gear Ratios & Cadence",
       "path": "./cycling-gear-ratios",
@@ -193,6 +209,14 @@
       "fidelity": "conceptual"
     },
     {
+      "id": "feedforwardTermLab",
+      "name": "ARES FTC Feedforward Term Trace",
+      "path": "./feedforward-term-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
       "id": "field",
       "name": "PathPlanner Canvas Renderer",
       "path": "./field",
@@ -207,6 +231,14 @@
       "requiresContext": false,
       "academyApproved": false,
       "fidelity": null
+    },
+    {
+      "id": "ftcTelemetryCadenceLab",
+      "name": "FTC Telemetry Cadence Lab",
+      "path": "./ftc-telemetry-cadence-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
     },
     {
       "id": "greatbee",
@@ -233,6 +265,14 @@
       "fidelity": null
     },
     {
+      "id": "inspectionPacketLab",
+      "name": "Inspection Packet Evidence Lab",
+      "path": "./inspection-packet-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "conceptual"
+    },
+    {
       "id": "kayakingHydrodynamics",
       "name": "Kayaking Hydrodynamics",
       "path": "./kayaking-hydrodynamics",
@@ -242,11 +282,11 @@
     },
     {
       "id": "kotlinExpressionLab",
-      "name": "Kotlin Expression Values Lab",
+      "name": "ARES Kotlin Deadband Function Lab",
       "path": "./kotlin-expression-lab",
       "requiresContext": false,
       "academyApproved": true,
-      "fidelity": "conceptual"
+      "fidelity": "code-derived"
     },
     {
       "id": "linearequations",
@@ -274,8 +314,16 @@
     },
     {
       "id": "loopCacheLab",
-      "name": "Cached Output Decision Lab",
+      "name": "ARES FTC Cached Motor Trace",
       "path": "./loop-cache-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
+      "id": "matchCycleScenarios",
+      "name": "Match Cycle Handoff Scenarios",
+      "path": "./match-cycle-scenarios",
       "requiresContext": false,
       "academyApproved": true,
       "fidelity": "conceptual"
@@ -402,11 +450,11 @@
     },
     {
       "id": "parityEvidenceLab",
-      "name": "Adapter Parity Evidence Lab",
+      "name": "Current ARES Parity Evidence Lab",
       "path": "./parity-evidence-lab",
       "requiresContext": false,
       "academyApproved": true,
-      "fidelity": "conceptual"
+      "fidelity": "code-derived"
     },
     {
       "id": "performance",
@@ -450,8 +498,16 @@
     },
     {
       "id": "reduxStateTracer",
-      "name": "Redux State Tracer",
+      "name": "Current ARES Redux State Tracer",
       "path": "./redux-state-tracer",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
+    },
+    {
+      "id": "releaseValidationLab",
+      "name": "ARES Release Validation Lab",
+      "path": "./release-validation-lab",
       "requiresContext": false,
       "academyApproved": true,
       "fidelity": "code-derived"
@@ -562,11 +618,11 @@
     },
     {
       "id": "sensorSignalLab",
-      "name": "Sensor Signal Evidence Lab",
+      "name": "Current ARES Sensor Evidence Lab",
       "path": "./sensor-signal-lab",
       "requiresContext": false,
       "academyApproved": true,
-      "fidelity": "conceptual"
+      "fidelity": "code-derived"
     },
     {
       "id": "skiingCarvingForces",
@@ -642,11 +698,19 @@
     },
     {
       "id": "sysidTuningLab",
-      "name": "One-Change Tuning Experiment Lab",
+      "name": "SysId and One-Change Evidence Lab",
       "path": "./sysid-tuning-lab",
       "requiresContext": false,
       "academyApproved": true,
-      "fidelity": "conceptual"
+      "fidelity": "code-derived"
+    },
+    {
+      "id": "taskSequenceLab",
+      "name": "ARES Task Tree Planner",
+      "path": "./task-sequence-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
     },
     {
       "id": "telemetryGraphLab",
@@ -727,6 +791,14 @@
       "requiresContext": false,
       "academyApproved": true,
       "fidelity": "conceptual"
+    },
+    {
+      "id": "workspaceOwnershipLab",
+      "name": "ARES Workspace Ownership Lab",
+      "path": "./workspace-ownership-lab",
+      "requiresContext": false,
+      "academyApproved": true,
+      "fidelity": "code-derived"
     },
     {
       "id": "zeroallocation",

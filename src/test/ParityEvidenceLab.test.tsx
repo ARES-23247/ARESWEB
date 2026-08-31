@@ -1,32 +1,110 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import ParityEvidenceLab, { classifyParityEvidence } from "@/sims/parity-evidence-lab";
+import ParityEvidenceLab, {
+  classifyParityEvidence,
+} from "@/sims/parity-evidence-lab";
 
 describe("ParityEvidenceLab", () => {
-  it("keeps incomplete, aligned, shared-failure, and mismatch findings separate", () => {
-    expect(classifyParityEvidence("untested", "matches").status).toBe("Incomplete evidence");
-    expect(classifyParityEvidence("matches", "matches").status).toBe("Aligned with expected contract");
-    expect(classifyParityEvidence("differs", "differs").status).toBe("Shared contract failure");
-    expect(classifyParityEvidence("matches", "differs").status).toBe("Adapter mismatch");
+  it("keeps current generated and lifecycle artifacts at their actual evidence levels", () => {
+    expect(
+      classifyParityEvidence("generated-contract", "matches", "matches"),
+    ).toMatchObject({
+      status: "Compile evidence only",
+      limit: "No adapter behavior or output was compared.",
+    });
+    expect(
+      classifyParityEvidence("generated-behavior", "matches", "matches"),
+    ).toMatchObject({
+      status: "Mock behavior evidence",
+      limit: "The FTC or FRC platform adapter did not run.",
+    });
+    expect(
+      classifyParityEvidence("ftc-lifecycle", "matches", "matches"),
+    ).toMatchObject({
+      status: "Lifecycle integration evidence",
+      supports: "One registered instance received read, write, then close.",
+    });
   });
 
-  it("supports native selects, evidence disclosure, and deterministic reset", () => {
+  it("ignores adapter outcome selections for non-paired evidence", () => {
+    expect(
+      classifyParityEvidence("generated-contract", "differs", "matches"),
+    ).toMatchObject({
+      status: "Compile evidence only",
+      supports: "Physical and mock source share the generated contract.",
+    });
+    expect(
+      classifyParityEvidence("generated-behavior", "untested", "differs"),
+    ).toMatchObject({
+      status: "Mock behavior evidence",
+      limit: "The FTC or FRC platform adapter did not run.",
+    });
+  });
+
+  it("classifies every paired runtime outcome without hiding gaps", () => {
+    expect(
+      classifyParityEvidence("paired-runtime", "untested", "matches").status,
+    ).toBe("Incomplete evidence");
+    expect(
+      classifyParityEvidence("paired-runtime", "matches", "matches").status,
+    ).toBe("Aligned for this case");
+    expect(
+      classifyParityEvidence("paired-runtime", "differs", "differs").status,
+    ).toBe("Shared expectation failure");
+    expect(
+      classifyParityEvidence("paired-runtime", "matches", "differs").status,
+    ).toBe("Adapter mismatch");
+  });
+
+  it("enables adapter results only for a paired runtime test", () => {
     render(<ParityEvidenceLab />);
-    fireEvent.change(screen.getByLabelText("Contract case"), { target: { value: "write-fault" } });
-    expect(screen.getByText("Attempt neutral and latch the fault")).toBeVisible();
-    fireEvent.change(screen.getByLabelText("Platform adapter test"), { target: { value: "matches" } });
-    fireEvent.change(screen.getByLabelText("Simulated adapter test"), { target: { value: "differs" } });
+    expect(screen.getByLabelText("Platform boundary")).toBeDisabled();
+    expect(screen.getByLabelText("Mock or simulated boundary")).toBeDisabled();
+    expect(screen.getByText("Compile evidence only")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Evidence artifact"), {
+      target: { value: "paired-runtime" },
+    });
+    expect(screen.getByLabelText("Platform boundary")).toBeEnabled();
+    expect(screen.getByLabelText("Mock or simulated boundary")).toBeEnabled();
+  });
+
+  it("shows source-derived cases, reports a mismatch, and resets", () => {
+    render(<ParityEvidenceLab />);
+    fireEvent.change(screen.getByLabelText("Contract case"), {
+      target: { value: "write-fault" },
+    });
+    expect(
+      screen.getByText("Safe output and declared fault policy"),
+    ).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Evidence artifact"), {
+      target: { value: "paired-runtime" },
+    });
+    fireEvent.change(screen.getByLabelText("Platform boundary"), {
+      target: { value: "matches" },
+    });
+    fireEvent.change(screen.getByLabelText("Mock or simulated boundary"), {
+      target: { value: "differs" },
+    });
     expect(screen.getByText("Adapter mismatch")).toBeVisible();
-    fireEvent.click(screen.getByText("Open the parity evidence rules"));
-    expect(screen.getByText(/same input, units, clock/u)).toBeVisible();
+
+    fireEvent.click(screen.getByText("Open the comparison rules"));
+    expect(
+      screen.getByText("Compile parity is not runtime parity."),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByLabelText("Evidence artifact")).toHaveValue(
+      "generated-contract",
+    );
     expect(screen.getByLabelText("Contract case")).toHaveValue("startup");
-    expect(screen.getByText("Incomplete evidence")).toBeVisible();
+    expect(screen.getByText("Compile evidence only")).toBeVisible();
   });
 
-  it("states that the form runs no tests and proves no hardware behavior", () => {
+  it("states the planner fidelity boundary", () => {
     render(<ParityEvidenceLab />);
-    expect(screen.getByRole("note")).toHaveTextContent("does not run Gradle");
-    expect(screen.getByRole("note")).toHaveTextContent("prove physical behavior");
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent("does not run Gradle");
+    expect(note).toHaveTextContent("inject faults");
+    expect(note).toHaveTextContent("prove physical behavior");
   });
 });

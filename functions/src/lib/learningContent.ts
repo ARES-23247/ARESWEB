@@ -17,8 +17,10 @@ export const LEARNING_LEVELS = ["beginner", "intermediate", "advanced"] as const
 export const LEARNING_PLATFORMS = ["web", "simulator", "ftc", "frc", "hardware-neutral"] as const;
 export const LEARNING_SAFETY_SCOPES = ["none", "simulation-only", "bench-testing", "physical-robot"] as const;
 export const LEARNING_PATH_IDS = [
+  "areslib-engineering-reference",
   "robotics-foundations",
   "ftc-robot-with-ares",
+  "frc-robot-with-ares",
   "controls-localization-autonomous",
   "math-for-robotics",
   "ai-ml-foundations",

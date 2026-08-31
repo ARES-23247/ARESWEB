@@ -14,8 +14,8 @@ import {
   DEFAULT_LEARNING_FILTERS,
   filterLearningDocuments,
   learningFiltersToSearchParams,
+  learningPathStepStatuses,
   learningTopics,
-  orderedPathDocuments,
   parseLearningFilters,
   type LearningFilters,
 } from "@/lib/learningExperience";
@@ -30,7 +30,7 @@ interface LearningLibraryLandingProps {
   };
 }
 
-const FILTER_QUERY_KEYS = ["search", "subject", "level", "type", "path", "platform", "topic", "duration"] as const;
+const FILTER_QUERY_KEYS = ["search", "subject", "level", "type", "path", "platform", "topic", "duration", "progress"] as const;
 
 export default function LearningLibraryLanding({ documents, library, progress }: LearningLibraryLandingProps) {
   const location = useLocation();
@@ -38,12 +38,15 @@ export default function LearningLibraryLanding({ documents, library, progress }:
   const [confirmingReset, setConfirmingReset] = useState(false);
   const basePath = library === "academy" ? "/academy" : "/docs";
   const filters = useMemo(() => parseLearningFilters(new URLSearchParams(location.search)), [location.search]);
-  const pathId = library === "academy" ? filters.pathId : "all";
+  const pathId = filters.pathId === "all"
+    || documents.some((document) => document.pathMemberships.some((membership) => membership.pathId === filters.pathId))
+    ? filters.pathId
+    : "all";
 
   const updateFilters = (next: LearningFilters) => {
     const params = new URLSearchParams(location.search);
     FILTER_QUERY_KEYS.forEach((key) => params.delete(key));
-    const normalized = library === "academy" ? next : { ...next, pathId: "all" as const };
+    const normalized = progress ? next : { ...next, progress: "all" as const };
     learningFiltersToSearchParams(normalized).forEach((value, key) => params.set(key, value));
     const search = params.toString();
     navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
@@ -54,8 +57,12 @@ export default function LearningLibraryLanding({ documents, library, progress }:
   };
 
   const filtered = useMemo(
-    () => filterLearningDocuments(documents, { ...filters, pathId }),
-    [documents, filters, pathId],
+    () => filterLearningDocuments(
+      documents,
+      { ...filters, pathId, progress: library === "academy" && progress ? filters.progress : "all" },
+      progress?.completedSlugs,
+    ),
+    [documents, filters, library, pathId, progress],
   );
   const topics = useMemo(() => learningTopics(documents), [documents]);
 
@@ -63,16 +70,34 @@ export default function LearningLibraryLanding({ documents, library, progress }:
     path.id,
     documents.filter((document) => document.pathMemberships.some((membership) => membership.pathId === path.id)).length,
   ])), [documents]);
+  const pathCompletedCounts = useMemo(() => new Map(LEARNING_PATHS.map((path) => [
+    path.id,
+    documents.filter((document) =>
+      document.pathMemberships.some((membership) => membership.pathId === path.id)
+      && progress?.completedSlugs.has(document.slug)).length,
+  ])), [documents, progress]);
+  const availablePaths = useMemo(
+    () => LEARNING_PATHS.filter((path) => (pathCounts.get(path.id) ?? 0) > 0),
+    [pathCounts],
+  );
 
   const selectedPath = pathId === "all" ? null : LEARNING_PATHS.find((path) => path.id === pathId) ?? null;
-  const selectedPathDocuments = useMemo(
-    () => pathId === "all" ? [] : orderedPathDocuments(documents, pathId),
-    [documents, pathId],
+  const selectedPathSteps = useMemo(
+    () => pathId === "all"
+      ? []
+      : learningPathStepStatuses(documents, pathId, progress?.completedSlugs),
+    [documents, pathId, progress?.completedSlugs],
   );
-  const completedInPath = selectedPathDocuments.filter((document) => progress?.completedSlugs.has(document.slug)).length;
-  const continueDocument = selectedPathDocuments.find((document) => !progress?.completedSlugs.has(document.slug))
-    ?? selectedPathDocuments[0]
+  const completedInPath = selectedPathSteps.filter((step) => step.completed).length;
+  const continueDocument = selectedPathSteps.find((step) => step.ready)?.document
+    ?? selectedPathSteps.find((step) => !step.completed)?.document
+    ?? selectedPathSteps[0]?.document
     ?? null;
+  const pathActionLabel = completedInPath === selectedPathSteps.length && selectedPathSteps.length > 0
+    ? "Review path"
+    : completedInPath > 0
+      ? "Continue path"
+      : "Start path";
 
   return (
     <div className="w-full max-w-6xl pb-20">
@@ -90,16 +115,23 @@ export default function LearningLibraryLanding({ documents, library, progress }:
         </p>
       </header>
 
-      {library === "academy" && (
+      {availablePaths.length > 0 && (
         <section aria-labelledby="learning-paths-heading" className="mt-10">
           <div className="flex items-center gap-3">
             <Route aria-hidden="true" className="text-ares-gold" />
-            <h2 id="learning-paths-heading" className="font-heading text-2xl font-black uppercase text-white">Learning paths</h2>
+            <h2 id="learning-paths-heading" className="font-heading text-2xl font-black uppercase text-white">
+              {library === "academy" ? "Learning paths" : "Guided reference paths"}
+            </h2>
           </div>
-          <p className="mt-2 text-sm text-marble/65">Paths combine lessons from several subjects into a suggested order.</p>
+          <p className="mt-2 text-sm text-marble/65">
+            {library === "academy"
+              ? "Paths combine lessons from several subjects into a suggested order."
+              : "Paths arrange related references in a suggested order while keeping every source and version note visible."}
+          </p>
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {LEARNING_PATHS.map((path) => {
+            {availablePaths.map((path) => {
               const count = pathCounts.get(path.id) ?? 0;
+              const completed = pathCompletedCounts.get(path.id) ?? 0;
               const active = pathId === path.id;
               return (
                 <button
@@ -117,6 +149,11 @@ export default function LearningLibraryLanding({ documents, library, progress }:
                   <span className="mt-4 block text-xs font-bold uppercase tracking-wider text-ares-gold">
                     {count > 0 ? `${count} ${count === 1 ? "lesson" : "lessons"}` : "Curriculum in preparation"}
                   </span>
+                  {progress && count > 0 && (
+                    <span className="mt-1 block text-xs font-bold text-ares-cyan">
+                      {completed} of {count} complete on this browser
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -135,7 +172,7 @@ export default function LearningLibraryLanding({ documents, library, progress }:
                   </p>
                   {progress && (
                     <p className="mt-3 text-sm font-bold text-ares-cyan">
-                      {completedInPath} of {selectedPathDocuments.length} complete on this browser
+                      {completedInPath} of {selectedPathSteps.length} complete on this browser
                     </p>
                   )}
                 </div>
@@ -144,23 +181,33 @@ export default function LearningLibraryLanding({ documents, library, progress }:
                     to={`${basePath}/${continueDocument.slug}?path=${selectedPath.id}`}
                     className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-red px-5 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                   >
-                    {completedInPath > 0 ? "Continue path" : "Start path"}
+                    {pathActionLabel}
                     <ArrowRight aria-hidden="true" size={16} />
                   </Link>
                 )}
               </div>
-              {selectedPathDocuments.length > 0 && (
+              {selectedPathSteps.length > 0 && (
                 <ol className="mt-5 grid gap-2 border-t border-white/10 pt-5 md:grid-cols-2">
-                  {selectedPathDocuments.map((document, index) => {
-                    const completed = progress?.completedSlugs.has(document.slug) ?? false;
+                  {selectedPathSteps.map((step, index) => {
+                    const { document } = step;
+                    const status = step.completed
+                      ? "Lesson completed"
+                      : step.ready
+                        ? "Ready next"
+                        : `${step.missingPrerequisites.length} ${step.missingPrerequisites.length === 1 ? "prerequisite" : "prerequisites"} remaining`;
                     return (
-                      <li key={document.slug} className="flex items-center gap-3 text-sm text-marble/75">
-                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${completed ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white"}`}>
-                          {completed ? <Check aria-label="Completed" size={15} /> : index + 1}
+                      <li key={document.slug} className="flex items-start gap-3 text-sm text-marble/75">
+                        <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border text-xs font-bold ${step.completed ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white"}`}>
+                          {step.completed ? <Check aria-hidden="true" size={15} /> : index + 1}
                         </span>
-                        <Link to={`${basePath}/${document.slug}?path=${selectedPath.id}`} className="hover:text-white hover:underline focus-visible:ring-2 focus-visible:ring-ares-cyan">
-                          {document.title}
-                        </Link>
+                        <span className="min-w-0">
+                          <Link to={`${basePath}/${document.slug}?path=${selectedPath.id}`} className="hover:text-white hover:underline focus-visible:ring-2 focus-visible:ring-ares-cyan">
+                            {document.title}
+                          </Link>
+                          <span className={`mt-0.5 block text-xs font-bold ${step.ready ? "text-ares-gold" : "text-marble/55"}`}>
+                            {status}
+                          </span>
+                        </span>
                       </li>
                     );
                   })}
@@ -196,7 +243,11 @@ export default function LearningLibraryLanding({ documents, library, progress }:
             { id: "30", label: "30 minutes or less" },
             { id: "60", label: "60 minutes or less" },
           ] as const} />
-          {library === "academy" && <FilterSelect label="Learning path" value={pathId} onChange={(value) => setFilter("pathId", value as LearningFilters["pathId"])} options={LEARNING_PATHS} />}
+          {library === "academy" && progress && <FilterSelect label="Progress" value={filters.progress} onChange={(value) => setFilter("progress", value as LearningFilters["progress"])} options={[
+            { id: "not-started", label: "Not started" },
+            { id: "completed", label: "Completed" },
+          ] as const} />}
+          {availablePaths.length > 0 && <FilterSelect label={library === "academy" ? "Learning path" : "Reference path"} value={pathId} onChange={(value) => setFilter("pathId", value as LearningFilters["pathId"])} options={availablePaths} />}
           <button
             type="button"
             onClick={() => updateFilters(DEFAULT_LEARNING_FILTERS)}
@@ -215,7 +266,7 @@ export default function LearningLibraryLanding({ documents, library, progress }:
           </p>
         )}
 
-        {library === "academy" && progress && (
+        {progress && (
           <div className="mt-4 border border-white/10 bg-white/[0.03] p-4 text-sm text-marble/70">
             <p>
               Progress is private to this browser. It is not sent to ARES, shared between devices, or tied to a sign-in.

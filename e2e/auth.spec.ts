@@ -39,6 +39,24 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.viewportWidth);
   });
 
+  test('should expose Academy evidence requests to editors without mobile overflow', async ({ page, loginAs }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await loginAs('admin', 'Curriculum Editor');
+    await page.goto('/dashboard/academy');
+
+    await expect(page.getByRole('heading', { name: 'Academy Manager' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Curriculum evidence needed' })).toBeVisible();
+    await page.getByText('Review all 20 open requests (1 partially supported)').click();
+    await expect(page.getByRole('heading', { name: 'Mechanical Measurement Design Notebook' })).toBeVisible();
+    await expect(page.getByText(/Approved team photo shows a student-safe measurement setup/i)).toBeVisible();
+
+    const viewport = await page.locator('html').evaluate((element) => ({
+      documentWidth: element.scrollWidth,
+      viewportWidth: element.clientWidth,
+    }));
+    expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.viewportWidth);
+  });
+
   test('should deny the isolated member fixture on admin routes', async ({ page, loginAs }) => {
     await loginAs('member', 'Test Member');
     await page.goto('/dashboard');

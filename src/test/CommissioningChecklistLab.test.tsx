@@ -6,16 +6,16 @@ const complete = { code: true, simulation: true, configuration: true, stopReady:
 
 describe("CommissioningChecklistLab", () => {
   it("advances through evidence in order", () => {
-    expect(chooseCommissioningBoundary({ ...complete, code: false }).next).toContain("build");
-    expect(chooseCommissioningBoundary({ ...complete, simulation: false }).next).toContain("simulation");
-    expect(chooseCommissioningBoundary({ ...complete, configuration: false }).next).toContain("disabled");
-    expect(chooseCommissioningBoundary({ ...complete, restrained: false }).next).toContain("restrained");
-    expect(chooseCommissioningBoundary(complete).status).toContain("bounded device test");
+    expect(chooseCommissioningBoundary({ ...complete, code: false }).nextAction).toContain("build");
+    expect(chooseCommissioningBoundary({ ...complete, simulation: false }).nextAction).toContain("simulation");
+    expect(chooseCommissioningBoundary({ ...complete, configuration: false }).nextAction).toContain("disabled");
+    expect(chooseCommissioningBoundary({ ...complete, restrained: false }).nextAction).toContain("restrained");
+    expect(chooseCommissioningBoundary(complete)).toMatchObject({ ready: true, title: expect.stringContaining("bounded device test") });
   });
 
   it("fails closed on missing stop readiness or any unexpected result", () => {
-    expect(chooseCommissioningBoundary({ ...complete, stopReady: false }).status).toBe("Stop and investigate");
-    expect(chooseCommissioningBoundary({ ...complete, code: false, unexpected: true }).next).toContain("unexpected result");
+    expect(chooseCommissioningBoundary({ ...complete, stopReady: false }).title).toBe("Stop and investigate");
+    expect(chooseCommissioningBoundary({ ...complete, code: false, unexpected: true }).nextAction).toContain("unexpected result");
   });
 
   it("supports native checks, live next actions, and deterministic reset", () => {

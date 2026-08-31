@@ -72,6 +72,92 @@ const nextLesson = {
   objectives: ["Explain a neutral-first recovery boundary."],
 };
 
+const replayLesson = {
+  ...lesson,
+  slug: "testing-logs-replay",
+  title: "Compare Logs and Replay a Failure",
+  description: "Read exact, held, and missing evidence without borrowing a future sample.",
+  level: "intermediate",
+  pathMemberships: [{ pathId: "testing-debugging-commissioning", order: 3 }],
+  prerequisites: ["read-a-telemetry-graph", "simulation-is-not-hardware-validation"],
+  objectives: ["Read exact, held, and missing replay evidence."],
+  appliesToVersion: "ARES 11.1.0; Studio 2.0.3",
+};
+
+const matchCycleLesson = {
+  ...lesson,
+  slug: "competition-drive-team",
+  title: "Run a Drive-Team Match Cycle",
+  description: "Practice bounded handoffs without inventing event rules.",
+  level: "intermediate",
+  pathMemberships: [{ pathId: "competition-operations", order: 3 }],
+  prerequisites: ["simulation-is-not-hardware-validation"],
+  objectives: ["Rehearse one explicit match-cycle handoff."],
+  platforms: ["ftc", "frc"],
+  appliesToVersion: "ARES 11.1.0; event-specific rules require current official review",
+  safetyScope: "physical-robot",
+};
+
+const inspectionLesson = {
+  ...matchCycleLesson,
+  slug: "competition-ftc-inspection-pit",
+  title: "Prepare an FTC Robot for Inspection and the Pit",
+  description: "Build a source-backed practice packet without claiming an inspection result.",
+  pathMemberships: [{ pathId: "competition-operations", order: 1 }],
+  objectives: ["Audit the evidence in a practice inspection packet."],
+};
+
+const frcModeLesson = {
+  ...matchCycleLesson,
+  slug: "frc-mode-handoffs-and-safe-recovery",
+  title: "Keep FRC Mode Changes Safe",
+  description: "Trace current FRC mode handoffs and persistent fault recovery.",
+  pathMemberships: [{ pathId: "frc-robot-with-ares", order: 6 }],
+  prerequisites: ["redux-state-actions-reducers", "programming-io-caching"],
+  objectives: ["Compare ordered guards with the current FRC lifecycle."],
+  platforms: ["frc", "simulator"],
+  appliesToVersion: "ARES 13.0.0; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.1.1",
+};
+
+const measurementLesson = {
+  ...lesson,
+  slug: "mechanical-measurement-design-notebook",
+  title: "Measure, Sketch, and Record a Design",
+  description: "Turn a design question into a repeatable and traceable measurement record.",
+  pathMemberships: [{ pathId: "mechanical-design-fabrication", order: 1 }],
+  prerequisites: ["rates-units-and-motion"],
+  objectives: ["Separate measurements, uncertainty, nominal values, and allowed tolerances."],
+  platforms: ["hardware-neutral"],
+  appliesToVersion: "ARES 13.0.0; Studio 3.1.1",
+  safetyScope: "none",
+};
+
+const autonomousReferenceLesson = {
+  ...lesson,
+  slug: "autonomous-and-vision",
+  title: "Autonomous Paths, Localization, and Vision",
+  description: "Trace canonical routines, external paths, localization, and delayed vision evidence.",
+  level: "advanced",
+  pathMemberships: [{ pathId: "areslib-engineering-reference", order: 7 }],
+  prerequisites: ["areslib-fundamentals"],
+  objectives: ["Trace a reviewed PathPlanner asset into the current ARES path runtime."],
+  platforms: ["ftc", "frc", "simulator"],
+  appliesToVersion: "ARES 13.0.0; Studio 3.1.1",
+};
+
+const firstSimulationLesson = {
+  ...lesson,
+  slug: "run-first-ftc-simulation",
+  title: "Run Your First FTC Simulation",
+  description: "Verify an FTC starter project and start a controllable local simulation in the required order.",
+  level: "beginner",
+  pathMemberships: [{ pathId: "robotics-foundations", order: 3 }],
+  prerequisites: ["ares-workspace-map"],
+  objectives: ["Distinguish build, process, connection, OpMode, and movement evidence."],
+  platforms: ["simulator", "ftc"],
+  appliesToVersion: "ARES 13.0.0; FTC Starter 13.0.0; Studio 3.1.1",
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -117,6 +203,8 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   await pathButton.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("link", { name: /Start path/i })).toBeVisible();
+  await expect(page.getByText("Ready next", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 prerequisite remaining", { exact: true })).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
 
@@ -137,9 +225,270 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   await expect(page.getByRole("heading", { level: 1, name: nextLesson.title })).toBeVisible();
   await expect(page.getByText("Completed locally", { exact: true })).toBeVisible();
 
+  await page.goto("/academy", { waitUntil: "networkidle" });
+  await expect(page.getByText("1 of 2 complete on this browser", { exact: true }).first()).toBeVisible();
+  await pathButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("link", { name: /Continue path/i })).toHaveAttribute(
+    "href",
+    `/academy/${nextLesson.slug}?path=robotics-foundations`,
+  );
+  await expect(page.getByText("Lesson completed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ready next", { exact: true })).toBeVisible();
+  await page.getByLabel("Progress").selectOption("completed");
+  await expect(page).toHaveURL(/progress=completed/u);
+  await expect(page.getByText("Showing 1 of 2 items.")).toBeVisible();
+  const browseLibrary = page.locator('section[aria-labelledby="browse-library-heading"]');
+  await expect(browseLibrary.getByRole("link", { name: /Robot State Flow/i })).toBeVisible();
+  await expect(browseLibrary.getByRole("link", { name: /Safe Output Boundaries/i })).toHaveCount(0);
+
+  await page.getByLabel("Progress").selectOption("not-started");
+  await expect(page).toHaveURL(/progress=not-started/u);
+  await expect(browseLibrary.getByRole("link", { name: /Safe Output Boundaries/i })).toBeVisible();
+  await expect(browseLibrary.getByRole("link", { name: /Robot State Flow/i })).toHaveCount(0);
+
   await expectNoHorizontalOverflow(page);
   const docsNavigationButton = page.getByRole("button", { name: "Open documentation navigation" });
   const buttonBox = await docsNavigationButton.boundingBox();
   expect(buttonBox?.width).toBeGreaterThanOrEqual(44);
   expect(buttonBox?.height).toBeGreaterThanOrEqual(44);
+});
+
+test("the replay comparison lab exposes held and missing evidence by keyboard at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...replayLesson, content: "# Compare logs and replay a failure\n\n<logcomparisonlab />" } }
+        : { documents: [replayLesson] }),
+    });
+  });
+
+  await page.goto("/academy/testing-logs-replay?path=testing-debugging-commissioning", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Log Alignment and Comparison Lab" })).toBeVisible();
+  await page.getByLabel("Alignment anchor").selectOption("SHARED_EVENT");
+
+  const playhead = page.getByRole("slider", { name: "Evidence time relative to anchor" });
+  await expect(playhead).toHaveValue("0");
+  await playhead.focus();
+  for (let step = 0; step < 5; step += 1) await page.keyboard.press("ArrowLeft");
+
+  await expect(playhead).toHaveValue("-50");
+  await expect(page.getByText("Missing before first sample")).toBeVisible();
+  await expect(page.getByText("1.0 A (held 10 ms)")).toBeVisible();
+  await expect(page.getByText("Not comparable: one run has no earlier sample")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the match-cycle handoff lab resets phase evidence by keyboard at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...matchCycleLesson, content: "# Run a drive-team match cycle\n\n<matchcyclescenarios />" } }
+        : { documents: [matchCycleLesson] }),
+    });
+  });
+
+  await page.goto("/academy/competition-drive-team?path=competition-operations", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Match Cycle Handoff Scenarios" })).toBeVisible();
+  const pitPhase = page.getByRole("radio", { name: "Pit to queue" });
+  const fieldPhase = page.getByRole("radio", { name: "Queue to field setup" });
+  await expect(pitPhase).toBeChecked();
+
+  await pitPhase.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(fieldPhase).toBeChecked();
+  await expect(page.getByText("Rehearse the last transfer before the practice match begins.")).toBeVisible();
+
+  const firstCheck = page.getByRole("checkbox").first();
+  await firstCheck.focus();
+  await page.keyboard.press("Space");
+  await expect(firstCheck).toBeChecked();
+  await expect(page.getByText("1 of 5")).toBeVisible();
+
+  await page.getByRole("button", { name: "Reset rehearsal" }).click();
+  await expect(pitPhase).toBeChecked();
+  await expect(page.getByRole("checkbox").first()).not.toBeChecked();
+  await expect(page.getByRole("note")).toContainText("cannot read a robot or event system");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the inspection packet lab preserves evidence limits at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...inspectionLesson, content: "# Prepare an FTC robot for inspection\n\n<inspectionpacketlab />" } }
+        : { documents: [inspectionLesson] }),
+    });
+  });
+
+  await page.goto("/academy/competition-ftc-inspection-pit?path=competition-operations", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Inspection Packet Evidence Lab" })).toBeVisible();
+  const checks = page.getByRole("checkbox");
+  await checks.first().focus();
+  await page.keyboard.press("Space");
+  await expect(checks.first()).toBeChecked();
+  await expect(page.getByText(/record the current document identity/i)).toBeVisible();
+
+  for (let index = 1; index < await checks.count(); index += 1) await checks.nth(index).check();
+  await expect(page.getByText("Ready for a practice handoff")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("does not load FIRST rules");
+  await expect(page.getByRole("note")).toContainText("approve inspection");
+
+  await page.getByRole("button", { name: "Reset packet" }).click();
+  for (let index = 0; index < await checks.count(); index += 1) await expect(checks.nth(index)).not.toBeChecked();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the FRC mode lesson practices guard precedence without claiming runtime proof at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...frcModeLesson, content: "# Keep FRC mode changes safe\n\n<superstructurestatelab />" } }
+        : { documents: [frcModeLesson] }),
+    });
+  });
+
+  await page.goto("/academy/frc-mode-handoffs-and-safe-recovery?path=frc-robot-with-ares", {
+    waitUntil: "networkidle",
+  });
+  await expect(page.getByRole("heading", { name: "Superstructure State Coordination Lab" })).toBeVisible();
+
+  const disabled = page.getByRole("checkbox", { name: "Robot is disabled" });
+  await disabled.focus();
+  await page.keyboard.press("Space");
+  await expect(disabled).toBeChecked();
+  await expect(page.getByText("Disabled policy runs first")).toBeVisible();
+
+  await page.getByRole("button", { name: "Evaluate next tick" }).click();
+  await expect(page.getByText("Current posture").locator("..")).toContainText("STOWED");
+  await page.getByRole("button", { name: "Reset" }).click();
+  await expect(disabled).not.toBeChecked();
+  await expect(page.getByRole("note")).toContainText("invented three-posture model");
+  await expect(page.getByRole("note")).toContainText("prove safe motion");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the measurement lesson separates nominal values and tolerance limits at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...measurementLesson, content: "# Measure, sketch, and record a design\n\n<tolerancestacklab />" } }
+        : { documents: [measurementLesson] }),
+    });
+  });
+
+  await page.goto("/academy/mechanical-measurement-design-notebook?path=mechanical-design-fabrication", {
+    waitUntil: "networkidle",
+  });
+  await expect(page.getByRole("heading", { name: "Tolerance Stack Lab" })).toBeVisible();
+
+  const nominal = page.getByRole("spinbutton", { name: "Part 1 nominal length" });
+  await nominal.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("41");
+  await expect(page.getByText("91.00 mm", { exact: true })).toBeVisible();
+
+  const tolerance = page.getByRole("spinbutton", { name: "Part 1 plus-or-minus tolerance" });
+  await tolerance.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("2");
+  await expect(page.getByText("The arithmetic range does not fit the lesson requirement.")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("measurement uncertainty");
+  await expect(page.getByRole("note")).toContainText("cannot approve a CAD model");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the autonomous reference exposes path clearance evidence without page overflow at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...autonomousReferenceLesson, content: "# Autonomous paths, localization, and vision\n\n<autonomouspathlab />" } }
+        : { documents: [autonomousReferenceLesson] }),
+    });
+  });
+
+  await page.goto("/academy/autonomous-and-vision?path=areslib-engineering-reference", {
+    waitUntil: "networkidle",
+  });
+  await expect(page.getByRole("heading", { name: "Autonomous Path Clearance Lab" })).toBeVisible();
+  await expect(page.getByText("Blocked", { exact: true })).toBeVisible();
+
+  const goalY = page.getByRole("slider", { name: "Goal field Y" });
+  await goalY.focus();
+  await page.keyboard.press("Home");
+  await expect(goalY).toHaveValue("0.2");
+  await expect(page.getByText("Clear", { exact: true })).toBeVisible();
+
+  await page.getByText("Open the path data table").click();
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("does not parse `.aresroutine` files");
+  await expect(page.getByRole("note")).toContainText("validate physical clearance");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the first FTC simulation lesson practices bounded evidence without page overflow at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...firstSimulationLesson, content: "# Run your first FTC simulation\n\n![Studio dashboard showing project and simulator entry points](/academy/studio-3.1.1/dashboard.png)\n\n<evidencelevelscenarios />" } }
+        : { documents: [firstSimulationLesson] }),
+    });
+  });
+
+  await page.goto("/academy/run-first-ftc-simulation?path=robotics-foundations", {
+    waitUntil: "networkidle",
+  });
+  const screenshot = page.getByRole("img", {
+    name: "Studio dashboard showing project and simulator entry points",
+  });
+  await screenshot.scrollIntoViewIfNeeded();
+  await expect(screenshot).toBeVisible();
+  await expect.poll(() => screenshot.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(page.getByRole("heading", { name: "Choose the Lowest Useful Evidence Level" })).toBeVisible();
+
+  const choices = page.getByRole("combobox", { name: "Lowest useful evidence level" });
+  await choices.nth(0).selectOption({ label: "Unit test" });
+  await choices.nth(1).selectOption({ label: "Local simulation" });
+  await choices.nth(2).selectOption({ label: "Restrained physical test" });
+  await page.getByRole("button", { name: "Check evidence choices" }).click();
+
+  await expect(page.getByText("3 of 3 choices supported.")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("do not replace the team safety procedure");
+  await expectNoHorizontalOverflow(page);
 });

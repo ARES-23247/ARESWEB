@@ -7,9 +7,10 @@ controller channel. This lesson teaches a simple identity record and a safe way 
 collision. Complete [Choose and Read Robot Sensors](/academy/electrical-sensors?path=electrical-systems-diagnostics)
 first. No powered robot is required for the lesson model.
 
-The pinned ARES topology model keeps a device ID, parent ID, port, CAN ID, CAN bus, bus position,
-and connection type. A subsystem connection can also store an FTC hardware-map name or an FRC
-channel. Not every device uses every field. The useful fields depend on the platform and connection.
+ARES 13 keeps the shared topology wire format in the `telemetry-schema` module. The format has a
+schema version plus a device ID, parent ID, port, CAN ID, CAN bus, bus position, and connection
+type. A subsystem connection can also store an FTC hardware-map name or an FRC channel. Not every
+device uses every field. The useful fields depend on the platform and connection.
 
 ## Vocabulary
 

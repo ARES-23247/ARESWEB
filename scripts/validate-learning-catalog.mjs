@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
@@ -7,6 +7,7 @@ import { analyzeLearningReadability } from "./learning-readability.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_ROOT = path.join(ROOT, "content", "learning");
+const PUBLIC_ROOT = path.join(ROOT, "public");
 const CATALOG_PATH = path.join(CONTENT_ROOT, "catalog.json");
 const SOURCE_AUTHORITIES_PATH = path.join(CONTENT_ROOT, "source-authorities.json");
 const LEGACY_PLAN_PATH = path.join(CONTENT_ROOT, "legacy-migration-plan.json");
@@ -15,6 +16,8 @@ const PUBLISHED_REFRESH_PLAN_PATH = path.join(CONTENT_ROOT, "published-refresh-p
 const ROBOTICS_CURRICULUM_PLAN_PATH = path.join(CONTENT_ROOT, "robotics-curriculum-plan.json");
 const SIM_REGISTRY_PATH = path.join(ROOT, "src", "sims", "simRegistry.json");
 const CURRICULUM_SOURCE_REQUESTS_PATH = path.join(CONTENT_ROOT, "curriculum-source-requests.json");
+const FRONTEND_LEARNING_CONTENT_PATH = path.join(ROOT, "src", "lib", "learningContent.ts");
+const FUNCTIONS_LEARNING_CONTENT_PATH = path.join(ROOT, "functions", "src", "lib", "learningContent.ts");
 const OUTPUT_PATH = path.join(ROOT, "build", "learning-content-import.json");
 const SUBJECTS = new Set(["robotics-engineering", "mathematics-data", "computing-ai", "physics-applied-science"]);
 const CONTENT_TYPES = new Set(["lesson", "guided-lab", "tutorial", "reference", "interactive"]);
@@ -22,8 +25,10 @@ const LEVELS = new Set(["beginner", "intermediate", "advanced"]);
 const PLATFORMS = new Set(["web", "simulator", "ftc", "frc", "hardware-neutral"]);
 const SAFETY_SCOPES = new Set(["none", "simulation-only", "bench-testing", "physical-robot"]);
 const PATH_IDS = new Set([
+  "areslib-engineering-reference",
   "robotics-foundations",
   "ftc-robot-with-ares",
+  "frc-robot-with-ares",
   "controls-localization-autonomous",
   "math-for-robotics",
   "ai-ml-foundations",
@@ -47,6 +52,35 @@ const ROBOTICS_TRACK_IDS = new Set([
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function constArrayBody(source, declarationName) {
+  const declaration = new RegExp(
+    `export const ${declarationName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as const;`,
+    "u",
+  ).exec(source);
+  assert(declaration, `Could not find the ${declarationName} const array.`);
+  return declaration[1];
+}
+
+export function validateLearningPathAllowlistContract(frontendSource, functionsSource) {
+  const frontendIds = [...constArrayBody(frontendSource, "LEARNING_PATHS")
+    .matchAll(/\bid:\s*"([a-z0-9-]+)"/gu)]
+    .map((match) => match[1]);
+  const functionsIds = [...constArrayBody(functionsSource, "LEARNING_PATH_IDS")
+    .matchAll(/"([a-z0-9-]+)"/gu)]
+    .map((match) => match[1]);
+  const validatorIds = [...PATH_IDS];
+
+  assert(frontendIds.length > 0, "Frontend LEARNING_PATHS must not be empty.");
+  assert(new Set(frontendIds).size === frontendIds.length, "Frontend LEARNING_PATHS contains duplicate IDs.");
+  assert(new Set(functionsIds).size === functionsIds.length, "Functions LEARNING_PATH_IDS contains duplicate IDs.");
+  assert(JSON.stringify(functionsIds) === JSON.stringify(frontendIds),
+    "Functions LEARNING_PATH_IDS must exactly match frontend LEARNING_PATHS order and IDs.");
+  assert(JSON.stringify(validatorIds) === JSON.stringify(frontendIds),
+    "Catalog PATH_IDS must exactly match frontend LEARNING_PATHS order and IDs.");
+
+  return { pathIds: frontendIds };
 }
 
 function assertStringList(value, field, slug, maxItems) {
@@ -185,8 +219,8 @@ export function validateAcademySimRegistry(registry) {
 }
 
 export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan) {
-  assert(sourceRequests?.schemaVersion === 1 && sourceRequests.mode === "proposal-only",
-    "Curriculum source requests must remain a proposal-only version 1 document.");
+  assert(sourceRequests?.schemaVersion === 2 && sourceRequests.mode === "proposal-only",
+    "Curriculum source requests must remain a proposal-only version 2 document.");
   assert(Array.isArray(sourceRequests.requests), "Curriculum source requests must be an array.");
   const allowedTypes = new Set([
     "authentic-media",
@@ -194,6 +228,15 @@ export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan)
     "process-review",
     "physical-evidence",
     "mixed",
+  ]);
+  const allowedEvidenceStates = new Set(["missing", "partial"]);
+  const allowedBlockers = new Set([
+    "approved-team-artifact",
+    "current-official-reference",
+    "current-product-screenshot",
+    "current-season-release",
+    "physical-student-evidence",
+    "team-process-review",
   ]);
   const gaps = new Map(curriculumPlan.tracks.flatMap((track) => track.lessons)
     .filter((lesson) => lesson.sourceGap !== null)
@@ -209,6 +252,31 @@ export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan)
     assert(request.status === "requested", `${request.lessonId}: unverified source requests must remain requested.`);
     assert(typeof request.acceptance === "string" && request.acceptance.trim(),
       `${request.lessonId}: source request acceptance evidence is required.`);
+    assert(request.review && typeof request.review === "object",
+      `${request.lessonId}: a dated evidence review is required.`);
+    assert(/^\d{4}-\d{2}-\d{2}$/u.test(request.review.reviewedAt),
+      `${request.lessonId}: reviewedAt must be an ISO calendar date.`);
+    assert(allowedEvidenceStates.has(request.review.evidenceState),
+      `${request.lessonId}: evidenceState must be missing or partial while the request remains open.`);
+    assert(Array.isArray(request.review.remainingBlockers) && request.review.remainingBlockers.length > 0,
+      `${request.lessonId}: at least one remaining blocker is required.`);
+    assert(new Set(request.review.remainingBlockers).size === request.review.remainingBlockers.length,
+      `${request.lessonId}: remaining blockers must not contain duplicates.`);
+    for (const blocker of request.review.remainingBlockers) {
+      assert(allowedBlockers.has(blocker), `${request.lessonId}: invalid remaining blocker ${blocker}.`);
+    }
+    assert(Array.isArray(request.review.evidence) && request.review.evidence.length <= 10,
+      `${request.lessonId}: review evidence must be a bounded array.`);
+    for (const evidence of request.review.evidence) {
+      assert(typeof evidence === "string" && evidence.trim(),
+        `${request.lessonId}: review evidence entries must be non-empty strings.`);
+    }
+    if (request.review.evidenceState === "partial") {
+      assert(request.review.evidence.length > 0,
+        `${request.lessonId}: partial evidence requires at least one exact evidence reference.`);
+    }
+    assert(typeof request.review.note === "string" && request.review.note.trim(),
+      `${request.lessonId}: a concise review note is required.`);
   }
   for (const lessonId of gaps.keys()) {
     assert(requestedLessons.has(lessonId), `${lessonId}: declared curriculum source gap has no tracked request.`);
@@ -218,11 +286,14 @@ export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan)
 
 export function validateSourceAuthorities(authorities) {
   assert(authorities?.schemaVersion === 1, "source-authorities.json schemaVersion must be 1.");
+  assert(authorities.mode === "current-only",
+    "source-authorities.json must use current-only mode.");
   assert(authorities.repositories && typeof authorities.repositories === "object", "Source-authority repositories are required.");
   for (const [repository, policy] of Object.entries(authorities.repositories)) {
     assert(/^[A-Za-z0-9._-]+$/u.test(repository), `${repository}: invalid authority repository name.`);
     assert(policy?.current && typeof policy.current === "object", `${repository}: current authority is required.`);
-    assert(Array.isArray(policy.approved) && policy.approved.length > 0, `${repository}: at least one approved authority is required.`);
+    assert(Array.isArray(policy.approved) && policy.approved.length === 1,
+      `${repository}: current-only mode requires exactly one approved authority.`);
     assertCommit(policy.current.commit, `${repository}.current.commit`);
     assert(typeof policy.current.revision === "string" && policy.current.revision.trim(), `${repository}.current.revision is required.`);
     const approvedKeys = new Set();
@@ -258,6 +329,35 @@ export function assertStudentLedRobotVerificationLanguage(content, slug) {
     mentorGatePatterns.every((pattern) => !pattern.test(content)),
     `${slug}: robot verification must be student-led; reserve required mentor approval for website posts.`,
   );
+}
+
+export function assertCurrentNamedAresVersions(content, slug, generatedFrom) {
+  const namedVersions = [
+    {
+      pattern: /\b(ARES(?:Lib|\s+FTC|\s+FRC)?|FTC Starter|FRC Starter|(?:ARES Robotics )?Studio)\s+v?(\d+\.\d+\.\d+)\b/giu,
+      expectedVersion(name) {
+        if (/Studio$/iu.test(name)) return generatedFrom.studioVersion;
+        if (/^(?:ARES\s+)?FTC|^FTC Starter$/iu.test(name)) return generatedFrom.ftcStarterVersion;
+        if (/^(?:ARES\s+)?FRC|^FRC Starter$/iu.test(name)) return generatedFrom.frcStarterVersion;
+        return generatedFrom.aresVersion;
+      },
+    },
+    {
+      pattern: /\bcurrent\s+(FTC|FRC)\s+v?(\d+\.\d+\.\d+)\b/giu,
+      expectedVersion(name) {
+        return /^FTC$/iu.test(name) ? generatedFrom.ftcStarterVersion : generatedFrom.frcStarterVersion;
+      },
+    },
+  ];
+  for (const { pattern, expectedVersion } of namedVersions) {
+    for (const match of content.matchAll(pattern)) {
+      const expected = expectedVersion(match[1]);
+      assert(
+        match[2] === expected,
+        `${slug}: ${match[0]} is stale; the current source authority declares ${expected}.`,
+      );
+    }
+  }
 }
 
 export function assertMiddleSchoolLearningQuality(content, slug) {
@@ -302,6 +402,14 @@ export function assertSubstantialLessonContract(content, slug) {
       `${slug}: substantial lesson is missing the ${requiredSection} section.`);
   }
   return readability;
+}
+
+export function assertAresLibReferenceContract(document) {
+  if (!document.contentFile?.startsWith("areslib-reference/")) return;
+  assert(
+    document.instructionalContractVersion === 2,
+    `${document.slug}: ARESLib references must use instructionalContractVersion 2.`,
+  );
 }
 
 export function parseAresVersions(value) {
@@ -358,6 +466,52 @@ export function registerPathOrder(pathOrders, pathId, order, slug) {
   pathOrders.set(pathOrderKey, slug);
 }
 
+export function validateLocalLearningImageReferences(content, slug) {
+  const references = [...content.matchAll(/!\[([^\]]*)\]\(\s*(\/[^)\s]+)(?:\s+["'][^"']*["'])?\s*\)/gu)]
+    .map((match) => ({ alt: match[1].trim(), url: match[2] }));
+
+  for (const reference of references) {
+    assert(reference.alt.length >= 10,
+      `${slug}: local learning images need descriptive alt text of at least 10 characters.`);
+    const pathname = decodeURIComponent(reference.url.split(/[?#]/u)[0]);
+    assert(!pathname.split("/").includes(".."), `${slug}: local image URL must not traverse directories.`);
+    assert(pathname.startsWith("/academy/"),
+      `${slug}: local learning images must live under the public /academy/ directory.`);
+    reference.pathname = pathname;
+  }
+
+  return references;
+}
+
+export function validateLearningPathContract(
+  catalog,
+  pathId,
+  { minimumDocuments = 1, requireSelfContained = false } = {},
+) {
+  const sequence = catalog.documents
+    .flatMap((document) => {
+      const membership = document.pathMemberships.find((item) => item.pathId === pathId);
+      return membership ? [{ document, order: membership.order }] : [];
+    })
+    .sort((left, right) => left.order - right.order || left.document.slug.localeCompare(right.document.slug));
+
+  assert(sequence.length >= minimumDocuments,
+    `${pathId}: expected at least ${minimumDocuments} lessons, found ${sequence.length}.`);
+  const seen = new Set();
+  sequence.forEach(({ document, order }, index) => {
+    assert(order === index + 1,
+      `${pathId}: ${document.slug} must use contiguous path order ${index + 1}, found ${order}.`);
+    if (requireSelfContained) {
+      for (const prerequisite of document.prerequisites) {
+        assert(seen.has(prerequisite),
+          `${pathId}: ${document.slug} prerequisite ${prerequisite} must appear earlier in the same path.`);
+      }
+    }
+    seen.add(document.slug);
+  });
+  return { documents: sequence.length, slugs: sequence.map(({ document }) => document.slug) };
+}
+
 async function verifyCurrentAresVersions(authorities, generatedFrom) {
   const current = authorities.repositories["ARES-Robotics"]?.current;
   assert(current, "ARES-Robotics current authority is required for remote version verification.");
@@ -405,8 +559,14 @@ async function verifyRemoteSource(source, cache) {
 }
 
 export async function validateLearningCatalog({ write = false, verifyRemote = false } = {}) {
+  const learningPathAllowlist = validateLearningPathAllowlistContract(
+    await readFile(FRONTEND_LEARNING_CONTENT_PATH, "utf8"),
+    await readFile(FUNCTIONS_LEARNING_CONTENT_PATH, "utf8"),
+  );
   const catalog = JSON.parse(await readFile(CATALOG_PATH, "utf8"));
   const authorities = validateSourceAuthorities(JSON.parse(await readFile(SOURCE_AUTHORITIES_PATH, "utf8")));
+  assert(Object.keys(authorities.repositories).length === 1 && authorities.repositories["ARES-Robotics"],
+    "Academy curriculum accepts only the current ARES-Robotics monorepo authority.");
   const academySims = validateAcademySimRegistry(JSON.parse(await readFile(SIM_REGISTRY_PATH, "utf8")));
   assert(catalog.catalogVersion === 1, "catalogVersion must be 1.");
   assert(catalog.generatedFrom && typeof catalog.generatedFrom === "object", "generatedFrom release provenance is required.");
@@ -444,6 +604,7 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(SAFETY_SCOPES.has(document.safetyScope), `${slug}: invalid safetyScope.`);
     assert([1, 2].includes(document.instructionalContractVersion ?? 1),
       `${slug}: instructionalContractVersion must be 1 or 2.`);
+    assertAresLibReferenceContract(document);
     assert(Array.isArray(document.pathMemberships), `${slug}: pathMemberships must be an array.`);
     const assignedPaths = new Set();
     for (const membership of document.pathMemberships) {
@@ -461,7 +622,15 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(content.startsWith("# "), `${slug}: Markdown must begin with one level-one heading.`);
     assert(content.length >= 300, `${slug}: Markdown is too short to be a useful lesson draft.`);
     assert(!/\bTODO\b|lorem ipsum|placeholder content/i.test(content), `${slug}: unresolved placeholder text is not allowed.`);
+    assertCurrentNamedAresVersions(content, slug, catalog.generatedFrom);
     assertMiddleSchoolLearningQuality(content, slug);
+    for (const image of validateLocalLearningImageReferences(content, slug)) {
+      const imagePath = path.resolve(PUBLIC_ROOT, `.${image.pathname}`);
+      assert(imagePath.startsWith(`${PUBLIC_ROOT}${path.sep}`),
+        `${slug}: local image URL escapes the public directory.`);
+      const imageInfo = await stat(imagePath).catch(() => null);
+      assert(imageInfo?.isFile(), `${slug}: local image does not exist at ${image.pathname}.`);
+    }
     if (document.instructionalContractVersion === 2) {
       assertSubstantialLessonContract(content, slug);
     }
@@ -508,6 +677,8 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
       },
     });
   }
+  assert(remoteSources.every((source) => source.current),
+    "Academy curriculum source references must use the current ARES-Robotics monorepo authority.");
 
   const legacyPlan = JSON.parse(await readFile(LEGACY_PLAN_PATH, "utf8"));
   assert(legacyPlan.planVersion === 1 && legacyPlan.mode === "proposal-only", "Legacy migration plan must remain proposal-only version 1.");
@@ -565,6 +736,10 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   for (const document of catalog.documents) {
     for (const prerequisite of document.prerequisites) assert(slugs.has(prerequisite), `${document.slug}: prerequisite ${prerequisite} is absent from this catalog.`);
   }
+  const frcPath = validateLearningPathContract(catalog, "frc-robot-with-ares", {
+    minimumDocuments: 12,
+    requireSelfContained: true,
+  });
 
   const roboticsCurriculumPlan = JSON.parse(await readFile(ROBOTICS_CURRICULUM_PLAN_PATH, "utf8"));
   const roboticsCurriculum = validateRoboticsCurriculumPlan(roboticsCurriculumPlan, catalog);
@@ -601,12 +776,14 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     proposedCrossLinks: crossLinkPlan.documents.length,
     proposedPublishedRefreshes: publishedRefreshPlan.documents.length,
     verifiedSources: verifyRemote ? new Set(remoteSources.map((source) => source.url)).size : 0,
-    historicalSources: remoteSources.filter((source) => !source.current).length,
+    currentSources: remoteSources.length,
     plannedRoboticsTracks: roboticsCurriculum.tracks,
     plannedRoboticsLessons: roboticsCurriculum.lessons,
     plannedExistingInteractions: roboticsCurriculum.existingInteractionCandidates,
     curriculumSourceRequests: curriculumSourceRequests.requests,
     embeddedInteractions,
+    learningPathIds: learningPathAllowlist.pathIds.length,
+    frcPathLessons: frcPath.documents,
     output: write ? OUTPUT_PATH : null,
   };
 }
@@ -618,5 +795,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   });
   const interactionVerb = result.embeddedInteractions === 1 ? "is" : "are";
   const interactionNoun = result.embeddedInteractions === 1 ? "interaction" : "interactions";
-  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. The robotics expansion contract contains ${result.plannedRoboticsLessons} lessons across ${result.plannedRoboticsTracks} tracks and ${result.plannedExistingInteractions} existing-lesson interaction upgrades; ${result.embeddedInteractions} reviewed ${interactionNoun} ${interactionVerb} currently embedded. ${result.curriculumSourceRequests} evidence gaps have tracked requests. ${result.historicalSources} source references intentionally retain reviewed historical pins.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
+  console.log(`Validated ${result.documents} learning documents, ${result.legacyActions} legacy actions, ${result.proposedPublishedRefreshes} published refreshes, and ${result.proposedCrossLinks} proposed cross-links across ${result.paths} populated draft paths. The self-contained FRC path contains ${result.frcPathLessons} lessons. The robotics expansion contract contains ${result.plannedRoboticsLessons} lessons across ${result.plannedRoboticsTracks} tracks and ${result.plannedExistingInteractions} existing-lesson interaction upgrades; ${result.embeddedInteractions} reviewed ${interactionNoun} ${interactionVerb} currently embedded. ${result.curriculumSourceRequests} evidence gaps have tracked requests. All ${result.currentSources} source references use the current ARES-Robotics monorepo authority.${result.verifiedSources ? ` Recomputed ${result.verifiedSources} pinned Git blob hashes and verified the current ARES monorepo version line.` : ""}${result.output ? ` Prepared ${result.output}.` : ""}`);
 }

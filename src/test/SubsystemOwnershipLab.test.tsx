@@ -1,28 +1,120 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import SubsystemOwnershipLab, { chooseSubsystemPath } from "@/sims/subsystem-ownership-lab";
+import SubsystemOwnershipLab, {
+  evaluateSubsystemPlan,
+  type EvidenceState,
+} from "@/sims/subsystem-ownership-lab";
+
+const COMPLETE: EvidenceState = {
+  pathContract: true,
+  units: true,
+  inputs: true,
+  neutral: true,
+  tuningAndActions: true,
+  simulation: true,
+  verification: true,
+};
+const EMPTY: EvidenceState = {
+  pathContract: false,
+  units: false,
+  inputs: false,
+  neutral: false,
+  tuningAndActions: false,
+  simulation: false,
+  verification: false,
+};
 
 describe("SubsystemOwnershipLab", () => {
-  it("chooses a bounded starting path from the two source-backed questions", () => {
-    expect(chooseSubsystemPath(false, true).choice).toBe("Generated starter");
-    expect(chooseSubsystemPath(true, true).choice).toBe("Hybrid registration");
-    expect(chooseSubsystemPath(false, false).choice).toBe("Hand-authored subsystem");
+  it("maps all current ARES implementation paths to their exact ownership", () => {
+    expect(evaluateSubsystemPlan("descriptor", COMPLETE)).toMatchObject({
+      implementation: "DECLARATIVE_GENERATED",
+      ownership: "GENERATED_DO_NOT_EDIT",
+    });
+    expect(evaluateSubsystemPlan("editable", COMPLETE)).toMatchObject({
+      implementation: "GENERATED_STARTER",
+      ownership: "GENERATED_STARTER",
+    });
+    expect(evaluateSubsystemPlan("existing", COMPLETE)).toMatchObject({
+      implementation: "HAND_AUTHORED",
+      ownership: "USER_OWNED",
+    });
   });
 
-  it("supports native controls, ownership details, and deterministic reset", () => {
+  it("keeps missing evidence visible and never calls an incomplete plan ready", () => {
+    const result = evaluateSubsystemPlan("existing", { ...EMPTY, units: true });
+    expect(result.readyForPreview).toBe(false);
+    expect(result.missingEvidence).toEqual([
+      "Hand-authored metadata",
+      "Cached input contract",
+      "Fault and neutral rules",
+      "Tuning and actions",
+      "Simulation boundary",
+      "Evidence ladder",
+    ]);
+    expect(result.guidance).toContain("Name the module");
+  });
+
+  it("supports native source and evidence controls with deterministic reset", () => {
     render(<SubsystemOwnershipLab />);
-    expect(screen.getByText("Generated starter")).toBeVisible();
-    fireEvent.click(screen.getByRole("checkbox", { name: /Proven Kotlin already exists/u }));
-    expect(screen.getByText("Hybrid registration")).toBeVisible();
-    fireEvent.click(screen.getByText("Compare artifact ownership"));
-    expect(screen.getByRole("table")).toHaveTextContent("Existing custom Kotlin");
+    fireEvent.click(
+      screen.getByRole("radio", { name: /Proven or custom Kotlin exists/u }),
+    );
+    expect(screen.getByText("HAND_AUTHORED", { selector: "dd" })).toBeVisible();
+    expect(screen.getByText("USER_OWNED", { selector: "dd" })).toBeVisible();
+
+    for (const name of [
+      "Hand-authored metadata",
+      "Units and direction",
+      "Cached input contract",
+      "Fault and neutral rules",
+      "Tuning and actions",
+      "Simulation boundary",
+      "Evidence ladder",
+    ]) {
+      fireEvent.click(
+        screen.getByRole("checkbox", { name: new RegExp(name, "u") }),
+      );
+    }
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Checklist filled in for source preview",
+    );
+
+    fireEvent.click(
+      screen.getByRole("radio", { name: /New editable Kotlin is needed/u }),
+    );
+    expect(
+      screen.getByRole("checkbox", { name: /Starter path rules/u }),
+    ).not.toBeChecked();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 evidence area still missing",
+    );
+
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    expect(screen.getByText("Generated starter")).toBeVisible();
+    expect(
+      screen.getByText("DECLARATIVE_GENERATED", { selector: "dd" }),
+    ).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "7 evidence areas still missing",
+    );
   });
 
-  it("states that the guide cannot validate source, safety, or hardware", () => {
+  it("exposes a precise fidelity boundary", () => {
     render(<SubsystemOwnershipLab />);
-    expect(screen.getByRole("note")).toHaveTextContent("does not inspect Kotlin");
-    expect(screen.getByRole("note")).toHaveTextContent("approve physical operation");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "does not inspect Kotlin or a descriptor",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent("command hardware");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "all seven planning boxes",
+    );
+  });
+
+  it("explains path-specific capability action ownership", () => {
+    expect(evaluateSubsystemPlan("descriptor", COMPLETE).guidance).toContain(
+      "target fields",
+    );
+    expect(evaluateSubsystemPlan("existing", COMPLETE).guidance).toContain(
+      "catalog action keys",
+    );
   });
 });

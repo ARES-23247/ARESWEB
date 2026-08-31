@@ -12,6 +12,7 @@ Do not publish from an active robot feature branch, a dirty worktree, or an unpi
 pnpm run content:validate
 pnpm run content:verify
 pnpm run content:prepare
+pnpm run content:release-validate
 ```
 
 `content:validate` performs deterministic offline schema, reviewed source-authority, unique path-order, published-refresh, immutable commit-pinning, student-led robot-verification language, and middle-school readability checks. Every lesson must include clear sections and at least one code-native Mermaid diagram with a useful `%% aria:` summary. `content:readability` reports the estimated grade, word count, sentence average, and longest sentence. The estimate catches regressions but does not replace a student usability review.
@@ -28,6 +29,14 @@ render a truthful unavailable-for-Academy note.
 
 Preparation normalizes Markdown line endings to LF so the staged record and its
 review digest are identical on Windows, Linux, and CI.
+
+`content:release-validate` prepares the ignored import artifact, then verifies
+`content/learning/release-candidate.json`. It requires the candidate's source
+authority to match the prepared catalog, recomputes every approval digest, and
+proves that the two new-draft batches exactly partition all currently stageable
+documents while the refresh batch exactly matches the guarded refresh plan.
+The candidate stores no reviewer identity or approval date and is not an
+approval to publish. CI runs this check after remote source verification.
 
 ## Legacy migration sequence
 

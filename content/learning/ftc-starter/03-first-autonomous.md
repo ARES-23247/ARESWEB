@@ -8,7 +8,7 @@ real routine is added. This safe default keeps an empty project from pretending 
 
 Before starting, complete [Map FTC Controls Through Redux](/academy/ftc-starter-controller-bindings?path=ftc-robot-with-ares)
 and [Use Units and Coordinate Frames](/academy/robot-coordinate-contracts?path=controls-localization-autonomous).
-You need a local FTC Starter project and ARES Robotics Studio 2.0.1.
+You need a local FTC Starter project and ARES Robotics Studio 3.1.2.
 
 ## Vocabulary
 
@@ -30,20 +30,34 @@ heading fixed. The field preview shows the whole robot footprint inside the fiel
 That preview is useful evidence, but it has limits. It does not prove wheel grip, motor direction,
 or obstacle clearance on a physical field. Those claims need later tests at the correct boundary.
 
+Studio saves the routine as a typed `RoutineDocument`. The compiler lowers each step into an ARES
+task tree. A sequence runs children in order. Parallel groups run children together. A resource
+check rejects parallel children that claim the same robot part. Bounded waits fail instead of
+waiting forever. The runtime then gives that task tree to `TaskExecutor`, which returns Redux
+actions for the lifecycle owner to dispatch.
+
 ## Visual model
 
 ```mermaid
-%% aria: A routine draft passes through review, save and generation, project verification, local simulation, and later physical testing.
+%% aria: A routine draft passes through review, typed compilation, task resource checks, project verification, local simulation, and later physical testing.
 flowchart LR
   A["Routine draft"] --> B["Inspect field preview"]
-  B --> C["Save and Generate"]
-  C --> D["verifyAresProject"]
-  D --> E["Local Simulator"]
-  E --> F["Student-led physical test"]
+  B --> C["Save typed RoutineDocument"]
+  C --> D["Compile task tree"]
+  D --> E["Check task resources"]
+  E --> F["verifyAresProject"]
+  F --> G["Local Simulator"]
+  G --> H["Student-led physical test"]
 ```
 
 ARES uses one routine format. A drive goal is one step inside that routine. Starting pose and match
 selection belong to the routine's **Autonomous entry** settings.
+
+![ARES Robotics Studio Routine Builder showing a Light Practice routine on the left and its square
+FTC field with waypoint axes on the right.](/academy/studio-3.1.1/autonomous-builder.png)
+
+*Studio 3.1.2 shows routine steps and field placement together. Review both views, then save,
+generate, build, and simulate; the screenshot alone is not execution evidence.*
 
 ## Hands-on activity
 
@@ -59,9 +73,12 @@ selection belong to the routine's **Autonomous entry** settings.
 10. Enable **Autonomous entry** only if this routine should appear in the match selector.
 11. Choose **Save and Generate**.
 12. Review the `.aresroutine`, autonomous catalog, and generated Kotlin changes.
-13. Run `verifyAresProject` and the simulator tests.
-14. Start the generated autonomous OpMode in Local Simulator.
-15. Compare the planned path, simulated pose, and estimated pose.
+13. Find the typed `RoutineDocument` and identify its step order.
+14. Mark any parallel steps and list the robot resources they could share.
+15. Confirm every sensor wait has a finite timeout.
+16. Run `verifyAresProject` and the simulator tests.
+17. Start the generated autonomous OpMode in Local Simulator.
+18. Compare the planned path, simulated pose, and estimated pose.
 
 Use the concept lab below before saving. Move the goal until the line clears the circle. Then make
 the robot radius larger and observe the required margin.
@@ -93,6 +110,8 @@ robot. Record what each lab can show and what it cannot show.
 | --- | --- |
 | No actions appear | Open the repository root and inspect `.ares/action-catalog.json`. |
 | Routine will not save | Fix missing references, invalid numbers, recursion, resources, or field bounds. |
+| Parallel steps conflict | Identify the shared task resource and change the grouping or ownership. |
+| A sensor wait never ends | Add a finite timeout and verify the failure path. |
 | Autonomous does not appear | Enable its autonomous entry and check the autonomous catalog. |
 | Generated project is stale | Use **Save and Generate**, then review the new files. |
 | Robot takes the mirrored route twice | Keep alliance mirroring at one named control boundary. |
@@ -110,6 +129,7 @@ Create a short evidence packet with:
 - the changed canonical and generated file names;
 - the `verifyAresProject` result;
 - one simulator screenshot or log reference;
+- the compiled group order, resource check, and timeout notes;
 - one observation about path agreement; and
 - one limit that still needs a physical test.
 
@@ -134,5 +154,6 @@ records and write the smallest next test.
 
 Review [Plan Smooth Motion with Limits](/academy/controls-motion-profiles?path=controls-localization-autonomous)
 when you need better setpoints. Continue to [Estimate Motion with Encoders and Odometry](/academy/controls-odometry?path=controls-localization-autonomous)
-to compare commanded movement with measured movement. Use Local Simulator before any student-led
-physical verification.
+to compare commanded movement with measured movement. Read
+[Build Safe Task Sequences in ARESLib](/academy/programming-safe-task-sequences?path=controls-localization-autonomous)
+to author typed task trees directly. Use Local Simulator before any student-led physical verification.

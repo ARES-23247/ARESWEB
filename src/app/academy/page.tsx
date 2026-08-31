@@ -56,10 +56,9 @@ export default function AcademyPage() {
   const isAresLib = pathname.startsWith("/docs");
   const basePath = isAresLib ? "/docs" : "/academy";
   const requestedPath = useMemo(() => {
-    if (isAresLib) return null;
     const parsed = parseLearningFilters(new URLSearchParams(location.search));
     return parsed.pathId === "all" ? null : parsed.pathId;
-  }, [isAresLib, location.search]);
+  }, [location.search]);
 
   const userRole = authorizedUser?.role;
   const isEditor = Boolean(
@@ -454,7 +453,7 @@ export default function AcademyPage() {
               <LearningLibraryLanding
                 documents={allDocs}
                 library={isAresLib ? "areslib" : "academy"}
-                progress={isAresLib ? undefined : academyProgress}
+                progress={academyProgress}
               />
             )}
 
@@ -503,34 +502,32 @@ export default function AcademyPage() {
 
                 <LearningMetadataPanel document={currentDoc} />
 
-                {!isAresLib && (
-                  <section className="mb-8 border border-white/10 bg-white/[0.03] p-5" aria-labelledby="lesson-progress-heading">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h2 id="lesson-progress-heading" className="font-heading text-lg font-black uppercase text-white">
-                          Your local progress
-                        </h2>
-                        <p className="mt-1 text-sm leading-6 text-marble/65">
-                          This completion mark stays only in this browser. It is not connected to your name or ARES account.
-                          {!academyProgress.storageAvailable && " Browser storage is unavailable, so this mark will last only until the page closes."}
+                <section className="mb-8 border border-white/10 bg-white/[0.03] p-5" aria-labelledby="lesson-progress-heading">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 id="lesson-progress-heading" className="font-heading text-lg font-black uppercase text-white">
+                        Your local progress
+                      </h2>
+                      <p className="mt-1 text-sm leading-6 text-marble/65">
+                        This completion mark stays only in this browser. It is not connected to your name or ARES account.
+                        {!academyProgress.storageAvailable && " Browser storage is unavailable, so this mark will last only until the page closes."}
+                      </p>
+                      {pathNavigation.pathId && (
+                        <p className="mt-2 text-xs font-bold uppercase tracking-wider text-ares-gold">
+                          {labelFor(LEARNING_PATHS, pathNavigation.pathId)} · Lesson {pathNavigation.position + 1} of {pathNavigation.documents.length}
                         </p>
-                        {pathNavigation.pathId && (
-                          <p className="mt-2 text-xs font-bold uppercase tracking-wider text-ares-gold">
-                            {labelFor(LEARNING_PATHS, pathNavigation.pathId)} · Lesson {pathNavigation.position + 1} of {pathNavigation.documents.length}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        aria-pressed={academyProgress.completedSlugs.has(currentDoc.slug)}
-                        onClick={() => academyProgress.toggleCompleted(currentDoc.slug)}
-                        className={`min-h-11 shrink-0 border px-5 py-3 text-xs font-black uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${academyProgress.completedSlugs.has(currentDoc.slug) ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white hover:border-ares-cyan"}`}
-                      >
-                        {academyProgress.completedSlugs.has(currentDoc.slug) ? "Completed — undo" : "Mark lesson complete"}
-                      </button>
+                      )}
                     </div>
-                  </section>
-                )}
+                    <button
+                      type="button"
+                      aria-pressed={academyProgress.completedSlugs.has(currentDoc.slug)}
+                      onClick={() => academyProgress.toggleCompleted(currentDoc.slug)}
+                      className={`min-h-11 shrink-0 border px-5 py-3 text-xs font-black uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${academyProgress.completedSlugs.has(currentDoc.slug) ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white hover:border-ares-cyan"}`}
+                    >
+                      {academyProgress.completedSlugs.has(currentDoc.slug) ? "Completed — undo" : "Mark lesson complete"}
+                    </button>
+                  </div>
+                </section>
 
                 {currentDoc.prerequisites.length > 0 && (
                   <section className="mb-8 border-l-4 border-ares-gold bg-ares-gold/[0.06] p-5" aria-labelledby="prerequisites-heading">

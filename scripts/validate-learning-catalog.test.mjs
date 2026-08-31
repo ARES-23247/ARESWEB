@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertAresLibReferenceContract,
   assertMiddleSchoolLearningQuality,
   assertSubstantialLessonContract,
   assertStudentLedRobotVerificationLanguage,
+  assertCurrentNamedAresVersions,
   normalizeLearningMarkdown,
   parseAresVersions,
   registerPathOrder,
+  validateLearningPathAllowlistContract,
+  validateLearningPathContract,
+  validateLocalLearningImageReferences,
   resolveApprovedAuthority,
   validateSourceReference,
   validateSourceAuthorities,
@@ -15,6 +20,24 @@ import {
 } from "./validate-learning-catalog.mjs";
 
 describe("learning catalog preparation", () => {
+  it("keeps frontend, Functions, and catalog learning-path allowlists aligned", () => {
+    const frontend = `export const LEARNING_PATHS = [
+      { id: "robotics-foundations", label: "Foundations" },
+      { id: "ftc-robot-with-ares", label: "FTC" },
+    ] as const;`;
+    const functions = `export const LEARNING_PATH_IDS = [
+      "robotics-foundations",
+      "ftc-robot-with-ares",
+    ] as const;`;
+
+    expect(() => validateLearningPathAllowlistContract(frontend, functions))
+      .toThrow(/Catalog PATH_IDS must exactly match/u);
+    expect(() => validateLearningPathAllowlistContract(
+      frontend,
+      functions.replace("ftc-robot-with-ares", "frc-robot-with-ares"),
+    )).toThrow(/Functions LEARNING_PATH_IDS must exactly match/u);
+  });
+
   it("normalizes Markdown line endings deterministically across operating systems", () => {
     expect(normalizeLearningMarkdown("  # Lesson\r\n\rBody\rMore\n  ")).toBe("# Lesson\n\nBody\nMore");
   });
@@ -57,17 +80,18 @@ describe("learning catalog preparation", () => {
     expect(() => parseAresVersions("not-a-property")).toThrow(/Invalid ARES version-property line/u);
   });
 
-  it("accepts current and historical pins but rejects undeclared source identities", () => {
+  it("accepts only the current pin and rejects undeclared source identities", () => {
     const current = { revision: "v2.0.0", commit: "b".repeat(40) };
     const historical = { revision: "v1.0.0", commit: "a".repeat(40) };
     const authorities = validateSourceAuthorities({
       schemaVersion: 1,
+      mode: "current-only",
       repositories: {
-        example: { current, approved: [historical, current] },
+        example: { current, approved: [current] },
       },
     });
 
-    expect(resolveApprovedAuthority(authorities, "example", historical.revision, historical.commit)).toEqual(historical);
+    expect(resolveApprovedAuthority(authorities, "example", historical.revision, historical.commit)).toBeNull();
     expect(resolveApprovedAuthority(authorities, "example", current.revision, current.commit)).toEqual(current);
     expect(resolveApprovedAuthority(authorities, "example", "v3.0.0", "c".repeat(40))).toBeNull();
     expect(resolveApprovedAuthority(authorities, "unknown", current.revision, current.commit)).toBeNull();
@@ -76,6 +100,7 @@ describe("learning catalog preparation", () => {
   it("requires the current source identity to be an approved immutable pin", () => {
     expect(() => validateSourceAuthorities({
       schemaVersion: 1,
+      mode: "current-only",
       repositories: {
         example: {
           current: { revision: "v2.0.0", commit: "b".repeat(40) },
@@ -85,10 +110,77 @@ describe("learning catalog preparation", () => {
     })).toThrow(/current authority must also be approved/u);
   });
 
+  it("rejects named ARES and Studio versions that drift behind the catalog authority", () => {
+    const generatedFrom = {
+      aresVersion: "13.0.1",
+      studioVersion: "3.1.2",
+      ftcStarterVersion: "13.1.0",
+      frcStarterVersion: "13.2.0",
+    };
+    expect(() => assertCurrentNamedAresVersions(
+      "ARES 13.0.1, ARES FTC 13.1.0, current FRC 13.2.0, and Studio 3.1.2 are current.",
+      "current-lesson",
+      generatedFrom,
+    )).not.toThrow();
+    expect(() => assertCurrentNamedAresVersions(
+      "This lesson uses the current FTC 12.0.0 season source.",
+      "stale-ftc-lesson",
+      generatedFrom,
+    )).toThrow(/current FTC 12\.0\.0 is stale/u);
+    expect(() => assertCurrentNamedAresVersions(
+      "Open ARES Robotics Studio 3.1.1.",
+      "stale-studio-lesson",
+      generatedFrom,
+    )).toThrow(/Studio 3\.1\.1 is stale/u);
+  });
+
+  it("requires accessible, bounded local Academy image references", () => {
+    expect(validateLocalLearningImageReferences(
+      "![Studio dashboard showing the project cards](/academy/studio-3.1.1/dashboard.png)",
+      "studio-tour",
+    )).toEqual([{
+      alt: "Studio dashboard showing the project cards",
+      pathname: "/academy/studio-3.1.1/dashboard.png",
+      url: "/academy/studio-3.1.1/dashboard.png",
+    }]);
+    expect(() => validateLocalLearningImageReferences(
+      "![](/academy/studio-3.1.1/dashboard.png)",
+      "missing-alt",
+    )).toThrow(/descriptive alt text/u);
+    expect(() => validateLocalLearningImageReferences(
+      "![Unsafe image path](/academy/../private.png)",
+      "unsafe-path",
+    )).toThrow(/must not traverse/u);
+    expect(() => validateLocalLearningImageReferences(
+      "![Wrong public directory](/images/studio.png)",
+      "wrong-directory",
+    )).toThrow(/public \/academy\//u);
+  });
+
+  it("rejects historical approvals and policies that are not current-only", () => {
+    const current = { revision: "v2.0.0", commit: "b".repeat(40) };
+    const historical = { revision: "v1.0.0", commit: "a".repeat(40) };
+    expect(() => validateSourceAuthorities({
+      schemaVersion: 1,
+      mode: "current-only",
+      repositories: {
+        example: { current, approved: [historical, current] },
+      },
+    })).toThrow(/exactly one approved authority/u);
+    expect(() => validateSourceAuthorities({
+      schemaVersion: 1,
+      mode: "historical-and-current",
+      repositories: {
+        example: { current, approved: [current] },
+      },
+    })).toThrow(/current-only mode/u);
+  });
+
   it("rejects mutable links and repositories outside the reviewed authority list", () => {
     const commit = "a".repeat(40);
     const authorities = validateSourceAuthorities({
       schemaVersion: 1,
+      mode: "current-only",
       repositories: {
         example: {
           current: { revision: "v1.0.0", commit },
@@ -117,6 +209,25 @@ describe("learning catalog preparation", () => {
     expect(() => registerPathOrder(orders, "another-path", 1, "second")).not.toThrow();
   });
 
+  it("requires a self-contained learning path to be contiguous and prerequisite ordered", () => {
+    const catalog = { documents: [
+      { slug: "start", prerequisites: [], pathMemberships: [{ pathId: "frc-robot-with-ares", order: 1 }] },
+      { slug: "finish", prerequisites: ["start"], pathMemberships: [{ pathId: "frc-robot-with-ares", order: 2 }] },
+    ] };
+    expect(validateLearningPathContract(catalog, "frc-robot-with-ares", {
+      minimumDocuments: 2,
+      requireSelfContained: true,
+    })).toEqual({ documents: 2, slugs: ["start", "finish"] });
+    expect(() => validateLearningPathContract({ documents: [
+      catalog.documents[0],
+      { ...catalog.documents[1], pathMemberships: [{ pathId: "frc-robot-with-ares", order: 3 }] },
+    ] }, "frc-robot-with-ares", { requireSelfContained: true })).toThrow(/contiguous path order 2/u);
+    expect(() => validateLearningPathContract({ documents: [
+      catalog.documents[0],
+      { ...catalog.documents[1], prerequisites: ["outside"] },
+    ] }, "frc-robot-with-ares", { requireSelfContained: true })).toThrow(/must appear earlier/u);
+  });
+
   it("measures substantial lesson structure instead of relying on word count alone", () => {
     const sentence = "Students change one value, record the result, and explain the pattern in clear words.";
     const sections = [
@@ -139,6 +250,24 @@ describe("learning catalog preparation", () => {
       valid.replace("## Troubleshooting", "## More words"),
       "missing-support",
     )).toThrow(/missing the Troubleshooting section/u);
+  });
+
+  it("keeps every ARESLib reference on the substantial learning contract", () => {
+    expect(() => assertAresLibReferenceContract({
+      slug: "deep-reference",
+      contentFile: "areslib-reference/deep-reference.md",
+      instructionalContractVersion: 2,
+    })).not.toThrow();
+    expect(() => assertAresLibReferenceContract({
+      slug: "thin-reference",
+      contentFile: "areslib-reference/thin-reference.md",
+      instructionalContractVersion: 1,
+    })).toThrow(/instructionalContractVersion 2/u);
+    expect(() => assertAresLibReferenceContract({
+      slug: "academy-lesson",
+      contentFile: "robotics-foundations/academy-lesson.md",
+      instructionalContractVersion: 1,
+    })).not.toThrow();
   });
 
   it("ratchets the robotics expansion and validates existing-lesson interaction targets", () => {
@@ -238,7 +367,7 @@ describe("learning catalog preparation", () => {
       { id: "complete-source", sourceGap: null },
     ] }] };
     const sourceRequests = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       mode: "proposal-only",
       requests: [{
         lessonId: "needs-photo",
@@ -246,6 +375,13 @@ describe("learning catalog preparation", () => {
         need: "authentic team photo required",
         status: "requested",
         acceptance: "An approved team photo supports the lesson objective.",
+        review: {
+          reviewedAt: "2026-08-30",
+          evidenceState: "missing",
+          remainingBlockers: ["approved-team-artifact"],
+          evidence: [],
+          note: "No approved team photo is available in the reviewed source set.",
+        },
       }],
     };
     expect(validateCurriculumSourceRequests(sourceRequests, curriculumPlan)).toEqual({ requests: 1 });
@@ -255,5 +391,22 @@ describe("learning catalog preparation", () => {
       ...sourceRequests,
       requests: [{ ...sourceRequests.requests[0], status: "fulfilled" }],
     }, curriculumPlan)).toThrow(/must remain requested/u);
+    expect(() => validateCurriculumSourceRequests({
+      ...sourceRequests,
+      requests: [{
+        ...sourceRequests.requests[0],
+        review: { ...sourceRequests.requests[0].review, evidenceState: "partial" },
+      }],
+    }, curriculumPlan)).toThrow(/partial evidence requires/u);
+    expect(() => validateCurriculumSourceRequests({
+      ...sourceRequests,
+      requests: [{
+        ...sourceRequests.requests[0],
+        review: {
+          ...sourceRequests.requests[0].review,
+          remainingBlockers: ["approved-team-artifact", "approved-team-artifact"],
+        },
+      }],
+    }, curriculumPlan)).toThrow(/must not contain duplicates/u);
   });
 });

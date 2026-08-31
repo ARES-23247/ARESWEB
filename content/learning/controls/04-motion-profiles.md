@@ -2,146 +2,297 @@
 
 A controller can chase a final target in one large jump. That request may demand more speed or
 acceleration than a mechanism can produce. A motion profile creates smaller position and velocity
-setpoints that obey chosen limits on the way to the goal.
+setpoints on the way to the goal.
 
 ## Purpose and prerequisites
 
 Complete [Tune Feedback with Evidence](/academy/controls-pid?path=controls-localization-autonomous)
-first. You should understand target, measured value, feedback, and acceptance limits. You should
-also be able to compare one-change trials in a table.
+first. You should understand targets, measured values, tracking error, units, and one-change trials.
 
-This lesson uses a one-dimensional, rest-to-rest profile. It teaches the shape and timing of bounded
-setpoints. It does not model a drivetrain, a loaded arm, traction, battery voltage, or motor current.
+In this lesson, you will:
+
+- explain the speed-up, cruise, and slow-down phases;
+- calculate the distance where a cruise phase first becomes possible;
+- compare velocity and acceleration limits through controlled trials;
+- read planned position, velocity, and acceleration evidence; and
+- separate a planned reference from real robot motion.
+
+The browser lab models positive motion on one straight line. Every move starts and ends at rest. The
+real ARES profile is more general, but this smaller model makes the main pattern easier to see.
 
 ## Vocabulary
 
 - **Setpoint:** the position or velocity requested at one moment.
-- **Motion profile:** a timed list of setpoints between a start and goal.
-- **Velocity limit:** the greatest allowed rate of position change.
-- **Acceleration limit:** the greatest allowed rate of velocity change.
-- **Trapezoidal profile:** accelerate, cruise at a limit, then decelerate.
-- **Triangular profile:** accelerate and decelerate without a cruise phase.
+- **Motion profile:** a timed plan of setpoints between a start and goal.
+- **Velocity:** how fast position changes. It includes a direction.
+- **Acceleration:** how fast velocity changes. It also includes a direction.
+- **Velocity limit:** the greatest allowed speed in the plan.
+- **Acceleration limit:** the greatest allowed rate of speed change in the plan.
+- **Trapezoidal profile:** speed up, cruise at a limit, then slow down.
+- **Triangular profile:** speed up and slow down without a cruise phase.
 - **Rest-to-rest:** start and finish with zero velocity.
 - **Constraint:** a limit the planner must obey.
 - **Saturation:** reaching a limit so a larger request cannot be followed.
 - **Reference:** the planned state that feedback tries to track.
+- **Tracking error:** planned position minus measured position.
+- **Boundary state:** the position and velocity at the start or goal.
+
+A profile is a plan, not a motor command and not a safety guarantee. Feedback follows the plan.
+Hardware limits, output guards, and stop conditions remain separate.
 
 ## Worked example
 
-Plan a three-meter rest-to-rest move. Set maximum velocity to `2 m/s` and maximum acceleration to
-`1.5 m/s²`. Reaching the velocity limit takes velocity divided by acceleration.
+Plan a `3 m` rest-to-rest move. Set maximum velocity to `2 m/s` and maximum acceleration to
+`1.5 m/s²`.
+
+First find how long it takes to reach the velocity limit.
 
 ```text
-acceleration time = 2 m/s ÷ 1.5 m/s²
-acceleration time = 1.33 s
+speed-up time = velocity limit ÷ acceleration limit
+speed-up time = 2 m/s ÷ 1.5 m/s²
+speed-up time = 1.33 s
 ```
 
-The distance covered while accelerating is one-half times acceleration times time squared.
+Next find the distance used while speeding up.
 
 ```text
-acceleration distance = 0.5 × 1.5 m/s² × (1.33 s)²
-acceleration distance = 1.33 m
+speed-up distance = 0.5 × acceleration × time²
+speed-up distance = 0.5 × 1.5 m/s² × (1.33 s)²
+speed-up distance = 1.33 m
 ```
 
-Deceleration needs the same distance. Together, those phases use about `2.67 m`. The move is three
-meters, so a short cruise phase remains. The velocity graph has a flat top and is trapezoidal.
+Slowing down from the same speed uses another `1.33 m`. Together, the two ramps need about
+`2.67 m`. The planned move is `3 m`, so about `0.33 m` remains for cruising. The velocity graph has
+a flat top and is trapezoidal.
 
-For a short move, the mechanism may need to slow before reaching the velocity limit. That graph has
-no flat top. It is triangular even though the planner is often called a trapezoid-profile planner.
+### Find the cruise boundary directly
+
+For a positive rest-to-rest move with equal speed-up and slow-down limits, use this shortcut:
+
+```text
+cruise boundary distance = velocity limit² ÷ acceleration limit
+cruise boundary distance = (2 m/s)² ÷ 1.5 m/s²
+cruise boundary distance = 2.67 m
+```
+
+A move longer than `2.67 m` includes a cruise phase in this model. A move at or below that distance
+is triangular. At the exact boundary, cruise time is zero.
+
+The lab also reports a **boundary margin**. A positive margin means the move has that much distance
+left for cruising. A negative margin means the move is that far short of the boundary, so it must
+begin slowing down before it reaches the velocity limit. A zero margin is exactly on the boundary.
+This signed difference is often easier to compare than two rounded numbers.
+
+For a `1 m` move with the same limits, the profile cannot reach `2 m/s`. Its peak speed is:
+
+```text
+triangular peak speed = √(distance × acceleration limit)
+triangular peak speed = √(1 m × 1.5 m/s²)
+triangular peak speed = 1.22 m/s
+```
+
+The lower peak is not a failure. It is the speed that leaves enough distance to stop at the goal.
+
+### How ARES goes beyond this example
+
+The ARES `TrapezoidProfile` accepts a current position and velocity, a goal position and velocity,
+the two constraints, a time step, and a reusable output state. Each call writes **one next state**.
+Robot code calls it again on the next loop. The browser lab is different: it samples and draws one
+whole classroom profile at once. ARES also supports forward and reverse moves and nonzero start and
+goal velocities.
+
+If the mechanism is already moving too fast to stop at a nearby goal, ARES can brake, pass the goal,
+reverse, and return. This prevents an impossible instant stop. The browser lab does not model that
+case.
+
+ARES checks every input, but not every bad input has the same fallback:
+
+| Input problem | State written by current ARESLib |
+| --- | --- |
+| Bad time step, limit, or goal while the current state is finite | Copy the current state |
+| Non-finite current position or velocity | Write position `0` and velocity `0` |
+| Goal speed above the velocity limit | Copy the current state |
+| A profile distance calculation becomes invalid | Copy the current state |
+
+These fallbacks avoid jumping to the goal. The profile method does not return a fault reason, so
+robot diagnostics must report invalid inputs separately. The browser lab throws an error for bad
+inputs because its sliders never send them during normal use.
+
+ARES writes each result into a provided state object. That design avoids creating new objects in a
+fast robot loop. This memory detail matters to robot software, but it does not change the shape you
+study here.
 
 ## Visual model
 
 ```mermaid
-%% aria: A start state, goal state, maximum velocity, and maximum acceleration enter a motion-profile planner. It produces timed position and velocity references. Feedback compares each reference with a measured state. Separate safety checks guard the real output.
+%% aria: A start state, goal state, velocity limit, acceleration limit, and time step enter a profile planner. The planner creates position and velocity references. Feedback compares each reference with a measured state. Separate output and safety checks protect hardware. Logged evidence compares planned and measured motion.
 flowchart LR
-  S["Start state"] --> P["Motion-profile planner"]
-  G["Goal state"] --> P
+  S["Start position and velocity"] --> P["Motion-profile planner"]
+  G["Goal position and velocity"] --> P
   V["Velocity limit"] --> P
   A["Acceleration limit"] --> P
-  P --> R["Timed reference"]
+  D["Time step"] --> P
+  P --> R["Planned position and velocity"]
   R --> F["Feedback controller"]
-  M["Measured state"] --> F
-  F --> L["Output and safety limits"]
+  M["Measured position and velocity"] --> F
+  F --> O["Output and safety checks"]
+  R --> E["Tracking evidence"]
+  M --> E
 ```
 
-The profile plans a reference. It does not guarantee that hardware follows the reference. Tracking
-error, current, temperature, collisions, and sensor health remain separate evidence.
+The profile plans a reference. It does not guarantee that hardware follows it. Current, voltage,
+temperature, collisions, sensor health, and tracking error remain separate evidence.
 
 ## Hands-on activity
 
-Open the Motion Profile Lab. Keep the default limits. Record the profile shape, peak velocity,
-cruise time, and total time. Open the numeric table and find the acceleration, cruise, deceleration,
-and complete phases.
+Work with a partner if possible. One student predicts the result. The other moves one control and
+records the evidence. Swap jobs halfway through.
 
 <motionprofilelab />
 
-Change only the move distance. Find one distance that creates a triangular profile and one that
-creates a trapezoidal profile. Record both trials.
+### Part 1: Read one complete move
 
-Reset the lab. Change only maximum velocity in four steps. Watch total time and profile shape. Then
-reset again and change only maximum acceleration. Explain which phase changes most clearly.
+1. Reset the lab.
+2. Record distance, both limits, shape, peak speed, speed-up time, cruise time, and total time.
+3. Compare the displayed cruise boundary with the worked example.
+4. Open the numeric table.
+5. Find positive acceleration, zero acceleration, negative acceleration, and the complete row.
 
-Choose one trial and draw its velocity graph on paper. Label time in seconds and velocity in meters
-per second. Mark where acceleration ends and deceleration begins.
+Positive acceleration speeds up the positive move. Negative acceleration slows it down. The final
+row should have zero velocity and zero acceleration.
+
+### Part 2: Cross the cruise boundary
+
+Keep both limits at their default values. Move only the distance control.
+
+1. Find a distance below the displayed boundary.
+2. Record its triangular shape and zero cruise time.
+3. Find a distance above the boundary.
+4. Record its trapezoidal shape and positive cruise time.
+5. Move as close to the boundary as the slider allows.
+6. Read the boundary margin after each move. Confirm that a negative margin matches triangular and
+   a positive margin matches trapezoidal.
+
+Explain why peak speed changes below the boundary but stays at the velocity limit above it. Do not
+add a cruise phase to a triangular move.
+
+### Part 3: Change the velocity limit
+
+Reset. Keep distance and acceleration fixed. Test four velocity limits from low to high. Predict the
+shape before each trial.
+
+A low velocity limit is easier to reach, so a cruise phase may appear. A high velocity limit may be
+impossible to reach before slowing must begin. Record the new boundary distance each time.
+
+### Part 4: Change the acceleration limit
+
+Reset. Keep distance and velocity fixed. Test four acceleration limits. Record speed-up time,
+boundary distance, and total time.
+
+Higher planned acceleration reaches the velocity limit sooner and uses less ramp distance. That may
+create a longer cruise phase. It does not prove the robot can safely produce that acceleration.
+
+### Part 5: Prepare tracking evidence
+
+Choose one trial and sketch its velocity graph. Mark speed-up, cruise if present, and slow-down.
+Under the graph, list the signals a real test should record:
+
+- planned position and velocity;
+- measured position and velocity;
+- tracking error;
+- controller output;
+- battery voltage and motor current; and
+- faults, stop reasons, and timestamps.
+
+The browser has only planned values. Leave measured columns blank rather than inventing robot data.
 
 ## Checkpoints
 
-Check units before calculating. Velocity uses position per time. Acceleration uses velocity per
-time. A value without its unit is not a complete constraint.
+- Every number with a physical meaning has a unit.
+- Speed-up time equals peak speed divided by the acceleration limit.
+- Cruise time is zero for a triangular profile.
+- A trapezoidal move is longer than the displayed cruise boundary.
+- Planned velocity never exceeds the selected limit.
+- Planned acceleration is positive, zero, negative, then zero for a full trapezoidal move.
+- The final row equals the goal position with zero velocity and acceleration.
+- Changing one control never becomes evidence about an unmeasured physical robot.
 
-Check whether the move reaches the velocity limit. If it does not, call the shape triangular. Do not
-invent a cruise phase just because the planner has a maximum velocity setting.
-
-Check the final table row. Position should equal the goal and velocity should be zero in this
-rest-to-rest model.
+Before continuing, explain why a higher velocity limit can still produce the same peak speed on a
+short move. The distance may force the planner to slow down before reaching the limit.
 
 ## Troubleshooting
 
-If a shorter move takes longer, confirm that only distance changed. Reset and repeat with the same
+If a shorter move takes longer, confirm that only distance changed. Reset and repeat with identical
 velocity and acceleration limits.
 
-If the graph looks flat, open the numeric table. The chart rescales to each trial's peak, so its
-height alone cannot compare two different velocity values.
+If a high velocity limit never appears as peak speed, compare the move with the cruise boundary. The
+planner may need every available meter for speeding up and slowing down.
 
-If a real mechanism cannot follow the reference, do not raise every limit at once. Save measured
-position, planned position, output, current, and battery voltage. Find the first time the measured
-state falls behind.
+If the graph looks equally tall across trials, read the number cards. The graph rescales to each
+trial's peak, so pixel height cannot compare separate trials.
 
-If a mechanism overshoots, do not blame the profile from one graph. Feedback gains, feedforward,
-load, backlash, saturation, and sensor delay may also matter.
+If table acceleration changes sign, remember that the move stays positive while acceleration
+describes changing velocity. Negative acceleration can mean safe slowing, not reverse motion.
+
+If a real mechanism cannot follow the reference, do not raise every limit. Save planned and measured
+states, output, current, and voltage. Find the first time tracking error grows.
+
+If a real mechanism overshoots, do not blame the profile from one graph. Feedback gains,
+feedforward, load, backlash, saturation, sensor delay, and structure movement may also matter.
+
+If robot telemetry suddenly reports position `0` and velocity `0`, do not assume the mechanism
+really moved there. Check whether the current profile state contained `NaN` or infinity. A finite
+held state can instead point to a bad time step, constraint, goal, or goal speed. Add a separate
+diagnostic because the profile result does not say which fallback occurred.
 
 ## Evidence artifact
 
-Submit a six-row trial table. Include distance, velocity limit, acceleration limit, shape, peak
-velocity, cruise time, and total time. Mark the one setting changed in each row.
+Submit a 12-row trial table:
 
-Add one labeled velocity graph and a short planning note. The note must state a goal, two chosen
-limits, and one physical fact the browser model cannot verify.
+- one default trial;
+- three distance trials around the cruise boundary;
+- four velocity-limit trials; and
+- four acceleration-limit trials.
+
+Include distance, both limits, shape, peak speed, speed-up time, cruise time, total time, and boundary
+distance. Mark the one value changed in each row.
+
+Add one labeled velocity graph and one planned-versus-measured evidence template. Write a claim that
+uses at least two rows. State one thing the browser proves and two physical facts it cannot prove.
+
+Students may review the evidence and verify robot function through the team's safety process. A
+mentor does not need to approve a valid robot result. Publishing the evidence on the website uses
+the separate Lead Coach review workflow.
 
 ## Short assessment
 
 1. What does a motion profile produce?
-2. When is a profile triangular?
-3. What are the three phases of a trapezoidal profile?
-4. Why is a planned reference not proof of measured motion?
-5. Which units belong to velocity and acceleration?
-6. Name two signals needed during a later physical verification.
-
-A strong answer separates planning from tracking. It also treats limits as measured engineering
-decisions, not numbers copied from a lesson.
+2. When is a rest-to-rest profile triangular?
+3. How do you calculate the cruise boundary distance?
+4. Why can a high velocity limit remain unreached?
+5. What does negative acceleration mean during a positive move?
+6. Why is a planned reference not proof of measured motion?
+7. How does the real ARES profile respond to invalid limits when the current state is finite?
+8. What does it write when the current position or velocity is non-finite?
+9. Name two cases the real ARES profile supports that this browser lab omits.
 
 ## Extension challenge
 
 Design a rest-to-rest move for a simulated elevator or arm. Choose a distance or angle, velocity
-limit, and acceleration limit. Explain what could set each real limit. Examples include motor
-speed, current, game-piece stability, frame contact, or a soft mechanism.
+limit, and acceleration limit. Calculate the cruise boundary before using the lab. Explain what real
+evidence could set each limit.
 
-Then write a student-led physical verification plan. Begin with a lower output and a clear stop
-condition. Students may verify robot function through the team's safety process. Lead Coach review
-is required only before publishing this lesson or another website post.
+Then write a student-led physical verification plan. Begin with restrained output, clear space, and
+a named stop condition. Include planned and measured signals, current, voltage, faults, and a
+rollback value. Do not use the browser slider values as approved hardware limits.
+
+As a software extension, describe how the plan must change for a nonzero starting speed or a reverse
+move. Do not claim the browser calculated that case. Point to the current ARES source contract for
+the more general behavior.
 
 ## Related and next
 
 Apply the same planning idea in [Add and Verify Your First FTC Autonomous
-Routine](/academy/ftc-starter-first-autonomous?path=controls-localization-autonomous). Continue next
-to encoders and odometry, where measured motion is compared with the planned reference.
+Routine](/academy/ftc-starter-first-autonomous?path=controls-localization-autonomous). Continue to
+[Estimate Motion with Odometry](/academy/controls-odometry?path=controls-localization-autonomous),
+where measured motion is compared with a planned reference.

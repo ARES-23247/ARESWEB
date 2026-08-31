@@ -1,27 +1,16 @@
 {
   "schemaVersion": 1,
+  "mode": "current-only",
   "repositories": {
     "ARES-Robotics": {
       "current": {
-        "revision": "ares-11.1.0-studio-2.0.2",
-        "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d"
+        "revision": "ares-13.0.1-studio-3.1.2",
+        "commit": "890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93"
       },
       "approved": [
         {
-          "revision": "ares-11.0.0-studio-2.0.0",
-          "commit": "1810d74e8f3b260116df68fd8c1b0854b2d61493"
-        },
-        {
-          "revision": "ares-11.0.0-studio-2.0.0",
-          "commit": "439f2a36855aa6d00010c0d4ada255511626d1af"
-        },
-        {
-          "revision": "ares-11.1.0-studio-2.0.1",
-          "commit": "65351a2721840ed3063a4a5a97c440b6fcc0d1b9"
-        },
-        {
-          "revision": "ares-11.1.0-studio-2.0.2",
-          "commit": "7cd2cf5f2ade0944214994b2e9ce5565d8a7608d"
+          "revision": "ares-13.0.1-studio-3.1.2",
+          "commit": "890ef5934a8f4c6efb95d0dd0aec3a0bf2251b93"
         }
       ]
     }

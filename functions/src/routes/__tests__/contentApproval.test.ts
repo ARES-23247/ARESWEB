@@ -114,7 +114,12 @@ describe("content approval routes", () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it("returns a bounded no-store review token instead of raw draft content", async () => {
+  it("returns a bounded no-store review token with an explicit review document DTO", async () => {
+    const document = validDocument({
+      original_authorNickname: "Private student name",
+      original_authorAvatar: "https://private.example/avatar.png",
+    });
+    mocks.documentGet.mockResolvedValueOnce({ exists: true, data: () => document });
     const req = { params: { slug: "lesson-one" }, query: { library: "academy" }, authorizationRole: "coach" };
     const res = response();
     const next = vi.fn();
@@ -126,9 +131,17 @@ describe("content approval routes", () => {
       title: "Robot intent",
       updatedAt: "2026-08-25T12:00:00.000Z",
       library: "academy",
-      digest: contentReviewDigest(validDocument()),
+      digest: contentReviewDigest(document),
+      document: expect.objectContaining({
+        slug: "lesson-one",
+        title: "Robot intent",
+        content: "# Robot intent",
+        status: "pending_approval",
+        metadataStatus: "complete",
+      }),
     } });
-    expect(JSON.stringify(res.payload)).not.toContain("# Robot intent");
+    expect(JSON.stringify(res.payload)).not.toContain("Private student name");
+    expect(JSON.stringify(res.payload)).not.toContain("private.example");
   });
 
   it("rejects malformed digests and stale reviewed content", async () => {

@@ -1,6 +1,7 @@
 /** @sim {"name":"Bus and Address Troubleshooter","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
 import { Cable, RotateCcw } from "lucide-react";
+import { AcademyDatum } from "@/sims/shared/academy-interaction-ui";
 
 type ConnectionKind = "CAN" | "I2C" | "CHANNEL";
 type DeviceIdentity = { kind: ConnectionKind; bus: string; address: number };
@@ -62,4 +63,4 @@ function DeviceEditor({ legend, prefix, value, onChange }: { legend: string; pre
   return <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4"><legend className="px-2 text-sm font-bold text-ares-gold">{legend}</legend><label htmlFor={`${prefix}-kind`} className="grid gap-2 text-sm font-bold text-white"><span>Connection type</span><select id={`${prefix}-kind`} value={value.kind} onChange={(event) => onChange({ ...value, kind: event.currentTarget.value as ConnectionKind })} className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="CAN">CAN device</option><option value="I2C">I2C device</option><option value="CHANNEL">Controller channel</option></select></label><label htmlFor={`${prefix}-bus`} className="grid gap-2 text-sm font-bold text-white"><span>Bus or parent controller</span><input id={`${prefix}-bus`} value={value.bus} onChange={(event) => onChange({ ...value, bus: event.currentTarget.value })} className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 font-mono text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" /></label><label htmlFor={`${prefix}-address`} className="grid gap-2 text-sm font-bold text-white"><span>Address or channel number</span><input id={`${prefix}-address`} type="number" min="0" step="1" value={value.address} onChange={(event) => onChange({ ...value, address: Number(event.currentTarget.value) })} className="min-h-11 rounded border border-white/20 bg-black px-3 py-2 font-mono text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" /></label></fieldset>;
 }
 
-function Datum({ label, value }: { label: string; value: string }) { return <div className="rounded border border-white/10 p-3"><dt className="text-xs uppercase tracking-wide text-marble/70">{label}</dt><dd className="mt-1 font-semibold leading-relaxed text-white">{value}</dd></div>; }
+const Datum = AcademyDatum;

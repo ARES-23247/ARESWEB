@@ -1,6 +1,6 @@
 /** @sim {"name":"Strategy Tradeoff Lab","requiresContext":false,"academyApproved":true,"fidelity":"conceptual"} */
 import { useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { AcademyLabShell, AcademyModelLimit } from "@/sims/shared/academy-interaction-ui";
 
 export type StrategyRatings = {
   evidence: number;
@@ -62,19 +62,13 @@ export default function StrategyTradeoffLab() {
   };
 
   return (
-    <section aria-labelledby="strategy-tradeoff-title" className="my-8 rounded-xl border border-ares-cyan/30 bg-black/35 p-4 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">Transparent comparison</p>
-          <h3 id="strategy-tradeoff-title" className="mt-1 text-xl font-black text-white">Strategy Tradeoff Lab</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Rate two invented plans with one visible matrix. Change a weight to see why priorities and assumptions must stay visible.
-          </p>
-        </div>
-        <button type="button" onClick={reset} className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-ares-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan sm:mt-0">
-          <RotateCcw aria-hidden="true" size={16} /> Reset
-        </button>
-      </div>
+    <AcademyLabShell
+      titleId="strategy-tradeoff-title"
+      title="Strategy Tradeoff Lab"
+      eyebrow="Transparent comparison"
+      description="Rate two invented plans with one visible matrix. Change a weight to see why priorities and assumptions must stay visible."
+      onReset={reset}
+    >
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-white/10">
         <table className="w-full min-w-[42rem] border-collapse text-left text-sm text-white">
@@ -110,10 +104,8 @@ export default function StrategyTradeoffLab() {
         )}
       </div>
 
-      <p role="note" className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> Ratings and weights are student-entered lesson values. The matrix cannot read scouting or robot data, model game rules, alliance partners, opponents, timing, defense, failure, or uncertainty, optimize a plan, or make a match decision.
-      </p>
-    </section>
+      <AcademyModelLimit>Ratings and weights are student-entered lesson values. The matrix cannot read scouting or robot data, model game rules, alliance partners, opponents, timing, defense, failure, or uncertainty, optimize a plan, or make a match decision.</AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
 
