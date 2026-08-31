@@ -67,8 +67,14 @@ function replaceField(source, field, value) {
 
 export function replaceCurrentVersionText(source, previous, next) {
   const replacements = [
-    [`ARES-FTC ${previous.aresVersion}`, `ARES-FTC ${next.aresVersion}`],
-    [`ARES FTC ${previous.aresVersion}`, `ARES FTC ${next.aresVersion}`],
+    [`ARES-FTC ${previous.ftcStarterVersion}`, `ARES-FTC ${next.ftcStarterVersion}`],
+    [`ARES-FTC ${previous.aresVersion}`, `ARES-FTC ${next.ftcStarterVersion}`],
+    [`ARES FTC ${previous.ftcStarterVersion}`, `ARES FTC ${next.ftcStarterVersion}`],
+    [`ARES FTC ${previous.aresVersion}`, `ARES FTC ${next.ftcStarterVersion}`],
+    [`ARES-FRC ${previous.frcStarterVersion}`, `ARES-FRC ${next.frcStarterVersion}`],
+    [`ARES-FRC ${previous.aresVersion}`, `ARES-FRC ${next.frcStarterVersion}`],
+    [`ARES FRC ${previous.frcStarterVersion}`, `ARES FRC ${next.frcStarterVersion}`],
+    [`ARES FRC ${previous.aresVersion}`, `ARES FRC ${next.frcStarterVersion}`],
     [`ARESLib ${previous.aresVersion}`, `ARESLib ${next.aresVersion}`],
     [`ARES ${previous.aresVersion}`, `ARES ${next.aresVersion}`],
     [`FTC Starter ${previous.ftcStarterVersion}`, `FTC Starter ${next.ftcStarterVersion}`],
