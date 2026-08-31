@@ -119,6 +119,19 @@ const frcModeLesson = {
   appliesToVersion: "ARES 13.0.0; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.1.0",
 };
 
+const measurementLesson = {
+  ...lesson,
+  slug: "mechanical-measurement-design-notebook",
+  title: "Measure, Sketch, and Record a Design",
+  description: "Turn a design question into a repeatable and traceable measurement record.",
+  pathMemberships: [{ pathId: "mechanical-design-fabrication", order: 1 }],
+  prerequisites: ["rates-units-and-motion"],
+  objectives: ["Separate measurements, uncertainty, nominal values, and allowed tolerances."],
+  platforms: ["hardware-neutral"],
+  appliesToVersion: "ARES 13.0.0; Studio 3.1.0",
+  safetyScope: "none",
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -346,5 +359,40 @@ test("the FRC mode lesson practices guard precedence without claiming runtime pr
   await expect(disabled).not.toBeChecked();
   await expect(page.getByRole("note")).toContainText("invented three-posture model");
   await expect(page.getByRole("note")).toContainText("prove safe motion");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the measurement lesson separates nominal values and tolerance limits at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...measurementLesson, content: "# Measure, sketch, and record a design\n\n<tolerancestacklab />" } }
+        : { documents: [measurementLesson] }),
+    });
+  });
+
+  await page.goto("/academy/mechanical-measurement-design-notebook?path=mechanical-design-fabrication", {
+    waitUntil: "networkidle",
+  });
+  await expect(page.getByRole("heading", { name: "Tolerance Stack Lab" })).toBeVisible();
+
+  const nominal = page.getByRole("spinbutton", { name: "Part 1 nominal length" });
+  await nominal.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("41");
+  await expect(page.getByText("91.00 mm", { exact: true })).toBeVisible();
+
+  const tolerance = page.getByRole("spinbutton", { name: "Part 1 plus-or-minus tolerance" });
+  await tolerance.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("2");
+  await expect(page.getByText("The arithmetic range does not fit the lesson requirement.")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("measurement uncertainty");
+  await expect(page.getByRole("note")).toContainText("cannot approve a CAD model");
   await expectNoHorizontalOverflow(page);
 });

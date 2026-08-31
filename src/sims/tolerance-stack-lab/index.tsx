@@ -91,7 +91,7 @@ export default function ToleranceStackLab() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.8fr)]">
-        <fieldset className="grid gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
+        <fieldset className="grid min-w-0 gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
           <legend className="px-2 text-sm font-bold text-ares-gold">Enter lesson dimensions in millimeters</legend>
           {parts.map((part, index) => (
             <div key={index} className="grid gap-3 rounded border border-white/10 p-3 sm:grid-cols-2">

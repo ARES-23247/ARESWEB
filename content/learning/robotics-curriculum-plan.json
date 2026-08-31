@@ -64,7 +64,7 @@
         "ARES-FRC/docs/DRIVEBASE_CONFIGURATION.md"
       ],
       "lessons": [
-        { "id": "mechanical-measurement-design-notebook", "title": "Measure, Sketch, and Record a Design", "level": "beginner", "interaction": null, "sourceGap": "authentic team measurement photos required" },
+        { "id": "mechanical-measurement-design-notebook", "title": "Measure, Sketch, and Record a Design", "level": "beginner", "interaction": "tolerance-stack-lab", "sourceGap": "authentic team measurement photos required" },
         { "id": "mechanical-tools-safe-work", "title": "Choose and Use Common Robot Tools", "level": "beginner", "interaction": "tool-choice-scenarios", "sourceGap": "official tool guidance and authentic team photos required" },
         { "id": "mechanical-fasteners", "title": "Fasteners, Threads, and Keeping Parts Together", "level": "beginner", "interaction": "fastener-choice-lab", "sourceGap": "official manufacturer references required" },
         { "id": "mechanical-structure-load-paths", "title": "Frames, Bracing, and Load Paths", "level": "beginner", "interaction": "load-path-explorer", "sourceGap": "authentic team structure examples required" },

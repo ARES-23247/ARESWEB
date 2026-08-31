@@ -62,6 +62,30 @@ flowchart LR
 The diagram is a record flow, not a measuring instrument. It does not set the correct tool,
 tolerance, or league limit for a real part.
 
+## Measurement uncertainty is not tolerance
+
+These two ideas answer different questions:
+
+- **Measurement uncertainty** describes what the measuring method may not resolve. For example,
+  estimating a wheel center by eye may make a result uncertain by about 1 mm.
+- **Design tolerance** describes the range a design or approved source allows. It must come from the
+  design need, drawing, process, or manufacturer—not from a guess about the tool.
+
+Do not copy an uncertainty estimate into a tolerance field. Keep the raw readings, method, and
+uncertainty in the notebook. Record an allowed tolerance only when its source is known.
+
+### Practice a calculated stack
+
+The lab below uses made-up millimeter values. Before changing a number, label it as a nominal design
+value or an allowed tolerance; none of the starting values are measurements of the team robot. Change
+one nominal length, then change one allowed tolerance. Record which input changed the center of the
+range and which changed its width.
+
+<tolerancestacklab />
+
+The result is arithmetic evidence only. It does not replace the physical measurements, datum sketch,
+uncertainty note, or approved tolerance source in your notebook.
+
 ## Hands-on activity
 
 1. Pick one safe, unpowered object such as a loose bracket, wheel, or practice frame member.
@@ -115,6 +139,11 @@ used. If the value later enters an ARES drivebase or subsystem document, link th
 this record. A source link proves where a code field is defined; the notebook proves how this robot's
 value was obtained.
 
+Current ARES drivetrain authoring stores measured geometry in SI units and links accepted calibration
+evidence by project-relative path and SHA-256. Keep the original readings and method in the notebook,
+then record the reviewed SI value and its evidence link in the canonical `.aresdrivetrain` document.
+Do not maintain a second untracked copy of the geometry just for simulation.
+
 ## Short assessment
 
 1. What makes a datum useful?
@@ -129,11 +158,9 @@ Make a second sketch from a different view. Identify one dimension that cannot b
 the first view alone. Create a revision comparison that highlights the one changed value and every
 downstream field it affects. Do not overwrite the first record.
 
-If several measured lengths meet in one direction, use the optional lab below. Enter lesson-only
-nominal values and allowed changes. Record whether their worst-case sum fits a written range. The
-result is arithmetic evidence, not approval of a CAD model, process, or real part.
-
-<tolerancestacklab />
+Reopen the Tolerance Stack Lab above with three values from a paper design exercise. State the source
+of each allowed tolerance and explain why the arithmetic still cannot approve a CAD model, process,
+or real part.
 
 ## Related and next
 
