@@ -124,6 +124,19 @@ limit, zero stop, CAN configuration, or mechanism clearance is correct.
 
 ## Hands-on activity
 
+Before tracing the Kotlin callbacks, use this invented coordinator to practice one key idea:
+the first applicable guard wins. This is **not** the FRC mode lifecycle, the current season robot,
+or its commissioning policy. It uses three made-up postures so you can compare an ordered decision
+with the real callback order in `ARESRobot.kt`.
+
+<superstructurestatelab />
+
+Request Score, then try one frame while Disabled and one frame with unhealthy cached ports. Predict
+which guard will win before selecting **Evaluate next tick**. Afterward, compare the model's order
+with an enabled FRC handoff: cancel work from the old mode, apply the current safety policy, and only
+then start mode-owned work. Record one important difference between the invented model and the
+current FRC source.
+
 1. Open the pinned `ARESRobot.kt`.
 2. Find `disabledInit`. List every old activity it stops.
 3. Find `teleopInit`, `autonomousInit`, and `testInit`.

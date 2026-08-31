@@ -120,7 +120,7 @@
         { "id": "ftc-gui-owned-indicator-lights", "title": "Author GUI-Owned FTC Indicator Lights", "level": "intermediate", "interaction": "subsystem-descriptor-lab", "sourceGap": null },
         { "id": "programming-code-subsystem", "title": "Author a Code-First or Hybrid Subsystem", "level": "intermediate", "interaction": "subsystem-ownership-lab", "sourceGap": null },
         { "id": "ftc-season-composition-and-safe-lifecycle", "title": "Coordinate Subsystems and Fail Safe", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
-        { "id": "frc-mode-handoffs-and-safe-recovery", "title": "Keep FRC Mode Changes Safe", "level": "intermediate", "interaction": null, "sourceGap": null },
+        { "id": "frc-mode-handoffs-and-safe-recovery", "title": "Keep FRC Mode Changes Safe", "level": "intermediate", "interaction": "superstructure-state-lab", "sourceGap": null },
         { "id": "programming-safe-task-sequences", "title": "Build Safe Task Sequences in ARESLib", "level": "advanced", "interaction": "task-sequence-lab", "sourceGap": null },
         { "id": "programming-tests-parity", "title": "Test Robot Logic Across Mocks and Simulation", "level": "advanced", "interaction": "parity-evidence-lab", "sourceGap": null }
       ]

@@ -107,6 +107,18 @@ const inspectionLesson = {
   objectives: ["Audit the evidence in a practice inspection packet."],
 };
 
+const frcModeLesson = {
+  ...matchCycleLesson,
+  slug: "frc-mode-handoffs-and-safe-recovery",
+  title: "Keep FRC Mode Changes Safe",
+  description: "Trace current FRC mode handoffs and persistent fault recovery.",
+  pathMemberships: [{ pathId: "frc-robot-with-ares", order: 6 }],
+  prerequisites: ["redux-state-actions-reducers", "programming-io-caching"],
+  objectives: ["Compare ordered guards with the current FRC lifecycle."],
+  platforms: ["frc", "simulator"],
+  appliesToVersion: "ARES 13.0.0; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.1.0",
+};
+
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.route("**/api/content/docs**", async (route) => {
@@ -300,5 +312,39 @@ test("the inspection packet lab preserves evidence limits at 320px", async ({ pa
 
   await page.getByRole("button", { name: "Reset packet" }).click();
   for (let index = 0; index < await checks.count(); index += 1) await expect(checks.nth(index)).not.toBeChecked();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the FRC mode lesson practices guard precedence without claiming runtime proof at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...frcModeLesson, content: "# Keep FRC mode changes safe\n\n<superstructurestatelab />" } }
+        : { documents: [frcModeLesson] }),
+    });
+  });
+
+  await page.goto("/academy/frc-mode-handoffs-and-safe-recovery?path=frc-robot-with-ares", {
+    waitUntil: "networkidle",
+  });
+  await expect(page.getByRole("heading", { name: "Superstructure State Coordination Lab" })).toBeVisible();
+
+  const disabled = page.getByRole("checkbox", { name: "Robot is disabled" });
+  await disabled.focus();
+  await page.keyboard.press("Space");
+  await expect(disabled).toBeChecked();
+  await expect(page.getByText("Disabled policy runs first")).toBeVisible();
+
+  await page.getByRole("button", { name: "Evaluate next tick" }).click();
+  await expect(page.getByText("Current posture").locator("..")).toContainText("STOWED");
+  await page.getByRole("button", { name: "Reset" }).click();
+  await expect(disabled).not.toBeChecked();
+  await expect(page.getByRole("note")).toContainText("invented three-posture model");
+  await expect(page.getByRole("note")).toContainText("prove safe motion");
   await expectNoHorizontalOverflow(page);
 });
