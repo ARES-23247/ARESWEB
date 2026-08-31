@@ -75,7 +75,7 @@ for the next command.
 Local Sim target is not selected, and the telemetry panels show their empty starting
 state.](/academy/studio-3.1.1/dashboard.png)
 
-*Studio 3.1.1 before connection. Use the target selector and the visible connection state instead
+*Studio 3.1.2 before connection. Use the target selector and the visible connection state instead
 of treating an empty field or graph as an error.*
 
 ## Hands-on activity

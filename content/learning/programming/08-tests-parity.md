@@ -6,7 +6,7 @@ Two files can use the same interface and still act differently. That is why a co
 the same as a behavior test. In this lesson, you will sort current ARES evidence into the right
 level. Then you will design one fair test that can reveal an adapter mismatch.
 
-This lesson matches ARES 13.0.0, FTC SDK 11.1.0, and Studio 3.1.1. Every source link is pinned to
+This lesson matches ARES 13.0.1, FTC SDK 11.1.0, and Studio 3.1.2. Every source link is pinned to
 one reviewed commit in the ARES Robotics monorepo. An older lesson named a `simulation-foundation`
 contract that is not in the current monorepo. Do not look for that removed file.
 
@@ -63,7 +63,7 @@ The contract also includes the hardware-and-simulation parity item. Its evidence
 `COMPILED_GENERATED_CODE`. That wording matters. It says both generated adapters share a contract.
 It does not say both adapters passed the same runtime case.
 
-ARES 13.0.0 has one more compile-level item when `zeroAllocationPeriodic` is selected. It records
+ARES 13.0.1 has one more compile-level item when `zeroAllocationPeriodic` is selected. It records
 that generated periodic code follows the zero-allocation policy. It does not measure allocated
 bytes. The source explains that byte-allocation regression remains a separate ARES platform test.
 
