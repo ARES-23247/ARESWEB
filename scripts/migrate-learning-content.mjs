@@ -385,10 +385,13 @@ export function buildLearningApprovalTemplate(phase, artifact, legacyPlan, cross
 export function planLearningDocument(change, snapshot, phase) {
   const exists = Boolean(snapshot?.exists);
   const current = exists ? snapshot.data() : {};
+  const desiredMatches = exists && exactFields(current, change.desired);
   const markerMatches = current.academyMigrationVersion === MIGRATION_VERSION
     && current.academyMigrationPhase === phase
-    && exactFields(current, change.desired);
-  if (markerMatches) return { ...change, state: "unchanged", current, changedFields: [] };
+    && desiredMatches;
+  if (markerMatches || (change.kind !== "create" && desiredMatches)) {
+    return { ...change, state: "unchanged", current, changedFields: [] };
+  }
   if (change.kind === "create") {
     if (exists) {
       return {
