@@ -10,6 +10,7 @@ import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 import DocumentApprovalReviewDialog from "@/components/dashboard/DocumentApprovalReviewDialog";
+import CurriculumEvidenceRequestsPanel from "@/components/dashboard/CurriculumEvidenceRequestsPanel";
 
 const ACADEMY_CATEGORIES = [
   "Robotics & Engineering",
@@ -97,6 +98,8 @@ export default function AcademyManagementPage() {
           <span>🔒 Read-only Guest Mode: Request authorization clearance to modify the Academy database.</span>
         </div>
       )}
+
+      {canEdit && <CurriculumEvidenceRequestsPanel />}
 
       {/* List Grid View */}
       <div className="flex justify-end">

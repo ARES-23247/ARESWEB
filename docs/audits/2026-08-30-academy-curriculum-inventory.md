@@ -319,3 +319,24 @@ or explicitly state that robot verification remains student-led. Matches for
 mock, fake, invented, physical validation, and approved evidence are bounded
 teaching labels or warnings rather than fabricated team claims. Exact source
 links all use the current `890ef593` commit.
+
+### ACAD-INV-07 — Evidence requests were invisible to curriculum editors
+
+- Severity: medium for curriculum completion
+- Confidence: high
+- Evidence: `content/learning/curriculum-source-requests.json` tracks 20
+  reviewed requests, while the Academy Manager previously rendered only the
+  documentation list and approval workflow in
+  `src/app/dashboard/academy/page.tsx`. Repository search found no frontend
+  consumer of the request register.
+- Impact: the remaining work was machine-validated but hidden from the coaches
+  who can provide authentic team media, current sources, physical evidence, or
+  process review. The gaps could remain open indefinitely or be replaced with
+  unsupported sample content.
+- Remediation: show editors a compact, expandable evidence panel sourced from
+  the checked-in register. Preserve missing and partial states, exact acceptance
+  checks, and blocker categories; do not create placeholder artifacts.
+- Acceptance test: the component test checks the register totals and first
+  acceptance contract. The authenticated Playwright matrix opens the full list
+  at 320 px in Chromium, Firefox, WebKit, mobile Chromium, and mobile WebKit and
+  proves the page has no horizontal overflow.
