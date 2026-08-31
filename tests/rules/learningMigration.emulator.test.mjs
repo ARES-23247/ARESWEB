@@ -109,8 +109,8 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
     expect((await db.doc("docs/e2e-test-quick-start").get()).data()).toMatchObject({ isDeleted: 1 });
     expect((await db.doc("docs/montyhall").get()).data()).toMatchObject({ displayInAreslib: 0 });
     expect((await db.doc("docs/ftc-intake-io-fault-recovery").get()).data()).toMatchObject({ isDeleted: 1 });
-    expect((await db.doc("docs/montyhall/revisions/academy_v2_cleanup_montyhall").get()).exists).toBe(true);
-    expect((await db.doc("audit_logs/academy_v2_cleanup_montyhall").get()).data()).not.toHaveProperty("content");
+    expect((await db.doc("docs/montyhall/revisions/academy_v3_cleanup_montyhall").get()).exists).toBe(true);
+    expect((await db.doc("audit_logs/academy_v3_cleanup_montyhall").get()).data()).not.toHaveProperty("content");
 
     const stage = await runLearningMigration({
       ...base,
@@ -162,7 +162,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
     });
     expect(refreshed.content).toContain("Students may verify the real lights using the team's normal safety procedure");
     expect(refreshed.content).not.toContain("a mentor must");
-    expect((await db.doc("audit_logs/academy_v2_refresh-published_ftc-gui-owned-indicator-lights").get()).data()).toMatchObject({
+    expect((await db.doc("audit_logs/academy_v3_refresh-published_ftc-gui-owned-indicator-lights").get()).data()).toMatchObject({
       reviewDigest: preparedApproval.template.reviewDigest,
       reviewedAt: "2026-08-25",
       reviewedByLabel: "Emulator Coach",
