@@ -35,7 +35,7 @@ describe("AnalyticsTracker", () => {
       </MemoryRouter>,
     );
 
-    expect(window.dataLayer[0]).toEqual([
+    expect(Array.from(window.dataLayer[0] as IArguments)).toEqual([
       "consent",
       "default",
       {
@@ -45,12 +45,16 @@ describe("AnalyticsTracker", () => {
         analytics_storage: "denied",
       },
     ]);
-    expect(window.dataLayer[1]).toEqual(["js", expect.any(Date)]);
-    expect(window.dataLayer[2]).toEqual([
+    expect(Array.from(window.dataLayer[1] as IArguments)).toEqual([
+      "js",
+      expect.any(Date),
+    ]);
+    expect(Array.from(window.dataLayer[2] as IArguments)).toEqual([
       "config",
       "G-0KKZT6G3TG",
       { send_page_view: false },
     ]);
+    expect(Array.isArray(window.dataLayer[0])).toBe(false);
     expect(window.localStorage.getItem("ares_ga_client_id")).toBeNull();
     expect(document.getElementById("google-analytics-script")).toHaveAttribute(
       "src",
@@ -68,7 +72,9 @@ describe("AnalyticsTracker", () => {
 
     act(() => getByRole("button", { name: "Change route" }).click());
 
-    expect(window.dataLayer).toContainEqual([
+    expect(
+      window.dataLayer.map((entry) => Array.from(entry as IArguments)),
+    ).toContainEqual([
       "event",
       "page_view",
       expect.objectContaining({
