@@ -8,27 +8,6 @@ declare global {
   }
 }
 
-// Generate or retrieve client ID from localStorage to run GA4 completely cookie-free
-function getOrCreateClientId(): string {
-  const STORAGE_KEY = "ares_ga_client_id";
-  try {
-    let cid = localStorage.getItem(STORAGE_KEY);
-    if (!cid) {
-      // Use crypto.randomUUID if available, otherwise fallback to custom random generator
-      if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {
-        cid = window.crypto.randomUUID();
-      } else {
-        cid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      }
-      localStorage.setItem(STORAGE_KEY, cid);
-    }
-    return cid;
-  } catch {
-    // Fallback for private tabs/browsers where localStorage is blocked
-    return "session_" + Math.random().toString(36).substring(2, 15);
-  }
-}
-
 export default function AnalyticsTracker() {
   const location = useLocation();
 
@@ -38,27 +17,35 @@ export default function AnalyticsTracker() {
   useEffect(() => {
     if (!measurementId) return;
 
-    // Load GA4 gtag script tag dynamically if it doesn't already exist
+    if (!window.gtag) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = (...args: unknown[]) => {
+        window.dataLayer.push(args);
+      };
+
+      // Use Google's supported Consent Mode instead of a custom client ID.
+      // Analytics receives cookieless measurement pings while advertising and
+      // analytics storage remain disabled.
+      window.gtag("consent", "default", {
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+        analytics_storage: "denied",
+      });
+      window.gtag("js", new Date());
+      window.gtag("config", measurementId, {
+        send_page_view: false,
+      });
+    }
+
+    // Load GA4 dynamically to keep executable inline scripts out of the app
+    // shell and preserve the strict Hosting CSP.
     if (!document.getElementById("google-analytics-script")) {
       const script = document.createElement("script");
       script.id = "google-analytics-script";
       script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
       script.async = true;
       document.head.appendChild(script);
-
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = (...args: unknown[]) => {
-        window.dataLayer.push(args);
-      };
-      
-      window.gtag("js", new Date());
-
-      // Configure Google Analytics with client_storage: 'none' and the localStorage client ID
-      window.gtag("config", measurementId, {
-        client_storage: "none",
-        client_id: getOrCreateClientId(),
-        send_page_view: false // Turn off automatic page view tracking to let React Router handle it
-      });
     }
   }, [measurementId]);
 
@@ -69,7 +56,8 @@ export default function AnalyticsTracker() {
     const pagePath = location.pathname + location.search;
     window.gtag("event", "page_view", {
       page_path: pagePath,
-      send_to: measurementId
+      page_location: window.location.href,
+      send_to: measurementId,
     });
   }, [location, measurementId]);
 

@@ -40,12 +40,12 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              We utilize Google Analytics in <strong>Cookie-Free Mode</strong>. To prioritize your privacy, we have explicitly disabled HTTP cookie storage.
+              We use Google Analytics with Google Consent Mode configured to deny analytics and advertising storage. This provides basic, cookie-free traffic measurements without creating a persistent browser identifier.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>A client identifier is generated and maintained strictly in the browser&apos;s local storage, preventing HTTP tracking cookies.</li>
-              <li>No unique user IP addresses are stored or permanently tracked.</li>
-              <li>We measure basic website traffic (like total visits, page views, and performance) to optimize site operations.</li>
+              <li>ARES does not create an analytics cookie or store an analytics identifier in your browser.</li>
+              <li>Google receives cookieless measurement requests and processes request metadata under its Analytics privacy and data-protection controls.</li>
+              <li>We measure basic website traffic, such as visits and page views, to improve site operations.</li>
             </ul>
           </section>
 

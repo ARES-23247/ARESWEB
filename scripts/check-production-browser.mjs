@@ -6,6 +6,7 @@ const SUCCESS_MESSAGE = "Application submitted successfully!";
 const SECURITY_FAILURE_MESSAGE =
   "Security verification failed. Please refresh and try again.";
 const APP_CHECK_EXCHANGE_PATH = "exchangeRecaptchaEnterpriseToken";
+const EXPECTED_ANALYTICS_MEASUREMENT_ID = "G-0KKZT6G3TG";
 const EXPECTED_HEADLESS_CONSOLE_FAILURES = [
   "console.error: requestStorageAccess: Permission denied.",
   "console.error: Failed to load resource: the server responded with a status of 403",
@@ -95,6 +96,16 @@ export async function runProductionBrowserCheck({
   });
 
   try {
+    const analyticsRequestPromise = page.waitForRequest(
+      (request) => {
+        const url = new URL(request.url());
+        return (
+          url.hostname.endsWith("google-analytics.com") &&
+          url.pathname === "/g/collect"
+        );
+      },
+      { timeout: 30_000 },
+    );
     await page.goto(
       `${origin}/join?deployment=${encodeURIComponent(deploymentId)}`,
       {
@@ -112,6 +123,15 @@ export async function runProductionBrowserCheck({
         clientFailures.length > 0 ? `\n${clientFailures.join("\n")}` : "";
       throw new Error(
         `Join form did not become ready at ${currentUrl}${diagnostics}`,
+      );
+    }
+    const analyticsRequest = await analyticsRequestPromise;
+    const analyticsMeasurementId = new URL(
+      analyticsRequest.url(),
+    ).searchParams.get("tid");
+    if (analyticsMeasurementId !== EXPECTED_ANALYTICS_MEASUREMENT_ID) {
+      throw new Error(
+        `GA4 collection used unexpected measurement ID ${analyticsMeasurementId ?? "missing"}`,
       );
     }
     if (new URL(page.url()).origin !== origin) {
@@ -209,6 +229,7 @@ export async function runProductionBrowserCheck({
       return {
         origin,
         enterpriseClient: true,
+        analyticsVerified: true,
         appCheckVerified: true,
         headlessRejectionVerified: false,
       };
@@ -247,6 +268,7 @@ export async function runProductionBrowserCheck({
     return {
       origin,
       enterpriseClient: true,
+      analyticsVerified: true,
       appCheckVerified: false,
       headlessRejectionVerified: true,
     };
@@ -265,8 +287,8 @@ export async function main(argv = process.argv.slice(2)) {
   const result = await runProductionBrowserCheck({ origin, deploymentId });
   console.log(
     result.appCheckVerified
-      ? `Production browser security check passed for ${result.origin}: Enterprise client and App Check canary verified`
-      : `Production browser security check passed for ${result.origin}: Enterprise rejected headless attestation and the canary failed closed`,
+      ? `Production browser security check passed for ${result.origin}: GA4 collection, Enterprise client, and App Check canary verified`
+      : `Production browser security check passed for ${result.origin}: GA4 collection verified, Enterprise rejected headless attestation, and the canary failed closed`,
   );
 }
 
