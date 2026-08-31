@@ -26,6 +26,22 @@ pipeline).
 | `pnpm run test:e2e` | Playwright E2E (5 browser engines incl. mobile WebKit) |
 | `pnpm audit --prod --audit-level=high` | Production dependency audit |
 
+## Local ARES source-drift audit
+
+Before refreshing Academy content from a local ARES Robotics checkout, run:
+
+```powershell
+pnpm run content:audit-source-worktree -- --repo C:\path\to\ARES-Robotics
+```
+
+This manual audit compares every pinned Academy source path with the catalog's
+immutable authority commit. It distinguishes an aligned checkout from a newer
+checkout with relevant changes, an older checkout, a divergent branch, missing
+sources, and uncommitted edits to referenced files. Do not refresh lesson
+authority from `checkout-behind`, `blocked-dirty`, `blocked-divergent`, or
+`blocked-missing` results. This check is intentionally not a CI gate because CI
+does not contain the separate ARES Robotics worktree.
+
 ## CI Gates
 
 The required test gate aggregates all of these on every PR; deploys run only
