@@ -1,5 +1,11 @@
 /** @sim {"name":"ARES FTC Current Budget Trace","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState } from "react";
+import {
+  AcademyLabShell,
+  AcademyModelLimit,
+  AcademyNumberControl,
+  AcademySelectControl,
+} from "@/sims/shared/academy-interaction-ui";
 
 export type CurrentBudgetState = "HEALTHY" | "WARNING" | "CRITICAL";
 
@@ -80,30 +86,43 @@ export default function CurrentBudgetLab() {
   };
 
   return (
-    <section aria-labelledby="current-budget-title" className="my-6 rounded-lg border border-white/10 bg-charcoal p-4 sm:p-5">
-      <h3 id="current-budget-title" className="text-xl font-black text-white">ARES FTC Current Budget Trace</h3>
-      <p className="mt-2 text-sm text-marble/80">Step one measured current through the pinned FTC profile.</p>
+    <AcademyLabShell
+      titleId="current-budget-title"
+      title="ARES FTC Current Budget Trace"
+      eyebrow="Code-derived state trace"
+      description="Step one measured current through the pinned FTC profile."
+      onReset={reset}
+      resetLabel="Reset trace"
+    >
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-bold text-white">Prior budget state
-          <select value={previousState} onChange={(event) => setPreviousState(event.currentTarget.value as CurrentBudgetState)} className={controlClass}>
-            <option value="HEALTHY">Healthy</option><option value="WARNING">Warning</option><option value="CRITICAL">Critical</option>
-          </select>
-        </label>
-        <label className="text-sm font-bold text-white">Lesson current input (amps)
-          <input type="number" inputMode="decimal" min={0} max={24} step={0.5} value={currentAmps} onChange={(event) => { const next = event.currentTarget.valueAsNumber; if (Number.isFinite(next)) setCurrentAmps(Math.min(24, Math.max(0, next))); }} className={controlClass} />
-        </label>
+        <AcademySelectControl
+          id="prior-budget-state"
+          label="Prior budget state"
+          value={previousState}
+          options={["HEALTHY", "WARNING", "CRITICAL"]}
+          onChange={(value) => setPreviousState(value as CurrentBudgetState)}
+        />
+        <AcademyNumberControl
+          id="lesson-current-input"
+          label="Lesson current input (amps)"
+          unit="A"
+          value={currentAmps}
+          min={0}
+          max={24}
+          step={0.5}
+          onChange={(value) => {
+            if (Number.isFinite(value)) setCurrentAmps(Math.min(24, Math.max(0, value)));
+          }}
+        />
       </div>
-      <button type="button" onClick={reset} className="mt-4 min-h-11 rounded border border-white/20 px-4 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Reset trace</button>
       <div role="status" aria-live="polite" className="mt-4 rounded border border-ares-cyan/30 bg-obsidian p-4 text-sm leading-relaxed text-white">
         <strong>{previousState} → {result.state}</strong> at {result.safeCurrentAmps.toFixed(1)} A; power scale {(result.powerScale * 100).toFixed(1)}%. {result.reason}
       </div>
-      <p role="note" className="mt-4 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white">
-        <strong>Model limit:</strong> This trace copies one state-machine step from the pinned FTC
+      <AcademyModelLimit>
+        This trace copies one state-machine step from the pinned FTC
         profile with no registered motors. It does not run Kotlin, estimate a motor, read a current
         sensor, model voltage sag or heat, apply a command, or approve electrical hardware.
-      </p>
-    </section>
+      </AcademyModelLimit>
+    </AcademyLabShell>
   );
 }
-
-const controlClass = "mt-2 min-h-11 w-full rounded border border-white/20 bg-obsidian px-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan";
