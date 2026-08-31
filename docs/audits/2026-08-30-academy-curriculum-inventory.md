@@ -49,11 +49,11 @@ released. The strongest remaining work is:
 | Planned robotics lesson identities | 50 |
 | Estimated learning time | 5,310 minutes (88.5 hours) |
 | Markdown words | about 97,000 |
-| Pinned source references | 243 across all 68 documents |
+| Pinned source references | 244 across all 68 documents |
 | Reviewed interaction embeds | 90, using 49 distinct interactions |
 | Documents with Mermaid diagrams | 68 |
-| Authentic image embeds | 5 (up from 0 at inventory start) |
-| Tracked evidence/source gaps | 20 |
+| Authentic image embeds | 6 placements using 5 unique images (up from 0 at inventory start) |
+| Tracked evidence/source gaps | 20: 19 missing, 1 partially supported |
 | Current branch delta from `origin/master` | 70 commits; 162 files; +17,359 / -3,198 lines |
 
 The reading-level check reports an estimated average grade of 6.9. No lesson is
@@ -179,8 +179,8 @@ Competition Operations has 6, Capstones has 5, and the ARESLib reference has 8.
 - catalog/path/source/media inventory through PowerShell and checked-in JSON;
 - `git fetch origin --prune` in the ARES monorepo;
 - `git diff f02737ae..099e5188` for the authority change;
-- `pnpm run content:validate` — passed after stabilization: 68 documents, 90
-  embeds, 243 references;
+- `pnpm run content:validate` — passed after gap reconciliation: 68 documents,
+  90 interaction embeds, 244 references;
 - `pnpm run content:readability` — passed: average grade 6.9, no lesson above 8.9;
 - inventory-time `pnpm run content:verify` — failed as designed on Studio 3.1.0
   versus 3.1.1;
@@ -222,3 +222,21 @@ The 20 tracked evidence gaps remain open unless their exact acceptance criteria
 are met. The five screenshots strengthen existing lessons but do not justify
 closing requests for physical team photographs, future-season FIRST material,
 or human-reviewed team procedures.
+
+## Evidence-gap review
+
+Every open request now has a dated, machine-validated review that distinguishes
+missing evidence from partial support and identifies the remaining blocker.
+Nineteen requests remain missing and one is partial. No request is marked
+fulfilled or removed merely because a nearby artifact exists.
+
+The partial request is `capstone-subsystem`. The exact Studio 3.1.1 Indicator
+lights builder screenshot now appears in the capstone with its immutable source
+reference. It supports the descriptor and ownership discussion, but it does not
+show the generated preview categories required by the acceptance criterion.
+
+Remaining blocker occurrences are: eight approved team artifacts, six current
+official references, three current-season releases, two current product
+screenshots, three physical student evidence sets, and four team process
+reviews. A request may have more than one blocker. These counts explain why
+further autonomous prose would not close the remaining gaps.

@@ -54,6 +54,13 @@ document or user-owned source. Do not edit disposable files under a generated bu
 The current team repository contains an `indicator-lights.aressubsystem` document. It is a useful
 beginner example because its limits are easy to see.
 
+![ARES Robotics Studio showing the Lightbot Indicator lights subsystem and its ownership-oriented builder steps](/academy/studio-3.1.1/subsystem-builder.png)
+
+This Studio 3.1.1 screenshot shows the real Indicator lights descriptor in the
+Subsystem Builder. It supports the descriptor and ownership discussion below.
+It does not show the generated preview categories, a successful build, a
+simulation result, or physical robot behavior.
+
 | Boundary | What the current descriptor says |
 | --- | --- |
 | Hardware | Two optional indicator lights use the FTC names `indicator` and `indicator2`. |

@@ -342,7 +342,7 @@ describe("learning catalog preparation", () => {
       { id: "complete-source", sourceGap: null },
     ] }] };
     const sourceRequests = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       mode: "proposal-only",
       requests: [{
         lessonId: "needs-photo",
@@ -350,6 +350,13 @@ describe("learning catalog preparation", () => {
         need: "authentic team photo required",
         status: "requested",
         acceptance: "An approved team photo supports the lesson objective.",
+        review: {
+          reviewedAt: "2026-08-30",
+          evidenceState: "missing",
+          remainingBlockers: ["approved-team-artifact"],
+          evidence: [],
+          note: "No approved team photo is available in the reviewed source set.",
+        },
       }],
     };
     expect(validateCurriculumSourceRequests(sourceRequests, curriculumPlan)).toEqual({ requests: 1 });
@@ -359,5 +366,22 @@ describe("learning catalog preparation", () => {
       ...sourceRequests,
       requests: [{ ...sourceRequests.requests[0], status: "fulfilled" }],
     }, curriculumPlan)).toThrow(/must remain requested/u);
+    expect(() => validateCurriculumSourceRequests({
+      ...sourceRequests,
+      requests: [{
+        ...sourceRequests.requests[0],
+        review: { ...sourceRequests.requests[0].review, evidenceState: "partial" },
+      }],
+    }, curriculumPlan)).toThrow(/partial evidence requires/u);
+    expect(() => validateCurriculumSourceRequests({
+      ...sourceRequests,
+      requests: [{
+        ...sourceRequests.requests[0],
+        review: {
+          ...sourceRequests.requests[0].review,
+          remainingBlockers: ["approved-team-artifact", "approved-team-artifact"],
+        },
+      }],
+    }, curriculumPlan)).toThrow(/must not contain duplicates/u);
   });
 });

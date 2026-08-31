@@ -219,8 +219,8 @@ export function validateAcademySimRegistry(registry) {
 }
 
 export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan) {
-  assert(sourceRequests?.schemaVersion === 1 && sourceRequests.mode === "proposal-only",
-    "Curriculum source requests must remain a proposal-only version 1 document.");
+  assert(sourceRequests?.schemaVersion === 2 && sourceRequests.mode === "proposal-only",
+    "Curriculum source requests must remain a proposal-only version 2 document.");
   assert(Array.isArray(sourceRequests.requests), "Curriculum source requests must be an array.");
   const allowedTypes = new Set([
     "authentic-media",
@@ -228,6 +228,15 @@ export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan)
     "process-review",
     "physical-evidence",
     "mixed",
+  ]);
+  const allowedEvidenceStates = new Set(["missing", "partial"]);
+  const allowedBlockers = new Set([
+    "approved-team-artifact",
+    "current-official-reference",
+    "current-product-screenshot",
+    "current-season-release",
+    "physical-student-evidence",
+    "team-process-review",
   ]);
   const gaps = new Map(curriculumPlan.tracks.flatMap((track) => track.lessons)
     .filter((lesson) => lesson.sourceGap !== null)
@@ -243,6 +252,31 @@ export function validateCurriculumSourceRequests(sourceRequests, curriculumPlan)
     assert(request.status === "requested", `${request.lessonId}: unverified source requests must remain requested.`);
     assert(typeof request.acceptance === "string" && request.acceptance.trim(),
       `${request.lessonId}: source request acceptance evidence is required.`);
+    assert(request.review && typeof request.review === "object",
+      `${request.lessonId}: a dated evidence review is required.`);
+    assert(/^\d{4}-\d{2}-\d{2}$/u.test(request.review.reviewedAt),
+      `${request.lessonId}: reviewedAt must be an ISO calendar date.`);
+    assert(allowedEvidenceStates.has(request.review.evidenceState),
+      `${request.lessonId}: evidenceState must be missing or partial while the request remains open.`);
+    assert(Array.isArray(request.review.remainingBlockers) && request.review.remainingBlockers.length > 0,
+      `${request.lessonId}: at least one remaining blocker is required.`);
+    assert(new Set(request.review.remainingBlockers).size === request.review.remainingBlockers.length,
+      `${request.lessonId}: remaining blockers must not contain duplicates.`);
+    for (const blocker of request.review.remainingBlockers) {
+      assert(allowedBlockers.has(blocker), `${request.lessonId}: invalid remaining blocker ${blocker}.`);
+    }
+    assert(Array.isArray(request.review.evidence) && request.review.evidence.length <= 10,
+      `${request.lessonId}: review evidence must be a bounded array.`);
+    for (const evidence of request.review.evidence) {
+      assert(typeof evidence === "string" && evidence.trim(),
+        `${request.lessonId}: review evidence entries must be non-empty strings.`);
+    }
+    if (request.review.evidenceState === "partial") {
+      assert(request.review.evidence.length > 0,
+        `${request.lessonId}: partial evidence requires at least one exact evidence reference.`);
+    }
+    assert(typeof request.review.note === "string" && request.review.note.trim(),
+      `${request.lessonId}: a concise review note is required.`);
   }
   for (const lessonId of gaps.keys()) {
     assert(requestedLessons.has(lessonId), `${lessonId}: declared curriculum source gap has no tracked request.`);
