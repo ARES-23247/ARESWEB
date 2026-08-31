@@ -112,6 +112,34 @@ const mockDocsList = [
   },
 ];
 
+const mockAresLibDocsList = [
+  {
+    ...mockDocsList[0],
+    contentType: "reference" as const,
+    subject: "robotics-engineering" as const,
+    topics: ["ARESLib", "architecture"],
+    pathMemberships: [{ pathId: "areslib-engineering-reference" as const, order: 1 }],
+    slug: "areslib-fundamentals",
+    title: "ARESLib Architecture and Ownership",
+    category: "Architecture & Redux",
+    description: "Trace shared ARES architecture and ownership boundaries.",
+    displayInAreslib: 1,
+  },
+  {
+    ...mockDocsList[1],
+    contentType: "reference" as const,
+    subject: "robotics-engineering" as const,
+    topics: ["ARESLib", "subsystems"],
+    pathMemberships: [{ pathId: "areslib-engineering-reference" as const, order: 2 }],
+    prerequisites: ["areslib-fundamentals"],
+    slug: "subsystems-ownership-and-safety",
+    title: "Subsystem Ownership, I/O, and Safety",
+    category: "Architecture & Redux",
+    description: "Trace subsystem ownership, cached I/O, and safe lifecycle behavior.",
+    displayInAreslib: 1,
+  },
+];
+
 function LocationProbe() {
   const location = useLocation();
   return <output data-testid="location-probe">{location.pathname}{location.search}</output>;
@@ -178,6 +206,56 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
     );
     expect(screen.getByText("Lesson completed", { exact: true })).toBeInTheDocument();
     expect(screen.getByText("Ready next", { exact: true })).toBeInTheDocument();
+  });
+
+  it("offers a path-aware ARESLib reference sequence with local progress", async () => {
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockAresLibDocsList);
+    vi.mocked(fetchPublicDocument).mockResolvedValue(mockAresLibDocsList[1]);
+
+    render(
+      <MemoryRouter initialEntries={["/docs/subsystems-ownership-and-safety?path=areslib-engineering-reference"]}>
+        <Routes>
+          <Route path="/docs/:slug" element={<AcademyPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Subsystem Ownership, I/O, and Safety" })).toBeInTheDocument();
+    expect(screen.getByText(/ARESLib Engineering Reference · Lesson 2 of 2/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ARESLib Architecture and Ownership" })).toHaveAttribute(
+      "href",
+      "/docs/areslib-fundamentals?path=areslib-engineering-reference",
+    );
+    expect(screen.getByRole("link", { name: /Previous.*ARESLib Architecture and Ownership/i })).toHaveAttribute(
+      "href",
+      "/docs/areslib-fundamentals?path=areslib-engineering-reference",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark lesson complete" }));
+    expect(window.localStorage.getItem("ares-academy-progress-v1")).toBe(
+      JSON.stringify({ version: 1, completedSlugs: ["subsystems-ownership-and-safety"] }),
+    );
+  });
+
+  it("shows only populated paths on the ARESLib landing page", async () => {
+    vi.mocked(fetchPublicDocuments).mockResolvedValue(mockAresLibDocsList);
+
+    render(
+      <MemoryRouter initialEntries={["/docs?path=areslib-engineering-reference"]}>
+        <Routes>
+          <Route path="/docs" element={<AcademyPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "ARESLib Documentation" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Guided reference paths" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ARESLib Engineering Reference/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Math for Robotics/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Start path/i })).toHaveAttribute(
+      "href",
+      "/docs/areslib-fundamentals?path=areslib-engineering-reference",
+    );
   });
 
   it("loads doc list and displays the active lesson with author lifecycle and navigation links", async () => {

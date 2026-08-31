@@ -6,11 +6,14 @@
 saves that story for later. Neither one should secretly control the robot.
 
 In this lesson, you will read invented telemetry, separate an observation from an explanation, and
-design a small evidence record. Complete [Simulation Is Not Hardware
+design a small evidence record. Read [ARESLib Architecture and
+Ownership](/docs/areslib-fundamentals?path=areslib-engineering-reference) first. The Academy lesson
+[Simulation Is Not Hardware
 Validation](/academy/simulation-is-not-hardware-validation?path=testing-debugging-commissioning)
-first. No physical robot is needed.
+is useful practice before you treat simulator evidence as robot evidence. No physical robot is
+needed.
 
-The topic and logging examples are pinned to the current ARES 12.0.0 contract. A real review must
+The topic and logging examples are pinned to the current ARES 13.0.0 contract. A real review must
 still confirm the source identity and version stored with that run. Never copy a topic meaning from
 one robot or simulator into another record without checking its contract.
 

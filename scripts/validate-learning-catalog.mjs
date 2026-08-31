@@ -24,6 +24,7 @@ const LEVELS = new Set(["beginner", "intermediate", "advanced"]);
 const PLATFORMS = new Set(["web", "simulator", "ftc", "frc", "hardware-neutral"]);
 const SAFETY_SCOPES = new Set(["none", "simulation-only", "bench-testing", "physical-robot"]);
 const PATH_IDS = new Set([
+  "areslib-engineering-reference",
   "robotics-foundations",
   "ftc-robot-with-ares",
   "frc-robot-with-ares",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  migrateCurrentSourcePaths,
   parseVersionProperties,
   refreshCatalogText,
   replaceCurrentVersionText,
@@ -42,6 +43,14 @@ describe("learning source-authority refresh", () => {
       previous,
       next,
     )).toBe("ARES 12.0.0, ARES-FTC 12.0.0, Studio 3.0.0, FTC SDK 11.1.0");
+  });
+
+  it("moves retired source references to their current monorepo boundary", () => {
+    expect(migrateCurrentSourcePaths(
+      "Canonical hardware topology models: ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt",
+    )).toBe(
+      "Canonical hardware topology wire schema: ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
+    );
   });
 
   it("refreshes provenance, URLs, revisions, versions, and blob identities", () => {

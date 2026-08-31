@@ -35,6 +35,7 @@ export const LEARNING_SAFETY_SCOPES = [
 ] as const;
 
 export const LEARNING_PATHS = [
+  { id: "areslib-engineering-reference", label: "ARESLib Engineering Reference", description: "Follow shared architecture, subsystem, telemetry, sequencing, tuning, drivebase, autonomous, and release contracts in a deliberate order.", beginnerGuidance: "Start here before changing shared robotics code" },
   { id: "robotics-foundations", label: "Robotics Foundations", description: "Learn how robot software turns intent into safe, observable behavior.", beginnerGuidance: "Best first robotics path" },
   { id: "ftc-robot-with-ares", label: "Build an FTC Robot with ARES", description: "Progress from the FTC starter project to a simulated and then supervised physical robot.", beginnerGuidance: "Continue here after Robotics Foundations" },
   { id: "frc-robot-with-ares", label: "Build an FRC Robot with ARES", description: "Move from the ARES workspace and robot loop through FRC mode safety, evidence, drivebase contracts, and competition handoffs.", beginnerGuidance: "FRC path from first source trace to competition" },

@@ -59,7 +59,7 @@ describe("AresPidTraceLab", () => {
 
   it("lets students compare every fixed source case and states its limits", () => {
     render(<AresPidTraceLab />);
-    expect(screen.getByText("ARES 12.0.0 source trace")).toBeVisible();
+    expect(screen.getByText("ARES 13.0.0 source trace")).toBeVisible();
     expect(screen.getAllByText("0.155", { selector: "dd" })).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "Output limited" }));
     expect(screen.getByText(/stored error freezes/u)).toBeVisible();

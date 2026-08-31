@@ -17,7 +17,7 @@ first. Keep the robot disabled unless the team's safety procedure reaches a spec
 - **Root cause:** the fact that explains why the problem occurred.
 - **Canonical inventory:** the reviewed project record for every expected device and connection.
 - **Hardware map:** the platform configuration that connects software names to physical devices.
-- **Topology:** the device, parent, port, bus, and address relationships.
+- **Topology:** the versioned device, parent, port, bus, and address relationships shared by the robot and Studio.
 - **Health:** an explicit state such as healthy, stale, invalid, or disconnected.
 - **Required device:** a device whose failed startup blocks the system.
 - **Optional device:** a device whose absence is reported but may permit bounded operation.

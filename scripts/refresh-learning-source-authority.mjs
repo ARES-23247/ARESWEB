@@ -12,6 +12,12 @@ const CURRICULUM_PLAN_PATH = path.join(LEARNING_ROOT, "robotics-curriculum-plan.
 const REPOSITORY = "ARES-Robotics";
 const COMMIT_PATTERN = /^[a-f0-9]{40}$/u;
 const VERSION_PATTERN = /^\d+\.\d+\.\d+$/u;
+const SOURCE_PATH_MIGRATIONS = new Map([
+  [
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/TopologyModels.kt",
+    "ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
+  ],
+]);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -54,6 +60,16 @@ export function replaceCurrentVersionText(source, previous, next) {
     [`Studio ${previous.studioVersion}`, `Studio ${next.studioVersion}`],
   ];
   return replacements.reduce((value, [from, to]) => value.replaceAll(from, to), source);
+}
+
+export function migrateCurrentSourcePaths(source) {
+  let updated = source;
+  for (const [previousPath, currentPath] of SOURCE_PATH_MIGRATIONS) {
+    updated = updated.replaceAll(previousPath, currentPath);
+  }
+  return updated
+    .replaceAll("Canonical hardware topology models", "Canonical hardware topology wire schema")
+    .replaceAll("Hardware topology models", "Hardware topology wire schema");
 }
 
 export function refreshCatalogText(source, snapshot, blobHashes) {
@@ -114,7 +130,8 @@ async function main() {
   const revision = `ares-${versions.aresVersion}-studio-${versions.studioVersion}`;
   const snapshot = { commit, revision, versions };
 
-  const catalogSource = await readFile(CATALOG_PATH, "utf8");
+  const originalCatalogSource = await readFile(CATALOG_PATH, "utf8");
+  const catalogSource = migrateCurrentSourcePaths(originalCatalogSource);
   const catalog = JSON.parse(catalogSource);
   const sourcePaths = new Set(catalog.documents.flatMap((document) =>
     document.sourceReferences.map((reference) => reference.path)));
@@ -137,7 +154,8 @@ async function main() {
   authorities.repositories[REPOSITORY].approved = [{ revision, commit }];
 
   const planSource = await readFile(CURRICULUM_PLAN_PATH, "utf8");
-  let updatedPlan = replaceField(planSource, "commit", commit);
+  let updatedPlan = migrateCurrentSourcePaths(planSource);
+  updatedPlan = replaceField(updatedPlan, "commit", commit);
   updatedPlan = replaceField(updatedPlan, "aresVersion", versions.aresVersion);
   updatedPlan = replaceField(updatedPlan, "studioVersion", versions.studioVersion);
 
@@ -149,7 +167,7 @@ async function main() {
     if (updated !== source) markdownUpdates.push([markdownPath, updated]);
   }
 
-  const changed = Number(updatedCatalog !== catalogSource)
+  const changed = Number(updatedCatalog !== originalCatalogSource)
     + Number(`${JSON.stringify(authorities, null, 2)}\n` !== authoritiesSource)
     + Number(updatedPlan !== planSource)
     + markdownUpdates.length;

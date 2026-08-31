@@ -6,7 +6,7 @@ An ARESLib change can pass one small test and still break an FTC robot, an FRC r
 starter project. This reference shows how to match evidence to the boundary that changed. It also
 explains why one version name must always point to one exact set of library files.
 
-This page applies to ARES 12.0.0 and Studio 3.0.0. Read
+This page applies to ARES 13.0.0 and Studio 3.1.0. Read
 [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Use
 [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
 when you need to compare behavior at two runtime boundaries.
@@ -96,7 +96,7 @@ Use the lab below to match a change to the smallest complete validation plan.
 
 <releasevalidationlab />
 
-The lab follows the pinned ARES 12.0.0 development and publishing documents. It does not inspect a
+The lab follows the pinned ARES 13.0.0 development and publishing documents. It does not inspect a
 branch, run a build, publish files, or approve a release.
 
 Then create a change card for one real proposed change. Do not edit or publish anything yet.
@@ -120,7 +120,7 @@ The release manifest owns the final ARESLib and Studio versions. Normal season p
 ARES BOM and modules from the ARES GitHub Maven repository. Maven Central may be a second channel.
 Both channels must return the same files for the same coordinate.
 
-Suppose two different JAR files are both named `core:12.0.0`. One developer may receive the cached
+Suppose two different JAR files are both given the fictional coordinate `core:9.9.9`. One developer may receive the cached
 first file. Another may receive the second file because repository order changed. Both builds print
 the same version, so the mismatch is hard to see. This is a version identity collision.
 

@@ -38,14 +38,15 @@ export default function LearningLibraryLanding({ documents, library, progress }:
   const [confirmingReset, setConfirmingReset] = useState(false);
   const basePath = library === "academy" ? "/academy" : "/docs";
   const filters = useMemo(() => parseLearningFilters(new URLSearchParams(location.search)), [location.search]);
-  const pathId = library === "academy" ? filters.pathId : "all";
+  const pathId = filters.pathId === "all"
+    || documents.some((document) => document.pathMemberships.some((membership) => membership.pathId === filters.pathId))
+    ? filters.pathId
+    : "all";
 
   const updateFilters = (next: LearningFilters) => {
     const params = new URLSearchParams(location.search);
     FILTER_QUERY_KEYS.forEach((key) => params.delete(key));
-    const normalized = library === "academy" && progress
-      ? next
-      : { ...next, pathId: "all" as const, progress: "all" as const };
+    const normalized = progress ? next : { ...next, progress: "all" as const };
     learningFiltersToSearchParams(normalized).forEach((value, key) => params.set(key, value));
     const search = params.toString();
     navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
@@ -75,6 +76,10 @@ export default function LearningLibraryLanding({ documents, library, progress }:
       document.pathMemberships.some((membership) => membership.pathId === path.id)
       && progress?.completedSlugs.has(document.slug)).length,
   ])), [documents, progress]);
+  const availablePaths = useMemo(
+    () => LEARNING_PATHS.filter((path) => (pathCounts.get(path.id) ?? 0) > 0),
+    [pathCounts],
+  );
 
   const selectedPath = pathId === "all" ? null : LEARNING_PATHS.find((path) => path.id === pathId) ?? null;
   const selectedPathSteps = useMemo(
@@ -110,15 +115,21 @@ export default function LearningLibraryLanding({ documents, library, progress }:
         </p>
       </header>
 
-      {library === "academy" && (
+      {availablePaths.length > 0 && (
         <section aria-labelledby="learning-paths-heading" className="mt-10">
           <div className="flex items-center gap-3">
             <Route aria-hidden="true" className="text-ares-gold" />
-            <h2 id="learning-paths-heading" className="font-heading text-2xl font-black uppercase text-white">Learning paths</h2>
+            <h2 id="learning-paths-heading" className="font-heading text-2xl font-black uppercase text-white">
+              {library === "academy" ? "Learning paths" : "Guided reference paths"}
+            </h2>
           </div>
-          <p className="mt-2 text-sm text-marble/65">Paths combine lessons from several subjects into a suggested order.</p>
+          <p className="mt-2 text-sm text-marble/65">
+            {library === "academy"
+              ? "Paths combine lessons from several subjects into a suggested order."
+              : "Paths arrange related references in a suggested order while keeping every source and version note visible."}
+          </p>
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {LEARNING_PATHS.map((path) => {
+            {availablePaths.map((path) => {
               const count = pathCounts.get(path.id) ?? 0;
               const completed = pathCompletedCounts.get(path.id) ?? 0;
               const active = pathId === path.id;
@@ -236,7 +247,7 @@ export default function LearningLibraryLanding({ documents, library, progress }:
             { id: "not-started", label: "Not started" },
             { id: "completed", label: "Completed" },
           ] as const} />}
-          {library === "academy" && <FilterSelect label="Learning path" value={pathId} onChange={(value) => setFilter("pathId", value as LearningFilters["pathId"])} options={LEARNING_PATHS} />}
+          {availablePaths.length > 0 && <FilterSelect label={library === "academy" ? "Learning path" : "Reference path"} value={pathId} onChange={(value) => setFilter("pathId", value as LearningFilters["pathId"])} options={availablePaths} />}
           <button
             type="button"
             onClick={() => updateFilters(DEFAULT_LEARNING_FILTERS)}
@@ -255,7 +266,7 @@ export default function LearningLibraryLanding({ documents, library, progress }:
           </p>
         )}
 
-        {library === "academy" && progress && (
+        {progress && (
           <div className="mt-4 border border-white/10 bg-white/[0.03] p-4 text-sm text-marble/70">
             <p>
               Progress is private to this browser. It is not sent to ARES, shared between devices, or tied to a sign-in.

@@ -168,7 +168,7 @@ export default function ReleaseValidationLab() {
         role="note"
         className="mt-4 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
-        <strong>Model limit:</strong> This lab follows the pinned ARES 12.0.0 development and release
+        <strong>Model limit:</strong> This lab follows the pinned ARES 13.0.0 development and release
         contracts. It does not inspect a branch, run Gradle, publish a candidate, approve a pull
         request, or prove that a release is correct.
       </p>

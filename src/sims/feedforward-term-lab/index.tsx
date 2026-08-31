@@ -163,7 +163,7 @@ export default function FeedforwardTermLab() {
     <AcademyLabShell
       titleId="feedforward-term-title"
       title="Feedforward Term Trace"
-      description="Trace one wheel with the checked-in Team 23247 profile from ARES 12.0.0."
+      description="Trace one wheel with the checked-in Team 23247 profile from ARES 13.0.0."
       onReset={() => setInput(DEFAULT_INPUT)}
       resetLabel="Reset trace"
     >

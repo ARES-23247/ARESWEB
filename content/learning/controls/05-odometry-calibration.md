@@ -29,7 +29,7 @@ This lesson will help you:
 
 The endpoint lab uses simple geometry. It does not reproduce the full ARES estimator.
 
-This lesson follows ARES 12.0.0, FTC SDK 11.1.0, and Studio 3.0.0. Its source links are pinned to
+This lesson follows ARES 13.0.0, FTC SDK 11.1.0, and Studio 3.1.0. Its source links are pinned to
 the exact public monorepo commit used for review. The browser supplies ready-made health results. It
 does not read robot sensors or execute the Kotlin runtime.
 
@@ -115,11 +115,11 @@ ARES FRC uses a different platform boundary. Its CTRE estimator remains authorit
 and independent-truth ideas in this lesson still apply, but the FTC source buttons in the browser
 lab do not describe FRC source selection.
 
-### Read the exact ARES 12.0.0 boundaries
+### Read the exact ARES 13.0.0 boundaries
 
 The Pinpoint adapter tests four kinds of evidence before calling a packet healthy:
 
-| Check | Pinned ARES 12.0.0 rule |
+| Check | Pinned ARES 13.0.0 rule |
 | --- | --- |
 | Finite values | X, Y, heading, linear velocity, and angular velocity must all be finite. |
 | Speed | Linear speed must be at most `8 m/s`. Angular speed must be at most `4π rad/s`. |

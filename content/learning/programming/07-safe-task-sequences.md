@@ -143,7 +143,7 @@ same charged execution time.
 
 ### Preemption needs a source review
 
-`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 12.0.0 source
+`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 13.0.0 source
 revision, the group classes do not forward `pause` and `resume` to their active children. A root
 sequence therefore must not rely only on a nested child's pause hook to neutralize hardware.
 

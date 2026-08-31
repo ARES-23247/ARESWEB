@@ -128,7 +128,7 @@ export default function AresPidTraceLab() {
 
   return (
     <section aria-labelledby="ares-pid-trace-title" className="my-8 rounded-xl border border-ares-gold/30 bg-obsidian p-4 sm:p-6">
-      <p className="text-xs font-bold uppercase tracking-widest text-ares-gold">ARES 12.0.0 source trace</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-ares-gold">ARES 13.0.0 source trace</p>
       <h3 id="ares-pid-trace-title" className="mt-1 text-xl font-black text-white">Follow one tested PID step</h3>
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {TRACE_PRESETS.map((preset, index) => (
