@@ -9,6 +9,7 @@ import {
   registerPathOrder,
   validateLearningPathAllowlistContract,
   validateLearningPathContract,
+  validateLocalLearningImageReferences,
   resolveApprovedAuthority,
   validateSourceReference,
   validateSourceAuthorities,
@@ -106,6 +107,29 @@ describe("learning catalog preparation", () => {
         },
       },
     })).toThrow(/current authority must also be approved/u);
+  });
+
+  it("requires accessible, bounded local Academy image references", () => {
+    expect(validateLocalLearningImageReferences(
+      "![Studio dashboard showing the project cards](/academy/studio-3.1.1/dashboard.png)",
+      "studio-tour",
+    )).toEqual([{
+      alt: "Studio dashboard showing the project cards",
+      pathname: "/academy/studio-3.1.1/dashboard.png",
+      url: "/academy/studio-3.1.1/dashboard.png",
+    }]);
+    expect(() => validateLocalLearningImageReferences(
+      "![](/academy/studio-3.1.1/dashboard.png)",
+      "missing-alt",
+    )).toThrow(/descriptive alt text/u);
+    expect(() => validateLocalLearningImageReferences(
+      "![Unsafe image path](/academy/../private.png)",
+      "unsafe-path",
+    )).toThrow(/must not traverse/u);
+    expect(() => validateLocalLearningImageReferences(
+      "![Wrong public directory](/images/studio.png)",
+      "wrong-directory",
+    )).toThrow(/public \/academy\//u);
   });
 
   it("rejects historical approvals and policies that are not current-only", () => {

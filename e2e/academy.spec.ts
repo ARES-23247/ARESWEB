@@ -116,7 +116,7 @@ const frcModeLesson = {
   prerequisites: ["redux-state-actions-reducers", "programming-io-caching"],
   objectives: ["Compare ordered guards with the current FRC lifecycle."],
   platforms: ["frc", "simulator"],
-  appliesToVersion: "ARES 13.0.0; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.1.0",
+  appliesToVersion: "ARES 13.0.0; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.1.1",
 };
 
 const measurementLesson = {
@@ -128,7 +128,7 @@ const measurementLesson = {
   prerequisites: ["rates-units-and-motion"],
   objectives: ["Separate measurements, uncertainty, nominal values, and allowed tolerances."],
   platforms: ["hardware-neutral"],
-  appliesToVersion: "ARES 13.0.0; Studio 3.1.0",
+  appliesToVersion: "ARES 13.0.0; Studio 3.1.1",
   safetyScope: "none",
 };
 
@@ -142,7 +142,20 @@ const autonomousReferenceLesson = {
   prerequisites: ["areslib-fundamentals"],
   objectives: ["Trace a reviewed PathPlanner asset into the current ARES path runtime."],
   platforms: ["ftc", "frc", "simulator"],
-  appliesToVersion: "ARES 13.0.0; Studio 3.1.0",
+  appliesToVersion: "ARES 13.0.0; Studio 3.1.1",
+};
+
+const firstSimulationLesson = {
+  ...lesson,
+  slug: "run-first-ftc-simulation",
+  title: "Run Your First FTC Simulation",
+  description: "Verify an FTC starter project and start a controllable local simulation in the required order.",
+  level: "beginner",
+  pathMemberships: [{ pathId: "robotics-foundations", order: 3 }],
+  prerequisites: ["ares-workspace-map"],
+  objectives: ["Distinguish build, process, connection, OpMode, and movement evidence."],
+  platforms: ["simulator", "ftc"],
+  appliesToVersion: "ARES 13.0.0; FTC Starter 13.0.0; Studio 3.1.1",
 };
 
 test("Academy learning paths and lesson metadata remain usable on a 320px viewport", async ({ page }) => {
@@ -440,5 +453,42 @@ test("the autonomous reference exposes path clearance evidence without page over
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("note")).toContainText("does not parse `.aresroutine` files");
   await expect(page.getByRole("note")).toContainText("validate physical clearance");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("the first FTC simulation lesson practices bounded evidence without page overflow at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("**/api/content/docs**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const detail = pathname !== "/api/content/docs";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(detail
+        ? { document: { ...firstSimulationLesson, content: "# Run your first FTC simulation\n\n![Studio dashboard showing project and simulator entry points](/academy/studio-3.1.1/dashboard.png)\n\n<evidencelevelscenarios />" } }
+        : { documents: [firstSimulationLesson] }),
+    });
+  });
+
+  await page.goto("/academy/run-first-ftc-simulation?path=robotics-foundations", {
+    waitUntil: "networkidle",
+  });
+  const screenshot = page.getByRole("img", {
+    name: "Studio dashboard showing project and simulator entry points",
+  });
+  await screenshot.scrollIntoViewIfNeeded();
+  await expect(screenshot).toBeVisible();
+  await expect.poll(() => screenshot.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(page.getByRole("heading", { name: "Choose the Lowest Useful Evidence Level" })).toBeVisible();
+
+  const choices = page.getByRole("combobox", { name: "Lowest useful evidence level" });
+  await choices.nth(0).selectOption({ label: "Unit test" });
+  await choices.nth(1).selectOption({ label: "Local simulation" });
+  await choices.nth(2).selectOption({ label: "Restrained physical test" });
+  await page.getByRole("button", { name: "Check evidence choices" }).click();
+
+  await expect(page.getByText("3 of 3 choices supported.")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("do not replace the team safety procedure");
   await expectNoHorizontalOverflow(page);
 });

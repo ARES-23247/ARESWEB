@@ -62,6 +62,12 @@ flowchart LR
 The transform happens once. A screen may flip or scale values only while drawing. Those display
 changes must not be written back as robot coordinates.
 
+![ARES Robotics Studio Field Editor showing the square FTC field, the field X and Y axes, grid
+spacing in meters, and one test waypoint.](/academy/studio-3.1.1/field-editor.png)
+
+*Studio 3.1.1 keeps the field axes visible beside the drawing tools. Read the units and axis arrows
+before placing a waypoint; the screen view does not create a second robot coordinate system.*
+
 ## Hands-on activity
 
 Open the lab below. Keep the default one-meter forward motion and zero heading. Record field X and

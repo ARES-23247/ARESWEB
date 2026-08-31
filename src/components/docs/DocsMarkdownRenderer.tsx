@@ -78,7 +78,7 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
           ],
           attributes: {
             ...(defaultSchema.attributes || {}),
-            "*": ["className"],
+            "*": [...(defaultSchema.attributes?.["*"] || []), "className"],
             iframe: [
               "src",
               "title",

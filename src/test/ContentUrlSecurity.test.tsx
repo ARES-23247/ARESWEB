@@ -106,7 +106,18 @@ describe("untrusted content URL boundaries", () => {
     render(<DocsMarkdownRenderer content="![Robot render](javascript:alert(1))" />);
 
     expect(screen.queryByRole("img", { name: "Robot render" })).not.toBeInTheDocument();
-    expect(screen.getByText("Image unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent("Image unavailable: Robot render");
+  });
+
+  it("renders reviewed local Academy images with their text alternative", () => {
+    render(
+      <DocsMarkdownRenderer
+        content="![Studio dashboard showing project cards](/academy/studio-3.1.1/dashboard.png)"
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: "Studio dashboard showing project cards" }))
+      .toHaveAttribute("src", "/academy/studio-3.1.1/dashboard.png");
   });
 
   it("preserves supported Markdown links while leaving executable links inactive", () => {

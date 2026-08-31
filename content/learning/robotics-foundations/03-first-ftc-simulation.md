@@ -31,6 +31,28 @@ A complete movement claim needs a changing value. For example, write down true p
 forward control briefly, release it, and write down true pose X again. A changed value supports the
 claim that this simulated model moved.
 
+Use five checkpoints instead of treating one green message as the whole result:
+
+| Checkpoint | Evidence | What it supports |
+| --- | --- | --- |
+| Build | The selected workspace compiles and its checks pass. | The source was accepted by the build. |
+| Process | The simulator starts and stays running. | A local simulator process exists. |
+| Connection | Local Sim and one expected topic update. | Studio receives live simulator data. |
+| Mode | The chosen OpMode reaches INIT and START. | The intended robot lifecycle is active. |
+| Movement | A pose or other expected value changes after input. | The simulated model responded. |
+
+No single row proves the rows below it. None of these rows proves physical wiring or safe motion.
+
+## Use the simulator that owns your robot code
+
+For normal FTC work, launch the simulator from the ARES-FTC project through Studio. Its
+`:TeamCode:runSim` task includes the editable TeamCode sources and generated ARES registration.
+The ARESLib `:simulator:run` task starts the shared launcher, but a season OpMode works there only
+when that season code is on its runtime classpath.
+
+This difference matters when a generic simulator starts but cannot find the OpMode you expected.
+Check the active workspace and task before changing robot code or launching another process.
+
 ## Visual model
 
 ```mermaid
@@ -49,6 +71,13 @@ flowchart LR
 Each arrow is a separate checkpoint. Skipping a checkpoint can leave a healthy simulator waiting
 for the next command.
 
+![ARES Robotics Studio dashboard before a simulator connection. The workspace is offline, the
+Local Sim target is not selected, and the telemetry panels show their empty starting
+state.](/academy/studio-3.1.1/dashboard.png)
+
+*Studio 3.1.1 before connection. Use the target selector and the visible connection state instead
+of treating an empty field or graph as an error.*
+
 ## Hands-on activity
 
 1. Open the FTC Starter workspace in ARES Robotics Studio.
@@ -62,10 +91,10 @@ for the next command.
 9. Record one pose value before input, during movement, and after release.
 10. Select STOP for the OpMode. Use Studio's square Stop control to end the simulator process.
 
-Use the checklist lab below before you call the run complete. It is a conceptual checklist. It
-does not launch Studio, run your build, send controls, or inspect a physical robot.
+Use the evidence lab below before you call the run complete. It asks for the lowest test level that
+can support a claim. It does not launch Studio, run your build, send controls, or inspect a robot.
 
-<commissioningchecklistlab />
+<evidencelevelscenarios />
 
 ## Checkpoints
 
@@ -78,6 +107,15 @@ for this target, so you do not need to replace the saved live-robot address.
 Confirm both process and data evidence. A running process without changing expected telemetry is
 not yet a successful run. State your mode clearly: “This is live simulator data. It is not replay,
 and it cannot move the physical robot.”
+
+Keep the data sources separate. **True pose** is the physics world's ground truth. **Estimated
+pose** is the robot's Redux estimator result. A difference is evidence to investigate, not a reason
+to replace one value with the other. The simulator advances `RobotClock` in fixed steps so robot
+timeouts and logs remain repeatable.
+
+Studio exchanges live simulator data over local NT4 port `5810`. The simulator also exposes its
+local log page and API on port `5002`. An open port shows that a service is listening; it does not
+prove that the right workspace, OpMode, or control flow is active.
 
 ## Troubleshooting
 
@@ -92,14 +130,15 @@ second known-changing topic before deciding that the connection failed.
 If controls do nothing, confirm the TeleOp is active and local control is armed. Release every
 input before retrying. Do not switch to Live Robot as a shortcut.
 
-If the terminal reports an unknown task, check the current project instructions. League simulator
-tasks are separate, and a saved workspace may use an explicit simulator command.
+If the terminal reports an unknown task, confirm Studio opened ARES-FTC rather than ARESLib alone.
+League simulator tasks are separate, and a saved workspace may use an explicit simulator command.
 
 ## Evidence artifact
 
-Submit a run record with the workspace name, selected target, OpMode, build result, connection
-state, INIT state, START state, and armed state. Add a three-row table for pose before input, during
-movement, and after release. Include the topic name and units.
+Submit a run record with the workspace name, selected target, OpMode, build result, process state,
+connection state, INIT state, START state, and armed state. Mark each of the five evidence
+checkpoints above. Add a three-row table for pose before input, during movement, and after release.
+Include the topic name and units.
 
 Write one sentence stating what the run supports and one stating what it cannot support. A good
 limit is: “This run supports simulated control flow and motion; it does not validate wiring or

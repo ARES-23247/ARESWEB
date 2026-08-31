@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
@@ -7,6 +7,7 @@ import { analyzeLearningReadability } from "./learning-readability.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_ROOT = path.join(ROOT, "content", "learning");
+const PUBLIC_ROOT = path.join(ROOT, "public");
 const CATALOG_PATH = path.join(CONTENT_ROOT, "catalog.json");
 const SOURCE_AUTHORITIES_PATH = path.join(CONTENT_ROOT, "source-authorities.json");
 const LEGACY_PLAN_PATH = path.join(CONTENT_ROOT, "legacy-migration-plan.json");
@@ -402,6 +403,23 @@ export function registerPathOrder(pathOrders, pathId, order, slug) {
   pathOrders.set(pathOrderKey, slug);
 }
 
+export function validateLocalLearningImageReferences(content, slug) {
+  const references = [...content.matchAll(/!\[([^\]]*)\]\(\s*(\/[^)\s]+)(?:\s+["'][^"']*["'])?\s*\)/gu)]
+    .map((match) => ({ alt: match[1].trim(), url: match[2] }));
+
+  for (const reference of references) {
+    assert(reference.alt.length >= 10,
+      `${slug}: local learning images need descriptive alt text of at least 10 characters.`);
+    const pathname = decodeURIComponent(reference.url.split(/[?#]/u)[0]);
+    assert(!pathname.split("/").includes(".."), `${slug}: local image URL must not traverse directories.`);
+    assert(pathname.startsWith("/academy/"),
+      `${slug}: local learning images must live under the public /academy/ directory.`);
+    reference.pathname = pathname;
+  }
+
+  return references;
+}
+
 export function validateLearningPathContract(
   catalog,
   pathId,
@@ -542,6 +560,13 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(content.length >= 300, `${slug}: Markdown is too short to be a useful lesson draft.`);
     assert(!/\bTODO\b|lorem ipsum|placeholder content/i.test(content), `${slug}: unresolved placeholder text is not allowed.`);
     assertMiddleSchoolLearningQuality(content, slug);
+    for (const image of validateLocalLearningImageReferences(content, slug)) {
+      const imagePath = path.resolve(PUBLIC_ROOT, `.${image.pathname}`);
+      assert(imagePath.startsWith(`${PUBLIC_ROOT}${path.sep}`),
+        `${slug}: local image URL escapes the public directory.`);
+      const imageInfo = await stat(imagePath).catch(() => null);
+      assert(imageInfo?.isFile(), `${slug}: local image does not exist at ${image.pathname}.`);
+    }
     if (document.instructionalContractVersion === 2) {
       assertSubstantialLessonContract(content, slug);
     }
