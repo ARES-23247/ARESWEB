@@ -187,6 +187,12 @@ describe("learning content migration", () => {
       academyMigrationVersion: 4,
       academyMigrationPhase: "cleanup",
     }), "cleanup").state).toBe("unchanged");
+    expect(planLearningDocument(update, snapshot({
+      title: "Changed",
+      status: "draft",
+      academyMigrationVersion: 3,
+      academyMigrationPhase: "cleanup",
+    }), "cleanup").state).toBe("unchanged");
   });
 
   it("applies cleanup atomically, records pre-change revisions, and emits content-free rollback metadata", async () => {
