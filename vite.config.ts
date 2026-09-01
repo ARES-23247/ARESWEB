@@ -183,6 +183,7 @@ export default defineConfig({
         "src/components/SEO.tsx",
         "src/components/dashboard/DocumentDraftPreview.tsx",
         "src/hooks/useAcademyProgress.ts",
+        "src/hooks/dashboard/documentationPublishing.ts",
         "src/app/dashboard/photos/*.{ts,tsx}",
         "src/app/dashboard/events/hooks/useEventLiveCollections.ts",
         "src/app/calendar/api.ts",
@@ -228,6 +229,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/app/dashboard/photos/useGooglePhotosSync.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/hooks/dashboard/documentationPublishing.ts": {
           lines: 85,
           functions: 100,
         },
