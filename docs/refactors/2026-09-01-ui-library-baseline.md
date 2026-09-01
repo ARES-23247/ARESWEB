@@ -121,3 +121,18 @@ tests across 217 files; the new primitives have 100% line and function coverage.
 The targeted Playwright matrix passed after fixing a pre-existing timing race in
 the analytics-consent test; a Firefox browser-shutdown failure also passed when
 rerun alone and did not reproduce as a product failure.
+
+## Slice 2 result: confirmation reuse
+
+Three additional feature confirmations now use the tested `ConfirmDialog`:
+inquiry account/archive actions, roster-access revocation, and video archival.
+The slice removes a net four production source lines while centralizing safe
+cancel autofocus, pending-state close protection, minimum target sizing, focus
+containment, and focus restoration. Feature-owned mutations and wording remain
+unchanged. A roster-revocation regression test was added; the existing inquiry
+and video lifecycle tests also pass.
+
+Relative to slice 1, initial JavaScript changed by +7 gzip bytes, initial CSS
+decreased by 13 gzip bytes, and total route JavaScript changed by +36 gzip bytes.
+All bundle budgets, lint, typecheck, the production build, and 27 focused tests
+passed.
