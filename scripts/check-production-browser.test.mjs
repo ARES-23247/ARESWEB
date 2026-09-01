@@ -160,6 +160,7 @@ describe("production browser security check", () => {
       consoleErrors: [
         "Connecting to 'https://pagead2.googlesyndication.com/measurement/conversion?test=1' violates the following Content Security Policy directive: connect-src 'self'.",
         "Fetch API cannot load https://pagead2.googlesyndication.com/measurement/conversion?test=1. Refused to connect because it violates the document's Content Security Policy.",
+        "Loading the image 'https://pagead2.googlesyndication.com/measurement/conversion?test=1' violates the following Content Security Policy directive: img-src 'self'. The action has been blocked.",
       ],
     });
 
