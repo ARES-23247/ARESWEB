@@ -76,14 +76,16 @@ export function validateLearningReleaseCandidate(
     "Release candidate source authority must exactly match the prepared catalog artifact.",
   );
   assert(
-    Array.isArray(candidate.batches) && candidate.batches.length === 3,
-    "Release candidate must contain exactly two new-draft batches and one published refresh.",
+    Array.isArray(candidate.batches) &&
+      candidate.batches.length >= 1 &&
+      candidate.batches.length <= 10,
+    "Release candidate must contain 1 through 10 bounded batches.",
   );
 
   const batchIds = new Set();
   const publishSlugs = new Set();
-  let publishBatches = 0;
-  let refreshBatch = null;
+  const refreshSlugs = new Set();
+  const releaseSlugs = new Set();
   for (const batch of candidate.batches) {
     assert(
       typeof batch.id === "string" &&
@@ -124,48 +126,40 @@ export function validateLearningReleaseCandidate(
       `${batch.id}: review digest drifted; regenerate and repeat human review.`,
     );
 
-    if (batch.phase === "publish-drafts") {
-      publishBatches += 1;
-      for (const slug of batch.approvedSlugs) {
-        assert(
-          !publishSlugs.has(slug),
-          `${batch.id}: new-draft slug ${slug} appears in more than one batch.`,
-        );
-        publishSlugs.add(slug);
-      }
-    } else {
+    for (const slug of batch.approvedSlugs) {
       assert(
-        refreshBatch === null,
-        "Release candidate may contain only one published-refresh batch.",
+        !releaseSlugs.has(slug),
+        `${batch.id}: slug ${slug} appears in more than one batch.`,
       );
-      refreshBatch = batch;
+      releaseSlugs.add(slug);
+      if (batch.phase === "publish-drafts") publishSlugs.add(slug);
+      else refreshSlugs.add(slug);
     }
   }
-  assert(
-    publishBatches === 2 && refreshBatch,
-    "Release candidate batch phase split is invalid.",
-  );
 
   const replacementSlugs = replacementCatalogSlugs(legacyPlan);
-  const refreshSlugs = new Set(
+  const expectedRefreshSlugs = new Set(
     refreshPlan.documents.map((document) => document.slug),
   );
   const expectedPublishSlugs = artifact.documents
     .map((document) => document.slug)
-    .filter((slug) => !replacementSlugs.has(slug) && !refreshSlugs.has(slug));
+    .filter(
+      (slug) =>
+        !replacementSlugs.has(slug) && !expectedRefreshSlugs.has(slug),
+    );
   assert(
     sameStrings(sorted(publishSlugs), sorted(expectedPublishSlugs)),
     "New-draft batches must exactly partition every currently stageable catalog document.",
   );
   assert(
-    sameStrings(refreshBatch.approvedSlugs, sorted(refreshSlugs)),
-    "Published-refresh batch must exactly match the guarded refresh plan.",
+    sameStrings(sorted(refreshSlugs), sorted(expectedRefreshSlugs)),
+    "Published-refresh batches must exactly partition the guarded refresh plan.",
   );
 
   return {
     batches: candidate.batches.length,
     newDrafts: publishSlugs.size,
-    publishedRefreshes: refreshBatch.approvedSlugs.length,
+    publishedRefreshes: refreshSlugs.size,
     sourceCommit: candidate.sourceAuthority.commit,
   };
 }

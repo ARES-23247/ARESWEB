@@ -719,8 +719,8 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
   const publishedRefreshPlan = JSON.parse(await readFile(PUBLISHED_REFRESH_PLAN_PATH, "utf8"));
   assert(publishedRefreshPlan.planVersion === 1 && publishedRefreshPlan.mode === "proposal-only" && publishedRefreshPlan.requiresHumanReview === true,
     "Published-refresh plan must remain a proposal requiring human review.");
-  assert(Array.isArray(publishedRefreshPlan.documents) && publishedRefreshPlan.documents.length <= 25,
-    "Published-refresh documents must be a bounded array.");
+  assert(Array.isArray(publishedRefreshPlan.documents) && publishedRefreshPlan.documents.length <= 100,
+    "Published-refresh documents must be an array of at most 100 reviewed proposals; release batches remain capped at 25.");
   const refreshSlugs = new Set();
   for (const document of publishedRefreshPlan.documents) {
     assert(typeof document.slug === "string" && slugs.has(document.slug) && !refreshSlugs.has(document.slug),

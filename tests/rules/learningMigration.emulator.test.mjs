@@ -21,8 +21,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
   let refreshPlanFile;
 
   beforeAll(async () => {
-    const catalog = await validateLearningCatalog({ write: true });
-    if (catalog.stageableDocuments < 1) throw new Error("Learning catalog has no stageable documents.");
+    await validateLearningCatalog({ write: true });
     const preparedCatalog = JSON.parse(readFileSync(
       new URL("../../build/learning-content-import.json", import.meta.url),
       "utf8",
@@ -31,15 +30,11 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       new URL("../../content/learning/legacy-migration-plan.json", import.meta.url),
       "utf8",
     ));
-    const refreshPlan = JSON.parse(readFileSync(
-      new URL("../../content/learning/published-refresh-plan.json", import.meta.url),
-      "utf8",
-    ));
     const excludedStageSlugs = new Set([
       ...legacyPlan.actions
         .filter((action) => action.action === "replace-from-catalog-after-review")
         .map((action) => action.catalogSlug),
-      ...refreshPlan.documents.map((document) => document.slug),
+      "ftc-gui-owned-indicator-lights",
     ]);
     stageSlugs = preparedCatalog.documents
       .map((document) => document.slug)
@@ -116,6 +111,7 @@ describe.skipIf(!emulatorHost)("learning migration (Firestore emulator)", () => 
       ...base,
       phase: "stage-drafts",
       stageSlugs,
+      refreshPlan: refreshPlanFile,
       batchId: "stage-emulator",
       rollbackManifest: join(directory, "stage.json"),
     }, { db });

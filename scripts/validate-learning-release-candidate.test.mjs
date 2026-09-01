@@ -134,6 +134,54 @@ describe("Academy release candidate validation", () => {
     });
   });
 
+  it("accepts a guarded refresh split across bounded batches", () => {
+    const value = fixture();
+    value.dependencies.refreshPlan.documents.push({
+      slug: "new-a",
+      preconditions: { status: "published", title: "New A" },
+      contentSha256: "b".repeat(64),
+    });
+    value.candidate.batches = [
+      {
+        id: "new-b",
+        phase: "publish-drafts",
+        approvedSlugs: ["new-b"],
+      },
+      {
+        id: "refresh-a",
+        phase: "refresh-published",
+        approvedSlugs: ["new-a"],
+      },
+      {
+        id: "refresh-b",
+        phase: "refresh-published",
+        approvedSlugs: ["refresh-me"],
+      },
+    ].map((batch) => ({
+      ...batch,
+      reviewDigest: buildLearningApprovalTemplate(
+        batch.phase,
+        value.dependencies.artifact,
+        value.dependencies.legacyPlan,
+        value.dependencies.crossLinkPlan,
+        batch.approvedSlugs,
+        value.dependencies.refreshPlan,
+      ).reviewDigest,
+    }));
+
+    expect(
+      validateLearningReleaseCandidate(
+        value.candidate,
+        value.dependencies,
+      ),
+    ).toEqual({
+      batches: 3,
+      newDrafts: 1,
+      publishedRefreshes: 2,
+      sourceCommit: value.candidate.sourceAuthority.commit,
+    });
+  });
+
   it("rejects digest, partition, authority, ordering, and phase drift", () => {
     const digest = fixture();
     digest.candidate.batches[0].reviewDigest = "f".repeat(64);

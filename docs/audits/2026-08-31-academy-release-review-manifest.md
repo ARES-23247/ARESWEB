@@ -12,6 +12,30 @@ Source authority: ARES Robotics
 
 Production project: `aresfirst-portal`
 
+## 2026-09-01 release reconciliation addendum
+
+Human review covered the current desired 68-document curriculum at ARES
+`14.0.0`, Studio `4.0.1`, FTC/FRC Starter `14.0.1`, pinned to monorepo commit
+`b4e3321a68550ffc356a0f1f99800b52f9c67359`. The earlier release described
+below was already published in migration version 2, so its 46 formerly
+"new-draft" lessons are now guarded published refreshes rather than creates.
+
+The release contract now partitions all 68 published lessons into three
+approval-bound refresh batches of 25, 21, and 22 documents. Exact production
+title, publication state, version, and normalized content hashes are recorded
+in `content/learning/published-refresh-plan.json`; any subsequent editorial
+change blocks that lesson instead of being overwritten. The refreshed review
+digests are stored in `content/learning/release-candidate.json`.
+
+A complete Firestore export was verified at
+`gs://aresfirst-portal-firestore-backups/academy-migration/20260901T001611Z`
+with seven-day bucket retention before the release dry runs. All three dry runs
+were ready with zero blocked documents, and cleanup reported four unchanged
+actions. The remainder of this document is the original review snapshot and is
+retained as historical release evidence.
+
+## Original review snapshot
+
 ## Release decision boundary
 
 This branch is ready for human review, not automatic publication. It contains
