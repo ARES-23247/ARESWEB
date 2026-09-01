@@ -17,15 +17,20 @@ function createBrowserHarness({
   consoleErrors = [],
   analyticsRequestUrl =
     "https://www.google-analytics.com/g/collect?tid=G-0KKZT6G3TG",
+  advertisingResponseUrl = "",
 } = {}) {
   let inquiryHandler;
   const close = vi.fn();
   const post = vi.fn().mockResolvedValue({ status: () => canaryStatus });
   const page = {
     on: vi.fn((event, handler) => {
-      if (event !== "console") return;
-      for (const text of consoleErrors) {
-        handler({ type: () => "error", text: () => text });
+      if (event === "console") {
+        for (const text of consoleErrors) {
+          handler({ type: () => "error", text: () => text });
+        }
+      }
+      if (event === "response" && advertisingResponseUrl) {
+        handler({ url: () => advertisingResponseUrl });
       }
     }),
     url: vi.fn(() => pageUrl),
@@ -148,6 +153,38 @@ describe("production browser security check", () => {
         launch: harness.launch,
       }),
     ).resolves.toMatchObject({ appCheckVerified: true });
+  });
+
+  it("accepts the CSP-blocked advertising conversion diagnostics", async () => {
+    const harness = createBrowserHarness({
+      consoleErrors: [
+        "Connecting to 'https://pagead2.googlesyndication.com/measurement/conversion?test=1' violates the following Content Security Policy directive: connect-src 'self'.",
+        "Fetch API cannot load https://pagead2.googlesyndication.com/measurement/conversion?test=1. Refused to connect because it violates the document's Content Security Policy.",
+      ],
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).resolves.toMatchObject({ analyticsVerified: true });
+  });
+
+  it("fails if advertising conversion traffic receives a response", async () => {
+    const harness = createBrowserHarness({
+      advertisingResponseUrl:
+        "https://pagead2.googlesyndication.com/measurement/conversion?test=1",
+    });
+
+    await expect(
+      runProductionBrowserCheck({
+        origin: "https://aresfirst-portal.web.app",
+        deploymentId: "a".repeat(40),
+        launch: harness.launch,
+      }),
+    ).rejects.toThrow("advertising conversion traffic escaped the site CSP");
   });
 
   it("still fails on every other success-path browser error", async () => {
