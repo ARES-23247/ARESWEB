@@ -177,6 +177,7 @@ export default defineConfig({
         "src/utils/lazySucrase.ts",
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
+        "src/components/docs/flowchart.ts",
         "src/components/AnalyticsConsentBanner.tsx",
         "src/components/PwaUpdatePrompt.tsx",
         "src/components/SiteAnnouncementBanner.tsx",
@@ -233,6 +234,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/hooks/dashboard/documentationPublishing.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/docs/flowchart.ts": {
           lines: 85,
           functions: 100,
         },
