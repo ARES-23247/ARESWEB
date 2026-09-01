@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Copy, Download, Mail, ShieldCheck } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
+import { Field, Select } from "@/components/ui/Field";
 import {
   buildBccList,
   buildEmailRosterCsv,
@@ -100,34 +102,31 @@ export default function UserEmailRosterPanel() {
 
       <fieldset className="space-y-3">
         <legend className="text-xs font-black uppercase tracking-wider text-ares-gold">Recipients</legend>
-        <div>
-          <label htmlFor="email-roster-audience" className="mb-1 block text-xs font-bold text-marble">Audience</label>
-          <select id="email-roster-audience" value={audience} onChange={(event) => { setAudience(event.target.value as EmailRosterAudience); clearPrepared(); }} className="w-full border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+        <Field id="email-roster-audience" label="Audience">
+          <Select value={audience} onChange={(event) => { setAudience(event.target.value as EmailRosterAudience); clearPrepared(); }} className="text-xs">
             <option value="all">All active, verified members</option>
             <option value="students">Students</option>
             <option value="parents">Parents</option>
             <option value="mentors">Mentors and coaches</option>
             <option value="alumni">Alumni</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="email-roster-subteam" className="mb-1 block text-xs font-bold text-marble">Subteam</label>
-          <select id="email-roster-subteam" value={subteam} onChange={(event) => { setSubteam(event.target.value); clearPrepared(); }} className="w-full border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+          </Select>
+        </Field>
+        <Field id="email-roster-subteam" label="Subteam">
+          <Select value={subteam} onChange={(event) => { setSubteam(event.target.value); clearPrepared(); }} className="text-xs">
             <option value="">All subteams</option>
             <option value="Programming">Programming</option>
             <option value="CAD">CAD</option>
             <option value="Mechanical">Mechanical</option>
             <option value="Outreach">Outreach</option>
             <option value="Business">Business</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="email-roster-client" className="mb-1 block text-xs font-bold text-marble">Email app</label>
-          <select id="email-roster-client" value={client} onChange={(event) => setClient(event.target.value as EmailRosterClient)} className="w-full border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+          </Select>
+        </Field>
+        <Field id="email-roster-client" label="Email app">
+          <Select value={client} onChange={(event) => setClient(event.target.value as EmailRosterClient)} className="text-xs">
             <option value="gmail">Gmail</option>
             <option value="outlook">Outlook</option>
-          </select>
-        </div>
+          </Select>
+        </Field>
       </fieldset>
 
       <label className="flex items-start gap-2 border border-ares-gold/20 bg-ares-gold/10 p-3 text-xs leading-relaxed text-white">
@@ -135,18 +134,24 @@ export default function UserEmailRosterPanel() {
         <span><ShieldCheck aria-hidden="true" className="mr-1 inline text-ares-gold" size={14} />I will use the team account, place recipients in <strong>BCC</strong>, and follow team youth-protection communication rules.</span>
       </label>
 
-      <button type="button" onClick={() => void prepareRoster()} disabled={!acknowledged || isPreparing} aria-busy={isPreparing} className="w-full bg-ares-red px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-ares-bronze disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
-        {isPreparing ? "Preparing roster..." : "Prepare email list"}
-      </button>
+      <Button
+        onClick={() => void prepareRoster()}
+        disabled={!acknowledged}
+        isPending={isPreparing}
+        pendingLabel="Preparing roster..."
+        className="w-full text-xs font-black uppercase tracking-wider"
+      >
+        Prepare email list
+      </Button>
 
       {prepared && (
         <div className="space-y-3 border-t border-white/10 pt-4">
           <p className="text-xs text-marble/70">Only the recipient count is shown here. The addresses remain private until copied or downloaded.</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button type="button" onClick={() => void copyBccList()} disabled={prepared.recipientCount === 0} className="inline-flex items-center justify-center gap-2 border border-ares-gold/40 bg-ares-gold/10 px-3 py-2 text-xs font-black uppercase text-ares-gold hover:bg-ares-gold/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><Copy aria-hidden="true" size={14} /> Copy BCC list</button>
-            <button type="button" onClick={downloadCsv} disabled={prepared.recipientCount === 0} className="inline-flex items-center justify-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs font-black uppercase text-white hover:bg-white/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"><Download aria-hidden="true" size={14} /> Download CSV</button>
+            <Button variant="gold" onClick={() => void copyBccList()} disabled={prepared.recipientCount === 0} className="text-xs font-black uppercase"><Copy aria-hidden="true" size={14} /> Copy BCC list</Button>
+            <Button variant="secondary" onClick={downloadCsv} disabled={prepared.recipientCount === 0} className="text-xs font-black uppercase"><Download aria-hidden="true" size={14} /> Download CSV</Button>
           </div>
-          <button type="button" onClick={clearPrepared} className="text-xs font-bold text-marble/70 underline decoration-ares-gold underline-offset-4 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Clear prepared list</button>
+          <Button variant="link" size="sm" onClick={clearPrepared} className="text-xs">Clear prepared list</Button>
         </div>
       )}
 

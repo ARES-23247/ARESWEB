@@ -152,10 +152,14 @@ test.describe("Navigation & Accessibility E2E tests", () => {
   }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.removeItem("ares_analytics_consent_v1");
-      window.dispatchEvent(new Event("ares:analytics-consent-open"));
-    });
+    // The shared E2E fixture defaults unset consent to "denied" so routine
+    // tests do not render the banner. Use an invalid, non-empty sentinel here:
+    // the fixture leaves it alone and the application truthfully treats it as
+    // no saved choice on the following page load.
+    await page.evaluate(() =>
+      localStorage.setItem("ares_analytics_consent_v1", "test-unset"),
+    );
+    await page.reload();
 
     const banner = page.getByRole("region", {
       name: "Optional website analytics",

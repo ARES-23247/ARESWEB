@@ -8,6 +8,7 @@ import {
   saveAnalyticsConsent,
   type AnalyticsConsentChoice,
 } from "@/lib/analyticsConsent";
+import { Button } from "@/components/ui/Button";
 
 function useAnalyticsConsentChoice() {
   const [choice, setChoice] = useState<AnalyticsConsentChoice | null>(() =>
@@ -75,20 +76,19 @@ export default function AnalyticsConsentBanner() {
           </Link>
         </div>
         <div className="mt-4 grid gap-3 sm:mt-0 sm:min-w-48">
-          <button
-            type="button"
+          <Button
             onClick={() => choose("granted")}
-            className="min-h-11 rounded border border-ares-red bg-ares-red px-4 py-2 text-sm font-black uppercase tracking-wide text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            className="font-black uppercase tracking-wide"
           >
             Allow analytics
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => choose("denied")}
-            className="min-h-11 rounded border border-white/30 bg-white/5 px-4 py-2 text-sm font-black uppercase tracking-wide text-white hover:border-ares-cyan hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            className="font-black uppercase tracking-wide"
           >
             Keep cookie-free
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -109,13 +109,13 @@ export function AnalyticsConsentPreferencesButton() {
       <p className="text-sm font-bold text-white" aria-live="polite">
         {status}
       </p>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         onClick={openAnalyticsConsentChoices}
-        className="mt-3 min-h-11 rounded border border-ares-cyan/60 px-4 py-2 text-sm font-black uppercase tracking-wide text-white hover:bg-ares-cyan/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+        className="mt-3 border-ares-cyan/60 font-black uppercase tracking-wide hover:bg-ares-cyan/10"
       >
         Change analytics choice
-      </button>
+      </Button>
     </div>
   );
 }

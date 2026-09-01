@@ -176,6 +176,11 @@ export default defineConfig({
         "src/lib/tournamentStats.ts",
         "src/utils/lazySucrase.ts",
         "src/components/PublicDataState.tsx",
+        "src/components/ui/AsyncState.tsx",
+        "src/components/ui/Badge.tsx",
+        "src/components/ui/Button.tsx",
+        "src/components/ui/Dialog.tsx",
+        "src/components/ui/Field.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/docs/flowchart.ts",
         "src/components/AnalyticsConsentBanner.tsx",
@@ -294,6 +299,26 @@ export default defineConfig({
           functions: 100,
         },
         "src/components/AnalyticsConsentBanner.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/AsyncState.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/Badge.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/Button.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/Dialog.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/Field.tsx": {
           lines: 85,
           functions: 100,
         },
