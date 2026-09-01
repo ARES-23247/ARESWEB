@@ -18,6 +18,7 @@ const EXPECTED_GOOGLE_REPORT_ONLY_FAILURE =
 const EXPECTED_BLOCKED_AD_CONVERSION_FAILURES = [
   "console.error: Connecting to 'https://pagead2.googlesyndication.com/measurement/conversion?",
   "console.error: Fetch API cannot load https://pagead2.googlesyndication.com/measurement/conversion?",
+  "console.error: Loading the image 'https://pagead2.googlesyndication.com/measurement/conversion?",
 ];
 
 function unexpectedClientFailures(failures, expectedFailures) {
