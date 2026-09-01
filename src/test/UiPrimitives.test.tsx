@@ -9,9 +9,42 @@ import {
 } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { ConfirmDialog, DialogShell, Drawer } from "@/components/ui/Dialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { TableFrame } from "@/components/ui/TableFrame";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 
 describe("shared UI primitives", () => {
+  it("provides a consistent page heading and optional action region", () => {
+    render(
+      <PageHeader
+        eyebrow="Team media"
+        title="Manage videos"
+        description="Review the official team channel."
+        actions={<Button>Add video</Button>}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Manage videos" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Team media")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add video" })).toBeInTheDocument();
+  });
+
+  it("gives horizontally scrollable data tables an accessible caption", () => {
+    render(
+      <TableFrame caption="Team members" className="min-w-[40rem]">
+        <thead><tr><th>Name</th></tr></thead>
+        <tbody><tr><td>Alex</td></tr></tbody>
+      </TableFrame>,
+    );
+
+    expect(screen.getByRole("table", { name: "Team members" })).toHaveClass(
+      "min-w-[40rem]",
+    );
+    expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+  });
+
   it("provides native button behavior, variants, and pending semantics", () => {
     const onClick = vi.fn();
     const { rerender } = render(

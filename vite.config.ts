@@ -181,6 +181,8 @@ export default defineConfig({
         "src/components/ui/Button.tsx",
         "src/components/ui/Dialog.tsx",
         "src/components/ui/Field.tsx",
+        "src/components/ui/PageHeader.tsx",
+        "src/components/ui/TableFrame.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/docs/flowchart.ts",
         "src/components/AnalyticsConsentBanner.tsx",
@@ -319,6 +321,14 @@ export default defineConfig({
           functions: 100,
         },
         "src/components/ui/Field.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/PageHeader.tsx": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/ui/TableFrame.tsx": {
           lines: 85,
           functions: 100,
         },

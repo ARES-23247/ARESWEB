@@ -11,6 +11,7 @@ import {
   ManagedPhoto,
 } from "@/lib/media";
 import AccessibleTabs from "@/components/AccessibleTabs";
+import { PageHeader } from "@/components/ui/PageHeader";
 import GooglePhotosSyncPanel from "./GooglePhotosSyncPanel";
 import PhotoAlbumsPanel from "./PhotoAlbumsPanel";
 import PhotoLibraryPanel, { type UploadState } from "./PhotoLibraryPanel";
@@ -404,20 +405,11 @@ export default function DashboardPhotosPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      <header className="flex flex-col gap-5 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ares-gold">
-            <ImageIcon size={14} aria-hidden="true" /> Team media
-          </p>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white md:text-5xl">
-            Manage Photos
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-marble/70">
-            Upload team photos, add useful alt text, build albums, and import
-            from the team Google account.
-          </p>
-        </div>
-        <AccessibleTabs
+      <PageHeader
+        eyebrow={<><ImageIcon size={14} aria-hidden="true" /> Team media</>}
+        title="Manage Photos"
+        description="Upload team photos, add useful alt text, build albums, and import from the team Google account."
+        actions={<AccessibleTabs
           id="photo-management"
           label="Photo management views"
           tabs={[
@@ -431,8 +423,8 @@ export default function DashboardPhotosPage() {
           tabClassName={(_value, active) =>
             `px-4 py-2 text-[10px] font-black uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "bg-ares-red text-white" : "text-marble/65"}`
           }
-        />
-      </header>
+        />}
+      />
 
       {!canContribute && (
         <p className="flex items-center gap-2 border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">

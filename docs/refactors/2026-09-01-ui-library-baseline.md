@@ -136,3 +136,18 @@ Relative to slice 1, initial JavaScript changed by +7 gzip bytes, initial CSS
 decreased by 13 gzip bytes, and total route JavaScript changed by +36 gzip bytes.
 All bundle budgets, lint, typecheck, the production build, and 27 focused tests
 passed.
+
+## Slice 3 result: dashboard headings and data tables
+
+`PageHeader` now owns the repeated responsive heading/eyebrow/description/action
+layout used by photo and video management. `TableFrame` gives the documentation
+library and Google Drive browser a consistent horizontal-scroll boundary and a
+required accessible table caption. It deliberately does not own columns, rows,
+sorting, selection, pagination, or feature data.
+
+This setup slice adds two small primitives while removing 39 lines from the four
+pilot consumers. Relative to slice 2, initial JavaScript changed by +35 gzip
+bytes, initial CSS by +4 gzip bytes, and total route JavaScript by +491 gzip
+bytes. All bundle budgets, lint, typecheck, the production build, and 37 focused
+tests passed. The new primitives are enrolled in the 85% line and 100% function
+coverage ratchets.

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Activity, Archive, ExternalLink, Loader2, Pencil, Play, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { apiFailure, ManagedVideo, parseYouTubeVideoId } from "@/lib/media";
@@ -187,19 +189,17 @@ export default function VideosManagementPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      <header className="flex flex-col gap-5 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ares-gold"><Activity size={14} aria-hidden="true" /> Team media</p>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white md:text-5xl">Manage Videos</h1>
-          <p className="mt-2 max-w-2xl text-sm text-marble/70">Add team YouTube links, review drafts, and sync the official team channel.</p>
-        </div>
-        {canManage && <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={() => void syncYoutube()} disabled={syncing} className="inline-flex items-center gap-2 border border-ares-gold/40 px-4 py-3 text-xs font-black uppercase tracking-wider text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
-            <RefreshCw size={15} className={syncing ? "motion-safe:animate-spin" : ""} aria-hidden="true" /> {syncing ? "Syncing" : "Sync YouTube"}
-          </button>
-          <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 bg-ares-red px-4 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><Plus size={15} aria-hidden="true" /> Add video</button>
-        </div>}
-      </header>
+      <PageHeader
+        eyebrow={<><Activity size={14} aria-hidden="true" /> Team media</>}
+        title="Manage Videos"
+        description="Add team YouTube links, review drafts, and sync the official team channel."
+        actions={canManage ? <>
+          <Button variant="gold" onClick={() => void syncYoutube()} isPending={syncing} pendingLabel="Syncing" className="px-4 py-3 text-xs font-black uppercase tracking-wider">
+            <RefreshCw size={15} aria-hidden="true" /> Sync YouTube
+          </Button>
+          <Button onClick={openCreate} className="px-4 py-3 text-xs font-black uppercase tracking-wider"><Plus size={15} aria-hidden="true" /> Add video</Button>
+        </> : undefined}
+      />
 
       {!canManage && <p className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">You can view the team library. An admin or coach manages video links.</p>}
       {notice && <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">{notice}</p>}
