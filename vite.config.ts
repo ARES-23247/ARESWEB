@@ -159,6 +159,7 @@ export default defineConfig({
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
+        "src/lib/analyticsConsent.ts",
         "src/lib/localDateTime.ts",
         "src/lib/academyProgress.ts",
         "src/lib/learningContent.ts",
@@ -173,6 +174,7 @@ export default defineConfig({
         "src/utils/lazySucrase.ts",
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
+        "src/components/AnalyticsConsentBanner.tsx",
         "src/components/PwaUpdatePrompt.tsx",
         "src/components/SiteAnnouncementBanner.tsx",
         "src/components/SEO.tsx",
@@ -261,6 +263,14 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/firebaseAppCheck.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/analyticsConsent.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/AnalyticsConsentBanner.tsx": {
           lines: 85,
           functions: 100,
         },

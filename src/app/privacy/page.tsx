@@ -6,27 +6,32 @@ import { Shield, EyeOff, Server, Lock } from "lucide-react";
 
 import { siteConfig } from "@/lib/site-config";
 import SEO from "@/components/SEO";
+import { AnalyticsConsentPreferencesButton } from "@/components/AnalyticsConsentBanner";
 
 export default function PrivacyPage() {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-obsidian text-white pt-24 pb-16 w-full"
     >
-      <SEO 
-        title="Privacy Policy" 
-        description="ARES 23247 Privacy Policy. Read our commitment to COPPA, GDPR, and cookie-free analytics." 
+      <SEO
+        title="Privacy Policy"
+        description="ARES 23247 Privacy Policy. Read how we protect student information and provide optional website analytics."
       />
       <div className="max-w-4xl mx-auto px-6 lg:px-8">
         <div className="mb-16">
           <h1 className="text-4xl lg:text-5xl font-bold font-heading mb-6 tracking-tight uppercase">
-            Privacy <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">Policy</span>
+            Privacy{" "}
+            <span className="bg-ares-red px-4 sm:px-6 py-1 pb-3 ares-cut-sm shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4)] text-white font-bold inline-block mt-2">
+              Policy
+            </span>
           </h1>
           <p className="text-xl text-marble border-l-2 border-ares-cyan/30 pl-6">
-            ARES 23247 is committed to engineering privacy. We employ <strong>Cookie-Free Analytics</strong> to protect our students and global visitors.
+            ARES 23247 is committed to engineering privacy. Website analytics
+            are <strong>optional</strong>, and advertising remains disabled.
           </p>
         </div>
 
@@ -37,16 +42,38 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
                 <EyeOff size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">1. Cookie-Free Web Analytics</h2>
+              <h2 className="text-2xl font-bold font-heading">
+                1. Optional Web Analytics
+              </h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              We use Google Analytics with Google Consent Mode configured to deny analytics and advertising storage. This provides basic, cookie-free traffic measurements without creating a persistent browser identifier.
+              We use Google Analytics with Consent Mode. Analytics storage is
+              denied by default. Visitors may allow analytics cookies, or keep
+              the default cookie-free setting. The website remains fully usable
+              either way.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>ARES does not create an analytics cookie or store an analytics identifier in your browser.</li>
-              <li>Google receives cookieless measurement requests and processes request metadata under its Analytics privacy and data-protection controls.</li>
-              <li>We measure basic website traffic, such as visits and page views, to improve site operations.</li>
+              <li>
+                Before a choice, and after a visitor declines, Google receives
+                limited cookieless measurement requests without an ARES-set
+                analytics identifier.
+              </li>
+              <li>
+                If a visitor allows analytics, Google Analytics may store a
+                first-party analytics identifier in that browser to measure
+                visits, page views, and visit duration.
+              </li>
+              <li>
+                Advertising storage, advertising user data, personalization,
+                Google Signals, and interest-group features remain disabled for
+                every choice.
+              </li>
+              <li>
+                ARES does not send names, email addresses, account IDs, form
+                entries, or student profile data to Google Analytics.
+              </li>
             </ul>
+            <AnalyticsConsentPreferencesButton />
           </section>
 
           <section className="bg-white/5 border border-white/10 p-8 hero-card backdrop-blur-sm shadow-xl relative overflow-hidden group">
@@ -55,19 +82,41 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
                 <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">4. ARES Robotics Studio and Google Drive</h2>
+              <h2 className="text-2xl font-bold font-heading">
+                4. ARES Robotics Studio and Google Drive
+              </h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              ARES Robotics Studio is a local-first desktop application. Robot connections, authoring,
-              simulation, imported logs, and analysis remain on the user&apos;s computer unless the user
-              explicitly enables Google Drive synchronization.
+              ARES Robotics Studio is a local-first desktop application. Robot
+              connections, authoring, simulation, imported logs, and analysis
+              remain on the user&apos;s computer unless the user explicitly
+              enables Google Drive synchronization.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>Google sign-in uses a public desktop OAuth client, Authorization Code with PKCE, and no client secret.</li>
-              <li>ARES requests basic Google identity and the narrow <code>drive.file</code> permission.</li>
-              <li>ARES may access files it creates or a folder the user explicitly selects through Google Picker. It does not scan unrelated Drive files.</li>
-              <li>Google remains authoritative for account identity, file ownership, folder sharing, Shared Drive membership, and revocation.</li>
-              <li>OAuth refresh tokens are stored locally for sign-in continuity. Windows releases protect them with the current user&apos;s DPAPI credential protection; signing out removes the local token record.</li>
+              <li>
+                Google sign-in uses a public desktop OAuth client, Authorization
+                Code with PKCE, and no client secret.
+              </li>
+              <li>
+                ARES requests basic Google identity and the narrow{" "}
+                <code>drive.file</code> permission.
+              </li>
+              <li>
+                ARES may access files it creates or a folder the user explicitly
+                selects through Google Picker. It does not scan unrelated Drive
+                files.
+              </li>
+              <li>
+                Google remains authoritative for account identity, file
+                ownership, folder sharing, Shared Drive membership, and
+                revocation.
+              </li>
+              <li>
+                OAuth refresh tokens are stored locally for sign-in continuity.
+                Windows releases protect them with the current user&apos;s DPAPI
+                credential protection; signing out removes the local token
+                record.
+              </li>
             </ul>
           </section>
 
@@ -77,14 +126,40 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-gold/30 flex items-center justify-center bg-ares-gold/10 text-ares-gold">
                 <Shield size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">2. COPPA & Student Privacy</h2>
+              <h2 className="text-2xl font-bold font-heading">
+                2. COPPA & Student Privacy
+              </h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              As a <a href="https://www.firstinspires.org/robotics/ftc" target="_blank" rel="noopener noreferrer" className="hover:text-ares-red-light transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"><i>FIRST</i>® Tech Challenge</a> team, we operate in an environment inclusive of minors. We strictly adhere to the <strong>Children&apos;s Online Privacy Protection Act (COPPA)</strong>.
+              As a{" "}
+              <a
+                href="https://www.firstinspires.org/robotics/ftc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-ares-red-light transition-colors underline decoration-ares-red/30 underline-offset-4 font-bold"
+              >
+                <i>FIRST</i>® Tech Challenge
+              </a>{" "}
+              team, we operate in an environment inclusive of minors. We
+              strictly adhere to the{" "}
+              <strong>
+                Children&apos;s Online Privacy Protection Act (COPPA)
+              </strong>
+              .
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li>We <strong>never</strong> collect personal information from general web portal visitors.</li>
-              <li>Robotics team member names, photographs, and media are only published with explicit written consent and release forms signed by legal guardians.</li>
+              <li>
+                Merely browsing the public website does not submit a visitor’s
+                name, email address, phone number, or form entries to ARES.
+                Information a person voluntarily enters in an application or
+                contact form is used for that stated purpose and protected by
+                the site’s access controls.
+              </li>
+              <li>
+                Robotics team member names, photographs, and media are only
+                published with explicit written consent and release forms signed
+                by legal guardians.
+              </li>
             </ul>
           </section>
 
@@ -94,10 +169,15 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-cyan/30 flex items-center justify-center bg-ares-cyan/10 text-ares-cyan">
                 <Server size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">3. Secure AI Processing</h2>
+              <h2 className="text-2xl font-bold font-heading">
+                3. Secure AI Processing
+              </h2>
             </div>
             <p className="text-marble leading-relaxed">
-              When ARES leadership uploads media via our Publisher Dashboard, we use Gemini models on Google Vertex AI to add Accessibility tags. This processing happens on Google&apos;s secure cloud servers. The raw data is never sold, shared, or used to train other AI.
+              When ARES leadership uploads media via our Publisher Dashboard, we
+              use Gemini models on Google Vertex AI to add Accessibility tags.
+              This processing happens on Google&apos;s secure cloud servers. The
+              raw data is never sold, shared, or used to train other AI.
             </p>
           </section>
 
@@ -107,17 +187,31 @@ export default function PrivacyPage() {
               <div className="w-12 h-12 rounded-full border border-ares-red/30 flex items-center justify-center bg-ares-red/10 text-ares-red">
                 <Lock size={24} />
               </div>
-              <h2 className="text-2xl font-bold font-heading">5. Secure Administration</h2>
+              <h2 className="text-2xl font-bold font-heading">
+                5. Secure Administration
+              </h2>
             </div>
             <p className="text-marble leading-relaxed">
-              Our internal content management system and API bounds are strictly locked behind role-based authentication. Access requires direct verification through authorized <i>FIRST</i>® Robotics team identity providers.
+              Our internal content management system and API bounds are strictly
+              locked behind role-based authentication. Access requires direct
+              verification through authorized <i>FIRST</i>® Robotics team
+              identity providers.
             </p>
           </section>
         </div>
 
         <div className="mt-16 text-center text-marble text-sm">
           <p>This privacy policy is actively maintained by ARES 23247.</p>
-          <p>For inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} aria-label={`Send an email to ${siteConfig.team.name} robotics team`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
+          <p>
+            For inquiries, contact us at{" "}
+            <a
+              href={`mailto:${siteConfig.contact.email}`}
+              aria-label={`Send an email to ${siteConfig.team.name} robotics team`}
+              className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase"
+            >
+              {siteConfig.contact.email}
+            </a>
+          </p>
         </div>
       </div>
     </motion.div>
