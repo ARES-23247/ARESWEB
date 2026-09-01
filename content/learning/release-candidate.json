@@ -9,9 +9,9 @@
   },
   "batches": [
     {
-      "id": "new-drafts-construction-programming",
-      "phase": "publish-drafts",
-      "reviewDigest": "9be46f8c72c6dd509f8b5e540e32d2d949ff3d25e69dcadd660f65801218f157",
+      "id": "published-refresh-construction-programming",
+      "phase": "refresh-published",
+      "reviewDigest": "b3eef43a7166b692d1f78e1c6b1f63c3e27088c17c626ea211c3f8aef4581872",
       "approvedSlugs": [
         "development-testing-and-release-validation",
         "electrical-battery-protection",
@@ -41,9 +41,9 @@
       ]
     },
     {
-      "id": "new-drafts-controls-competition-capstones",
-      "phase": "publish-drafts",
-      "reviewDigest": "85a0d7aa14ca1408165b40b1afbdf9d1c4207781b240470075f93c9d651ed47f",
+      "id": "published-refresh-controls-competition-capstones",
+      "phase": "refresh-published",
+      "reviewDigest": "2768b508c3ad666d3595b2a0a3c7d5f353b177bb4b314e65e424142439f5ec3f",
       "approvedSlugs": [
         "capstone-autonomous-mission",
         "capstone-competition-readiness",
@@ -69,9 +69,9 @@
       ]
     },
     {
-      "id": "guarded-published-refresh",
+      "id": "published-refresh-foundations",
       "phase": "refresh-published",
-      "reviewDigest": "0627e299638d57b3dbb897ffaecf9532305741f80175f3a5e41e3b3921128090",
+      "reviewDigest": "3bae7d2298a0be34dcf25c5410ef5946a8278536f3784dc29ba56b68b60dd8d3",
       "approvedSlugs": [
         "ares-workspace-map",
         "areslib-fundamentals",

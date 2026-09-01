@@ -3,27 +3,617 @@
   "mode": "proposal-only",
   "requiresHumanReview": true,
   "documents": [
-    { "slug": "ares-workspace-map", "preconditions": { "title": "The ARES Software Workspace", "status": "published", "appliesToVersion": "ARES 11.0.0; Studio 2.0.0" }, "contentSha256": "ddc45854d118b57c3304ef76afd44e8abc45d4dea7a6fe3d0ffae0c28c410c4c" },
-    { "slug": "robot-input-to-output", "preconditions": { "title": "From Driver Input to Motor Output", "status": "published", "appliesToVersion": "ARES 11.0.0" }, "contentSha256": "6588615bb8444d9f49f13edb2643ee6a5ccb577d127a1a1dbe3244c487bb9b28" },
-    { "slug": "run-first-ftc-simulation", "preconditions": { "title": "Run Your First FTC Simulation", "status": "published", "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0; Studio 2.0.0" }, "contentSha256": "07c01cd411310bca60e0b638d45850ce6f39564582e4d9d6d99523e72723045d" },
-    { "slug": "robot-coordinate-contracts", "preconditions": { "title": "Robot Coordinates Without Guesswork", "status": "published", "appliesToVersion": "ARES 11.0.0" }, "contentSha256": "47e0f79bc9d771ee548da4ac715a19d9463118edd4d5349b1b7155f24016f62e" },
-    { "slug": "redux-state-actions-reducers", "preconditions": { "title": "State, Actions, and Reducers", "status": "published", "appliesToVersion": "ARES 11.0.0" }, "contentSha256": "259faf82e362ec6add1f4f533050f769ef1c0c6d5f5c5a3267ff6e85c2a36cf0" },
-    { "slug": "telemetry-and-local-logs", "preconditions": { "title": "Telemetry and Local Log Retrieval", "status": "published", "appliesToVersion": "ARES 11.0.0" }, "contentSha256": "9fe3f4bca9c5371b04d1fcacc3bda17015c844c2e5687e084d87bbf738aa7b3f" },
-    { "slug": "simulation-is-not-hardware-validation", "preconditions": { "title": "Simulation Is Not Hardware Validation", "status": "published", "appliesToVersion": "ARES 11.0.0" }, "contentSha256": "55b8310239ede6e0800f7267893678d5c116f43cb3986dbd7235798d8d22fae3" },
-    { "slug": "ftc-starter-project-identity", "preconditions": { "title": "Start an FTC Project Without Inherited Robot Assumptions", "status": "published", "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0; Studio 2.0.0" }, "contentSha256": "db2cec0a2fa109b9f9df3b1cce0029ef90daa557c2a5f7c86445e70ff021faf5" },
-    { "slug": "ftc-starter-controller-bindings", "preconditions": { "title": "Map FTC Controls Through Redux", "status": "published", "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0" }, "contentSha256": "bc718eca21c9d45df726e11bfc7cc607e58ef545af66dd658aaceb7dea6ba63b" },
-    { "slug": "ftc-starter-first-autonomous", "preconditions": { "title": "Add and Verify an FTC Starter Autonomous Routine", "status": "published", "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0; Studio 2.0.0" }, "contentSha256": "baf5de151ec5344aac4098b59b8e750dd4662532a82ae6322b39ccb272a59176" },
-    { "slug": "ftc-starter-physical-commissioning", "preconditions": { "title": "Commission an FTC Starter Robot Safely", "status": "published", "appliesToVersion": "ARES 11.0.0; FTC Starter 11.0.0" }, "contentSha256": "3e63abeef1c9940e5d59fcbf2a487f5414dee456ea56de36807975c4114c8c46" },
-    { "slug": "areslib-fundamentals", "preconditions": { "title": "ARESLib Architecture and Ownership", "status": "published", "appliesToVersion": "ARES 11.0.0" }, "contentSha256": "d0e8073ccc83403ecee9801e1ff528078cb2d802f2a1b0523f508daf2f2cd2bb" },
-    { "slug": "autonomous-and-vision", "preconditions": { "title": "Autonomous Paths, Localization, and Vision", "status": "published", "appliesToVersion": "ARES 11.0.0; Studio 2.0.0" }, "contentSha256": "f603d7f046048197148c6464fb55b932623c5a38f6bd1bb7599ec1d98da45be9" },
-    { "slug": "telemetry-and-control", "preconditions": { "title": "Telemetry, Control State, and Offline Logs", "status": "published", "appliesToVersion": "ARES 11.0.0; Studio 2.0.0" }, "contentSha256": "215cb4c9c5251c2e9d9552b136b0b4b7d25c0968cdba3148a99074c4cb39d8bb" },
-    { "slug": "swerve-and-kinematics", "preconditions": { "title": "Drivebase, Swerve, and Kinematics Contracts", "status": "published", "appliesToVersion": "ARES 11.0.0; Studio 2.0.0" }, "contentSha256": "8d9e5e283a6593746095aafd6e01f886449a3563720e5eafbfc0d8e9c426af31" },
-    { "slug": "ftc-season-composition-and-safe-lifecycle", "preconditions": { "title": "Compose an FTC Season Robot That Fails Safe", "status": "published", "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 1810d74" }, "contentSha256": "41822e2ff5b0ff334a84752ff72ff8bf848f3934dde73f2117a21395cbbc3703" },
-    { "slug": "ftc-driver-input-shaping-and-frames", "preconditions": { "title": "Shape FTC Driver Input Without Losing the Frame", "status": "published", "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 1810d74" }, "contentSha256": "407f8b70e53a8e3a2b7b24804bf4d4fb142a53669541dd7da2b8fa3dfec424eb" },
-    { "slug": "ftc-gui-owned-indicator-lights", "preconditions": { "title": "Author GUI-Owned FTC Indicator Lights", "status": "published", "appliesToVersion": "ARES 11.0.0; ARES-FTC monorepo 1810d74; Studio 2.0.0" }, "contentSha256": "4cc454b248c8759d934e7a91fbcb2f7ac4aab4663b87158414ac6a94c4acf92b" },
-    { "slug": "camera-evidence-and-uncertainty", "preconditions": { "title": "Decide Whether Camera Evidence Is Trustworthy", "status": "published", "appliesToVersion": "General STEM; ARES 11.0.0 examples" }, "contentSha256": "697f895c7d78364e7b111e7561ab40ca892edebbb8cd7087dcb9863a8fd76c5c" },
-    { "slug": "measure-test-and-improve", "preconditions": { "title": "Measure, Test, and Improve a Design", "status": "published", "appliesToVersion": "General STEM; ARES 11.0.0 evidence practices" }, "contentSha256": "d55bf98c001824e99fe16c37cf4999fe7c57966937ba8b407929344fa5c2f78c" },
-    { "slug": "rates-units-and-motion", "preconditions": { "title": "Use Rates and Units to Describe Motion", "status": "published", "appliesToVersion": "General STEM; ARES 11.0.0 examples" }, "contentSha256": "32c68d4e7baf102c7079fa19d62629b25b754b74282ab5608daa407c7d414e93" },
-    { "slug": "read-a-telemetry-graph", "preconditions": { "title": "Read a Telemetry Graph Like a Scientist", "status": "published", "appliesToVersion": "General STEM; ARES 11.0.0 examples" }, "contentSha256": "99a78b5db68d6f27e0e05bd493d92f70346a8627ae1a5091c022551ba8c63870" }
+    {
+      "slug": "development-testing-and-release-validation",
+      "preconditions": {
+        "title": "Develop, Test, and Validate ARESLib Changes",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC Starter 13.0.1; FRC Starter 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "f1a902413fd3258e4d917f39747b81016152f0716d1bd9e8cf1a1b8da853c33c"
+    },
+    {
+      "slug": "electrical-battery-protection",
+      "preconditions": {
+        "title": "Batteries, Breakers, Fuses, and Brownouts",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; current league rules remain an open source request"
+      },
+      "contentSha256": "39fc44e06b3d2e64ba3d4a256e3115f7d7e3fecd6701082b128a7bda8a07c430"
+    },
+    {
+      "slug": "electrical-buses-addresses",
+      "preconditions": {
+        "title": "USB, I2C, CAN, Addresses, and Device Identity",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "0f950d6f48613ba0ab662f25fc445e356dd15f3c8863b6d02d31906c642b9e4d"
+    },
+    {
+      "slug": "electrical-hardware-map-diagnostics",
+      "preconditions": {
+        "title": "Map Hardware and Diagnose a Dead Device",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "df185eb922bd348f1e32c080f286088563735ab1263909346e9d4548c7092ac6"
+    },
+    {
+      "slug": "electrical-motors-servos",
+      "preconditions": {
+        "title": "Choose Motors, Gearmotors, and Servos",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; approved manufacturer specifications remain an open source request"
+      },
+      "contentSha256": "c4f59732f739dcebf1aa94eefe63740f689ee3176cd5d9158156394a719a545c"
+    },
+    {
+      "slug": "electrical-sensors",
+      "preconditions": {
+        "title": "Choose and Read Robot Sensors",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "3b59b443a9be3fb3623742b42fc3191dfc9526e92cc3178aeaedd0ff7ea2811e"
+    },
+    {
+      "slug": "electrical-voltage-current-power",
+      "preconditions": {
+        "title": "Voltage, Current, Power, and Energy",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "11a22660a595e0f343dda815ad338167d75d56e611fce7c0cdf13d36a6b846d2"
+    },
+    {
+      "slug": "electrical-wiring-connectors",
+      "preconditions": {
+        "title": "Wire, Connectors, Polarity, and Strain Relief",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; authentic wiring media and current ratings remain open"
+      },
+      "contentSha256": "466c4b1ff6495d3ce8cd88be017fef3221fc44d3c67b22f344a9375257f6ccda"
+    },
+    {
+      "slug": "frc-mode-handoffs-and-safe-recovery",
+      "preconditions": {
+        "title": "Keep FRC Mode Changes Safe",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES-FRC 12.0.0; WPILib 2026.2.1; Studio 3.1.2"
+      },
+      "contentSha256": "f68c3ac2968213d7c2ae47b926b1c392f92cb3409ff3ee851e44552e91079cbc"
+    },
+    {
+      "slug": "mechanical-cad-fabrication",
+      "preconditions": {
+        "title": "From a CAD Model to a Buildable Part",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "ad02b56cb2dd3eb8cc3a242d230d21001fb7d6268b02f2fb94e2cb821d78f1d8"
+    },
+    {
+      "slug": "mechanical-drivetrains",
+      "preconditions": {
+        "title": "Compare Mecanum, Differential, and Swerve Drivetrains",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "fbfd09f956d3470a03a54c6e4dd038128cfa38561ea2aae621f1265aa5a00125"
+    },
+    {
+      "slug": "mechanical-fasteners",
+      "preconditions": {
+        "title": "Fasteners, Threads, and Keeping Parts Together",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; manufacturer fastener references remain open"
+      },
+      "contentSha256": "eb2fb39c99e5beb0feccca56431c38146a1881886d35f7f3b52c757cd5614075"
+    },
+    {
+      "slug": "mechanical-gears-sprockets-belts",
+      "preconditions": {
+        "title": "Gears, Sprockets, Belts, Speed, and Torque",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "230ef3afdae4096bc5eac4419d1f924999aa23fa96e190d4315ee043523745c7"
+    },
+    {
+      "slug": "mechanical-measurement-design-notebook",
+      "preconditions": {
+        "title": "Measure, Sketch, and Record a Design",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "a9207e37b5de537c1680097ca52715c0f1d1e684c87350c941f33879c3bc2116"
+    },
+    {
+      "slug": "mechanical-mechanisms",
+      "preconditions": {
+        "title": "Build Motion with Arms, Elevators, Intakes, and Linkages",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "79b289d78340d7dd951f750a0d3d2f347dcba7ebff13e05d0bc3e32b8ebfe423"
+    },
+    {
+      "slug": "mechanical-structure-load-paths",
+      "preconditions": {
+        "title": "Frames, Bracing, and Load Paths",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; authentic team structure examples remain open"
+      },
+      "contentSha256": "1488a9b9ae3116134cf3a57453fa1bfc36444207252b3f1226b3a865b2f6ea70"
+    },
+    {
+      "slug": "mechanical-tools-safe-work",
+      "preconditions": {
+        "title": "Choose and Use Common Robot Tools",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; official tool guidance and authentic team photos remain open"
+      },
+      "contentSha256": "50ac6b06c97f425d0da30252482b0f34f63d748b5b3b381ce8fb1952e2448a67"
+    },
+    {
+      "slug": "programming-code-subsystem",
+      "preconditions": {
+        "title": "Choose and Author an ARES Subsystem",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES FTC 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "0592f240375745b9e996f09471a5d12eb9c20fc30b48a6d89279edc337fd623a"
+    },
+    {
+      "slug": "programming-io-caching",
+      "preconditions": {
+        "title": "Read Hardware Once and Write Safe Outputs",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "94fc601dde05027be3574c1f257ee83d68400230685e21c89993ef5ec86a6392"
+    },
+    {
+      "slug": "programming-kotlin-basics",
+      "preconditions": {
+        "title": "Read and Test a Small Kotlin Function",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "e31f9245751cdd0b02db632af885580f0eaccbe020f235a1a249f6d6d7a04a66"
+    },
+    {
+      "slug": "programming-safe-task-sequences",
+      "preconditions": {
+        "title": "Build Safe Task Sequences in ARESLib",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "e4b4ba618a087c3ef810681d2ecef0dc7c0a69f75459d42f4ef819971344129d"
+    },
+    {
+      "slug": "programming-tests-parity",
+      "preconditions": {
+        "title": "Test Robot Logic Across Mocks and Simulation",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC SDK 11.1.0; Studio 3.1.2"
+      },
+      "contentSha256": "d703ddd5f5ee994be902599135064d916156cd789875c5193af7733ea6886590"
+    },
+    {
+      "slug": "sequencing-and-resources",
+      "preconditions": {
+        "title": "Task Sequences, Resources, and Cleanup",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "876c6972bff5950214b5c00ea554395c6c03fd4af19c406a3724927faa3a75af"
+    },
+    {
+      "slug": "subsystems-ownership-and-safety",
+      "preconditions": {
+        "title": "Subsystem Ownership, I/O, and Safety",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES FTC 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "aa1cfda4c09235c878874a035c77c423e3ea3374ae9cb9a3b4da20573ea5f66f"
+    },
+    {
+      "slug": "typed-tuning-and-safe-experiments",
+      "preconditions": {
+        "title": "Typed Tuning Profiles and Safe Experiments",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES FTC 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "9d53f594c52cebdb5100a8612378bb616dbe8bbc45137c86f6bda74225e04538"
+    },
+    {
+      "slug": "capstone-autonomous-mission",
+      "preconditions": {
+        "title": "Capstone 3: Complete a Simulated Autonomous Mission",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "a8ae301e3a729b72692f725bfcee091008189cdef9c6c28becb1c3b6e0fa79bb"
+    },
+    {
+      "slug": "capstone-competition-readiness",
+      "preconditions": {
+        "title": "Capstone 5: Present Competition-Readiness Evidence",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "46f953b3b5e8745f4bd160aae1e228d383bf36f9bb66e7eeaf265087ae204135"
+    },
+    {
+      "slug": "capstone-physical-commissioning",
+      "preconditions": {
+        "title": "Capstone 4: Commission a Physical Robot Feature",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "4be678b19516b022e423e222377a704d033aaa0c40b068ef26d2e7f1da8e4dc8"
+    },
+    {
+      "slug": "capstone-simulated-mechanism",
+      "preconditions": {
+        "title": "Capstone 1: Model and Test a Simulated Mechanism",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "6b219a2ad806b353907bcdb30afd50cc5c6acc8d5b28b05c3ebb5e43d164ea4e"
+    },
+    {
+      "slug": "capstone-subsystem",
+      "preconditions": {
+        "title": "Capstone 2: Build a Complete ARES Subsystem",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "a08406de3124d71af364da15d697b887816d8ec35cb6bfdea0dc06f1d0ea5766"
+    },
+    {
+      "slug": "competition-drive-team",
+      "preconditions": {
+        "title": "Run a Drive-Team Match Cycle",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; event-specific rules require current official review"
+      },
+      "contentSha256": "7ff30755d3104e581a48fba070c85d5ef6abc8e6f8bd8dc92ceef5d68d0dc874"
+    },
+    {
+      "slug": "competition-frc-inspection-pit",
+      "preconditions": {
+        "title": "Prepare an FRC Robot for Inspection and the Pit",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; 2027 FRC inspection materials pending official release at source review"
+      },
+      "contentSha256": "1f0fc9b39b32f49e99338c56b40aa8a7e7a54993b6c8f446b3772f0fb73fd95c"
+    },
+    {
+      "slug": "competition-ftc-inspection-pit",
+      "preconditions": {
+        "title": "Prepare an FTC Robot for Inspection and the Pit",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; 2026-2027 FTC checklist pending official release at source review"
+      },
+      "contentSha256": "8697476ce4ddc55e24447821d71ace39d705b5ad2bfc4d018b41d516f5538abe"
+    },
+    {
+      "slug": "competition-post-match",
+      "preconditions": {
+        "title": "Review, Repair, and Record after a Match",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; authentic team post-match checklist remains open"
+      },
+      "contentSha256": "81856a37fb7087854e558b095b3926f2f323efbc1ec26af43c96a9d5252bfcd4"
+    },
+    {
+      "slug": "competition-scouting",
+      "preconditions": {
+        "title": "Collect Useful Scouting Evidence",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; team scouting process and approved non-PII examples remain open"
+      },
+      "contentSha256": "478095aa7af9c7d4c2e07f5b98b16ed8632ac6db99cfa46214d708a1886fb5f0"
+    },
+    {
+      "slug": "competition-strategy",
+      "preconditions": {
+        "title": "Turn Evidence into Match Strategy",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2; team strategy process remains open for review"
+      },
+      "contentSha256": "b818bb711572335b85075fc48469f6f88ef0f41d0e9ec5dfce95ff6a308de862"
+    },
+    {
+      "slug": "controls-motion-profiles",
+      "preconditions": {
+        "title": "Plan Smooth Motion with Limits",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "9fa038fc3396e9abc5c82892f59a79bca5e9c765146d6778d92965650b6338b2"
+    },
+    {
+      "slug": "controls-motor-model-feedforward",
+      "preconditions": {
+        "title": "Predict Motion with Feedforward",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "c32cb968523ec3500bc871a2e3c1c9c49e4b9fe517d133e9e428dc9ecd505f53"
+    },
+    {
+      "slug": "controls-odometry",
+      "preconditions": {
+        "title": "Estimate Motion with Odometry",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC SDK 11.1.0; Studio 3.1.2"
+      },
+      "contentSha256": "06978f6497111d6a98aee0b7a54973070ac0c3d12fcb84447237aebd12090367"
+    },
+    {
+      "slug": "controls-pid",
+      "preconditions": {
+        "title": "Tune Feedback with Evidence",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "ea3d28ba45dd366064d9e3c1075298829f9d9f2ca4e1ff519ac3a0ace116a40f"
+    },
+    {
+      "slug": "controls-sensor-fusion",
+      "preconditions": {
+        "title": "Combine Measurements without Hiding Uncertainty",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "ac8a2c87ac1c557fcf4ec1a3bd5f1d6b272f8dd76e6d0b79ab3e461e71594166"
+    },
+    {
+      "slug": "controls-vision",
+      "preconditions": {
+        "title": "Use AprilTags and Reject Bad Vision Measurements",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "86403a5bcc9e5f41ada7b102455f13f75dd7942b0d9027b6f1da347876c857ec"
+    },
+    {
+      "slug": "ftc-driver-station-telemetry",
+      "preconditions": {
+        "title": "Build Bounded FTC Driver Station Telemetry",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES-FTC 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "9b569df698bff6954c90980c7e7e2daeb74826ad182c31159b46a89ba40ff34d"
+    },
+    {
+      "slug": "testing-fault-tree",
+      "preconditions": {
+        "title": "Build a Fault Tree and Isolate a Cause",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "280e796de584df49a7a540d7e956ec7600b392d61984240daa7892c9a69fd1a8"
+    },
+    {
+      "slug": "testing-logs-replay",
+      "preconditions": {
+        "title": "Compare Logs and Replay a Failure",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "8daf30a4de1bd2e589b7f5474814c9770b3d300027f9ab690746e24d004437fb"
+    },
+    {
+      "slug": "testing-sysid-tuning",
+      "preconditions": {
+        "title": "Run SysId and a Bounded Tuning Experiment",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "ba67659983cf556b66590debca5b840823c8d088e25e0f1de2d107bd9a0d946b"
+    },
+    {
+      "slug": "ares-workspace-map",
+      "preconditions": {
+        "title": "The ARES Software Workspace",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "723b22e5f90ee57d8494bc4fd69a4165877f1bf342c9d397d6d7285a58deaa9d"
+    },
+    {
+      "slug": "areslib-fundamentals",
+      "preconditions": {
+        "title": "ARESLib Architecture and Ownership",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "f4dfb609626277a115fe4050ab5dfdf079d1fe0427cc44c51bf48ccbb8ca26d2"
+    },
+    {
+      "slug": "autonomous-and-vision",
+      "preconditions": {
+        "title": "Autonomous Paths, Localization, and Vision",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "fe4ea35bf893373b24aacdf954c4a7420a20d1e24f0d080f9852ba79dd6bc335"
+    },
+    {
+      "slug": "camera-evidence-and-uncertainty",
+      "preconditions": {
+        "title": "Decide Whether Camera Evidence Is Trustworthy",
+        "status": "published",
+        "appliesToVersion": "General STEM; ARES 13.0.1 examples"
+      },
+      "contentSha256": "64d29913c09fbb2da91504073c63ff23a5ace593d1cf2ce3c255489af9713e54"
+    },
+    {
+      "slug": "ftc-driver-input-shaping-and-frames",
+      "preconditions": {
+        "title": "Shape FTC Driver Input Without Losing the Frame",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES-FTC monorepo f3de343a"
+      },
+      "contentSha256": "eec0f68aee84491278864ff05fd8edb60b71d2edfb3089e1405d7f3463ac8820"
+    },
+    {
+      "slug": "ftc-gui-owned-indicator-lights",
+      "preconditions": {
+        "title": "Author GUI-Owned FTC Indicator Lights",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; ARES-FTC 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "8c523e48ee55c062b1ac05abb504baed14e9a2f08ef61e3d45473c5bbb276f70"
+    },
+    {
+      "slug": "ftc-season-composition-and-safe-lifecycle",
+      "preconditions": {
+        "title": "Coordinate Subsystems and Fail Safe",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "f870b43594fedfd00d00e24436952d20a9fb5597fd48dec1405a76fe4c4935a1"
+    },
+    {
+      "slug": "ftc-starter-controller-bindings",
+      "preconditions": {
+        "title": "Map FTC Controls Through Redux",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC Starter 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "eb4e8c2209af9bbed2608099325bd8fb53bc5fd95afd45615472e4c94b216109"
+    },
+    {
+      "slug": "ftc-starter-first-autonomous",
+      "preconditions": {
+        "title": "Build and Verify Your First FTC Autonomous Routine",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC Starter 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "3a6f17ba79d832b0b893fb49e5e9d4d1f2a15389184062ef555a2a15052ba631"
+    },
+    {
+      "slug": "ftc-starter-physical-commissioning",
+      "preconditions": {
+        "title": "Commission an FTC Starter Robot Safely",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC Starter 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "8c1bd256684bbfddfe46f6cdbb658b9c2e4f80b56b3c4db8f75f938a24bc6870"
+    },
+    {
+      "slug": "ftc-starter-project-identity",
+      "preconditions": {
+        "title": "Start an FTC Project Without Inherited Robot Assumptions",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC Starter 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "f9dbc414c04b3f8f6cabefac287f750e472346a64a74b1329d0fecc06aa20cb6"
+    },
+    {
+      "slug": "measure-test-and-improve",
+      "preconditions": {
+        "title": "Measure, Test, and Improve a Design",
+        "status": "published",
+        "appliesToVersion": "General STEM; ARES 13.0.1 evidence practices"
+      },
+      "contentSha256": "fcf1950ddefcc4ce53e9514d9ab49bb2ca13ffa75fe4cb7670c208b2031678f9"
+    },
+    {
+      "slug": "rates-units-and-motion",
+      "preconditions": {
+        "title": "Use Rates and Units to Describe Motion",
+        "status": "published",
+        "appliesToVersion": "General STEM; ARES 13.0.1 examples"
+      },
+      "contentSha256": "ab5db90f642365f491e334640865ccb447351747a3d141796d0caf265237c1c9"
+    },
+    {
+      "slug": "read-a-telemetry-graph",
+      "preconditions": {
+        "title": "Read a Telemetry Graph Like a Scientist",
+        "status": "published",
+        "appliesToVersion": "General STEM; ARES 13.0.1 examples"
+      },
+      "contentSha256": "04ce6dc4305f299b98502fd61ba6e6f6eaa91a9f29760c16a7847792c3714968"
+    },
+    {
+      "slug": "redux-state-actions-reducers",
+      "preconditions": {
+        "title": "State, Actions, and Reducers",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "5fef2118348a552e1198c0795d30bc61c9cfeea738fa05c42f3c011f756d773c"
+    },
+    {
+      "slug": "robot-coordinate-contracts",
+      "preconditions": {
+        "title": "Robot Coordinates Without Guesswork",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "ace710509bd00b9021fbfe0044157abae8c9593b0e212d9eea8dd3b76936b968"
+    },
+    {
+      "slug": "robot-input-to-output",
+      "preconditions": {
+        "title": "Follow a Robot Request from Input to Output",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "2883c06efe426205abdd224415750e6058b1fb6c37018d315402e0f6b525d763"
+    },
+    {
+      "slug": "run-first-ftc-simulation",
+      "preconditions": {
+        "title": "Run Your First FTC Simulation",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; FTC Starter 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "2cb083b15cdc60c5a962de6ef5cf89dc85a1f802174d67f004e0aa826e2270d2"
+    },
+    {
+      "slug": "simulation-is-not-hardware-validation",
+      "preconditions": {
+        "title": "Simulation Is Not Hardware Validation",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "74d2ec11653cd33bbd46abdb71a39a6f82e9554158fe07908202f31cdec6ac1a"
+    },
+    {
+      "slug": "swerve-and-kinematics",
+      "preconditions": {
+        "title": "Drivebase, Swerve, and Kinematics Contracts",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "41d2be9c6820b10d30e028e59a5ab80d8f8e45d3fa41765b971ccb25ed96db76"
+    },
+    {
+      "slug": "telemetry-and-control",
+      "preconditions": {
+        "title": "Telemetry, Control State, and Offline Logs",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1; Studio 3.1.2"
+      },
+      "contentSha256": "789293bb2ddd9c10c3d9d3d36c755f94179a6fadc0f749539356742298329ccf"
+    },
+    {
+      "slug": "telemetry-and-local-logs",
+      "preconditions": {
+        "title": "Telemetry and Local Log Retrieval",
+        "status": "published",
+        "appliesToVersion": "ARES 13.0.1"
+      },
+      "contentSha256": "cbcbd6a42b2516ef3f48b045e67d66133e4e64ad2206f6ad8699c93308bf6744"
+    }
   ]
 }

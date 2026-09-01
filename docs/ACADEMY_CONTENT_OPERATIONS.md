@@ -33,8 +33,9 @@ review digest are identical on Windows, Linux, and CI.
 `content:release-validate` prepares the ignored import artifact, then verifies
 `content/learning/release-candidate.json`. It requires the candidate's source
 authority to match the prepared catalog, recomputes every approval digest, and
-proves that the two new-draft batches exactly partition all currently stageable
-documents while the refresh batch exactly matches the guarded refresh plan.
+proves that the bounded batches exactly partition all currently stageable and
+guarded-refresh documents. A review plan may describe up to 100 documents, but
+every executable batch remains capped at 25 changes.
 The candidate stores no reviewer identity or approval date and is not an
 approval to publish. CI runs this check after remote source verification.
 
