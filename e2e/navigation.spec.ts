@@ -147,6 +147,59 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     expect(targetHeights.every((height) => height >= 44)).toBe(true);
   });
 
+  test("analytics choices are usable on mobile and can be changed from privacy", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.removeItem("ares_analytics_consent_v1");
+      window.dispatchEvent(new Event("ares:analytics-consent-open"));
+    });
+
+    const banner = page.getByRole("region", {
+      name: "Optional website analytics",
+    });
+    await expect(banner).toBeVisible();
+    const bounds = await banner.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        viewportWidth: document.documentElement.clientWidth,
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    });
+    expect(bounds.left).toBeGreaterThanOrEqual(0);
+    expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+    expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth);
+
+    const choices = banner.getByRole("button");
+    const choiceSizes = await choices.evaluateAll((buttons) =>
+      buttons.map((button) => button.getBoundingClientRect().height),
+    );
+    expect(choiceSizes.every((height) => height >= 44)).toBe(true);
+
+    await banner.getByRole("button", { name: "Keep cookie-free" }).click();
+    await expect(banner).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(() => localStorage.getItem("ares_analytics_consent_v1")),
+      )
+      .toBe("denied");
+
+    await page.goto("/privacy");
+    await expect(
+      page.getByText("This browser remains cookie-free for analytics."),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Change analytics choice" }).click();
+    await expect(banner).toBeVisible();
+    await banner.getByRole("button", { name: "Allow analytics" }).click();
+    await expect(
+      page.getByText("Analytics is allowed in this browser."),
+    ).toBeVisible();
+  });
+
   test("mobile footer links open the destination at the top of the page", async ({
     page,
   }) => {

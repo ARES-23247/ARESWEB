@@ -2,11 +2,18 @@ import { act, render } from "@testing-library/react";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import {
+  ANALYTICS_CONSENT_CHANGE_EVENT,
+  ANALYTICS_CONSENT_STORAGE_KEY,
+} from "@/lib/analyticsConsent";
 
 function RouteControl() {
   const navigate = useNavigate();
   return (
-    <button type="button" onClick={() => navigate("/academy?path=robotics-foundations")}>
+    <button
+      type="button"
+      onClick={() => navigate("/academy?path=robotics-foundations")}
+    >
       Change route
     </button>
   );
@@ -15,7 +22,7 @@ function RouteControl() {
 describe("AnalyticsTracker", () => {
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-0KKZT6G3TG");
-    window.localStorage.removeItem("ares_ga_client_id");
+    window.localStorage.removeItem(ANALYTICS_CONSENT_STORAGE_KEY);
     Reflect.deleteProperty(window, "dataLayer");
     Reflect.deleteProperty(window, "gtag");
     document.getElementById("google-analytics-script")?.remove();
@@ -60,14 +67,16 @@ describe("AnalyticsTracker", () => {
       },
     ]);
     expect(Array.isArray(window.dataLayer[0])).toBe(false);
-    expect(window.localStorage.getItem("ares_ga_client_id")).toBeNull();
+    expect(
+      window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY),
+    ).toBeNull();
     expect(document.getElementById("google-analytics-script")).toHaveAttribute(
       "src",
       "https://www.googletagmanager.com/gtag/js?id=G-0KKZT6G3TG",
     );
   });
 
-  it("sends manual page views for React Router navigation", () => {
+  it("sends manual page views without query parameters", () => {
     const { getByRole } = render(
       <MemoryRouter initialEntries={["/"]}>
         <AnalyticsTracker />
@@ -83,10 +92,74 @@ describe("AnalyticsTracker", () => {
       "event",
       "page_view",
       expect.objectContaining({
-        page_path: "/academy?path=robotics-foundations",
+        page_path: "/academy",
+        page_location: "http://localhost:3000/academy",
         send_to: "G-0KKZT6G3TG",
       }),
     ]);
+  });
+
+  it("restores a saved opt-in while keeping advertising consent denied", () => {
+    window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, "granted");
+
+    render(
+      <MemoryRouter initialEntries={["/privacy"]}>
+        <AnalyticsTracker />
+      </MemoryRouter>,
+    );
+
+    expect(
+      window.dataLayer.map((entry) => Array.from(entry as IArguments)),
+    ).toContainEqual([
+      "consent",
+      "update",
+      {
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+        analytics_storage: "granted",
+      },
+    ]);
+  });
+
+  it("updates consent and records the current page after a new opt-in", () => {
+    render(
+      <MemoryRouter initialEntries={["/join?email=student@example.test"]}>
+        <AnalyticsTracker />
+      </MemoryRouter>,
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(ANALYTICS_CONSENT_CHANGE_EVENT, {
+          detail: "granted",
+        }),
+      );
+    });
+
+    const commands = window.dataLayer.map((entry) =>
+      Array.from(entry as IArguments),
+    );
+    expect(commands).toContainEqual([
+      "consent",
+      "update",
+      {
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+        analytics_storage: "granted",
+      },
+    ]);
+    expect(commands).toContainEqual([
+      "event",
+      "page_view",
+      {
+        page_path: "/join",
+        page_location: "http://localhost:3000/join",
+        send_to: "G-0KKZT6G3TG",
+      },
+    ]);
+    expect(JSON.stringify(commands)).not.toContain("student@example.test");
   });
 
   it("does nothing when no measurement ID is configured", () => {

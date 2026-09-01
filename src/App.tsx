@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import AnalyticsConsentBanner from "@/components/AnalyticsConsentBanner";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import SEO from "@/components/SEO";
 
@@ -104,6 +105,7 @@ export default function App() {
       <HelmetProvider>
         <BrowserRouter>
           <AnalyticsTracker />
+          <AnalyticsConsentBanner />
           <AuthProvider>
             <LayoutWrapper>
               <OfflineIndicator />

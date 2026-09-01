@@ -70,10 +70,23 @@ export const test = base.extend<AresFixtures>({
 
     await page.addInitScript(() => {
       window.ARES_E2E_BYPASS = true;
+      // Most tests validate unrelated user journeys and should begin from the
+      // stable, privacy-preserving choice. The dedicated consent test removes
+      // this value and reopens the banner explicitly.
+      try {
+        if (!window.localStorage.getItem("ares_analytics_consent_v1")) {
+          window.localStorage.setItem("ares_analytics_consent_v1", "denied");
+        }
+      } catch {
+        // The init script also runs in the opaque initial document where
+        // storage may be unavailable; it runs again on the application origin.
+      }
     });
 
     const errorHandler = (err: Error) => {
-      clientFailures.push(`${err.name || "Error"}: ${err.message}\n${err.stack || ""}`);
+      clientFailures.push(
+        `${err.name || "Error"}: ${err.message}\n${err.stack || ""}`,
+      );
     };
     const consoleHandler = (message: ConsoleMessage) => {
       if (message.type() === "error") {
@@ -87,12 +100,15 @@ export const test = base.extend<AresFixtures>({
       url(): string;
       failure(): { errorText?: string } | null;
     }) => {
-      const errorText = request.failure()?.errorText ?? "unknown network failure";
+      const errorText =
+        request.failure()?.errorText ?? "unknown network failure";
       if (/ERR_ABORTED|NS_BINDING_ABORTED/i.test(errorText)) return;
       try {
         const currentOrigin = new URL(page.url()).origin;
         if (new URL(request.url()).origin === currentOrigin) {
-          clientFailures.push(`same-origin request failed: ${request.url()} (${errorText})`);
+          clientFailures.push(
+            `same-origin request failed: ${request.url()} (${errorText})`,
+          );
         }
       } catch {
         // Ignore failures before the first real document establishes an origin.
@@ -103,7 +119,9 @@ export const test = base.extend<AresFixtures>({
       try {
         const currentOrigin = new URL(page.url()).origin;
         if (new URL(response.url()).origin === currentOrigin) {
-          clientFailures.push(`same-origin HTTP ${response.status()}: ${response.url()}`);
+          clientFailures.push(
+            `same-origin HTTP ${response.status()}: ${response.url()}`,
+          );
         }
       } catch {
         // Ignore responses before the first real document establishes an origin.
