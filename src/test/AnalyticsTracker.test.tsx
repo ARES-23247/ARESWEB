@@ -52,7 +52,12 @@ describe("AnalyticsTracker", () => {
     expect(Array.from(window.dataLayer[2] as IArguments)).toEqual([
       "config",
       "G-0KKZT6G3TG",
-      { send_page_view: false },
+      {
+        send_page_view: false,
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false,
+        allow_interest_groups: false,
+      },
     ]);
     expect(Array.isArray(window.dataLayer[0])).toBe(false);
     expect(window.localStorage.getItem("ares_ga_client_id")).toBeNull();

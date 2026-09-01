@@ -15,6 +15,10 @@ const EXPECTED_HEADLESS_CONSOLE_FAILURES = [
 ];
 const EXPECTED_GOOGLE_REPORT_ONLY_FAILURE =
   "console.error: Framing 'https://www.google.com/' violates the following report-only Content Security Policy directive: \"frame-ancestors 'self'\".";
+const EXPECTED_BLOCKED_AD_CONVERSION_FAILURES = [
+  "console.error: Connecting to 'https://pagead2.googlesyndication.com/measurement/conversion?",
+  "console.error: Fetch API cannot load https://pagead2.googlesyndication.com/measurement/conversion?",
+];
 
 function unexpectedClientFailures(failures, expectedFailures) {
   return failures.filter(
@@ -68,6 +72,12 @@ export async function runProductionBrowserCheck({
   const clientFailures = [];
   let appCheckToken = "";
   let inquiryPayload;
+  let advertisingResponseSeen = false;
+  const assertAdvertisingTrafficBlocked = () => {
+    if (advertisingResponseSeen) {
+      throw new Error("advertising conversion traffic escaped the site CSP");
+    }
+  };
 
   page.on("pageerror", (error) => {
     clientFailures.push(`pageerror: ${error.message}`);
@@ -75,6 +85,15 @@ export async function runProductionBrowserCheck({
   page.on("console", (message) => {
     if (message.type() === "error") {
       clientFailures.push(`console.error: ${message.text()}`);
+    }
+  });
+  page.on("response", (response) => {
+    const url = new URL(response.url());
+    if (
+      url.hostname === "pagead2.googlesyndication.com" &&
+      url.pathname === "/measurement/conversion"
+    ) {
+      advertisingResponseSeen = true;
     }
   });
 
@@ -135,6 +154,7 @@ export async function runProductionBrowserCheck({
         `GA4 collection used unexpected measurement ID ${analyticsMeasurementId ?? "missing"}`,
       );
     }
+    assertAdvertisingTrafficBlocked();
     if (new URL(page.url()).origin !== origin) {
       throw new Error(
         `Deployment probe left the direct Hosting origin for ${page.url()}`,
@@ -220,8 +240,10 @@ export async function runProductionBrowserCheck({
           `App Check canary rejected the browser token with HTTP ${canaryResponse.status()}`,
         );
       }
+      assertAdvertisingTrafficBlocked();
       const unexpectedFailures = unexpectedClientFailures(clientFailures, [
         EXPECTED_GOOGLE_REPORT_ONLY_FAILURE,
+        ...EXPECTED_BLOCKED_AD_CONVERSION_FAILURES,
       ]);
       if (unexpectedFailures.length > 0) {
         throw new Error(unexpectedFailures.join("\n"));
@@ -258,9 +280,11 @@ export async function runProductionBrowserCheck({
         `App Check canary accepted an unattested request with HTTP ${untrustedCanaryResponse.status()}`,
       );
     }
+    assertAdvertisingTrafficBlocked();
     const unexpectedFailures = unexpectedClientFailures(clientFailures, [
       ...EXPECTED_HEADLESS_CONSOLE_FAILURES,
       EXPECTED_GOOGLE_REPORT_ONLY_FAILURE,
+      ...EXPECTED_BLOCKED_AD_CONVERSION_FAILURES,
     ]);
     if (unexpectedFailures.length > 0) {
       throw new Error(unexpectedFailures.join("\n"));

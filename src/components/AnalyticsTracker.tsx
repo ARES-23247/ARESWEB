@@ -39,6 +39,12 @@ export default function AnalyticsTracker() {
       window.gtag("js", new Date());
       window.gtag("config", measurementId, {
         send_page_view: false,
+        // Keep GA4 limited to aggregate site measurement. Google documents
+        // allow_google_signals=false as the switch that disables advertising
+        // features and suppresses the associated join beacons.
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false,
+        allow_interest_groups: false,
       });
     }
 

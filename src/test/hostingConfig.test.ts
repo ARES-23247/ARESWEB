@@ -272,6 +272,7 @@ describe("Firebase Hosting crawl configuration", () => {
     // no URL is being validated for security here.
     expect(csp).toMatch(/script-src[^;]*https:\/\/www\.googletagmanager\.com/);
     expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
+    expect(csp).not.toContain("googlesyndication.com");
   });
 
   it("allows reCAPTCHA Enterprise verification requests without weakening scripts", () => {
