@@ -4,7 +4,7 @@ import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
-import * as Dialog from "@radix-ui/react-dialog";
+import { ConfirmDialog } from "@/components/ui/Dialog";
 import { 
   MessageSquare, 
   Trash2, 
@@ -452,32 +452,22 @@ export default function InquiriesPage() {
         </div>
       )}
 
-      <Dialog.Root open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/15 bg-obsidian p-6 shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
-            <Dialog.Title className="font-heading text-xl font-black uppercase text-white">
-              {pendingAction?.kind === "approve" ? "Create this team account?" : "Archive this inquiry?"}
-            </Dialog.Title>
-            <Dialog.Description className="mt-3 text-sm leading-relaxed text-marble/80">
-              {pendingAction?.kind === "approve"
-                ? "This will pre-authorize the applicant with a private-by-default profile and mark the inquiry resolved."
-                : "The inquiry will leave the active queue but remain available under Archived for recovery and audit history."}
-            </Dialog.Description>
-            <div className="mt-6 flex justify-end gap-3">
-              <Dialog.Close asChild><button type="button" className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase text-marble focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close>
-              <button
-                type="button"
-                disabled={!pendingAction || isProcessingId !== null}
-                onClick={() => pendingAction && void (pendingAction.kind === "approve" ? handleApproveAccount(pendingAction.inquiry.id) : handleDeleteInquiry(pendingAction.inquiry.id))}
-                className="rounded bg-ares-red px-4 py-2 text-xs font-black uppercase text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                {pendingAction?.kind === "approve" ? "Create account" : "Archive inquiry"}
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <ConfirmDialog
+        open={pendingAction !== null}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        title={pendingAction?.kind === "approve" ? "Create this team account?" : "Archive this inquiry?"}
+        description={pendingAction?.kind === "approve"
+          ? "This will pre-authorize the applicant with a private-by-default profile and mark the inquiry resolved."
+          : "The inquiry will leave the active queue but remain available under Archived for recovery and audit history."}
+        confirmLabel={pendingAction?.kind === "approve" ? "Create account" : "Archive inquiry"}
+        pendingLabel={pendingAction?.kind === "approve" ? "Creating account…" : "Archiving inquiry…"}
+        busy={isProcessingId !== null}
+        onConfirm={() => pendingAction
+          ? pendingAction.kind === "approve"
+            ? handleApproveAccount(pendingAction.inquiry.id)
+            : handleDeleteInquiry(pendingAction.inquiry.id)
+          : undefined}
+      />
     </div>
   );
 }

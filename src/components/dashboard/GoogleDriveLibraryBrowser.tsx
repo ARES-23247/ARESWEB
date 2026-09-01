@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react";
+import { TableFrame } from "@/components/ui/TableFrame";
 import { toast } from "sonner";
 import { authenticatedFetch } from "@/lib/api";
 import { pickGoogleDriveFolder } from "@/lib/googleDrivePicker";
@@ -306,8 +307,11 @@ export default function GoogleDriveLibraryBrowser() {
             ))}
           </nav>
 
-          <div className="overflow-x-auto rounded border border-white/10">
-            <table className="min-w-[760px] w-full text-left text-xs">
+          <TableFrame
+            caption="Google Drive folder contents"
+            containerClassName="rounded border border-white/10"
+            className="min-w-[760px]"
+          >
               <thead className="bg-white/5 text-[10px] uppercase tracking-wider text-marble/60">
                 <tr><th className="w-12 p-3"><span className="sr-only">Select</span></th><th className="p-3">Name</th><th className="p-3">Type</th><th className="p-3">Modified</th><th className="p-3">Size</th><th className="p-3">Import state</th><th className="w-12 p-3"><span className="sr-only">Open</span></th></tr>
               </thead>
@@ -327,8 +331,7 @@ export default function GoogleDriveLibraryBrowser() {
                 ))}
                 {items.length === 0 && loadingState !== "folder" && <tr><td colSpan={7} className="p-8 text-center text-marble/60">This Drive folder is empty.</td></tr>}
               </tbody>
-            </table>
-          </div>
+          </TableFrame>
 
           {loadingState === "folder" && <p role="status" className="text-sm text-marble/70">Loading folder contents…</p>}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

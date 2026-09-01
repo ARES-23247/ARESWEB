@@ -57,6 +57,32 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.viewportWidth);
   });
 
+  test('should keep shared media dashboard actions usable at a 320px viewport', async ({ page, loginAs }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.route('**/api/videos?**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ videos: [], hasMore: false, nextCursor: null }),
+    }));
+    await loginAs('admin', 'Media Manager');
+    await page.goto('/dashboard/videos');
+
+    await expect(page.getByRole('heading', { name: 'Manage Videos' })).toBeVisible({ timeout: 15000 });
+    const actions = page.getByRole('button', { name: /Sync YouTube|Add video/ });
+    const actionSizes = await actions.evaluateAll((buttons) => buttons.map((button) => {
+      const bounds = button.getBoundingClientRect();
+      return { width: bounds.width, height: bounds.height };
+    }));
+    expect(actionSizes).toHaveLength(2);
+    expect(actionSizes.every(({ width, height }) => width >= 44 && height >= 44)).toBe(true);
+
+    const viewport = await page.locator('html').evaluate((element) => ({
+      documentWidth: element.scrollWidth,
+      viewportWidth: element.clientWidth,
+    }));
+    expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.viewportWidth);
+  });
+
   test('should deny the isolated member fixture on admin routes', async ({ page, loginAs }) => {
     await loginAs('member', 'Test Member');
     await page.goto('/dashboard');

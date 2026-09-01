@@ -64,6 +64,11 @@ test("public routes render with their titles and a main landmark", async ({ page
     await page.goto(path, { waitUntil: "networkidle" });
     await expect(page).toHaveTitle(new RegExp(titlePart), { timeout: 15_000 });
     await expect(page.locator("main").first()).toBeVisible();
+    if (path === "/academy" || path === "/docs") {
+      await expect(
+        page.getByRole("heading", { name: "No Lessons Yet" }),
+      ).toBeVisible();
+    }
   }
 });
 

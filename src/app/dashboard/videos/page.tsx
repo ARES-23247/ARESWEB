@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Activity, Archive, ExternalLink, Loader2, Pencil, Play, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { apiFailure, ManagedVideo, parseYouTubeVideoId } from "@/lib/media";
@@ -186,19 +189,17 @@ export default function VideosManagementPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      <header className="flex flex-col gap-5 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ares-gold"><Activity size={14} aria-hidden="true" /> Team media</p>
-          <h1 className="font-heading text-4xl font-black uppercase tracking-tight text-white md:text-5xl">Manage Videos</h1>
-          <p className="mt-2 max-w-2xl text-sm text-marble/70">Add team YouTube links, review drafts, and sync the official team channel.</p>
-        </div>
-        {canManage && <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={() => void syncYoutube()} disabled={syncing} className="inline-flex items-center gap-2 border border-ares-gold/40 px-4 py-3 text-xs font-black uppercase tracking-wider text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">
-            <RefreshCw size={15} className={syncing ? "motion-safe:animate-spin" : ""} aria-hidden="true" /> {syncing ? "Syncing" : "Sync YouTube"}
-          </button>
-          <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 bg-ares-red px-4 py-3 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><Plus size={15} aria-hidden="true" /> Add video</button>
-        </div>}
-      </header>
+      <PageHeader
+        eyebrow={<><Activity size={14} aria-hidden="true" /> Team media</>}
+        title="Manage Videos"
+        description="Add team YouTube links, review drafts, and sync the official team channel."
+        actions={canManage ? <>
+          <Button variant="gold" onClick={() => void syncYoutube()} isPending={syncing} pendingLabel="Syncing" className="px-4 py-3 text-xs font-black uppercase tracking-wider">
+            <RefreshCw size={15} aria-hidden="true" /> Sync YouTube
+          </Button>
+          <Button onClick={openCreate} className="px-4 py-3 text-xs font-black uppercase tracking-wider"><Plus size={15} aria-hidden="true" /> Add video</Button>
+        </> : undefined}
+      />
 
       {!canManage && <p className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">You can view the team library. An admin or coach manages video links.</p>}
       {notice && <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">{notice}</p>}
@@ -231,7 +232,17 @@ export default function VideosManagementPage() {
         <form onSubmit={(event) => void saveVideo(event)} className="mt-6 space-y-4"><div><label htmlFor="video-title-input" className="mb-1 block text-xs font-bold text-marble">Title</label><input id="video-title-input" required maxLength={180} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div><label htmlFor="video-link-input" className="mb-1 block text-xs font-bold text-marble">YouTube URL or video ID</label><input id="video-link-input" required value={draft.videoId} onChange={(event) => setDraft({ ...draft, videoId: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 font-mono text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div><label htmlFor="video-description-input" className="mb-1 block text-xs font-bold text-marble">Summary</label><textarea id="video-description-input" maxLength={2000} rows={4} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className="w-full resize-y border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div><div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="video-kind-input" className="mb-1 block text-xs font-bold text-marble">Media type</label><select id="video-kind-input" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as VideoDraft["type"] })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="video">Video</option><option value="short">Short</option></select></div><div><label htmlFor="video-status-input" className="mb-1 block text-xs font-bold text-marble">Status</label><select id="video-status-input" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as VideoDraft["status"] })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"><option value="draft">Draft</option><option value="published">Published</option></select></div></div><div><label htmlFor="video-thumbnail-input" className="mb-1 block text-xs font-bold text-marble">Thumbnail URL (optional)</label><input id="video-thumbnail-input" type="url" value={draft.thumbnailUrl} onChange={(event) => setDraft({ ...draft, thumbnailUrl: event.target.value })} className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" /></div>{saveError && <div role="alert" className="border border-ares-red bg-ares-red/15 p-3 text-white"><p className="text-xs font-bold">Your draft is still here. The video was not saved.</p><p className="mt-1 font-mono text-[10px] text-white/80">{saveError}</p></div>}<div className="flex justify-end gap-3 border-t border-white/10 pt-4"><Dialog.Close asChild><button type="button" disabled={saving} className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close><button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{saving && <Loader2 size={14} className="motion-safe:animate-spin" aria-hidden="true" />}{saving ? "Saving" : "Save video"}</button></div></form>
       </Dialog.Content></Dialog.Portal></Dialog.Root>
 
-      <Dialog.Root open={Boolean(pendingArchive)} onOpenChange={(open) => !open && !actionId && setPendingArchive(null)}><Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[110] bg-black/80" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[111] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 border border-white/15 bg-obsidian p-6 focus:outline-none"><Dialog.Title className="font-heading text-xl font-black uppercase text-white">Archive this video?</Dialog.Title><Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/70">The video leaves active and public views. You can restore it later.</Dialog.Description><div className="mt-6 flex justify-end gap-3"><Dialog.Close asChild><button type="button" disabled={Boolean(actionId)} className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close><button type="button" onClick={() => void archiveVideo()} disabled={Boolean(actionId)} className="bg-ares-red px-4 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50">{actionId ? "Archiving" : "Archive video"}</button></div></Dialog.Content></Dialog.Portal></Dialog.Root>
+      <ConfirmDialog
+        open={Boolean(pendingArchive)}
+        onOpenChange={(open) => !open && setPendingArchive(null)}
+        title="Archive this video?"
+        description="The video leaves active and public views. You can restore it later."
+        confirmLabel="Archive video"
+        pendingLabel="Archiving"
+        busy={Boolean(actionId)}
+        onConfirm={archiveVideo}
+        layer="nested"
+      />
     </div>
   );
 }

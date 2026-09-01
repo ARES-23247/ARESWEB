@@ -3,6 +3,7 @@ import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCc
 import { cleanThumbnailUrl } from "@/lib/utils";
 import type { DocRecord, DocumentConnectionState } from "@/hooks/useDocumentSync";
 import AuthenticatedImage from "@/components/media/AuthenticatedImage";
+import { TableFrame } from "@/components/ui/TableFrame";
 
 interface DocListGridProps {
   items: DocRecord[];
@@ -131,8 +132,9 @@ export default function DocListGrid({
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+      <TableFrame
+        caption={variant === "docs" ? "Documentation articles" : variant === "documents" ? "Team documents" : "Blog posts"}
+      >
           <thead>
             <tr className="border-b border-white/10 text-marble/40 uppercase font-black tracking-widest text-[9px] bg-black/5">
               {variant === "docs" && (
@@ -390,8 +392,7 @@ export default function DocListGrid({
               })
             )}
           </tbody>
-        </table>
-      </div>
+      </TableFrame>
       {pendingArchiveSlug && onConfirmArchive && onCancelArchive && (
         <div
           role="alertdialog"

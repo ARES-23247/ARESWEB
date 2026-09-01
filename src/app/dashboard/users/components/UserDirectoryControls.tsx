@@ -1,5 +1,5 @@
-import * as Dialog from "@radix-ui/react-dialog";
 import { AlertCircle, CheckCircle, Search, UserCheck } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/Dialog";
 
 interface UserDirectoryNoticesProps {
   success: string | null;
@@ -98,20 +98,15 @@ interface UserRevocationDialogProps {
 
 export function UserRevocationDialog({ target, onOpenChange, onConfirm }: UserRevocationDialogProps) {
   return (
-    <Dialog.Root open={target !== null} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-ares-red/40 bg-obsidian p-6 shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
-          <Dialog.Title className="font-heading text-xl font-black uppercase text-white">Revoke roster access?</Dialog.Title>
-          <Dialog.Description className="mt-3 text-sm leading-relaxed text-marble/80">
-            {target ? `${target.name || target.email} will be signed out of team tools. Their profile and audit history will be archived, not deleted, and an administrator can restore access later.` : "The account will be archived."}
-          </Dialog.Description>
-          <div className="mt-6 flex justify-end gap-3">
-            <Dialog.Close asChild><button type="button" className="rounded border border-white/15 px-4 py-2 text-xs font-black uppercase text-marble hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Cancel</button></Dialog.Close>
-            <button type="button" onClick={onConfirm} className="rounded bg-ares-red px-4 py-2 text-xs font-black uppercase text-white hover:bg-ares-red/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Revoke access</button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <ConfirmDialog
+      open={target !== null}
+      onOpenChange={onOpenChange}
+      title="Revoke roster access?"
+      description={target
+        ? `${target.name || target.email} will be signed out of team tools. Their profile and audit history will be archived, not deleted, and an administrator can restore access later.`
+        : "The account will be archived."}
+      confirmLabel="Revoke access"
+      onConfirm={onConfirm}
+    />
   );
 }

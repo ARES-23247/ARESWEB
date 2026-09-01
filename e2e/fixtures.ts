@@ -60,6 +60,20 @@ export const test = base.extend<AresFixtures>({
         body: JSON.stringify({ awards: [] }),
       }),
     );
+    await page.route("**/api/announcements", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ announcement: null }),
+      }),
+    );
+    await page.route("**/api/outreach?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ logs: [], nextCursor: null }),
+      }),
+    );
     // The isolated role fixture intentionally does not start Firebase Auth's
     // emulator. WebKit still requests its helper iframe during SDK startup;
     // satisfy only that loopback origin so a missing, unused emulator does not
@@ -91,8 +105,19 @@ export const test = base.extend<AresFixtures>({
     const consoleHandler = (message: ConsoleMessage) => {
       if (message.type() === "error") {
         const sourceUrl = message.location().url;
+        const messageText = message.text();
+        // Firefox reports an external font-CDN network miss as console.error.
+        // It does not indicate an application failure, and CI must not depend on
+        // Google Fonts being reachable. Keep this exception limited to Firefox's
+        // exact downloadable-font diagnostic and the expected CDN host.
+        if (
+          /downloadable font: download failed/i.test(messageText) &&
+          /fonts\.gstatic\.com/i.test(`${sourceUrl} ${messageText}`)
+        ) {
+          return;
+        }
         clientFailures.push(
-          `console.error${sourceUrl ? ` (${sourceUrl})` : ""}: ${message.text()}`,
+          `console.error${sourceUrl ? ` (${sourceUrl})` : ""}: ${messageText}`,
         );
       }
     };
@@ -102,7 +127,12 @@ export const test = base.extend<AresFixtures>({
     }) => {
       const errorText =
         request.failure()?.errorText ?? "unknown network failure";
-      if (/ERR_ABORTED|NS_BINDING_ABORTED/i.test(errorText)) return;
+      // Browsers use different text for a request cancelled by an intentional
+      // client-side navigation. These are equivalent to Chromium ERR_ABORTED,
+      // not server/network failures.
+      if (/ERR_ABORTED|NS_BINDING_ABORTED|Load request cancelled/i.test(errorText)) {
+        return;
+      }
       try {
         const currentOrigin = new URL(page.url()).origin;
         if (new URL(request.url()).origin === currentOrigin) {
