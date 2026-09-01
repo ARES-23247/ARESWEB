@@ -218,11 +218,11 @@ describe("learning content migration", () => {
     expect(result).toMatchObject({ planned: 2, ready: 2, blocked: 0, applied: 2, verified: 2 });
     expect(store.records.get("docs/test-doc")).toMatchObject({ isDeleted: 1, academyMigrationPhase: "cleanup" });
     expect(store.records.get("docs/monty")).toMatchObject({ displayInAreslib: 0, academyMigrationPhase: "cleanup" });
-    expect(store.records.get("docs/test-doc/revisions/academy_v4_cleanup_test-doc")).toMatchObject({
+    expect(store.records.get("docs/test-doc/revisions/academy_v5_cleanup_test-doc")).toMatchObject({
       content: "public lesson",
       migrationAction: "pre-migration-snapshot",
     });
-    expect(store.records.get("audit_logs/academy_v4_cleanup_test-doc")).not.toHaveProperty("content");
+    expect(store.records.get("audit_logs/academy_v5_cleanup_test-doc")).not.toHaveProperty("content");
     const manifestText = readFileSync(files.rollbackManifest, "utf8");
     expect(manifestText).not.toContain("public lesson");
     const manifest = JSON.parse(manifestText);

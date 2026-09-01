@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const MIGRATION_VERSION = 4;
+const MIGRATION_VERSION = 5;
 const MAX_FILE_BYTES = 2_000_000;
 const MAX_CHANGES = 25;
 const MAX_ARTIFACT_DOCUMENTS = 100;

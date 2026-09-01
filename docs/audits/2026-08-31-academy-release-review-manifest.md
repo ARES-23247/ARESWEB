@@ -34,6 +34,18 @@ were ready with zero blocked documents, and cleanup reported four unchanged
 actions. The remainder of this document is the original review snapshot and is
 retained as historical release evidence.
 
+The first two production batches applied and verified 46 documents in migration
+generation v4. The final 22-document transaction stopped atomically before any
+write because ten lessons already had immutable v4 revision and audit records
+from `academy-refresh-reconciled-v4-20260831T1607Z`. Those records are retained.
+The runner advances to generation v5, which changes only migration markers and
+revision/audit namespaces; the reviewed lesson content, guarded production
+preconditions, slug scopes, and pinned source authority remain unchanged. A new
+digest must still be generated for the final batch because the digest binds the
+migration generation as well as the reviewed content.
+The v5 final-batch digest is
+`6f9ac813578cfd398ca206c8a269256088faf1e1efddc48c260f1479572f95dd`.
+
 ## Original review snapshot
 
 ## Release decision boundary
