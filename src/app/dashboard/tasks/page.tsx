@@ -2,7 +2,7 @@
 
 import { logger } from "@/utils/logger";
 import { useEffect, useMemo, useState } from "react";
-import { collection, doc, onSnapshot, query, limit, runTransaction, writeBatch, getCountFromServer, } from "firebase/firestore";
+import { doc, runTransaction, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
@@ -11,74 +11,34 @@ import { canUseMemberAi } from "@/lib/authorization";
 import TaskDetailsModal from "./components/TaskDetailsModal";
 import TaskFilters from "./components/TaskFilters";
 import TaskBoardColumn from "./components/TaskBoardColumn";
-import { TaskItem, MemberProfile, SubTask } from "@/types/task";
+import { TaskItem, SubTask } from "@/types/task";
 import { PublicDataState } from "@/components/PublicDataState";
 import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
+import { useTaskBoardData } from "./hooks/useTaskBoardData";
 import { describeTaskError, TaskOperationError } from "./taskErrors";
 import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask, } from "./taskSubtasks";
 import {
   buildDuplicateTaskCounts,
-  normalizeTaskRecord,
   sortTasks,
   taskMatchesSearch,
   type TaskSortMode,
 } from "./taskRecord";
 
-const E2E_TASK_FIXTURES: TaskItem[] = [
-  {
-    id: "task_1",
-    title: "Calibrate Mecanum kS Friction Feedforward",
-    description: "Run systematic motor sweeps to calibrate feedforward voltage deadbands at low velocity.",
-    status: "in_progress",
-    priority: "high",
-    subteam: "software",
-    assignees: ["lead_programmer"],
-    subtasks: [
-      { id: "sub_1", title: "Run friction sweep script", done: true },
-      { id: "sub_2", title: "Apply 0.05 kS compensation in FtcMecanumRobot.kt", done: false, },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "task_2",
-    title: "Assemble Compliant Intake Flywheels",
-    description: "3D print and mount compliant wheels to the main hex shaft assembly for intake testing.",
-    status: "todo",
-    priority: "medium",
-    subteam: "hardware",
-    assignees: ["mechanic_lead"],
-    subtasks: [
-      { id: "sub_3", title: "3D print TPU compliant wheels", done: true },
-      { id: "sub_4", title: "Mount hex shaft to side plates", done: false },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "task_3",
-    title: "Sponsorship Outreach Pamphlets",
-    description: "Design and print marketing pamphlets detailing ARES 23247 *FIRST*® achievements.",
-    status: "review",
-    priority: "high",
-    subteam: "business",
-    assignees: ["coach_david"],
-    subtasks: [
-      { id: "sub_5", title: "Compile World Championship recap data", done: true, },
-      { id: "sub_6", title: "Review pamphlet layouts with advisors", done: false, },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export default function KanbanPage() {
   const { user, authorizedUser } = useAuth();
 
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
+  const {
+    tasks,
+    setTasks,
+    teamProfiles,
+    isLive,
+    loadError,
+    overflowCount,
+    overflowUnknown,
+  } = useTaskBoardData();
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
-  const [isLive, setIsLive] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [draggedOverCol, setDraggedOverCol] = useState<TaskItem["status"] | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -90,8 +50,6 @@ export default function KanbanPage() {
   const [sortBy, setSortBy] = useState<TaskSortMode>("newest");
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [overflowCount, setOverflowCount] = useState(0);
-  const [overflowUnknown, setOverflowUnknown] = useState(false);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
@@ -176,48 +134,6 @@ export default function KanbanPage() {
     }
   };
 
-  useEffect(() => {
-    if (import.meta.env.MODE === "e2e") {
-      setTasks(E2E_TASK_FIXTURES);
-      setIsLive(false);
-      return;
-    }
-
-    try {
-      const tasksRef = collection(db, "tasks");
-      const q = query(tasksRef, limit(500));
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          if (snapshot.empty) {
-            setTasks([]);
-            setIsLive(true);
-            setLoadError(null);
-            return;
-          }
-          const list = snapshot.docs.map((docSnap) =>
-            normalizeTaskRecord(docSnap.id, docSnap.data()),
-          );
-          setTasks(list.filter((task) => task.isDeleted !== 1));
-          setIsLive(true);
-          setLoadError(null);
-        },
-        (err) => {
-          logger.error("Unable to load task board:", err);
-          setTasks([]);
-          setIsLive(false);
-          setLoadError(err.message);
-        },
-      );
-      return () => unsubscribe();
-    } catch (e) {
-      logger.error("Unable to initialize task board:", e);
-      setTasks([]);
-      setIsLive(false);
-      setLoadError(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
   // ?task={id} deep links (from Zulip messages or copied card links) arrive as
   // full page loads, so the parameter is read from the location once and then
   // cleared without a router dependency.
@@ -233,32 +149,6 @@ export default function KanbanPage() {
       window.history.replaceState(null, "", cleanUrl);
     }
   }, [deepLinkId, tasks]);
-
-  // Surface silent truncation: the board queries at most 500 tasks.
-  useEffect(() => {
-    if (import.meta.env.MODE === "e2e") return;
-    getCountFromServer(query(collection(db, "tasks"), limit(501)))
-      .then((snap) => setOverflowCount(Math.max(0, snap.data().count - 500)))
-      .catch((err: unknown) => {
-        logger.error("Unable to verify the task truncation count:", err);
-        setOverflowUnknown(true);
-      });
-  }, []);
-
-  useEffect(() => {
-    const fetchTeamRoster = async () => {
-      try {
-        const response = await authenticatedFetch("/api/profiles/team-roster");
-        if (!response.ok)
-          throw new Error(`Failed to fetch team roster: ${response.status}`);
-        const data = await response.json();
-        setTeamProfiles(data.members || []);
-      } catch (e) {
-        logger.warn("Failed to fetch team roster from backend:", e);
-      }
-    };
-    fetchTeamRoster();
-  }, []);
 
   const handleMoveStatus = async (
     taskId: string,
