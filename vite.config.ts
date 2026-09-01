@@ -227,6 +227,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/app/dashboard/photos/useGooglePhotosSync.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/contentFormatters.ts": {
           lines: 85,
           functions: 100,
