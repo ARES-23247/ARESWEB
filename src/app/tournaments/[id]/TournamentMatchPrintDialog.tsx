@@ -41,8 +41,8 @@ export default function TournamentMatchPrintDialog({
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-modal bg-black/85 backdrop-blur-sm print:hidden" />
-        <Dialog.Content className="tournament-match-print fixed left-1/2 top-1/2 z-modal flex max-h-[92vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-white/15 bg-obsidian text-marble shadow-2xl focus:outline-none print:static print:max-h-none print:w-full print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-none print:bg-white print:text-black print:shadow-none">
+        <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/85 backdrop-blur-sm print:hidden" />
+        <Dialog.Content className="tournament-match-print fixed left-1/2 top-1/2 z-[81] flex max-h-[92vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-white/15 bg-obsidian text-marble shadow-2xl focus:outline-none print:static print:max-h-none print:w-full print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-none print:bg-white print:text-black print:shadow-none">
           <header className="flex items-start justify-between gap-4 border-b border-white/10 bg-zinc-900/60 px-5 py-4 print:hidden">
             <div>
               <Dialog.Title className="font-heading text-lg font-black uppercase tracking-wide text-white">

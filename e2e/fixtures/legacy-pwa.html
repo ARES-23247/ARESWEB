@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Legacy PWA installer</title>
+  </head>
+  <body>
+    <p id="status" role="status">Installing legacy worker…</p>
+    <script>
+      async function installLegacyWorker() {
+        const registration = await navigator.serviceWorker.register(
+          "/legacy-sw.js?version=previous-release",
+          { scope: "/" },
+        );
+        await navigator.serviceWorker.ready;
+        if (!navigator.serviceWorker.controller) {
+          await new Promise((resolve) =>
+            navigator.serviceWorker.addEventListener("controllerchange", resolve, {
+              once: true,
+            }),
+          );
+        }
+        document.querySelector("#status").textContent =
+          registration.active?.scriptURL.includes("legacy-sw.js")
+            ? "Legacy worker controls this browser"
+            : "Legacy worker did not activate";
+      }
+
+      installLegacyWorker().catch((error) => {
+        document.querySelector("#status").textContent = `Installation failed: ${error.message}`;
+      });
+    </script>
+  </body>
+</html>

@@ -107,4 +107,28 @@ describe("Dashboard mobile navigation", () => {
       ).not.toBeInTheDocument(),
     );
   });
+
+  it("returns keyboard focus to the sidebar trigger after Escape", async () => {
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardLayout>
+          <h1>Dashboard content</h1>
+        </DashboardLayout>
+      </MemoryRouter>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Open sidebar menu" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Portal navigation" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Portal navigation" }),
+      ).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
+  });
 });

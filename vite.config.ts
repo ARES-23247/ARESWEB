@@ -38,7 +38,10 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        clientsClaim: false,
+        // A waiting worker is still activated only after the user accepts the
+        // update. Once activated, claim the current tab so controllerchange can
+        // trigger the controlled reload instead of deadlocking on the old worker.
+        clientsClaim: true,
         skipWaiting: false,
         navigateFallback: "/index.html",
         // Only true SPA-only areas may fall back to index.html. Public record
@@ -174,18 +177,22 @@ export default defineConfig({
         "src/utils/lazySucrase.ts",
         "src/components/PublicDataState.tsx",
         "src/components/BlogThumbnailImage.tsx",
+        "src/components/docs/flowchart.ts",
         "src/components/AnalyticsConsentBanner.tsx",
         "src/components/PwaUpdatePrompt.tsx",
         "src/components/SiteAnnouncementBanner.tsx",
         "src/components/SEO.tsx",
         "src/components/dashboard/DocumentDraftPreview.tsx",
         "src/hooks/useAcademyProgress.ts",
+        "src/hooks/dashboard/documentationPublishing.ts",
         "src/app/dashboard/photos/*.{ts,tsx}",
+        "src/app/dashboard/events/hooks/useEventLiveCollections.ts",
         "src/app/calendar/api.ts",
         "src/app/dashboard/profile/page.tsx",
         "src/app/join/page.tsx",
         "src/app/dashboard/tasks/taskRecord.ts",
         "src/app/dashboard/tasks/taskSubtasks.ts",
+        "src/app/dashboard/tasks/hooks/useTaskBoardData.ts",
         "src/app/tournaments/[id]/TournamentMatchEditForm.tsx",
         "src/app/tournaments/[id]/TournamentMatchPrintDialog.tsx",
         "src/app/dashboard/profile/components/*.tsx",
@@ -215,6 +222,22 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/events/hooks/useEventLiveCollections.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/photos/useGooglePhotosSync.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/hooks/dashboard/documentationPublishing.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/components/docs/flowchart.ts": {
           lines: 85,
           functions: 100,
         },
@@ -351,6 +374,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/app/dashboard/tasks/taskSubtasks.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/tasks/hooks/useTaskBoardData.ts": {
           lines: 85,
           functions: 100,
         },

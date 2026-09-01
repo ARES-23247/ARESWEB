@@ -1,43 +1,30 @@
-import React, { useEffect, useId, useRef, useState } from "react";
+import { useMemo } from "react";
+import {
+  MarkerType,
+  Position,
+  ReactFlow,
+  type Edge,
+  type Node,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { parseFlowchart } from "./flowchart";
 
 /** Diagram sources are bounded so a pathological post cannot pin the CPU. */
-const MAX_MERMAID_SOURCE_CHARS = 8_000;
-
-let mermaidReady: Promise<typeof import("mermaid")["default"]> | null = null;
-
-function loadMermaid() {
-  // securityLevel "strict" disables HTML labels, links, and callbacks in the
-  // rendered SVG; the base theme is recolored to match the team palette.
-  mermaidReady ??= import("mermaid").then(({ default: mermaid }) => {
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: "strict",
-      theme: "base",
-      fontFamily: "Inter, system-ui, sans-serif",
-      themeVariables: {
-        background: "#0b0b0e",
-        primaryColor: "#121217",
-        primaryTextColor: "#e2e8f0",
-        primaryBorderColor: "#52525b",
-        lineColor: "#71717a",
-        secondaryColor: "#1c1917",
-        tertiaryColor: "#0b0b0e",
-      },
-    });
-    return mermaid;
-  });
-  return mermaidReady;
-}
+const MAX_FLOWCHART_SOURCE_CHARS = 8_000;
+const NODE_WIDTH = 190;
+const NODE_HEIGHT = 68;
+const RANK_GAP = 245;
+const LANE_GAP = 112;
 
 export interface MermaidDiagramProps {
-  /** Mermaid diagram source (the contents of a ```mermaid code fence). */
+  /** Supported Mermaid flowchart source from a ```mermaid code fence. */
   code: string;
   /** Accessible summary; defaults to a `%% aria:` comment in the diagram. */
   label?: string;
 }
 
 function getAccessibleLabel(source: string, label?: string) {
-  const ariaComment = source.match(/^%%\s*aria:\s*(.+)$/im)?.[1]?.trim();
+  const ariaComment = source.match(/^%%\s*aria:\s*(.+)$/imu)?.[1]?.trim();
   return (
     label?.trim() ||
     ariaComment?.slice(0, 240) ||
@@ -46,50 +33,110 @@ function getAccessibleLabel(source: string, label?: string) {
   );
 }
 
+function nodePosition(
+  direction: "LR" | "RL" | "TD" | "TB",
+  rank: number,
+  lane: number,
+  rankCount: number,
+) {
+  const displayedRank = direction === "RL" ? rankCount - rank - 1 : rank;
+  return direction === "LR" || direction === "RL"
+    ? { x: displayedRank * RANK_GAP, y: lane * LANE_GAP }
+    : { x: lane * RANK_GAP, y: rank * LANE_GAP };
+}
+
 export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
-  const reactId = useId();
-  const renderCounter = useRef(0);
-  const [svg, setSvg] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  const source = code.replace(/\u0000/g, "").trim();
+  const source = code.replace(/\u0000/gu, "").trim();
   const accessibleLabel = getAccessibleLabel(source, label);
+  const parsed = useMemo(
+    () =>
+      source && source.length <= MAX_FLOWCHART_SOURCE_CHARS
+        ? parseFlowchart(source)
+        : null,
+    [source],
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!source || source.length > MAX_MERMAID_SOURCE_CHARS) {
-      setFailed(true);
-      return;
-    }
-    setFailed(false);
-    setSvg(null);
-    renderCounter.current += 1;
-    // Unique diagram ids keep repeated rerenders from colliding in mermaid's cache.
-    const diagramId = `mmd-${reactId.replace(/[^a-zA-Z0-9]/g, "")}-${renderCounter.current}`;
-
-    loadMermaid()
-      .then(async (mermaid) => {
-        const { svg: rendered } = await mermaid.render(diagramId, source);
-        if (!cancelled) setSvg(rendered);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-
-    return () => {
-      cancelled = true;
+  const graph = useMemo(() => {
+    if (!parsed) return null;
+    const nodes: Node[] = parsed.nodes.map((node) => ({
+      id: node.id,
+      data: { label: node.label },
+      position: nodePosition(
+        parsed.direction,
+        node.rank,
+        node.lane,
+        parsed.rankCount,
+      ),
+      sourcePosition:
+        parsed.direction === "LR" || parsed.direction === "RL"
+          ? parsed.direction === "RL"
+            ? Position.Left
+            : Position.Right
+          : Position.Bottom,
+      targetPosition:
+        parsed.direction === "LR" || parsed.direction === "RL"
+          ? parsed.direction === "RL"
+            ? Position.Right
+            : Position.Left
+          : Position.Top,
+      style: {
+        width: NODE_WIDTH,
+        minHeight: NODE_HEIGHT,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: node.kind === "decision" ? 22 : 8,
+        border:
+          node.kind === "decision"
+            ? "2px solid #fbbf24"
+            : "1px solid #52525b",
+        background: node.kind === "decision" ? "#29220d" : "#121217",
+        color: "#f8fafc",
+        fontSize: 13,
+        fontWeight: 700,
+        lineHeight: 1.3,
+        padding: "10px 12px",
+        textAlign: "center",
+      },
+    }));
+    const edges: Edge[] = parsed.edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      type: "smoothstep",
+      markerEnd: { type: MarkerType.ArrowClosed, color: "#a1a1aa" },
+      style: {
+        stroke: "#a1a1aa",
+        strokeWidth: 1.5,
+        ...(edge.dashed ? { strokeDasharray: "6 5" } : {}),
+      },
+      labelStyle: { fill: "#f8fafc", fontSize: 11, fontWeight: 700 },
+      labelBgStyle: { fill: "#18181b", fillOpacity: 0.95 },
+      labelBgPadding: [4, 3],
+    }));
+    const vertical = parsed.direction === "TD" || parsed.direction === "TB";
+    const primaryCount = vertical ? parsed.rankCount : parsed.laneCount;
+    return {
+      nodes,
+      edges,
+      height: Math.min(720, Math.max(260, primaryCount * LANE_GAP + 100)),
     };
-  }, [source, reactId]);
+  }, [parsed]);
 
-  if (failed) {
+  if (!graph) {
     return (
       <figure
         role="note"
         className="my-6 rounded-lg border border-ares-red/40 bg-ares-red/10 p-4"
       >
         <figcaption className="mb-2 text-xs font-bold uppercase tracking-wider text-ares-red">
-          Diagram could not be rendered
+          Flowchart could not be rendered
         </figcaption>
+        <p className="mb-2 text-xs text-marble/70">
+          This viewer supports bounded Mermaid flowcharts. The source remains
+          available below.
+        </p>
         <pre className="overflow-x-auto text-xs text-marble/80">
           <code>{source || "(empty diagram)"}</code>
         </pre>
@@ -97,21 +144,32 @@ export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
     );
   }
 
-  if (svg === null) {
-    return (
-      <div
-        role="img"
-        aria-label={accessibleLabel}
-        className="my-6 flex h-32 items-center justify-center rounded-lg border border-white/10 bg-black/25 text-xs uppercase tracking-wider text-marble/50"
-      >
-        Rendering diagram…
-      </div>
-    );
-  }
-
   return (
-    <figure className="my-6 overflow-x-auto rounded-lg border border-white/10 bg-obsidian p-4">
-      <div role="img" aria-label={accessibleLabel} title={accessibleLabel} dangerouslySetInnerHTML={{ __html: svg }} />
+    <figure className="my-6 overflow-hidden rounded-lg border border-white/10 bg-obsidian p-3">
+      <div role="img" aria-label={accessibleLabel} title={accessibleLabel}>
+        <div aria-hidden="true" style={{ height: graph.height }}>
+          <ReactFlow
+            nodes={graph.nodes}
+            edges={graph.edges}
+            fitView
+            fitViewOptions={{ padding: 0.18, minZoom: 0.25, maxZoom: 1 }}
+            minZoom={0.25}
+            maxZoom={1}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={false}
+            nodesFocusable={false}
+            edgesFocusable={false}
+            panOnDrag={false}
+            zoomOnDoubleClick={false}
+            zoomOnScroll={false}
+            zoomOnPinch={false}
+            preventScrolling={false}
+            proOptions={{ hideAttribution: true }}
+            colorMode="dark"
+          />
+        </div>
+      </div>
       <figcaption className="sr-only">{accessibleLabel}</figcaption>
     </figure>
   );

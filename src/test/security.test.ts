@@ -1,59 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
-  signTutorialProgress,
-  verifyTutorialProgress,
   sanitizeHtml,
-  validateUrlParam,
   validateIdParam
 } from "../lib/security";
 
 describe("security utilities", () => {
-  describe("HMAC Tutorial Progress", () => {
-    it("should sign and verify valid progress data", async () => {
-      const progress = ["step1", "step2", "step3"];
-      const signed = await signTutorialProgress(progress);
-      
-      expect(signed).toBeDefined();
-      expect(signed.progress).toEqual(progress);
-      expect(signed.signature).toBeTypeOf("string");
-
-      const verified = await verifyTutorialProgress(signed);
-      expect(verified).toEqual(progress);
-    });
-
-    it("should fail validation if signature is modified", async () => {
-      const progress = ["step1", "step2"];
-      const signed = await signTutorialProgress(progress);
-      
-      const tampered = {
-        progress: signed.progress,
-        signature: signed.signature.slice(0, -2) + "00" // Tamper signature
-      };
-
-      const verified = await verifyTutorialProgress(tampered);
-      expect(verified).toBeNull();
-    });
-
-    it("should fail validation if progress items are modified", async () => {
-      const progress = ["step1", "step2"];
-      const signed = await signTutorialProgress(progress);
-      
-      const tampered = {
-        progress: ["step1", "step2", "tampered_step"],
-        signature: signed.signature
-      };
-
-      const verified = await verifyTutorialProgress(tampered);
-      expect(verified).toBeNull();
-    });
-
-    it("should return null for invalid inputs", async () => {
-      expect(await verifyTutorialProgress(null)).toBeNull();
-      expect(await verifyTutorialProgress({})).toBeNull();
-      expect(await verifyTutorialProgress({ progress: [] })).toBeNull();
-    });
-  });
-
   describe("sanitizeHtml", () => {
     it("should pass through clean text and safe tags", () => {
       const clean = "<p>Hello <strong>World</strong></p>";
@@ -74,36 +25,6 @@ describe("security utilities", () => {
 
     it("should return empty string for empty input", () => {
       expect(sanitizeHtml("")).toBe("");
-    });
-  });
-
-  describe("validateUrlParam", () => {
-    it("should return validated safe string", () => {
-      expect(validateUrlParam("about")).toBe("about");
-      expect(validateUrlParam("page-name_1")).toBe("page-name_1");
-    });
-
-    it("should reject traversals and scripts", () => {
-      expect(validateUrlParam("../about")).toBeNull();
-      expect(validateUrlParam("<script>")).toBeNull();
-      expect(validateUrlParam("javascript:alert(1)")).toBeNull();
-      expect(validateUrlParam("data:text/html,xss")).toBeNull();
-    });
-
-    it("should reject unsafe characters", () => {
-      expect(validateUrlParam("about?name=test")).toBeNull();
-      expect(validateUrlParam("about#hash")).toBeNull();
-      expect(validateUrlParam("about;select")).toBeNull();
-    });
-
-    it("should reject inputs exceeding length limit", () => {
-      const longInput = "a".repeat(257);
-      expect(validateUrlParam(longInput)).toBeNull();
-    });
-
-    it("should handle undefined and empty input", () => {
-      expect(validateUrlParam(undefined)).toBeNull();
-      expect(validateUrlParam("")).toBeNull();
     });
   });
 

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, Menu, X, ExternalLink } from "lucide-react";
 import { useSidebarStore } from "@/store/sidebarStore";
 import type { PublicDocument } from "@/lib/publicContentApi";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 
 export type DocRecord = PublicDocument;
 
@@ -24,9 +25,11 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
   const toggleDocsCategory = useSidebarStore((s) => s.toggleDocsCategory);
   const setDocsExpandedCategories = useSidebarStore((s) => s.setDocsExpandedCategories);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const searchRef = useRef<HTMLButtonElement>(null);
-  const wasOpen = useRef(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const sidebarRef = useFocusTrap<HTMLElement>(
+    docsOpen && !isDesktop,
+    toggleDocs,
+  );
 
   useEffect(() => {
     const query = window.matchMedia?.("(min-width: 1024px)");
@@ -49,19 +52,37 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
   }, [currentSlug, docsExpandedCategories, groupedDocs, setDocsExpandedCategories]);
 
   useEffect(() => {
-    if (docsOpen && !isDesktop) searchRef.current?.focus();
-    if (!docsOpen && wasOpen.current && !isDesktop) triggerRef.current?.focus();
-    wasOpen.current = docsOpen;
-  }, [docsOpen, isDesktop]);
-
-  useEffect(() => {
     if (!docsOpen || isDesktop) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") toggleDocs();
+    const sidebar = sidebarRef.current;
+    const parent = sidebar?.parentElement;
+    if (!sidebar || !parent) return;
+
+    const siblings = Array.from(parent.children).filter(
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement && element !== sidebar,
+    );
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousStates = siblings.map((element) => ({
+      element,
+      inert: element.inert,
+      ariaHidden: element.getAttribute("aria-hidden"),
+    }));
+
+    document.body.style.overflow = "hidden";
+    for (const element of siblings) {
+      element.inert = true;
+      element.setAttribute("aria-hidden", "true");
+    }
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      for (const { element, inert, ariaHidden } of previousStates) {
+        element.inert = inert;
+        if (ariaHidden === null) element.removeAttribute("aria-hidden");
+        else element.setAttribute("aria-hidden", ariaHidden);
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [docsOpen, isDesktop, toggleDocs]);
+  }, [docsOpen, isDesktop, sidebarRef]);
 
   const toggleCat = useCallback((cat: string) => {
     toggleDocsCategory(cat);
@@ -95,12 +116,14 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
       </AnimatePresence>
 
       <aside
+        ref={sidebarRef}
         id="documentation-sidebar"
         aria-label="Documentation navigation"
         aria-hidden={!isDesktop && !docsOpen}
         inert={!isDesktop && !docsOpen ? true : undefined}
-        role={!isDesktop ? "dialog" : undefined}
-        aria-modal={!isDesktop ? true : undefined}
+        role={!isDesktop && docsOpen ? "dialog" : undefined}
+        aria-modal={!isDesktop && docsOpen ? true : undefined}
+        tabIndex={-1}
         className={`
         fixed lg:sticky top-0 left-0 z-30 h-screen w-72 shrink-0
         bg-obsidian border-r border-white/8
@@ -109,17 +132,24 @@ function DocsSidebar({ groupedDocs, currentSlug, onSearchOpen, basePath = "/docs
         ${docsOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         pt-24 pb-8 px-4
       `}>
-        <div className="mb-6 px-2">
+        <div className="mb-6 flex items-center justify-between gap-3 px-2">
           <Link to={basePath} className="flex items-center shadow-lg ares-cut-sm overflow-hidden group w-fit">
             <span className="bg-ares-red px-3 py-1.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10">ARES</span>
             <span className="bg-white/10 text-white font-heading font-medium px-3 py-1.5 text-xs uppercase tracking-widest group-hover:bg-white/20 transition-colors">
               {basePath.includes("academy") ? "Academy" : "Lib"}
             </span>
           </Link>
+          <button
+            type="button"
+            onClick={toggleDocs}
+            aria-label="Close documentation navigation"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded border border-white/10 text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan lg:hidden"
+          >
+            <X aria-hidden="true" size={20} />
+          </button>
         </div>
 
         <button
-          ref={searchRef}
           onClick={onSearchOpen}
           className="w-full flex items-center gap-2 px-3 py-2 mb-6 ares-cut-sm bg-white/5 border border-white/10 text-white text-sm hover:border-ares-red/40 transition-colors"
         >

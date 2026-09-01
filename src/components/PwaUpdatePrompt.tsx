@@ -272,7 +272,8 @@ export default function PwaUpdatePrompt({
   return (
     <aside
       aria-live="polite"
-      className="fixed bottom-4 left-4 right-4 z-modal mx-auto max-w-lg rounded-xl border border-white/15 bg-obsidian p-4 text-white shadow-2xl"
+      aria-labelledby="pwa-update-title"
+      className="fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-lg rounded-xl border border-white/15 bg-obsidian p-4 text-white shadow-2xl"
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 rounded-lg bg-ares-red p-2 text-white">
@@ -283,7 +284,7 @@ export default function PwaUpdatePrompt({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-heading text-sm font-black uppercase tracking-wide">
+          <h2 id="pwa-update-title" className="font-heading text-sm font-black uppercase tracking-wide">
             {updateAvailable ? "Portal update ready" : "Offline support unavailable"}
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-marble/80">

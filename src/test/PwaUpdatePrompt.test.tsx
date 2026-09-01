@@ -45,6 +45,11 @@ describe("PwaUpdatePrompt", () => {
 
     act(() => callbacks.onNeedRefresh());
     expect(screen.getByText("Portal update ready")).toBeVisible();
+    const updateNotice = screen.getByRole("complementary", {
+      name: "Portal update ready",
+    });
+    expect(updateNotice).toBeVisible();
+    expect(updateNotice).toHaveClass("z-[90]");
 
     fireEvent.click(screen.getByRole("button", { name: "Reload and update" }));
     expect(updateServiceWorkerMock).toHaveBeenCalledWith(true);

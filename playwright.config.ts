@@ -56,7 +56,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node node_modules/vite/bin/vite.js build --mode e2e && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 3000 --strictPort',
+    command: 'node node_modules/vite/bin/vite.js build --mode e2e && node scripts/prepare-pwa-upgrade-fixture.mjs && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 3000 --strictPort',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

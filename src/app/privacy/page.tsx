@@ -83,7 +83,7 @@ export default function PrivacyPage() {
                 <Lock size={24} />
               </div>
               <h2 className="text-2xl font-bold font-heading">
-                4. ARES Robotics Studio and Google Drive
+                2. ARES Robotics Studio and Google Drive
               </h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
                 <Shield size={24} />
               </div>
               <h2 className="text-2xl font-bold font-heading">
-                2. COPPA & Student Privacy
+                3. Youth Privacy
               </h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
@@ -140,12 +140,10 @@ export default function PrivacyPage() {
               >
                 <i>FIRST</i>® Tech Challenge
               </a>{" "}
-              team, we operate in an environment inclusive of minors. We
-              strictly adhere to the{" "}
-              <strong>
-                Children&apos;s Online Privacy Protection Act (COPPA)
-              </strong>
-              .
+              team, we operate in an environment that includes minors. Our
+              collection and publishing practices are designed to limit youth
+              data and support applicable privacy requirements, including the
+              Children&apos;s Online Privacy Protection Act (COPPA).
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
               <li>
@@ -156,9 +154,8 @@ export default function PrivacyPage() {
                 the site’s access controls.
               </li>
               <li>
-                Robotics team member names, photographs, and media are only
-                published with explicit written consent and release forms signed
-                by legal guardians.
+                ARES policy requires appropriate student media permission before
+                publishing an identifiable student name, photograph, or video.
               </li>
             </ul>
           </section>
@@ -170,14 +167,14 @@ export default function PrivacyPage() {
                 <Server size={24} />
               </div>
               <h2 className="text-2xl font-bold font-heading">
-                3. Secure AI Processing
+                4. Optional AI Media Assistance
               </h2>
             </div>
             <p className="text-marble leading-relaxed">
-              When ARES leadership uploads media via our Publisher Dashboard, we
-              use Gemini models on Google Vertex AI to add Accessibility tags.
-              This processing happens on Google&apos;s secure cloud servers. The
-              raw data is never sold, shared, or used to train other AI.
+              Authorized publishers may use Gemini on Google Vertex AI to suggest
+              descriptions for uploaded team media. A team reviewer decides what
+              text is published. Application and contact-form records are not
+              sent through this media-assistance workflow.
             </p>
           </section>
 
@@ -192,10 +189,10 @@ export default function PrivacyPage() {
               </h2>
             </div>
             <p className="text-marble leading-relaxed">
-              Our internal content management system and API bounds are strictly
-              locked behind role-based authentication. Access requires direct
-              verification through authorized <i>FIRST</i>® Robotics team
-              identity providers.
+              The internal content-management system uses Google sign-in, then
+              checks the signed-in account against current server-side team access
+              records. Administrative actions also require an allowed role and
+              the route-specific safeguards described in our security operations.
             </p>
           </section>
         </div>
