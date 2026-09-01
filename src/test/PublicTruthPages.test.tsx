@@ -6,6 +6,8 @@ import GalleryPage from "../app/gallery/page";
 import LeaderboardPage from "../app/leaderboard/page";
 import OutreachPage from "../app/outreach/page";
 import SponsorsPage from "../app/sponsors/page";
+import AccessibilityPage from "../app/accessibility/page";
+import PrivacyPage from "../app/privacy/page";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
 vi.mock("@/components/GreekMeander", () => ({ GreekMeander: () => null }));
@@ -27,6 +29,31 @@ describe("public truth and reliability pages", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  it("describes accessibility work without claiming AI compliance or guaranteed security", () => {
+    renderPage(<AccessibilityPage />);
+
+    expect(screen.getByRole("heading", { name: "Useful media descriptions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Student-friendly technical writing" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Layered access controls" })).toBeInTheDocument();
+    expect(screen.getByText(/Academy lessons are checked against a grade 6–8 readability target/i)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/AI-Powered ARIA|guarantee system integrity|enforce Flesch-Kincaid/i);
+  });
+
+  it("keeps privacy sections ordered and describes the real sign-in and AI boundaries", () => {
+    renderPage(<PrivacyPage />);
+
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent?.trim());
+    expect(headings).toEqual([
+      "1. Optional Web Analytics",
+      "2. ARES Robotics Studio and Google Drive",
+      "3. Youth Privacy",
+      "4. Optional AI Media Assistance",
+      "5. Secure Administration",
+    ]);
+    expect(screen.getByText(/uses Google sign-in, then checks the signed-in account against current server-side team access records/i)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/strictly adhere|never sold|used to train other AI|FIRST.*identity providers/i);
   });
 
   it("publishes no fabricated leaderboard identities or ranks", () => {
