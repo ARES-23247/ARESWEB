@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { collection, onSnapshot, getDocs, query, orderBy, limit, } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit, } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
@@ -30,6 +30,7 @@ import {
   localDateTimeInputToIso,
   storedDateTimeToLocalInput,
 } from "@/lib/localDateTime";
+import { useEventLiveCollections } from "./useEventLiveCollections";
 
 export interface EventRevision {
   id: string;
@@ -128,9 +129,8 @@ export function useEventEditor({
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
-  // RSVP, Photos, Revisions list states
-  const [signups, setSignups] = useState<EventSignup[]>([]);
-  const [photos, setPhotos] = useState<EventPhoto[]>([]);
+  // Revision list state remains tab-driven; RSVP and photo subscriptions live
+  // in a focused event-collections hook below.
   const [revisions, setRevisions] = useState<EventRevision[]>([]);
   const [loadingRevisions, setLoadingRevisions] = useState(false);
 
@@ -146,6 +146,12 @@ export function useEventEditor({
   // edits. A non-recurring event always uses the series scope.
   const editId = eventToEdit?.recurrenceOf || eventToEdit?.id || null;
   const occurrenceContextDate = eventToEdit?.recurrenceOf ? eventToEdit.occurrenceDate || null : null;
+  const { signups, photos } = useEventLiveCollections({
+    editId,
+    isOpen,
+    occurrenceDate: occurrenceContextDate,
+    reportError: setOperationError,
+  });
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
   const profileQuery = useCurrentProfile(user?.uid);
@@ -229,79 +235,10 @@ export function useEventEditor({
       setActiveTab("edit");
       setShowAiSidebar(false);
       setRevertAlert(null);
-      setSignups([]);
-      setPhotos([]);
       setRevisions([]);
       setOperationError(null);
     }
   }, [isOpen, eventToEdit, canPublishDirectly]);
-
-  // Fetch event signups in real-time
-  useEffect(() => {
-    if (!editId || !isOpen) return;
-    const signupsRef = collection(db, "events", editId, "signups");
-    const unsubscribe = onSnapshot(
-      signupsRef,
-      (snapshot) => {
-        const list = snapshot.docs.map((docSnap) => ({
-          userId: docSnap.id,
-          ...docSnap.data(),
-        })) as EventSignup[];
-        setSignups(list);
-      },
-      (err) => {
-        logger.warn("Unable to fetch event signups:", err);
-        setOperationError(
-          `Sign-up list unavailable: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      },
-    );
-    return () => unsubscribe();
-  }, [editId, isOpen]);
-
-  // Fetch active event photos in real-time
-  useEffect(() => {
-    if (!editId || !isOpen) return;
-    const photosRef = collection(db, "events", editId, "photos");
-    const q = query(photosRef, orderBy("uploadedAt", "desc"));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const list = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data();
-          const sourcePhotoId =
-            typeof data.sourcePhotoId === "string" && data.sourcePhotoId
-              ? data.sourcePhotoId
-              : docSnap.id;
-          const encodedPhotoId = encodeURIComponent(sourcePhotoId);
-          const mediaBase = `/api/photos/admin/media/${encodedPhotoId}`;
-          return {
-            id: docSnap.id,
-            ...data,
-            url: `${mediaBase}/original`,
-            thumbnailUrl: `${mediaBase}/thumbnail`,
-            mediumUrl: `${mediaBase}/medium`,
-            publicationStatus:
-              data.publicationStatus === "published" ? "published" : "pending",
-          } as EventPhoto;
-        });
-        setPhotos(
-          list.filter(
-            (photo) =>
-              photo.isDeleted !== 1 &&
-              (!occurrenceContextDate ||
-                !photo.occurrenceDate ||
-                photo.occurrenceDate === occurrenceContextDate),
-          ),
-        );
-      },
-      (err) => {
-        logger.warn("Unable to fetch event photos:", err);
-        setOperationError(`Event gallery unavailable: ${err.message}`);
-      },
-    );
-    return () => unsubscribe();
-  }, [editId, isOpen, occurrenceContextDate]);
 
   const handleEditScopeChange = useCallback(
     (scope: EventEditScope) => {

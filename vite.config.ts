@@ -181,6 +181,7 @@ export default defineConfig({
         "src/components/dashboard/DocumentDraftPreview.tsx",
         "src/hooks/useAcademyProgress.ts",
         "src/app/dashboard/photos/*.{ts,tsx}",
+        "src/app/dashboard/events/hooks/useEventLiveCollections.ts",
         "src/app/calendar/api.ts",
         "src/app/dashboard/profile/page.tsx",
         "src/app/join/page.tsx",
@@ -215,6 +216,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/app/dashboard/events/hooks/useEventLiveCollections.ts": {
           lines: 85,
           functions: 100,
         },
