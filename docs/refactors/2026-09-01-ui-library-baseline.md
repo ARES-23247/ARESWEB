@@ -151,3 +151,55 @@ bytes, initial CSS by +4 gzip bytes, and total route JavaScript by +491 gzip
 bytes. All bundle budgets, lint, typecheck, the production build, and 37 focused
 tests passed. The new primitives are enrolled in the 85% line and 100% function
 coverage ratchets.
+
+## Academy reuse decision
+
+No new Academy-specific abstraction was added. The existing
+`src/sims/shared/academy-interaction-ui.tsx` already provides lab shells,
+checklists, controls, metrics, model-limit notes, and reset behavior to 37
+interactive modules. Adding a second Academy layer would increase indirection
+without removing duplication. General application primitives may be adopted by
+that file later only when an Academy interaction needs the same semantic fix.
+
+## Incremental adoption after this branch
+
+This branch establishes the library and proves it in public, administrative,
+media, document, Drive, and destructive-action flows. Remaining direct controls
+are not automatically defects and should not be mass-rewritten. Future feature
+work should adopt a primitive when it changes or fixes the same pattern, while
+the following bounded candidates can be migrated independently:
+
+- typed permanent award deletion, which needs a composed confirmation rather
+  than the simple confirmation primitive;
+- editor and configuration dialogs whose scrollable body and fixed footer need
+  explicit regression tests before adopting `DialogShell`;
+- the remaining tournament table after its mobile editing behavior is covered;
+  and
+- repeated dashboard headers when their current visual hierarchy matches
+  `PageHeader` without variant-specific exceptions.
+
+No superseded component or stylesheet became orphaned in these slices. The
+replaced code was inline feature markup, so cleanup is limited to the imports
+removed in each commit.
+
+## Final verification evidence
+
+The completed branch passed the repository verification gate on 2026-09-01:
+
+- frontend coverage: 218 files and 1,142 tests, with 85.37% line coverage;
+- Cloud Functions coverage: 67 files and 807 tests, with 95.32% line coverage;
+- Firestore and Storage rules: 31 tests;
+- Playwright: 167 tests across desktop and mobile Chromium, Firefox, WebKit,
+  and the production PWA worker flow;
+- agent configuration, route security, Functions deployment lock, frontend and
+  Functions lint, TypeScript, both production builds, and the production
+  dependency audit; and
+- all production bundle budgets, with final initial JavaScript at 229,824 gzip
+  bytes and total route JavaScript at 1,393,622 gzip bytes.
+
+Manual source review confirmed native control semantics, associated field help
+and errors, named icon buttons, live regions, Radix focus containment/Escape/
+focus restoration, safe confirmation cancel focus, table captions, and pending
+state close protection. The 320 px browser checks cover the migrated dashboard
+header actions and existing public/admin navigation. This evidence supports the
+specific migrated interactions; it is not a claim of complete WCAG conformance.
