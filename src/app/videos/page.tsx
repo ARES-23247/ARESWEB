@@ -294,8 +294,8 @@ export default function VideosPage() {
         onOpenChange={(open) => !open && setSelected(null)}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-modal bg-black/90" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-modal max-h-[95vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-white/15 bg-obsidian focus:outline-none">
+          <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/90" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[81] max-h-[95vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-white/15 bg-obsidian focus:outline-none">
             <div className="flex items-start justify-between gap-4 border-b border-white/10 p-4">
               <div>
                 <div className="flex items-center gap-2.5">

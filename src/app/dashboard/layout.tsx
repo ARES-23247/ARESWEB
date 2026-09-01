@@ -227,14 +227,14 @@ export default function DashboardLayout({
   // 3. Authenticated Dashboard Layout
   return (
     <DashboardNotificationsProvider>
-      <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
+      <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
       {/* ─── DESKTOP SIDEBAR ─── */}
       <div className="hidden md:block shrink-0 self-stretch flex flex-col">
         <DashboardSidebar />
       </div>
 
       {/* ─── MOBILE DRAWER SIDEBAR ─── */}
-      <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm md:hidden" />
           <Dialog.Content
@@ -263,7 +263,6 @@ export default function DashboardLayout({
             </div>
           </Dialog.Content>
         </Dialog.Portal>
-      </Dialog.Root>
 
       {/* ─── MAIN PORTAL VIEWPORT ─── */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -280,13 +279,14 @@ export default function DashboardLayout({
           </span>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="flex h-11 w-11 items-center justify-center bg-white/5 border border-white/10 ares-cut-sm text-ares-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian cursor-pointer"
-              aria-label="Open sidebar menu"
-            >
-              <Menu size={20} />
-            </button>
+            <Dialog.Trigger asChild>
+              <button
+                className="flex h-11 w-11 items-center justify-center bg-white/5 border border-white/10 ares-cut-sm text-ares-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian cursor-pointer"
+                aria-label="Open sidebar menu"
+              >
+                <Menu aria-hidden="true" size={20} />
+              </button>
+            </Dialog.Trigger>
           </div>
         </header>
 
@@ -299,7 +299,8 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
-      </div>
+        </div>
+      </Dialog.Root>
     </DashboardNotificationsProvider>
   );
 }

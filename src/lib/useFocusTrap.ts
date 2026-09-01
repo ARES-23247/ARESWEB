@@ -42,8 +42,11 @@ function focusBoundary(container: HTMLElement, fromEnd = false) {
  * exact trigger when it closes. Prefer Radix Dialog for new modal UI; this hook
  * remains for drawer/lightbox surfaces that have not migrated yet.
  */
-export function useFocusTrap(isOpen: boolean, onClose?: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
+export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
+  isOpen: boolean,
+  onClose?: () => void,
+) {
+  const ref = useRef<T>(null);
   const onCloseRef = useRef(onClose);
 
   useEffect(() => {
