@@ -38,7 +38,10 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        clientsClaim: false,
+        // A waiting worker is still activated only after the user accepts the
+        // update. Once activated, claim the current tab so controllerchange can
+        // trigger the controlled reload instead of deadlocking on the old worker.
+        clientsClaim: true,
         skipWaiting: false,
         navigateFallback: "/index.html",
         // Only true SPA-only areas may fall back to index.html. Public record
