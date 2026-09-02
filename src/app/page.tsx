@@ -8,6 +8,7 @@ import {
   Cpu,
   Calendar as CalendarIcon,
   ClipboardList,
+  Hexagon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
@@ -227,6 +228,68 @@ export default function Home() {
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ─── ARES GAMES ─── */}
+      <section
+        aria-labelledby="ares-games-heading"
+        className="relative overflow-hidden border-b border-white/10 bg-obsidian py-20"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 top-1/2 h-72 w-72 -translate-y-1/2 rotate-12 rounded-[4rem] border border-ares-gold/10"
+        />
+        <div className="relative z-10 mx-auto max-w-7xl px-6">
+          <div className="mb-10 max-w-3xl">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-ares-gold font-heading">
+              Play, learn, and compete
+            </p>
+            <h2
+              id="ares-games-heading"
+              className="mb-5 text-4xl font-bold text-white font-heading md:text-5xl"
+            >
+              ARES Games
+            </h2>
+            <p className="text-lg leading-relaxed text-marble/80">
+              A growing collection of original strategy games built for phones,
+              tablets, and desktops. New games will join the collection after
+              their rules and safety reviews are complete.
+            </p>
+          </div>
+
+          <Link
+            to="/buzzello"
+            aria-label="Play BUZZELLO"
+            className="group block max-w-4xl rounded-2xl border border-ares-gold/30 bg-white/5 p-6 transition-colors hover:border-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian sm:p-8"
+          >
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-5">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-ares-gold/40 bg-ares-gold/10 text-ares-gold transition-transform group-hover:scale-105">
+                  <Hexagon aria-hidden="true" size={30} />
+                </span>
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-ares-gold">
+                    Available now
+                  </p>
+                  <h3 className="mb-3 text-2xl font-bold text-white font-heading sm:text-3xl">
+                    BUZZELLO™
+                  </h3>
+                  <p className="max-w-2xl leading-relaxed text-marble/75">
+                    Six-axis hexagonal strategy for two players. Play locally,
+                    challenge the AI, find a guest or team match, or invite a
+                    friend with a private link or code.
+                  </p>
+                  <p className="mt-3 text-sm text-marble/60">
+                    No chat, public lobby, player profile, or spectator mode.
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start font-bold uppercase tracking-widest text-white transition-colors group-hover:text-ares-gold sm:self-center">
+                Play now <ArrowRight aria-hidden="true" size={18} />
+              </span>
+            </div>
+          </Link>
         </div>
       </section>
 

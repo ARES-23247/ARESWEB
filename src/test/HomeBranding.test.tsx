@@ -46,6 +46,11 @@ describe("Home page branding & OAuth truthfulness", () => {
     expect(privacyLink).toHaveAttribute("href", "/privacy");
     expect(termsLink).toHaveAttribute("href", "/terms");
 
+    // Public games collection
+    expect(screen.getByRole("heading", { name: "ARES Games" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Play BUZZELLO" })).toHaveAttribute("href", "/buzzello");
+    expect(screen.getByText(/No chat, public lobby, player profile, or spectator mode/i)).toBeInTheDocument();
+
     // Action buttons
     expect(screen.getByRole("button", { name: /Team Member Sign In/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View Schedule" })).toHaveAttribute("href", "/calendar");

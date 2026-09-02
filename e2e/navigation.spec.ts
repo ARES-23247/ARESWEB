@@ -37,6 +37,14 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     await expect(
       analyticsSection.getByRole("link", { name: "Terms" }),
     ).toHaveAttribute("href", "/terms");
+
+    const gamesSection = page.getByRole("region", { name: "ARES Games" });
+    await expect(
+      gamesSection.getByRole("heading", { name: "ARES Games" }),
+    ).toBeVisible();
+    await expect(
+      gamesSection.getByRole("link", { name: "Play BUZZELLO" }),
+    ).toHaveAttribute("href", "/buzzello");
   });
 
   test("should have a working skip link for accessibility", async ({
@@ -129,6 +137,25 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     });
     expect(reflow.documentWidth).toBeLessThanOrEqual(reflow.viewportWidth);
     expect(reflow.linesFit).toBe(true);
+
+    const gamesSection = page.getByRole("region", { name: "ARES Games" });
+    await expect(
+      gamesSection.getByRole("link", { name: "Play BUZZELLO" }),
+    ).toBeVisible();
+    const gamesBounds = await gamesSection.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        viewportWidth: document.documentElement.clientWidth,
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    });
+    expect(gamesBounds.left).toBeGreaterThanOrEqual(0);
+    expect(gamesBounds.right).toBeLessThanOrEqual(gamesBounds.viewportWidth + 1);
+    expect(gamesBounds.documentWidth).toBeLessThanOrEqual(
+      gamesBounds.viewportWidth,
+    );
 
     const trigger = page.getByRole("button", { name: "Open navigation menu" });
     const triggerBox = await trigger.boundingBox();
