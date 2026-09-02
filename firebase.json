@@ -208,15 +208,7 @@
         "function": "coreApi"
       },
       {
-        "source": "/api/buzzello{,/**}",
-        "run": {
-          "serviceId": "aresweb-game-api",
-          "region": "us-central1",
-          "pinTag": true
-        }
-      },
-      {
-        "source": "/api/buzzle{,/**}",
+        "source": "/api/@(buzzello|buzzle){,/**}",
         "run": {
           "serviceId": "aresweb-game-api",
           "region": "us-central1",

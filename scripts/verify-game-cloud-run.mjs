@@ -211,16 +211,18 @@ export function imageUri(contract, tag) {
 export function validateRepositoryWiring(contract, root = process.cwd()) {
   const read = (path) => readFileSync(resolve(root, path), "utf8");
   const firebase = JSON.parse(read("firebase.json"));
-  for (const source of ["/api/buzzello{,/**}", "/api/buzzle{,/**}"]) {
-    const rewrite = firebase.hosting?.rewrites?.find((candidate) => candidate.source === source);
-    if (
-      rewrite?.run?.serviceId !== contract.serviceId
-      || rewrite.run.region !== contract.region
-      || rewrite.run.pinTag !== true
-      || rewrite.function !== undefined
-    ) {
-      throw new Error(`Firebase Hosting must route ${source} only to the pinned game Cloud Run service`);
-    }
+  const source = "/api/@(buzzello|buzzle){,/**}";
+  const gameRewrites = (firebase.hosting?.rewrites ?? [])
+    .filter((candidate) => candidate?.run?.serviceId === contract.serviceId);
+  const rewrite = gameRewrites[0];
+  if (
+    gameRewrites.length !== 1
+    || rewrite?.source !== source
+    || rewrite.run.region !== contract.region
+    || rewrite.run.pinTag !== true
+    || rewrite.function !== undefined
+  ) {
+    throw new Error(`Firebase Hosting must route both game APIs through one ${source} rewrite to the pinned game Cloud Run service`);
   }
 
   const dockerfile = read("functions/Dockerfile.game");

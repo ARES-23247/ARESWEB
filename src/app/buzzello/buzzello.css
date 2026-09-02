@@ -196,7 +196,6 @@
   display: grid;
   overflow: hidden;
   place-items: center;
-  backface-visibility: hidden;
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   box-shadow:
     0 5px 8px rgb(0 0 0 / 52%),
@@ -227,15 +226,11 @@
 .buzzello-piece-face[data-face="black"] {
   background: #1b1b1d;
   color: var(--buzzello-yellow);
-  transform: rotateY(180deg);
 }
 
-.buzzello-piece[data-player="yellow"] {
-  transform: rotateX(-5deg) rotateY(0deg) translateY(-2%);
-}
-
+.buzzello-piece[data-player="yellow"],
 .buzzello-piece[data-player="black"] {
-  transform: rotateX(-5deg) rotateY(180deg) translateY(-2%);
+  transform: rotateX(-5deg) rotateY(0deg) translateY(-2%);
 }
 
 .buzzello-piece[data-preview="true"] {
@@ -248,7 +243,7 @@
 }
 
 .buzzello-piece[data-player="black"][data-preview="true"] {
-  transform: rotateX(-5deg) rotateY(152deg) translateY(-3%) scale(1.04);
+  transform: rotateX(-5deg) rotateY(-28deg) translateY(-3%) scale(1.04);
 }
 
 .buzzello-piece[data-just-flipped="true"] {
