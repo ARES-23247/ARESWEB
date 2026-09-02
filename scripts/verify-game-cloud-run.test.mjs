@@ -8,6 +8,7 @@ import {
   validateGameInvokerPolicy,
   validateGameServiceContract,
   validateLiveGameService,
+  validateLiveGameRevision,
   validateRepositoryWiring,
 } from "./verify-game-cloud-run.mjs";
 
@@ -71,7 +72,7 @@ const liveService = {
         containerConcurrency: 1,
         timeoutSeconds: 10,
         containers: [{
-          image: "us-central1-docker.pkg.dev/aresfirst-portal/aresweb-services/game-api@sha256:abc",
+          image: "us-central1-docker.pkg.dev/aresfirst-portal/aresweb-services/game-api:" + "a".repeat(40),
           resources: { limits: { cpu: "80m", memory: "256Mi" } },
           env: contract.secrets.map((name) => ({
             name,
@@ -84,10 +85,24 @@ const liveService = {
   status: { conditions: [{ type: "Ready", status: "True" }] },
 };
 
+const liveRevision = {
+  metadata: { labels: { "serving.knative.dev/service": contract.serviceId } },
+  spec: {
+    containers: [{
+      image: "us-central1-docker.pkg.dev/aresfirst-portal/aresweb-services/game-api@sha256:" + "b".repeat(64),
+    }],
+  },
+  status: {
+    imageDigest: "us-central1-docker.pkg.dev/aresfirst-portal/aresweb-services/game-api@sha256:" + "b".repeat(64),
+    conditions: [{ type: "Ready", status: "True" }],
+  },
+};
+
 describe("game Cloud Run deployment contract", () => {
   it("accepts the checked-in conservative boundary", () => {
     expect(validateGameServiceContract(contract)).toBe(contract);
     expect(validateLiveGameService(contract, liveService)).toBe(true);
+    expect(validateLiveGameRevision(contract, liveRevision)).toBe(true);
     expect(validateRepositoryWiring(contract)).toBe(true);
   });
 
@@ -115,7 +130,11 @@ describe("game Cloud Run deployment contract", () => {
           },
         },
       },
-    })).toThrow("immutable digest");
+    })).toThrow("full-SHA release tag");
+    expect(() => validateLiveGameRevision(contract, {
+      ...liveRevision,
+      status: { ...liveRevision.status, imageDigest: "attacker.example/game@sha256:" + "b".repeat(64) },
+    })).toThrow("ready immutable digest");
   });
 
   it("requires only the public Cloud Run invoker grant", () => {
@@ -145,6 +164,7 @@ describe("game Cloud Run deployment contract", () => {
     const messages = [];
     const readJsonFn = (path) => {
       if (path === "service.json") return liveService;
+      if (path === "revision.json") return liveRevision;
       if (path === "iam.json") {
         return { bindings: [{ role: "roles/run.invoker", members: ["allUsers"] }] };
       }
@@ -154,11 +174,12 @@ describe("game Cloud Run deployment contract", () => {
 
     await main(["--validate-contract"], dependencies);
     await main(["--service-json", "service.json"], dependencies);
+    await main(["--revision-json", "revision.json"], dependencies);
     await main(["--iam-json", "iam.json"], dependencies);
     await main(["--print-image-uri", "a".repeat(40)], dependencies);
 
-    expect(messages).toHaveLength(4);
-    expect(messages[3]).toContain("game-api:" + "a".repeat(40));
+    expect(messages).toHaveLength(5);
+    expect(messages[4]).toContain("game-api:" + "a".repeat(40));
     expect(readJson("infra/gcp/game-service.json")).toEqual(contract);
   });
 
