@@ -14,6 +14,7 @@ const routesRoot = path.resolve("functions/src/routes");
 const apiAppSource = fs.readFileSync(path.resolve("functions/src/apiApp.ts"), "utf8");
 const gameAppSource = fs.readFileSync(path.resolve("functions/src/apps/game.ts"), "utf8");
 const gameRouteSource = fs.readFileSync(path.resolve("functions/src/routes/buzzello.ts"), "utf8");
+const gameBudgetSource = fs.readFileSync(path.resolve("functions/src/lib/gameResourceBudget.ts"), "utf8");
 const mutationMethods = new Set(["post", "put", "patch", "delete"]);
 const authorizationMiddleware = new Set([
   "ensureAuth",
@@ -42,6 +43,26 @@ const explicitNonFirebaseRoutes = new Map([
   ["buzzello.ts:POST:/games/:gameId/moves", {
     rationale: "match-scoped guest action authenticated by a random capability whose HMAC is stored server-side, with durable quotas and optimistic concurrency",
     requiredSource: [/moveQuota/u, /validate\(moveSchema\)/u, /requireGamePlayerToken\(req\)/u, /expectedVersion/u, /service\.action\(/u],
+  }],
+  ["buzzle.ts:POST:/games", {
+    rationale: "guest friend-game creation; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
+    requiredSource: [/createQuota/u, /validate\(emptyBodySchema\)/u, /service\.createFriendGame\(\)/u],
+  }],
+  ["buzzle.ts:POST:/join", {
+    rationale: "guest invite redemption; globally requires App Check and locally requires a bounded invite capability, durable quotas, and strict validation",
+    requiredSource: [/joinQuota/u, /validate\(joinSchema\)/u, /service\.joinFriendGame\(code\)/u],
+  }],
+  ["buzzle.ts:POST:/matchmaking", {
+    rationale: "blind guest matchmaking; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
+    requiredSource: [/guestMatchmakingQuota/u, /validate\(emptyBodySchema\)/u, /service\.matchmake\("guest"\)/u],
+  }],
+  ["buzzle.ts:POST:/games/:gameId/sync", {
+    rationale: "match-scoped guest access authenticated by a random capability whose HMAC is stored server-side, with durable and per-match quotas",
+    requiredSource: [/syncQuota/u, /requireGamePlayerToken\(req\)/u, /service\.sync\(/u],
+  }],
+  ["buzzle.ts:POST:/games/:gameId/actions", {
+    rationale: "match-scoped guest action authenticated by a random capability whose HMAC is stored server-side, with durable quotas and optimistic concurrency",
+    requiredSource: [/actionQuota/u, /validate\(moveSchema\)/u, /requireGamePlayerToken\(req\)/u, /expectedVersion/u, /service\.action\(/u],
   }],
   ["appCheckCanary.ts:POST:/canary", {
     rationale: "public App Check canary; globally requires a valid App Check token",
@@ -91,7 +112,7 @@ for (const requiredGlobalControl of [
 
 for (const [source, requiredControl, label] of [
   [gameAppSource, /globalRequestLimit:\s*\{[\s\S]*max:\s*5_000/u, "service-wide game request ceiling"],
-  [gameRouteSource, /GAME_MONTHLY_RESOURCE_UNITS\s*=\s*500_000/u, "monthly game resource ceiling"],
+  [gameBudgetSource, /GAME_MONTHLY_RESOURCE_UNITS\s*=\s*500_000/u, "monthly game resource ceiling"],
   [gameRouteSource, /calendarWindow:\s*"month"/u, "calendar-month game quota"],
 ]) {
   if (!requiredControl.test(source)) findings.push(`Game service is missing ${label}`);

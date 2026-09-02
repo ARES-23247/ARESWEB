@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "sourcePackage": "an-array-of-english-words",
+  "sourceVersion": "2.0.0",
+  "sourceLicense": "MIT",
+  "safetyFilterPackage": "leo-profanity",
+  "safetyFilterVersion": "1.9.0",
+  "wordLength": {
+    "minimum": 2,
+    "maximum": 13
+  },
+  "words": 255472,
+  "sha256": "fe33fda37a78dd9f8e944df2ae11b4499aa7beca8cf97e47f83687ad900d7d1e"
+}

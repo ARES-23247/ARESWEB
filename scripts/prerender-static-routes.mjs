@@ -31,6 +31,9 @@ export const staticPageMetadata = [
   ["/buzzello", "BUZZELLO™", "Play BUZZELLO, ARES 23247's hexagonal strategy game, locally or against the computer.", false, [
     ["Hexagonal strategy", "Play BUZZELLO on a 61-cell hexagonal board. Challenge another player on the same device or choose from three computer difficulty levels, with keyboard controls, move history, and undo support."],
   ]],
+  ["/buzzle", "BUZZLE™", "Play BUZZLE, ARES 23247's three-axis hexagonal word game.", false, [
+    ["Three-axis word strategy", "Build connected words on a 127-cell hexagonal board. BUZZLE supports two to four local players, letter and word multipliers, blank tiles, exchanges, keyboard controls, and cross-words on all three axes."],
+  ]],
   ["/accessibility", "Accessibility & Web Standards", "Read the ARES 23247 accessibility commitment and supported ways to report a barrier.", false, [
     ["Our commitment", "ARES 23247 works to keep this website usable with keyboards, screen readers, and mobile devices. This page explains the standards we target, the assistive technologies we test with, and how to contact the team if you encounter a barrier."],
   ]],

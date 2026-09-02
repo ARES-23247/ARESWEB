@@ -216,6 +216,14 @@
         }
       },
       {
+        "source": "/api/buzzle{,/**}",
+        "run": {
+          "serviceId": "aresweb-game-api",
+          "region": "us-central1",
+          "pinTag": true
+        }
+      },
+      {
         "source": "/api/content-admin{,/**}",
         "function": "coreApi"
       },
@@ -318,6 +326,10 @@
       {
         "source": "/buzzello",
         "destination": "/prerender/buzzello.html"
+      },
+      {
+        "source": "/buzzle",
+        "destination": "/prerender/buzzle.html"
       },
       {
         "source": "/accessibility",
