@@ -99,29 +99,16 @@ function onlineGameSnapshot(game: OnlineBuzzleGame): BuzzleGameState {
   };
 }
 
-function tileArtwork(tile: BuzzleTile, playedBy = 0): "yellow" | "black" {
-  return playedBy % 2 === 0 ? "yellow" : "black";
-}
-
 function BuzzleTileFace({
   tile,
-  playedBy = 0,
   compact = false,
 }: {
   tile: BuzzleTile;
-  playedBy?: number;
   compact?: boolean;
 }) {
-  const artwork = tileArtwork(tile, playedBy);
   return (
-    <span className="buzzle-tile-face" data-artwork={artwork} data-compact={compact}>
-      <img
-        aria-hidden="true"
-        alt=""
-        draggable={false}
-        src={`/images/games/biobuzz-tile-${artwork}.png`}
-      />
-      <span className="buzzle-tile-letter">{tile.letter}</span>
+    <span className="buzzle-tile-face" data-compact={compact}>
+      <span className="buzzle-tile-letter">{tile.blank && tile.letter === "?" ? "" : tile.letter}</span>
       <span className="buzzle-tile-points">{tile.points}</span>
     </span>
   );
@@ -240,9 +227,9 @@ function BuzzleBoardView({
             >
               <span className="buzzle-cell-surface" aria-hidden="true">
                 {boardTile ? (
-                  <BuzzleTileFace tile={boardTile} playedBy={boardTile.playedBy} compact />
+                  <BuzzleTileFace tile={boardTile} compact />
                 ) : draft ? (
-                  <BuzzleTileFace tile={{ ...draft.tile, letter: draft.assignedLetter ?? draft.tile.letter }} playedBy={game.currentPlayer} compact />
+                  <BuzzleTileFace tile={{ ...draft.tile, letter: draft.assignedLetter ?? draft.tile.letter }} compact />
                 ) : multiplier === "star" ? (
                   <span className="buzzle-multiplier-mark">★</span>
                 ) : multiplier !== "plain" ? (
@@ -686,7 +673,7 @@ export default function BuzzlePage() {
                         }
                       }}
                     >
-                      <BuzzleTileFace tile={tile} playedBy={game.currentPlayer} />
+                      <BuzzleTileFace tile={tile} />
                     </button>
                   );
                 })}

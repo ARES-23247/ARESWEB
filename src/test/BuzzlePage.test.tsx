@@ -14,7 +14,11 @@ describe("BUZZLE page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "BUZZLE™" })).toBeInTheDocument();
     expect(screen.getAllByRole("gridcell")).toHaveLength(127);
     expect(screen.getByRole("grid", { name: /BUZZLE board/u })).toBeInTheDocument();
-    expect(within(screen.getByRole("list", { name: /Player 1 tiles/u })).getAllByRole("listitem")).toHaveLength(7);
+    const rack = screen.getByRole("list", { name: /Player 1 tiles/u });
+    expect(within(rack).getAllByRole("listitem")).toHaveLength(7);
+    expect(rack.querySelectorAll("img")).toHaveLength(0);
+    expect(rack.querySelectorAll(".buzzle-tile-face")).toHaveLength(7);
+    expect(rack.querySelectorAll(".buzzle-tile-points")).toHaveLength(7);
     await waitFor(() => expect(screen.getByText(/255,472 filtered English words ready/u)).toBeInTheDocument());
   });
 
