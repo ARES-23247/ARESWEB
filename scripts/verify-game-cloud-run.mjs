@@ -145,10 +145,13 @@ export function validateLiveGameService(contract, service) {
     }
   }
 
-  const imagePrefix = `${contract.region}-docker.pkg.dev/${contract.project}/` +
-    `${contract.artifactRegistry.repository}/${contract.artifactRegistry.image}@sha256:`;
-  if (typeof container?.image !== "string" || !container.image.startsWith(imagePrefix)) {
-    errors.push("image is not an immutable digest from the reviewed Artifact Registry repository");
+  const imageTagPrefix = `${contract.region}-docker.pkg.dev/${contract.project}/` +
+    `${contract.artifactRegistry.repository}/${contract.artifactRegistry.image}:`;
+  const imageTag = typeof container?.image === "string" && container.image.startsWith(imageTagPrefix)
+    ? container.image.slice(imageTagPrefix.length)
+    : "";
+  if (!/^[a-f0-9]{40}$/u.test(imageTag)) {
+    errors.push("image is not a full-SHA release tag from the reviewed Artifact Registry repository");
   }
   const actualSecrets = (container?.env ?? [])
     .filter((entry) => entry?.valueFrom?.secretKeyRef)
@@ -161,6 +164,27 @@ export function validateLiveGameService(contract, service) {
   }
   if (errors.length > 0) {
     throw new Error(`Production game service drift detected:\n- ${errors.join("\n- ")}`);
+  }
+  return true;
+}
+
+export function validateLiveGameRevision(contract, revision) {
+  const container = revision?.spec?.containers?.[0];
+  const digestPrefix = `${contract.region}-docker.pkg.dev/${contract.project}/` +
+    `${contract.artifactRegistry.repository}/${contract.artifactRegistry.image}@sha256:`;
+  const image = container?.image;
+  const statusDigest = revision?.status?.imageDigest;
+  if (
+    revision?.metadata?.labels?.["serving.knative.dev/service"] !== contract.serviceId
+    || typeof image !== "string"
+    || !image.startsWith(digestPrefix)
+    || !/^[a-f0-9]{64}$/u.test(image.slice(digestPrefix.length))
+    || statusDigest !== image
+    || !revision?.status?.conditions?.some(
+      (condition) => condition.type === "Ready" && condition.status === "True",
+    )
+  ) {
+    throw new Error("Production game revision is not a ready immutable digest from the reviewed repository");
   }
   return true;
 }
@@ -252,6 +276,7 @@ export function parseArgs(argv) {
     contractPath: "infra/gcp/game-service.json",
     validateContract: false,
     serviceJsonPath: null,
+    revisionJsonPath: null,
     iamJsonPath: null,
     imageTag: null,
   };
@@ -260,11 +285,18 @@ export function parseArgs(argv) {
     if (arg === "--contract") options.contractPath = argv[++index];
     else if (arg === "--validate-contract") options.validateContract = true;
     else if (arg === "--service-json") options.serviceJsonPath = argv[++index];
+    else if (arg === "--revision-json") options.revisionJsonPath = argv[++index];
     else if (arg === "--iam-json") options.iamJsonPath = argv[++index];
     else if (arg === "--print-image-uri") options.imageTag = argv[++index];
     else throw new Error(`Unknown argument: ${arg}`);
   }
-  const actions = [options.validateContract, options.serviceJsonPath, options.iamJsonPath, options.imageTag]
+  const actions = [
+    options.validateContract,
+    options.serviceJsonPath,
+    options.revisionJsonPath,
+    options.iamJsonPath,
+    options.imageTag,
+  ]
     .filter(Boolean).length;
   if (actions !== 1) throw new Error("Choose exactly one game service verification action");
   return options;
@@ -281,6 +313,9 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
   } else if (options.serviceJsonPath) {
     validateLiveGameService(contract, read(options.serviceJsonPath));
     log("Production game Cloud Run service matches the reviewed cost boundary.");
+  } else if (options.revisionJsonPath) {
+    validateLiveGameRevision(contract, read(options.revisionJsonPath));
+    log("Production game Cloud Run revision uses a ready immutable image digest.");
   } else if (options.iamJsonPath) {
     validateGameInvokerPolicy(read(options.iamJsonPath));
     log("Production game Cloud Run invoker policy is valid.");

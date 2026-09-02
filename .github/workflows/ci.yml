@@ -410,6 +410,9 @@ jobs:
         run: |
           gcloud run services describe aresweb-game-api --project aresfirst-portal --region us-central1 --format=json \
             | node scripts/verify-game-cloud-run.mjs --service-json -
+          revision_name="$(gcloud run services describe aresweb-game-api --project aresfirst-portal --region us-central1 --format='value(status.latestReadyRevisionName)')"
+          gcloud run revisions describe "$revision_name" --project aresfirst-portal --region us-central1 --format=json \
+            | node scripts/verify-game-cloud-run.mjs --revision-json -
           gcloud run services get-iam-policy aresweb-game-api --project aresfirst-portal --region us-central1 --format=json \
             | node scripts/verify-game-cloud-run.mjs --iam-json -
 
