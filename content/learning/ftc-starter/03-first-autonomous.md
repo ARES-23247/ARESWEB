@@ -8,7 +8,7 @@ real routine is added. This safe default keeps an empty project from pretending 
 
 Before starting, complete [Map FTC Controls Through Redux](/academy/ftc-starter-controller-bindings?path=ftc-robot-with-ares)
 and [Use Units and Coordinate Frames](/academy/robot-coordinate-contracts?path=controls-localization-autonomous).
-You need a local FTC Starter project and ARES Robotics Studio 5.0.1.
+You need a local FTC Starter project and ARES Robotics Studio 5.0.2.
 
 ## Vocabulary
 
@@ -56,7 +56,7 @@ selection belong to the routine's **Autonomous entry** settings.
 ![ARES Robotics Studio Routine Builder showing a Light Practice routine on the left and its square
 FTC field with waypoint axes on the right.](/academy/studio-3.1.1/autonomous-builder.png)
 
-*Studio 5.0.1 shows routine steps and field placement together. Review both views, then save,
+*Studio 5.0.2 shows routine steps and field placement together. Review both views, then save,
 generate, build, and simulate; the screenshot alone is not execution evidence.*
 
 ## Hands-on activity
