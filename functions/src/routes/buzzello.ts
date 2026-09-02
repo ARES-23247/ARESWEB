@@ -17,6 +17,16 @@ const router = express.Router();
 const service = new GameMatchService(buzzelloGameDefinition);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
+export const GAME_MONTHLY_RESOURCE_UNITS = 500_000;
+
+const gameMonthlyBudget = (cost: number) => ({
+  scope: "games-monthly-resource-project",
+  limit: GAME_MONTHLY_RESOURCE_UNITS,
+  calendarWindow: "month" as const,
+  identity: "global" as const,
+  cost,
+  retentionMs: 32 * DAY_MS,
+});
 
 const emptyBodySchema = z.object({}).strict();
 const joinSchema = z
@@ -68,27 +78,33 @@ function globalQuota(scope: string, limit: number, windowMs: number) {
 }
 
 const createQuota = distributedQuotas([
+  gameMonthlyBudget(8),
   ipQuota("buzzello-create-ip", 12, DAY_MS),
   globalQuota("buzzello-create-project", 300, DAY_MS),
 ]);
 const joinQuota = distributedQuotas([
+  gameMonthlyBudget(8),
   ipQuota("buzzello-join-ip", 60, DAY_MS),
   globalQuota("buzzello-join-project", 900, DAY_MS),
 ]);
 const guestMatchmakingQuota = distributedQuotas([
+  gameMonthlyBudget(8),
   ipQuota("buzzello-matchmaking-ip", 20, DAY_MS),
   globalQuota("buzzello-matchmaking-project", 400, DAY_MS),
 ]);
 const teamMatchmakingQuota = distributedQuotas([
+  gameMonthlyBudget(8),
   { scope: "buzzello-team-matchmaking-user", limit: 12, windowMs: DAY_MS },
   ipQuota("buzzello-team-matchmaking-ip", 30, DAY_MS),
   globalQuota("buzzello-team-matchmaking-project", 200, DAY_MS),
 ]);
 const moveQuota = distributedQuotas([
+  gameMonthlyBudget(6),
   ipQuota("buzzello-move-ip", 360, HOUR_MS),
   globalQuota("buzzello-move-project", 5_000, HOUR_MS),
 ]);
 const syncQuota = distributedQuotas([
+  gameMonthlyBudget(5),
   ipQuota("buzzello-sync-ip", 2_400, HOUR_MS),
   globalQuota("buzzello-sync-project", 60_000, HOUR_MS),
 ]);
@@ -102,6 +118,11 @@ router.use((_req, res, next) => {
 export const generateBuzzelloInviteCode = generateGameInviteCode;
 export const hashBuzzelloInviteCode = (code: string) =>
   hashGameInviteCode(buzzelloGameDefinition.gameType, code);
+
+router.get("/health", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ healthy: true, service: "game-api" });
+});
 
 router.post(
   "/games",

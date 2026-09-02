@@ -65,6 +65,8 @@ const firestore = vi.hoisted(() => {
   };
 });
 
+const quotaConfigurations = vi.hoisted(() => [] as unknown[][]);
+
 vi.mock("../../lib/firebase-admin", () => ({
   adminDb: firestore.adminDb,
   adminAppCheck: { verifyToken: firestore.appCheckVerify },
@@ -73,8 +75,10 @@ vi.mock("express-rate-limit", () => ({
   default: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 vi.mock("../../middleware/distributedQuota", () => ({
-  distributedQuotas: () => (_req: unknown, _res: unknown, next: () => void) =>
-    next(),
+  distributedQuotas: (options: unknown[]) => {
+    quotaConfigurations.push(options);
+    return (_req: unknown, _res: unknown, next: () => void) => next();
+  },
 }));
 vi.mock("../../middleware/auth", () => ({
   ensureTeamMember: (
@@ -97,6 +101,7 @@ import {
 } from "../../lib/buzzelloGame";
 import { createApiApp } from "../../apiApp";
 import router, {
+  GAME_MONTHLY_RESOURCE_UNITS,
   generateBuzzelloInviteCode,
   hashBuzzelloInviteCode,
 } from "../buzzello";
@@ -178,6 +183,27 @@ afterAll(async () => {
 });
 
 describe("BUZZELLO online routes", () => {
+  it("charges every operation against one bounded calendar-month resource budget", () => {
+    expect(GAME_MONTHLY_RESOURCE_UNITS).toBe(500_000);
+    const gameBudgets = quotaConfigurations
+      .map((configuration) => configuration[0] as { scope?: string })
+      .filter((configuration) => configuration.scope === "games-monthly-resource-project");
+    expect(gameBudgets).toEqual([
+      expect.objectContaining({ calendarWindow: "month", cost: 8, identity: "global" }),
+      expect.objectContaining({ calendarWindow: "month", cost: 8, identity: "global" }),
+      expect.objectContaining({ calendarWindow: "month", cost: 8, identity: "global" }),
+      expect.objectContaining({ calendarWindow: "month", cost: 8, identity: "global" }),
+      expect.objectContaining({ calendarWindow: "month", cost: 6, identity: "global" }),
+      expect.objectContaining({ calendarWindow: "month", cost: 5, identity: "global" }),
+    ]);
+  });
+
+  it("exposes a mutation-free health endpoint for protected deployment checks", async () => {
+    const response = await fetch(`${origin}/health`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    await expect(response.json()).resolves.toEqual({ healthy: true, service: "game-api" });
+  });
   it("creates and joins a private friend match without exposing stored capabilities", async () => {
     const createdResponse = await post("/games");
     expect(createdResponse.status).toBe(201);

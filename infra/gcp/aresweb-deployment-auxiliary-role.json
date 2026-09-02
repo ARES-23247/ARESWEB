@@ -10,8 +10,17 @@
     "firebaseauth.configs.update",
     "firebasestorage.defaultBucket.get",
     "resourcemanager.projects.getIamPolicy",
+    "run.configurations.get",
+    "run.operations.get",
+    "run.revisions.get",
+    "run.revisions.list",
+    "run.routes.get",
+    "run.services.create",
+    "run.services.get",
     "run.services.getIamPolicy",
+    "run.services.list",
     "run.services.setIamPolicy",
+    "run.services.update",
     "storage.buckets.get",
     "storage.buckets.getIamPolicy"
   ]

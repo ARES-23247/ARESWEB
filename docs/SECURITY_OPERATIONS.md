@@ -157,12 +157,14 @@ errors.
 
 ## Coordinated deployment
 
-The HTTP API is split into five processes so a compromised public endpoint does
+The HTTP API is split into six processes so a compromised public endpoint does
 not inherit unrelated credentials:
 
 - `publicApi`: public data routes, with only the anonymous-quota HMAC secret.
 - `coreApi`: inquiry/profile routes, with encryption, profile-sync, and Zulip
   bot secrets used for inquiry alerts and member provisioning.
+- `aresweb-game-api`: the online game routes in a fractional-CPU Cloud Run
+  service, with only the anonymous-quota HMAC and encryption secrets.
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with encryption, the
   OAuth client pair, and the dedicated Drive refresh token (four secrets).
@@ -199,6 +201,7 @@ The production access baseline is:
 | ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `publicApi`              | Firestore user, App Check token verifier                                                              | anonymous-quota HMAC                                               |
 | `coreApi`                | Firestore user, App Check token verifier, Firebase Auth viewer                                        | encryption, profile sync, Zulip bot credentials                    |
+| `aresweb-game-api`       | Firestore user, App Check token verifier, Firebase Auth viewer                                        | anonymous-quota HMAC, encryption                                   |
 | `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
 | `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
 | `communicationsApi`      | Firestore user, App Check token verifier                                                              | anonymous-quota HMAC; GitHub, Zulip, Bluesky, Buffer, Onshape      |
@@ -219,24 +222,26 @@ application Storage, Vertex AI, or Editor access. Cloud Scheduler may retain
 it uses that account as the OIDC subject. Do not replace these narrow grants
 with a broad project role.
 
-The GitHub deployer may impersonate the eight runtime identities and may bind a
+The GitHub deployer may impersonate only the reviewed runtime identities and may bind a
 reviewed secret to a Function, but it cannot read secret payloads. Keep the
 deployer's custom secret-binding permission separate from
 `roles/secretmanager.secretAccessor`.
 
-Hosting routes are the boundary between these functions. Keep the rewrite tests
-and `FUNCTION_SECRET_BINDINGS` in sync whenever a route moves. Never add a
-catch-all secret list to any function.
+Hosting routes are the boundary between these services. Keep the rewrite tests,
+`FUNCTION_SECRET_BINDINGS`, and `GAME_SERVICE_SECRET_BINDINGS` in sync whenever
+a route moves. Never add a catch-all secret list to any workload.
 
-Deploy the contracted Functions before switching Hosting. The production
-workflow derives its Firebase target list from
-`infra/gcp/production-deployment.json`, then rejects any missing or unexpected
-Function after the release. It never deletes unexpected infrastructure
+Deploy the contracted game Cloud Run image and Functions before switching
+Hosting. The production workflow derives its Firebase target list from
+`infra/gcp/production-deployment.json`, verifies the game against
+`infra/gcp/game-service.json`, then rejects any missing or unexpected Function
+or game-service resource drift. It never deletes unexpected infrastructure
 automatically; investigate and remove it through an explicitly reviewed
 operation.
 
-Deploy Functions, indexes, and Firebase rules together. This keeps API queries
-and their access rules in sync:
+Use the protected release workflow so the immutable game container is deployed
+before Functions, indexes, rules, and Hosting. For emergency Firebase-only
+recovery, the Firebase portion remains:
 
 ```text
 firebase deploy --only firestore:rules,firestore:indexes,storage,functions,hosting
@@ -448,10 +453,18 @@ the publishing user's ID or other Firestore metadata.
 
 Online games use the generic controls documented in
 [`GAME_SERVICE.md`](./GAME_SERVICE.md). Preserve App Check, route/IP/project
-quotas, match and queue expiry, per-player sync budgets, Firestore TTL, and the
-core Function instance cap together. Match capabilities are sensitive even
+quotas, the 500,000-unit calendar-month budget, match and queue expiry,
+per-player sync budgets, Firestore TTL, and the dedicated Cloud Run fractional
+single-instance cap together. Match capabilities are sensitive even
 though they are temporary: never log them, persist them in browser storage, or
 put them in invite URLs.
+
+Keep the `$35` spend-cap budget scoped specifically to project
+`aresfirst-portal` and billing service `Cloud Run`. Do not select `Cloud Run
+functions`, because that would pause unrelated website APIs. The cap is a
+Preview control and is not instantaneous; retain the existing project-wide
+alerts and investigate any difference between estimated enforcement and billed
+cost.
 
 1. Preserve the affected service, revision, route group, event counts, and time
    range. Do not record source addresses, tokens, user IDs, or request bodies.

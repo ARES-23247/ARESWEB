@@ -209,7 +209,11 @@
       },
       {
         "source": "/api/buzzello{,/**}",
-        "function": "coreApi"
+        "run": {
+          "serviceId": "aresweb-game-api",
+          "region": "us-central1",
+          "pinTag": true
+        }
       },
       {
         "source": "/api/content-admin{,/**}",

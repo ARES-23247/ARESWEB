@@ -13,11 +13,34 @@ const QUOTA_ERROR_CODE = "DISTRIBUTED_QUOTA_EXCEEDED";
 export interface DistributedQuotaOptions {
   scope: string;
   limit: number;
-  windowMs: number;
+  windowMs?: number;
+  calendarWindow?: "month";
   retentionMs?: number;
   identity?: "user" | "ip" | "global";
   secretEnvironmentVariable?: "ENCRYPTION_SECRET" | "ABUSE_HMAC_SECRET";
   cost?: number | ((req: AuthenticatedRequest) => number);
+}
+
+interface QuotaWindow {
+  startedAtMs: number;
+  endsAtMs: number;
+}
+
+const blockedQuotaDocuments = new Map<string, number>();
+
+function quotaWindow(options: DistributedQuotaOptions, nowMs: number): QuotaWindow {
+  if (options.calendarWindow === "month") {
+    const now = new Date(nowMs);
+    const startedAtMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+    return {
+      startedAtMs,
+      endsAtMs: Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    };
+  }
+
+  const windowMs = options.windowMs as number;
+  const startedAtMs = Math.floor(nowMs / windowMs) * windowMs;
+  return { startedAtMs, endsAtMs: startedAtMs + windowMs };
 }
 
 function quotaDocumentId(
@@ -41,8 +64,11 @@ function assertValidOptions(options: DistributedQuotaOptions): void {
     !/^[a-z0-9][a-z0-9-]{0,79}$/.test(options.scope)
     || !Number.isSafeInteger(options.limit)
     || options.limit < 1
-    || !Number.isSafeInteger(options.windowMs)
-    || options.windowMs < 1_000
+    || ((options.windowMs === undefined) === (options.calendarWindow === undefined))
+    || (options.windowMs !== undefined && (
+      !Number.isSafeInteger(options.windowMs) || options.windowMs < 1_000
+    ))
+    || (options.calendarWindow !== undefined && options.calendarWindow !== "month")
     || (options.retentionMs !== undefined && (
       !Number.isSafeInteger(options.retentionMs) || options.retentionMs < 0
     ))
@@ -125,8 +151,9 @@ export function distributedQuotas(optionsList: readonly DistributedQuotaOptions[
     try {
       const quotas: ResolvedQuota[] = optionsList.map((options) => {
         const mode = options.identity ?? "user";
-        const windowStartedAtMs = Math.floor(nowMs / options.windowMs) * options.windowMs;
-        const windowEndsAtMs = windowStartedAtMs + options.windowMs;
+        const window = quotaWindow(options, nowMs);
+        const windowStartedAtMs = window.startedAtMs;
+        const windowEndsAtMs = window.endsAtMs;
         const secretEnvironmentVariable = options.secretEnvironmentVariable ?? "ENCRYPTION_SECRET";
         const documentId = quotaDocumentId(
           options.scope,
@@ -144,6 +171,25 @@ export function distributedQuotas(optionsList: readonly DistributedQuotaOptions[
         };
       });
 
+      const locallyBlocked = quotas.find((quota) => {
+        const blockedUntil = blockedQuotaDocuments.get(quota.ref.path);
+        if (blockedUntil === undefined) return false;
+        if (blockedUntil <= nowMs) {
+          blockedQuotaDocuments.delete(quota.ref.path);
+          return false;
+        }
+        retryAfterSeconds = Math.max(1, Math.ceil((blockedUntil - nowMs) / 1_000));
+        exceededScope = quota.options.scope;
+        return true;
+      });
+      if (locallyBlocked) {
+        throw new ApiError(
+          429,
+          "This operation has reached its temporary request limit. Please try again later.",
+          QUOTA_ERROR_CODE,
+        );
+      }
+
       await adminDb.runTransaction(async (transaction) => {
         const snapshots = await Promise.all(quotas.map((quota) => transaction.get(quota.ref)));
         const counts = snapshots.map((snapshot) => snapshot.exists ? snapshot.data()?.count : 0);
@@ -156,6 +202,9 @@ export function distributedQuotas(optionsList: readonly DistributedQuotaOptions[
           if ((storedCount as number) + quota.cost > quota.options.limit) {
             retryAfterSeconds = Math.max(1, Math.ceil((quota.windowEndsAtMs - nowMs) / 1_000));
             exceededScope = quota.options.scope;
+            if ((quota.options.identity ?? "user") === "global") {
+              blockedQuotaDocuments.set(quota.ref.path, quota.windowEndsAtMs);
+            }
             throw new ApiError(
               429,
               "This operation has reached its temporary request limit. Please try again later.",

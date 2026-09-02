@@ -46,3 +46,37 @@ Google Cloud CLI, deploys the reviewed release, and then:
 
 Unexpected infrastructure fails the deployment job for operator review. It is
 never automatically removed.
+
+## Online game Cloud Run cost boundary
+
+`game-service.json` is the separate runtime and cost contract for online games.
+The protected release builds an immutable container, deploys one
+`0.08 vCPU`/`256 MiB` instance with concurrency `1`, verifies the live service
+and public-invoker policy, and only then switches the Hosting rewrite.
+
+The deployer has `roles/artifactregistry.writer` only on the
+`aresweb-services` repository and `roles/iam.serviceAccountUser` only on the
+game runtime identity. The runtime identity has Firestore, App Check token
+verification, and Firebase Auth viewing for team matchmaking, plus access to
+only `ABUSE_HMAC_SECRET` and `ENCRYPTION_SECRET`.
+
+The `$35` monthly spend-cap budget is a production billing control and is not
+created by an ordinary release. Configure it in Cloud Billing with this exact
+scope:
+
+- Project: `aresfirst-portal`
+- Service: `Cloud Run` (not `Cloud Run functions`)
+- Period: monthly
+- Target: `$35 USD`
+- Enforcement: spend cap
+
+The spend cap was configured on 2026-09-02 as console budget
+`46634d74-3a32-4f26-b3c4-d9599448a3d6`. Google's legacy Budget API does not
+return Preview spend caps, so CI cannot verify this setting. Before relaxing any
+application guardrail, manually confirm that this cap remains `Configured`,
+monthly, and scoped to Cloud Run in the Billing console.
+
+Cloud Billing currently labels spend caps Preview and documents that
+enforcement is not instantaneous. Keep the application monthly resource
+budget, App Check, durable quotas, and every runtime bound enabled even after
+the spend cap exists.

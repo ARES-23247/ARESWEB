@@ -12,6 +12,8 @@ import ts from "typescript";
 
 const routesRoot = path.resolve("functions/src/routes");
 const apiAppSource = fs.readFileSync(path.resolve("functions/src/apiApp.ts"), "utf8");
+const gameAppSource = fs.readFileSync(path.resolve("functions/src/apps/game.ts"), "utf8");
+const gameRouteSource = fs.readFileSync(path.resolve("functions/src/routes/buzzello.ts"), "utf8");
 const mutationMethods = new Set(["post", "put", "patch", "delete"]);
 const authorizationMiddleware = new Set([
   "ensureAuth",
@@ -85,6 +87,14 @@ for (const requiredGlobalControl of [
   if (!requiredGlobalControl.test(apiAppSource)) {
     findings.push(`apiApp.ts no longer contains global mutation control ${requiredGlobalControl}`);
   }
+}
+
+for (const [source, requiredControl, label] of [
+  [gameAppSource, /globalRequestLimit:\s*\{[\s\S]*max:\s*5_000/u, "service-wide game request ceiling"],
+  [gameRouteSource, /GAME_MONTHLY_RESOURCE_UNITS\s*=\s*500_000/u, "monthly game resource ceiling"],
+  [gameRouteSource, /calendarWindow:\s*"month"/u, "calendar-month game quota"],
+]) {
+  if (!requiredControl.test(source)) findings.push(`Game service is missing ${label}`);
 }
 
 for (const file of fs.readdirSync(routesRoot).filter((name) => name.endsWith(".ts")).sort()) {

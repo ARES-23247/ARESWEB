@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "project": "aresfirst-portal",
+  "region": "us-central1",
+  "serviceId": "aresweb-game-api",
+  "runtimeServiceAccount": "aresweb-game-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  "runtimeProjectRoles": [
+    "roles/datastore.user",
+    "roles/firebaseappcheck.tokenVerifier",
+    "roles/firebaseauth.viewer"
+  ],
+  "artifactRegistry": {
+    "repository": "aresweb-services",
+    "image": "game-api"
+  },
+  "deployerArtifactRepositoryRoles": ["roles/artifactregistry.writer"],
+  "deployerRuntimeIdentityRoles": ["roles/iam.serviceAccountUser"],
+  "runtime": {
+    "cpu": "0.08",
+    "memoryMiB": 256,
+    "concurrency": 1,
+    "minInstances": 0,
+    "maxInstances": 1,
+    "timeoutSeconds": 10,
+    "executionEnvironment": "gen1",
+    "requestBasedBilling": true,
+    "startupCpuBoost": false
+  },
+  "secrets": ["ABUSE_HMAC_SECRET", "ENCRYPTION_SECRET"],
+  "monthlyResourceUnits": 500000,
+  "spendCap": {
+    "consoleBudgetId": "46634d74-3a32-4f26-b3c4-d9599448a3d6",
+    "configuredAt": "2026-09-02",
+    "billingService": "Cloud Run",
+    "currency": "USD",
+    "targetAmount": 35,
+    "period": "calendar-month",
+    "enforcement": "spend-cap",
+    "configuredOutsideDeployment": true,
+    "reportingLatencyCanCauseOverage": true
+  }
+}

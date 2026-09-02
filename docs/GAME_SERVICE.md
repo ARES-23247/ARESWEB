@@ -98,16 +98,41 @@ server-validated bucket identifiers—not user-provided Firestore paths.
    specifications are intentionally deferred until their approved requirements
    exist.
 
-## Operational controls
+## Operational and cost controls
 
-All mutations depend on production App Check enforcement in the shared API app.
-The route layer adds in-memory smoothing plus HMAC-pseudonymized IP and global
-Firestore quotas. Matchmaking, creation, joining, moves, and sync use separate
-limits. Cloud Functions `maxInstances`, match expiry, invite/search expiry,
-per-player sync budgets, and Firestore TTL cleanup provide independent cost
-bounds. Do not restore unconditional fixed-interval polling or full-state
-responses for unchanged matches; both increase bandwidth without improving
-turn-based responsiveness.
+All mutations depend on production App Check enforcement in the dedicated game
+API process. The route layer adds per-address smoothing, a service-wide
+in-memory ceiling, and HMAC-pseudonymized IP and global Firestore quotas.
+Matchmaking, creation, joining, moves, and sync use separate limits.
 
-Do not enable, deploy, or relax these controls without the normal protected
-release process. Billing alerts are detection, not a hard spending cap.
+Every accepted route also reserves weighted units from the single
+`games-monthly-resource-project` calendar-month budget. The ceiling is 500,000
+units: creation, joining, and matchmaking cost 8; moves cost 6; and sync costs
+5. Quotas are reserved together in one Firestore transaction. When a global
+quota is exhausted, the active instance caches the cutoff until the next
+window, so repeated rejected requests do not keep reading Firestore. This
+application budget is intentionally a resource ceiling, not a fabricated
+dollar conversion.
+
+The backend runs as the `aresweb-game-api` Cloud Run service, separate from
+Cloud Run functions used by the rest of the website. Its reviewed contract is:
+
+- request-based billing with scale-to-zero;
+- one maximum instance, `0.08 vCPU`, `256 MiB`, and concurrency `1`;
+- a 10-second request timeout and no startup CPU boost;
+- only the game runtime identity and two game secrets;
+- immutable container images from the reviewed Artifact Registry repository;
+- a `$35 USD` monthly Cloud Billing spend cap scoped to the `Cloud Run`
+  service category.
+
+The spend cap is defense in depth, not a literal guarantee: Google documents
+that enforcement is not instantaneous and any overage is billed. Firestore is
+not currently eligible for spend-cap budgets. The large margin below `$50`,
+the fractional single-instance ceiling, monthly resource budget, App Check,
+short match/invite/search expiry, per-player sync limits, compact unchanged
+responses, and Firestore TTL cleanup must remain enabled together.
+
+Do not restore unconditional fixed-interval polling or full-state responses for
+unchanged matches; both increase bandwidth without improving turn-based
+responsiveness. Do not enable, deploy, or relax these controls outside the
+protected release process.

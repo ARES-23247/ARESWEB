@@ -16,6 +16,10 @@ export interface ApiRouteMount {
 interface CreateApiAppOptions {
   routes: readonly ApiRouteMount[];
   enableLargePhotoUpload?: boolean;
+  globalRequestLimit?: {
+    max: number;
+    windowMs: number;
+  };
 }
 
 const corsOptions: cors.CorsOptions = {
@@ -33,7 +37,11 @@ const corsOptions: cors.CorsOptions = {
 };
 
 /** Build an isolated API process with the same security middleware contract. */
-export function createApiApp({ routes, enableLargePhotoUpload = false }: CreateApiAppOptions) {
+export function createApiApp({
+  routes,
+  enableLargePhotoUpload = false,
+  globalRequestLimit,
+}: CreateApiAppOptions) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
@@ -45,6 +53,16 @@ export function createApiApp({ routes, enableLargePhotoUpload = false }: CreateA
     standardHeaders: true,
     legacyHeaders: false,
   }));
+  if (globalRequestLimit) {
+    app.use("/api", rateLimit({
+      windowMs: globalRequestLimit.windowMs,
+      max: globalRequestLimit.max,
+      keyGenerator: () => "service-global",
+      message: { error: "The online game service is temporarily at capacity." },
+      standardHeaders: true,
+      legacyHeaders: false,
+    }));
+  }
   app.use(observeAppCheck);
   app.use(enforceAppCheck);
 

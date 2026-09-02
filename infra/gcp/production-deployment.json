@@ -249,6 +249,18 @@
         "validJson": true
       },
       {
+        "name": "bounded online game service",
+        "origin": "hosting",
+        "path": "/api/buzzello/health",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true,
+        "bodyIncludes": ["healthy", "game-api"],
+        "headerIncludes": {
+          "cache-control": ["no-store"]
+        }
+      },
+      {
         "name": "public finance API",
         "origin": "primary",
         "path": "/api/finance?limit=1",
