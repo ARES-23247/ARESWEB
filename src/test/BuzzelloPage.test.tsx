@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import BuzzelloPage from "@/app/buzzello/page";
 import {
   createBuzzelloInitialBoard,
@@ -20,6 +20,10 @@ function renderPage() {
 }
 
 describe("BUZZELLO page", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/buzzello");
+  });
+
   it("starts a local match, plays a legal move, and supports undo", () => {
     renderPage();
 
@@ -76,5 +80,26 @@ describe("BUZZELLO page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open move history" }));
     expect(screen.getByText(/No moves yet/i)).toBeInTheDocument();
+  });
+
+  it("offers separate guest, team, and friend paths without communication features", async () => {
+    window.history.replaceState(null, "", "/buzzello#join=ABC23456");
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { name: "Online BUZZELLO" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Join with a code")).toHaveValue("ABC23456");
+    expect(
+      screen.getByRole("heading", { name: "Find a match" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Find a teammate" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Play a friend" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/no chat, names, profiles/i)).toBeInTheDocument();
+    expect(window.location.hash).toBe("");
   });
 });

@@ -8,11 +8,7 @@
   },
   "hosting": {
     "public": "dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [
       {
         "source": "/assets/**",
@@ -209,6 +205,10 @@
       },
       {
         "source": "/api/profiles{,/**}",
+        "function": "coreApi"
+      },
+      {
+        "source": "/api/buzzello{,/**}",
         "function": "coreApi"
       },
       {

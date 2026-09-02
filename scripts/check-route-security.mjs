@@ -21,6 +21,26 @@ const authorizationMiddleware = new Set([
 ]);
 
 const explicitNonFirebaseRoutes = new Map([
+  ["buzzello.ts:POST:/games", {
+    rationale: "guest friend-game creation; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
+    requiredSource: [/createQuota/u, /validate\(emptyBodySchema\)/u, /service\.createFriendGame\(\)/u],
+  }],
+  ["buzzello.ts:POST:/join", {
+    rationale: "guest invite redemption; globally requires App Check and locally requires a bounded invite capability, durable quotas, and strict validation",
+    requiredSource: [/joinQuota/u, /validate\(joinSchema\)/u, /service\.joinFriendGame\(code\)/u],
+  }],
+  ["buzzello.ts:POST:/matchmaking", {
+    rationale: "blind guest matchmaking; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
+    requiredSource: [/guestMatchmakingQuota/u, /validate\(emptyBodySchema\)/u, /service\.matchmake\("guest"\)/u],
+  }],
+  ["buzzello.ts:POST:/games/:gameId/sync", {
+    rationale: "match-scoped guest access authenticated by a random capability whose HMAC is stored server-side, with durable and per-match quotas",
+    requiredSource: [/syncQuota/u, /requireGamePlayerToken\(req\)/u, /service\.sync\(/u],
+  }],
+  ["buzzello.ts:POST:/games/:gameId/moves", {
+    rationale: "match-scoped guest action authenticated by a random capability whose HMAC is stored server-side, with durable quotas and optimistic concurrency",
+    requiredSource: [/moveQuota/u, /validate\(moveSchema\)/u, /requireGamePlayerToken\(req\)/u, /expectedVersion/u, /service\.action\(/u],
+  }],
   ["appCheckCanary.ts:POST:/canary", {
     rationale: "public App Check canary; globally requires a valid App Check token",
     requiredSource: [/res\.status\(204\)/u],

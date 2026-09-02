@@ -64,6 +64,22 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/gameMatches.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzelloGame.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzelloGameDefinition.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/buzzello.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/publicArtifactCache.ts": {
           lines: 85,
           functions: 100,

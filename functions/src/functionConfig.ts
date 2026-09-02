@@ -16,7 +16,7 @@ export const API_ROUTE_GROUPS = {
     "/api/og", "/sitemap.xml", "/api/sitemap.xml",
     "/feed.xml", "/api/feed.xml",
   ],
-  core: ["/api/inquiries", "/api/profiles", "/api/content-admin"],
+  core: ["/api/inquiries", "/api/profiles", "/api/buzzello", "/api/content-admin"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
   drive: ["/api/drive"],
   communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/integrations/robotics-studio", "/api/zulip"],
@@ -24,7 +24,7 @@ export const API_ROUTE_GROUPS = {
 
 export const FUNCTION_SECRET_BINDINGS = {
   publicApi: ["ABUSE_HMAC_SECRET"],
-  coreApi: ["ENCRYPTION_SECRET", "PROFILE_SYNC_SECRET", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
+  coreApi: ["ABUSE_HMAC_SECRET", "ENCRYPTION_SECRET", "PROFILE_SYNC_SECRET", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
   mediaApi: [
     "ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
     "GOOGLE_PHOTOS_REFRESH_TOKEN", "GEMINI_API_KEY", "YOUTUBE_API_KEY",

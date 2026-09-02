@@ -31,3 +31,31 @@ test("plays an accessible local BUZZELLO turn and restores the opening state", a
   await page.keyboard.press("Escape");
   await expect(rulesTrigger).toBeFocused();
 });
+
+test("keeps friend, guest, and team online choices usable on a phone viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/buzzello#join=ABC23456");
+
+  const onlineSetup = page.getByRole("dialog", { name: "Online BUZZELLO" });
+  await expect(onlineSetup).toBeVisible();
+  await expect(onlineSetup.getByLabel("Join with a code")).toHaveValue(
+    "ABC23456",
+  );
+  await expect(
+    onlineSetup.getByRole("button", { name: "Find a match" }),
+  ).toBeVisible();
+  await expect(
+    onlineSetup.getByRole("button", { name: "Find a teammate" }),
+  ).toBeVisible();
+  await expect(
+    onlineSetup.getByRole("button", { name: "Create friend invite" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/buzzello$/u);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});

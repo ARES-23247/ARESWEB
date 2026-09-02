@@ -166,6 +166,7 @@ export default defineConfig({
         "src/lib/localDateTime.ts",
         "src/lib/academyProgress.ts",
         "src/lib/buzzello.ts",
+        "src/lib/buzzelloOnline.ts",
         "src/lib/learningContent.ts",
         "src/lib/learningExperience.ts",
         "src/lib/documentMedia.ts",
@@ -266,6 +267,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/buzzello.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzelloOnline.ts": {
           lines: 85,
           functions: 100,
         },

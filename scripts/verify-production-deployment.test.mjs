@@ -112,6 +112,7 @@ describe("production deployment contract", () => {
     expect(
       contract.functions.find(({ id }) => id === "coreApi")?.secrets,
     ).toEqual([
+      "ABUSE_HMAC_SECRET",
       "ENCRYPTION_SECRET",
       "PROFILE_SYNC_SECRET",
       "ZULIP_API_KEY",

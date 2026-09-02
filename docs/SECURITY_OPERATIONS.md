@@ -446,6 +446,13 @@ the publishing user's ID or other Firestore metadata.
 
 ### Denial-of-wallet containment
 
+Online games use the generic controls documented in
+[`GAME_SERVICE.md`](./GAME_SERVICE.md). Preserve App Check, route/IP/project
+quotas, match and queue expiry, per-player sync budgets, Firestore TTL, and the
+core Function instance cap together. Match capabilities are sensitive even
+though they are temporary: never log them, persist them in browser storage, or
+put them in invite URLs.
+
 1. Preserve the affected service, revision, route group, event counts, and time
    range. Do not record source addresses, tokens, user IDs, or request bodies.
 2. Keep App Check, authentication, shared quotas, and maximum-instance settings

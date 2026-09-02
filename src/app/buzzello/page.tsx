@@ -12,6 +12,7 @@ import {
   CircleHelp,
   Gauge,
   History,
+  Radio,
   Redo2,
   RotateCcw,
   Sparkles,
@@ -39,9 +40,19 @@ import {
   type BuzzelloDifficulty,
   type BuzzelloPlayer,
 } from "@/lib/buzzello";
+import {
+  BuzzelloOnlineError,
+  createOnlineBuzzelloGame,
+  findOnlineBuzzelloMatch,
+  findTeamBuzzelloMatch,
+  joinOnlineBuzzelloGame,
+  playOnlineBuzzelloMove,
+  syncOnlineBuzzelloGame,
+  type OnlineBuzzelloGame,
+} from "@/lib/buzzelloOnline";
 import "./buzzello.css";
 
-type BuzzelloMode = "local" | BuzzelloDifficulty;
+type BuzzelloMode = "local" | "online" | BuzzelloDifficulty;
 type SoundKind = "place" | "flip" | "victory";
 
 interface BuzzelloHistoryEntry {
@@ -78,6 +89,13 @@ const MODE_DETAILS: ReadonlyArray<{
     icon: Users,
   },
   {
+    id: "online",
+    name: "Private Online",
+    description:
+      "Find a guest or invite a friend by link or code. There is no chat or public lobby.",
+    icon: Radio,
+  },
+  {
     id: "easy",
     name: "Rookie AI",
     description: "A relaxed opponent that mixes greedy and random moves.",
@@ -110,6 +128,30 @@ function createStartingSnapshot(): BuzzelloSnapshot {
     history: [],
     lastFlipped: [],
     notice: "Yellow opens. Choose any glowing legal cell.",
+  };
+}
+
+function onlineGameSnapshot(game: OnlineBuzzelloGame): BuzzelloSnapshot {
+  const gameOver = game.status === "finished";
+  const notice =
+    game.status === "waiting"
+      ? "Waiting for another player to join."
+      : gameOver
+        ? "No legal moves remain. Final score locked."
+        : game.currentPlayer === game.youAre
+          ? `Your turn as ${playerName(game.youAre)}.`
+          : `Waiting for ${playerName(game.currentPlayer)} to move.`;
+  return {
+    board: game.board,
+    currentPlayer: game.currentPlayer,
+    gameOver,
+    history: game.history.map((entry, index) => ({
+      ...entry,
+      passedPlayer:
+        index === game.history.length - 1 ? game.passedPlayer : null,
+    })),
+    lastFlipped: game.lastMove?.flipped ?? [],
+    notice,
   };
 }
 
@@ -322,11 +364,21 @@ export default function BuzzelloPage() {
   ]);
   const [cursor, setCursor] = useState(0);
   const [newGameOpen, setNewGameOpen] = useState(true);
+  const [onlineSetupOpen, setOnlineSetupOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [gameOverOpen, setGameOverOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [aiThinking, setAiThinking] = useState(false);
+  const [onlineGame, setOnlineGame] = useState<OnlineBuzzelloGame | null>(null);
+  const [onlineInviteCode, setOnlineInviteCode] = useState<string | null>(null);
+  const [onlineShareLink, setOnlineShareLink] = useState<string | null>(null);
+  const [onlineCopyStatus, setOnlineCopyStatus] = useState<string | null>(null);
+  const [onlineJoinCode, setOnlineJoinCode] = useState("");
+  const [onlineBusy, setOnlineBusy] = useState(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+  const [onlinePollingStopped, setOnlinePollingStopped] = useState(false);
+  const onlinePlayerTokenRef = useRef<string | null>(null);
   const aiRequestRef = useRef(0);
   const rulesTriggerRef = useRef<HTMLButtonElement>(null);
   const current = timeline[cursor];
@@ -340,11 +392,28 @@ export default function BuzzelloPage() {
     [legalMoves],
   );
   const playSound = useBuzzelloAudio(soundEnabled);
-  const isAiMode = mode !== "local";
+  const isOnlineMode = mode === "online";
+  const isAiMode = mode !== "local" && mode !== "online";
   const isAiTurn =
     isAiMode && current.currentPlayer === "black" && !current.gameOver;
 
+  useEffect(() => {
+    const inviteMatch = window.location.hash.match(
+      /^#join=([2-9A-HJ-NP-Z]{8})$/u,
+    );
+    if (!inviteMatch) return;
+    setOnlineJoinCode(inviteMatch[1]);
+    setNewGameOpen(false);
+    setOnlineSetupOpen(true);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+  }, []);
+
   const startGame = useCallback((nextMode: BuzzelloMode) => {
+    if (nextMode === "online") return;
     setMode(nextMode);
     setTimeline([createStartingSnapshot()]);
     setCursor(0);
@@ -352,7 +421,123 @@ export default function BuzzelloPage() {
     setGameOverOpen(false);
     setHistoryOpen(false);
     setNewGameOpen(false);
+    setOnlineGame(null);
+    setOnlineInviteCode(null);
+    setOnlineShareLink(null);
+    setOnlineCopyStatus(null);
+    setOnlineError(null);
+    onlinePlayerTokenRef.current = null;
   }, []);
+
+  const applyOnlineGame = useCallback((game: OnlineBuzzelloGame) => {
+    setMode("online");
+    setOnlineGame(game);
+    setTimeline([onlineGameSnapshot(game)]);
+    setCursor(0);
+    setGameOverOpen(game.status === "finished");
+    setNewGameOpen(false);
+    setOnlineSetupOpen(false);
+    setOnlinePollingStopped(false);
+  }, []);
+
+  const createOnlineGame = useCallback(async () => {
+    setOnlineBusy(true);
+    setOnlineError(null);
+    try {
+      const result = await createOnlineBuzzelloGame();
+      onlinePlayerTokenRef.current = result.playerToken;
+      setOnlineInviteCode(result.inviteCode);
+      const shareUrl = new URL("/buzzello", window.location.origin);
+      shareUrl.hash = `join=${result.inviteCode}`;
+      setOnlineShareLink(shareUrl.toString());
+      setOnlineCopyStatus(null);
+      applyOnlineGame(result.game);
+    } catch (error) {
+      setOnlineError(
+        error instanceof Error
+          ? error.message
+          : "The online match could not be created.",
+      );
+    } finally {
+      setOnlineBusy(false);
+    }
+  }, [applyOnlineGame]);
+
+  const findOnlineMatch = useCallback(async () => {
+    setOnlineBusy(true);
+    setOnlineError(null);
+    try {
+      const result = await findOnlineBuzzelloMatch();
+      onlinePlayerTokenRef.current = result.playerToken;
+      setOnlineInviteCode(null);
+      setOnlineShareLink(null);
+      setOnlineCopyStatus(null);
+      applyOnlineGame(result.game);
+    } catch (error) {
+      setOnlineError(
+        error instanceof Error
+          ? error.message
+          : "A quick match could not be started.",
+      );
+    } finally {
+      setOnlineBusy(false);
+    }
+  }, [applyOnlineGame]);
+
+  const findTeamMatch = useCallback(async () => {
+    setOnlineBusy(true);
+    setOnlineError(null);
+    try {
+      const result = await findTeamBuzzelloMatch();
+      onlinePlayerTokenRef.current = result.playerToken;
+      setOnlineInviteCode(null);
+      setOnlineShareLink(null);
+      setOnlineCopyStatus(null);
+      applyOnlineGame(result.game);
+    } catch (error) {
+      setOnlineError(
+        error instanceof Error
+          ? error.message
+          : "A team match could not be started.",
+      );
+    } finally {
+      setOnlineBusy(false);
+    }
+  }, [applyOnlineGame]);
+
+  const joinOnlineGame = useCallback(async () => {
+    setOnlineBusy(true);
+    setOnlineError(null);
+    try {
+      const result = await joinOnlineBuzzelloGame(onlineJoinCode);
+      onlinePlayerTokenRef.current = result.playerToken;
+      setOnlineInviteCode(null);
+      setOnlineShareLink(null);
+      setOnlineCopyStatus(null);
+      applyOnlineGame(result.game);
+    } catch (error) {
+      setOnlineError(
+        error instanceof Error
+          ? error.message
+          : "The online match could not be joined.",
+      );
+    } finally {
+      setOnlineBusy(false);
+    }
+  }, [applyOnlineGame, onlineJoinCode]);
+
+  const copyOnlineShareLink = useCallback(async () => {
+    if (!onlineShareLink || !navigator.clipboard) {
+      setOnlineCopyStatus("Select and copy the link manually.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(onlineShareLink);
+      setOnlineCopyStatus("Invite link copied.");
+    } catch {
+      setOnlineCopyStatus("Select and copy the link manually.");
+    }
+  }, [onlineShareLink]);
 
   const handleRulesOpenChange = useCallback((open: boolean) => {
     setRulesOpen(open);
@@ -406,6 +591,100 @@ export default function BuzzelloPage() {
     },
     [current, cursor, legalMoveFlips, playSound],
   );
+
+  const commitOnlineMove = useCallback(
+    async (index: number) => {
+      if (
+        !onlineGame ||
+        !onlinePlayerTokenRef.current ||
+        onlineGame.status !== "active" ||
+        onlineGame.currentPlayer !== onlineGame.youAre ||
+        onlineBusy
+      ) {
+        return;
+      }
+      setOnlineBusy(true);
+      setOnlineError(null);
+      try {
+        const game = await playOnlineBuzzelloMove(
+          onlineGame.gameId,
+          index,
+          onlineGame.version,
+          onlinePlayerTokenRef.current,
+        );
+        applyOnlineGame(game);
+        playSound("place");
+        if (game.lastMove?.flipped.length) playSound("flip");
+        if (game.status === "finished") playSound("victory");
+      } catch (error) {
+        setOnlineError(
+          error instanceof Error
+            ? error.message
+            : "The move could not be completed.",
+        );
+      } finally {
+        setOnlineBusy(false);
+      }
+    },
+    [applyOnlineGame, onlineBusy, onlineGame, playSound],
+  );
+
+  useEffect(() => {
+    const playerToken = onlinePlayerTokenRef.current;
+    if (
+      !isOnlineMode ||
+      !onlineGame ||
+      !playerToken ||
+      onlineGame.status === "finished" ||
+      onlinePollingStopped
+    ) {
+      return;
+    }
+    let cancelled = false;
+    let timer = 0;
+    const poll = async () => {
+      if (cancelled) return;
+      if (document.visibilityState === "hidden") {
+        timer = window.setTimeout(poll, 4_000);
+        return;
+      }
+      try {
+        const game = await syncOnlineBuzzelloGame(
+          onlineGame.gameId,
+          playerToken,
+        );
+        if (!cancelled) {
+          setOnlineError(null);
+          applyOnlineGame(game);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setOnlineError(
+            error instanceof Error
+              ? error.message
+              : "The match could not be refreshed.",
+          );
+          if (
+            error instanceof BuzzelloOnlineError &&
+            [404, 410, 429].includes(error.status)
+          ) {
+            setOnlinePollingStopped(true);
+          }
+        }
+      }
+      if (!cancelled) timer = window.setTimeout(poll, 4_000);
+    };
+    timer = window.setTimeout(poll, 4_000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    applyOnlineGame,
+    isOnlineMode,
+    onlineGame,
+    onlinePollingStopped,
+  ]);
 
   useEffect(() => {
     if (!isAiTurn) return;
@@ -497,13 +776,26 @@ export default function BuzzelloPage() {
   };
 
   const winner = current.gameOver ? getBuzzelloWinner(current.board) : null;
-  const statusText = aiThinking
-    ? `${modeName(mode)} is calculating Black's move.`
-    : current.gameOver
-      ? winner === "draw"
-        ? `Game over. Draw at ${scores.yellow} to ${scores.black}.`
-        : `Game over. ${playerName(winner as BuzzelloPlayer)} wins ${Math.max(scores.yellow, scores.black)} to ${Math.min(scores.yellow, scores.black)}.`
-      : current.notice;
+  const isOnlineWaiting = isOnlineMode && onlineGame?.status === "waiting";
+  const isOnlineOpponentTurn =
+    isOnlineMode &&
+    onlineGame?.status === "active" &&
+    onlineGame.currentPlayer !== onlineGame.youAre;
+  const onlineBoardDisabled =
+    isOnlineMode &&
+    (!onlineGame ||
+      onlineGame.status !== "active" ||
+      onlineGame.currentPlayer !== onlineGame.youAre ||
+      onlineBusy);
+  const statusText = onlineError
+    ? onlineError
+    : aiThinking
+      ? `${modeName(mode)} is calculating Black's move.`
+      : current.gameOver
+        ? winner === "draw"
+          ? `Game over. Draw at ${scores.yellow} to ${scores.black}.`
+          : `Game over. ${playerName(winner as BuzzelloPlayer)} wins ${Math.max(scores.yellow, scores.black)} to ${Math.min(scores.yellow, scores.black)}.`
+        : current.notice;
 
   return (
     <main className="buzzello-shell min-h-screen bg-obsidian px-3 pb-16 pt-28 text-marble sm:px-5 lg:px-8">
@@ -511,7 +803,7 @@ export default function BuzzelloPage() {
         title="BUZZELLO™"
         exactTitle
         url="/buzzello"
-        description="Play BUZZELLO, a local two-player or AI-powered six-axis hexagonal strategy game from ARES 23247."
+        description="Play BUZZELLO, a local, private online, or AI-powered six-axis hexagonal strategy game from ARES 23247."
       />
 
       <div className="mx-auto max-w-[1500px]">
@@ -532,8 +824,8 @@ export default function BuzzelloPage() {
                 </span>
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-marble/72 sm:text-base">
-                Surround. Convert. Control the hive. Play pass-and-play or
-                challenge a local AI—your game never leaves this browser.
+                Surround. Convert. Control the hive. Play locally, challenge a
+                local AI, or invite one remote guest to a chat-free match.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -586,7 +878,7 @@ export default function BuzzelloPage() {
                   variant="ghost"
                   aria-label="Undo move"
                   onClick={undo}
-                  disabled={cursor === 0 || aiThinking}
+                  disabled={isOnlineMode || cursor === 0 || aiThinking}
                 >
                   <Undo2 aria-hidden="true" />
                 </IconButton>
@@ -594,7 +886,9 @@ export default function BuzzelloPage() {
                   variant="ghost"
                   aria-label="Redo move"
                   onClick={redo}
-                  disabled={cursor >= timeline.length - 1 || aiThinking}
+                  disabled={
+                    isOnlineMode || cursor >= timeline.length - 1 || aiThinking
+                  }
                 >
                   <Redo2 aria-hidden="true" />
                 </IconButton>
@@ -613,8 +907,14 @@ export default function BuzzelloPage() {
               currentPlayer={current.currentPlayer}
               legalMoveFlips={legalMoveFlips}
               lastFlipped={current.lastFlipped}
-              disabled={current.gameOver || aiThinking || newGameOpen}
-              onMove={commitMove}
+              disabled={
+                current.gameOver ||
+                aiThinking ||
+                newGameOpen ||
+                onlineSetupOpen ||
+                onlineBoardDisabled
+              }
+              onMove={isOnlineMode ? commitOnlineMove : commitMove}
             />
 
             <p className="mt-4 text-center text-xs leading-5 text-marble/58">
@@ -664,9 +964,13 @@ export default function BuzzelloPage() {
               >
                 {current.gameOver
                   ? "Final result"
-                  : aiThinking
-                    ? "AI turn"
-                    : `${playerName(current.currentPlayer)} turn`}
+                  : isOnlineWaiting
+                    ? "Waiting for opponent"
+                    : isOnlineOpponentTurn
+                      ? "Opponent's turn"
+                      : aiThinking
+                        ? "AI turn"
+                        : `${playerName(current.currentPlayer)} turn`}
               </p>
               <p
                 className="mt-2 text-sm font-semibold leading-6 text-white"
@@ -675,8 +979,9 @@ export default function BuzzelloPage() {
               >
                 {statusText}
               </p>
-              {!current.gameOver && !aiThinking && (
+              {!current.gameOver && !aiThinking && !isOnlineWaiting && (
                 <p className="mt-3 text-xs leading-5 text-marble/62">
+                  {isOnlineOpponentTurn ? "Opponent has" : "You have"}{" "}
                   {legalMoves.length} legal{" "}
                   {legalMoves.length === 1 ? "move" : "moves"}. Hover a glowing
                   cell to preview every flip.
@@ -684,14 +989,98 @@ export default function BuzzelloPage() {
               )}
             </section>
 
+            {isOnlineMode && onlineGame && (
+              <section className="rounded-2xl border border-ares-cyan/25 bg-ares-cyan/[0.05] p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-ares-cyan">
+                  Private online match
+                </p>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-marble/60">Your side</dt>
+                    <dd className="font-bold text-white">
+                      {playerName(onlineGame.youAre)}
+                    </dd>
+                  </div>
+                  {onlineInviteCode && onlineGame.status === "waiting" && (
+                    <>
+                      <div className="flex items-center justify-between gap-4">
+                        <dt className="text-marble/60">Invite code</dt>
+                        <dd className="select-all font-mono text-lg font-black tracking-widest text-ares-gold">
+                          {onlineInviteCode}
+                        </dd>
+                      </div>
+                      {onlineShareLink && (
+                        <div className="pt-2">
+                          <dt className="text-marble/60">Invite link</dt>
+                          <dd className="mt-2 space-y-2">
+                            <input
+                              aria-label="Shareable match link"
+                              readOnly
+                              value={onlineShareLink}
+                              onFocus={(event) => event.currentTarget.select()}
+                              className="min-h-10 w-full rounded border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => void copyOnlineShareLink()}
+                            >
+                              Copy invite link
+                            </Button>
+                            {onlineCopyStatus && (
+                              <p
+                                role="status"
+                                className="text-xs text-marble/65"
+                              >
+                                {onlineCopyStatus}
+                              </p>
+                            )}
+                          </dd>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-marble/60">Refreshes left</dt>
+                    <dd className="font-bold text-white">
+                      {onlineGame.syncsRemaining}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-marble/60">Expires</dt>
+                    <dd className="font-bold text-white">
+                      {new Date(onlineGame.expiresAt).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-4 text-xs leading-5 text-marble/62">
+                  Two players only. No chat, display names, profiles, or
+                  spectators. The match closes automatically.
+                </p>
+              </section>
+            )}
+
             <section className="rounded-2xl border border-white/10 bg-black/30 p-5">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-marble/55">
                 Match controls
               </p>
               <div className="mt-4 grid gap-2">
-                <Button variant="secondary" onClick={() => startGame(mode)}>
-                  <RotateCcw aria-hidden="true" className="h-4 w-4" /> Rematch
-                  this mode
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    if (isOnlineMode) {
+                      setOnlineError(null);
+                      setOnlineSetupOpen(true);
+                    } else {
+                      startGame(mode);
+                    }
+                  }}
+                >
+                  <RotateCcw aria-hidden="true" className="h-4 w-4" />{" "}
+                  {isOnlineMode ? "Start another match" : "Rematch this mode"}
                 </Button>
                 <Button variant="ghost" onClick={() => setHistoryOpen(true)}>
                   <History aria-hidden="true" className="h-4 w-4" /> View{" "}
@@ -707,16 +1096,24 @@ export default function BuzzelloPage() {
         open={newGameOpen}
         onOpenChange={setNewGameOpen}
         title="Start a new BUZZELLO match"
-        description="Choose who controls Black. Yellow always makes the opening move."
+        description="Choose local, private online, or AI play. Yellow always makes the opening move."
         size="lg"
-        showClose={current.history.length > 0}
+        showClose={current.history.length > 0 || isOnlineMode}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           {MODE_DETAILS.map(({ id, name, description, icon: Icon }) => (
             <button
               key={id}
               type="button"
-              onClick={() => startGame(id)}
+              onClick={() => {
+                if (id === "online") {
+                  setNewGameOpen(false);
+                  setOnlineError(null);
+                  setOnlineSetupOpen(true);
+                  return;
+                }
+                startGame(id);
+              }}
               className="group min-h-36 rounded-xl border border-white/12 bg-white/[0.035] p-5 text-left transition-colors hover:border-ares-gold/60 hover:bg-ares-gold/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               <Icon aria-hidden="true" className="h-6 w-6 text-ares-gold" />
@@ -728,6 +1125,143 @@ export default function BuzzelloPage() {
               </span>
             </button>
           ))}
+        </div>
+      </DialogShell>
+
+      <DialogShell
+        open={onlineSetupOpen}
+        onOpenChange={(open) => {
+          if (!onlineBusy) setOnlineSetupOpen(open);
+        }}
+        title="Online BUZZELLO"
+        description="Guests and team members can play without a profile. Every temporary match connects exactly two players."
+        size="md"
+        showClose={!onlineBusy}
+      >
+        <div className="space-y-5">
+          <section className="rounded-xl border border-ares-cyan/25 bg-ares-cyan/[0.05] p-4">
+            <h3 className="font-heading text-sm font-black uppercase text-ares-cyan">
+              Find a match
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-marble/70">
+              Join the next available guest with no lobby or identity exchange.
+              If nobody is waiting, your search expires after 90 seconds.
+            </p>
+            <Button
+              variant="secondary"
+              className="mt-3"
+              onClick={() => void findOnlineMatch()}
+              isPending={onlineBusy}
+              pendingLabel="Finding a guest…"
+            >
+              Find a match
+            </Button>
+          </section>
+
+          <section className="rounded-xl border border-white/12 bg-white/[0.03] p-4">
+            <h3 className="font-heading text-sm font-black uppercase text-white">
+              Find a teammate
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-marble/70">
+              Uses the same blind, chat-free queue, but requires an authorized
+              ARES website account and only pairs team members.
+            </p>
+            <Button
+              variant="ghost"
+              className="mt-3"
+              onClick={() => void findTeamMatch()}
+              isPending={onlineBusy}
+              pendingLabel="Finding a teammate…"
+            >
+              Find a teammate
+            </Button>
+          </section>
+
+          <section className="rounded-xl border border-ares-gold/25 bg-ares-gold/[0.06] p-4">
+            <h3 className="font-heading text-sm font-black uppercase text-ares-gold">
+              Play a friend
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-marble/70">
+              You play Yellow. Share the link or eight-character code with one
+              person; it expires after ten minutes.
+            </p>
+            <Button
+              variant="gold"
+              className="mt-3"
+              onClick={() => void createOnlineGame()}
+              isPending={onlineBusy}
+              pendingLabel="Creating private match…"
+            >
+              Create friend invite
+            </Button>
+          </section>
+
+          <form
+            className="rounded-xl border border-white/12 bg-white/[0.03] p-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void joinOnlineGame();
+            }}
+          >
+            <label
+              htmlFor="buzzello-invite-code"
+              className="font-heading text-sm font-black uppercase text-white"
+            >
+              Join with a code
+            </label>
+            <p className="mt-1 text-sm leading-6 text-marble/70">
+              You play Black. Codes contain only letters and numbers.
+            </p>
+            <input
+              id="buzzello-invite-code"
+              value={onlineJoinCode}
+              onChange={(event) =>
+                setOnlineJoinCode(
+                  event.target.value
+                    .toUpperCase()
+                    .replace(/[^2-9A-HJ-NP-Z]/g, "")
+                    .slice(0, 8),
+                )
+              }
+              required
+              minLength={8}
+              maxLength={8}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              inputMode="text"
+              className="mt-3 min-h-11 w-full rounded border border-white/20 bg-black/30 px-4 py-2 font-mono text-lg font-black uppercase tracking-[0.2em] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-describedby="buzzello-online-privacy"
+            />
+            <Button
+              type="submit"
+              variant="secondary"
+              className="mt-3"
+              disabled={onlineJoinCode.length !== 8}
+              isPending={onlineBusy}
+              pendingLabel="Joining private match…"
+            >
+              Join private match
+            </Button>
+          </form>
+
+          <p
+            id="buzzello-online-privacy"
+            className="text-xs leading-5 text-marble/60"
+          >
+            Online play uses a temporary match-only session held in this tab and
+            protected service requests. It has no chat, names, profiles, friend
+            lists, or public lobby. Requests and match lifetime are strictly
+            limited; refreshing or closing the tab ends access.
+          </p>
+          {onlineError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100"
+            >
+              {onlineError}
+            </p>
+          )}
         </div>
       </DialogShell>
 
@@ -842,8 +1376,20 @@ export default function BuzzelloPage() {
             <Button variant="secondary" onClick={() => setGameOverOpen(false)}>
               Review board
             </Button>
-            <Button variant="gold" onClick={() => startGame(mode)}>
-              <Trophy aria-hidden="true" className="h-4 w-4" /> Rematch
+            <Button
+              variant="gold"
+              onClick={() => {
+                if (isOnlineMode) {
+                  setGameOverOpen(false);
+                  setOnlineError(null);
+                  setOnlineSetupOpen(true);
+                } else {
+                  startGame(mode);
+                }
+              }}
+            >
+              <Trophy aria-hidden="true" className="h-4 w-4" />{" "}
+              {isOnlineMode ? "New online match" : "Rematch"}
             </Button>
           </>
         }
