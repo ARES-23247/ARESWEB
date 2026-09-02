@@ -22,7 +22,7 @@ first. No powered robot is required for the source and model work.
 By the end, you will be able to explain what each path proves, choose a sensor for one robot
 question, and plan a student-led physical check.
 
-This lesson matches ARES 15.0.0 and Studio 5.0.1. Its source links point to one reviewed commit in
+This lesson matches ARES 15.0.1 and Studio 5.0.2. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 ## The important correction: two source paths and one design pattern
