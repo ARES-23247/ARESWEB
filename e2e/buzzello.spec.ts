@@ -59,3 +59,66 @@ test("keeps friend, guest, and team online choices usable on a phone viewport", 
     ),
   ).toBe(true);
 });
+
+test("keeps the hex board playable without horizontal scrolling on a narrow phone", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/buzzello");
+  await page
+    .getByRole("dialog", { name: "Start a new BUZZELLO match" })
+    .getByRole("button", { name: /Pass & Play/ })
+    .click();
+
+  const board = page.getByRole("grid", { name: /BUZZELLO board/ });
+  const boardBox = await board.boundingBox();
+  expect(boardBox).not.toBeNull();
+  expect(boardBox!.x).toBeGreaterThanOrEqual(0);
+  expect(boardBox!.x + boardBox!.width).toBeLessThanOrEqual(360);
+  expect(boardBox!.height).toBeGreaterThan(boardBox!.width);
+
+  const arenaOverflow = await page
+    .locator(".buzzello-arena")
+    .evaluate((element) => {
+      const style = getComputedStyle(element);
+      return [style.overflowX, style.overflowY];
+    });
+  const boardWrapperOverflow = await page
+    .locator(".buzzello-board-wrap")
+    .evaluate((element) => {
+      const style = getComputedStyle(element);
+      return [style.overflowX, style.overflowY];
+    });
+  expect(arenaOverflow).not.toContain("auto");
+  expect(arenaOverflow).not.toContain("scroll");
+  expect(boardWrapperOverflow).not.toContain("auto");
+  expect(boardWrapperOverflow).not.toContain("scroll");
+
+  const cellsStayInsideBoard = await board.evaluate((element) => {
+    const boardRect = element.getBoundingClientRect();
+    return [...element.querySelectorAll('[role="gridcell"]')].every((cell) => {
+      const cellRect = cell.getBoundingClientRect();
+      return (
+        cellRect.left >= boardRect.left - 0.5 &&
+        cellRect.right <= boardRect.right + 0.5 &&
+        cellRect.top >= boardRect.top - 0.5 &&
+        cellRect.bottom <= boardRect.bottom + 0.5
+      );
+    });
+  });
+  expect(cellsStayInsideBoard).toBe(true);
+
+  const legalCell = board
+    .locator('[role="gridcell"][aria-label*="legal move"]')
+    .first();
+  const cellBox = await legalCell.boundingBox();
+  expect(cellBox).not.toBeNull();
+  expect(cellBox!.width).toBeGreaterThanOrEqual(40);
+  expect(cellBox!.height).toBeGreaterThanOrEqual(36);
+  await expect(page.locator(".buzzello-mobile-status")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});

@@ -32,8 +32,24 @@ describe("BUZZELLO page", () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /pass & play/i }));
 
+    expect(
+      screen.getByRole("img", {
+        name: /BIOBUZZ presented by RTX, FIRST Tech Challenge/i,
+      }),
+    ).toHaveAttribute("src", "/images/season/biobuzz-lockup.webp");
+
     const board = screen.getByRole("grid", { name: /BUZZELLO board/i });
     expect(within(board).getAllByRole("gridcell")).toHaveLength(61);
+    const firstPiece = board.querySelector(".buzzello-piece");
+    expect(firstPiece?.querySelectorAll(".buzzello-piece-face")).toHaveLength(
+      2,
+    );
+    expect(
+      firstPiece?.querySelector('[data-face="yellow"]'),
+    ).toBeInTheDocument();
+    expect(
+      firstPiece?.querySelector('[data-face="black"]'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Yellow opens/i)).toBeInTheDocument();
 
     const openingMove = getBuzzelloLegalMoves(

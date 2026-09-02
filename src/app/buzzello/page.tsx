@@ -15,7 +15,6 @@ import {
   Radio,
   Redo2,
   RotateCcw,
-  Sparkles,
   Trophy,
   Undo2,
   Users,
@@ -214,9 +213,21 @@ function useBuzzelloAudio(enabled: boolean) {
   );
 }
 
-function Rosette({ className = "" }: { className?: string }) {
+function HiveMark({ className = "" }: { className?: string }) {
   return (
-    <Sparkles aria-hidden="true" className={className} strokeWidth={2.4} />
+    <svg
+      aria-hidden="true"
+      className={className}
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="4"
+    >
+      <path d="m32 22 8 5v10l-8 5-8-5V27l8-5Z" />
+      <path d="m32 2 8 5v10l-8 5-8-5V7l8-5ZM32 42l8 5v10l-8 5-8-5V47l8-5ZM14 12l8 5v10l-8 5-8-5V17l8-5ZM50 12l8 5v10l-8 5-8-5V17l8-5ZM14 32l8 5v10l-8 5-8-5V37l8-5ZM50 32l8 5v10l-8 5-8-5V37l8-5Z" />
+    </svg>
   );
 }
 
@@ -227,7 +238,7 @@ function ScorePiece({ player }: { player: BuzzelloPlayer }) {
       data-player={player}
       aria-hidden="true"
     >
-      <Rosette className="h-4 w-4" />
+      <HiveMark className="h-5 w-5" />
     </span>
   );
 }
@@ -291,7 +302,7 @@ function BuzzelloBoardView({
   };
 
   return (
-    <div className="overflow-x-auto pb-2" tabIndex={-1}>
+    <div className="buzzello-board-wrap" tabIndex={-1}>
       <div
         className="buzzello-board mx-auto w-full max-w-[760px] rounded-2xl"
         role="grid"
@@ -309,8 +320,10 @@ function BuzzelloBoardView({
               : isCenter
                 ? "open center, empty"
                 : "empty";
-          const left = 50 + q * (150 / 14);
-          const top = 50 + (r + q / 2) * 20;
+          // Preserve the regular flat-top geometry inside a 2% safety inset.
+          // A radius-4 grid spans 14 hex radii wide and 9√3 radii tall.
+          const left = 50 + q * (72 / 7);
+          const top = 50 + (r + q / 2) * (32 / 3);
 
           return (
             <button
@@ -344,7 +357,12 @@ function BuzzelloBoardView({
                     data-preview={previewFlips.has(index)}
                     data-just-flipped={justFlipped.has(index)}
                   >
-                    <Rosette className="buzzello-rosette" />
+                    <span className="buzzello-piece-face" data-face="yellow">
+                      <HiveMark className="buzzello-rosette" />
+                    </span>
+                    <span className="buzzello-piece-face" data-face="black">
+                      <HiveMark className="buzzello-rosette" />
+                    </span>
                   </span>
                 ) : isLegal ? (
                   <span className="buzzello-valid-ring" />
@@ -852,7 +870,7 @@ export default function BuzzelloPage() {
         : current.notice;
 
   return (
-    <main className="buzzello-shell min-h-screen bg-obsidian px-3 pb-16 pt-28 text-marble sm:px-5 lg:px-8">
+    <main className="buzzello-shell min-h-screen bg-obsidian px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8">
       <SEO
         title="BUZZELLO™"
         exactTitle
@@ -861,19 +879,19 @@ export default function BuzzelloPage() {
       />
 
       <div className="mx-auto max-w-[1500px]">
-        <header className="relative overflow-hidden rounded-2xl border border-ares-gold/25 bg-black/30 px-5 py-7 shadow-2xl sm:px-8">
+        <header className="buzzello-hero relative overflow-hidden rounded-2xl px-4 py-5 shadow-2xl sm:px-8 sm:py-7">
           <div
             className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_center,rgba(245,166,35,0.14),transparent_68%)]"
             aria-hidden="true"
           />
           <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
-              <p className="font-heading text-[10px] font-black uppercase tracking-[0.38em] text-ares-gold">
-                Six-axis strategy arena
+              <p className="buzzello-accent font-heading text-[10px] font-black uppercase tracking-[0.3em] sm:tracking-[0.38em]">
+                ARES hive strategy
               </p>
               <h1 className="mt-2 font-heading text-4xl font-black tracking-[-0.04em] text-white sm:text-6xl">
                 BUZZELLO
-                <span className="align-top text-xl text-ares-gold sm:text-2xl">
+                <span className="buzzello-accent align-top text-xl sm:text-2xl">
                   ™
                 </span>
               </h1>
@@ -883,18 +901,24 @@ export default function BuzzelloPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="gold" onClick={() => setNewGameOpen(true)}>
+              <Button
+                variant="gold"
+                className="buzzello-primary-action"
+                onClick={() => setNewGameOpen(true)}
+              >
                 <RotateCcw aria-hidden="true" className="h-4 w-4" /> New game
               </Button>
               <Button
                 ref={rulesTriggerRef}
                 variant="secondary"
+                className="buzzello-secondary-action"
                 onClick={() => setRulesOpen(true)}
               >
                 <CircleHelp aria-hidden="true" className="h-4 w-4" /> Rules
               </Button>
               <IconButton
                 variant="secondary"
+                className="buzzello-secondary-action"
                 aria-label={
                   soundEnabled ? "Mute game sounds" : "Enable game sounds"
                 }
@@ -911,11 +935,11 @@ export default function BuzzelloPage() {
         </header>
 
         <section
-          className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]"
+          className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]"
           aria-labelledby="arena-heading"
         >
-          <div className="min-w-0 rounded-2xl border border-white/10 bg-black/25 p-3 shadow-2xl sm:p-5">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="buzzello-arena min-w-0 rounded-2xl p-2 shadow-2xl sm:p-5">
+            <div className="mb-3 flex items-center justify-between gap-2 px-1 sm:mb-4 sm:px-0">
               <div>
                 <h2
                   id="arena-heading"
@@ -927,9 +951,10 @@ export default function BuzzelloPage() {
                   {modeName(mode)} · {scores.empty} open cells
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex shrink-0 gap-1 sm:gap-2">
                 <IconButton
                   variant="ghost"
+                  className="buzzello-icon-action"
                   aria-label="Undo move"
                   onClick={undo}
                   disabled={isOnlineMode || cursor === 0 || aiThinking}
@@ -938,6 +963,7 @@ export default function BuzzelloPage() {
                 </IconButton>
                 <IconButton
                   variant="ghost"
+                  className="buzzello-icon-action"
                   aria-label="Redo move"
                   onClick={redo}
                   disabled={
@@ -948,11 +974,64 @@ export default function BuzzelloPage() {
                 </IconButton>
                 <IconButton
                   variant="ghost"
+                  className="buzzello-icon-action"
                   aria-label="Open move history"
                   onClick={() => setHistoryOpen(true)}
                 >
                   <History aria-hidden="true" />
                 </IconButton>
+              </div>
+            </div>
+
+            <div
+              className="buzzello-mobile-status mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl p-2 xl:hidden"
+              aria-label={`Score: Yellow ${scores.yellow}, Black ${scores.black}`}
+            >
+              <div
+                className="buzzello-mobile-player"
+                data-active={
+                  current.currentPlayer === "yellow" && !current.gameOver
+                }
+              >
+                <ScorePiece player="yellow" />
+                <span>
+                  <span className="block text-[9px] font-black uppercase tracking-wider text-[#f7e326]">
+                    Yellow
+                  </span>
+                  <span className="font-heading text-xl font-black text-white">
+                    {scores.yellow}
+                  </span>
+                </span>
+              </div>
+              <div className="min-w-0 text-center">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#f7e326]">
+                  {current.gameOver
+                    ? "Final"
+                    : aiThinking
+                      ? "AI turn"
+                      : `${playerName(current.currentPlayer)} turn`}
+                </p>
+                <p className="max-w-36 truncate text-[11px] text-white/75">
+                  {current.gameOver
+                    ? `${scores.empty} open cells`
+                    : `${legalMoves.length} legal ${legalMoves.length === 1 ? "move" : "moves"}`}
+                </p>
+              </div>
+              <div
+                className="buzzello-mobile-player justify-self-end"
+                data-active={
+                  current.currentPlayer === "black" && !current.gameOver
+                }
+              >
+                <span className="text-right">
+                  <span className="block text-[9px] font-black uppercase tracking-wider text-white/65">
+                    Black
+                  </span>
+                  <span className="font-heading text-xl font-black text-white">
+                    {scores.black}
+                  </span>
+                </span>
+                <ScorePiece player="black" />
               </div>
             </div>
 
@@ -971,9 +1050,9 @@ export default function BuzzelloPage() {
               onMove={isOnlineMode ? commitOnlineMove : commitMove}
             />
 
-            <p className="mt-4 text-center text-xs leading-5 text-marble/58">
-              Keyboard: use arrow keys to move between cells, Home for the open
-              center, and Enter or Space to place.
+            <p className="mt-3 px-2 text-center text-[11px] leading-5 text-marble/65 sm:mt-4 sm:text-xs">
+              Tap a glowing hex to place. Keyboard players can use arrow keys,
+              Home, Enter, or Space.
             </p>
           </div>
 
@@ -984,10 +1063,10 @@ export default function BuzzelloPage() {
               </p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div
-                  className={`rounded-xl border p-4 ${current.currentPlayer === "yellow" && !current.gameOver ? "border-ares-gold bg-ares-gold/10" : "border-white/10 bg-white/[0.03]"}`}
+                  className={`rounded-xl border p-4 ${current.currentPlayer === "yellow" && !current.gameOver ? "border-[#f7e326] bg-[#f7e326]/10" : "border-white/10 bg-white/[0.03]"}`}
                 >
                   <ScorePiece player="yellow" />
-                  <p className="mt-3 text-xs font-black uppercase tracking-wider text-ares-gold">
+                  <p className="mt-3 text-xs font-black uppercase tracking-wider text-[#f7e326]">
                     Yellow
                   </p>
                   <p className="font-heading text-3xl font-black text-white">
@@ -995,7 +1074,7 @@ export default function BuzzelloPage() {
                   </p>
                 </div>
                 <div
-                  className={`rounded-xl border p-4 ${current.currentPlayer === "black" && !current.gameOver ? "border-ares-gold bg-ares-gold/10" : "border-white/10 bg-white/[0.03]"}`}
+                  className={`rounded-xl border p-4 ${current.currentPlayer === "black" && !current.gameOver ? "border-[#f7e326] bg-[#f7e326]/10" : "border-white/10 bg-white/[0.03]"}`}
                 >
                   <ScorePiece player="black" />
                   <p className="mt-3 text-xs font-black uppercase tracking-wider text-marble/75">
@@ -1009,12 +1088,12 @@ export default function BuzzelloPage() {
             </section>
 
             <section
-              className="rounded-2xl border border-ares-gold/25 bg-ares-gold/[0.06] p-5"
+              className="buzzello-turn-card rounded-2xl p-5"
               aria-labelledby="turn-heading"
             >
               <p
                 id="turn-heading"
-                className="text-[10px] font-black uppercase tracking-[0.24em] text-ares-gold"
+                className="buzzello-accent text-[10px] font-black uppercase tracking-[0.24em]"
               >
                 {current.gameOver
                   ? "Final result"
@@ -1037,15 +1116,15 @@ export default function BuzzelloPage() {
                 <p className="mt-3 text-xs leading-5 text-marble/62">
                   {isOnlineOpponentTurn ? "Opponent has" : "You have"}{" "}
                   {legalMoves.length} legal{" "}
-                  {legalMoves.length === 1 ? "move" : "moves"}. Hover a glowing
-                  cell to preview every flip.
+                  {legalMoves.length === 1 ? "move" : "moves"}. Tap a glowing
+                  cell to play, or hover with a pointer to preview every flip.
                 </p>
               )}
             </section>
 
             {isOnlineMode && onlineGame && (
-              <section className="rounded-2xl border border-ares-cyan/25 bg-ares-cyan/[0.05] p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-ares-cyan">
+              <section className="buzzello-turn-card rounded-2xl p-5">
+                <p className="buzzello-accent text-[10px] font-black uppercase tracking-[0.24em]">
                   Private online match
                 </p>
                 <dl className="mt-3 space-y-2 text-sm">
@@ -1059,7 +1138,7 @@ export default function BuzzelloPage() {
                     <>
                       <div className="flex items-center justify-between gap-4">
                         <dt className="text-marble/60">Invite code</dt>
-                        <dd className="select-all font-mono text-lg font-black tracking-widest text-ares-gold">
+                        <dd className="select-all font-mono text-lg font-black tracking-widest text-[#f7e326]">
                           {onlineInviteCode}
                         </dd>
                       </div>
@@ -1072,7 +1151,7 @@ export default function BuzzelloPage() {
                               readOnly
                               value={onlineShareLink}
                               onFocus={(event) => event.currentTarget.select()}
-                              className="min-h-10 w-full rounded border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                              className="min-h-10 w-full rounded border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f7e326]"
                             />
                             <Button
                               variant="ghost"
@@ -1116,6 +1195,30 @@ export default function BuzzelloPage() {
                 </p>
               </section>
             )}
+
+            <section className="buzzello-season-card rounded-2xl p-1 sm:p-3">
+              <a
+                href="https://www.firstinspires.org/resources/library/season-brand-downloads"
+                target="_blank"
+                rel="noreferrer"
+                className="hidden rounded-xl min-[360px]:block"
+                aria-label="Official BIOBUZZ presented by RTX season brand resources (opens in a new tab)"
+              >
+                <img
+                  src="/images/season/biobuzz-lockup.webp"
+                  width="1280"
+                  height="850"
+                  loading="lazy"
+                  alt="BIOBUZZ presented by RTX, FIRST Tech Challenge"
+                  className="h-auto w-full rounded-xl"
+                />
+              </a>
+              <p className="mt-2 px-2 pb-2 text-xs leading-5 text-marble/65 sm:px-1 sm:pb-0">
+                Created by ARES for the 2026–2027 BIOBUZZ™ presented by RTX
+                season. BUZZELLO is a team-made game, not an official season
+                game.
+              </p>
+            </section>
 
             <section className="rounded-2xl border border-white/10 bg-black/30 p-5">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-marble/55">
@@ -1168,10 +1271,10 @@ export default function BuzzelloPage() {
                 }
                 startGame(id);
               }}
-              className="group min-h-36 rounded-xl border border-white/12 bg-white/[0.035] p-5 text-left transition-colors hover:border-ares-gold/60 hover:bg-ares-gold/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="buzzello-mode-card group rounded-xl p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f7e326] sm:min-h-36 sm:p-5"
             >
-              <Icon aria-hidden="true" className="h-6 w-6 text-ares-gold" />
-              <span className="mt-4 block font-heading text-base font-black uppercase text-white">
+              <Icon aria-hidden="true" className="h-6 w-6 text-[#f7e326]" />
+              <span className="mt-2 block font-heading text-base font-black uppercase text-white sm:mt-4">
                 {name}
               </span>
               <span className="mt-2 block text-sm leading-6 text-marble/65">
@@ -1193,8 +1296,8 @@ export default function BuzzelloPage() {
         showClose={!onlineBusy}
       >
         <div className="space-y-5">
-          <section className="rounded-xl border border-ares-cyan/25 bg-ares-cyan/[0.05] p-4">
-            <h3 className="font-heading text-sm font-black uppercase text-ares-cyan">
+          <section className="buzzello-turn-card rounded-xl p-4">
+            <h3 className="font-heading text-sm font-black uppercase text-[#f7e326]">
               Find a match
             </h3>
             <p className="mt-1 text-sm leading-6 text-marble/70">
@@ -1231,8 +1334,8 @@ export default function BuzzelloPage() {
             </Button>
           </section>
 
-          <section className="rounded-xl border border-ares-gold/25 bg-ares-gold/[0.06] p-4">
-            <h3 className="font-heading text-sm font-black uppercase text-ares-gold">
+          <section className="buzzello-turn-card rounded-xl p-4">
+            <h3 className="font-heading text-sm font-black uppercase text-[#f7e326]">
               Play a friend
             </h3>
             <p className="mt-1 text-sm leading-6 text-marble/70">
@@ -1284,7 +1387,7 @@ export default function BuzzelloPage() {
               autoCapitalize="characters"
               spellCheck={false}
               inputMode="text"
-              className="mt-3 min-h-11 w-full rounded border border-white/20 bg-black/30 px-4 py-2 font-mono text-lg font-black uppercase tracking-[0.2em] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="mt-3 min-h-11 w-full rounded border border-white/20 bg-black/30 px-4 py-2 font-mono text-lg font-black uppercase tracking-[0.2em] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f7e326]"
               aria-describedby="buzzello-online-privacy"
             />
             <Button
@@ -1357,8 +1460,8 @@ export default function BuzzelloPage() {
               eliminated. The higher final piece count wins.
             </p>
           </section>
-          <section className="rounded-xl border border-ares-gold/25 bg-ares-gold/[0.06] p-4">
-            <h3 className="font-heading font-black uppercase text-ares-gold">
+          <section className="rounded-xl border border-[#f7e326]/25 bg-[#f7e326]/[0.06] p-4">
+            <h3 className="font-heading font-black uppercase text-[#f7e326]">
               Master AI
             </h3>
             <p className="mt-1">
@@ -1404,7 +1507,7 @@ export default function BuzzelloPage() {
                     </div>
                   </div>
                   {entry.passedPlayer && (
-                    <span className="rounded-full border border-ares-gold/30 bg-ares-gold/10 px-2 py-1 text-[10px] font-black uppercase text-ares-gold">
+                    <span className="rounded-full border border-[#f7e326]/30 bg-[#f7e326]/10 px-2 py-1 text-[10px] font-black uppercase text-[#f7e326]">
                       {playerName(entry.passedPlayer)} passed
                     </span>
                   )}
@@ -1449,12 +1552,12 @@ export default function BuzzelloPage() {
         }
       >
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-ares-gold/30 bg-ares-gold/10 p-4 text-center">
+          <div className="rounded-xl border border-[#f7e326]/30 bg-[#f7e326]/10 p-4 text-center">
             <ScorePiece player="yellow" />
             <p className="mt-2 text-3xl font-black text-white">
               {scores.yellow}
             </p>
-            <p className="text-xs uppercase tracking-wider text-ares-gold">
+            <p className="text-xs uppercase tracking-wider text-[#f7e326]">
               Yellow
             </p>
           </div>
