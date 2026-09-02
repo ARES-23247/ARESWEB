@@ -50,6 +50,16 @@ describe("BUZZELLO page", () => {
     expect(
       firstPiece?.querySelector('[data-face="black"]'),
     ).toBeInTheDocument();
+    expect(
+      firstPiece?.querySelector(
+        'img[src="/images/games/biobuzz-tile-yellow.png"]',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      firstPiece?.querySelector(
+        'img[src="/images/games/biobuzz-tile-black.png"]',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Yellow opens/i)).toBeInTheDocument();
 
     const openingMove = getBuzzelloLegalMoves(
