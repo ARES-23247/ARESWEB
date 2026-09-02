@@ -10,11 +10,11 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
   await expect(board.getByRole("gridcell")).toHaveCount(127);
   const rack = page.getByRole("list", { name: "Player 1 tiles" });
   await expect(rack.getByRole("listitem")).toHaveCount(7);
-  expect(await rack.locator("img").evaluateAll((images) => images.every((image) =>
-    image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
-  ))).toBe(true);
+  await expect(rack.locator("img")).toHaveCount(0);
+  await expect(rack.locator(".buzzle-tile-face")).toHaveCount(7);
+  await expect(rack.locator(".buzzle-tile-points")).toHaveCount(7);
 
-  await rack.getByRole("listitem").first().click();
+  await rack.locator('[role="listitem"]:not([aria-label^="Blank"])').first().click();
   await board.getByRole("gridcell", { name: /q 0, r 0/u }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(1);
   await page.getByRole("button", { name: "Recall" }).click();
