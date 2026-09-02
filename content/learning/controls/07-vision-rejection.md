@@ -18,7 +18,7 @@ By the end, you will be able to:
 - use a rejection reason without pretending it names every failed check; and
 - plan a private, repeatable camera test at surveyed field points.
 
-This lesson matches ARES 14.0.0 and Studio 4.0.1. Its source links point to one reviewed commit in
+This lesson matches ARES 15.0.0 and Studio 5.0.1. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The lab uses a short checklist and straight-line math. Its detailed gate explanations are teaching
