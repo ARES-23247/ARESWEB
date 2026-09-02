@@ -17,7 +17,7 @@ export const API_ROUTE_GROUPS = {
     "/feed.xml", "/api/feed.xml",
   ],
   core: ["/api/inquiries", "/api/profiles", "/api/content-admin"],
-  game: ["/api/buzzello"],
+  game: ["/api/buzzello", "/api/buzzle"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
   drive: ["/api/drive"],
   communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/integrations/robotics-studio", "/api/zulip"],

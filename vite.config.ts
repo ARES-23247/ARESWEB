@@ -167,6 +167,10 @@ export default defineConfig({
         "src/lib/academyProgress.ts",
         "src/lib/buzzello.ts",
         "src/lib/buzzelloOnline.ts",
+        "src/lib/buzzle.ts",
+        "src/lib/buzzleAi.ts",
+        "src/lib/buzzleDictionary.ts",
+        "src/lib/buzzleOnline.ts",
         "src/lib/learningContent.ts",
         "src/lib/learningExperience.ts",
         "src/lib/documentMedia.ts",
@@ -231,6 +235,22 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/api.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzle.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzleAi.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzleDictionary.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/buzzleOnline.ts": {
           lines: 85,
           functions: 100,
         },

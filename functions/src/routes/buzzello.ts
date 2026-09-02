@@ -12,15 +12,16 @@ import { asyncHandler } from "../lib/utils";
 import { ensureTeamMember } from "../middleware/auth";
 import { distributedQuotas } from "../middleware/distributedQuota";
 import { requireRouteParam, validate } from "../middleware/validation";
+import { GAME_MONTHLY_RESOURCE_SCOPE, GAME_MONTHLY_RESOURCE_UNITS } from "../lib/gameResourceBudget";
 
 const router = express.Router();
 const service = new GameMatchService(buzzelloGameDefinition);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
-export const GAME_MONTHLY_RESOURCE_UNITS = 500_000;
+export { GAME_MONTHLY_RESOURCE_UNITS } from "../lib/gameResourceBudget";
 
 const gameMonthlyBudget = (cost: number) => ({
-  scope: "games-monthly-resource-project",
+  scope: GAME_MONTHLY_RESOURCE_SCOPE,
   limit: GAME_MONTHLY_RESOURCE_UNITS,
   calendarWindow: "month" as const,
   identity: "global" as const,
