@@ -14,7 +14,17 @@ test("plays an accessible local BUZZELLO turn and restores the opening state", a
   const board = page.getByRole("grid", { name: /BUZZELLO board/ });
   await expect(board).toBeVisible();
   await expect(board.getByRole("gridcell")).toHaveCount(61);
-  await expect(board.locator(".buzzello-tile-art")).toHaveCount(12);
+  await expect(board.locator(".buzzello-tile-art")).toHaveCount(6);
+  await expect(
+    board.locator(
+      '.buzzello-piece[data-player="yellow"] img[src="/images/games/biobuzz-tile-yellow.png"]',
+    ),
+  ).toHaveCount(3);
+  await expect(
+    board.locator(
+      '.buzzello-piece[data-player="black"] img[src="/images/games/biobuzz-tile-black.png"]',
+    ),
+  ).toHaveCount(3);
   expect(
     await board.locator(".buzzello-tile-art").evaluateAll((images) =>
       images.every(

@@ -40,26 +40,20 @@ describe("BUZZELLO page", () => {
 
     const board = screen.getByRole("grid", { name: /BUZZELLO board/i });
     expect(within(board).getAllByRole("gridcell")).toHaveLength(61);
-    const firstPiece = board.querySelector(".buzzello-piece");
-    expect(firstPiece?.querySelectorAll(".buzzello-piece-face")).toHaveLength(
-      2,
-    );
+    const pieces = [...board.querySelectorAll(".buzzello-piece")];
+    expect(pieces).toHaveLength(6);
     expect(
-      firstPiece?.querySelector('[data-face="yellow"]'),
-    ).toBeInTheDocument();
-    expect(
-      firstPiece?.querySelector('[data-face="black"]'),
-    ).toBeInTheDocument();
-    expect(
-      firstPiece?.querySelector(
-        'img[src="/images/games/biobuzz-tile-yellow.png"]',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      firstPiece?.querySelector(
-        'img[src="/images/games/biobuzz-tile-black.png"]',
-      ),
-    ).toBeInTheDocument();
+      pieces.every((piece) => {
+        const player = piece.getAttribute("data-player");
+        const face = piece.querySelector(".buzzello-piece-face");
+        const artwork = face?.querySelector("img");
+        return (
+          face?.getAttribute("data-face") === player &&
+          artwork?.getAttribute("src") ===
+            `/images/games/biobuzz-tile-${player}.png`
+        );
+      }),
+    ).toBe(true);
     expect(screen.getByText(/Yellow opens/i)).toBeInTheDocument();
 
     const openingMove = getBuzzelloLegalMoves(

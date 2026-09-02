@@ -362,15 +362,9 @@ function BuzzelloBoardView({
                     data-preview={previewFlips.has(index)}
                     data-just-flipped={justFlipped.has(index)}
                   >
-                    <span className="buzzello-piece-face" data-face="yellow">
+                    <span className="buzzello-piece-face" data-face={player}>
                       <TileArtwork
-                        player="yellow"
-                        className="buzzello-tile-art"
-                      />
-                    </span>
-                    <span className="buzzello-piece-face" data-face="black">
-                      <TileArtwork
-                        player="black"
+                        player={player}
                         className="buzzello-tile-art"
                       />
                     </span>
