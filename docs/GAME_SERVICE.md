@@ -48,6 +48,15 @@ active player. Simultaneous games use `expectedActionSequence` per player, so an
 unrelated player's accepted action does not make another player's action stale.
 Firestore transactions still serialize authoritative state updates.
 
+Clients synchronize conservatively. During a sequential game, only the player
+waiting for remote state polls; the active player already owns the only action
+that can change the match. Polling begins promptly, backs off from four to
+twelve seconds while the opponent is thinking, and stops in hidden tabs and
+finished games. Clients send their last observed version, status, and player
+count. When those fields are unchanged, the API returns only the remaining sync
+budget and expiry instead of repeating the board, history, and player view.
+Older clients that omit the cursor continue to receive the full DTO.
+
 BUZZELLO's adapter is `functions/src/lib/buzzelloGameDefinition.ts`. It fixes the
 room size at two, uses sequential actions, maps player indexes to Yellow and
 Black, and exposes no hidden state.
@@ -96,7 +105,9 @@ The route layer adds in-memory smoothing plus HMAC-pseudonymized IP and global
 Firestore quotas. Matchmaking, creation, joining, moves, and sync use separate
 limits. Cloud Functions `maxInstances`, match expiry, invite/search expiry,
 per-player sync budgets, and Firestore TTL cleanup provide independent cost
-bounds.
+bounds. Do not restore unconditional fixed-interval polling or full-state
+responses for unchanged matches; both increase bandwidth without improving
+turn-based responsiveness.
 
 Do not enable, deploy, or relax these controls without the normal protected
 release process. Billing alerts are detection, not a hard spending cap.

@@ -32,6 +32,46 @@ export interface OnlineBuzzelloSession {
   game: OnlineBuzzelloGame;
 }
 
+export type OnlineBuzzelloSyncResult =
+  | { unchanged: false; game: OnlineBuzzelloGame }
+  | {
+      unchanged: true;
+      syncsRemaining: number;
+      expiresAt: string;
+    };
+
+const WAITING_POLL_DELAYS_MS = [6_000, 8_000, 12_000] as const;
+const OPPONENT_POLL_DELAYS_MS = [4_000, 6_000, 8_000, 12_000] as const;
+
+/**
+ * Only the player waiting for a remote state change needs to poll. Increasing
+ * delays preserve a responsive first refresh without continuously spending
+ * bandwidth while an opponent is thinking.
+ */
+export function getOnlineBuzzelloPollDelay(
+  game: OnlineBuzzelloGame,
+  unchangedPolls: number,
+): number | null {
+  if (
+    game.status === "finished" ||
+    (game.status === "active" && game.currentPlayer === game.youAre)
+  ) {
+    return null;
+  }
+  const delays =
+    game.status === "waiting"
+      ? WAITING_POLL_DELAYS_MS
+      : OPPONENT_POLL_DELAYS_MS;
+  const safeUnchangedPolls = Number.isFinite(unchangedPolls)
+    ? Math.max(0, Math.floor(unchangedPolls))
+    : 0;
+  const index = Math.min(
+    safeUnchangedPolls,
+    delays.length - 1,
+  );
+  return delays[index];
+}
+
 export class BuzzelloOnlineError extends Error {
   constructor(
     message: string,
@@ -266,15 +306,38 @@ export async function findTeamBuzzelloMatch(): Promise<OnlineBuzzelloSession> {
 }
 
 export async function syncOnlineBuzzelloGame(
-  gameId: string,
+  knownGame: OnlineBuzzelloGame,
   playerToken: string,
-): Promise<OnlineBuzzelloGame> {
+): Promise<OnlineBuzzelloSyncResult> {
   const payload = await requestBuzzello(
-    `/api/buzzello/games/${encodeURIComponent(gameId)}/sync`,
-    {},
+    `/api/buzzello/games/${encodeURIComponent(knownGame.gameId)}/sync`,
+    {
+      knownVersion: knownGame.version,
+      knownStatus: knownGame.status,
+      knownPlayerCount: knownGame.opponentConnected ? 2 : 1,
+    },
     playerToken,
   );
-  return parseOnlineBuzzelloGame(payload.game);
+  if (payload.unchanged === true) {
+    if (
+      !Number.isInteger(payload.syncsRemaining) ||
+      (payload.syncsRemaining as number) < 0 ||
+      typeof payload.expiresAt !== "string" ||
+      !Number.isFinite(Date.parse(payload.expiresAt))
+    ) {
+      throw new BuzzelloOnlineError(
+        "The server returned an invalid match.",
+        "INVALID_RESPONSE",
+        502,
+      );
+    }
+    return {
+      unchanged: true,
+      syncsRemaining: payload.syncsRemaining as number,
+      expiresAt: payload.expiresAt,
+    };
+  }
+  return { unchanged: false, game: parseOnlineBuzzelloGame(payload.game) };
 }
 
 export async function playOnlineBuzzelloMove(

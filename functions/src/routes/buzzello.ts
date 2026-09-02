@@ -35,6 +35,13 @@ const moveSchema = z
     expectedVersion: z.number().int().min(1).max(56),
   })
   .strict();
+const syncSchema = z
+  .object({
+    knownVersion: z.number().int().min(1).max(56).optional(),
+    knownStatus: z.enum(["waiting", "active", "finished"]).optional(),
+    knownPlayerCount: z.number().int().min(1).max(2).optional(),
+  })
+  .strict();
 
 const routeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -141,10 +148,28 @@ router.post(
 router.post(
   "/games/:gameId/sync",
   syncQuota,
-  validate(emptyBodySchema),
+  validate(syncSchema),
   asyncHandler(async (req, res) => {
     const gameId = requireRouteParam(req.params.gameId, "game ID");
     const game = await service.sync(gameId, requireGamePlayerToken(req));
+    const { knownVersion, knownStatus, knownPlayerCount } =
+      req.body as z.infer<typeof syncSchema>;
+    if (
+      knownVersion !== undefined &&
+      knownStatus !== undefined &&
+      knownPlayerCount !== undefined &&
+      game.version === knownVersion &&
+      game.status === knownStatus &&
+      game.playerCount === knownPlayerCount
+    ) {
+      res.json({
+        success: true,
+        unchanged: true,
+        syncsRemaining: game.syncsRemaining,
+        expiresAt: game.expiresAt,
+      });
+      return;
+    }
     res.json({ success: true, game });
   }),
 );

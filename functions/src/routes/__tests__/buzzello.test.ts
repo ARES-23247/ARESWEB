@@ -188,7 +188,14 @@ describe("BUZZELLO online routes", () => {
     expect(created.inviteCode).toMatch(/^[2-9A-HJ-NP-Z]{8}$/u);
     expect(created.playerToken).toMatch(/^[A-Za-z0-9_-]{43}$/u);
     expect(created.game).toMatchObject({ status: "waiting", youAre: "yellow" });
-    expect(JSON.stringify(created)).not.toMatch(/tokenHash|uid|chat|profile/iu);
+    const responseKeys: string[] = [];
+    JSON.stringify(created, (key, value) => {
+      responseKeys.push(key);
+      return value;
+    });
+    expect(responseKeys).not.toEqual(
+      expect.arrayContaining(["tokenHash", "uid", "chat", "profile"]),
+    );
 
     const stored = firestore.get("game_matches", created.game.gameId)!;
     expect(
@@ -228,6 +235,29 @@ describe("BUZZELLO online routes", () => {
     );
     await expect(blackSync.json()).resolves.toMatchObject({
       game: { youAre: "black", syncsRemaining: 479 },
+    });
+
+    const compactSync = await post(
+      `/games/${created.game.gameId}/sync`,
+      { knownVersion: 2, knownStatus: "active", knownPlayerCount: 2 },
+      { "X-Game-Player": joined.playerToken },
+    );
+    const compactPayload = await compactSync.json();
+    expect(compactPayload).toMatchObject({
+      success: true,
+      unchanged: true,
+      syncsRemaining: 478,
+    });
+    expect(compactPayload).not.toHaveProperty("game");
+    expect(JSON.stringify(compactPayload)).not.toMatch(/board|history/iu);
+
+    const changedSync = await post(
+      `/games/${created.game.gameId}/sync`,
+      { knownVersion: 1, knownStatus: "active", knownPlayerCount: 2 },
+      { "X-Game-Player": joined.playerToken },
+    );
+    await expect(changedSync.json()).resolves.toMatchObject({
+      game: { version: 2, syncsRemaining: 477 },
     });
   });
 
@@ -317,6 +347,12 @@ describe("BUZZELLO online routes", () => {
     expect(invalidJoin.status).toBe(404);
     const invalidBody = await post("/games", { unexpected: true });
     expect(invalidBody.status).toBe(400);
+    const invalidSyncCursor = await post(
+      "/games/00000000-0000-4000-8000-000000000000/sync",
+      { knownVersion: 0 },
+      { "X-Game-Player": "a".repeat(43) },
+    );
+    expect(invalidSyncCursor.status).toBe(400);
     const missing = await post(
       "/games/00000000-0000-4000-8000-000000000000/sync",
       {},

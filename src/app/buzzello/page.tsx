@@ -45,6 +45,7 @@ import {
   createOnlineBuzzelloGame,
   findOnlineBuzzelloMatch,
   findTeamBuzzelloMatch,
+  getOnlineBuzzelloPollDelay,
   joinOnlineBuzzelloGame,
   playOnlineBuzzelloMove,
   syncOnlineBuzzelloGame,
@@ -379,6 +380,7 @@ export default function BuzzelloPage() {
   const [onlineError, setOnlineError] = useState<string | null>(null);
   const [onlinePollingStopped, setOnlinePollingStopped] = useState(false);
   const onlinePlayerTokenRef = useRef<string | null>(null);
+  const onlineGameRef = useRef<OnlineBuzzelloGame | null>(null);
   const aiRequestRef = useRef(0);
   const rulesTriggerRef = useRef<HTMLButtonElement>(null);
   const current = timeline[cursor];
@@ -427,10 +429,12 @@ export default function BuzzelloPage() {
     setOnlineCopyStatus(null);
     setOnlineError(null);
     onlinePlayerTokenRef.current = null;
+    onlineGameRef.current = null;
   }, []);
 
   const applyOnlineGame = useCallback((game: OnlineBuzzelloGame) => {
     setMode("online");
+    onlineGameRef.current = game;
     setOnlineGame(game);
     setTimeline([onlineGameSnapshot(game)]);
     setCursor(0);
@@ -629,33 +633,69 @@ export default function BuzzelloPage() {
     [applyOnlineGame, onlineBusy, onlineGame, playSound],
   );
 
+  const shouldPollOnlineGame = Boolean(
+    onlineGame && getOnlineBuzzelloPollDelay(onlineGame, 0) !== null,
+  );
+  const pollingGameId = onlineGame?.gameId;
+
   useEffect(() => {
     const playerToken = onlinePlayerTokenRef.current;
     if (
       !isOnlineMode ||
-      !onlineGame ||
+      !pollingGameId ||
       !playerToken ||
-      onlineGame.status === "finished" ||
+      !shouldPollOnlineGame ||
       onlinePollingStopped
     ) {
       return;
     }
     let cancelled = false;
     let timer = 0;
+    let unchangedPolls = 0;
+
+    const schedule = (game: OnlineBuzzelloGame, delayOverride?: number) => {
+      if (cancelled) return;
+      const delay =
+        delayOverride ?? getOnlineBuzzelloPollDelay(game, unchangedPolls);
+      if (delay !== null) timer = window.setTimeout(poll, delay);
+    };
+
     const poll = async () => {
       if (cancelled) return;
+      const knownGame = onlineGameRef.current;
+      if (!knownGame || knownGame.gameId !== pollingGameId) return;
       if (document.visibilityState === "hidden") {
-        timer = window.setTimeout(poll, 4_000);
+        schedule(knownGame, 30_000);
         return;
       }
       try {
-        const game = await syncOnlineBuzzelloGame(
-          onlineGame.gameId,
-          playerToken,
-        );
+        const result = await syncOnlineBuzzelloGame(knownGame, playerToken);
         if (!cancelled) {
           setOnlineError(null);
+          if (result.unchanged) {
+            unchangedPolls += 1;
+            const refreshedGame = {
+              ...knownGame,
+              syncsRemaining: result.syncsRemaining,
+              expiresAt: result.expiresAt,
+            };
+            onlineGameRef.current = refreshedGame;
+            setOnlineGame((currentGame) =>
+              currentGame?.gameId === refreshedGame.gameId
+                ? refreshedGame
+                : currentGame,
+            );
+            schedule(refreshedGame);
+            return;
+          }
+          const game = result.game;
+          const stateChanged =
+            game.version !== knownGame.version ||
+            game.status !== knownGame.status ||
+            game.opponentConnected !== knownGame.opponentConnected;
+          unchangedPolls = stateChanged ? 0 : unchangedPolls + 1;
           applyOnlineGame(game);
+          schedule(game);
         }
       } catch (error) {
         if (!cancelled) {
@@ -664,26 +704,40 @@ export default function BuzzelloPage() {
               ? error.message
               : "The match could not be refreshed.",
           );
-          if (
+          const pollingMustStop =
             error instanceof BuzzelloOnlineError &&
-            [404, 410, 429].includes(error.status)
-          ) {
+            [404, 410, 429].includes(error.status);
+          if (pollingMustStop) {
             setOnlinePollingStopped(true);
+            return;
           }
+          unchangedPolls += 1;
+          schedule(knownGame);
         }
       }
-      if (!cancelled) timer = window.setTimeout(poll, 4_000);
     };
-    timer = window.setTimeout(poll, 4_000);
+
+    const handleVisibilityChange = () => {
+      if (cancelled || document.visibilityState !== "visible") return;
+      window.clearTimeout(timer);
+      const game = onlineGameRef.current;
+      if (game?.gameId === pollingGameId) schedule(game, 0);
+    };
+
+    const game = onlineGameRef.current;
+    if (game) schedule(game);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     applyOnlineGame,
     isOnlineMode,
-    onlineGame,
     onlinePollingStopped,
+    pollingGameId,
+    shouldPollOnlineGame,
   ]);
 
   useEffect(() => {

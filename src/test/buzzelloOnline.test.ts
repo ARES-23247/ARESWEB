@@ -11,6 +11,7 @@ import {
   createOnlineBuzzelloGame,
   findOnlineBuzzelloMatch,
   findTeamBuzzelloMatch,
+  getOnlineBuzzelloPollDelay,
   joinOnlineBuzzelloGame,
   parseOnlineBuzzelloGame,
   playOnlineBuzzelloMove,
@@ -172,11 +173,15 @@ describe("BUZZELLO online client", () => {
   });
 
   it("sends the match capability only on sync and move requests", async () => {
+    const knownGame = parseOnlineBuzzelloGame(gameFixture());
     apiMocks.authenticatedFetch
       .mockResolvedValueOnce(jsonResponse({ game: gameFixture() }))
       .mockResolvedValueOnce(jsonResponse({ game: gameFixture() }));
 
-    await syncOnlineBuzzelloGame("game/id", playerToken);
+    await syncOnlineBuzzelloGame(
+      { ...knownGame, gameId: "game/id" },
+      playerToken,
+    );
     await playOnlineBuzzelloMove("game/id", 30, 2, playerToken);
 
     for (const call of apiMocks.authenticatedFetch.mock.calls) {
@@ -186,9 +191,71 @@ describe("BUZZELLO online client", () => {
     expect(apiMocks.authenticatedFetch.mock.calls[0][0]).toContain(
       "game%2Fid/sync",
     );
+    expect(apiMocks.authenticatedFetch.mock.calls[0][1]?.body).toBe(
+      JSON.stringify({
+        knownVersion: 2,
+        knownStatus: "active",
+        knownPlayerCount: 2,
+      }),
+    );
     expect(apiMocks.authenticatedFetch.mock.calls[1][1]?.body).toBe(
       JSON.stringify({ index: 30, expectedVersion: 2 }),
     );
+  });
+
+  it("accepts compact unchanged sync responses and rejects malformed cursors", async () => {
+    const knownGame = parseOnlineBuzzelloGame(gameFixture());
+    apiMocks.authenticatedFetch
+      .mockResolvedValueOnce(
+        jsonResponse({
+          unchanged: true,
+          syncsRemaining: 478,
+          expiresAt: "2026-09-01T18:00:00.000Z",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          unchanged: true,
+          syncsRemaining: -1,
+          expiresAt: "not-a-date",
+        }),
+      );
+
+    await expect(
+      syncOnlineBuzzelloGame(knownGame, playerToken),
+    ).resolves.toEqual({
+      unchanged: true,
+      syncsRemaining: 478,
+      expiresAt: "2026-09-01T18:00:00.000Z",
+    });
+    await expect(
+      syncOnlineBuzzelloGame(knownGame, playerToken),
+    ).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+  });
+
+  it("polls only while waiting for remote state and backs off when unchanged", () => {
+    const yourTurn = parseOnlineBuzzelloGame(gameFixture());
+    const opponentTurn = { ...yourTurn, youAre: "black" as const };
+    const waiting = {
+      ...yourTurn,
+      status: "waiting" as const,
+      opponentConnected: false,
+    };
+
+    expect(getOnlineBuzzelloPollDelay(yourTurn, 0)).toBeNull();
+    expect(getOnlineBuzzelloPollDelay(opponentTurn, 0)).toBe(4_000);
+    expect(getOnlineBuzzelloPollDelay(opponentTurn, Number.NaN)).toBe(4_000);
+    expect(getOnlineBuzzelloPollDelay(opponentTurn, -1)).toBe(4_000);
+    expect(getOnlineBuzzelloPollDelay(opponentTurn, 2)).toBe(8_000);
+    expect(getOnlineBuzzelloPollDelay(opponentTurn, 99)).toBe(12_000);
+    expect(getOnlineBuzzelloPollDelay(waiting, 0)).toBe(6_000);
+    expect(getOnlineBuzzelloPollDelay(waiting, 99)).toBe(12_000);
+    expect(
+      getOnlineBuzzelloPollDelay(
+        { ...opponentTurn, status: "finished" },
+        0,
+      ),
+    ).toBeNull();
   });
 
   it("preserves bounded server errors and rejects non-JSON success bodies", async () => {
