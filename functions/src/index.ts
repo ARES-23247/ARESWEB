@@ -16,6 +16,7 @@ export { web } from "./web";
 export {
   API_ROUTE_GROUPS,
   FUNCTION_SECRET_BINDINGS,
+  GAME_SERVICE_SECRET_BINDINGS,
   RUNTIME_SERVICE_ACCOUNTS,
 } from "./functionConfig";
 

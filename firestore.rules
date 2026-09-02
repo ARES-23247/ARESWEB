@@ -433,6 +433,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Online game state, per-player capability hashes, and invite/matchmaking
+    // mappings are server-only. Browsers use player-specific bounded DTO APIs.
+    match /game_matches/{gameId} {
+      allow read, write: if false;
+    }
+
+    match /game_invites/{inviteHash} {
+      allow read, write: if false;
+    }
+
+    match /game_matchmaking/{slotId} {
+      allow read, write: if false;
+    }
+
     // Robot Studio installations, rate counters, and idempotency receipts are
     // server-to-server integration state and must never be browser-readable.
     match /studio_integrations/{installationId} {

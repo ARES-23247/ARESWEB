@@ -119,6 +119,29 @@ describe("distributedQuota", () => {
     })).toThrow("Invalid distributed quota configuration.");
   });
 
+  it("uses exact UTC calendar-month boundaries for monthly resource budgets", async () => {
+    vi.mocked(Date.now).mockReturnValue(Date.UTC(2026, 1, 15, 12));
+    const middleware = distributedQuota({
+      scope: "games-monthly-resource-project",
+      limit: 500_000,
+      calendarWindow: "month",
+      identity: "global",
+      cost: 5,
+    });
+
+    await middleware({} as never, res as never, next);
+
+    expect(transactionSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        count: 5,
+        windowStartedAt: new Date("2026-02-01T00:00:00.000Z"),
+        expiresAt: new Date("2026-03-02T00:00:00.000Z"),
+      }),
+      { merge: true },
+    );
+  });
+
   it("pseudonymizes normalized client addresses for shared anonymous quotas", async () => {
     process.env.ABUSE_HMAC_SECRET = "a-separate-abuse-hmac-key-that-is-long-enough";
     const middleware = distributedAnonymousQuota({ scope: "public-calendar", limit: 20, windowMs: 60_000 });
@@ -178,5 +201,35 @@ describe("distributedQuota", () => {
     expect(transactionSet).not.toHaveBeenCalled();
     expect(res.setHeader).toHaveBeenCalledWith("Retry-After", expect.stringMatching(/^\d+$/));
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 429 }));
+  });
+
+  it("fails repeated global over-budget requests from memory without another Firestore read", async () => {
+    transactionGet.mockResolvedValue({ exists: true, data: () => ({ count: 10 }) });
+    const middleware = distributedQuota({
+      scope: "cached-project-ceiling",
+      limit: 10,
+      windowMs: 3_600_000,
+      identity: "global",
+    });
+
+    await middleware({} as never, res as never, next);
+    expect(runTransaction).toHaveBeenCalledTimes(1);
+
+    await middleware({} as never, res as never, next);
+    expect(runTransaction).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 429 }));
+  });
+
+  it("rejects ambiguous fixed and calendar window configuration", () => {
+    expect(() => distributedQuota({
+      scope: "ambiguous-window",
+      limit: 1,
+      windowMs: 60_000,
+      calendarWindow: "month",
+    })).toThrow("Invalid distributed quota configuration.");
+    expect(() => distributedQuota({
+      scope: "missing-window",
+      limit: 1,
+    })).toThrow("Invalid distributed quota configuration.");
   });
 });

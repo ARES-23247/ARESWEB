@@ -67,8 +67,14 @@ jobs:
       - name: Validate exact Academy release batches and review digests
         run: pnpm run content:release-validate
 
+      - name: Run content migration and deployment contract tests
+        run: pnpm run test:content-migration
+
       - name: Validate production deployment contract
         run: node scripts/verify-production-deployment.mjs --validate-contract
+
+      - name: Validate game Cloud Run cost contract
+        run: pnpm run validate:game-deployment
 
       - name: Validate Cloud Functions npm deployment lock
         run: pnpm run validate:functions-deploy-lock
@@ -364,6 +370,49 @@ jobs:
       - name: Verify least-privilege build identity
         run: node scripts/verify-production-deployment.mjs --verify-build-iam
 
+      - name: Validate game Cloud Run cost contract
+        run: pnpm run validate:game-deployment
+
+      - name: Build and publish immutable game service image
+        shell: bash
+        run: |
+          game_image="$(node scripts/verify-game-cloud-run.mjs --print-image-uri "${{ github.sha }}")"
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          docker build --file functions/Dockerfile.game --tag "$game_image" functions
+          docker push "$game_image"
+          echo "GAME_IMAGE=$game_image" >> "$GITHUB_ENV"
+
+      - name: Deploy bounded game Cloud Run service before switching routes
+        run: >-
+          gcloud run deploy aresweb-game-api
+          --project aresfirst-portal
+          --region us-central1
+          --platform managed
+          --image "${{ env.GAME_IMAGE }}"
+          --service-account aresweb-game-runtime@aresfirst-portal.iam.gserviceaccount.com
+          --set-secrets ABUSE_HMAC_SECRET=ABUSE_HMAC_SECRET:latest,ENCRYPTION_SECRET=ENCRYPTION_SECRET:latest
+          --set-env-vars ENFORCE_APP_CHECK=true,NODE_ENV=production
+          --cpu 0.08
+          --memory 256Mi
+          --concurrency 1
+          --min-instances 0
+          --max-instances 1
+          --timeout 10s
+          --execution-environment gen1
+          --cpu-throttling
+          --no-cpu-boost
+          --ingress all
+          --allow-unauthenticated
+          --quiet
+
+      - name: Reject production game service resource and IAM drift
+        shell: bash
+        run: |
+          gcloud run services describe aresweb-game-api --project aresfirst-portal --region us-central1 --format=json \
+            | node scripts/verify-game-cloud-run.mjs --service-json -
+          gcloud run services get-iam-policy aresweb-game-api --project aresfirst-portal --region us-central1 --format=json \
+            | node scripts/verify-game-cloud-run.mjs --iam-json -
+
       - name: Deploy isolated Functions before switching routes
         shell: bash
         run: |
@@ -412,8 +461,8 @@ jobs:
           echo "- Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Drift contract: build identity, 9 Functions, and 9 Cloud Run invoker policies" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Live health: 14 strict Firebase surface checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Drift contract: build identity, 11 Functions, 11 Function invoker policies, and the bounded game Cloud Run service" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Live health: 15 strict Firebase surface checks" >> "$GITHUB_STEP_SUMMARY"
           echo "- Canonical domain: continuously checked by Google Cloud Monitoring" >> "$GITHUB_STEP_SUMMARY"
 
   production-browser-smoke:

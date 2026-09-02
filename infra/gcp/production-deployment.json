@@ -67,6 +67,7 @@
       "serviceAccount": "aresweb-core-runtime@aresfirst-portal.iam.gserviceaccount.com",
       "public": true,
       "secrets": [
+        "ABUSE_HMAC_SECRET",
         "ENCRYPTION_SECRET",
         "PROFILE_SYNC_SECRET",
         "ZULIP_API_KEY",
@@ -246,6 +247,18 @@
         "status": 200,
         "contentType": "application/json",
         "validJson": true
+      },
+      {
+        "name": "bounded online game service",
+        "origin": "hosting",
+        "path": "/api/buzzello/health",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true,
+        "bodyIncludes": ["healthy", "game-api"],
+        "headerIncludes": {
+          "cache-control": ["no-store"]
+        }
       },
       {
         "name": "public finance API",

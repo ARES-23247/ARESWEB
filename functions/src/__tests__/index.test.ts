@@ -45,6 +45,7 @@ process.env.ENCRYPTION_SECRET =
 import {
   API_ROUTE_GROUPS,
   FUNCTION_SECRET_BINDINGS,
+  GAME_SERVICE_SECRET_BINDINGS,
   RUNTIME_SERVICE_ACCOUNTS,
   cleanupOldInquiries,
   communicationsApi,
@@ -329,6 +330,10 @@ describe("Express App Endpoints", () => {
 
   it("binds only the pseudonymization key to public routes and caps every other blast radius", () => {
     expect(FUNCTION_SECRET_BINDINGS.publicApi).toEqual(["ABUSE_HMAC_SECRET"]);
+    expect(GAME_SERVICE_SECRET_BINDINGS).toEqual([
+      "ABUSE_HMAC_SECRET",
+      "ENCRYPTION_SECRET",
+    ]);
     expect(
       Math.max(
         ...Object.values(FUNCTION_SECRET_BINDINGS).map(

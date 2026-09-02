@@ -8,11 +8,7 @@
   },
   "hosting": {
     "public": "dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [
       {
         "source": "/assets/**",
@@ -212,6 +208,14 @@
         "function": "coreApi"
       },
       {
+        "source": "/api/buzzello{,/**}",
+        "run": {
+          "serviceId": "aresweb-game-api",
+          "region": "us-central1",
+          "pinTag": true
+        }
+      },
+      {
         "source": "/api/content-admin{,/**}",
         "function": "coreApi"
       },
@@ -310,6 +314,10 @@
       {
         "source": "/brand",
         "destination": "/prerender/brand.html"
+      },
+      {
+        "source": "/buzzello",
+        "destination": "/prerender/buzzello.html"
       },
       {
         "source": "/accessibility",

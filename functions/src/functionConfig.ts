@@ -17,6 +17,7 @@ export const API_ROUTE_GROUPS = {
     "/feed.xml", "/api/feed.xml",
   ],
   core: ["/api/inquiries", "/api/profiles", "/api/content-admin"],
+  game: ["/api/buzzello"],
   media: ["/api/photos", "/api/ai", "/api/videos"],
   drive: ["/api/drive"],
   communications: ["/api/tasks", "/api/webhooks", "/api/simulations", "/api/integrations/robotics-studio", "/api/zulip"],
@@ -24,7 +25,7 @@ export const API_ROUTE_GROUPS = {
 
 export const FUNCTION_SECRET_BINDINGS = {
   publicApi: ["ABUSE_HMAC_SECRET"],
-  coreApi: ["ENCRYPTION_SECRET", "PROFILE_SYNC_SECRET", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
+  coreApi: ["ABUSE_HMAC_SECRET", "ENCRYPTION_SECRET", "PROFILE_SYNC_SECRET", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
   mediaApi: [
     "ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
     "GOOGLE_PHOTOS_REFRESH_TOKEN", "GEMINI_API_KEY", "YOUTUBE_API_KEY",
@@ -32,6 +33,11 @@ export const FUNCTION_SECRET_BINDINGS = {
   driveApi: ["ENCRYPTION_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN"],
   communicationsApi: ["ABUSE_HMAC_SECRET", "GITHUB_PAT", "ZULIP_BOT_EMAIL", "ZULIP_API_KEY", "ZULIP_WEBHOOK_TOKEN", "BLUESKY_APP_PASSWORD", "BUFFER_API_KEY", "ONSHAPE_WEBHOOK_TOKEN"],
 } as const;
+
+export const GAME_SERVICE_SECRET_BINDINGS = [
+  "ABUSE_HMAC_SECRET",
+  "ENCRYPTION_SECRET",
+] as const;
 
 /**
  * Dedicated production identities keep a compromised function from inheriting
@@ -41,6 +47,7 @@ export const FUNCTION_SECRET_BINDINGS = {
 export const RUNTIME_SERVICE_ACCOUNTS = {
   publicApi: "aresweb-public-runtime@aresfirst-portal.iam.gserviceaccount.com",
   coreApi: "aresweb-core-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  gameService: "aresweb-game-runtime@aresfirst-portal.iam.gserviceaccount.com",
   mediaApi: "aresweb-media-runtime@aresfirst-portal.iam.gserviceaccount.com",
   driveApi: "aresweb-drive-runtime@aresfirst-portal.iam.gserviceaccount.com",
   communicationsApi: "aresweb-communications-runtime@aresfirst-portal.iam.gserviceaccount.com",

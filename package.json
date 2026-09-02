@@ -17,6 +17,7 @@
     "check:route-security": "node scripts/check-route-security.mjs",
     "validate:security-observability": "node scripts/validate-security-observability.mjs",
     "validate:functions-deploy-lock": "node scripts/verify-functions-npm-lock.mjs",
+    "validate:game-deployment": "node scripts/verify-game-cloud-run.mjs --validate-contract",
     "generate:sims": "node --experimental-strip-types scripts/generate-sim-registry.ts",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
