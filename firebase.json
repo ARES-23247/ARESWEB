@@ -312,6 +312,10 @@
         "destination": "/prerender/brand.html"
       },
       {
+        "source": "/buzzello",
+        "destination": "/prerender/buzzello.html"
+      },
+      {
         "source": "/accessibility",
         "destination": "/prerender/accessibility.html"
       },

@@ -28,6 +28,9 @@ export const staticPageMetadata = [
   ["/brand", "Brand & Press Kit", "Official ARES 23247 logo assets, brand palette, typography, and media boilerplate.", false, [
     ["Assets and identity", "Download the official ARES 23247 logo assets and default social card, read the exact palette and typography used across this site, and use the approved boilerplate for press and sponsor materials. <a href=\"/about\">Learn about the team</a> or <a href=\"/sponsors\">become a sponsor</a>."],
   ]],
+  ["/buzzello", "BUZZELLO™", "Play BUZZELLO, ARES 23247's hexagonal strategy game, locally or against the computer.", false, [
+    ["Hexagonal strategy", "Play BUZZELLO on a 61-cell hexagonal board. Challenge another player on the same device or choose from three computer difficulty levels, with keyboard controls, move history, and undo support."],
+  ]],
   ["/accessibility", "Accessibility & Web Standards", "Read the ARES 23247 accessibility commitment and supported ways to report a barrier.", false, [
     ["Our commitment", "ARES 23247 works to keep this website usable with keyboards, screen readers, and mobile devices. This page explains the standards we target, the assistive technologies we test with, and how to contact the team if you encounter a barrier."],
   ]],
