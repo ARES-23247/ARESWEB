@@ -13,16 +13,41 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
   await expect(rack.locator("img")).toHaveCount(0);
   await expect(rack.locator(".buzzle-tile-face")).toHaveCount(7);
   await expect(rack.locator(".buzzle-tile-points")).toHaveCount(7);
-  const rackLetterSize = await rack.locator('[role="listitem"]:not([aria-label^="Blank"]) .buzzle-tile-letter')
-    .first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
-  expect(rackLetterSize).toBeLessThanOrEqual(24);
+  const rackTile = rack.locator('[role="listitem"]:not([aria-label^="Blank"])').first();
+  const rackLetterSize = await rackTile.locator(".buzzle-tile-letter")
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  const rackPointSize = await rackTile.locator(".buzzle-tile-points")
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  const rackTileBox = await rackTile.boundingBox();
+  const rackTextOverlaps = await rack.locator('[role="listitem"]:not([aria-label^="Blank"])').evaluateAll((tiles) => tiles.some((tile) => {
+    const letter = tile.querySelector(".buzzle-tile-letter")!.getBoundingClientRect();
+    const points = tile.querySelector(".buzzle-tile-points")!.getBoundingClientRect();
+    return letter.left < points.right && letter.right > points.left && letter.top < points.bottom && letter.bottom > points.top;
+  }));
+  expect(rackLetterSize).toBeGreaterThanOrEqual(20);
+  expect(rackLetterSize).toBeLessThanOrEqual(28);
+  expect(rackPointSize).toBeGreaterThanOrEqual(10.5);
+  expect(rackTileBox!.width).toBeGreaterThanOrEqual(44);
+  expect(rackTileBox!.height).toBeGreaterThanOrEqual(44);
+  expect(rackTextOverlaps).toBe(false);
 
   await rack.locator('[role="listitem"]:not([aria-label^="Blank"])').first().click();
   await board.getByRole("gridcell", { name: /q 0, r 0/u }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(1);
   const boardLetterSize = await board.locator('[data-draft="true"] .buzzle-tile-letter')
     .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
-  expect(boardLetterSize).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) >= 800 ? 18 : 11);
+  const boardPointSize = await board.locator('[data-draft="true"] .buzzle-tile-points')
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  const boardTextOverlaps = await board.locator('[data-draft="true"] .buzzle-tile-face')
+    .evaluate((tile) => {
+      const letter = tile.querySelector(".buzzle-tile-letter")!.getBoundingClientRect();
+      const points = tile.querySelector(".buzzle-tile-points")!.getBoundingClientRect();
+      return letter.left < points.right && letter.right > points.left && letter.top < points.bottom && letter.bottom > points.top;
+    });
+  const desktop = (page.viewportSize()?.width ?? 0) >= 800;
+  expect(boardLetterSize).toBeGreaterThanOrEqual(desktop ? 22 : 12);
+  expect(boardPointSize).toBeGreaterThanOrEqual(desktop ? 12 : 8.5);
+  expect(boardTextOverlaps).toBe(false);
   await page.getByRole("button", { name: "Recall" }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(0);
 });
