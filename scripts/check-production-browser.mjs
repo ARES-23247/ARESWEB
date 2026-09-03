@@ -6,7 +6,7 @@ const SUCCESS_MESSAGE = "Application submitted successfully!";
 const SECURITY_FAILURE_MESSAGE =
   "Security verification failed. Please refresh and try again.";
 const APP_CHECK_EXCHANGE_PATH = "exchangeRecaptchaEnterpriseToken";
-const EXPECTED_ANALYTICS_MEASUREMENT_ID = "G-0KKZT6G3TG";
+const EXPECTED_ANALYTICS_MEASUREMENT_ID = "G-8XWENKB7EZ";
 const EXPECTED_HEADLESS_CONSOLE_FAILURES = [
   "console.error: requestStorageAccess: Permission denied.",
   "console.error: Failed to load resource: the server responded with a status of 403",

@@ -21,7 +21,7 @@ function RouteControl() {
 
 describe("AnalyticsTracker", () => {
   beforeEach(() => {
-    vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-0KKZT6G3TG");
+    vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-8XWENKB7EZ");
     window.localStorage.removeItem(ANALYTICS_CONSENT_STORAGE_KEY);
     Reflect.deleteProperty(window, "dataLayer");
     Reflect.deleteProperty(window, "gtag");
@@ -58,7 +58,7 @@ describe("AnalyticsTracker", () => {
     ]);
     expect(Array.from(window.dataLayer[2] as IArguments)).toEqual([
       "config",
-      "G-0KKZT6G3TG",
+      "G-8XWENKB7EZ",
       {
         send_page_view: false,
         allow_google_signals: false,
@@ -72,7 +72,7 @@ describe("AnalyticsTracker", () => {
     ).toBeNull();
     expect(document.getElementById("google-analytics-script")).toHaveAttribute(
       "src",
-      "https://www.googletagmanager.com/gtag/js?id=G-0KKZT6G3TG",
+      "https://www.googletagmanager.com/gtag/js?id=G-8XWENKB7EZ",
     );
   });
 
@@ -94,7 +94,7 @@ describe("AnalyticsTracker", () => {
       expect.objectContaining({
         page_path: "/academy",
         page_location: "http://localhost:3000/academy",
-        send_to: "G-0KKZT6G3TG",
+        send_to: "G-8XWENKB7EZ",
       }),
     ]);
   });
@@ -156,7 +156,7 @@ describe("AnalyticsTracker", () => {
       {
         page_path: "/join",
         page_location: "http://localhost:3000/join",
-        send_to: "G-0KKZT6G3TG",
+        send_to: "G-8XWENKB7EZ",
       },
     ]);
     expect(JSON.stringify(commands)).not.toContain("student@example.test");
