@@ -6,7 +6,7 @@ Two files can use the same interface and still act differently. That is why a co
 the same as a behavior test. In this lesson, you will sort current ARES evidence into the right
 level. Then you will design one fair test that can reveal an adapter mismatch.
 
-This lesson matches ARES 15.0.3, FTC SDK 11.1.0, and Studio 5.0.4. Every source link is pinned to
+This lesson matches ARES 15.0.3, FTC SDK 11.1.0, and Studio 5.0.5. Every source link is pinned to
 one reviewed commit in the ARES Robotics monorepo. An older lesson named a `simulation-foundation`
 contract that is not in the current monorepo. Do not look for that removed file.
 

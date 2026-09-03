@@ -65,7 +65,7 @@ changes must not be written back as robot coordinates.
 ![ARES Robotics Studio Field Editor showing the square FTC field, the field X and Y axes, grid
 spacing in meters, and one test waypoint.](/academy/studio-3.1.1/field-editor.png)
 
-*Studio 5.0.4 keeps the field axes visible beside the drawing tools. Read the units and axis arrows
+*Studio 5.0.5 keeps the field axes visible beside the drawing tools. Read the units and axis arrows
 before placing a waypoint; the screen view does not create a second robot coordinate system.*
 
 ## Hands-on activity
