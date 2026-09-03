@@ -1,7 +1,7 @@
 # ARESWEB game service
 
-The game backend is a reusable match boundary. BUZZELLO is the first adapter;
-future game rules must plug into the same service instead of creating separate
+The game backend is a reusable match boundary used by BUZZELLO and BUZZLE;
+future game rules plug into the same service instead of creating separate
 identity, invitation, matchmaking, persistence, or polling systems.
 
 ## Security and youth-safety contract
@@ -61,6 +61,14 @@ BUZZELLO's adapter is `functions/src/lib/buzzelloGameDefinition.ts`. It fixes th
 room size at two, uses sequential actions, maps player indexes to Yellow and
 Black, and exposes no hidden state.
 
+BUZZLE's adapter is `functions/src/lib/buzzleGameDefinition.ts`. It reuses the
+same two-player invitation, guest matchmaking, team matchmaking, expiry,
+capability, and synchronization boundary. The adapter owns the shuffled
+100-tile distribution, server-side dictionary validation, three-axis scoring,
+turn actions, and endgame penalties. Its player DTO exposes the caller's rack,
+opponent rack counts, scores, public board, and bag count; the bag order and
+opponent rack contents never leave the service.
+
 ## Match flows
 
 Friend match:
@@ -94,9 +102,8 @@ server-validated bucket identifiers—not user-provided Firestore paths.
 5. Add Firestore/API, malformed-state, replay, stale-action, expiry, sync-budget,
    guest/team matchmaking, accessibility, touch, and multi-browser tests.
 6. Keep dictionaries, tile distributions, scoring, timers, and other game rules
-   inside that adapter or its engine. The Scrabble-like and Bananagrams-like
-   specifications are intentionally deferred until their approved requirements
-   exist.
+   inside that adapter or its engine. The Bananagrams-like specification remains
+   deferred until its approved requirements exist.
 
 ## Operational and cost controls
 
@@ -107,8 +114,9 @@ Matchmaking, creation, joining, moves, and sync use separate limits.
 
 Every accepted route also reserves weighted units from the single
 `games-monthly-resource-project` calendar-month budget. The ceiling is 500,000
-units: creation, joining, and matchmaking cost 8; moves cost 6; and sync costs
-5. Quotas are reserved together in one Firestore transaction. When a global
+units: creation, joining, and matchmaking cost 8; BUZZELLO moves cost 6;
+BUZZLE actions cost 8; and sync costs 5. Quotas are reserved together in one
+Firestore transaction. When a global
 quota is exhausted, the active instance caches the cutoff until the next
 window, so repeated rejected requests do not keep reading Firestore. This
 application budget is intentionally a resource ceiling, not a fabricated

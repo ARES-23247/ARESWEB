@@ -28,6 +28,7 @@ const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page")
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BrandPage = lazy(() => import("@/app/brand/page"));
 const BuzzelloPage = lazy(() => import("@/app/buzzello/page"));
+const BuzzlePage = lazy(() => import("@/app/buzzle/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
 const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
 const CalendarPage = lazy(() => import("@/app/calendar/page"));
@@ -123,6 +124,7 @@ export default function App() {
                   <Route path="/accessibility" element={<AccessibilityPage />} />
           <Route path="/brand" element={<BrandPage />} />
                   <Route path="/buzzello" element={<BuzzelloPage />} />
+                  <Route path="/buzzle" element={<BuzzlePage />} />
                   <Route path="/blog" element={<BlogFeedPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />

@@ -211,16 +211,18 @@ export function imageUri(contract, tag) {
 export function validateRepositoryWiring(contract, root = process.cwd()) {
   const read = (path) => readFileSync(resolve(root, path), "utf8");
   const firebase = JSON.parse(read("firebase.json"));
-  const rewrite = firebase.hosting?.rewrites?.find(
-    (candidate) => candidate.source === "/api/buzzello{,/**}",
-  );
+  const source = "/api/@(buzzello|buzzle){,/**}";
+  const gameRewrites = (firebase.hosting?.rewrites ?? [])
+    .filter((candidate) => candidate?.run?.serviceId === contract.serviceId);
+  const rewrite = gameRewrites[0];
   if (
-    rewrite?.run?.serviceId !== contract.serviceId
+    gameRewrites.length !== 1
+    || rewrite?.source !== source
     || rewrite.run.region !== contract.region
     || rewrite.run.pinTag !== true
     || rewrite.function !== undefined
   ) {
-    throw new Error("Firebase Hosting must route BUZZELLO only to the pinned game Cloud Run service");
+    throw new Error(`Firebase Hosting must route both game APIs through one ${source} rewrite to the pinned game Cloud Run service`);
   }
 
   const dockerfile = read("functions/Dockerfile.game");
@@ -231,19 +233,24 @@ export function validateRepositoryWiring(contract, root = process.cwd()) {
     /ENV NODE_ENV=production/u,
     /ENFORCE_APP_CHECK=true/u,
     /USER node/u,
+    /COPY --from=build --chown=node:node \/app\/data \.\/data/u,
     /CMD \["node", "lib\/gameServer\.js"\]/u,
   ]) {
     if (!pattern.test(dockerfile)) throw new Error(`Game Dockerfile is missing ${pattern}`);
   }
 
-  const routeSource = read("functions/src/routes/buzzello.ts");
+  const routeSources = [
+    read("functions/src/routes/buzzello.ts"),
+    read("functions/src/routes/buzzle.ts"),
+  ];
+  const budgetSource = read("functions/src/lib/gameResourceBudget.ts");
   const sourceUnitLiteral = String(contract.monthlyResourceUnits).replace(/\B(?=(\d{3})+(?!\d))/gu, "_");
   if (
-    !routeSource.includes(`GAME_MONTHLY_RESOURCE_UNITS = ${sourceUnitLiteral}`)
-    || !routeSource.includes('calendarWindow: "month"')
-    || !routeSource.includes('scope: "games-monthly-resource-project"')
+    !budgetSource.includes(`GAME_MONTHLY_RESOURCE_UNITS = ${sourceUnitLiteral}`)
+    || !budgetSource.includes('GAME_MONTHLY_RESOURCE_SCOPE = "games-monthly-resource-project"')
+    || routeSources.some((routeSource) => !routeSource.includes('calendarWindow: "month"') || !routeSource.includes("GAME_MONTHLY_RESOURCE_SCOPE"))
   ) {
-    throw new Error("BUZZELLO routes do not match the monthly resource-unit contract");
+    throw new Error("Online game routes do not match the shared monthly resource-unit contract");
   }
 
   const workflow = read(".github/workflows/ci.yml");

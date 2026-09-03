@@ -258,11 +258,12 @@ export default function Home() {
             </p>
           </div>
 
-          <Link
-            to="/buzzello"
-            aria-label="Play BUZZELLO"
-            className="group block max-w-4xl rounded-2xl border border-ares-gold/30 bg-white/5 p-6 transition-colors hover:border-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian sm:p-8"
-          >
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Link
+              to="/buzzello"
+              aria-label="Play BUZZELLO"
+              className="group block rounded-2xl border border-ares-gold/30 bg-white/5 p-6 transition-colors hover:border-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian sm:p-8"
+            >
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-start gap-5">
                 <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-ares-gold/40 bg-ares-gold/10 text-ares-gold transition-transform group-hover:scale-105">
@@ -289,7 +290,40 @@ export default function Home() {
                 Play now <ArrowRight aria-hidden="true" size={18} />
               </span>
             </div>
-          </Link>
+            </Link>
+            <Link
+              to="/buzzle"
+              aria-label="Play BUZZLE"
+              className="group block rounded-2xl border border-ares-gold/30 bg-white/5 p-6 transition-colors hover:border-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian sm:p-8"
+            >
+              <div className="flex h-full flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-5">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-ares-gold/40 bg-ares-gold/10 text-ares-gold transition-transform group-hover:scale-105">
+                    <Hexagon aria-hidden="true" size={30} />
+                  </span>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-ares-gold">
+                      New in ARES Games
+                    </p>
+                    <h3 className="mb-3 text-2xl font-bold text-white font-heading sm:text-3xl">
+                      BUZZLE™
+                    </h3>
+                    <p className="max-w-2xl leading-relaxed text-marble/75">
+                      Three-axis hexagonal word strategy for local, computer,
+                      friend-code, and bounded matchmaking play, with crossing
+                      words, multiplier hubs, blanks, and keyboard controls.
+                    </p>
+                    <p className="mt-3 text-sm text-marble/60">
+                      Online rooms use the same no-chat, no-profile safety boundary.
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start font-bold uppercase tracking-widest text-white transition-colors group-hover:text-ares-gold sm:self-center">
+                  Play now <ArrowRight aria-hidden="true" size={18} />
+                </span>
+              </div>
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -213,21 +213,26 @@ function useBuzzelloAudio(enabled: boolean) {
   );
 }
 
-function HiveMark({ className = "" }: { className?: string }) {
+const TILE_ARTWORK: Record<BuzzelloPlayer, string> = {
+  yellow: "/images/games/biobuzz-tile-yellow.png",
+  black: "/images/games/biobuzz-tile-black.png",
+};
+
+function TileArtwork({
+  player,
+  className = "",
+}: {
+  player: BuzzelloPlayer;
+  className?: string;
+}) {
   return (
-    <svg
+    <img
       aria-hidden="true"
       className={className}
-      viewBox="0 0 64 64"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="4"
-    >
-      <path d="m32 22 8 5v10l-8 5-8-5V27l8-5Z" />
-      <path d="m32 2 8 5v10l-8 5-8-5V7l8-5ZM32 42l8 5v10l-8 5-8-5V47l8-5ZM14 12l8 5v10l-8 5-8-5V17l8-5ZM50 12l8 5v10l-8 5-8-5V17l8-5ZM14 32l8 5v10l-8 5-8-5V37l8-5ZM50 32l8 5v10l-8 5-8-5V37l8-5Z" />
-    </svg>
+      src={TILE_ARTWORK[player]}
+      alt=""
+      draggable={false}
+    />
   );
 }
 
@@ -238,7 +243,7 @@ function ScorePiece({ player }: { player: BuzzelloPlayer }) {
       data-player={player}
       aria-hidden="true"
     >
-      <HiveMark className="h-5 w-5" />
+      <TileArtwork player={player} className="buzzello-tile-art" />
     </span>
   );
 }
@@ -357,11 +362,11 @@ function BuzzelloBoardView({
                     data-preview={previewFlips.has(index)}
                     data-just-flipped={justFlipped.has(index)}
                   >
-                    <span className="buzzello-piece-face" data-face="yellow">
-                      <HiveMark className="buzzello-rosette" />
-                    </span>
-                    <span className="buzzello-piece-face" data-face="black">
-                      <HiveMark className="buzzello-rosette" />
+                    <span className="buzzello-piece-face" data-face={player}>
+                      <TileArtwork
+                        player={player}
+                        className="buzzello-tile-art"
+                      />
                     </span>
                   </span>
                 ) : isLegal ? (

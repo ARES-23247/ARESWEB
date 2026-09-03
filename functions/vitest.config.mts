@@ -80,6 +80,18 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/buzzleGameDefinition.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/gameResourceBudget.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/routes/buzzle.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/publicArtifactCache.ts": {
           lines: 85,
           functions: 100,
