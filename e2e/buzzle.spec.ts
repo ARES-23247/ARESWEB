@@ -13,10 +13,16 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
   await expect(rack.locator("img")).toHaveCount(0);
   await expect(rack.locator(".buzzle-tile-face")).toHaveCount(7);
   await expect(rack.locator(".buzzle-tile-points")).toHaveCount(7);
+  const rackLetterSize = await rack.locator('[role="listitem"]:not([aria-label^="Blank"]) .buzzle-tile-letter')
+    .first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  expect(rackLetterSize).toBeLessThanOrEqual(24);
 
   await rack.locator('[role="listitem"]:not([aria-label^="Blank"])').first().click();
   await board.getByRole("gridcell", { name: /q 0, r 0/u }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(1);
+  const boardLetterSize = await board.locator('[data-draft="true"] .buzzle-tile-letter')
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  expect(boardLetterSize).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) >= 800 ? 18 : 11);
   await page.getByRole("button", { name: "Recall" }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(0);
 });
