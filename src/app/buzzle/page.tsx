@@ -107,7 +107,7 @@ function BuzzleTileFace({
   compact?: boolean;
 }) {
   return (
-    <span className="buzzle-tile-face" data-compact={compact}>
+    <span className="buzzle-tile-face" data-compact={compact} data-points={tile.points}>
       <span className="buzzle-tile-letter">{tile.blank && tile.letter === "?" ? "" : tile.letter}</span>
       <span className="buzzle-tile-points">{tile.points}</span>
     </span>
