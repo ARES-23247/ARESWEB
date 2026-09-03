@@ -146,10 +146,10 @@ describe("BUZZLE online routes", () => {
     const stored = firestore.get("game_matches", created.game.gameId)!;
     putTileInRack(stored.state, "A-1", 0);
     putTileInRack(stored.state, "T-1", 1);
-    const center = 63;
+    const center = 108;
     const played = await post(`/games/${created.game.gameId}/actions`, {
       expectedVersion: 1,
-      action: { type: "play", placements: [{ index: center, tileId: "A-1" }, { index: 76, tileId: "T-1" }] },
+      action: { type: "play", placements: [{ index: center, tileId: "A-1" }, { index: 125, tileId: "T-1" }] },
     }, { "X-Game-Player": created.playerToken });
     expect(played.status).toBe(200);
     await expect(played.json()).resolves.toMatchObject({ game: { version: 2, state: { currentPlayer: 1 } } });
