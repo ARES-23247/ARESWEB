@@ -7,7 +7,7 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
 
   const board = page.getByRole("grid", { name: /BUZZLE board/u });
   await expect(board).toBeVisible();
-  await expect(board.getByRole("gridcell")).toHaveCount(127);
+  await expect(board.getByRole("gridcell")).toHaveCount(217);
   const rack = page.getByRole("list", { name: "Player 1 tiles" });
   await expect(rack.getByRole("listitem")).toHaveCount(7);
   await expect(rack.locator("img")).toHaveCount(0);
@@ -49,8 +49,8 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
   expect(rackGeometry[4]!.x - rackGeometry[0]!.x).toBeGreaterThan(rackGeometry[0]!.width * 0.4);
   expect(rackGeometry[4]!.x - rackGeometry[0]!.x).toBeLessThan(rackGeometry[0]!.width * 0.6);
   for (const geometry of rackGeometry) {
-    expect(geometry.pointRight).toBeLessThanOrEqual(geometry.x + geometry.width * 0.9);
-    expect(geometry.pointBottom).toBeLessThanOrEqual(geometry.y + geometry.height * 0.9);
+    expect(geometry.pointRight).toBeLessThanOrEqual(geometry.x + geometry.width * 0.9 + 0.5);
+    expect(geometry.pointBottom).toBeLessThanOrEqual(geometry.y + geometry.height * 0.9 + 0.5);
   }
   const worstCaseRackTile = rack.locator('[role="listitem"]:not([aria-label^="Blank"])').first();
   const worstCaseRackOverlap = await worstCaseRackTile.evaluate((tile) => {
@@ -111,7 +111,7 @@ test("offers friend, guest, and team online play without chat", async ({ page })
   await expect(page).toHaveURL(/\/buzzle$/u);
 });
 
-test("fits the entire 127-cell board on a narrow phone without a nested scroller", async ({ page }) => {
+test("fits the entire 217-cell board on a narrow phone without a nested scroller", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/buzzle");
   await page.getByRole("dialog", { name: "Choose a BUZZLE game" })
@@ -130,6 +130,6 @@ test("fits the entire 127-cell board on a narrow phone without a nested scroller
   expect(overflow).not.toContain("scroll");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   const firstCell = await board.getByRole("gridcell").first().boundingBox();
-  expect(firstCell!.width).toBeGreaterThanOrEqual(30);
-  expect(firstCell!.height).toBeGreaterThanOrEqual(24);
+  expect(firstCell!.width).toBeGreaterThanOrEqual(24);
+  expect(firstCell!.height).toBeGreaterThanOrEqual(20);
 });

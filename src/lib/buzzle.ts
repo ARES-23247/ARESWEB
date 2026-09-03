@@ -2,7 +2,6 @@ import {
   HEX_DIRECTIONS,
   HEX_WORD_AXES,
   addAxial,
-  axialDistance,
   axialKey,
   createHexCoordinateIndex,
   createHexCoordinates,
