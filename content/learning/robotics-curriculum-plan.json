@@ -5,9 +5,9 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "9c9631632ea7969bece6f8e99d3acdbdb4e25cd7",
-    "aresVersion": "15.0.2",
-    "studioVersion": "5.0.3"
+    "commit": "53ae99b1829e1d5d0f941630678fe789a3bb265f",
+    "aresVersion": "15.0.3",
+    "studioVersion": "5.0.4"
   },
   "instructionalContract": {
     "targetReadingGrades": [6, 8],
