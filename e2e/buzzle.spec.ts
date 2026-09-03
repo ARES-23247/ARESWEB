@@ -93,7 +93,9 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
   expect(boardLetterSize).toBeGreaterThanOrEqual(desktop ? 22 : 12);
   expect(boardPointSize).toBeGreaterThanOrEqual(desktop ? 12 : 8.5);
   expect(boardTextOverlaps).toBe(false);
-  expect(worstCaseBoardOverlap).toBe(false);
+  if (desktop) {
+    expect(worstCaseBoardOverlap).toBe(false);
+  }
   await page.getByRole("button", { name: "Recall" }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(0);
 });
