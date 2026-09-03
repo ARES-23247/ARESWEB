@@ -56,7 +56,7 @@ beginner example because its limits are easy to see.
 
 ![ARES Robotics Studio showing the Lightbot Indicator lights subsystem and its ownership-oriented builder steps](/academy/studio-3.1.1/subsystem-builder.png)
 
-This Studio 5.0.4 screenshot shows the real Indicator lights descriptor in the
+This Studio 5.0.5 screenshot shows the real Indicator lights descriptor in the
 Subsystem Builder. It supports the descriptor and ownership discussion below.
 It does not show the generated preview categories, a successful build, a
 simulation result, or physical robot behavior.

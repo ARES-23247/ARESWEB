@@ -10,7 +10,7 @@ Complete [Predict Motion with Feedforward](/academy/controls-motor-model-feedfor
 first. You should be able to read a time graph, name the units in a calculation, and explain why a
 prediction and a feedback correction are different jobs.
 
-This lesson follows ARES 15.0.3 and Studio 5.0.4. Its source links are pinned to the exact public
+This lesson follows ARES 15.0.3 and Studio 5.0.5. Its source links are pinned to the exact public
 monorepo commit used for review. The browser activities do not run the Kotlin controller.
 
 In this lesson, you will:

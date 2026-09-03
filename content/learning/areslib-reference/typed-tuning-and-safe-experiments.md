@@ -5,7 +5,7 @@
 ARES typed tuning gives each adjustable value a name, type, unit, range, default, and apply rule.
 It lets a team test a small change without turning every robot constant into a live control. This
 reference explains what may change, when it may change, and how an accepted experiment becomes a
-checked-in profile. It applies to ARES 15.0.3, ARES FTC 15.0.4, and Studio 5.0.4.
+checked-in profile. It applies to ARES 15.0.3, ARES FTC 15.0.4, and Studio 5.0.5.
 
 Read [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Use
 [Run SysId and a Bounded Tuning Experiment](/academy/testing-sysid-tuning?path=testing-debugging-commissioning)

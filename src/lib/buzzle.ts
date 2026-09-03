@@ -2,7 +2,6 @@ import {
   HEX_DIRECTIONS,
   HEX_WORD_AXES,
   addAxial,
-  axialDistance,
   axialKey,
   createHexCoordinateIndex,
   createHexCoordinates,
@@ -61,8 +60,8 @@ export interface BuzzlePlayAnalysis {
   hiveFlush: boolean;
 }
 
-export const BUZZLE_RADIUS = 6;
-export const BUZZLE_CELL_COUNT = 127;
+export const BUZZLE_RADIUS = 8;
+export const BUZZLE_CELL_COUNT = 217;
 export const BUZZLE_RACK_SIZE = 7;
 export const BUZZLE_COORDINATES = createHexCoordinates(BUZZLE_RADIUS);
 const BUZZLE_COORDINATE_INDEX = createHexCoordinateIndex(BUZZLE_COORDINATES);
@@ -80,25 +79,24 @@ const LETTER_DISTRIBUTION: ReadonlyArray<
 ];
 
 const TRIPLE_WORD_KEYS = new Set([
-  "0,-6", "6,-6", "6,0", "0,6", "-6,6", "-6,0",
+  "-8,0", "0,-8", "-8,8", "8,-8", "0,8", "8,0",
 ]);
 const TRIPLE_LETTER_KEYS = new Set([
-  "0,-4", "4,-4", "4,0", "0,4", "-4,4", "-4,0",
+  "-4,-4", "-8,4", "4,-8", "-4,8", "8,-4", "4,4",
 ]);
-
-// The supplied topology says “distance 2 + distance 5” but also fixes DL at
-// 26 cells; those complete rings contain 42 cells. Keep every distance-2 cell
-// and a centrally symmetric, deterministic 14-cell distance-5 subset so the
-// stated 26-cell count and score balance remain testable.
-const OUTER_DOUBLE_LETTER_COORDINATES: ReadonlyArray<AxialCoordinate> = [
-  { q: 5, r: 0 }, { q: -5, r: 0 }, { q: 0, r: 5 }, { q: 0, r: -5 },
-  { q: 5, r: -5 }, { q: -5, r: 5 }, { q: 5, r: -2 }, { q: -5, r: 2 },
-  { q: 2, r: 3 }, { q: -2, r: -3 }, { q: 3, r: -5 }, { q: -3, r: 5 },
-  { q: 2, r: -5 }, { q: -2, r: 5 },
-];
-const OUTER_DOUBLE_LETTER_KEYS = new Set(
-  OUTER_DOUBLE_LETTER_COORDINATES.map(axialKey),
-);
+const DOUBLE_WORD_KEYS = new Set([
+  "-6,-1", "-1,-6", "-7,1", "1,-7", "-7,6", "6,-7",
+  "-6,7", "7,-6", "-1,7", "7,-1", "1,6", "6,1",
+]);
+const KEY_WILD_KEYS = new Set([
+  "-2,-2", "-4,2", "2,-4", "-2,4", "4,-2", "2,2",
+]);
+const DOUBLE_LETTER_KEYS = new Set([
+  "-4,-2", "-2,-4", "-6,2", "-4,0", "0,-4", "2,-6",
+  "-6,4", "-1,-1", "4,-6", "-2,1", "1,-2", "-4,4",
+  "4,-4", "-1,2", "2,-1", "-4,6", "1,1", "6,-4",
+  "-2,6", "0,4", "4,0", "6,-2", "2,4", "4,2",
+]);
 
 export function getBuzzleCellIndex(q: number, r: number): number | null {
   return BUZZLE_COORDINATE_INDEX.get(`${q},${r}`) ?? null;
@@ -116,9 +114,8 @@ export function getBuzzleMultiplier(index: number): BuzzleMultiplier {
   if (coordinate.q === 0 && coordinate.r === 0) return "star";
   if (TRIPLE_WORD_KEYS.has(key)) return "TW";
   if (TRIPLE_LETTER_KEYS.has(key)) return "TL";
-  const distance = axialDistance(coordinate);
-  if (distance === 3) return "DW";
-  if (distance === 2 || OUTER_DOUBLE_LETTER_KEYS.has(key)) return "DL";
+  if (DOUBLE_WORD_KEYS.has(key) || KEY_WILD_KEYS.has(key)) return "DW";
+  if (DOUBLE_LETTER_KEYS.has(key)) return "DL";
   return "plain";
 }
 

@@ -1,5 +1,5 @@
 import { authenticatedFetch } from "@/lib/api";
-import type { BuzzleBoardTile, BuzzlePlacement, BuzzleTile } from "@/lib/buzzle";
+import { BUZZLE_CELL_COUNT, type BuzzleBoardTile, type BuzzlePlacement, type BuzzleTile } from "@/lib/buzzle";
 
 export type OnlineBuzzleStatus = "waiting" | "active" | "finished";
 export type OnlineBuzzleAction =
@@ -80,7 +80,7 @@ export function parseOnlineBuzzleGame(value: unknown): OnlineBuzzleGame {
       game.desiredPlayers !== 2 || !Number.isInteger(game.version) || !Number.isInteger(game.actionSequence) ||
       typeof game.expiresAt !== "string" || !Number.isFinite(Date.parse(game.expiresAt)) ||
       !Number.isInteger(game.syncsRemaining) || (game.syncsRemaining as number) < 0 ||
-      !Array.isArray(board) || board.length !== 127 || board.some((tile) => parseTile(tile, true) === null && tile !== null) ||
+      !Array.isArray(board) || board.length !== BUZZLE_CELL_COUNT || board.some((tile) => parseTile(tile, true) === null && tile !== null) ||
       !Array.isArray(rack) || rack.length > 7 || rack.some((tile) => parseTile(tile) === null) ||
       !Array.isArray(players) || players.length !== 2 || players.some((player) => typeof player !== "object" || player === null ||
         !Number.isInteger((player as Record<string, unknown>).score) || !Number.isInteger((player as Record<string, unknown>).rackCount)) ||

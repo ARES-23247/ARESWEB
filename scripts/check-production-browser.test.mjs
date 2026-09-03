@@ -16,7 +16,7 @@ function createBrowserHarness({
   securityAlert = "",
   consoleErrors = [],
   analyticsRequestUrl =
-    "https://www.google-analytics.com/g/collect?tid=G-0KKZT6G3TG",
+    "https://www.google-analytics.com/g/collect?tid=G-8XWENKB7EZ",
   advertisingResponseUrl = "",
 } = {}) {
   let inquiryHandler;
@@ -322,7 +322,7 @@ describe("production browser security check", () => {
   it("rejects a deceptive hostname ending in the Analytics domain text", async () => {
     const harness = createBrowserHarness({
       analyticsRequestUrl:
-        "https://evilgoogle-analytics.com/g/collect?tid=G-0KKZT6G3TG",
+        "https://evilgoogle-analytics.com/g/collect?tid=G-8XWENKB7EZ",
     });
 
     await expect(

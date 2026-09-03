@@ -107,7 +107,7 @@ function BuzzleTileFace({
   compact?: boolean;
 }) {
   return (
-    <span className="buzzle-tile-face" data-compact={compact}>
+    <span className="buzzle-tile-face" data-compact={compact} data-points={tile.points}>
       <span className="buzzle-tile-letter">{tile.blank && tile.letter === "?" ? "" : tile.letter}</span>
       <span className="buzzle-tile-points">{tile.points}</span>
     </span>
@@ -190,8 +190,8 @@ function BuzzleBoardView({
           const draft = draftByIndex.get(index);
           const multiplier = getBuzzleMultiplier(index);
           const canPlace = !disabled && !boardTile && !draft && selectedTile !== null;
-          const left = 50 + q * 7.2;
-          const top = 50 + (r + q / 2) * (96 / 13);
+          const left = 50 + q * (7.2 * 13 / 17);
+          const top = 50 + (r + q / 2) * (96 / 17);
           const state = boardTile
             ? `${boardTile.letter}, ${boardTile.points} points, played by ${playerName(boardTile.playedBy)}`
             : draft
