@@ -24,7 +24,7 @@ function placement(q: number, r: number, value: BuzzleTile): BuzzlePlacement {
 }
 
 describe("BUZZLE geometry and inventory", () => {
-  it("builds the specified 127-cell board and multiplier counts", () => {
+  it("builds the specified 217-cell board and multiplier counts", () => {
     expect(BUZZLE_COORDINATES).toHaveLength(BUZZLE_CELL_COUNT);
     const counts = Object.fromEntries(
       ["plain", "DL", "TL", "DW", "TW", "star"].map((kind) => [
@@ -32,9 +32,9 @@ describe("BUZZLE geometry and inventory", () => {
         BUZZLE_COORDINATES.filter((_, index) => getBuzzleMultiplier(index) === kind).length,
       ]),
     );
-    expect(counts).toEqual({ plain: 70, DL: 26, TL: 6, DW: 18, TW: 6, star: 1 });
+    expect(counts).toEqual({ plain: 162, DL: 24, TL: 6, DW: 18, TW: 6, star: 1 });
     expect(getBuzzleCellIndex(0, 0)).not.toBeNull();
-    expect(getBuzzleCellIndex(7, 0)).toBeNull();
+    expect(getBuzzleCellIndex(9, 0)).toBeNull();
   });
 
   it("creates the official 100-tile distribution", () => {
@@ -161,7 +161,7 @@ describe("BUZZLE play validation and scoring", () => {
       new Set(["reading"]),
     );
     expect(result.hiveFlush).toBe(true);
-    expect(result.score).toBe(122);
+    expect(result.score).toBe(64);
   });
 });
 

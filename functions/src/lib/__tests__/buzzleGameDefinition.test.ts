@@ -7,8 +7,8 @@ import {
 
 function indexFor(q: number, r: number): number {
   let index = 0;
-  for (let column = -6; column <= 6; column += 1) {
-    for (let row = Math.max(-6, -column - 6); row <= Math.min(6, -column + 6); row += 1) {
+  for (let column = -8; column <= 8; column += 1) {
+    for (let row = Math.max(-8, -column - 8); row <= Math.min(8, -column + 8); row += 1) {
       if (column === q && row === r) return index;
       index += 1;
     }
@@ -38,7 +38,7 @@ function putTileInRack(state: BuzzleGameState, tileId: string, rackIndex: number
 describe("buzzleGameDefinition", () => {
   it("creates a bounded two-player game and returns only the requesting rack", () => {
     const state = buzzleGameDefinition.createInitialState(2);
-    expect(state.board).toHaveLength(127);
+    expect(state.board).toHaveLength(217);
     expect(state.bag).toHaveLength(86);
     expect(state.players.map(({ rack }) => rack)).toEqual([
       expect.arrayContaining([expect.objectContaining({ id: expect.any(String) })]),

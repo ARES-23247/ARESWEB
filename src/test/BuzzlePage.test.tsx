@@ -12,7 +12,7 @@ describe("BUZZLE page", () => {
     render(<BuzzlePage />);
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
     expect(screen.getByRole("heading", { level: 1, name: "BUZZLE™" })).toBeInTheDocument();
-    expect(screen.getAllByRole("gridcell")).toHaveLength(127);
+    expect(screen.getAllByRole("gridcell")).toHaveLength(217);
     expect(screen.getByRole("grid", { name: /BUZZLE board/u })).toBeInTheDocument();
     const rack = screen.getByRole("list", { name: /Player 1 tiles/u });
     expect(within(rack).getAllByRole("listitem")).toHaveLength(7);

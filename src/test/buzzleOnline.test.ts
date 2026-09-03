@@ -48,7 +48,7 @@ describe("BUZZLE online DTO", () => {
   it("parses a bounded player-specific view", () => {
     const game = parseOnlineBuzzleGame(onlinePayload());
     expect(game.rack).toHaveLength(7);
-    expect(game.board).toHaveLength(127);
+    expect(game.board).toHaveLength(217);
     expect(game.players).toEqual([{ score: 0, rackCount: 7 }, { score: 0, rackCount: 7 }]);
   });
 

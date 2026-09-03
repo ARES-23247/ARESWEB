@@ -39,8 +39,8 @@ type BuzzlePlayerView = Record<string, unknown> & {
   winner: number | "draw" | null;
 };
 
-const RADIUS = 6;
-const CELL_COUNT = 127;
+const RADIUS = 8;
+const CELL_COUNT = 217;
 const RACK_SIZE = 7;
 const MAX_ACTIONS = 400;
 const AXES: ReadonlyArray<Coordinate> = [{ q: 1, r: 0 }, { q: 0, r: 1 }, { q: 1, r: -1 }];
@@ -62,11 +62,18 @@ for (let q = -RADIUS; q <= RADIUS; q += 1) {
   }
 }
 const COORDINATE_INDEX = new Map(COORDINATES.map(({ q, r }, index) => [`${q},${r}`, index]));
-const TRIPLE_WORD = new Set(["0,-6", "6,-6", "6,0", "0,6", "-6,6", "-6,0"]);
-const TRIPLE_LETTER = new Set(["0,-4", "4,-4", "4,0", "0,4", "-4,4", "-4,0"]);
-const OUTER_DOUBLE_LETTER = new Set([
-  "5,0", "-5,0", "0,5", "0,-5", "5,-5", "-5,5", "5,-2", "-5,2",
-  "2,3", "-2,-3", "3,-5", "-3,5", "2,-5", "-2,5",
+const TRIPLE_WORD = new Set(["-8,0", "0,-8", "-8,8", "8,-8", "0,8", "8,0"]);
+const TRIPLE_LETTER = new Set(["-4,-4", "-8,4", "4,-8", "-4,8", "8,-4", "4,4"]);
+const DOUBLE_WORD = new Set([
+  "-6,-1", "-1,-6", "-7,1", "1,-7", "-7,6", "6,-7",
+  "-6,7", "7,-6", "-1,7", "7,-1", "1,6", "6,1",
+  "-2,-2", "-4,2", "2,-4", "-2,4", "4,-2", "2,2",
+]);
+const DOUBLE_LETTER = new Set([
+  "-4,-2", "-2,-4", "-6,2", "-4,0", "0,-4", "2,-6",
+  "-6,4", "-1,-1", "4,-6", "-2,1", "1,-2", "-4,4",
+  "4,-4", "-1,2", "2,-1", "-4,6", "1,1", "6,-4",
+  "-2,6", "0,4", "4,0", "6,-2", "2,4", "4,2",
 ]);
 
 let dictionary: ReadonlySet<string> | null = null;
@@ -84,18 +91,14 @@ function cellIndex(q: number, r: number): number | null {
   return COORDINATE_INDEX.get(`${q},${r}`) ?? null;
 }
 
-function distance({ q, r }: Coordinate): number {
-  return Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r));
-}
-
 function multiplier(index: number): Multiplier {
   const coordinate = COORDINATES[index];
   const key = `${coordinate.q},${coordinate.r}`;
   if (coordinate.q === 0 && coordinate.r === 0) return "star";
   if (TRIPLE_WORD.has(key)) return "TW";
   if (TRIPLE_LETTER.has(key)) return "TL";
-  if (distance(coordinate) === 3) return "DW";
-  if (distance(coordinate) === 2 || OUTER_DOUBLE_LETTER.has(key)) return "DL";
+  if (DOUBLE_WORD.has(key)) return "DW";
+  if (DOUBLE_LETTER.has(key)) return "DL";
   return "plain";
 }
 
