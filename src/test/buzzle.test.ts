@@ -177,4 +177,34 @@ describe("BUZZLE turn options", () => {
     expect(passed.finished).toBe(true);
     expect(passed.winner === "draw" || typeof passed.winner === "number").toBe(true);
   });
+
+  it("finishes the game and awards rack points when a player goes out with an empty bag", () => {
+    const game = createBuzzleGame(2);
+    game.bag = [];
+    const tileA = { id: "a-1", letter: "A", points: 1, blank: false };
+    const tileT = { id: "t-1", letter: "T", points: 1, blank: false };
+    game.players[0].rack = [tileA, tileT];
+    game.players[0].score = 100;
+
+    const tileO = { id: "o-1", letter: "O", points: 1, blank: false };
+    const tileN = { id: "n-1", letter: "N", points: 1, blank: false };
+    game.players[1].rack = [tileO, tileN];
+    game.players[1].score = 80;
+    game.currentPlayer = 1;
+
+    const center = getBuzzleCellIndex(0, 0)!;
+    const neighbor = getBuzzleCellIndex(1, 0)!;
+    const placements = [
+      { index: center, tile: tileO },
+      { index: neighbor, tile: tileN },
+    ];
+    const { state } = playBuzzleTiles(game, placements, new Set(["on"]));
+    expect(state.finished).toBe(true);
+    expect(state.players[1].rack).toHaveLength(0);
+    // Player 0 had 2 points in rack: deducted 2 pts (100 - 2 = 98)
+    expect(state.players[0].score).toBe(98);
+    // Player 1 had 80 + word score + 2 award
+    expect(state.players[1].score).toBeGreaterThan(82);
+    expect(state.winner).toBe(0);
+  });
 });

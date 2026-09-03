@@ -154,6 +154,7 @@
 .buzzle-live-score small { display: block; max-width: 10rem; overflow: hidden; padding-inline: 0.3rem; font-family: inherit; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.04em; text-overflow: ellipsis; white-space: nowrap; }
 .buzzle-player-score { display: grid; min-width: 7.4rem; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 0.6rem; border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.7rem; padding: 0.55rem 0.7rem; }
 .buzzle-player-score[data-active="true"] { border-color: var(--buzzle-yellow); background: rgb(247 227 38 / 7%); }
+.buzzle-player-score[data-winner="true"] { border-color: var(--buzzle-yellow); background: rgb(247 227 38 / 14%); box-shadow: 0 0 16px rgb(247 227 38 / 18%); }
 .buzzle-player-score span { font-size: 0.72rem; font-weight: 850; color: white; }
 .buzzle-player-score strong { grid-row: span 2; font-size: 1.5rem; color: var(--buzzle-yellow); }
 .buzzle-player-score small { font-size: 0.6rem; color: rgb(255 255 255 / 55%); }

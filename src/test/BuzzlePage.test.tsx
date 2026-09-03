@@ -36,4 +36,42 @@ describe("BUZZLE page", () => {
     expect(screen.getByText(/no chat, profiles, or permanent room history/u)).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(/Dictionary: loading/u)).not.toBeInTheDocument());
   });
+
+  it("declares a winner, shows game over dialog, and updates scoreboard when match finishes", async () => {
+    render(<BuzzlePage />);
+    fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
+
+    // Execute 6 consecutive passes to trigger game finish (3 full rounds of passes in a 2-player game)
+    for (let i = 0; i < 6; i += 1) {
+      if (i > 0) {
+        fireEvent.click(screen.getByRole("button", { name: "Reveal my rack" }));
+      }
+      fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    }
+
+    // Game over dialog should be open declaring winner or draw
+    expect(await screen.findByRole("dialog", { name: /Wins!|The Hive is Balanced/u })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review board" })).toBeInTheDocument();
+
+    // Review board to inspect match complete UI
+    fireEvent.click(screen.getByRole("button", { name: "Review board" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Match Complete" })).toBeInTheDocument();
+    expect(screen.getByText(/Game over ·/u)).toBeInTheDocument();
+
+    // Scoreboard should show winner/tie indicator
+    expect(screen.getAllByRole("status").some((node) => /Winner|Tie/u.test(node.textContent ?? ""))).toBe(true);
+
+    // Action panel should offer View results and Rematch
+    expect(screen.getByRole("button", { name: "View results" })).toBeInTheDocument();
+    const rematchButton = screen.getByRole("button", { name: "Rematch" });
+    expect(rematchButton).toBeInTheDocument();
+
+    // Reopen results dialog
+    fireEvent.click(screen.getByRole("button", { name: "View results" }));
+    expect(screen.getByRole("dialog", { name: /Wins!|The Hive is Balanced/u })).toBeInTheDocument();
+
+    // Start rematch
+    fireEvent.click(screen.getAllByRole("button", { name: "Rematch" })[0]!);
+    expect(screen.getByRole("heading", { level: 2, name: "Tournament hive" })).toBeInTheDocument();
+  });
 });

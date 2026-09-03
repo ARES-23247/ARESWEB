@@ -15,6 +15,7 @@ import {
   Radio,
   RotateCcw,
   Shuffle,
+  Trophy,
   Users,
 } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -79,8 +80,22 @@ const MULTIPLIER_NAMES = {
   star: "center star, double word on the opening play",
 } as const;
 
-function playerName(index: number): string {
+function playerName(index: number, currentMode?: BuzzleMode): string {
+  if (currentMode && currentMode !== "local" && currentMode !== "online") {
+    return index === 0 ? "Player 1" : (MODE_OPTIONS.find(({ id }) => id === currentMode)?.name ?? "Hive AI");
+  }
   return `Player ${index + 1}`;
+}
+
+function getBuzzleEndSummary(game: BuzzleGameState, currentMode?: BuzzleMode): string {
+  if (!game.finished || game.winner === null) return "";
+  const high = Math.max(...game.players.map((p) => p.score));
+  const low = Math.min(...game.players.map((p) => p.score));
+  if (game.winner === "draw") {
+    return `Game over. The match ended in a draw at ${high} points.`;
+  }
+  const winnerName = playerName(game.winner, currentMode);
+  return `Game over! ${winnerName} wins ${high} to ${low}!`;
 }
 
 function onlineGameSnapshot(game: OnlineBuzzleGame): BuzzleGameState {
@@ -259,6 +274,7 @@ export default function BuzzlePage() {
   const [notice, setNotice] = useState("Select a rack tile, then choose a board cell.");
   const [newGameOpen, setNewGameOpen] = useState(inviteFromHash === null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [gameOverOpen, setGameOverOpen] = useState(false);
   const [blankPlacement, setBlankPlacement] = useState<{ index: number; tile: BuzzleTile } | null>(null);
   const [handoffPending, setHandoffPending] = useState(false);
   const [aiThinking, setAiThinking] = useState(false);
@@ -294,11 +310,15 @@ export default function BuzzlePage() {
   const applyOnlineGame = useCallback((next: OnlineBuzzleGame) => {
     onlineGameRef.current = next;
     setOnlineGame(next);
-    setGame(onlineGameSnapshot(next));
+    const snapshot = onlineGameSnapshot(next);
+    setGame(snapshot);
     setMode("online");
     setOnlineSetupOpen(false);
     setOnlinePollingStopped(false);
     resetDraft();
+    if (snapshot.finished) {
+      setGameOverOpen(true);
+    }
   }, [resetDraft]);
 
   useEffect(() => {
@@ -330,12 +350,26 @@ export default function BuzzlePage() {
       try {
         if (event.data.error) throw new Error(event.data.error);
         if (!event.data.move) {
-          setGame(passBuzzleTurn(game));
-          setNotice("The hive AI found no legal word and passed.");
+          const next = passBuzzleTurn(game);
+          setGame(next);
+          if (next.finished) {
+            const summary = getBuzzleEndSummary(next, mode);
+            setNotice(`The hive AI found no legal word and passed. ${summary}`);
+            setGameOverOpen(true);
+          } else {
+            setNotice("The hive AI found no legal word and passed.");
+          }
         } else {
           const result = playBuzzleTiles(game, event.data.move.placements, dictionary.words);
           setGame(result.state);
-          setNotice(`The hive AI played ${result.analysis.words.map(({ word }) => word).join(" + ")} for ${result.analysis.score} points.`);
+          const playNotice = `The hive AI played ${result.analysis.words.map(({ word }) => word).join(" + ")} for ${result.analysis.score} points.`;
+          if (result.state.finished) {
+            const summary = getBuzzleEndSummary(result.state, mode);
+            setNotice(`${playNotice} ${summary}`);
+            setGameOverOpen(true);
+          } else {
+            setNotice(playNotice);
+          }
         }
       } catch (error) {
         setNotice(error instanceof Error ? error.message : "The hive AI could not finish its turn.");
@@ -471,7 +505,8 @@ export default function BuzzlePage() {
     onlineGameRef.current = null;
     onlinePlayerToken.current = null;
     setNewGameOpen(false);
-    setNotice(`${playerName(0)} opens. Build a word through the center star.`);
+    setGameOverOpen(false);
+    setNotice(`${playerName(0, nextMode)} opens. Build a word through the center star.`);
   };
 
   const addPlacement = useCallback((index: number, requestedTileId?: string) => {
@@ -499,8 +534,14 @@ export default function BuzzlePage() {
   const finishTurn = (next: BuzzleGameState, message: string) => {
     setGame(next);
     resetDraft();
-    setNotice(message);
-    if (!next.finished && mode === "local") setHandoffPending(true);
+    if (next.finished) {
+      const summary = getBuzzleEndSummary(next, mode);
+      setNotice(message ? `${message} ${summary}` : summary);
+      setGameOverOpen(true);
+    } else {
+      setNotice(message);
+      if (mode === "local") setHandoffPending(true);
+    }
   };
 
   const submitPlay = async () => {
@@ -576,7 +617,7 @@ export default function BuzzlePage() {
               <p className="text-xs font-black uppercase tracking-[0.28em] text-ares-gold">ARES Games · Three-axis word strategy</p>
               <h1 className="mt-2 font-heading text-4xl font-black text-white sm:text-6xl">BUZZLE™</h1>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/75 sm:text-base">
-                Build connected words across all three axes of a 127-cell hive. Every crossing scores.
+                Build connected words across all three axes of a 217-cell hive. Every crossing scores.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -592,13 +633,34 @@ export default function BuzzlePage() {
 
         <section className="buzzle-scoreboard mb-4 grid gap-2 rounded-2xl p-3 sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="flex min-w-0 gap-2 overflow-x-auto pb-1" aria-label="Player scores">
-            {game.players.map((player, index) => (
-              <div key={index} className="buzzle-player-score" data-active={index === game.currentPlayer}>
-                <span>{playerName(index)}</span>
-                <strong>{player.score}</strong>
-                <small>{mode === "online" ? (onlineGame?.players[index]?.rackCount ?? 0) : player.rack.length} tiles</small>
-              </div>
-            ))}
+            {game.players.map((player, index) => {
+              const isWinner = game.finished && game.winner === index;
+              const isTie = game.finished && game.winner === "draw";
+              return (
+                <div
+                  key={index}
+                  className="buzzle-player-score"
+                  data-active={!game.finished && index === game.currentPlayer}
+                  data-winner={isWinner || isTie}
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate">{playerName(index, mode)}</span>
+                    {isWinner && (
+                      <span className="rounded bg-ares-gold/20 px-1 py-0.5 text-[9px] font-bold text-ares-gold shrink-0" role="status">
+                        Winner
+                      </span>
+                    )}
+                    {isTie && (
+                      <span className="rounded bg-white/10 px-1 py-0.5 text-[9px] font-bold text-marble/70 shrink-0" role="status">
+                        Tie
+                      </span>
+                    )}
+                  </div>
+                  <strong>{player.score}</strong>
+                  <small>{mode === "online" ? (onlineGame?.players[index]?.rackCount ?? 0) : player.rack.length} tiles</small>
+                </div>
+              );
+            })}
           </div>
           <div className="text-right text-sm">
             <strong className="text-ares-gold">{mode === "online" ? (onlineGame?.bagCount ?? 0) : game.bag.length}</strong> in bag · Turn {game.turn}
@@ -609,18 +671,24 @@ export default function BuzzlePage() {
           <section className="buzzle-arena min-w-0 rounded-2xl p-1.5 sm:p-4" aria-labelledby="buzzle-board-heading">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-2">
               <div>
-                <h2 id="buzzle-board-heading" className="font-heading text-lg font-black uppercase text-white">Tournament hive</h2>
+                <h2 id="buzzle-board-heading" className="font-heading text-lg font-black uppercase text-white">
+                  {game.finished ? "Match Complete" : "Tournament hive"}
+                </h2>
                 <p className="text-xs text-marble/65">
-                  {mode === "online" && onlineGame?.status === "waiting"
-                    ? "Waiting for an opponent"
-                    : mode === "online"
-                      ? `${onlineGame?.currentPlayer === onlineGame?.playerIndex ? "Your" : "Opponent's"} turn · Online`
-                      : `${playerName(game.currentPlayer)} to move · ${MODE_OPTIONS.find(({ id }) => id === mode)?.name}`}
+                  {game.finished
+                    ? game.winner === "draw"
+                      ? "Game over · Draw at final score"
+                      : `Game over · ${playerName(game.winner as number, mode)} wins!`
+                    : mode === "online" && onlineGame?.status === "waiting"
+                      ? "Waiting for an opponent"
+                      : mode === "online"
+                        ? `${onlineGame?.currentPlayer === onlineGame?.playerIndex ? "Your" : "Opponent's"} turn · Online`
+                        : `${playerName(game.currentPlayer, mode)} to move · ${MODE_OPTIONS.find(({ id }) => id === mode)?.name}`}
                 </p>
               </div>
               <div className="buzzle-live-score" role="status" aria-live="polite" data-valid={Boolean(analysis?.value)}>
-                {analysis?.value ? `+${analysis.value.score}` : placements.length ? "—" : "0"}
-                <small>{analysis?.value ? analysis.value.words.map(({ word }) => word).join(" · ") : "turn score"}</small>
+                {game.finished ? "END" : analysis?.value ? `+${analysis.value.score}` : placements.length ? "—" : "0"}
+                <small>{game.finished ? "final score" : analysis?.value ? analysis.value.words.map(({ word }) => word).join(" · ") : "turn score"}</small>
               </div>
             </div>
             <BuzzleBoardView
@@ -637,8 +705,18 @@ export default function BuzzlePage() {
             <section className="buzzle-panel rounded-2xl p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div>
-                  <h2 className="font-heading text-lg font-black uppercase text-white">{mode === "online" ? "Your rack" : `${playerName(game.currentPlayer)} rack`}</h2>
-                  <p className="text-xs text-marble/60">Tap or drag a tile. Type a letter on a focused board cell.</p>
+                  <h2 className="font-heading text-lg font-black uppercase text-white">
+                    {game.finished
+                      ? "Final rack"
+                      : mode === "online"
+                        ? "Your rack"
+                        : `${playerName(game.currentPlayer, mode)} rack`}
+                  </h2>
+                  <p className="text-xs text-marble/60">
+                    {game.finished
+                      ? "Match finished. Unplayed tiles deducted and awarded."
+                      : "Tap or drag a tile. Type a letter on a focused board cell."}
+                  </p>
                 </div>
                 <button type="button" className="buzzle-icon-button" aria-label="Shuffle rack" onClick={shuffleRack}>
                   <Shuffle aria-hidden="true" size={18} />
@@ -681,31 +759,79 @@ export default function BuzzlePage() {
               {aiTurn && <p className="mt-3 text-center text-sm font-bold text-ares-gold" role="status">{aiThinking ? "AI searching the hive…" : "AI turn"}</p>}
             </section>
 
-            <section className="buzzle-panel rounded-2xl p-4">
-              <p className="min-h-12 text-sm leading-relaxed text-marble/80" role="status" aria-live="polite">
-                {onlineError ?? analysis?.error ?? notice}
-              </p>
-              <p className="mt-2 text-xs text-marble/55">
-                Dictionary: {dictionary.status === "ready" ? "255,472 filtered English words ready" : dictionary.status === "loading" ? "loading…" : "unavailable—retry with a connection"}
-              </p>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" className="buzzle-secondary-action" disabled={!placements.length || aiTurn || onlineTurnBlocked} onClick={resetDraft}>Recall</button>
-                <button
-                  type="button"
-                  className="buzzle-secondary-action"
-                  data-active={exchangeMode}
-                  disabled={aiTurn || onlineTurnBlocked}
-                  onClick={() => { setExchangeMode((value) => !value); setPlacements([]); setSelectedTileId(null); }}
-                >
-                  Exchange
-                </button>
-                <button type="button" className="buzzle-secondary-action" disabled={placements.length > 0 || exchangeMode || aiTurn || onlineTurnBlocked} onClick={() => void passTurn()}>Pass</button>
-                {exchangeMode ? (
-                  <button type="button" className="buzzle-primary-action" disabled={exchangeSelection.size === 0 || onlineTurnBlocked} onClick={() => void exchangeTiles()}>Swap {exchangeSelection.size || ""}</button>
-                ) : (
-                  <button type="button" className="buzzle-primary-action" disabled={!analysis?.value || dictionary.status !== "ready" || onlineTurnBlocked} onClick={() => void submitPlay()}>Submit</button>
-                )}
-              </div>
+            <section className="buzzle-panel rounded-2xl p-4" aria-label={game.finished ? "Match complete" : "Turn actions"}>
+              {game.finished ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 rounded-xl border border-ares-gold/35 bg-ares-gold/10 p-3">
+                    <Trophy className="h-6 w-6 shrink-0 text-ares-gold" aria-hidden="true" />
+                    <div>
+                      <h3 className="font-heading text-sm font-black uppercase text-white">
+                        {game.winner === "draw"
+                          ? "Hive Draw"
+                          : `${playerName(game.winner as number, mode)} Wins!`}
+                      </h3>
+                      <p className="text-xs text-marble/80">
+                        {game.winner === "draw"
+                          ? `Tied at ${Math.max(...game.players.map((p) => p.score))} points.`
+                          : `Final: ${Math.max(...game.players.map((p) => p.score))} to ${Math.min(...game.players.map((p) => p.score))} points.`}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed text-marble/80" role="status" aria-live="polite">
+                    {onlineError ?? notice}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className="buzzle-secondary-action"
+                      onClick={() => setGameOverOpen(true)}
+                    >
+                      View results
+                    </button>
+                    <button
+                      type="button"
+                      className="buzzle-primary-action flex items-center justify-center gap-1.5"
+                      onClick={() => {
+                        if (mode === "online") {
+                          setOnlineError(null);
+                          setOnlineSetupOpen(true);
+                        } else {
+                          startGame(mode, playerCount);
+                        }
+                      }}
+                    >
+                      <RotateCcw aria-hidden="true" size={16} /> Rematch
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="min-h-12 text-sm leading-relaxed text-marble/80" role="status" aria-live="polite">
+                    {onlineError ?? analysis?.error ?? notice}
+                  </p>
+                  <p className="mt-2 text-xs text-marble/55">
+                    Dictionary: {dictionary.status === "ready" ? "255,472 filtered English words ready" : dictionary.status === "loading" ? "loading…" : "unavailable—retry with a connection"}
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button type="button" className="buzzle-secondary-action" disabled={!placements.length || aiTurn || onlineTurnBlocked} onClick={resetDraft}>Recall</button>
+                    <button
+                      type="button"
+                      className="buzzle-secondary-action"
+                      data-active={exchangeMode}
+                      disabled={aiTurn || onlineTurnBlocked}
+                      onClick={() => { setExchangeMode((value) => !value); setPlacements([]); setSelectedTileId(null); }}
+                    >
+                      Exchange
+                    </button>
+                    <button type="button" className="buzzle-secondary-action" disabled={placements.length > 0 || exchangeMode || aiTurn || onlineTurnBlocked} onClick={() => void passTurn()}>Pass</button>
+                    {exchangeMode ? (
+                      <button type="button" className="buzzle-primary-action" disabled={exchangeSelection.size === 0 || onlineTurnBlocked} onClick={() => void exchangeTiles()}>Swap {exchangeSelection.size || ""}</button>
+                    ) : (
+                      <button type="button" className="buzzle-primary-action" disabled={!analysis?.value || dictionary.status !== "ready" || onlineTurnBlocked} onClick={() => void submitPlay()}>Submit</button>
+                    )}
+                  </div>
+                </>
+              )}
             </section>
             {mode === "online" && onlineGame && (
               <section className="buzzle-panel rounded-2xl p-4 text-sm text-marble/75" aria-label="Online match details">
@@ -804,6 +930,83 @@ export default function BuzzlePage() {
 
       <DialogShell open={handoffPending} onOpenChange={() => undefined} showClose={false} title={`Pass to ${playerName(game.currentPlayer)}`} description="The rack stays hidden until the next player is ready.">
         <button type="button" className="buzzle-primary-action w-full" onClick={() => setHandoffPending(false)}>Reveal my rack</button>
+      </DialogShell>
+
+      <DialogShell
+        open={gameOverOpen}
+        onOpenChange={setGameOverOpen}
+        title={
+          game.winner === "draw"
+            ? "The Hive is Balanced"
+            : `${playerName(game.winner as number, mode)} Wins!`
+        }
+        description={
+          game.winner === "draw"
+            ? `The match ended in a tie with both players at ${Math.max(...game.players.map((p) => p.score))} points.`
+            : `${playerName(game.winner as number, mode)} won the match ${Math.max(...game.players.map((p) => p.score))} to ${Math.min(...game.players.map((p) => p.score))}!`
+        }
+        size="sm"
+        footer={
+          <>
+            <button
+              type="button"
+              className="buzzle-secondary-action"
+              onClick={() => setGameOverOpen(false)}
+            >
+              Review board
+            </button>
+            <button
+              type="button"
+              className="buzzle-primary-action flex items-center justify-center gap-1.5"
+              onClick={() => {
+                setGameOverOpen(false);
+                if (mode === "online") {
+                  setOnlineError(null);
+                  setOnlineSetupOpen(true);
+                } else {
+                  startGame(mode, playerCount);
+                }
+              }}
+            >
+              <RotateCcw aria-hidden="true" size={16} /> Rematch
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${game.players.length}, minmax(0, 1fr))` }}
+          >
+            {game.players.map((player, idx) => {
+              const isWinner = game.winner === idx;
+              const isTie = game.winner === "draw";
+              return (
+                <div
+                  key={idx}
+                  className={`rounded-xl border p-4 text-center transition-all ${
+                    isWinner
+                      ? "border-ares-gold/50 bg-ares-gold/10 text-white shadow-lg shadow-ares-gold/10"
+                      : "border-white/10 bg-white/5 text-marble/80"
+                  }`}
+                >
+                  <p className="text-xs font-bold uppercase tracking-wider text-marble/60">
+                    {playerName(idx, mode)}
+                  </p>
+                  <p className="mt-1 font-heading text-3xl font-black text-white">
+                    {player.score}
+                  </p>
+                  <p className="mt-1 text-xs text-marble/70">
+                    {isWinner ? "🏆 Winner" : isTie ? "🤝 Tied" : `${player.rack.length} tile${player.rack.length === 1 ? "" : "s"} left`}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-center text-xs text-marble/55">
+            Remaining tile values were deducted from player racks and awarded to the player who went out.
+          </p>
+        </div>
       </DialogShell>
     </main>
   );
