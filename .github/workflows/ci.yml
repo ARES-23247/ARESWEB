@@ -313,7 +313,7 @@ jobs:
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     needs:
       - release-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.release-build.result == 'success'
