@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SeasonPicker from "@/components/SeasonPicker";
 import { fetchPublicSeasons } from "@/lib/publicContentApi";
@@ -22,11 +22,13 @@ describe("SeasonPicker", () => {
     render(<SeasonPicker value="" onChange={onChange} />);
 
     const select = await screen.findByRole("combobox", { name: "Linked Season" });
-    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "-- No Season Link --",
-      "NEXT 2026-2027",
-      "DECODE 2025-2026",
-    ]);
+    await waitFor(() => {
+      expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+        "-- No Season Link --",
+        "NEXT 2026-2027",
+        "DECODE 2025-2026",
+      ]);
+    });
     fireEvent.change(select, { target: { value: "2026" } });
     expect(onChange).toHaveBeenCalledWith("2026");
   });

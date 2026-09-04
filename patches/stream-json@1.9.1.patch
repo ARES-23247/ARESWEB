@@ -1,0 +1,27 @@
+diff --git a/filters/FilterBase.js b/filters/FilterBase.js
+index 31c3e94..7fb2390 100644
+--- a/filters/FilterBase.js
++++ b/filters/FilterBase.js
+@@ -3,1 +3,2 @@
+ const {Transform} = require('stream');
++const DEFAULT_MAX_DEPTH = 1024;
+@@ -27,1 +28,9 @@ class FilterBase extends Transform {
+     this._stack = [];
++    const maxDepth = options && 'maxDepth' in options ? options.maxDepth : DEFAULT_MAX_DEPTH;
++    if (
++      maxDepth !== Infinity &&
++      (!Number.isSafeInteger(maxDepth) || maxDepth < 0)
++    ) {
++      throw new RangeError('maxDepth should be a non-negative safe integer or Infinity');
++    }
++    this._maxDepth = maxDepth;
+@@ -85,6 +96,9 @@ class FilterBase extends Transform {
+         }
+         break;
+     }
++    if (this._stack.length > this._maxDepth) {
++      return callback(new RangeError(`filter: JSON nesting depth exceeds maxDepth (${this._maxDepth})`));
++    }
+     this._previousToken = chunk.name;
+     // check, if we allow a chunk
+     if (this._checkChunk(chunk)) {
