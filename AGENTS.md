@@ -41,6 +41,31 @@ vendor-specific directories.
 - Do not deploy, rotate secrets, or change production data without explicit user
   approval. Record required operational steps in documentation instead.
 
+## Standing approval for ARES version refreshes
+
+The owner grants agents standing approval to refresh this repository's ARES
+version references during requested maintenance or release work. Do not ask
+again for each version bump, including a major version, when all of these
+conditions are met:
+
+- Resolve the official ARES-Robotics source to an immutable public commit;
+  verify its release manifest and source blob hashes. Never use unrelated local
+  monorepo edits as release evidence.
+- Review changed referenced source and make the bounded lesson corrections
+  required to keep existing guidance accurate. Update catalog provenance,
+  version text, curriculum plans, and unapproved review-candidate digests together.
+  Preserve historical screenshot identities and other captured evidence.
+- Run the required gates, remote provenance validation, and release-candidate
+  validation. Preserve human-review flags and record the source comparison.
+- Commit and push the refresh through a normal pull request. When the user has
+  already authorized deployment for the active task, include the refresh in that
+  release and continue through protected merge and deployment without asking again.
+
+This approval covers source maintenance, not new curriculum scope, fabricated
+review or test evidence, production Academy document publication/migration,
+secret rotation, or bypassing branch protections, CI, sandbox policy, or managed
+approval controls. Standalone production deployment still needs user authorization.
+
 ## Verification gate
 
 Use Node 24.15 or newer in the Node 24 line (the Cloud Functions runtime),

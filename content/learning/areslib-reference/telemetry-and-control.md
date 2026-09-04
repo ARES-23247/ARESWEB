@@ -13,7 +13,7 @@ Validation](/academy/simulation-is-not-hardware-validation?path=testing-debuggin
 is useful practice before you treat simulator evidence as robot evidence. No physical robot is
 needed.
 
-The topic and logging examples are pinned to the current ARES 15.0.4 contract. A real review must
+The topic and logging examples are pinned to the current ARES 16.0.1 contract. A real review must
 still confirm the source identity and version stored with that run. Never copy a topic meaning from
 one robot or simulator into another record without checking its contract.
 

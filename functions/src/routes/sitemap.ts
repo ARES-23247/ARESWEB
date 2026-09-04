@@ -1,4 +1,5 @@
 import express from "express";
+import { hasPublicContentLifecycle } from "../lib/contentVisibility";
 import { FieldPath } from "firebase-admin/firestore";
 import { adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
@@ -195,7 +196,7 @@ export async function buildSitemapXml(): Promise<string> {
     if (!isSitemapRecordIndexable(doc.id, data)) return;
     // Match the syndication gate: posts with explicit approval metadata must
     // be approved to be sitemap-visible (legacy records predate approvals).
-    if (data.approvalStatus !== undefined && data.approvalStatus !== "approved") return;
+    if (!hasPublicContentLifecycle(data)) return;
     addEntry({
       loc: `${BASE_URL}/blog/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
@@ -218,6 +219,7 @@ export async function buildSitemapXml(): Promise<string> {
   docsSnap.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
     if (!isSitemapRecordIndexable(doc.id, data)) return;
+    if (!hasPublicContentLifecycle(data)) return;
     const path = data.displayInMathCorner === 1 || data.displayInScienceCorner === 1
       ? "academy"
       : data.displayInAreslib === 1

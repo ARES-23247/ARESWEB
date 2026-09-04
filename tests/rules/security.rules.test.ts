@@ -66,6 +66,46 @@ afterAll(async () => {
 });
 
 describe("Firestore zero-trust rules", () => {
+  it("keeps every raw finance operation behind the admin/coach API", async () => {
+    await seedDocument("finance_transactions", "private-ledger", {
+      amount: 19.99, receiptUrl: "https://example.test/receipt", isDeleted: 0,
+    });
+    for (const role of ["admin", "coach", "mentor", "member"]) {
+      await seedAuthorizedUser(`finance-${role}`, role);
+      const db = testEnvironment.authenticatedContext(`finance-${role}`).firestore();
+      const existing = doc(db, "finance_transactions", "private-ledger");
+      await assertFails(getDoc(existing));
+      await assertFails(getDocs(collection(db, "finance_transactions")));
+      await assertFails(setDoc(doc(db, "finance_transactions", `new-${role}`), { amount: 1 }));
+      await assertFails(updateDoc(existing, { amount: -100, recordedBy: "spoofed" }));
+      await assertFails(deleteDoc(existing));
+    }
+  });
+
+  it("binds ownership only to atomic new content, never an existing ownerless draft", async () => {
+    await seedAuthorizedUser("draft-owner", "member");
+    await seedAuthorizedUser("draft-other", "member");
+    const db = testEnvironment.authenticatedContext("draft-owner").firestore();
+    const other = testEnvironment.authenticatedContext("draft-other").firestore();
+    for (const collectionName of ["posts", "docs", "documents"]) {
+      const ownership = { collectionName, contentId: "existing", ownerUid: "draft-owner", createdAt: "2026-09-04" };
+      const draft = { title: "Original", status: "pending_approval", approvalStatus: "pending_approval", isDeleted: 0 };
+      await seedDocument(collectionName, "existing", draft);
+      await assertFails(setDoc(doc(db, "content_owners", `${collectionName}__existing`), ownership));
+      await assertFails(updateDoc(doc(db, collectionName, "existing"), { title: "Claimed" }));
+      await assertFails(runTransaction(db, async tx => {
+        tx.set(doc(db, "content_owners", `${collectionName}__existing`), ownership);
+        tx.update(doc(db, collectionName, "existing"), { title: "Claimed atomically" });
+      }));
+      await assertSucceeds(runTransaction(db, async tx => {
+        tx.set(doc(db, collectionName, "new-draft"), draft);
+        tx.set(doc(db, "content_owners", `${collectionName}__new-draft`), { ...ownership, contentId: "new-draft" });
+      }));
+      await assertSucceeds(updateDoc(doc(db, collectionName, "new-draft"), { title: "Owner edit" }));
+      await assertFails(updateDoc(doc(other, collectionName, "new-draft"), { title: "Other edit" }));
+    }
+  });
+
   it("keeps raw public-content records behind server DTO APIs", async () => {
     await seedAuthorizedUser("member-user", "member");
     const publicDb = testEnvironment.unauthenticatedContext().firestore();

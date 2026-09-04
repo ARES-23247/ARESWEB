@@ -12,6 +12,11 @@ export default defineConfig({
     restoreMocks: true,
     coverage: {
       thresholds: {
+        "src/lib/contentVisibility.ts": {
+          lines: 100,
+          functions: 100,
+          branches: 100,
+        },
         // Preserve the measured legacy baseline and enforce the full standard
         // on the shared authorization, validation, and error middleware.
         lines: 65,

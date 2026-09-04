@@ -1,4 +1,5 @@
 import express from "express";
+import { isPublishedContent } from "../lib/contentVisibility";
 import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
@@ -115,13 +116,11 @@ function contentMediaCollection(value: unknown): ContentMediaCollection {
   return value as ContentMediaCollection;
 }
 
-function isPublishedContent(data: Record<string, unknown>, photoId: string): boolean {
+function includesPublishedPhoto(data: Record<string, unknown>, photoId: string): boolean {
   const mediaPhotoIds = Array.isArray(data.mediaPhotoIds)
     ? data.mediaPhotoIds.filter((value): value is string => typeof value === "string").slice(0, 100)
     : [];
-  return data.status === "published"
-    && data.isDeleted !== 1
-    && (data.approvalStatus === undefined || data.approvalStatus === "approved")
+  return isPublishedContent(data)
     && mediaPhotoIds.includes(photoId);
 }
 
@@ -267,7 +266,7 @@ router.get(
     if (
       !contentDoc.exists ||
       !photoDoc.exists ||
-      !isPublishedContent(contentData, photoId) ||
+      !includesPublishedPhoto(contentData, photoId) ||
       photoData.isDeleted === 1
     ) {
       throw new ApiError(404, "Published content media not found.", "PHOTO_NOT_FOUND");

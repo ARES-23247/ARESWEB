@@ -49,7 +49,7 @@ canonical document. Generated Kotlin is a checked result, not the editing surfac
 ![ARES Robotics Studio Robot Builder showing the real Lightbot Indicator lights subsystem, its
 four authoring stages, and the mechanism template choices.](/academy/studio-3.1.1/subsystem-builder.png)
 
-*Studio 5.0.6 showing the source-owned Lightbot example. The screenshot identifies where students
+*Archived Studio screenshot: Studio showing the source-owned Lightbot example. The screenshot identifies where students
 edit the subsystem contract; it does not prove that either physical light is wired or working.*
 
 ## Hands-on activity

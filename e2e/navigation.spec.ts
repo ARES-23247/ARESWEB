@@ -1,6 +1,49 @@
 import { test, expect } from "./fixtures";
 
 test.describe("Navigation & Accessibility E2E tests", () => {
+  test("desktop disclosures agree with visible state and dismiss with Escape", async ({ page, browserName }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const nav = page.getByRole("navigation", { name: "Main Navigation" });
+    const team = nav.getByRole("button", { name: "Team", exact: true });
+    const resources = nav.getByRole("button", { name: "Resources", exact: true });
+    const about = nav.getByRole("link", { name: "Who We Are", exact: true });
+    await expect(team).toHaveAttribute("aria-expanded", "false");
+    await expect(about).toHaveCount(0);
+    await team.focus();
+    await page.keyboard.press("Tab");
+    await expect(resources).toBeFocused();
+    await team.focus();
+    await page.keyboard.press("Enter");
+    await expect(team).toHaveAttribute("aria-expanded", "true");
+    await expect(about).toBeVisible();
+    await page.keyboard.press("Tab");
+    if (browserName === "webkit" && await resources.evaluate(element => element === document.activeElement)) {
+      // Some WebKit platforms skip links during Tab navigation. Verify that
+      // leaving closes the disclosure, then focus its link to exercise Escape.
+      await expect(resources).toBeFocused();
+      await expect(team).toHaveAttribute("aria-expanded", "false");
+      await team.focus();
+      await page.keyboard.press("Enter");
+      await about.focus();
+    }
+    await expect(about).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(team).toBeFocused();
+    await expect(team).toHaveAttribute("aria-expanded", "false");
+    await expect(about).toHaveCount(0);
+    await team.hover();
+    await expect(team).toHaveAttribute("aria-expanded", "false");
+    await team.click();
+    await expect(about).toBeVisible();
+    await team.click();
+    await expect(about).toHaveCount(0);
+    await resources.click();
+    await expect(resources).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(resources).toHaveAttribute("aria-expanded", "false");
+  });
+
   test("should navigate to homepage and verify branding", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(
@@ -193,7 +236,8 @@ test.describe("Navigation & Accessibility E2E tests", () => {
         // The script runs again after the opaque initial document is replaced.
       }
     });
-    await page.goto("/");
+    // Wait for the consent UI below, not unrelated external font downloads.
+    await page.goto("/", { waitUntil: "domcontentloaded" });
 
     const banner = page.getByRole("region", {
       name: "Optional website analytics",
@@ -226,7 +270,7 @@ test.describe("Navigation & Accessibility E2E tests", () => {
       )
       .toBe("denied");
 
-    await page.goto("/privacy");
+    await page.goto("/privacy", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByText("This browser remains cookie-free for analytics."),
     ).toBeVisible();

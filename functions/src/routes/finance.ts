@@ -117,8 +117,13 @@ function financeWriteRecord(input: FinanceWriteInput, actorUid: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new ApiError(400, "Transaction date must be a YYYY-MM-DD date.");
   }
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0 || Math.round(amount * 100) !== amount * 100) {
+  // Validate decimal digits, then calculate cents from the two parts. Multiplying
+  // a binary floating-point dollar value rejects valid amounts such as 19.99.
+  const amountText = typeof input.amount === "number" || typeof input.amount === "string"
+    ? String(input.amount).trim() : "";
+  const [whole, fraction = ""] = amountText.split(".");
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  if (!/^\d+(?:\.\d{1,2})?$/.test(amountText) || !Number.isSafeInteger(cents) || cents <= 0) {
     throw new ApiError(400, "Amount must be a positive number with at most two decimals.");
   }
   const type = input.type === "income" ? "income" : "expense";
@@ -146,7 +151,7 @@ function financeWriteRecord(input: FinanceWriteInput, actorUid: string) {
   }
   return {
     date,
-    amount: Math.round(amount * 100) / 100,
+    amount: cents / 100,
     type,
     category,
     description,
