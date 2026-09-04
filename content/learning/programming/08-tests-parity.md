@@ -6,7 +6,7 @@ Two files can use the same interface and still act differently. That is why a co
 the same as a behavior test. In this lesson, you will sort current ARES evidence into the right
 level. Then you will design one fair test that can reveal an adapter mismatch.
 
-This lesson matches ARES 15.0.4, FTC SDK 11.1.0, and Studio 5.0.6. Every source link is pinned to
+This lesson matches ARES 16.0.1, FTC SDK 11.1.0, and Studio 6.0.1. Every source link is pinned to
 one reviewed commit in the ARES Robotics monorepo. An older lesson named a `simulation-foundation`
 contract that is not in the current monorepo. Do not look for that removed file.
 
@@ -36,7 +36,7 @@ The current source contains four related ideas. They must not be blended into on
 | Evidence                   | What current ARES does                                                                                                                                                                                    | What it does not prove                                                                      |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Generated adapter contract | Marks `HARDWARE_SIMULATION_PARITY` as `COMPILED_GENERATED_CODE`. Physical and mock adapters compile against the same generated I/O, controller, limits, inversion, follower, and safe-output contract.    | It does not run both adapters or compare their outputs.                                     |
-| Generated mock behavior    | Generates tests for safe startup, failed writes, independent homing and current permits, output limits, disabled stop, invalid feedback, and idempotent cleanup. Selected safety features add more tests. | These tests use generated `Mock...IO`. They do not execute an FTC motor controller.         |
+| Generated mock behavior    | Generates safe-startup tests and adds applicable checks for declared actuators, feedback, control loops, homing, and current monitoring. Selected safety features add more tests. | These tests use generated `Mock...IO`. They do not execute an FTC motor controller.         |
 | FTC simulator lifecycle    | Installs one subsystem instance, then checks the order `readSensors`, `writeOutputs`, and `close`.                                                                                                        | It does not compare a physical adapter with a mock adapter. It does not prove motor motion. |
 | Team-authored paired test  | Uses the same case, units, clock, expected result, and assertions on two test boundaries.                                                                                                                 | It still cannot prove wiring, polarity, load, friction, radio timing, or real travel.       |
 
@@ -45,15 +45,15 @@ a behavior truly needs a two-sided comparison.
 
 ## Read the generated contract carefully
 
-`subsystemVerificationContract` creates checks only when generated verification is enabled. Its
-base behavior checks cover:
+`subsystemVerificationContract` creates checks only when generated verification is enabled.
+Its behavior checks depend on what the document declares:
 
-- safe startup;
-- failed output writes;
-- separate homing and current permits;
-- controller output limits;
-- disabled or stopped neutral output; and
-- invalid feedback plus repeatable cleanup.
+- safe startup for every generated verification contract;
+- failed output writes when an actuator declares a safe output;
+- separate homing and current permits when homing or current monitoring is required;
+- controller output limits when control loops are present;
+- disabled or stopped neutral output when an actuator declares a safe output; and
+- invalid feedback plus repeatable cleanup when feedback or an actuator is present.
 
 The subsystem document can require more checks. Feedback timeouts add stale-feedback rejection.
 Homing adds a dwell test. Explicit neutral recovery adds a one-use request test. Calibration adds a
@@ -63,7 +63,7 @@ The contract also includes the hardware-and-simulation parity item. Its evidence
 `COMPILED_GENERATED_CODE`. That wording matters. It says both generated adapters share a contract.
 It does not say both adapters passed the same runtime case.
 
-ARES 15.0.4 has one more compile-level item when `zeroAllocationPeriodic` is selected. It records
+ARES 16.0.1 has one more compile-level item when `zeroAllocationPeriodic` is selected. It records
 that generated periodic code follows the zero-allocation policy. It does not measure allocated
 bytes. The source explains that byte-allocation regression remains a separate ARES platform test.
 
@@ -119,7 +119,7 @@ column. A simulator result cannot fill a physical column.
 1. Open the pinned monorepo `SubsystemVerificationContract.kt` source.
 2. Find `HARDWARE_SIMULATION_PARITY`.
 3. Record its `COMPILED_GENERATED_CODE` evidence level.
-4. List the six base generated behavior checks.
+4. List the behavior checks and the document conditions that enable each one.
 5. Pick one optional safety setting. Record which extra check it adds and its evidence level.
 6. Find the zero-allocation check. Explain why it is compile evidence, not a byte measurement.
 7. Find the rule that lets an editable generated starter omit generated tests but rejects that choice

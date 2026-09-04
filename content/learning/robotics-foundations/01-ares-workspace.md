@@ -7,9 +7,10 @@ several related products. This lesson helps you find the right home for a change
 code. You do not need an earlier lesson. You only need the current ARES Robotics source tree or its
 GitHub page and a place to record your answers.
 
-The protected release manifest currently names ARES 15.0.4 and Studio 5.0.6. Each product still has
-its own Gradle build because FTC, FRC, the shared library, and the desktop app use different tools
-and run in different places. One source repository does not mean one program or one runtime.
+The protected release manifest currently names ARES 16.0.1 and Studio 6.0.1. Six products have
+separate Gradle builds because FTC, FRC, the shared library, and the desktop app use different tools.
+The XRP starter uses Python and MicroPython instead. One source repository does not mean one
+program or one runtime. This lesson's runtime exercise focuses on FTC and FRC.
 
 ## Vocabulary
 
@@ -67,6 +68,7 @@ Open the workspace and find these owners:
 | `ARES-Analytics/` | ARES Robotics Studio, local data tools, replay, and the gateway |
 | `ARES-FTC-Starter/` | Canonical source for the clean FTC starter release mirror |
 | `ARES-FRC-Starter/` | Canonical source for the clean FRC starter release mirror |
+| `ARES-XRP-Starter/` | Python-native XRP starter, deterministic `.ares` generation, simulator, and deployment tooling |
 | `templates/` | Monorepo-owned runtime templates, not normal student source files |
 | `build-logic/` and `release/` | Shared build rules and immutable release identity |
 

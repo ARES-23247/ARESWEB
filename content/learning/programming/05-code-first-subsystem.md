@@ -33,7 +33,7 @@ If the file changes again, the old token no longer fits.
 
 ## Worked example
 
-Start with the ownership question, not a file-count goal. Current ARES 15.0.4 uses subsystem
+Start with the ownership question, not a file-count goal. Current ARES 16.0.1 uses subsystem
 document schema 11. It names three implementation kinds:
 
 You do not need to memorize the long names at first. Ask three short questions. Can the document own
