@@ -228,6 +228,7 @@ service cloud.firestore {
         request.resource.data.ownerUid == request.auth.uid &&
         request.resource.data.createdAt is string &&
         request.resource.data.createdAt.size() <= 40 &&
+        !exists(/databases/$(database)/documents/$(request.resource.data.collectionName)/$(request.resource.data.contentId)) &&
         existsAfter(/databases/$(database)/documents/$(request.resource.data.collectionName)/$(request.resource.data.contentId));
       allow update, delete: if false;
     }
@@ -515,8 +516,8 @@ service cloud.firestore {
 
     // finance_transactions
     match /finance_transactions/{txId} {
-      allow read: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
-      allow write: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      // Receipts, validation, recorder identity, and archival are API-owned.
+      allow read, write: if false;
     }
 
     // orders (team store checkout mock orders)

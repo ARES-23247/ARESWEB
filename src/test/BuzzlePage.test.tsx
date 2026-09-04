@@ -55,11 +55,12 @@ describe("BUZZLE page", () => {
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
 
     // Execute 6 consecutive passes to trigger game finish (3 full rounds of passes in a 2-player game)
+    const controls = within(screen.getByRole("complementary", { name: "Turn controls" }));
     for (let i = 0; i < 6; i += 1) {
       if (i > 0) {
-        fireEvent.click(screen.getByRole("button", { name: "Reveal my rack" }));
+        fireEvent.click(within(screen.getByRole("dialog", { name: /Pass to/u })).getByRole("button", { name: "Reveal my rack" }));
       }
-      fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+      fireEvent.click(controls.getByRole("button", { name: "Pass" }));
     }
 
     // Game over dialog should be open declaring winner or draw
@@ -93,9 +94,10 @@ describe("BUZZLE page", () => {
     fireEvent.change(screen.getByLabelText("Local players"), { target: { value: "4" } });
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
 
+    const controls = within(screen.getByRole("complementary", { name: "Turn controls" }));
     for (let i = 0; i < 12; i += 1) {
-      if (i > 0) fireEvent.click(screen.getByRole("button", { name: "Reveal my rack" }));
-      fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+      if (i > 0) fireEvent.click(within(screen.getByRole("dialog", { name: /Pass to/u })).getByRole("button", { name: "Reveal my rack" }));
+      fireEvent.click(controls.getByRole("button", { name: "Pass" }));
     }
 
     const dialog = await screen.findByRole("dialog", { name: /Wins!|The Hive is Balanced/u });

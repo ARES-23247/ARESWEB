@@ -1,4 +1,5 @@
 import express from "express";
+import { hasPublicContentLifecycle } from "../lib/contentVisibility";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
 import { toPlainText } from "../lib/contentFormatters";
@@ -78,10 +79,7 @@ router.get(
 
     // Match the syndication gate: a published post must also be approved when
     // approval metadata exists (legacy records predate the approval workflow).
-    const approvedDocs = snapshot.docs.filter((document) => {
-      const approval = (document.data() as Record<string, unknown>).approvalStatus;
-      return approval === undefined || approval === "approved";
-    });
+    const approvedDocs = snapshot.docs.filter((document) => hasPublicContentLifecycle(document.data()));
     const itemDates: Date[] = [];
     const itemsXml = approvedDocs.map((document) => {
       const data = document.data() as Record<string, unknown>;

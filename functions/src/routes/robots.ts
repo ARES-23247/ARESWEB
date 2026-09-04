@@ -79,14 +79,19 @@ export const createRobotSchema = z.object({
   versions: z.array(robotVersionSchema).max(30).optional().default([]),
 });
 
-export const updateRobotSchema = createRobotSchema.omit({ id: true }).partial().refine(
-  // Under zod 4, .partial() preserves the create schema's field defaults, so
-  // an empty body parses with defaulted keys present. Require at least one
-  // value that differs from those defaults instead of counting keys.
-  (value) =>
-    Object.values(value).some(
-      (entry) => entry !== undefined && entry !== "" && !(Array.isArray(entry) && entry.length === 0),
-    ),
+// Remove create-only defaults before making fields optional. An omitted update
+// must not clear stored metadata; an explicitly supplied empty value may do so.
+export const updateRobotSchema = createRobotSchema.omit({ id: true }).extend({
+  programmingLanguage: createRobotSchema.shape.programmingLanguage.removeDefault(),
+  revealVideoId: createRobotSchema.shape.revealVideoId.removeDefault(),
+  onshapeUrl: createRobotSchema.shape.onshapeUrl.removeDefault(),
+  cadViewerUrl: createRobotSchema.shape.cadViewerUrl.removeDefault(),
+  printablesUrl: createRobotSchema.shape.printablesUrl.removeDefault(),
+  primaryMechanism: createRobotSchema.shape.primaryMechanism.removeDefault(),
+  content: createRobotSchema.shape.content.removeDefault(),
+  versions: createRobotSchema.shape.versions.removeDefault(),
+}).partial().refine(
+  (value) => Object.values(value).some((entry) => entry !== undefined),
   "At least one field is required",
 );
 

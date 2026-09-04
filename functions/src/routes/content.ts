@@ -3,6 +3,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { publishedDocumentDto } from "../lib/contentDtos";
+import { isPublishedContent } from "../lib/contentVisibility";
 
 const router = express.Router();
 
@@ -24,14 +25,8 @@ function requestedLibrary(value: unknown): PublicLibrary {
   throw new ApiError(400, "Choose the academy or areslib library.");
 }
 
-function isPublished(data: Record<string, unknown>): boolean {
-  return data.status === "published"
-    && data.isDeleted !== 1
-    && (data.approvalStatus === undefined || data.approvalStatus === "approved");
-}
-
 function isVisibleInLibrary(data: Record<string, unknown>, library: PublicLibrary): boolean {
-  if (!isPublished(data)) return false;
+  if (!isPublishedContent(data)) return false;
   return library === "areslib"
     ? data.displayInAreslib === 1
     : data.displayInMathCorner === 1 || data.displayInScienceCorner === 1;
@@ -64,7 +59,7 @@ router.get(
       .limit(100)
       .get();
     const posts = snapshot.docs
-      .filter((document) => isPublished(document.data()))
+      .filter((document) => isPublishedContent(document.data()))
       .slice(0, 50)
       .map((document) => postDto(document.id, document.data(), false));
     res.json({ posts });
@@ -78,7 +73,7 @@ router.get(
     const slug = safeContentId(req.params.slug);
     const snapshot = await adminDb.collection("posts").doc(slug).get();
     const data = (snapshot.data() || {}) as Record<string, unknown>;
-    if (!snapshot.exists || !isPublished(data)) {
+    if (!snapshot.exists || !isPublishedContent(data)) {
       throw new ApiError(404, "Published blog post not found.", "CONTENT_NOT_FOUND");
     }
     res.json({ post: postDto(slug, data, true) });

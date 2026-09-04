@@ -1,3 +1,5 @@
+import { isPublishedContent } from "./lib/contentVisibility";
+
 export interface PageMetadata {
   title: string;
   description: string;
@@ -87,6 +89,7 @@ export function metadataForDocument(
 ): PageMetadata | null {
   if (data.isDeleted === 1 || data.isDeleted === true || data.searchIndexable === false) return null;
   if (route.collection !== "robots" && data.status !== "published") return null;
+  if ((route.collection === "posts" || route.collection === "docs") && !isPublishedContent(data)) return null;
   if (route.kind === "academy" && data.displayInMathCorner !== 1 && data.displayInScienceCorner !== 1) return null;
   if (route.kind === "docs" && data.displayInAreslib !== 1) return null;
 

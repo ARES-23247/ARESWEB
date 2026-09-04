@@ -650,6 +650,14 @@ describe("photos routes", () => {
   });
 
   describe("publication-aware media gateways", () => {
+    it.each([true, 1, "1", null])("rejects content media with archived or malformed flag %s", async isDeleted => {
+      docGet.mockResolvedValueOnce({ exists: true, data: () => ({ status: "published", approvalStatus: "approved", isDeleted, mediaPhotoIds: ["photo-1"] }) })
+        .mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 0, storagePath: "gallery/photo.jpg" }) });
+      await expectApiError("/public/content/:collection/:contentId/:photoId/:variant", "get",
+        { params: { collection: "posts", contentId: "archived", photoId: "photo-1", variant: "original" }, headers: {} },
+        404, "Published content media not found.");
+      expect(storageFile).not.toHaveBeenCalled();
+    });
     it("streams media referenced by an active published content record", async () => {
       docGet
         .mockResolvedValueOnce({
