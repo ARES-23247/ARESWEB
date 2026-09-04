@@ -189,6 +189,7 @@ export default defineConfig({
         "src/components/ui/Field.tsx",
         "src/components/ui/PageHeader.tsx",
         "src/components/ui/TableFrame.tsx",
+        "src/components/games/GameFullscreen.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/docs/flowchart.ts",
         "src/components/AnalyticsConsentBanner.tsx",

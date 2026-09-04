@@ -22,6 +22,10 @@ import {
   VolumeX,
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import {
+  GameFullscreenButton,
+  useGameFullscreen,
+} from "@/components/games/GameFullscreen";
 import { Button, IconButton } from "@/components/ui/Button";
 import { DialogShell, Drawer } from "@/components/ui/Dialog";
 import {
@@ -382,6 +386,7 @@ function BuzzelloBoardView({
 }
 
 export default function BuzzelloPage() {
+  const fullscreen = useGameFullscreen();
   const [mode, setMode] = useState<BuzzelloMode>("medium");
   const [timeline, setTimeline] = useState<BuzzelloSnapshot[]>(() => [
     createStartingSnapshot(),
@@ -875,7 +880,11 @@ export default function BuzzelloPage() {
         : current.notice;
 
   return (
-    <main className="buzzello-shell min-h-screen bg-obsidian px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8">
+    <main
+      ref={fullscreen.targetRef}
+      className="game-fullscreen-target buzzello-shell min-h-screen bg-obsidian px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8"
+      data-game-fullscreen={fullscreen.isFullscreen || undefined}
+    >
       <SEO
         title="BUZZELLO™"
         exactTitle
@@ -906,6 +915,11 @@ export default function BuzzelloPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <GameFullscreenButton
+                isFullscreen={fullscreen.isFullscreen}
+                onToggle={fullscreen.toggleFullscreen}
+                className="buzzello-secondary-action"
+              />
               <Button
                 variant="gold"
                 className="buzzello-primary-action"

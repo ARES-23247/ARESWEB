@@ -1,30 +1,20 @@
-# BUZZLE™ 217-Cell Board Specification & Developer Handoff Guide
+# BUZZLE™ 217-Cell Board Implementation Reference
 
-> **Official Game Board Architecture (Radius 8)**  
-> **Status**: Approved & Locked (2026-09-03)  
-> **ARESWEB Integration**: Implemented & Verified (100% Tests Passing)
-
----
-
-## 1. Visual Architecture
-
-![Official 217-Cell Clean Board](file:///C:/Users/david/.gemini/antigravity/brain/2297f84f-f061-496a-befc-cc4ec57124a9/buzzle_master_clean_board.png)
+> **Current digital board architecture (radius 8)**
+> This document describes the ARESWEB implementation. It is not a physical manufacturing specification.
 
 ---
 
-## 2. Geometric & Topological Parameters
+## 1. Geometric & Topological Parameters
 
 | Parameter | Value | Details |
 | :--- | :--- | :--- |
 | **Board Radius** | **8** | From center $(0, 0)$ to any of the 6 extreme apex points |
 | **Total Cells** | **217** | Formula: $N = 1 + 3 \times R \times (R + 1) = 1 + 3(8)(9) = 217$ |
-| **Flat-to-Flat Pitch** | **$35.20\text{ mm}$** | $33.80\text{ mm}$ pocket flat $+ 1.40\text{ mm}$ rib dividing wall |
-| **Overall Diameter** | **$563.2\text{ mm}$** | 17 cells point-to-point flat orientation |
-| **3D Print Structure** | **7 Plates** | 1 Central Rosette Hub (37 cells) + 6 Outer Wedges (30 cells each) |
 
 ---
 
-## 3. Coordinate Systems & Bijection
+## 2. Coordinate Systems & Bijection
 
 The board supports both **Axial $(q, r)$** (used in web/game engines like ARESWEB) and **Cubic $(x, y, z)$** (used in 3D CAD/rendering).
 
@@ -42,14 +32,14 @@ $$\begin{cases} q = -z = x + y \\ r = -y \end{cases} \iff \begin{cases} x = q + 
 
 ---
 
-## 4. Multiplier Inventory & Coordinate Sets
+## 3. Multiplier Inventory & Coordinate Sets
 
 | Multiplier | Symbol | Count | Ring Location | Description |
 | :--- | :---: | :---: | :--- | :--- |
 | **Triple Word** | `TW` | **6** | Ring 8 (6 Apexes) | Multiplies total word score by $3\times$ |
 | **Triple Letter** | `TL` | **6** | Ring 8 (6 Perimeter Midpoints) | Multiplies letter value by $3\times$ |
 | **Double Word** | `DW` | **12** | Ring 7 (2 per corner, Row 3) | Multiplies total word score by $2\times$ |
-| **Key Wild** | `DW 🔑` | **6** | Ring 4 (1 per radial spoke) | Acts as Double Word + Wild placement |
+| **Inner Double Word** | `DW` | **6** | Ring 4 (1 per radial spoke) | Multiplies total word score by $2\times$ |
 | **Double Letter** | `DL` | **24** | Rings 2, 4, 6 | Multiplies letter value by $2\times$ |
 | **Start Star** | `★` | **1** | Ring 0 $(0, 0)$ | Opening play must cover $(0, 0)$ ($2\times$ word) |
 | **Plain / Neutral** | — | **162** | Interior / Buffer rows | Regular letter scoring |
@@ -63,7 +53,7 @@ $$\begin{cases} q = -z = x + y \\ r = -y \end{cases} \iff \begin{cases} x = q + 
 
 ---
 
-## 5. Ready-to-Use TypeScript / JavaScript Constants
+## 4. Ready-to-Use TypeScript / JavaScript Constants
 
 For integration into any web engine, React component, or Node backend:
 
@@ -87,8 +77,8 @@ export const DOUBLE_WORD_KEYS = new Set<string>([
   "-6,7", "7,-6", "-1,7", "7,-1", "1,6", "6,1",
 ]);
 
-/** 6 Key Wild spaces at radius 4 along the principal corridors */
-export const KEY_WILD_KEYS = new Set<string>([
+/** 6 inner Double Word spaces at radius 4 along the principal corridors */
+export const INNER_DOUBLE_WORD_KEYS = new Set<string>([
   "-2,-2", "-4,2", "2,-4", "-2,4", "4,-2", "2,2",
 ]);
 
@@ -105,7 +95,7 @@ export function getBuzzleMultiplier(q: number, r: number): "plain" | "DL" | "TL"
   const key = `${q},${r}`;
   if (TRIPLE_WORD_KEYS.has(key)) return "TW";
   if (TRIPLE_LETTER_KEYS.has(key)) return "TL";
-  if (DOUBLE_WORD_KEYS.has(key) || KEY_WILD_KEYS.has(key)) return "DW";
+  if (DOUBLE_WORD_KEYS.has(key) || INNER_DOUBLE_WORD_KEYS.has(key)) return "DW";
   if (DOUBLE_LETTER_KEYS.has(key)) return "DL";
   return "plain";
 }
@@ -113,17 +103,10 @@ export function getBuzzleMultiplier(q: number, r: number): "plain" | "DL" | "TL"
 
 ---
 
-## 6. ARESWEB Codebase Update Status
+## 5. ARESWEB implementation locations
 
-The ARESWEB portal repository (`C:\Users\david\AppData\Local\Temp\aresweb-buzzle` on branch `codex/buzzle-tile-fidelity`) has already been updated:
-
-* `src/lib/buzzle.ts`: Updated to `BUZZLE_RADIUS = 8`, `BUZZLE_CELL_COUNT = 217`, and new multiplier sets.
-* `src/lib/buzzleOnline.ts`: Replaced hardcoded 127 checks with `BUZZLE_CELL_COUNT`.
-* `src/app/buzzle/page.tsx`: Re-scaled dynamic hex grid projection for 17 columns/rows.
-* `src/app/buzzle/buzzle.css`: Re-scaled `.buzzle-cell` width ($7.34\%$) and height ($5.65\%$).
-* `functions/src/lib/buzzleGameDefinition.ts`: Updated backend matchmaking, move validation, and scoring to 217 cells.
-* **Test Verification**:
-  * `vitest run src/test/buzzle*` $\rightarrow$ **23/23 tests passed**
-  * Full Portal Suite $\rightarrow$ **227 test files, 1194 tests passed (100%)**
-  * `tsc --noEmit` & `pnpm --filter functions build` $\rightarrow$ **0 errors**
-  * Changes staged and committed under commit `991fbb6c`.
+The frontend geometry and scoring live in `src/lib/buzzle.ts`. The server-authoritative
+online rules live in `functions/src/lib/buzzleGameDefinition.ts`; both must remain
+synchronized. Rendering is implemented by `src/app/buzzle/page.tsx` and
+`src/app/buzzle/buzzle.css`. Protocol parsing uses `BUZZLE_CELL_COUNT` from the
+shared frontend game module rather than a duplicated literal.

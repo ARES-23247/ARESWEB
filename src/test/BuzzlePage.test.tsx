@@ -8,6 +8,19 @@ vi.mock("@/lib/buzzleDictionary", () => ({
 import BuzzlePage from "@/app/buzzle/page";
 
 describe("BUZZLE page", () => {
+  it("offers a viewport-filling mode with an Escape exit", () => {
+    const { container } = render(<BuzzlePage />);
+    const shell = container.querySelector("main");
+
+    fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
+    fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
+    expect(shell).toHaveAttribute("data-game-fullscreen", "true");
+    expect(screen.getByRole("button", { name: "Exit full screen" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(shell).not.toHaveAttribute("data-game-fullscreen");
+  });
+
   it("renders the complete keyboard-operable hive and starts pass-and-play", async () => {
     render(<BuzzlePage />);
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
@@ -74,4 +87,26 @@ describe("BUZZLE page", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Rematch" })[0]!);
     expect(screen.getByRole("heading", { level: 2, name: "Tournament hive" })).toBeInTheDocument();
   });
+
+  it("marks only the leaders when a four-player match ends", async () => {
+    render(<BuzzlePage />);
+    fireEvent.change(screen.getByLabelText("Local players"), { target: { value: "4" } });
+    fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
+
+    for (let i = 0; i < 12; i += 1) {
+      if (i > 0) fireEvent.click(screen.getByRole("button", { name: "Reveal my rack" }));
+      fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    }
+
+    const dialog = await screen.findByRole("dialog", { name: /Wins!|The Hive is Balanced/u });
+    expect(dialog).not.toHaveTextContent(/both players/u);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Review board" }));
+
+    const scoreCards = [...document.querySelectorAll<HTMLElement>(".buzzle-player-score")];
+    const scores = scoreCards.map((card) => Number(card.querySelector("strong")?.textContent));
+    const highScore = Math.max(...scores);
+    scoreCards.forEach((card, index) => {
+      expect(card.dataset.winner).toBe(String(scores[index] === highScore));
+    });
+  }, 10_000);
 });
