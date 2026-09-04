@@ -14,7 +14,14 @@ overrides:
   fast-xml-parser: ^5.10.1
   protobufjs: ^7.6.5
   uuid: ^11.1.1
-  qs: ^6.14.0
+  qs: ^6.16.0
+
+patchedDependencies:
+  # firebase-tools still loads stream-json through its CommonJS 1.x paths,
+  # which are incompatible with the ESM-only fixed major. Backport the
+  # upstream nesting-depth guard for GHSA-528h-pc64-c93x until it upgrades.
+  stream-json@1.9.1: patches/stream-json@1.9.1.patch
+
 allowBuilds:
   '@google/genai': true
   '@firebase/util': true
