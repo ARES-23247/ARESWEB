@@ -6,7 +6,7 @@ An ARESLib change can pass one small test and still break an FTC robot, an FRC r
 starter project. This reference shows how to match evidence to the boundary that changed. It also
 explains why one version name must always point to one exact set of library files.
 
-This page applies to ARES 15.0.3 and Studio 5.0.5. Read
+This page applies to ARES 15.0.4 and Studio 5.0.6. Read
 [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Use
 [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
 when you need to compare behavior at two runtime boundaries.
@@ -96,7 +96,7 @@ Use the lab below to match a change to the smallest complete validation plan.
 
 <releasevalidationlab />
 
-The lab follows the pinned ARES 15.0.3 development and publishing documents. It does not inspect a
+The lab follows the pinned ARES 15.0.4 development and publishing documents. It does not inspect a
 branch, run a build, publish files, or approve a release.
 
 Then create a change card for one real proposed change. Do not edit or publish anything yet.

@@ -24,6 +24,19 @@ describe("BUZZELLO page", () => {
     window.history.replaceState(null, "", "/buzzello");
   });
 
+  it("offers a viewport-filling mode with an Escape exit", () => {
+    const { container } = renderPage();
+    const shell = container.querySelector("main");
+
+    fireEvent.click(screen.getByRole("button", { name: /pass & play/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
+    expect(shell).toHaveAttribute("data-game-fullscreen", "true");
+    expect(screen.getByRole("button", { name: "Exit full screen" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(shell).not.toHaveAttribute("data-game-fullscreen");
+  });
+
   it("starts a local match, plays a legal move, and supports undo", () => {
     renderPage();
 

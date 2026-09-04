@@ -70,7 +70,7 @@ sample at or before that time. It never fills a gap with a future value or a cur
 ![ARES Robotics Studio Guided Run Review showing the ordered workflow, selected run, preserved
 source identity, filename, decoder, digest, freshness, and interpretation confidence.](/academy/studio-3.1.1/guided-run-review.png)
 
-*Studio 5.0.5 keeps provenance and limits next to the selected run. Read those fields before using
+*Studio 5.0.6 keeps provenance and limits next to the selected run. Read those fields before using
 a graph or proposing a cause.*
 
 ## Hands-on activity

@@ -19,6 +19,10 @@ import {
   Users,
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import {
+  GameFullscreenButton,
+  useGameFullscreen,
+} from "@/components/games/GameFullscreen";
 import { DialogShell } from "@/components/ui/Dialog";
 import {
   BUZZLE_COORDINATES,
@@ -87,15 +91,32 @@ function playerName(index: number, currentMode?: BuzzleMode): string {
   return `Player ${index + 1}`;
 }
 
+function getBuzzleLeaderIndexes(game: BuzzleGameState): number[] {
+  if (!game.finished) return [];
+  const highScore = Math.max(...game.players.map(({ score }) => score));
+  return game.players.flatMap(({ score }, index) => score === highScore ? [index] : []);
+}
+
+function formatPlayerNames(indexes: readonly number[], currentMode?: BuzzleMode): string {
+  const names = indexes.map((index) => playerName(index, currentMode));
+  if (names.length <= 1) return names[0] ?? "No player";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names.at(-1)}`;
+}
+
 function getBuzzleEndSummary(game: BuzzleGameState, currentMode?: BuzzleMode): string {
   if (!game.finished || game.winner === null) return "";
-  const high = Math.max(...game.players.map((p) => p.score));
-  const low = Math.min(...game.players.map((p) => p.score));
+  const leaders = getBuzzleLeaderIndexes(game);
+  const high = game.players[leaders[0]!]!.score;
   if (game.winner === "draw") {
-    return `Game over. The match ended in a draw at ${high} points.`;
+    return `Game over. ${formatPlayerNames(leaders, currentMode)} tied for first at ${high} points.`;
   }
   const winnerName = playerName(game.winner, currentMode);
-  return `Game over! ${winnerName} wins ${high} to ${low}!`;
+  if (game.players.length === 2) {
+    const otherScore = game.players[game.winner === 0 ? 1 : 0]!.score;
+    return `Game over! ${winnerName} wins ${high} to ${otherScore}!`;
+  }
+  return `Game over! ${winnerName} wins with ${high} points.`;
 }
 
 function onlineGameSnapshot(game: OnlineBuzzleGame): BuzzleGameState {
@@ -260,6 +281,7 @@ function BuzzleBoardView({
 }
 
 export default function BuzzlePage() {
+  const fullscreen = useGameFullscreen();
   const inviteFromHash = useRef(
     typeof window === "undefined" ? null : window.location.hash.match(/^#join=([2-9A-HJ-NP-Z]{8})$/u)?.[1] ?? null,
   ).current;
@@ -308,6 +330,7 @@ export default function BuzzlePage() {
   }, []);
 
   const applyOnlineGame = useCallback((next: OnlineBuzzleGame) => {
+    const wasFinished = onlineGameRef.current?.finished ?? false;
     onlineGameRef.current = next;
     setOnlineGame(next);
     const snapshot = onlineGameSnapshot(next);
@@ -316,7 +339,7 @@ export default function BuzzlePage() {
     setOnlineSetupOpen(false);
     setOnlinePollingStopped(false);
     resetDraft();
-    if (snapshot.finished) {
+    if (snapshot.finished && !wasFinished) {
       setGameOverOpen(true);
     }
   }, [resetDraft]);
@@ -603,8 +626,25 @@ export default function BuzzlePage() {
     });
   };
 
+  const startAnotherGame = () => {
+    setGameOverOpen(false);
+    if (mode === "online") {
+      setOnlineError(null);
+      setOnlineSetupOpen(true);
+    } else {
+      startGame(mode, playerCount);
+    }
+  };
+
+  const resultLeaderIndexes = getBuzzleLeaderIndexes(game);
+  const startAnotherGameLabel = mode === "online" ? "New online game" : "Rematch";
+
   return (
-    <main className="buzzle-shell min-h-screen px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8">
+    <main
+      ref={fullscreen.targetRef}
+      className="game-fullscreen-target buzzle-shell min-h-screen px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8"
+      data-game-fullscreen={fullscreen.isFullscreen || undefined}
+    >
       <SEO
         title="BUZZLE™ Hexagonal Word Game"
         description="Play BUZZLE, a three-axis hexagonal word game from ARES 23247."
@@ -621,6 +661,11 @@ export default function BuzzlePage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <GameFullscreenButton
+                isFullscreen={fullscreen.isFullscreen}
+                onToggle={fullscreen.toggleFullscreen}
+                className="buzzle-secondary-action"
+              />
               <button type="button" className="buzzle-secondary-action" onClick={() => setRulesOpen(true)}>
                 <BookOpen aria-hidden="true" size={18} /> Rules
               </button>
@@ -635,7 +680,7 @@ export default function BuzzlePage() {
           <div className="flex min-w-0 gap-2 overflow-x-auto pb-1" aria-label="Player scores">
             {game.players.map((player, index) => {
               const isWinner = game.finished && game.winner === index;
-              const isTie = game.finished && game.winner === "draw";
+              const isTie = game.finished && game.winner === "draw" && resultLeaderIndexes.includes(index);
               return (
                 <div
                   key={index}
@@ -718,7 +763,7 @@ export default function BuzzlePage() {
                       : "Tap or drag a tile. Type a letter on a focused board cell."}
                   </p>
                 </div>
-                <button type="button" className="buzzle-icon-button" aria-label="Shuffle rack" onClick={shuffleRack}>
+                <button type="button" className="buzzle-icon-button" aria-label="Shuffle rack" disabled={game.finished} onClick={shuffleRack}>
                   <Shuffle aria-hidden="true" size={18} />
                 </button>
               </div>
@@ -771,9 +816,7 @@ export default function BuzzlePage() {
                           : `${playerName(game.winner as number, mode)} Wins!`}
                       </h3>
                       <p className="text-xs text-marble/80">
-                        {game.winner === "draw"
-                          ? `Tied at ${Math.max(...game.players.map((p) => p.score))} points.`
-                          : `Final: ${Math.max(...game.players.map((p) => p.score))} to ${Math.min(...game.players.map((p) => p.score))} points.`}
+                        {getBuzzleEndSummary(game, mode)}
                       </p>
                     </div>
                   </div>
@@ -791,16 +834,9 @@ export default function BuzzlePage() {
                     <button
                       type="button"
                       className="buzzle-primary-action flex items-center justify-center gap-1.5"
-                      onClick={() => {
-                        if (mode === "online") {
-                          setOnlineError(null);
-                          setOnlineSetupOpen(true);
-                        } else {
-                          startGame(mode, playerCount);
-                        }
-                      }}
+                      onClick={startAnotherGame}
                     >
-                      <RotateCcw aria-hidden="true" size={16} /> Rematch
+                      <RotateCcw aria-hidden="true" size={16} /> {startAnotherGameLabel}
                     </button>
                   </div>
                 </div>
@@ -940,11 +976,7 @@ export default function BuzzlePage() {
             ? "The Hive is Balanced"
             : `${playerName(game.winner as number, mode)} Wins!`
         }
-        description={
-          game.winner === "draw"
-            ? `The match ended in a tie with both players at ${Math.max(...game.players.map((p) => p.score))} points.`
-            : `${playerName(game.winner as number, mode)} won the match ${Math.max(...game.players.map((p) => p.score))} to ${Math.min(...game.players.map((p) => p.score))}!`
-        }
+        description={getBuzzleEndSummary(game, mode)}
         size="sm"
         footer={
           <>
@@ -958,29 +990,23 @@ export default function BuzzlePage() {
             <button
               type="button"
               className="buzzle-primary-action flex items-center justify-center gap-1.5"
-              onClick={() => {
-                setGameOverOpen(false);
-                if (mode === "online") {
-                  setOnlineError(null);
-                  setOnlineSetupOpen(true);
-                } else {
-                  startGame(mode, playerCount);
-                }
-              }}
+              onClick={startAnotherGame}
             >
-              <RotateCcw aria-hidden="true" size={16} /> Rematch
+              <RotateCcw aria-hidden="true" size={16} /> {startAnotherGameLabel}
             </button>
           </>
         }
       >
         <div className="space-y-4">
           <div
-            className="grid gap-2"
-            style={{ gridTemplateColumns: `repeat(${game.players.length}, minmax(0, 1fr))` }}
+            className="grid gap-2 sm:grid-cols-2"
           >
             {game.players.map((player, idx) => {
               const isWinner = game.winner === idx;
-              const isTie = game.winner === "draw";
+              const isTie = game.winner === "draw" && resultLeaderIndexes.includes(idx);
+              const rackCount = mode === "online"
+                ? (onlineGame?.players[idx]?.rackCount ?? 0)
+                : player.rack.length;
               return (
                 <div
                   key={idx}
@@ -997,7 +1023,11 @@ export default function BuzzlePage() {
                     {player.score}
                   </p>
                   <p className="mt-1 text-xs text-marble/70">
-                    {isWinner ? "🏆 Winner" : isTie ? "🤝 Tied" : `${player.rack.length} tile${player.rack.length === 1 ? "" : "s"} left`}
+                    {isWinner
+                      ? "Winner"
+                      : isTie
+                        ? "Tied for first"
+                        : `${rackCount} tile${rackCount === 1 ? "" : "s"} left`}
                   </p>
                 </div>
               );

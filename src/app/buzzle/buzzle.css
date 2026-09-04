@@ -50,7 +50,8 @@
 
 .buzzle-icon-button { width: 2.75rem; padding: 0; }
 .buzzle-primary-action:disabled,
-.buzzle-secondary-action:disabled { cursor: not-allowed; opacity: 0.42; }
+.buzzle-secondary-action:disabled,
+.buzzle-icon-button:disabled { cursor: not-allowed; opacity: 0.42; }
 .buzzle-primary-action:focus-visible,
 .buzzle-secondary-action:focus-visible,
 .buzzle-icon-button:focus-visible,
@@ -174,7 +175,10 @@
 @media (max-width: 420px) {
   .buzzle-arena { padding-inline: 0.1rem; }
   .buzzle-board { border-radius: 0.7rem; }
-  .buzzle-cell { width: 9.85%; }
+  .buzzle-tile-face[data-compact="true"] .buzzle-tile-letter { top: 30%; left: 44%; font-size: 0.75rem; line-height: 0.8; }
+  .buzzle-tile-face[data-compact="true"] .buzzle-tile-points { right: 14%; bottom: 5%; font-size: 0.53125rem; line-height: 0.8; }
+  .buzzle-tile-face[data-compact="true"][data-points="10"] .buzzle-tile-letter { left: 36%; }
+  .buzzle-tile-face[data-compact="true"][data-points="10"] .buzzle-tile-points { right: 8%; }
   .buzzle-rack { padding-inline: 0.55rem; }
 }
 

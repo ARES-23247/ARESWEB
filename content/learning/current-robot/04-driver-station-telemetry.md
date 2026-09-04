@@ -7,7 +7,7 @@ small, readable, and separate from control. This lesson traces the current ARES 
 into the shared FTC telemetry manager. You will model its two rate limits and design one useful
 status line without hiding invalid data.
 
-This lesson applies to the ARES 15.0.3 shared library and ARES FTC 15.0.4 season source. Complete
+This lesson applies to the ARES 15.0.4 shared library and ARES FTC 15.0.5 season source. Complete
 [Telemetry, Control State, and Offline Logs](/academy/telemetry-and-control?path=testing-debugging-commissioning)
 and [Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=ftc-robot-with-ares)
 first. No robot is required for the activity.

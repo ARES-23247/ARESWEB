@@ -93,9 +93,7 @@ test("starts a local BUZZLE game with a complete accessible hive", async ({ page
   expect(boardLetterSize).toBeGreaterThanOrEqual(desktop ? 22 : 12);
   expect(boardPointSize).toBeGreaterThanOrEqual(desktop ? 12 : 8.5);
   expect(boardTextOverlaps).toBe(false);
-  if (desktop) {
-    expect(worstCaseBoardOverlap).toBe(false);
-  }
+  expect(worstCaseBoardOverlap).toBe(false);
   await page.getByRole("button", { name: "Recall" }).click();
   await expect(board.locator('[data-draft="true"]')).toHaveCount(0);
 });
@@ -131,7 +129,19 @@ test("fits the entire 217-cell board on a narrow phone without a nested scroller
   expect(overflow).not.toContain("auto");
   expect(overflow).not.toContain("scroll");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  const firstCell = await board.getByRole("gridcell").first().boundingBox();
-  expect(firstCell!.width).toBeGreaterThanOrEqual(24);
-  expect(firstCell!.height).toBeGreaterThanOrEqual(20);
+  const geometry = await board.getByRole("gridcell").evaluateAll((cells) => cells.map((cell) => {
+    const box = cell.getBoundingClientRect();
+    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+  }));
+  expect(geometry[0]!.width).toBeGreaterThanOrEqual(18);
+  expect(geometry[0]!.height).toBeGreaterThanOrEqual(18);
+
+  const center = await board.getByRole("gridcell", { name: /q 0, r 0/u }).boundingBox();
+  const east = await board.getByRole("gridcell", { name: /q 1, r 0/u }).boundingBox();
+  const southeast = await board.getByRole("gridcell", { name: /q 0, r 1/u }).boundingBox();
+  expect(center).not.toBeNull();
+  expect(east).not.toBeNull();
+  expect(southeast).not.toBeNull();
+  expect(east!.x - center!.x).toBeGreaterThanOrEqual(center!.width * 0.72);
+  expect(southeast!.y - center!.y).toBeGreaterThanOrEqual(center!.height * 0.95);
 });

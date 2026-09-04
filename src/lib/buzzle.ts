@@ -88,7 +88,7 @@ const DOUBLE_WORD_KEYS = new Set([
   "-6,-1", "-1,-6", "-7,1", "1,-7", "-7,6", "6,-7",
   "-6,7", "7,-6", "-1,7", "7,-1", "1,6", "6,1",
 ]);
-const KEY_WILD_KEYS = new Set([
+const INNER_DOUBLE_WORD_KEYS = new Set([
   "-2,-2", "-4,2", "2,-4", "-2,4", "4,-2", "2,2",
 ]);
 const DOUBLE_LETTER_KEYS = new Set([
@@ -114,7 +114,7 @@ export function getBuzzleMultiplier(index: number): BuzzleMultiplier {
   if (coordinate.q === 0 && coordinate.r === 0) return "star";
   if (TRIPLE_WORD_KEYS.has(key)) return "TW";
   if (TRIPLE_LETTER_KEYS.has(key)) return "TL";
-  if (DOUBLE_WORD_KEYS.has(key) || KEY_WILD_KEYS.has(key)) return "DW";
+  if (DOUBLE_WORD_KEYS.has(key) || INNER_DOUBLE_WORD_KEYS.has(key)) return "DW";
   if (DOUBLE_LETTER_KEYS.has(key)) return "DL";
   return "plain";
 }
