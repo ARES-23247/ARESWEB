@@ -1,6 +1,6 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { Button, IconButton, type ButtonVariant } from "@/components/ui/Button";
 
@@ -43,6 +43,7 @@ export interface DialogShellProps {
   closeLabel?: string;
   className?: string;
   overlayClassName?: string;
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
 export function DialogShell({
@@ -60,6 +61,7 @@ export function DialogShell({
   closeLabel = "Close dialog",
   className,
   overlayClassName,
+  returnFocusRef,
 }: DialogShellProps) {
   const isDrawer = placement === "right";
 
@@ -75,6 +77,10 @@ export function DialogShell({
           )}
         />
         <RadixDialog.Content
+          onCloseAutoFocus={returnFocusRef ? (event) => {
+            event.preventDefault();
+            returnFocusRef.current?.focus();
+          } : undefined}
           {...(description ? {} : { "aria-describedby": undefined })}
           className={cn(
             "fixed flex flex-col border border-white/15 bg-obsidian text-marble shadow-2xl focus:outline-none",

@@ -13,6 +13,9 @@ test("plays an accessible local BUZZELLO turn and restores the opening state", a
 
   const board = page.getByRole("grid", { name: /BUZZELLO board/ });
   await expect(board).toBeVisible();
+  const turnIndicator = page.getByRole("status", { name: "Current turn" });
+  await expect(turnIndicator).toBeVisible();
+  await expect(turnIndicator).toHaveText("Yellow’s turn");
   await expect(board.getByRole("gridcell")).toHaveCount(61);
   await expect(board.locator(".buzzello-tile-art")).toHaveCount(6);
   await expect(
@@ -40,9 +43,11 @@ test("plays an accessible local BUZZELLO turn and restores the opening state", a
     .first()
     .click();
   await expect(page.getByText("Black to move.")).toBeVisible();
+  await expect(turnIndicator).toHaveText("Black’s turn");
 
   await page.getByRole("button", { name: "Undo move" }).click();
   await expect(page.getByText(/Yellow opens/)).toBeVisible();
+  await expect(turnIndicator).toHaveText("Yellow’s turn");
 
   const rulesTrigger = page.getByRole("button", { name: "Rules" });
   await rulesTrigger.click();

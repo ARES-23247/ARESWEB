@@ -2,6 +2,8 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 export default defineConfig({
   plugins: [
@@ -52,6 +54,7 @@ export default defineConfig({
           /^\/tournaments(?:\/|$)/,
           /^\/academy\/playground\/?$/,
           /^\/tasks\/?$/,
+          /^\/buzzle\/word-tools\/?$/,
         ],
         globPatterns: [
           "index.html",
@@ -63,8 +66,34 @@ export default defineConfig({
           "assets/rolldown-runtime-*.js",
           "assets/vendor-{framer,radix,lucide}-*.js",
         ],
-        // API and Firebase traffic must always reach the network. Only the
-        // versioned application shell is precached.
+        // The physical-play companion must reopen offline. Follow Vite's
+        // static imports instead of guessing shared chunk names or caching
+        // every game/editor. Only this public lexicon and static assets are
+        // added; API, definition-provider, and Firebase traffic stay network-only.
+        additionalManifestEntries: [{
+          url: "data/buzzle-words.txt",
+          revision: createHash("sha256").update(readFileSync("public/data/buzzle-words.txt")).digest("hex"),
+        }],
+        manifestTransforms: [async (entries) => {
+          const manifest = JSON.parse(readFileSync("dist/.vite/manifest.json", "utf8")) as Record<string, { file: string; imports?: string[]; css?: string[]; assets?: string[] }>;
+          const visited = new Set<string>();
+          const urls = new Set(entries.map(({ url }) => url));
+          function include(key: string) {
+            if (visited.has(key)) return;
+            visited.add(key);
+            const chunk = manifest[key];
+            if (!chunk) throw new Error(`Missing offline Word Tools chunk: ${key}`);
+            for (const url of [chunk.file, ...(chunk.css ?? []), ...(chunk.assets ?? [])]) {
+              if (!urls.has(url)) {
+                entries.push({ url, revision: null, size: readFileSync(path.join("dist", url)).length });
+                urls.add(url);
+              }
+            }
+            for (const dependency of chunk.imports ?? []) include(dependency);
+          }
+          include("src/app/buzzle/word-tools/page.tsx");
+          return { manifest: entries };
+        }],
         runtimeCaching: [],
       },
       devOptions: {
@@ -83,6 +112,7 @@ export default defineConfig({
     port: 3000,
   },
   build: {
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -170,6 +200,8 @@ export default defineConfig({
         "src/lib/buzzle.ts",
         "src/lib/buzzleAi.ts",
         "src/lib/buzzleDictionary.ts",
+        "src/lib/buzzleWordHelp.ts",
+        "src/lib/buzzleDefinitions.ts",
         "src/lib/buzzleOnline.ts",
         "src/lib/learningContent.ts",
         "src/lib/learningExperience.ts",
@@ -251,6 +283,8 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/buzzleWordHelp.ts": { lines: 85, functions: 100 },
+        "src/lib/buzzleDefinitions.ts": { lines: 85, functions: 100 },
         "src/lib/buzzleOnline.ts": {
           lines: 85,
           functions: 100,

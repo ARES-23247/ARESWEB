@@ -51,8 +51,11 @@ describe("public truth and reliability pages", () => {
       "3. Youth Privacy",
       "4. Optional AI Media Assistance",
       "5. Secure Administration",
+      "6. BUZZLE Dictionary",
     ]);
     expect(screen.getByText(/uses Google sign-in, then checks the signed-in account against current server-side team access records/i)).toBeInTheDocument();
+    expect(screen.getByText(/accepted BUZZLE word sends that word directly to Wiktionary/i)).toBeInTheDocument();
+    expect(document.body).toHaveTextContent(/do not send your rack, match tokens, or account details/i);
     expect(document.body).not.toHaveTextContent(/strictly adhere|never sold|used to train other AI|FIRST.*identity providers/i);
   });
 

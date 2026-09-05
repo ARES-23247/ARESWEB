@@ -195,6 +195,17 @@ export default function PrivacyPage() {
               the route-specific safeguards described in our security operations.
             </p>
           </section>
+          <section className="bg-white/5 border border-white/10 p-8 hero-card">
+            <h2 className="text-2xl font-bold font-heading mb-4">6. BUZZLE Dictionary</h2>
+            <p className="text-marble leading-relaxed">
+              Looking up an accepted BUZZLE word sends that word directly to
+              Wiktionary. The provider also receives normal connection data,
+              including your IP address. We omit credentials and the page referrer,
+              and do not send your rack, match tokens, or account details. Definitions
+              are cached temporarily in memory while Word Help is open. Word lists
+              and Help Mode searches run locally after the game word list loads.
+            </p>
+          </section>
         </div>
 
         <div className="mt-16 text-center text-marble text-sm">
