@@ -1,6 +1,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
 const canonicalSkills = [
@@ -60,9 +61,9 @@ if (JSON.stringify(actualSkills) !== JSON.stringify(canonicalSkills)) {
   );
 }
 
-for (const duplicateRoot of [".gemini/skills", ".agent/skills"]) {
+for (const duplicateRoot of [".gemini/skills", ".agent/skills", ".codex/skills", ".agent/rules", "AGENTS.override.md"]) {
   if (await exists(duplicateRoot)) {
-    fail(`${duplicateRoot} duplicates the canonical .agents/skills tree`);
+    fail(`${duplicateRoot} duplicates or shadows shared instructions`);
   }
 }
 
@@ -95,14 +96,70 @@ if (!/^@\.\.\/\.\.\/AGENTS\.md$/m.test(antigravityRule)) {
   fail(`${antigravityRulePath} must import ../../AGENTS.md`);
 }
 
-const copilotInstructions = await read(".github/copilot-instructions.md");
+const guide = await read("AGENTS.md");
 for (const skillName of canonicalSkills) {
-  if (!copilotInstructions.includes(`.agents/skills/${skillName}/SKILL.md`)) {
-    fail(`Copilot instructions must reference ${skillName}`);
+  if (!guide.includes(`](.agents/skills/${skillName}/SKILL.md)`)) {
+    fail(`AGENTS.md must link to ${skillName}`);
   }
+}
+
+for (const match of guide.matchAll(/`((?:src|functions|scripts|infra|content|\.github)\/[^`\s]+)`/g)) {
+  if (!(await exists(match[1]))) fail(`AGENTS.md references missing repository path ${match[1]}`);
+}
+
+const rootPackage = JSON.parse(await read("package.json"));
+for (const match of guide.matchAll(/^pnpm run ([\w:-]+)$/gm)) {
+  if (!rootPackage.scripts[match[1]]) fail(`AGENTS.md names unknown package script ${match[1]}`);
+}
+
+const claudeInstructions = await read("CLAUDE.md");
+if (!/^@AGENTS\.md$/m.test(claudeInstructions)) fail("CLAUDE.md must import AGENTS.md");
+const copilotInstructions = await read(".github/copilot-instructions.md");
+if (!copilotInstructions.includes("[AGENTS.md](../AGENTS.md)")) {
+  fail("Copilot instructions must link to ../AGENTS.md");
+}
+for (const [file, source] of [
+  ["GEMINI.md", geminiContext], ["CLAUDE.md", claudeInstructions],
+  [antigravityRulePath, antigravityRule], [".github/copilot-instructions.md", copilotInstructions],
+]) {
+  if (source.length > 1500) fail(`${file} must remain a thin entry point; put policy in AGENTS.md`);
+}
+
+// Inspect both the index and effective ignores: tracked files can still match
+// ignore rules, and untracked skill resources are missing from other clones.
+const required = new Set(["AGENTS.md", "GEMINI.md", "CLAUDE.md", ".github/copilot-instructions.md", "docs/AGENT_SETUP.md"]);
+async function collect(relativePath) {
+  for (const entry of await readdir(path.join(root, relativePath), { withFileTypes: true })) {
+    const child = `${relativePath}/${entry.name}`;
+    if (entry.isSymbolicLink()) fail(`${child} must be a repository file, not a machine-specific symlink`);
+    else if (entry.isDirectory()) await collect(child);
+    else required.add(child);
+  }
+}
+await collect(".agents/skills");
+await collect(".agents/rules");
+for (const skillName of canonicalSkills) {
+  const metadataPath = `.agents/skills/${skillName}/agents/openai.yaml`;
+  required.add(metadataPath);
+  if (!(await read(metadataPath)).includes(`$${skillName}`)) fail(`${metadataPath} prompt must reference its shared skill`);
+}
+const tracked = spawnSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" });
+if (tracked.status !== 0) fail("Cannot inspect the Git index; run from a Git checkout");
+else {
+  const indexed = new Set(tracked.stdout.split("\0"));
+  for (const file of required) {
+    if (!(await exists(file))) fail(`${file} must exist`);
+    if (!indexed.has(file)) fail(`${file} must be tracked in Git`);
+  }
+  const ignored = spawnSync("git", ["check-ignore", "--no-index", "--stdin", "-z"], {
+    cwd: root, input: [...required].join("\0") + "\0", encoding: "utf8",
+  });
+  if (ignored.status === 0) {
+    for (const file of ignored.stdout.split("\0").filter(Boolean)) fail(`${file} must not be Git ignored`);
+  } else if (ignored.status !== 1) fail("Cannot inspect Git ignore rules");
 }
 
 if (process.exitCode) process.exit();
 console.log(
-  `Validated ${canonicalSkills.length} shared skills plus Gemini, Antigravity, and Copilot discovery.`,
+  `Validated ${canonicalSkills.length} tracked shared skills and Codex, Gemini, Antigravity, Claude, and Copilot entry points.`,
 );

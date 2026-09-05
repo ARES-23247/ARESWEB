@@ -40,6 +40,7 @@ export const TEAM_LINKS: NavItemConfig[] = [
 export const RESOURCE_LINKS: NavItemConfig[] = [
   { label: "Play BUZZELLO", to: "/buzzello", icon: Hexagon, iconColor: "text-ares-gold" },
   { label: "Play BUZZLE", to: "/buzzle", icon: Hexagon, iconColor: "text-ares-gold" },
+  { label: "Pollenator Pile-Up", to: "/pollen", icon: Hexagon, iconColor: "text-ares-gold" },
   { label: "Tech Stack", to: "/tech-stack", icon: Cpu, iconColor: "text-ares-cyan" },
   { label: "Robots Fleet", to: "/robots", icon: Cpu, iconColor: "text-ares-bronze" },
   { label: "3D Models Archive", href: "https://www.printables.com/@ARESFTC_3784306", icon: Layers, iconColor: "text-ares-red" },

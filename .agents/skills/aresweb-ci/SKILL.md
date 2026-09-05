@@ -11,8 +11,7 @@ and `.github/workflows/ci.yml` as authoritative.
 
 ## Required checks
 
-Run the root `AGENTS.md` verification gate. Also run
-`pnpm --filter functions lint`; CI must lint both frontend and Functions source.
+Run the root `AGENTS.md` verification gate, including both frontend and Functions lint.
 Use focused tests while iterating, then run the full gate before handoff.
 
 - Do not lower thresholds, exclude changed production code, or replace failing
@@ -29,6 +28,12 @@ Use focused tests while iterating, then run the full gate before handoff.
   on unexpected Functions or public/private invoker drift; never auto-delete
   unknown cloud resources.
 - Never add service-account JSON, refresh tokens, or long-lived deploy secrets.
+
+Production delivery uses `.github/workflows/ci.yml` after a protected merge to
+`master`: build the verified artifact, deploy the bounded game Cloud Run image,
+deploy the declared Functions, switch Hosting/rules, then verify live health and
+browser security. Check the run's final result; a merge is not a completed deploy.
+Do not use the package's direct Functions deploy command to bypass this workflow.
 
 Do not deploy, rotate secrets, change environments, or mutate production data
 without explicit user approval. Build and test approval does not imply deployment

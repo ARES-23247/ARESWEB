@@ -93,3 +93,15 @@ gha-creds-*.json
 # Explicitly track files we want
 !eslint.config.js
 !eslint.config.mjs
+
+# Shared AI guidance belongs in every clone (including new skill resources).
+!/AGENTS.md
+!/GEMINI.md
+!/CLAUDE.md
+!/.github/
+!/.github/copilot-instructions.md
+!/.agents/
+!/.agents/skills/
+!/.agents/skills/**
+!/.agents/rules/
+!/.agents/rules/**

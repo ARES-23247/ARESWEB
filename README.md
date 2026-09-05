@@ -77,6 +77,10 @@ See `AGENTS.md` for the complete handoff gate. Repository skills live once under
 Antigravity. Production deploys occur only through the protected GitHub Actions
 workflow after merge to `master`.
 
+For shared AI contributor setup and troubleshooting, see
+[Agent setup](docs/AGENT_SETUP.md). Agent instructions and skills are tracked
+repository files; changes must pass `pnpm run validate:agents`.
+
 Google Drive uses a dedicated read-only credential, restricted Google Picker,
 explicit draft imports, and a private incremental-change schedule. See
 `docs/GOOGLE_DRIVE_INTEGRATION.md` before configuring or rotating that account.

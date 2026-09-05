@@ -1,13 +1,46 @@
 # ARESWEB Agent Guide
 
 This repository is a Vite + React 19 frontend with Firebase Hosting, Firestore,
-Storage, and second-generation Cloud Functions. Read the relevant skill under
+Storage, second-generation Cloud Functions, and a Cloud Run game service. Read the relevant skill under
 `.agents/skills/` before changing a protected area.
 
 The same `.agents/skills/` tree is the canonical workspace skill source for
 Codex, Gemini CLI, and Google Antigravity. `GEMINI.md` and the Antigravity rule
 under `.agents/rules/` import this guide; do not duplicate skill contents into
 vendor-specific directories.
+
+## Repository map and shared skills
+
+Use these live sources when locating work; `src/app/` is a page convention,
+not a Next.js router.
+
+| Area | Source of truth |
+| --- | --- |
+| Frontend routes and build/PWA | `src/App.tsx`, `vite.config.ts`, `firebase.json` |
+| API composition and route security | `functions/src/apiApp.ts`, `functions/src/apps/`, `functions/src/routes/` |
+| Function exports and bindings | `functions/src/index.ts`, `functions/src/functionConfig.ts` |
+| Online game process | `functions/src/gameServer.ts`, `functions/src/apps/game.ts` |
+| Authorization and data rules | `functions/src/middleware/auth.ts`, `firestore.rules`, `storage.rules` |
+| Academy source and release provenance | `content/learning/`, `scripts/validate-learning-catalog.mjs`, `scripts/migrate-learning-content.mjs` |
+| Runtime, commands, deployment | `package.json`, `functions/package.json`, `.github/workflows/ci.yml`, `infra/gcp/production-deployment.json` |
+
+Read each skill whose boundary the task changes. These links are also the manual
+fallback when a client's automatic skill discovery is unavailable.
+
+| Work | Shared skill |
+| --- | --- |
+| Backend routes, DTOs, data access | [.agents/skills/aresweb-api-reference/SKILL.md](.agents/skills/aresweb-api-reference/SKILL.md) |
+| Markdown/legacy AST imports and content migrations | [.agents/skills/aresweb-ast-migration/SKILL.md](.agents/skills/aresweb-ast-migration/SKILL.md) |
+| Tests, builds, CI and releases | [.agents/skills/aresweb-ci/SKILL.md](.agents/skills/aresweb-ci/SKILL.md) |
+| Broad audits and technical debt | [.agents/skills/aresweb-comprehensive-audit/SKILL.md](.agents/skills/aresweb-comprehensive-audit/SKILL.md) |
+| React UI, accessibility and brand | [.agents/skills/aresweb-web-accessibility/SKILL.md](.agents/skills/aresweb-web-accessibility/SKILL.md) |
+| Authentication, privacy, secrets and uploads | [.agents/skills/aresweb-zero-trust-security/SKILL.md](.agents/skills/aresweb-zero-trust-security/SKILL.md) |
+
+Keep this guide, tool entry points, and `.agents/skills/` and `.agents/rules/`
+tracked in Git. Put temporary notes in root `scratch/`, outside the shared
+instruction tree. Keep tool entry points as references to this guide, not copied
+policies. See [docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) for discovery checks.
+Preserve other contributors' work; use an isolated worktree when changes overlap.
 
 ## Required engineering boundaries
 
@@ -95,6 +128,12 @@ Coverage floors are ratchets, not targets. New utilities and API routes must mee
 Firebase Emulator Suite tests for Firestore or Storage rule behavior.
 
 See `docs/SECURITY_OPERATIONS.md` for required secret and deployment controls.
+The protected workflow also checks runtime, security observability, Academy
+provenance/release digests, deployment contracts, Functions authorization in the
+emulator, and Hosting route behavior. Use its current commands for those checks;
+the list above does not replace required CI. Deliver through a normal pull
+request. An authorized production release proceeds through protected merge to
+`master`, deployment, and live health/browser checks in that workflow.
 
 ## Agent and audit quality
 
