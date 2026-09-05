@@ -243,6 +243,13 @@ test.describe("Navigation & Accessibility E2E tests", () => {
       name: "Optional website analytics",
     });
     await expect(banner).toBeVisible();
+    // WebKit can mount the banner before its stylesheet finishes loading.
+    // Wait for rendered touch targets before measuring the rest of the layout.
+    const choices = banner.getByRole("button");
+    await expect(choices).toHaveCount(2);
+    await expect.poll(() => choices.evaluateAll((buttons) =>
+      buttons.every((button) => button.getBoundingClientRect().height >= 44),
+    )).toBe(true);
     const bounds = await banner.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
@@ -255,12 +262,6 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     expect(bounds.left).toBeGreaterThanOrEqual(0);
     expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
     expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth);
-
-    const choices = banner.getByRole("button");
-    const choiceSizes = await choices.evaluateAll((buttons) =>
-      buttons.map((button) => button.getBoundingClientRect().height),
-    );
-    expect(choiceSizes.every((height) => height >= 44)).toBe(true);
 
     await banner.getByRole("button", { name: "Keep cookie-free" }).click();
     await expect(banner).toBeHidden();
