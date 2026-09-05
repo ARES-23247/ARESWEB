@@ -118,6 +118,16 @@ jobs:
       - name: Build Cloud Functions
         run: pnpm --filter functions build
 
+      - name: Verify standalone game container
+        run: |
+          docker build --file functions/Dockerfile.game --tag aresweb-game-ci .
+          docker run --rm --entrypoint node aresweb-game-ci -e '
+            const word = require("./lib/generated/games/buzzle");
+            const board = require("./lib/generated/games/buzzello");
+            if (word.createBuzzleGame().board.length !== 217 || board.createBuzzelloInitialBoard().length !== 61) throw new Error("Missing shared game rules");
+            if (!require("node:fs").readFileSync("data/buzzle-words.txt", "utf8").includes("\nqi\n")) throw new Error("Missing deployed lexicon");
+          '
+
       - name: Verify Hosting route status behavior
         run: pnpm exec firebase emulators:exec --only hosting,functions --project aresweb-ci "node scripts/check-hosting-emulator.mjs"
 

@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { axialKey, createHexCoordinates } from "@ares/game-common/hex-grid";
+import { axialDistance, axialKey, createHexCoordinates } from "@ares/game-common/hex-grid";
 import { BUZZELLO_COORDINATES } from "@ares/buzzello/rules";
 import { BUZZLE_COORDINATES, BUZZLE_ONLINE_INDICES, getBuzzleCellIndex } from "@ares/buzzle/rules";
 
 describe("persisted game coordinate compatibility", () => {
+  it("measures shortest hex distance on axes and across opposite slants", () => {
+    expect(axialDistance({ q: 0, r: 0 })).toBe(0);
+    expect(axialDistance({ q: 2, r: -1 })).toBe(2);
+    expect(axialDistance({ q: 2, r: 2 })).toBe(4);
+    expect(axialDistance({ q: -2, r: -2 })).toBe(4);
+  });
   it("preserves every BUZZELLO column-major cell identifier", () => {
     let index = 0;
     for (let q = -4; q <= 4; q += 1) {
