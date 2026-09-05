@@ -32,9 +32,18 @@ test("Ranger Dave takes a turn and the isolated game stores only a device score"
   const iframe = page.locator('iframe[title="Pollenator Pile-Up game"]');
   const game = page.frameLocator('iframe[title="Pollenator Pile-Up game"]');
   await game.getByRole("button", { name: /Vs. Ranger Dave/ }).click();
+  const frame = await (await iframe.elementHandle())!.contentFrame();
+  // Reproduce the heavy-on-light contact that previously vibrated indefinitely.
+  await frame!.evaluate(() => {
+    const scope = window as unknown as {
+      game: { currentPollinator: unknown; nextPollinator: unknown };
+      POLLINATOR_TYPES: { LUNA_MOTH: unknown; MOTHMAN: unknown };
+    };
+    scope.game.currentPollinator = scope.POLLINATOR_TYPES.LUNA_MOTH;
+    scope.game.nextPollinator = scope.POLLINATOR_TYPES.MOTHMAN;
+  });
   await game.locator("#game-canvas").press("Space");
   await expect(game.locator("#hud-critters-val")).toHaveText("2", { timeout: 20000 });
-  const frame = await (await iframe.elementHandle())!.contentFrame();
   // Exercise the actual game-over score save and its sandbox boundary.
   await frame!.evaluate(() => {
     const scope = window as unknown as { game: { triggerTumble: (reason: string) => void } };

@@ -126,6 +126,10 @@ class PollinatorFactory {
       });
     }
 
+    // Use the same weight ratios as the roster and the opponent. Multiplying
+    // both density and silhouette area made Mothman far heavier than advertised
+    // and drove persistent contact jitter against the constrained blossom.
+    Body.setMass(body, type.weight * 2);
     Body.setAngle(body, angle);
     body.pollinatorType = type;
     body.landed = false;
@@ -140,7 +144,7 @@ class PollinatorFactory {
     ctx.rotate(angle);
 
     const t = (Date.now() % 1000) / 1000;
-    const flap = Math.sin(t * Math.PI * 2 * (isHovering ? 8 : 2));
+    const flap = isHovering ? Math.sin(t * Math.PI * 2 * 8) : 0;
 
     switch (type.id) {
       case 'bee':

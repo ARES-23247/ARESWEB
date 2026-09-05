@@ -113,10 +113,10 @@ class RhododendronFlower {
   }
 
   // Render the stem, waxy mountain leaves, and pink rhododendron blossom
-  draw(ctx) {
-    const hx = this.head.position.x;
-    const hy = this.head.position.y;
-    const angle = this.head.angle;
+  draw(ctx, pose = this.head) {
+    const hx = pose.position.x;
+    const hy = pose.position.y;
+    const angle = pose.angle;
 
     // 1. Draw Thin, Organic Curved Stem
     ctx.save();

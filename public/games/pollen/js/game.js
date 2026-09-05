@@ -38,6 +38,9 @@ class PollenGame {
 
     // Camera shake
     this.shakeAmount = 0;
+    this.physicsClock = new window.PollenPhysicsClock();
+    this.landingStableMs = 0;
+    this.aiThinkDelayMs = 0;
 
     // Subsystems
     this.background = new window.BackgroundRenderer();
@@ -72,6 +75,7 @@ class PollenGame {
       if (this.flower) {
         // Keep existing stacks and the physical spring anchors aligned on resize.
         Matter.Composite.allBodies(this.world).forEach(body => Matter.Body.translate(body, { x: dx, y: dy }));
+        Matter.Composite.allBodies(this.world).forEach(body => { body.pollenPreviousPose = null; });
         [this.flower.pivotConstraint, this.flower.leftSpring, this.flower.rightSpring].forEach(constraint => {
           constraint.pointA.x += dx;
           constraint.pointA.y += dy;
@@ -88,7 +92,10 @@ class PollenGame {
   initPhysics() {
     const { Engine, World } = Matter;
     this.engine = Engine.create({
-      gravity: { x: 0, y: 0.95 }
+      gravity: { x: 0, y: 0.95 },
+      positionIterations: 10,
+      velocityIterations: 8,
+      constraintIterations: 4
     });
     this.world = this.engine.world;
 
@@ -97,10 +104,6 @@ class PollenGame {
     const groundY = this.height - 20;
     this.flower = new window.RhododendronFlower(this.world, this.width / 2, groundY, flowerY);
 
-    // Collision events
-    Matter.Events.on(this.engine, 'collisionStart', (event) => {
-      this.handleCollision(event);
-    });
   }
 
   bindInputs() {
@@ -171,6 +174,10 @@ class PollenGame {
   }
 
   restart() {
+    this.physicsClock.reset();
+    this.landingStableMs = 0;
+    this.aiThinkDelayMs = 0;
+    this.rangerDave.isThinking = false;
     // Clear physics bodies of pollinators
     const { World, Composite } = Matter;
     this.landedBodies.forEach(b => World.remove(this.world, b));
@@ -187,6 +194,7 @@ class PollenGame {
 
     // Reset flower
     this.flower.reset();
+    this.flower.head.pollenPreviousPose = null;
 
     // Reset day/night atmosphere
     this.background.setTimeTarget(0.0);
@@ -224,6 +232,7 @@ class PollenGame {
 
   dropPollinator() {
     if (this.state !== 'aiming') return;
+    this.landingStableMs = 0;
     this.state = 'falling';
     window.audioManager.playPluck(this.currentPollinator.id === 'mothman' ? 180 : 330);
 
@@ -238,27 +247,23 @@ class PollenGame {
     Matter.World.add(this.world, this.activeBody);
   }
 
-  handleCollision(event) {
-    if (!this.activeBody || this.state !== 'falling') return;
-
-    const pairs = event.pairs;
-    for (let pair of pairs) {
-      if (pair.bodyA === this.activeBody || pair.bodyB === this.activeBody) {
-        // Active body made contact!
-        this.onActiveBodyContact();
-        break;
-      }
+  updateLanding(stepMs) {
+    const body = this.activeBody;
+    if (!body || this.state !== 'falling') return;
+    const supported = this.engine.pairs.list.some(pair => {
+      if (!pair.isActive) return false;
+      const a = pair.bodyA.parent;
+      const b = pair.bodyB.parent;
+      const other = a === body ? b : b === body ? a : null;
+      return other && (other === this.flower.head || other.landed);
+    });
+    // A grazing collision or a bouncing piece does not complete a turn.
+    if (supported && body.speed < 0.6 && body.angularSpeed < 0.03) {
+      this.landingStableMs += stepMs;
+      if (this.landingStableMs >= 350) this.settlePollinator();
+    } else {
+      this.landingStableMs = 0;
     }
-  }
-
-  onActiveBodyContact() {
-    const contactedBody = this.activeBody;
-    // Settle check
-    setTimeout(() => {
-      if (this.state === 'falling' && this.activeBody === contactedBody) {
-        this.settlePollinator();
-      }
-    }, 450);
   }
 
   settlePollinator() {
@@ -313,11 +318,7 @@ class PollenGame {
 
     // If it's Dave's turn, trigger Dave's thought process
     if (this.mode === 'dave' && this.isAiTurn) {
-      setTimeout(() => {
-        if (this.state === 'aiming' && this.isAiTurn) {
-          this.rangerDave.calculateMove();
-        }
-      }, 700);
+      this.aiThinkDelayMs = 700;
     }
   }
 
@@ -337,20 +338,20 @@ class PollenGame {
       }
     }
 
-    setTimeout(() => {
-      this.state = 'gameover';
-      this.ui.showGameOver(this.score, this.crittersLanded, this.mode, this.currentTurn, this.isAiTurn);
-    }, 1100);
+    this.tumbleRemainingMs = 1100;
   }
 
   startLoop() {
-    let lastTime = performance.now();
+    let lastTime = null;
+    document.addEventListener('visibilitychange', () => {
+      lastTime = null;
+      this.physicsClock.reset();
+    });
 
     const loop = (currentTime) => {
-      const dt = Math.min((currentTime - lastTime) / 16.666, 2.5);
+      const elapsed = lastTime === null ? 0 : currentTime - lastTime;
       lastTime = currentTime;
-
-      this.update(dt);
+      if (!document.hidden) this.physicsClock.advance(elapsed, stepMs => this.update(stepMs / (1000 / 60)));
       this.render();
 
       requestAnimationFrame(loop);
@@ -360,8 +361,12 @@ class PollenGame {
   }
 
   update(dt) {
+    const stepMs = dt * (1000 / 60);
+    Matter.Composite.allBodies(this.world).forEach(body => {
+      body.pollenPreviousPose = { position: { ...body.position }, angle: body.angle };
+    });
     // 1. Step Matter.js physics engine
-    Matter.Engine.update(this.engine, 1000 / 60);
+    Matter.Engine.update(this.engine, stepMs);
 
     // 2. Update flower state
     this.flower.update();
@@ -371,7 +376,20 @@ class PollenGame {
 
     // 4. Update Ranger Dave AI if thinking
     if (this.mode === 'dave' && this.isAiTurn) {
+      if (this.state === 'aiming' && this.aiThinkDelayMs > 0) {
+        this.aiThinkDelayMs -= stepMs;
+        if (this.aiThinkDelayMs <= 0) this.rangerDave.calculateMove();
+      }
       this.rangerDave.update(dt);
+    }
+
+    this.updateLanding(stepMs);
+    if (this.state === 'tumble') {
+      this.tumbleRemainingMs -= stepMs;
+      if (this.tumbleRemainingMs <= 0) {
+        this.state = 'gameover';
+        this.ui.showGameOver(this.score, this.crittersLanded, this.mode, this.currentTurn, this.isAiTurn);
+      }
     }
 
     // 5. Check if flower tipped over critical threshold
@@ -396,9 +414,21 @@ class PollenGame {
 
     // Camera shake decay
     if (this.shakeAmount > 0) {
-      this.shakeAmount *= 0.9;
+      this.shakeAmount *= Math.pow(0.9, dt);
       if (this.shakeAmount < 0.2) this.shakeAmount = 0;
     }
+  }
+
+  renderPose(body) {
+    const previous = body.pollenPreviousPose || body;
+    const alpha = this.physicsClock.alpha;
+    return {
+      position: {
+        x: previous.position.x + (body.position.x - previous.position.x) * alpha,
+        y: previous.position.y + (body.position.y - previous.position.y) * alpha
+      },
+      angle: previous.angle + (body.angle - previous.angle) * alpha
+    };
   }
 
   render() {
@@ -417,17 +447,18 @@ class PollenGame {
     this.background.draw(ctx, this.width, this.height);
 
     // 2. The Rhododendron Blossom
-    this.flower.draw(ctx);
+    this.flower.draw(ctx, this.renderPose(this.flower.head));
 
     // 3. Landed Pollinators
     this.landedBodies.forEach(body => {
       if (body.pollinatorType) {
+        const pose = this.renderPose(body);
         window.PollinatorFactory.draw(
           ctx,
           body.pollinatorType,
-          body.position.x,
-          body.position.y,
-          body.angle,
+          pose.position.x,
+          pose.position.y,
+          pose.angle,
           false
         );
       }
@@ -435,12 +466,13 @@ class PollenGame {
 
     // 4. Active Falling Pollinator
     if (this.activeBody && this.activeBody.pollinatorType) {
+      const pose = this.renderPose(this.activeBody);
       window.PollinatorFactory.draw(
         ctx,
         this.activeBody.pollinatorType,
-        this.activeBody.position.x,
-        this.activeBody.position.y,
-        this.activeBody.angle,
+        pose.position.x,
+        pose.position.y,
+        pose.angle,
         false
       );
     }
