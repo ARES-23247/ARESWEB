@@ -90,7 +90,7 @@ class PollenGame {
   }
 
   initPhysics() {
-    const { Engine, World } = Matter;
+    const { Engine } = Matter;
     this.engine = Engine.create({
       gravity: { x: 0, y: 0.95 },
       positionIterations: 10,
@@ -179,7 +179,7 @@ class PollenGame {
     this.aiThinkDelayMs = 0;
     this.rangerDave.isThinking = false;
     // Clear physics bodies of pollinators
-    const { World, Composite } = Matter;
+    const { World } = Matter;
     this.landedBodies.forEach(b => World.remove(this.world, b));
     if (this.activeBody) World.remove(this.world, this.activeBody);
 

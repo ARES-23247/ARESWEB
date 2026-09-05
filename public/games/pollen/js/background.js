@@ -402,7 +402,6 @@ class BackgroundRenderer {
 
     // Two Main Truss Towers
     const towerH = 48;
-    const towerW = 10;
     const spanDist = 65;
 
     [-spanDist / 2, spanDist / 2].forEach(tx => {
