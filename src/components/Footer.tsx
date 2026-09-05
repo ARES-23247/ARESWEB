@@ -245,6 +245,9 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link to="/arcade" className="flex min-h-11 items-center gap-2 transition-colors hover:text-ares-gold">ARES Arcade</Link>
+            </li>
+            <li>
               <Link
                 to="/docs"
                 className="hover:opacity-80 transition-colors flex items-center gap-2 group"

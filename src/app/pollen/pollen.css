@@ -1,0 +1,8 @@
+.pollen-page { width: 100%; max-width: 1100px; margin: 0 auto; padding: 1rem; }
+.pollen-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.pollen-links { display: flex; flex-wrap: wrap; gap: 1rem; margin: .5rem 0; }
+.pollen-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-ares-gold); text-decoration: underline; }
+.pollen-frame { display: block; width: 100%; height: min(82dvh, 920px); min-height: 560px; border: 1px solid var(--color-ares-gold); border-radius: 12px; background: var(--color-obsidian); }
+.pollen-fullscreen { display: flex; flex-direction: column; max-width: none; padding: .5rem; background: var(--color-obsidian); }
+.pollen-fullscreen .pollen-heading { flex: none; margin-bottom: .5rem; }
+.pollen-fullscreen .pollen-frame { flex: 1; min-height: 0; height: 0; }

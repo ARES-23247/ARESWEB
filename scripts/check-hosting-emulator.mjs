@@ -16,3 +16,15 @@ const api = await fetch(`${origin}/api/definitely-missing`, {
 });
 console.log(`Unknown API status: ${api.status}`);
 if (api.status !== 404) process.exitCode = 1;
+
+const pollen = await fetch(`${origin}/pollen`);
+const arcade = await fetch(`${origin}/arcade`);
+if (arcade.status !== 200 || !(await arcade.text()).includes("ARES Arcade")) process.exitCode = 1;
+console.log(`Arcade route status: ${arcade.status}`);
+if (pollen.status !== 200 || !(await pollen.text()).includes("Pollenator Pile-Up")) process.exitCode = 1;
+const game = await fetch(`${origin}/games/pollen/index.html`);
+const gameCsp = game.headers.get("content-security-policy") || "";
+if (game.status !== 200 || game.headers.get("x-frame-options") !== "SAMEORIGIN"
+  || !gameCsp.includes("frame-ancestors 'self'") || gameCsp.includes("frame-ancestors 'none'")
+  || /script-src[^;]*'unsafe-inline'/.test(gameCsp)) process.exitCode = 1;
+console.log(`Pollen route/embedded game status: ${pollen.status}/${game.status}`);

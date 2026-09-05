@@ -252,10 +252,10 @@ export default function Home() {
               ARES Games
             </h2>
             <p className="text-lg leading-relaxed text-marble/80">
-              A growing collection of original strategy games built for phones,
-              tablets, and desktops. New games will join the collection after
-              their rules and safety reviews are complete.
+              Word games, hexagonal strategy, and a balancing challenge. Explore
+              the arcade on your phone, tablet, or desktop.
             </p>
+            <Link to="/arcade" className="mt-4 inline-flex min-h-11 items-center font-bold text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">Explore the arcade</Link>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">

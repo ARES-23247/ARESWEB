@@ -21,6 +21,13 @@ const baseUrl = "https://aresfirst.org";
  */
 export const staticPageMetadata = [
   ["/", "Home", "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia."],
+  ["/arcade", "ARES Arcade", "Play BUZZLE, BUZZELLO, and Pollenator Pile-Up from ARES 23247.", false, [
+    ["Choose your next game", "Build words in BUZZLE, claim the hexagonal board in BUZZELLO, or balance critters in Pollenator Pile-Up. Visit <a href=\"/buzzle\">BUZZLE</a>, <a href=\"/buzzello\">BUZZELLO</a>, or <a href=\"/pollen\">Pollenator Pile-Up</a>."],
+    ["Tools for physical play", "Check legal BUZZLE words, browse the two-letter list, and find definitions in <a href=\"/buzzle/word-tools\">BUZZLE Word Tools</a>."],
+  ]],
+  ["/pollen", "Pollenator Pile-Up", "Balance Appalachian critters on a blossom. Play solo, share a device, or challenge Ranger Dave.", false, [
+    ["Appalachian blossom balance", "Stack critters without tipping the flower. Play solo, pass and play on the same device, or challenge the local computer opponent. No sign-in is needed. Best scores stay on your device. <a href=\"/buzzle\">Play BUZZLE</a> or <a href=\"/buzzello\">play BUZZELLO</a>."],
+  ]],
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission.", false, [
     ["Who we are", "ARES 23247 is the Appalachian Robotics & Engineering Society, a student-led FIRST® Tech Challenge team from Morgantown, West Virginia. Students design, build, and program competition robots while coaches and mentors guide engineering, business, and outreach work. <a href=\"/seasons\">See our seasons and legacy</a> or <a href=\"/join\">apply to join</a>."],
     ["What we value", "The team emphasizes gracious professionalism, hands-on engineering, and community impact. Explore our <a href=\"/outreach\">outreach programs</a> or meet <a href=\"/robots\">the robots we have built</a>."],

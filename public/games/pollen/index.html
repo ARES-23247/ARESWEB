@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pollenator Pile-Up — Appalachian Blossom Balance</title>
+  <meta name="description" content="An Appalachian summer physics balancing web game featuring native pollinators, a swaying rhododendron blossom, Ranger Dave Bot, and West Virginia's legendary Mothman!">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Top Header -->
+    <header id="game-header">
+      <div class="title-badge">
+        <h1>POLLENATOR PILE-UP</h1>
+        <div class="subtitle">An Appalachian Blossom Balance</div>
+      </div>
+      <button id="btn-sound-toggle" class="top-icon-btn" title="Toggle Sound" aria-label="Toggle Sound">🔊</button>
+      <button id="btn-fs-toggle" class="top-icon-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+    </header>
+
+    <!-- Main Canvas Viewport -->
+    <main id="canvas-wrapper">
+      <canvas id="game-canvas" tabindex="0" aria-label="Pollinator balance board. Use arrow keys to aim and rotate, then Space to drop. Score and turn are shown above the controls."></canvas>
+
+      <!-- Heads-Up Display -->
+      <div id="hud">
+        <div class="hud-panel hud-score">
+          <span class="hud-label">Mountain Score</span>
+          <span id="hud-score-val" class="hud-value">0</span>
+          <span class="hud-label" style="margin-top: 4px;">Critters: <strong id="hud-critters-val" style="color: #bf360c;">0</strong></span>
+        </div>
+
+        <div id="hud-turn-info" class="hud-turn-info">Player 1's Turn</div>
+
+        <div class="hud-right">
+          <div class="hud-preview">
+            <span class="hud-label">Next Up</span>
+            <canvas id="preview-canvas" class="hud-preview-canvas" width="54" height="48"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ranger Dave Speech Bubble -->
+      <div id="dave-bubble">🤠 Ranger Dave: "Howdy partner! Keep that stem steady!"</div>
+
+      <!-- Mobile / On-Screen Touch Controls -->
+      <div id="mobile-controls">
+        <button id="btn-rotate-left" class="touch-btn" title="Rotate Left" aria-label="Rotate Left">↺</button>
+        <button id="btn-touch-drop" class="touch-btn drop-btn" title="Drop" aria-label="Drop">DROP</button>
+        <button id="btn-rotate-right" class="touch-btn" title="Rotate Right" aria-label="Rotate Right">↻</button>
+      </div>
+
+      <!-- Start Menu Modal -->
+      <div id="start-modal" class="overlay-screen">
+        <div class="modal-box">
+          <h2 class="modal-title">🌸 POLLENATOR PILE-UP 🌸</h2>
+          <p class="modal-subtitle">Stack Appalachian pollinators onto the rhododendron flower without tumbling into the mountain breeze!</p>
+
+          <div class="mode-buttons">
+            <button id="btn-mode-solo" class="game-btn">
+              <span>🌻 Solo High Score</span>
+            </button>
+            <button id="btn-mode-pass" class="game-btn">
+              <span>👥 Pass &amp; Play (2 Players)</span>
+            </button>
+            <button id="btn-mode-dave" class="game-btn">
+              <span>🤠 Vs. Ranger Dave Bot</span>
+            </button>
+          </div>
+
+          <div class="controls-hint">
+            <strong>Controls:</strong><br>
+            • <strong>Mouse:</strong> Move cursor to aim, <strong>Scroll Wheel</strong> (or Q/E) to rotate, <strong>Left Click</strong> to drop.<br>
+            • <strong>Touch / Mobile:</strong> Drag to position, tap ↺ / ↻ to rotate, tap <strong>DROP</strong>.<br>
+            • <em>Watch out for the Point Pleasant <strong>Mothman</strong> (+500 pts)!</em>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over / Tumble Modal -->
+      <div id="game-over-modal" class="overlay-screen hidden">
+        <div class="modal-box">
+          <h2 id="go-title" class="modal-title">🌸 Blossom Tumbled!</h2>
+          <p id="go-subtitle" class="modal-subtitle">The mountain breeze claimed the pollinators!</p>
+
+          <div style="background: #fff8e1; border: 2px dashed #ffa000; border-radius: 14px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-around;">
+              <div>
+                <div class="hud-label">Final Score</div>
+                <div id="go-final-score" style="font-family: 'Fredoka One', sans-serif; font-size: 26px; color: #e65100;">0</div>
+              </div>
+              <div>
+                <div class="hud-label">Best Record</div>
+                <div id="go-best-score" style="font-family: 'Fredoka One', sans-serif; font-size: 26px; color: #2e7d32;">0</div>
+              </div>
+              <div>
+                <div class="hud-label">Critters Landed</div>
+                <div id="go-critters-count" style="font-family: 'Fredoka One', sans-serif; font-size: 26px; color: #d81b60;">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-buttons">
+            <button id="btn-play-again" class="game-btn">🔄 Play Again</button>
+            <button id="btn-change-mode" class="game-btn secondary">⚙️ Change Game Mode</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Footer with ARES FIRST link -->
+    <footer id="game-footer">
+      <span>Built for <a href="https://aresfirst.org" target="_blank" rel="noopener">ARES Team 23247</a></span>
+      <span>•</span>
+      <span>Morgantown, WV</span>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="lib/matter.min.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/pollinators.js"></script>
+  <script src="js/flower.js"></script>
+  <script src="js/rangerDave.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

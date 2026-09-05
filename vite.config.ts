@@ -184,6 +184,7 @@ export default defineConfig({
       // administrative reliability surface. A listed module therefore reports
       // 0% instead of disappearing when its importing test is removed.
       include: [
+        "public/games/pollen/js/physics.js",
         "src/lib/api.ts",
         "src/lib/contentFormatters.ts",
         "src/lib/contentUrls.ts",
@@ -259,6 +260,7 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
+        "public/games/pollen/js/physics.js": { lines: 85, functions: 100 },
         // Ratchet the measured legacy baseline while enforcing the project
         // standard on security-sensitive utilities and newly covered code.
         lines: 56,

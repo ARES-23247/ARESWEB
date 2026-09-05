@@ -24,12 +24,14 @@ const queryClient = new QueryClient({
 const Home = lazy(() => import("@/app/page"));
 const AboutPage = lazy(() => import("@/app/about/page"));
 const AcademyPage = lazy(() => import("@/app/academy/page"));
+const ArcadePage = lazy(() => import("@/app/arcade/page"));
 const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page"));
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BrandPage = lazy(() => import("@/app/brand/page"));
 const BuzzelloPage = lazy(() => import("@/app/buzzello/page"));
 const BuzzlePage = lazy(() => import("@/app/buzzle/page"));
 const BuzzleWordToolsPage = lazy(() => import("@/app/buzzle/word-tools/page"));
+const PollenPage = lazy(() => import("@/app/pollen/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
 const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
 const CalendarPage = lazy(() => import("@/app/calendar/page"));
@@ -118,6 +120,7 @@ export default function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/arcade" element={<ArcadePage />} />
                   <Route path="/academy/playground" element={<AcademyPlaygroundPage />} />
                   <Route path="/academy/:slug" element={<AcademyPage />} />
                   <Route path="/docs" element={<AcademyPage />} />
@@ -127,6 +130,7 @@ export default function App() {
                   <Route path="/buzzello" element={<BuzzelloPage />} />
                   <Route path="/buzzle" element={<BuzzlePage />} />
                   <Route path="/buzzle/word-tools" element={<BuzzleWordToolsPage />} />
+                  <Route path="/pollen" element={<PollenPage />} />
                   <Route path="/blog" element={<BlogFeedPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />

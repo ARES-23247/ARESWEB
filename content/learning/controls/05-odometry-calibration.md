@@ -29,7 +29,7 @@ This lesson will help you:
 
 The endpoint lab uses simple geometry. It does not reproduce the full ARES estimator.
 
-This lesson follows ARES 17.0.1, FTC SDK 11.1.0, and Studio 7.0.1. Its source links are pinned to
+This lesson follows ARES 17.0.1, FTC SDK 11.1.0, and Studio 7.0.2. Its source links are pinned to
 the exact public monorepo commit used for review. The browser supplies ready-made health results. It
 does not read robot sensors or execute the Kotlin runtime.
 
