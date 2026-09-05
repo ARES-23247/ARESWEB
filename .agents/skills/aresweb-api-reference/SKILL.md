@@ -5,13 +5,18 @@ description: Implement or review ARESWEB Cloud Functions, Express routes, Firest
 
 # ARESWEB backend and data
 
-Derive the active route inventory from `functions/src/index.ts` and the routers in
-`functions/src/routes/`. Do not copy endpoint lists from planning archives or old
-documentation.
+Derive the route inventory from `functions/src/apps/`, `functions/src/routes/`,
+and the Hosting rewrites in `firebase.json`. `functions/src/index.ts` exports
+the second-generation Functions; `functions/src/gameServer.ts` starts the
+separate Cloud Run game process. Check bindings in `functions/src/functionConfig.ts`
+and the deployment contract in `infra/gcp/production-deployment.json`.
 
 ## Request pipeline
 
-- Mount every handler through the shared Express application.
+- Mount API routers in the appropriate isolated app under `functions/src/apps/`,
+  using `createApiApp` in `functions/src/apiApp.ts` for shared middleware.
+  Preserve the separate public HTML handler in `functions/src/web.ts` and the
+  scheduled Function entry points; these are not Express API routers.
 - Apply authentication, authorization, App Check when required, rate limiting,
   and validation before expensive parsing or external calls.
 - Use `AuthenticatedRequest` and the middleware in
