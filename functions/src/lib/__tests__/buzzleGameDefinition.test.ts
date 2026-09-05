@@ -36,6 +36,21 @@ function putTileInRack(state: BuzzleGameState, tileId: string, rackIndex: number
 }
 
 describe("buzzleGameDefinition", () => {
+  it.each([[1, 0], [0, 1], [1, -1]])("keeps online word direction and scoring on axis %s,%s", (q, r) => {
+    const state = buzzleGameDefinition.createInitialState(2);
+    putTileInRack(state, "A-1", 0);
+    putTileInRack(state, "T-1", 1);
+    const next = buzzleGameDefinition.applyAction(state, 0, {
+      type: "play", placements: [
+        { index: indexFor(0, 0), tileId: "A-1" },
+        { index: indexFor(q, r), tileId: "T-1" },
+      ],
+    });
+    expect(next.players[0].score).toBe(4);
+    expect(next.board[indexFor(q, r)]?.letter).toBe("T");
+    expect(parseBuzzleGameState(next, 2)).toEqual(next);
+    expect(state.board.every((cell) => cell === null)).toBe(true);
+  });
   it("creates a bounded two-player game and returns only the requesting rack", () => {
     const state = buzzleGameDefinition.createInitialState(2);
     expect(state.board).toHaveLength(217);

@@ -52,6 +52,20 @@ describe("BUZZLE online DTO", () => {
     expect(game.players).toEqual([{ score: 0, rackCount: 7 }, { score: 0, rackCount: 7 }]);
   });
 
+  it("renders a persisted online tile at its physical coordinate and sends it back in wire order", () => {
+    const payload = onlinePayload();
+    const tile = { id: "T-1", letter: "T", points: 1, blank: false, playedBy: 0 };
+    const board = [...payload.state.board];
+    board[125] = tile; // online q=1, r=0
+    payload.state.board = board;
+    const game = parseOnlineBuzzleGame(payload);
+    expect(game.board[109]).toEqual(tile); // browser q=1, r=0
+    expect(game.board[125]).toBeNull();
+    expect(placementsToOnlineAction([{ index: 109, tile }])).toEqual({
+      type: "play", placements: [{ index: 125, tileId: "T-1" }],
+    });
+  });
+
   it("polls only while waiting for a remote state change", () => {
     const ownTurn = parseOnlineBuzzleGame(onlinePayload());
     expect(getOnlineBuzzlePollDelay(ownTurn, 0)).toBeNull();
@@ -99,7 +113,7 @@ describe("BUZZLE online DTO", () => {
   it("maps local placements and surfaces bounded API errors", async () => {
     const local = createBuzzleGame(2, () => 0);
     expect(placementsToOnlineAction([{ index: 63, tile: local.players[0].rack[0] }])).toMatchObject({
-      type: "play", placements: [{ index: 63, tileId: local.players[0].rack[0].id }],
+      type: "play", placements: [{ index: 153, tileId: local.players[0].rack[0].id }],
     });
     vi.mocked(authenticatedFetch).mockResolvedValueOnce(new Response(JSON.stringify({ error: "Budget reached.", code: "GAME_BUDGET" }), { status: 429 }));
     await expect(findOnlineBuzzleMatch()).rejects.toMatchObject({ message: "Budget reached.", code: "GAME_BUDGET", status: 429 });

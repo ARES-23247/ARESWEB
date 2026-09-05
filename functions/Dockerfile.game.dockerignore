@@ -1,0 +1,23 @@
+# Repository-root context, limited to the existing service and canonical game inputs.
+**
+!functions/
+!functions/package.json
+!functions/package-lock.json
+!functions/tsconfig.json
+!functions/src/
+!functions/src/**
+functions/src/**/__tests__/
+functions/src/**/*.test.ts
+functions/src/generated/
+!packages/
+!packages/*/
+!packages/*/src/
+!packages/buzzle/src/rules.ts
+!packages/buzzello/src/rules.ts
+!packages/game-common/src/hexGrid.ts
+!packages/buzzle/data/
+!packages/buzzle/data/**
+!packages/pollenator/public/
+!packages/pollenator/public/**
+!scripts/
+!scripts/prepare-game-packages.mjs

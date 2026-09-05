@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BuzzleHelpMode } from '@/components/games/BuzzleHelpMode';
 import { createBuzzleGame, getBuzzleCellIndex } from '@/lib/buzzle';
-import type { BuzzleHint } from '@/lib/buzzleWordHelp';
+import type { BuzzleHint } from '@ares/buzzle/word-help';
 
 describe('BUZZLE hint worker lifecycle', () => {
   afterEach(() => vi.unstubAllGlobals());

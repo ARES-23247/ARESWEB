@@ -8,11 +8,10 @@ const require = createRequire(import.meta.url);
 const words = require("an-array-of-english-words");
 const profanity = require("leo-profanity");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const outputDirectory = path.join(root, "public", "data");
+const outputDirectory = path.join(root, "packages", "buzzle", "data");
 const outputPath = path.join(outputDirectory, "buzzle-words.txt");
 const metadataPath = path.join(outputDirectory, "buzzle-words.meta.json");
-const functionsOutputDirectory = path.join(root, "functions", "data");
-const functionsOutputPath = path.join(functionsOutputDirectory, "buzzle-words.txt");
+
 
 const lexicon = [...new Set(
   words
@@ -24,9 +23,7 @@ const body = `${lexicon.join("\n")}\n`;
 const sha256 = createHash("sha256").update(body).digest("hex");
 
 await mkdir(outputDirectory, { recursive: true });
-await mkdir(functionsOutputDirectory, { recursive: true });
 await writeFile(outputPath, body, "utf8");
-await writeFile(functionsOutputPath, body, "utf8");
 await writeFile(
   metadataPath,
   `${JSON.stringify({
@@ -43,3 +40,6 @@ await writeFile(
   "utf8",
 );
 console.log(`Generated ${lexicon.length} BUZZLE words (${sha256.slice(0, 12)}).`);
+
+const { prepareGamePackages } = await import("./prepare-game-packages.mjs");
+prepareGamePackages(root);

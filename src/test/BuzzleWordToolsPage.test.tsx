@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import BuzzleWordToolsPage from '@/app/buzzle/word-tools/page';
-import { loadBuzzleDictionary, BuzzleTrie } from '@/lib/buzzleDictionary';
+import { loadBuzzleDictionary, BuzzleTrie } from '@ares/buzzle/dictionary';
 
-vi.mock('@/lib/buzzleDictionary', async (original) => ({
-  ...await original<typeof import('@/lib/buzzleDictionary')>(),
+vi.mock('@ares/buzzle/dictionary', async (original) => ({
+  ...await original<typeof import('@ares/buzzle/dictionary')>(),
   loadBuzzleDictionary: vi.fn(),
 }));
 

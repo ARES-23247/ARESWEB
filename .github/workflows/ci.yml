@@ -378,7 +378,7 @@ jobs:
         run: |
           game_image="$(node scripts/verify-game-cloud-run.mjs --print-image-uri "${{ github.sha }}")"
           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-          docker build --file functions/Dockerfile.game --tag "$game_image" functions
+          docker build --file functions/Dockerfile.game --tag "$game_image" .
           docker push "$game_image"
           echo "GAME_IMAGE=$game_image" >> "$GITHUB_ENV"
 

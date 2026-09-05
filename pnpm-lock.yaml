@@ -25,6 +25,21 @@ importers:
 
   .:
     dependencies:
+      '@ares/buzzello':
+        specifier: workspace:*
+        version: link:packages/buzzello
+      '@ares/buzzle':
+        specifier: workspace:*
+        version: link:packages/buzzle
+      '@ares/game-common':
+        specifier: workspace:*
+        version: link:packages/game-common
+      '@ares/pollenator':
+        specifier: workspace:*
+        version: link:packages/pollenator
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:packages/ui
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -234,6 +249,74 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1)(vite@8.2.2(@types/node@26.2.0)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))
+
+  packages/buzzello:
+    dependencies:
+      '@ares/game-common':
+        specifier: workspace:*
+        version: link:../game-common
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+
+  packages/buzzle:
+    dependencies:
+      '@ares/game-common':
+        specifier: workspace:*
+        version: link:../game-common
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:../ui
+      dompurify:
+        specifier: ^3.4.13
+        version: 3.4.13
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+
+  packages/game-common:
+    dependencies:
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+
+  packages/pollenator: {}
+
+  packages/ui:
+    dependencies:
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.23
+        version: 1.1.23(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.8(react@19.2.8)
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
 
 packages:
 

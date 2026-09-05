@@ -1,5 +1,5 @@
-import { findBuzzleTwoLetterHints } from "@/lib/buzzleWordHelp";
-import type { BuzzleBoard, BuzzlePlacement, BuzzleTile } from "@/lib/buzzle";
+import { findBuzzleTwoLetterHints } from "./wordHelp";
+import type { BuzzleBoard, BuzzlePlacement, BuzzleTile } from "./rules";
 
 self.addEventListener("message", (event: MessageEvent<{
   board: BuzzleBoard; rack: BuzzleTile[]; draft: BuzzlePlacement[]; words: Set<string>; player: number;

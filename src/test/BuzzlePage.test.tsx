@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/buzzleDictionary", () => ({
+vi.mock("@ares/buzzle/dictionary", () => ({
   loadBuzzleDictionary: async () => ({ words: new Set(["at", "ate", "cat", "bee"]) }),
 }));
 

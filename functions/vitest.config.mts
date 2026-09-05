@@ -11,6 +11,9 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     coverage: {
+      // Canonical package rules retain their coverage ratchets in the root suite.
+      // These deployment copies are generated verbatim and tested through the adapters below.
+      exclude: ["src/generated/**", "**/*.{test,spec}.ts"],
       thresholds: {
         "src/lib/contentVisibility.ts": {
           lines: 100,

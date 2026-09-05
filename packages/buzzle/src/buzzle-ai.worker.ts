@@ -1,6 +1,6 @@
-import { selectBuzzleAiMove } from "@/lib/buzzleAi";
-import { loadBuzzleDictionary } from "@/lib/buzzleDictionary";
-import type { BuzzleDifficulty, BuzzleGameState } from "@/lib/buzzle";
+import { selectBuzzleAiMove } from "./ai";
+import { loadBuzzleDictionary } from "./dictionary";
+import type { BuzzleDifficulty, BuzzleGameState } from "./rules";
 
 interface AiRequest {
   requestId: number;

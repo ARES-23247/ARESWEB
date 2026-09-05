@@ -4,7 +4,7 @@ import {
   fetchBuzzleDictionary,
   loadBuzzleDictionary,
   resetBuzzleDictionaryForTests,
-} from "@/lib/buzzleDictionary";
+} from "@ares/buzzle/dictionary";
 
 function largeCorpus(): string {
   return Array.from({ length: 100_000 }, (_, index) => {

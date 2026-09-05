@@ -233,7 +233,7 @@ export function validateRepositoryWiring(contract, root = process.cwd()) {
     /ENV NODE_ENV=production/u,
     /ENFORCE_APP_CHECK=true/u,
     /USER node/u,
-    /COPY --from=build --chown=node:node \/app\/data \.\/data/u,
+    /COPY --from=build --chown=node:node \/workspace\/functions\/data \.\/data/u,
     /CMD \["node", "lib\/gameServer\.js"\]/u,
   ]) {
     if (!pattern.test(dockerfile)) throw new Error(`Game Dockerfile is missing ${pattern}`);

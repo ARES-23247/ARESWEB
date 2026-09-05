@@ -1,0 +1,19 @@
+{
+  "name": "@ares/buzzello",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./rules": "./src/rules.ts",
+    "./game": "./src/Game.tsx",
+    "./online": "./src/online.ts"
+  },
+  "dependencies": {
+    "@ares/ui": "workspace:*",
+    "@ares/game-common": "workspace:*",
+    "lucide-react": "^1.33.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}

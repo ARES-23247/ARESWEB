@@ -9,8 +9,8 @@
     "pnpm": ">=11.21.0 <12"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node scripts/prerender-static-routes.mjs",
+    "dev": "node scripts/prepare-game-packages.mjs && vite",
+    "build": "node scripts/prepare-game-packages.mjs && vite build && node scripts/prerender-static-routes.mjs",
     "preview": "vite preview",
     "validate:runtime": "node scripts/verify-runtime.mjs",
     "validate:agents": "node scripts/validate-agent-config.mjs",
@@ -40,7 +40,9 @@
     "content:release-validate": "pnpm run content:prepare && node scripts/validate-learning-release-candidate.mjs",
     "content:approval": "node scripts/migrate-learning-content.mjs --prepare-approval",
     "content:migrate": "node scripts/migrate-learning-content.mjs",
-    "test:content-migration": "vitest run --config vitest.learning-migration.config.mts"
+    "test:content-migration": "vitest run --config vitest.learning-migration.config.mts",
+    "games:prepare": "node scripts/prepare-game-packages.mjs",
+    "prepare": "node scripts/prepare-game-packages.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -70,7 +72,12 @@
     "sucrase": "3.35.1",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
-    "zustand": "^5.0.15"
+    "zustand": "^5.0.15",
+    "@ares/ui": "workspace:*",
+    "@ares/game-common": "workspace:*",
+    "@ares/buzzello": "workspace:*",
+    "@ares/buzzle": "workspace:*",
+    "@ares/pollenator": "workspace:*"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

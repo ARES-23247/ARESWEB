@@ -17,7 +17,7 @@ export default defineConfig({
         name: "ARES 23247 Team Portal",
         short_name: "ARES Portal",
         description:
-          "Team portal for ARES 23247, a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
+          "Team portal for ARES 23247, a FIRSTÂ® Tech Challenge robotics team in Morgantown, West Virginia.",
         theme_color: "#1A1A1A",
         background_color: "#1A1A1A",
         display: "standalone",
@@ -184,7 +184,18 @@ export default defineConfig({
       // administrative reliability surface. A listed module therefore reports
       // 0% instead of disappearing when its importing test is removed.
       include: [
-        "public/games/pollen/js/physics.js",
+        "src/lib/buzzello.ts",
+        "src/lib/buzzelloOnline.ts",
+        "src/lib/buzzle.ts",
+        "src/lib/buzzleAi.ts",
+        "src/lib/buzzleDictionary.ts",
+        "src/lib/buzzleDefinitions.ts",
+        "src/lib/buzzleWordHelp.ts",
+        "src/lib/buzzleOnline.ts",
+        "packages/ui/src/cn.ts",
+        "scripts/prepare-game-packages.mjs",
+        "packages/game-common/src/hexGrid.ts",
+        "packages/pollenator/public/js/physics.js",
         "src/lib/api.ts",
         "src/lib/contentFormatters.ts",
         "src/lib/contentUrls.ts",
@@ -196,14 +207,14 @@ export default defineConfig({
         "src/lib/analyticsConsent.ts",
         "src/lib/localDateTime.ts",
         "src/lib/academyProgress.ts",
-        "src/lib/buzzello.ts",
-        "src/lib/buzzelloOnline.ts",
-        "src/lib/buzzle.ts",
-        "src/lib/buzzleAi.ts",
-        "src/lib/buzzleDictionary.ts",
-        "src/lib/buzzleWordHelp.ts",
-        "src/lib/buzzleDefinitions.ts",
-        "src/lib/buzzleOnline.ts",
+        "packages/buzzello/src/rules.ts",
+        "packages/buzzello/src/online.ts",
+        "packages/buzzle/src/rules.ts",
+        "packages/buzzle/src/ai.ts",
+        "packages/buzzle/src/dictionary.ts",
+        "packages/buzzle/src/wordHelp.ts",
+        "packages/buzzle/src/definitions.ts",
+        "packages/buzzle/src/online.ts",
         "src/lib/learningContent.ts",
         "src/lib/learningExperience.ts",
         "src/lib/documentMedia.ts",
@@ -217,12 +228,12 @@ export default defineConfig({
         "src/components/PublicDataState.tsx",
         "src/components/ui/AsyncState.tsx",
         "src/components/ui/Badge.tsx",
-        "src/components/ui/Button.tsx",
-        "src/components/ui/Dialog.tsx",
+        "packages/ui/src/Button.tsx",
+        "packages/ui/src/Dialog.tsx",
         "src/components/ui/Field.tsx",
         "src/components/ui/PageHeader.tsx",
         "src/components/ui/TableFrame.tsx",
-        "src/components/games/GameFullscreen.tsx",
+        "packages/game-common/src/GameFullscreen.tsx",
         "src/components/BlogThumbnailImage.tsx",
         "src/components/docs/flowchart.ts",
         "src/components/AnalyticsConsentBanner.tsx",
@@ -260,7 +271,10 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
-        "public/games/pollen/js/physics.js": { lines: 85, functions: 100 },
+        "packages/pollenator/public/js/physics.js": { lines: 85, functions: 100 },
+        "scripts/prepare-game-packages.mjs": { lines: 85, functions: 100 },
+        "packages/game-common/src/hexGrid.ts": { lines: 85, functions: 100 },
+        "packages/ui/src/cn.ts": { lines: 85, functions: 100 },
         // Ratchet the measured legacy baseline while enforcing the project
         // standard on security-sensitive utilities and newly covered code.
         lines: 56,
@@ -273,21 +287,21 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
-        "src/lib/buzzle.ts": {
+        "packages/buzzle/src/rules.ts": {
           lines: 85,
           functions: 100,
         },
-        "src/lib/buzzleAi.ts": {
+        "packages/buzzle/src/ai.ts": {
           lines: 85,
           functions: 100,
         },
-        "src/lib/buzzleDictionary.ts": {
+        "packages/buzzle/src/dictionary.ts": {
           lines: 85,
           functions: 100,
         },
-        "src/lib/buzzleWordHelp.ts": { lines: 85, functions: 100 },
-        "src/lib/buzzleDefinitions.ts": { lines: 85, functions: 100 },
-        "src/lib/buzzleOnline.ts": {
+        "packages/buzzle/src/wordHelp.ts": { lines: 85, functions: 100 },
+        "packages/buzzle/src/definitions.ts": { lines: 85, functions: 100 },
+        "packages/buzzle/src/online.ts": {
           lines: 85,
           functions: 100,
         },
@@ -323,11 +337,11 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
-        "src/lib/buzzello.ts": {
+        "packages/buzzello/src/rules.ts": {
           lines: 85,
           functions: 100,
         },
-        "src/lib/buzzelloOnline.ts": {
+        "packages/buzzello/src/online.ts": {
           lines: 85,
           functions: 100,
         },
@@ -379,11 +393,11 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
-        "src/components/ui/Button.tsx": {
+        "packages/ui/src/Button.tsx": {
           lines: 85,
           functions: 100,
         },
-        "src/components/ui/Dialog.tsx": {
+        "packages/ui/src/Dialog.tsx": {
           lines: 85,
           functions: 100,
         },

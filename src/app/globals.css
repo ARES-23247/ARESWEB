@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../packages";
 @import "../styles/ares-design-tokens.css";
 
 @theme inline {

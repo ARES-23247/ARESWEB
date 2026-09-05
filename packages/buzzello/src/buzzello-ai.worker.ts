@@ -3,7 +3,7 @@ import {
   type BuzzelloBoard,
   type BuzzelloDifficulty,
   type BuzzelloPlayer,
-} from "@/lib/buzzello";
+} from "./rules";
 
 interface BuzzelloAiRequest {
   requestId: number;

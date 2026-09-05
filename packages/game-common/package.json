@@ -1,0 +1,17 @@
+{
+  "name": "@ares/game-common",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./hex-grid": "./src/hexGrid.ts",
+    "./fullscreen": "./src/GameFullscreen.tsx"
+  },
+  "dependencies": {
+    "@ares/ui": "workspace:*",
+    "lucide-react": "^1.33.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}

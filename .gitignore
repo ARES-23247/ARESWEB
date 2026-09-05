@@ -105,3 +105,10 @@ gha-creds-*.json
 !/.agents/skills/**
 !/.agents/rules/
 !/.agents/rules/**
+
+# Generated from canonical workspace game packages
+/functions/src/generated/games/
+/public/games/pollen/
+/public/data/buzzle-words.txt
+/public/data/buzzle-words.meta.json
+/functions/data/buzzle-words.txt

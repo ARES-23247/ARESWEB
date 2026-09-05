@@ -4,9 +4,10 @@ import { resolve } from "node:path";
 import { ApiError } from "../middleware/errorHandler";
 import type { GameDefinition } from "./gameMatches";
 
-type Multiplier = "plain" | "DL" | "TL" | "DW" | "TW" | "star";
+import { BUZZLE_LETTER_DISTRIBUTION as DISTRIBUTION, createBuzzleTileBag as createBag, BUZZLE_ONLINE_INDICES, playBuzzleTiles, passBuzzleTurn,
+  exchangeBuzzleTiles, BuzzleRuleError, type BuzzleGameState as SharedState,
+} from "../generated/games/buzzle";
 
-interface Coordinate { q: number; r: number }
 interface Tile { id: string; letter: string; points: number; blank: boolean }
 interface BoardTile extends Tile { playedBy: number }
 interface PlayerState { rack: Tile[]; score: number }
@@ -39,42 +40,10 @@ type BuzzlePlayerView = Record<string, unknown> & {
   winner: number | "draw" | null;
 };
 
-const RADIUS = 8;
 const CELL_COUNT = 217;
 const RACK_SIZE = 7;
 const MAX_ACTIONS = 400;
-const AXES: ReadonlyArray<Coordinate> = [{ q: 1, r: 0 }, { q: 0, r: 1 }, { q: 1, r: -1 }];
-const DIRECTIONS: ReadonlyArray<Coordinate> = [...AXES, ...AXES.map(({ q, r }) => ({ q: -q, r: -r }))];
-const DISTRIBUTION: ReadonlyArray<readonly [string, number, number]> = [
-  ["E", 12, 1], ["A", 9, 1], ["I", 9, 1], ["O", 8, 1], ["N", 6, 1],
-  ["R", 6, 1], ["T", 6, 1], ["L", 4, 1], ["S", 4, 1], ["U", 4, 1],
-  ["D", 4, 2], ["G", 3, 2], ["B", 2, 3], ["C", 2, 3], ["M", 2, 3],
-  ["P", 2, 3], ["F", 2, 4], ["H", 2, 4], ["V", 2, 4], ["W", 2, 4],
-  ["Y", 2, 4], ["K", 1, 5], ["J", 1, 8], ["X", 1, 8], ["Q", 1, 10],
-  ["Z", 1, 10], ["?", 2, 0],
-];
 const TILE_SPECS = new Map(DISTRIBUTION.map(([letter, count, points]) => [letter, { count, points }]));
-
-const COORDINATES: Coordinate[] = [];
-for (let q = -RADIUS; q <= RADIUS; q += 1) {
-  for (let r = Math.max(-RADIUS, -q - RADIUS); r <= Math.min(RADIUS, -q + RADIUS); r += 1) {
-    COORDINATES.push({ q, r });
-  }
-}
-const COORDINATE_INDEX = new Map(COORDINATES.map(({ q, r }, index) => [`${q},${r}`, index]));
-const TRIPLE_WORD = new Set(["-8,0", "0,-8", "-8,8", "8,-8", "0,8", "8,0"]);
-const TRIPLE_LETTER = new Set(["-4,-4", "-8,4", "4,-8", "-4,8", "8,-4", "4,4"]);
-const DOUBLE_WORD = new Set([
-  "-6,-1", "-1,-6", "-7,1", "1,-7", "-7,6", "6,-7",
-  "-6,7", "7,-6", "-1,7", "7,-1", "1,6", "6,1",
-  "-2,-2", "-4,2", "2,-4", "-2,4", "4,-2", "2,2",
-]);
-const DOUBLE_LETTER = new Set([
-  "-4,-2", "-2,-4", "-6,2", "-4,0", "0,-4", "2,-6",
-  "-6,4", "-1,-1", "4,-6", "-2,1", "1,-2", "-4,4",
-  "4,-4", "-1,2", "2,-1", "-4,6", "1,1", "6,-4",
-  "-2,6", "0,4", "4,0", "6,-2", "2,4", "4,2",
-]);
 
 let dictionary: ReadonlySet<string> | null = null;
 function getDictionary(): ReadonlySet<string> {
@@ -85,32 +54,6 @@ function getDictionary(): ReadonlySet<string> {
       .filter(Boolean),
   );
   return dictionary;
-}
-
-function cellIndex(q: number, r: number): number | null {
-  return COORDINATE_INDEX.get(`${q},${r}`) ?? null;
-}
-
-function multiplier(index: number): Multiplier {
-  const coordinate = COORDINATES[index];
-  const key = `${coordinate.q},${coordinate.r}`;
-  if (coordinate.q === 0 && coordinate.r === 0) return "star";
-  if (TRIPLE_WORD.has(key)) return "TW";
-  if (TRIPLE_LETTER.has(key)) return "TL";
-  if (DOUBLE_WORD.has(key)) return "DW";
-  if (DOUBLE_LETTER.has(key)) return "DL";
-  return "plain";
-}
-
-function createBag(): Tile[] {
-  return DISTRIBUTION.flatMap(([letter, count, points]) =>
-    Array.from({ length: count }, (_, copy) => ({
-      id: `${letter}-${copy + 1}`,
-      letter,
-      points,
-      blank: letter === "?",
-    })),
-  );
 }
 
 function shuffle<T>(values: T[]): T[] {
@@ -180,140 +123,46 @@ function normalizedTile(tile: Tile, assignedLetter: string | undefined, playedBy
   return { ...tile, playedBy };
 }
 
-function collectWord(board: Array<BoardTile | null>, additions: ReadonlyMap<number, BoardTile>, origin: number, axis: number) {
-  const direction = AXES[axis];
-  let cursor = COORDINATES[origin];
-  const occupied = (index: number) => additions.get(index) ?? board[index] ?? null;
-  while (true) {
-    const previous = cellIndex(cursor.q - direction.q, cursor.r - direction.r);
-    if (previous === null || !occupied(previous)) break;
-    cursor = COORDINATES[previous];
-  }
-  const indices: number[] = [];
-  const tiles: BoardTile[] = [];
-  while (true) {
-    const index = cellIndex(cursor.q, cursor.r);
-    if (index === null) break;
-    const tile = occupied(index);
-    if (!tile) break;
-    indices.push(index); tiles.push(tile);
-    cursor = { q: cursor.q + direction.q, r: cursor.r + direction.r };
-  }
-  return { indices, tiles };
+function sharedState(state: BuzzleGameState, playerIndex: number): SharedState {
+  return { ...state, currentPlayer: playerIndex, board: BUZZLE_ONLINE_INDICES.map((index) => state.board[index]) };
 }
-
-function placementAxis(indices: number[]): number {
-  if (indices.length === 1) return 0;
-  const coordinates = indices.map((index) => COORDINATES[index]);
-  const candidates = [
-    coordinates.every(({ r }) => r === coordinates[0].r),
-    coordinates.every(({ q }) => q === coordinates[0].q),
-    coordinates.every(({ q, r }) => q + r === coordinates[0].q + coordinates[0].r),
-  ];
-  const axis = candidates.findIndex(Boolean);
-  if (axis < 0) throw new ApiError(400, "Place tiles in one straight hex line.", "BUZZLE_NOT_LINEAR");
-  return axis;
+function serverState(state: SharedState): BuzzleGameState {
+  return { ...state, board: BUZZLE_ONLINE_INDICES.map((index) => state.board[index]) };
 }
-
-function scoreWord(word: ReturnType<typeof collectWord>, placed: ReadonlySet<number>): number {
-  let letters = 0;
-  let wordMultiplier = 1;
-  word.indices.forEach((index, offset) => {
-    const tile = word.tiles[offset];
-    const bonus = placed.has(index) ? multiplier(index) : "plain";
-    letters += tile.points * (bonus === "DL" ? 2 : bonus === "TL" ? 3 : 1);
-    if (bonus === "DW" || bonus === "star") wordMultiplier *= 2;
-    if (bonus === "TW") wordMultiplier *= 3;
-  });
-  return letters * wordMultiplier;
-}
-
-function applyPlay(state: BuzzleGameState, playerIndex: number, action: Extract<BuzzleAction, { type: "play" }>): BuzzleGameState {
-  if (action.placements.length < 1 || action.placements.length > RACK_SIZE) throw new ApiError(400, "Place between one and seven tiles.", "BUZZLE_PLACEMENT_COUNT");
-  const player = state.players[playerIndex];
-  const rack = new Map(player.rack.map((tile) => [tile.id, tile]));
-  const additions = new Map<number, BoardTile>();
-  for (const placement of action.placements) {
-    const tile = rack.get(placement.tileId);
-    if (!tile || !Number.isSafeInteger(placement.index) || placement.index < 0 || placement.index >= CELL_COUNT ||
-        state.board[placement.index] || additions.has(placement.index)) throw new ApiError(400, "That tile placement is not legal.", "BUZZLE_ILLEGAL_PLACEMENT");
-    additions.set(placement.index, normalizedTile(tile, placement.assignedLetter, playerIndex));
-    rack.delete(tile.id);
-  }
-  const indices = [...additions.keys()];
-  let axis = placementAxis(indices);
-  const boardEmpty = state.board.every((tile) => tile === null);
-  if (boardEmpty && !additions.has(cellIndex(0, 0)!)) throw new ApiError(400, "The opening word must cover the center star.", "BUZZLE_CENTER_REQUIRED");
-  if (!boardEmpty && !indices.some((index) => DIRECTIONS.some(({ q, r }) => {
-    const origin = COORDINATES[index]; const neighbor = cellIndex(origin.q + q, origin.r + r);
-    return neighbor !== null && state.board[neighbor] !== null;
-  }))) throw new ApiError(400, "The new word must connect to the hive.", "BUZZLE_DISCONNECTED");
-  if (indices.length === 1) {
-    axis = AXES.map((_, candidate) => collectWord(state.board, additions, indices[0], candidate).indices.length)
-      .reduce((best, length, candidate, lengths) => length > lengths[best] ? candidate : best, 0);
-  }
-  const main = collectWord(state.board, additions, indices[0], axis);
-  if (indices.some((index) => !main.indices.includes(index)) || main.indices.length < 2) throw new ApiError(400, "The play must form one gap-free word.", "BUZZLE_GAPPED_WORD");
-  const words = new Map<string, ReturnType<typeof collectWord>>();
-  for (const index of indices) for (let candidate = 0; candidate < AXES.length; candidate += 1) {
-    const word = collectWord(state.board, additions, index, candidate);
-    if (word.indices.length >= 2) words.set(word.indices.join(","), word);
-  }
-  let score = indices.length === RACK_SIZE ? 50 : 0;
-  for (const word of words.values()) {
-    const text = word.tiles.map(({ letter }) => letter).join("").toLowerCase();
-    if (!getDictionary().has(text)) throw new ApiError(400, `${text.toUpperCase()} is not in the selected dictionary.`, "BUZZLE_WORD_NOT_FOUND");
-    score += scoreWord(word, new Set(indices));
-  }
-  const board = [...state.board];
-  for (const [index, tile] of additions) board[index] = tile;
-  const bag = [...state.bag];
-  const players = state.players.map((entry) => ({ score: entry.score, rack: [...entry.rack] }));
-  players[playerIndex].rack = [...rack.values()];
-  players[playerIndex].score += score;
-  players[playerIndex].rack.push(...draw(bag, RACK_SIZE - players[playerIndex].rack.length));
-  let next: BuzzleGameState = { ...state, board, bag, players, currentPlayer: (playerIndex + 1) % players.length,
-    turn: state.turn + 1, consecutivePasses: 0 };
-  if (bag.length === 0 && players[playerIndex].rack.length === 0) next = finish(next, playerIndex);
-  return next;
-}
-
-function finish(state: BuzzleGameState, playerWhoWentOut: number | null): BuzzleGameState {
-  const players = state.players.map((player) => ({ ...player, rack: [...player.rack] }));
-  let award = 0;
-  players.forEach((player, index) => {
-    const penalty = player.rack.reduce((total, tile) => total + tile.points, 0);
-    player.score -= penalty;
-    if (playerWhoWentOut !== null && index !== playerWhoWentOut) award += penalty;
-  });
-  if (playerWhoWentOut !== null) players[playerWhoWentOut].score += award;
-  const high = Math.max(...players.map(({ score }) => score));
-  const leaders = players.flatMap(({ score }, index) => score === high ? [index] : []);
-  return { ...state, players, finished: true, winner: leaders.length === 1 ? leaders[0] : "draw" };
-}
-
 function applyAction(state: BuzzleGameState, playerIndex: number, action: BuzzleAction): BuzzleGameState {
   if (state.finished) throw new ApiError(409, "This BUZZLE match is finished.", "BUZZLE_FINISHED");
-  if (action.type === "play") return applyPlay(state, playerIndex, action);
-  if (action.type === "pass") {
-    const passes = state.consecutivePasses + 1;
-    const next = { ...state, currentPlayer: (playerIndex + 1) % state.players.length, turn: state.turn + 1, consecutivePasses: passes };
-    return passes >= state.players.length * 3 ? finish(next, null) : next;
+  const shared = sharedState(state, playerIndex);
+  try {
+    if (action.type === "pass") return serverState(passBuzzleTurn(shared));
+    if (action.type === "exchange") {
+      // The shared shuffle requests one bounded draw for each descending index.
+      // Use the same unbiased cryptographic integer source as the online service.
+      let limit = state.bag.length;
+      return serverState(exchangeBuzzleTiles(shared, action.tileIds, () => {
+        const draw = (randomInt(limit) + 0.5) / limit;
+        limit -= 1;
+        return draw;
+      }));
+    }
+    if (action.placements.length < 1 || action.placements.length > RACK_SIZE) {
+      throw new ApiError(400, "Place between one and seven tiles.", "BUZZLE_PLACEMENT_COUNT");
+    }
+    const rack = new Map(state.players[playerIndex].rack.map((tile) => [tile.id, tile]));
+    const placements = action.placements.map((placement) => {
+      const tile = rack.get(placement.tileId);
+      if (!tile || !Number.isSafeInteger(placement.index) || placement.index < 0 || placement.index >= CELL_COUNT) {
+        throw new ApiError(400, "That tile placement is not legal.", "BUZZLE_ILLEGAL_PLACEMENT");
+      }
+      // Tile identity/value comes only from the validated authoritative rack.
+      normalizedTile(tile, placement.assignedLetter, playerIndex);
+      rack.delete(tile.id);
+      return { index: BUZZLE_ONLINE_INDICES[placement.index], tile, assignedLetter: placement.assignedLetter };
+    });
+    return serverState(playBuzzleTiles(shared, placements, getDictionary()).state);
+  } catch (error) {
+    if (error instanceof BuzzleRuleError) throw new ApiError(400, error.message, error.code);
+    throw error;
   }
-  const selected = new Set(action.tileIds);
-  const player = state.players[playerIndex];
-  if (selected.size < 1 || selected.size !== action.tileIds.length || selected.size > RACK_SIZE || state.bag.length < selected.size) {
-    throw new ApiError(400, "Choose rack tiles that the bag can replace.", "BUZZLE_INVALID_EXCHANGE");
-  }
-  const returned = player.rack.filter(({ id }) => selected.has(id));
-  if (returned.length !== selected.size) throw new ApiError(400, "Exchange only tiles from your rack.", "BUZZLE_INVALID_EXCHANGE");
-  const bag = [...state.bag];
-  const players = state.players.map((entry) => ({ score: entry.score, rack: [...entry.rack] }));
-  players[playerIndex].rack = players[playerIndex].rack.filter(({ id }) => !selected.has(id));
-  players[playerIndex].rack.push(...draw(bag, returned.length));
-  bag.unshift(...returned);
-  return { ...state, bag: shuffle(bag), players, currentPlayer: (playerIndex + 1) % players.length,
-    turn: state.turn + 1, consecutivePasses: 0 };
 }
 
 export const buzzleGameDefinition: GameDefinition<BuzzleGameState, BuzzleAction, BuzzlePlayerView, "player-1" | "player-2"> = {
