@@ -1,6 +1,6 @@
 @import "tailwindcss";
-@source "../../packages";
 @import "../styles/ares-design-tokens.css";
+@source "../../packages";
 
 @theme inline {
   --color-background: var(--background);
