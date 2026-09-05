@@ -183,6 +183,11 @@ The current store serializes dispatches and publishes the new immutable snapshot
 mutable estimator history. Drive and vision observations must go through the store so its estimator
 runtime can prepare the correct reducer actions.
 
+After reduction, listeners run outside the store lock against a captured
+subscriber array. Adding or removing a subscription does not change that captured
+notification pass. Duplicate subscriptions remain separate registrations, and
+each unsubscribe callback removes only its own registration.
+
 Do not use a direct reducer call as a replacement for the store when testing pose estimation. This
 lesson uses direct calls only because the two heading actions are stateless reducer transitions.
 

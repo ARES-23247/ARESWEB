@@ -10,6 +10,36 @@
     #050608;
 }
 
+.buzzle-word-help { --buzzle-yellow: var(--color-ares-gold); }
+.buzzle-help-tabs, .buzzle-help-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.buzzle-help-bar { margin: 0.75rem 0.5rem; align-items: center; }
+.buzzle-help-bar p { flex-basis: 100%; }
+.buzzle-help-tabs button, .buzzle-word-list button {
+  min-height: 44px; border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-weight: 800;
+}
+.buzzle-help-tabs button[aria-pressed="true"], .buzzle-help-bar button[aria-pressed="true"] {
+  background: var(--color-ares-gold); color: var(--color-obsidian); border-color: var(--color-ares-gold);
+}
+.buzzle-help-input { display: block; width: 100%; min-width: 0; min-height: 44px; margin-top: 0.5rem; border: 1px solid rgb(255 255 255 / 35%); border-radius: 0.5rem; background: rgb(255 255 255 / 5%); padding: 0.5rem 0.75rem; }
+.buzzle-word-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.5rem, 1fr)); gap: 0.5rem; }
+.buzzle-word-list button { color: var(--color-ares-gold); }
+.buzzle-word-help :is(button, input, a):focus-visible, .buzzle-help-suggestions button:focus-visible {
+  outline: 3px solid var(--color-ares-gold); outline-offset: 3px;
+}
+.buzzle-help-suggestions { margin: 0.75rem 0.5rem; padding: 0.75rem; border: 1px solid var(--buzzle-gold); border-radius: 0.75rem; }
+.buzzle-hint-word { display: flex; flex-direction: column; border: 1px solid rgb(255 255 255 / 25%); border-radius: 0.5rem; }
+.buzzle-hint-word button { min-height: 44px; padding: 0.4rem 0.75rem; color: var(--buzzle-yellow); font-weight: 800; }
+.buzzle-hint-preview { padding-top: 0.75rem; border-top: 1px solid rgb(255 255 255 / 25%); }
+.buzzle-definition { overflow-wrap: anywhere; }
+.buzzle-definition a { text-decoration: underline; }
+.buzzle-cell[data-hint="true"] { filter: drop-shadow(0 0 4px var(--buzzle-yellow)); background: var(--buzzle-yellow); }
+.buzzle-cell[data-hint="true"] .buzzle-cell-surface { box-shadow: inset 0 0 0 2px var(--buzzle-yellow); }
+.buzzle-preview-marker { display: grid; place-items: center; width: 75%; aspect-ratio: 1; border-radius: 50%; background: var(--buzzle-yellow); color: var(--buzzle-ink); font-size: clamp(11px, 1.6vw, 22px); font-weight: 900; line-height: 1; }
+.buzzle-placement-steps { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
+.buzzle-placement-steps li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+.buzzle-step-marker { display: inline-grid; place-items: center; flex: 0 0 auto; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--buzzle-yellow); color: var(--buzzle-ink); font-weight: 900; }
+
 .buzzle-hero,
 .buzzle-arena,
 .buzzle-panel,

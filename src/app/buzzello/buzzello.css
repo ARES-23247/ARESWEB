@@ -285,6 +285,27 @@
   color: var(--buzzello-yellow);
 }
 
+.buzzello-current-turn {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 2px solid var(--buzzello-cream);
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: var(--buzzello-black);
+  color: var(--buzzello-cream);
+  font-size: 1.125rem;
+  font-weight: 900;
+}
+
+.buzzello-current-turn[data-player="yellow"] {
+  border-color: var(--buzzello-yellow);
+  background: var(--buzzello-yellow);
+  color: var(--buzzello-black);
+}
+
 .buzzello-mobile-status,
 .buzzello-turn-card,
 .buzzello-season-card,

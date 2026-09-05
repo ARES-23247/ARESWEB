@@ -68,6 +68,8 @@ describe("BUZZELLO page", () => {
       }),
     ).toBe(true);
     expect(screen.getByText(/Yellow opens/i)).toBeInTheDocument();
+    const turnIndicator = screen.getByRole("status", { name: "Current turn" });
+    expect(turnIndicator).toHaveTextContent("Yellow’s turn");
 
     const openingMove = getBuzzelloLegalMoves(
       createBuzzelloInitialBoard(),
@@ -82,11 +84,15 @@ describe("BUZZELLO page", () => {
     fireEvent.click(cell);
 
     expect(screen.getByText("Black to move.")).toBeInTheDocument();
+    expect(turnIndicator).toHaveTextContent("Black’s turn");
     expect(
       screen.getByRole("button", { name: /view 1 move/i }),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Undo move" }));
     expect(screen.getByText(/Yellow opens/i)).toBeInTheDocument();
+    expect(turnIndicator).toHaveTextContent("Yellow’s turn");
+    fireEvent.click(screen.getByRole("button", { name: "Redo move" }));
+    expect(turnIndicator).toHaveTextContent("Black’s turn");
   });
 
   it("exposes keyboard grid navigation, rules, and an empty history state", () => {

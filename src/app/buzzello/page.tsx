@@ -1003,6 +1003,30 @@ export default function BuzzelloPage() {
             </div>
 
             <div
+              className="buzzello-current-turn"
+              data-player={
+                current.gameOver || isOnlineWaiting
+                  ? undefined
+                  : current.currentPlayer
+              }
+              role="status"
+              aria-label="Current turn"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {!current.gameOver && !isOnlineWaiting && (
+                <ScorePiece player={current.currentPlayer} />
+              )}
+              <span>
+                {current.gameOver
+                  ? "Match complete"
+                  : isOnlineWaiting
+                    ? "Waiting for opponent"
+                    : `${playerName(current.currentPlayer)}’s turn`}
+              </span>
+            </div>
+
+            <div
               className="buzzello-mobile-status mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl p-2 xl:hidden"
               aria-label={`Score: Yellow ${scores.yellow}, Black ${scores.black}`}
             >
@@ -1026,8 +1050,8 @@ export default function BuzzelloPage() {
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#f7e326]">
                   {current.gameOver
                     ? "Final"
-                    : aiThinking
-                      ? "AI turn"
+                    : isOnlineWaiting
+                      ? "Waiting"
                       : `${playerName(current.currentPlayer)} turn`}
                 </p>
                 <p className="max-w-36 truncate text-[11px] text-white/75">

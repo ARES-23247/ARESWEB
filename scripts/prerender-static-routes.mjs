@@ -32,7 +32,10 @@ export const staticPageMetadata = [
     ["Hexagonal strategy", "Play BUZZELLO on a 61-cell hexagonal board. Challenge another player on the same device or choose from three computer difficulty levels, with keyboard controls, move history, and undo support."],
   ]],
   ["/buzzle", "BUZZLE™", "Play BUZZLE, ARES 23247's three-axis hexagonal word game.", false, [
-    ["Three-axis word strategy", "Build connected words on a 127-cell hexagonal board. BUZZLE supports two to four local players, letter and word multipliers, blank tiles, exchanges, keyboard controls, and cross-words on all three axes."],
+    ["Three-axis word strategy", "Build connected words on a 217-cell hexagonal board. BUZZLE supports two to four local players, letter and word multipliers, blank tiles, exchanges, keyboard controls, and cross-words on all three axes."],
+  ]],
+  ["/buzzle/word-tools", "BUZZLE Word Tools", "Check legal BUZZLE words, browse two-letter words, and look up definitions for physical play.", false, [
+    ["Physical play companion", "Use the same accepted word list as BUZZLE to check words and browse the complete two-letter reference. After offline setup, the checker and reference can be reopened without internet. New dictionary definitions need an internet connection. <a href=\"/buzzle\">Play BUZZLE</a>."],
   ]],
   ["/accessibility", "Accessibility & Web Standards", "Read the ARES 23247 accessibility commitment and supported ways to report a barrier.", false, [
     ["Our commitment", "ARES 23247 works to keep this website usable with keyboards, screen readers, and mobile devices. This page explains the standards we target, the assistive technologies we test with, and how to contact the team if you encounter a barrier."],

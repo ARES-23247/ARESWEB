@@ -41,6 +41,9 @@ import {
 } from "@/lib/buzzle";
 import type { BuzzleAiMove } from "@/lib/buzzleAi";
 import { loadBuzzleDictionary } from "@/lib/buzzleDictionary";
+import { BuzzleWordHelp, type WordHelpRequest } from "@/components/games/BuzzleWordHelp";
+import { BuzzleHelpMode } from "@/components/games/BuzzleHelpMode";
+import type { BuzzleHint } from "@/lib/buzzleWordHelp";
 import {
   BuzzleOnlineError,
   createOnlineBuzzleGame,
@@ -157,6 +160,8 @@ interface BoardProps {
   disabled: boolean;
   onPlace: (index: number, tileId?: string) => void;
   onRecall: (index: number) => void;
+  preview: BuzzleHint | null;
+  onInspect: (index: number, trigger: HTMLElement) => void;
 }
 
 function BuzzleBoardView({
@@ -166,6 +171,8 @@ function BuzzleBoardView({
   disabled,
   onPlace,
   onRecall,
+  preview,
+  onInspect,
 }: BoardProps) {
   const centerIndex = getBuzzleCellIndex(0, 0)!;
   const [focusedIndex, setFocusedIndex] = useState(centerIndex);
@@ -224,6 +231,9 @@ function BuzzleBoardView({
         {BUZZLE_COORDINATES.map(({ q, r }, index) => {
           const boardTile = game.board[index];
           const draft = draftByIndex.get(index);
+          const ghost = preview?.placements.find((item) => item.index === index);
+          const marker = ghost && !draft ? preview!.placements.indexOf(ghost) + 1 : undefined;
+          const highlighted = preview?.indices.includes(index) ?? false;
           const multiplier = getBuzzleMultiplier(index);
           const canPlace = !disabled && !boardTile && !draft && selectedTile !== null;
           const left = 50 + q * (7.2 * 13 / 17);
@@ -245,12 +255,15 @@ function BuzzleBoardView({
               data-can-place={canPlace}
               data-occupied={Boolean(boardTile || draft)}
               data-draft={Boolean(draft)}
-              aria-label={`q ${q}, r ${r}: ${state}`}
+              data-hint={highlighted}
+              data-preview-marker={marker}
+              aria-label={`q ${q}, r ${r}: ${state}${boardTile ? ", select to inspect words" : ""}${ghost ? `, ${marker ? `marker ${marker}, ` : ""}preview ${ghost.assignedLetter ?? ghost.tile.letter}` : ""}`}
               style={{ left: `${left}%`, top: `${top}%` }}
               onFocus={() => setFocusedIndex(index)}
               onKeyDown={(event) => handleKeyDown(event, index)}
-              onClick={() => {
-                if (draft) onRecall(index);
+              onClick={(event) => {
+                if (boardTile) onInspect(index, event.currentTarget);
+                else if (draft) onRecall(index);
                 else if (canPlace) onPlace(index);
               }}
               onDragOver={(event) => {
@@ -266,6 +279,8 @@ function BuzzleBoardView({
                   <BuzzleTileFace tile={boardTile} compact />
                 ) : draft ? (
                   <BuzzleTileFace tile={{ ...draft.tile, letter: draft.assignedLetter ?? draft.tile.letter }} compact />
+                ) : ghost ? (
+                  <span className="buzzle-preview-marker">{marker}</span>
                 ) : multiplier === "star" ? (
                   <span className="buzzle-multiplier-mark">★</span>
                 ) : multiplier !== "plain" ? (
@@ -293,6 +308,11 @@ export default function BuzzlePage() {
   const [exchangeMode, setExchangeMode] = useState(false);
   const [exchangeSelection, setExchangeSelection] = useState<Set<string>>(new Set());
   const [dictionary, setDictionary] = useState<DictionaryState>({ status: "loading", words: null });
+  const [dictionaryAttempt, setDictionaryAttempt] = useState(0);
+  const [wordHelp, setWordHelp] = useState<WordHelpRequest | null>(null);
+  const helpFocusRef = useRef<HTMLElement | null>(null);
+  const [helpMode, setHelpMode] = useState(false);
+  const [hintPreview, setHintPreview] = useState<{ key: string; hint: BuzzleHint | null } | null>(null);
   const [notice, setNotice] = useState("Select a rack tile, then choose a board cell.");
   const [newGameOpen, setNewGameOpen] = useState(inviteFromHash === null);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -321,6 +341,16 @@ export default function BuzzlePage() {
   const onlineTurnBlocked = mode === "online" && (
     !onlineGame || onlineGame.status !== "active" || onlineGame.currentPlayer !== onlineGame.playerIndex || onlineBusy
   );
+  const helpActive = helpMode && !handoffPending && !game.finished && !exchangeMode && !aiTurn && !onlineTurnBlocked && !newGameOpen;
+  const helpPositionKey = JSON.stringify([game.turn, game.board, rack, game.currentPlayer]);
+  const helpSearchKey = JSON.stringify([helpPositionKey, placements]);
+  const visibleHint = helpActive && hintPreview?.key === helpPositionKey && placements.every((placement) =>
+    hintPreview.hint?.placements.some((candidate) => candidate.index === placement.index && candidate.tile.id === placement.tile.id && candidate.assignedLetter === placement.assignedLetter),
+  ) ? hintPreview.hint : null;
+  const openWordHelp = (request: WordHelpRequest, trigger: HTMLElement) => {
+    helpFocusRef.current = trigger;
+    setWordHelp(request);
+  };
 
   const resetDraft = useCallback(() => {
     setPlacements([]);
@@ -354,7 +384,7 @@ export default function BuzzlePage() {
         if (active) setDictionary({ status: "error", words: null });
       });
     return () => { active = false; };
-  }, []);
+  }, [dictionaryAttempt]);
 
   useEffect(() => {
     if (!inviteFromHash) return;
@@ -661,6 +691,9 @@ export default function BuzzlePage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <a className="buzzle-secondary-action" href="/buzzle/word-tools">Physical play tools</a>
+              <button type="button" className="buzzle-secondary-action" onClick={(event) => openWordHelp({ tab: "two" }, event.currentTarget)}>Two-letter words</button>
+              <button type="button" className="buzzle-secondary-action" onClick={(event) => openWordHelp({ tab: "dictionary" }, event.currentTarget)}>Dictionary</button>
               <GameFullscreenButton
                 isFullscreen={fullscreen.isFullscreen}
                 onToggle={fullscreen.toggleFullscreen}
@@ -743,7 +776,16 @@ export default function BuzzlePage() {
               disabled={handoffPending || game.finished || exchangeMode || aiTurn || onlineTurnBlocked}
               onPlace={addPlacement}
               onRecall={(index) => setPlacements((current) => current.filter((placement) => placement.index !== index))}
+              preview={visibleHint}
+              onInspect={(cell, trigger) => openWordHelp({ tab: "board", cell }, trigger)}
             />
+            <div className="buzzle-help-bar">
+              <button type="button" className="buzzle-secondary-action" aria-pressed={helpMode} onClick={() => { setHelpMode(!helpMode); setHintPreview(null); }}>Help Mode: {helpMode ? "on" : "off"}</button>
+              <button type="button" className="buzzle-secondary-action" onClick={(event) => openWordHelp({ tab: "board" }, event.currentTarget)}>Words on board</button>
+              <p className="text-xs text-marble/75">Help Mode finds legal two-letter placements with your rack.</p>
+            </div>
+            {helpActive && <BuzzleHelpMode key={helpSearchKey} board={game.board} rack={rack} draft={placements} words={dictionary.words} player={game.currentPlayer} initialPreview={visibleHint}
+              onPreview={(hint) => setHintPreview({ key: helpPositionKey, hint })} onDefine={(word, trigger) => openWordHelp({ tab: "dictionary", word }, trigger)} />}
           </section>
 
           <aside className="space-y-3" aria-label="Turn controls">
@@ -899,6 +941,10 @@ export default function BuzzlePage() {
               <span><strong>{name}</strong><small>{detail}</small></span>
             </button>
           ))}
+          <a href="/buzzle/word-tools" className="buzzle-mode-card">
+            <BookOpen aria-hidden="true" size={24} />
+            <span><strong>Physical play tools</strong><small>Word checker, dictionary, and two-letter list. Checker and list work offline after setup.</small></span>
+          </a>
         </div>
         <label className="mt-4 block text-sm font-bold text-white" htmlFor="buzzle-player-count">Local players</label>
         <select id="buzzle-player-count" className="mt-2 min-h-11 w-full rounded-lg border border-white/25 bg-obsidian px-3 text-white" value={playerCount} onChange={(event) => setPlayerCount(Number(event.target.value))}>
@@ -1038,6 +1084,9 @@ export default function BuzzlePage() {
           </p>
         </div>
       </DialogShell>
+      {wordHelp && !handoffPending && !newGameOpen && !onlineSetupOpen && !gameOverOpen && <BuzzleWordHelp request={wordHelp} words={dictionary.words} board={game.board}
+        loading={dictionary.status === "loading"} onRetry={() => { setDictionary({ status: "loading", words: null }); setDictionaryAttempt((attempt) => attempt + 1); }}
+        onClose={() => setWordHelp(null)} returnFocusRef={helpFocusRef} />}
     </main>
   );
 }

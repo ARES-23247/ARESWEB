@@ -10,7 +10,7 @@ Complete [Predict Motion with Feedforward](/academy/controls-motor-model-feedfor
 first. You should be able to read a time graph, name the units in a calculation, and explain why a
 prediction and a feedback correction are different jobs.
 
-This lesson follows ARES 16.0.1 and Studio 6.0.1. Its source links are pinned to the exact public
+This lesson follows ARES 17.0.1 and Studio 7.0.1. Its source links are pinned to the exact public
 monorepo commit used for review. The browser activities do not run the Kotlin controller.
 
 In this lesson, you will:
@@ -115,7 +115,7 @@ classroom cases and does not run Kotlin or a motor.
 
 <arespidtracelab />
 
-Now use the **ARES 16.0.1 source trace** in the same activity:
+Now use the **ARES 17.0.1 source trace** in the same activity:
 
 1. Choose **Worked step**. Confirm the final output is `0.155`.
 2. Choose **First after reset**. Explain why the D term is zero.
