@@ -7,7 +7,7 @@ action, follow a path, or wrap other tasks. This reference explains how task gro
 resource bits prevent unsafe overlap, and how cleanup actions return to Redux.
 
 Read [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. You should know what
-an action, reducer, controller, and immutable state are. This page is pinned to ARES 16.0.1. It can
+an action, reducer, controller, and immutable state are. This page is pinned to ARES 17.0.1. It can
 support source review and software tests, but it cannot prove that a physical mechanism is safe.
 
 ## Vocabulary
@@ -69,6 +69,12 @@ check whether cleanup reached a physical device.
 Resource checking happens when a concurrent group is built. It is not extra work inside the fast
 robot loop. ARES reserves named bits for common work and separate ranges for generated subsystems
 and season code.
+
+Executor suspension preserves charged execution time and propagates timeout
+suspension through built-in groups and active path-event tasks. Running child
+watchdogs pause; resuming does not start a queued child's watchdog. Pausing those
+clocks does not itself neutralize hardware. Review the task's explicit pause and
+cleanup actions separately.
 
 ## Task tree explorer
 

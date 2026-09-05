@@ -141,9 +141,14 @@ Both paths stop the rest of the executor instead of starting the next queued tas
 elapsed duration or timeout. `resume()` shifts the task start time so the task continues from the
 same charged execution time.
 
+ARES 17.0.1 also propagates timeout suspension through built-in task groups and
+active path-event tasks. Their running watchdogs pause and resume with the parent;
+resuming does not start a queued child's watchdog. This timeout bookkeeping does
+not dispatch a neutral hardware action or replace the task's cleanup contract.
+
 ### Preemption needs a source review
 
-`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 16.0.1 source
+`preempt()` pauses the executor's active task and later resumes it. At the pinned ARES 17.0.1 source
 revision, the group classes do not forward `pause` and `resume` to their active children. A root
 sequence therefore must not rely only on a nested child's pause hook to neutralize hardware.
 

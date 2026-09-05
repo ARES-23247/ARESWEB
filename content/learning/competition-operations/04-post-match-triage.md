@@ -45,6 +45,13 @@ ARES Diagnostic Coach follows the same evidence rule. Its notice says telemetry 
 screening observations, not root-cause diagnoses or proof that a robot is safe. Missing signals stay
 listed. Possible causes and verification steps remain separate from the observation.
 
+Preserve Studio evidence before a version upgrade too. Close Studio, then back up
+its database and any adjacent `.wal` file from the same closed session. Keep the
+original robot logs and exported sessions separately. If the new release rejects
+an older database schema, preserve the original pair. Follow the pinned operations
+guide to export with a compatible release and import into a new profile.
+Do not delete an active WAL or assume a general legacy-schema converter.
+
 ## Visual model
 
 ```mermaid

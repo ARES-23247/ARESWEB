@@ -8,7 +8,7 @@ shows how a request moves through the robot loop without hidden device reads.
 
 You should know that a robot has sensors, motors, and a repeating control loop. You do not need to
 know every Gradle module. Keep the current ARES source open so you can compare this map with real
-files. This page applies to ARES 16.0.1 and Studio 6.0.1.
+files. This page applies to ARES 17.0.1 and Studio 7.0.1.
 
 ## Vocabulary
 

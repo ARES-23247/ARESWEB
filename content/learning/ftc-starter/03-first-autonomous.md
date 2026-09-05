@@ -8,7 +8,7 @@ real routine is added. This safe default keeps an empty project from pretending 
 
 Before starting, complete [Map FTC Controls Through Redux](/academy/ftc-starter-controller-bindings?path=ftc-robot-with-ares)
 and [Use Units and Coordinate Frames](/academy/robot-coordinate-contracts?path=controls-localization-autonomous).
-You need a local FTC Starter project and ARES Robotics Studio 6.0.1.
+You need a local FTC Starter project and ARES Robotics Studio 7.0.1.
 
 ## Vocabulary
 

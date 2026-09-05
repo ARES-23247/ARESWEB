@@ -7,7 +7,7 @@ several related products. This lesson helps you find the right home for a change
 code. You do not need an earlier lesson. You only need the current ARES Robotics source tree or its
 GitHub page and a place to record your answers.
 
-The protected release manifest currently names ARES 16.0.1 and Studio 6.0.1. Six products have
+The protected release manifest currently names ARES 17.0.1 and Studio 7.0.1. Six products have
 separate Gradle builds because FTC, FRC, the shared library, and the desktop app use different tools.
 The XRP starter uses Python and MicroPython instead. One source repository does not mean one
 program or one runtime. This lesson's runtime exercise focuses on FTC and FRC.
