@@ -64,7 +64,7 @@ export function DesktopUserMenu({
 
   if (loading) {
     return (
-      <div className="hidden items-center gap-4 md:flex">
+      <div className="hidden items-center gap-4 xl:flex">
         <span className="text-xs text-marble/60" role="status">Verifying session...</span>
       </div>
     );
@@ -72,7 +72,7 @@ export function DesktopUserMenu({
 
   if (!isSignedIn || !user) {
     return (
-      <div className="hidden items-center gap-4 md:flex">
+      <div className="hidden items-center gap-4 xl:flex">
         <button
           type="button"
           onClick={loginWithGoogle}
@@ -88,10 +88,10 @@ export function DesktopUserMenu({
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <div className="hidden items-center gap-4 md:flex">
+    <div className="hidden items-center gap-4 xl:flex">
       <div className="flex items-center gap-3">
-        <div className="hidden text-right lg:block">
-          <p className="text-xs font-bold leading-none text-white">
+        <div className="hidden max-w-28 text-right 2xl:block">
+          <p className="truncate text-xs font-bold leading-none text-white">
             {user.displayName || "ARES Member"}
           </p>
           <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-ares-gold">

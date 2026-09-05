@@ -351,6 +351,10 @@
         "destination": "/prerender/buzzle.html"
       },
       {
+        "source": "/arcade",
+        "destination": "/prerender/arcade.html"
+      },
+      {
         "source": "/pollen",
         "destination": "/prerender/pollen.html"
       },

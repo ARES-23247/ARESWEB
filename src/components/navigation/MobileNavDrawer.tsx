@@ -7,7 +7,7 @@ import {
   User as UserIcon,
   X,
 } from "lucide-react";
-import { TEAM_LINKS, RESOURCE_LINKS } from "./navItems";
+import { TEAM_LINKS, RESOURCE_LINKS, ARCADE_LINKS } from "./navItems";
 import { NavLinkItem } from "./NavLinkItem";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import AuthErrorNotice from "./AuthErrorNotice";
@@ -66,7 +66,7 @@ export function MobileNavDrawer({
     if (!isOpen) return;
 
     const closeAtDesktopWidth = () => {
-      if (window.matchMedia("(min-width: 768px)").matches) {
+      if (window.matchMedia("(min-width: 1280px)").matches) {
         onCloseRef.current();
       }
     };
@@ -113,7 +113,7 @@ export function MobileNavDrawer({
   if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
-    <div data-mobile-nav-portal className="fixed inset-0 z-[100] md:hidden">
+    <div data-mobile-nav-portal className="fixed inset-0 z-[100] xl:hidden">
       <button
         type="button"
         tabIndex={-1}
@@ -178,6 +178,15 @@ export function MobileNavDrawer({
             ))}
           </div>
         </div>
+
+        <section aria-labelledby="mobile-arcade-heading">
+          <h3 id="mobile-arcade-heading" className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ares-gold">Arcade</h3>
+          <div className="flex flex-col gap-1">
+            {ARCADE_LINKS.map(item => (
+              <NavLinkItem key={item.label} item={item} variant="mobile-drawer" onClick={onClose} />
+            ))}
+          </div>
+        </section>
 
         <div className="my-1 h-px bg-white/10" aria-hidden="true" />
 

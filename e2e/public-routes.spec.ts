@@ -16,6 +16,7 @@ const publicRoutes: Array<{ path: string; titlePart: string }> = [
   { path: "/seasons", titlePart: "Team Legacy" },
   { path: "/blog", titlePart: "Blog" },
   { path: "/academy", titlePart: "ARES Academy" },
+  { path: "/arcade", titlePart: "ARES Arcade" },
   { path: "/buzzello", titlePart: "BUZZELLO" },
   { path: "/docs", titlePart: "ARESLib Documentation" },
   { path: "/finance", titlePart: "Financial Transparency Ledger" },

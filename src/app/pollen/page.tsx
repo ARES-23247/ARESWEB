@@ -45,6 +45,7 @@ export default function PollenPage() {
         <GameFullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
       </header>
       {!isFullscreen && <nav aria-label="Games" className="pollen-links">
+        <Link to="/arcade">All arcade games</Link>
         <Link to="/buzzle">BUZZLE</Link><Link to="/buzzello">BUZZELLO</Link><Link to="/">Team home</Link>
       </nav>}
       <iframe ref={frame} src="/games/pollen/index.html" title="Pollenator Pile-Up game" sandbox="allow-scripts" className="pollen-frame" />

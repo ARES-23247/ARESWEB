@@ -7,6 +7,7 @@ import {
   Calendar as CalendarIcon,
   ShoppingBag,
   GraduationCap,
+  Gamepad2,
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
@@ -140,7 +141,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-widest animate-fade-in">
+        <div className="hidden xl:flex items-center gap-4 2xl:gap-6 text-sm font-bold uppercase tracking-widest animate-fade-in">
           {/* 1. Team Dropdown */}
           <NavDropdown
             label="Team"
@@ -183,6 +184,13 @@ export default function Navbar() {
           </Link>
 
           <Link
+            to="/arcade"
+            className="flex min-h-11 items-center gap-2 rounded px-1 text-white transition-colors hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <Gamepad2 aria-hidden="true" size={14} /> Arcade
+          </Link>
+
+          <Link
             to="/docs"
             aria-label="ARES Documentation Library"
             className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group/lib border border-white/5 bg-white/5"
@@ -214,7 +222,7 @@ export default function Navbar() {
           ref={mobileMenuButtonRef}
           type="button"
           onClick={() => setOpen(!open)}
-          className="group flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded text-ares-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan md:hidden"
+          className="group flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded text-ares-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan xl:hidden"
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={open}
           aria-controls="mobile-navigation-drawer"
