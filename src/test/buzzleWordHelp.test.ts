@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BUZZLE_COORDINATES, analyzeBuzzlePlay, createBuzzleGame, getBuzzleCellIndex, type BuzzleTile, type BuzzleBoardTile, type BuzzlePlacement } from "@/lib/buzzle";
-import { findBuzzleTwoLetterHints, twoLetterWords, wordsOnBuzzleBoard } from "@/lib/buzzleWordHelp";
+import { findBuzzleTwoLetterHints, twoLetterWords, wordsOnBuzzleBoard } from "@ares/buzzle/word-help";
 
 const at = (q: number, r: number) => getBuzzleCellIndex(q, r)!;
 const tile = (letter: string, id = letter): BuzzleTile => ({ id, letter, points: letter === '?' ? 0 : 1, blank: letter === '?' });

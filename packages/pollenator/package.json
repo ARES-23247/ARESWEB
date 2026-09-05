@@ -1,0 +1,11 @@
+{
+  "name": "@ares/pollenator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./physics": "./public/js/physics.js"
+  },
+  "dependencies": {},
+  "peerDependencies": {}
+}

@@ -20,6 +20,9 @@ not a Next.js router.
 | API composition and route security | `functions/src/apiApp.ts`, `functions/src/apps/`, `functions/src/routes/` |
 | Function exports and bindings | `functions/src/index.ts`, `functions/src/functionConfig.ts` |
 | Online game process | `functions/src/gameServer.ts`, `functions/src/apps/game.ts` |
+| Canonical game rules and UI | `packages/buzzle/`, `packages/buzzello/`, `packages/pollenator/` |
+| Shared game geometry and UI primitives | `packages/game-common/`, `packages/ui/` |
+| Game deployment staging | `scripts/prepare-game-packages.mjs`, `docs/GAME_ARCHITECTURE.md` |
 | Authorization and data rules | `functions/src/middleware/auth.ts`, `firestore.rules`, `storage.rules` |
 | Academy source and release provenance | `content/learning/`, `scripts/validate-learning-catalog.mjs`, `scripts/migrate-learning-content.mjs` |
 | Runtime, commands, deployment | `package.json`, `functions/package.json`, `.github/workflows/ci.yml`, `infra/gcp/production-deployment.json` |
@@ -41,6 +44,12 @@ tracked in Git. Put temporary notes in root `scratch/`, outside the shared
 instruction tree. Keep tool entry points as references to this guide, not copied
 policies. See [docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) for discovery checks.
 Preserve other contributors' work; use an isolated worktree when changes overlap.
+
+Edit canonical game packages, not the generated `functions/src/generated/games/`,
+`public/games/pollen/`, or dictionary deployment copies. Run `pnpm games:prepare`
+after changing shared rules while a backend development process is running.
+Keep packages independent of website source; the site injects authenticated
+online clients. Preserve online board-index conversions and server validation.
 
 ## Required engineering boundaries
 

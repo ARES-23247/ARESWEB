@@ -9,14 +9,14 @@ interface Clock {
   advance(elapsedMs: number, step: (ms: number) => void): void;
 }
 // This is a classic script in the opaque game, imported here for instrumentation.
-const clockModule = "../../public/games/pollen/js/physics.js";
+const clockModule = "../../packages/pollenator/public/js/physics.js";
 await import(clockModule);
 const ClockClass = (window as unknown as { PollenPhysicsClock: new () => Clock }).PollenPhysicsClock;
 
 function simulation() {
   const context = createContext({ window: { addEventListener() {} } });
   for (const file of ["lib/matter.min.js", "js/flower.js", "js/pollinators.js", "js/physics.js", "js/game.js"]) {
-    runInContext(readFileSync(resolve("public/games/pollen", file), "utf8"), context);
+    runInContext(readFileSync(resolve("packages/pollenator/public", file), "utf8"), context);
   }
   runInContext(`
     window.audioManager = new Proxy({}, { get: () => () => {} });

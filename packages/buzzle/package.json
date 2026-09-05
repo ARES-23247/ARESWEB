@@ -1,0 +1,27 @@
+{
+  "name": "@ares/buzzle",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./rules": "./src/rules.ts",
+    "./game": "./src/Game.tsx",
+    "./online": "./src/online.ts",
+    "./ai": "./src/ai.ts",
+    "./dictionary": "./src/dictionary.ts",
+    "./definitions": "./src/definitions.ts",
+    "./word-help": "./src/wordHelp.ts",
+    "./word-tools": "./src/WordTools.tsx",
+    "./help-panel": "./src/BuzzleWordHelp.tsx",
+    "./help-mode": "./src/BuzzleHelpMode.tsx"
+  },
+  "dependencies": {
+    "@ares/ui": "workspace:*",
+    "@ares/game-common": "workspace:*",
+    "lucide-react": "^1.33.0",
+    "dompurify": "^3.4.14"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}

@@ -1,6 +1,7 @@
 packages:
   - "."
   - "functions"
+  - "packages/*"
 optimisticRepeatInstall: false
 overrides:
   dompurify: ^3.4.13

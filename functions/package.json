@@ -1,8 +1,9 @@
 {
   "name": "functions",
   "scripts": {
+    "gcp-build": "",
     "lint": "eslint src --max-warnings=0",
-    "build": "tsc",
+    "build": "node ../scripts/prepare-game-packages.mjs && tsc",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run serve",

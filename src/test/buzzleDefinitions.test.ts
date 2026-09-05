@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createBuzzleDefinitionLookup, parseBuzzleDefinition } from "@/lib/buzzleDefinitions";
+import { createBuzzleDefinitionLookup, parseBuzzleDefinition } from "@ares/buzzle/definitions";
 
 const entry = () => ({ en: [{ language: 'English', partOfSpeech: 'preposition', definitions: [{ definition: 'Test definition.', examples: ['Test example.'] }] }] });
 const response = () => new Response(JSON.stringify(entry()), { status: 200 });
