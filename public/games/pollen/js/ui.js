@@ -23,7 +23,20 @@ class UIManager {
 
     // High Score key
     this.storageKey = 'pollen_appalachian_high_score';
-    this.highScore = parseInt(localStorage.getItem(this.storageKey) || '0', 10);
+    this.highScore = 0;
+    try {
+      const stored = Number(localStorage.getItem(this.storageKey));
+      if (Number.isSafeInteger(stored) && stored >= 0 && stored <= 1000000000) this.highScore = stored;
+    } catch { /* The embedded game uses an opaque sandbox and the host score bridge. */ }
+    window.addEventListener('message', (event) => {
+      if (window.parent === window || event.source !== window.parent || event.data?.type !== 'pollen:score') return;
+      const score = event.data.score;
+      if (Number.isSafeInteger(score) && score >= 0 && score <= 1000000000) {
+        this.highScore = Math.max(this.highScore, score);
+        if (this.goBestEl) this.goBestEl.innerText = this.highScore.toLocaleString();
+      }
+    });
+    if (window.parent !== window) window.parent.postMessage({ type: 'pollen:load-score' }, '*');
 
     this.bindEvents();
   }
@@ -65,11 +78,12 @@ class UIManager {
 
     // Fullscreen toggle
     const fsBtn = document.getElementById('btn-fs-toggle');
+    if (window.parent !== window && fsBtn) fsBtn.hidden = true;
     fsBtn?.addEventListener('click', () => {
       if (!document.fullscreenElement) {
-        document.getElementById('canvas-wrapper')?.requestFullscreen().catch(() => {});
+        document.getElementById('canvas-wrapper')?.requestFullscreen?.().catch(() => {});
       } else {
-        document.exitFullscreen().catch(() => {});
+        document.exitFullscreen?.().catch(() => {});
       }
     });
 
@@ -91,11 +105,15 @@ class UIManager {
   }
 
   showModal(modalEl) {
-    if (modalEl) modalEl.classList.remove('hidden');
+    if (modalEl) {
+      modalEl.classList.remove('hidden');
+      modalEl.querySelector('button')?.focus();
+    }
   }
 
   hideModal(modalEl) {
     if (modalEl) modalEl.classList.add('hidden');
+    this.game.canvas.focus();
   }
 
   updateHUD(score, crittersLanded, mode, currentTurn, isAiTurn) {
@@ -151,7 +169,8 @@ class UIManager {
     let isNewHigh = false;
     if (score > this.highScore) {
       this.highScore = score;
-      localStorage.setItem(this.storageKey, this.highScore.toString());
+      try { localStorage.setItem(this.storageKey, this.highScore.toString()); } catch { /* Host stores the embedded game's score. */ }
+      if (window.parent !== window) window.parent.postMessage({ type: 'pollen:save-score', score: this.highScore }, '*');
       isNewHigh = true;
     }
 

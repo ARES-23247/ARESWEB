@@ -62,15 +62,25 @@ class PollenGame {
 
     window.addEventListener('resize', () => {
       const r = this.canvas.parentElement.getBoundingClientRect();
+      const dx = (r.width - this.width) / 2;
+      const dy = (r.height - this.height) * 0.58;
       this.width = r.width;
       this.height = r.height;
       this.canvas.width = this.width * this.dpr;
       this.canvas.height = this.height * this.dpr;
       this.ctx.scale(this.dpr, this.dpr);
       if (this.flower) {
+        // Keep existing stacks and the physical spring anchors aligned on resize.
+        Matter.Composite.allBodies(this.world).forEach(body => Matter.Body.translate(body, { x: dx, y: dy }));
+        [this.flower.pivotConstraint, this.flower.leftSpring, this.flower.rightSpring].forEach(constraint => {
+          constraint.pointA.x += dx;
+          constraint.pointA.y += dy;
+        });
         this.flower.centerX = this.width / 2;
         this.flower.groundY = this.height - 20;
         this.flower.flowerY = this.height * 0.58;
+        Matter.Body.setPosition(this.flower.groundAnchor, { x: this.flower.centerX, y: this.flower.groundY });
+        this.dropX = Math.max(60, Math.min(this.width - 60, this.dropX + dx));
       }
     });
   }
@@ -128,7 +138,10 @@ class PollenGame {
 
     // Keyboard controls
     window.addEventListener('keydown', (e) => {
+      // Let focused buttons keep native Enter/Space activation.
+      if (e.target instanceof Element && e.target.closest('button, a, input, select, textarea')) return;
       if (this.isAiTurn || this.state !== 'aiming') return;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Enter', 'a', 'A', 'd', 'D', 'q', 'Q', 'e', 'E'].includes(e.key)) e.preventDefault();
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         this.dropX = Math.max(60, this.dropX - 15);
       } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
@@ -144,6 +157,7 @@ class PollenGame {
   }
 
   rotateDrop(delta) {
+    if (this.isAiTurn || this.state !== 'aiming') return;
     this.dropAngle += delta;
   }
 
@@ -204,11 +218,12 @@ class PollenGame {
   }
 
   handleDropAction() {
-    if (this.state !== 'aiming') return;
+    if (this.isAiTurn || this.state !== 'aiming') return;
     this.dropPollinator();
   }
 
   dropPollinator() {
+    if (this.state !== 'aiming') return;
     this.state = 'falling';
     window.audioManager.playPluck(this.currentPollinator.id === 'mothman' ? 180 : 330);
 
@@ -237,9 +252,10 @@ class PollenGame {
   }
 
   onActiveBodyContact() {
+    const contactedBody = this.activeBody;
     // Settle check
     setTimeout(() => {
-      if (this.state === 'falling' && this.activeBody) {
+      if (this.state === 'falling' && this.activeBody === contactedBody) {
         this.settlePollinator();
       }
     }, 450);

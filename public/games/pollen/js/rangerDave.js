@@ -130,7 +130,7 @@ class RangerDaveBot {
 
   // Update called every frame during AI turn
   update(dt = 1) {
-    if (!this.isThinking || !this.game.isAiTurn) return;
+    if (!this.isThinking || !this.game.isAiTurn || this.game.state !== 'aiming') return;
 
     this.aimProgress += 0.02 * dt;
 
