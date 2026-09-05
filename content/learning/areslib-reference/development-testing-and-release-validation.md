@@ -6,7 +6,7 @@ An ARESLib change can pass one small test and still break an FTC robot, an FRC r
 starter project. This reference shows how to match evidence to the boundary that changed. It also
 explains why one version name must always point to one exact set of library files.
 
-This page applies to ARES 17.0.1 and Studio 7.0.1. Read
+This page applies to ARES 17.0.1 and Studio 7.0.2. Read
 [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Use
 [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
 when you need to compare behavior at two runtime boundaries.
