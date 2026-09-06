@@ -115,7 +115,7 @@ function playerName(player: BuzzelloPlayer): string {
 }
 
 function createStartingSnapshot(
-  boardSize: BuzzelloBoardSize = 61,
+  boardSize: BuzzelloBoardSize = 91,
 ): BuzzelloSnapshot {
   return {
     board: getBuzzelloRules(boardSize).createBuzzelloInitialBoard(),
@@ -406,7 +406,7 @@ export default function BuzzelloPage({
     playOnlineBuzzelloMove,
   } = online;
   const fullscreen = useGameFullscreen();
-  const [boardSize, setBoardSize] = useState<BuzzelloBoardSize>(61);
+  const [boardSize, setBoardSize] = useState<BuzzelloBoardSize>(91);
   const [mode, setMode] = useState<BuzzelloMode>("medium");
   const [timeline, setTimeline] = useState<BuzzelloSnapshot[]>(() => [
     createStartingSnapshot(),
@@ -1346,7 +1346,7 @@ export default function BuzzelloPage({
       >
         <fieldset className="mb-4 flex flex-wrap gap-4">
           <legend className="mb-2 font-bold">Board size</legend>
-          {([61, 91] as const).map((size) => (
+          {([91, 61] as const).map((size) => (
             <label
               key={size}
               className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/30 p-3"
@@ -1358,10 +1358,16 @@ export default function BuzzelloPage({
                 checked={boardSize === size}
                 onChange={() => setBoardSize(size)}
               />
-              {size === 61 ? "Classic — 61 cells" : "Large — 91 cells"}
+              {size === 61
+                ? "Classic — 61 cells"
+                : "Large — 91 cells (preferred)"}
             </label>
           ))}
         </fieldset>
+        <p className="mb-4">
+          We prefer the 91-cell board — it plays better. Classic 61 is still
+          available.
+        </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {MODE_DETAILS.map(({ id, name, description, icon: Icon }) => (
             <button
