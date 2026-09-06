@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { BuzzleWordHelp } from "./BuzzleWordHelp";
 import { loadBuzzleDictionary } from "./dictionary";
 import "./buzzle.css";
 
-export default function BuzzleWordToolsPage() {
+export default function BuzzleWordToolsPage({ physicalGameLink }: { physicalGameLink?: ReactNode }) {
   const [words, setWords] = useState<ReadonlySet<string> | null>(null);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
@@ -41,7 +41,10 @@ export default function BuzzleWordToolsPage() {
         <p className="text-xs font-black uppercase tracking-[0.2em] text-ares-gold">BUZZLE™ · Physical play companion</p>
         <h1 className="mt-3 font-heading text-4xl font-black text-white sm:text-5xl">Word Tools</h1>
         <p className="mt-3 text-sm leading-relaxed text-marble/80">Playing at the table? Check a word, explore two-letter words, or find a meaning. No digital game or sign-in needed.</p>
-        <a href="/buzzle" className="buzzle-secondary-action mt-4">Play BUZZLE online</a>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <a href="/buzzle" className="buzzle-secondary-action">Play BUZZLE online</a>
+          {physicalGameLink}
+        </div>
       </header>
       <p role="status" className="mb-4 rounded-lg border border-white/20 p-3 text-sm text-marble/80">
         {offlineReady && words

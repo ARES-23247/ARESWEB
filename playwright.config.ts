@@ -1,5 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Concurrent local tasks can serve different checkouts. An explicit port owns a
+// fresh server instead of silently reusing an unrelated preview on port 3000.
+const testPort = Number(process.env.ARES_E2E_PORT ?? '3000');
+if (!Number.isInteger(testPort) || testPort < 1024 || testPort > 65535) {
+  throw new Error('ARES_E2E_PORT must be an integer from 1024 to 65535.');
+}
+const testOrigin = `http://127.0.0.1:${testPort}`;
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
@@ -13,7 +21,7 @@ export default defineConfig({
     timeout: 10000,
   },
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: testOrigin,
     // The preview smoke suite validates the freshly built app. A previously
     // installed PWA worker can bypass Playwright routing and serve stale assets.
     serviceWorkers: 'block',
@@ -56,9 +64,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node node_modules/vite/bin/vite.js build --mode e2e && node scripts/prepare-pwa-upgrade-fixture.mjs && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 3000 --strictPort',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
+    command: `node node_modules/vite/bin/vite.js build --mode e2e && node scripts/prepare-pwa-upgrade-fixture.mjs && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port ${testPort} --strictPort`,
+    url: testOrigin,
+    reuseExistingServer: !process.env.CI && !process.env.ARES_E2E_PORT,
     timeout: 120000,
   },
 });

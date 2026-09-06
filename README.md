@@ -7,7 +7,7 @@ This is the official web portal for *FIRST*® Tech Challenge team **ARES 23247**
 The project is structured as a pnpm monorepo:
 - **Frontend SPA** (`src/`): Single Page React App built with **Vite** and styled with **Tailwind CSS**.
 - **Backend API** (`functions/`): Serverless Express.js API running on **Firebase Cloud Functions (2nd Gen)**.
-- **Arcade packages** (`packages/`): BUZZLE, BUZZELLO and Pollenator with shared rules, UI and geometry. See [game architecture](docs/GAME_ARCHITECTURE.md).
+- **Arcade packages** (`packages/`): BUZZLE, BUZZELLO and Pollinator with shared rules, UI and geometry. See [game architecture](docs/GAME_ARCHITECTURE.md).
 - **Online game service** (`functions/src/gameServer.ts`): The existing Cloud Run service uses the same canonical rules as the browser.
 - **Database**: **Cloud Firestore** for data storage, protected by role-based `firestore.rules`.
 - **Hosting**: Deployed and served via **Firebase Hosting**.

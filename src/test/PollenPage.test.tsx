@@ -7,7 +7,7 @@ vi.mock("@/components/SEO", () => ({ default: () => null }));
 
 function setup() {
   render(<MemoryRouter><PollenPage /></MemoryRouter>);
-  const frame = screen.getByTitle("Pollenator Pile-Up game") as HTMLIFrameElement;
+  const frame = screen.getByTitle("Pollinator Pile-Up game") as HTMLIFrameElement;
   const reply = vi.spyOn(frame.contentWindow!, "postMessage");
   const send = (data: unknown, source: Window = frame.contentWindow!, origin = "null") => {
     act(() => { window.dispatchEvent(new MessageEvent("message", { data, source, origin })); });

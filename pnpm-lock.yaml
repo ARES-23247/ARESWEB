@@ -28,15 +28,18 @@ importers:
       '@ares/buzzello':
         specifier: workspace:*
         version: link:packages/buzzello
+      '@ares/buzzhex':
+        specifier: workspace:*
+        version: link:packages/buzzhex
       '@ares/buzzle':
         specifier: workspace:*
         version: link:packages/buzzle
       '@ares/game-common':
         specifier: workspace:*
         version: link:packages/game-common
-      '@ares/pollenator':
+      '@ares/pollinator':
         specifier: workspace:*
-        version: link:packages/pollenator
+        version: link:packages/pollinator
       '@ares/ui':
         specifier: workspace:*
         version: link:packages/ui
@@ -265,6 +268,21 @@ importers:
         specifier: ^19.2.0
         version: 19.2.8
 
+  packages/buzzhex:
+    dependencies:
+      '@ares/game-common':
+        specifier: workspace:*
+        version: link:../game-common
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+
   packages/buzzle:
     dependencies:
       '@ares/game-common':
@@ -295,7 +313,7 @@ importers:
         specifier: ^19.2.0
         version: 19.2.8
 
-  packages/pollenator: {}
+  packages/pollinator: {}
 
   packages/ui:
     dependencies:

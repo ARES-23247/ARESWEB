@@ -77,7 +77,8 @@
     "@ares/game-common": "workspace:*",
     "@ares/buzzello": "workspace:*",
     "@ares/buzzle": "workspace:*",
-    "@ares/pollenator": "workspace:*"
+    "@ares/pollinator": "workspace:*",
+    "@ares/buzzhex": "workspace:*"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

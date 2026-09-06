@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 describe("game workspace boundaries", () => {
   it("keeps game packages independent of website source and declares external imports", () => {
-    for (const name of ["buzzle", "buzzello", "game-common", "ui"]) {
+    for (const name of ["buzzle", "buzzello", "buzzhex", "game-common", "ui"]) {
       const root = resolve("packages", name);
       const manifest = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
       const allowed = new Set(Object.keys({ ...manifest.dependencies, ...manifest.peerDependencies }));

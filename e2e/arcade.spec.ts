@@ -15,9 +15,15 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   const main = page.getByRole("main").last();
   await expect(main.getByRole("link", { name: "Play BUZZLE", exact: true })).toHaveAttribute("href", "/buzzle");
   await expect(main.getByRole("link", { name: "Play BUZZELLO", exact: true })).toHaveAttribute("href", "/buzzello");
-  await expect(main.getByRole("link", { name: "Play Pollenator Pile-Up", exact: true })).toHaveAttribute("href", "/pollen");
+  await expect(main.getByRole("link", { name: "Play BUZZHEX", exact: true })).toHaveAttribute("href", "/buzzhex");
+  await expect(main.getByRole("link", { name: "Play Pollinator Pile-Up", exact: true })).toHaveAttribute("href", "/pollen");
+  const printBuzzle = main.getByRole("link", { name: "3D print BUZZLE on Printables (opens in a new tab)", exact: true });
+  await expect(printBuzzle).toHaveAttribute("href", "https://www.printables.com/model/1834054-buzzle-biobuzz-hex-word-game-board-individual-tile");
+  await expect(printBuzzle).toHaveAttribute("target", "_blank");
+  await expect(printBuzzle).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(main.getByRole("link", { name: "3D print BUZZELLO on Printables (opens in a new tab)", exact: true })).toHaveAttribute("href", "https://www.printables.com/model/1834053-buzzello-biobuzz-hex-strategy-board-reversible-pie");
   await nav.getByRole("button", { name: "Resources", exact: true }).click();
-  await expect(nav.getByRole("link", { name: /BUZZLE|Pollenator/ })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: /BUZZLE|Pollinator/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
   for (const width of [1024, 768, 320]) {
     await page.setViewportSize({ width, height: 900 });
@@ -25,11 +31,12 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
     await page.getByRole("button", { name: "Open navigation menu" }).click();
     const drawer = page.getByRole("dialog", { name: "Mobile navigation menu" });
     const games = drawer.getByRole("region", { name: "Arcade", exact: true });
-    await expect(games.getByRole("link", { name: "Pollenator Pile-Up", exact: true })).toBeVisible();
+    await expect(games.getByRole("link", { name: "Pollinator Pile-Up", exact: true })).toBeVisible();
     await games.getByRole("link", { name: "Arcade", exact: true }).click();
     await expect(drawer).toHaveCount(0);
   }
   await main.getByRole("link", { name: "BUZZLE Word Tools", exact: true }).click();
   await expect(page).toHaveURL(/\/buzzle\/word-tools$/);
   await expect(page.getByRole("heading", { name: "Word Tools", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "3D print BUZZLE on Printables (opens in a new tab)", exact: true })).toBeVisible();
 });
