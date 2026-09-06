@@ -15,7 +15,7 @@ The website stays in `src/`; the existing APIs and game process stay in
 | `packages/buzzle/` | Rules, AI, workers, game UI, dictionary lookup, physical tools, canonical lexicon |
 | `packages/buzzhex/` | Local Hex rules and UI; thin site wrapper at `/buzzhex` |
 | `packages/buzzello/` | Rules, AI, worker, game UI, online client contract |
-| `packages/pollenator/public/` | Classic-script physics, rendering, local game UI, assets and dependency license |
+| `packages/pollinator/public/` | Classic-script physics, rendering, local game UI, assets and dependency license |
 | `packages/game-common/` | Hex geometry and fullscreen behavior |
 | `packages/ui/` | Existing shared buttons, dialogs and class-name utility |
 | `functions/src/lib/*Game*.ts` | Validate persisted state/actions, authoritative match adapters, private DTOs |
@@ -48,7 +48,7 @@ the complete stored state, uses cryptographic randomness, retains bounded match
 budgets, and exposes only the requesting player's rack. Shared rule errors carry
 stable codes that the server maps to `ApiError`; unexpected errors still propagate
 to the existing global handler. API paths, match envelopes and authentication are
-unchanged. Pollenator remains a device-only game in an opaque `allow-scripts`
+unchanged. Pollinator remains a device-only game in an opaque `allow-scripts`
 iframe, with the existing bounded host score bridge.
 
 ## Build and deployment
@@ -66,10 +66,10 @@ pnpm build
 Installation, frontend dev/build and backend build run `games:prepare`. It stages
 canonical rules into `functions/src/generated/games/`, rewriting the known
 geometry package import to a local import for the existing CommonJS compiler.
-It also stages Pollenator into `public/games/pollen/` and the single BUZZLE lexicon
+It also stages Pollinator into `public/games/pollen/` and the single BUZZLE lexicon
 into the existing browser and server data locations. These deployment copies are
 ignored and must never be edited. Run preparation again after shared-rule edits
-when keeping a backend process open. Pollenator source edits require preparation
+when keeping a backend process open. Pollinator source edits require preparation
 and a page reload during development.
 
 `pnpm games:generate-lexicon` updates the canonical package lexicon and its existing

@@ -43,7 +43,7 @@ export const ARCADE_GAMES = [
   { label: "BUZZHEX", to: "/buzzhex", icon: Hexagon, iconColor: "text-ares-gold", description: "Connect opposite edges of an 11 × 11 hex board. Place tiles, swap opening colors, and find your path across the hive.", modes: "Connection strategy · 2 players on one device" },
   { label: "BUZZLE", to: "/buzzle", icon: Hexagon, iconColor: "text-ares-gold", description: "Build words in three directions on a hexagonal board. Find your next move with legal word references and dictionary help.", modes: "Word game · 2–4 players" },
   { label: "BUZZELLO", to: "/buzzello", icon: Hexagon, iconColor: "text-ares-cyan", description: "Outthink your opponent, flip pieces, and claim the hexagonal board. Share a device or challenge the computer.", modes: "Strategy · 2 players or computer" },
-  { label: "Pollenator Pile-Up", to: "/pollen", icon: Flower2, iconColor: "text-ares-gold", description: "Balance Appalachian critters on a swaying flower. Stack carefully, keep your balance, and watch for Mothman.", modes: "Balance · Solo, shared device, or computer" },
+  { label: "Pollinator Pile-Up", to: "/pollen", icon: Flower2, iconColor: "text-ares-gold", description: "Balance Appalachian critters on a swaying flower. Stack carefully, keep your balance, and watch for Mothman.", modes: "Balance · Solo, shared device, or computer" },
 ];
 
 export const ARCADE_LINKS: NavItemConfig[] = [

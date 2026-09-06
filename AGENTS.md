@@ -20,7 +20,7 @@ not a Next.js router.
 | API composition and route security | `functions/src/apiApp.ts`, `functions/src/apps/`, `functions/src/routes/` |
 | Function exports and bindings | `functions/src/index.ts`, `functions/src/functionConfig.ts` |
 | Online game process | `functions/src/gameServer.ts`, `functions/src/apps/game.ts` |
-| Canonical game rules and UI | `packages/buzzle/`, `packages/buzzello/`, `packages/pollenator/` |
+| Canonical game rules and UI | `packages/buzzle/`, `packages/buzzello/`, `packages/pollinator/` |
 | Shared game geometry and UI primitives | `packages/game-common/`, `packages/ui/` |
 | Game deployment staging | `scripts/prepare-game-packages.mjs`, `docs/GAME_ARCHITECTURE.md` |
 | Authorization and data rules | `functions/src/middleware/auth.ts`, `firestore.rules`, `storage.rules` |
@@ -55,11 +55,11 @@ includes the root website, `functions`, and `packages/*`. Read
 | Edit here | Owned behavior |
 | --- | --- |
 | `src/app/arcade/`, `src/App.tsx`, website navigation | Arcade discovery, routes, and navigation |
-| `src/app/buzzle/`, `src/app/buzzello/`, `src/app/pollen/` | Website route/SEO wrappers; Pollenator iframe and bounded score bridge |
+| `src/app/buzzle/`, `src/app/buzzello/`, `src/app/pollen/` | Website route/SEO wrappers; Pollinator iframe and bounded score bridge |
 | `src/lib/buzzleOnline.ts`, `src/lib/buzzelloOnline.ts` | Bind game clients to the site's authenticated transport |
 | `packages/buzzle/` | Word-game rules, AI, workers, UI, dictionary, physical Word Tools, and canonical lexicon |
 | `packages/buzzello/` | Black/yellow strategy-game rules, AI, worker, UI, and online client |
-| `packages/pollenator/public/` | Pollenator scripts, physics, game UI, and assets |
+| `packages/pollinator/public/` | Pollinator scripts, physics, game UI, and assets |
 | `packages/game-common/`, `packages/ui/` | Shared hex geometry/fullscreen behavior and UI primitives |
 | `functions/src/lib/`, `functions/src/apps/game.ts` | Existing authoritative online match adapters and game service |
 
@@ -78,7 +78,7 @@ includes the root website, `functions`, and `packages/*`. Read
   `BUZZLE_ONLINE_INDICES`. Shared rules do not replace server validation,
   authorization, cryptographic randomness, or private rack filtering.
 - Keep `/arcade`, `/buzzle`, `/buzzello`, `/pollen`, and `/buzzle/word-tools`
-  stable. Pollenator remains a local game in an opaque iframe. Add any future
+  stable. Pollinator remains a local game in an opaque iframe. Add any future
   online game adapter to the existing backend unless a different architecture
   is explicitly agreed; a new package alone does not require a new service.
 - Build from the repository root. Keep Functions' standalone npm deployment

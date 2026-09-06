@@ -196,7 +196,7 @@ export default defineConfig({
         "packages/ui/src/cn.ts",
         "scripts/prepare-game-packages.mjs",
         "packages/game-common/src/hexGrid.ts",
-        "packages/pollenator/public/js/physics.js",
+        "packages/pollinator/public/js/physics.js",
         "src/lib/api.ts",
         "src/lib/contentFormatters.ts",
         "src/lib/contentUrls.ts",
@@ -273,7 +273,7 @@ export default defineConfig({
       ],
       thresholds: {
         "packages/buzzhex/src/rules.ts": { lines: 85, functions: 100 },
-        "packages/pollenator/public/js/physics.js": { lines: 85, functions: 100 },
+        "packages/pollinator/public/js/physics.js": { lines: 85, functions: 100 },
         "scripts/prepare-game-packages.mjs": { lines: 85, functions: 100 },
         "packages/game-common/src/hexGrid.ts": { lines: 85, functions: 100 },
         "packages/ui/src/cn.ts": { lines: 85, functions: 100 },

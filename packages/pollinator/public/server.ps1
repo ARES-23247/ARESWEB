@@ -1,4 +1,4 @@
-# Pollenator Pile-Up - Local Development HTTP Server
+# Pollinator Pile-Up - Local Development HTTP Server
 # Zero-install lightweight web server for testing in browser
 
 $port = 8080
@@ -8,7 +8,7 @@ $listener.Prefixes.Add("http://localhost:$port/")
 
 try {
     $listener.Start()
-    Write-Host "🌸 Pollenator Pile-Up Game Server running at http://localhost:$port/" -ForegroundColor Green
+    Write-Host "🌸 Pollinator Pile-Up Game Server running at http://localhost:$port/" -ForegroundColor Green
     Write-Host "Press Ctrl+C to stop the server.`n" -ForegroundColor Yellow
     
     # Launch browser

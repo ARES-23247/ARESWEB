@@ -17,7 +17,7 @@ functions/src/generated/
 !packages/game-common/src/hexGrid.ts
 !packages/buzzle/data/
 !packages/buzzle/data/**
-!packages/pollenator/public/
-!packages/pollenator/public/**
+!packages/pollinator/public/
+!packages/pollinator/public/**
 !scripts/
 !scripts/prepare-game-packages.mjs

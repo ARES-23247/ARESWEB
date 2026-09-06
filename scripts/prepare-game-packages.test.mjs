@@ -11,7 +11,7 @@ describe("workspace game deployment inputs", () => {
     const root = mkdtempSync(resolve(tmpdir(), "ares-game-packages-"));
     temporary.push(root);
     for (const file of ["game-common/src/hexGrid.ts", "buzzello/src/rules.ts", "buzzle/src/rules.ts",
-      "buzzle/data/buzzle-words.txt", "buzzle/data/buzzle-words.meta.json", "pollenator/public/js/game.js"]) {
+      "buzzle/data/buzzle-words.txt", "buzzle/data/buzzle-words.meta.json", "pollinator/public/js/game.js"]) {
       const target = resolve(root, "packages", file);
       mkdirSync(resolve(target, ".."), { recursive: true });
       cpSync(resolve("packages", file), target);
@@ -20,7 +20,7 @@ describe("workspace game deployment inputs", () => {
     for (const target of ["public/data/buzzle-words.txt", "functions/data/buzzle-words.txt"]) {
       expect(readFileSync(resolve(root, target)).equals(readFileSync(resolve(root, "packages/buzzle/data/buzzle-words.txt")))).toBe(true);
     }
-    expect(readFileSync(resolve(root, "public/games/pollen/js/game.js")).equals(readFileSync(resolve(root, "packages/pollenator/public/js/game.js")))).toBe(true);
+    expect(readFileSync(resolve(root, "public/games/pollen/js/game.js")).equals(readFileSync(resolve(root, "packages/pollinator/public/js/game.js")))).toBe(true);
     const staged = resolve(root, "functions/src/generated/games/buzzle.ts");
     expect(readFileSync(staged, "utf8")).toContain('from "./hexGrid"');
     expect(readFileSync(staged, "utf8")).not.toContain("@ares/");

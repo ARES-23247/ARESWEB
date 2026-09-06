@@ -4,12 +4,12 @@ import { test, expect } from "./fixtures";
 // frame, which throws in an opaque sandbox. The sandbox itself prevents workers.
 test.use({ serviceWorkers: "allow" });
 
-test("Pollenator is public, playable by keyboard, and supports fullscreen without losing the stack", async ({ page }) => {
+test("Pollinator is public, playable by keyboard, and supports fullscreen without losing the stack", async ({ page }) => {
   await page.goto("/pollen");
-  await expect(page.getByRole("heading", { name: "Pollenator Pile-Up", exact: true })).toBeVisible();
-  const iframe = page.locator('iframe[title="Pollenator Pile-Up game"]');
+  await expect(page.getByRole("heading", { name: "Pollinator Pile-Up", exact: true })).toBeVisible();
+  const iframe = page.locator('iframe[title="Pollinator Pile-Up game"]');
   await expect(iframe).toHaveAttribute("sandbox", "allow-scripts");
-  const game = page.frameLocator('iframe[title="Pollenator Pile-Up game"]');
+  const game = page.frameLocator('iframe[title="Pollinator Pile-Up game"]');
   await game.getByRole("button", { name: /Pass & Play/ }).click();
   // The focusable canvas is the keyboard game surface, with a descriptive label.
   const canvas = game.locator("#game-canvas");
@@ -29,8 +29,8 @@ test("Pollenator is public, playable by keyboard, and supports fullscreen withou
 
 test("Ranger Dave takes a turn and the isolated game stores only a device score", async ({ page }) => {
   await page.goto("/pollen");
-  const iframe = page.locator('iframe[title="Pollenator Pile-Up game"]');
-  const game = page.frameLocator('iframe[title="Pollenator Pile-Up game"]');
+  const iframe = page.locator('iframe[title="Pollinator Pile-Up game"]');
+  const game = page.frameLocator('iframe[title="Pollinator Pile-Up game"]');
   await game.getByRole("button", { name: /Vs. Ranger Dave/ }).click();
   const frame = await (await iframe.elementHandle())!.contentFrame();
   // Reproduce the heavy-on-light contact that previously vibrated indefinitely.
@@ -60,8 +60,8 @@ test("Ranger Dave takes a turn and the isolated game stores only a device score"
 
 test("the wider flower visibly leans under an off-center heavy drop", async ({ page }, testInfo) => {
   await page.goto("/pollen");
-  const iframe = page.locator('iframe[title="Pollenator Pile-Up game"]');
-  const game = page.frameLocator('iframe[title="Pollenator Pile-Up game"]');
+  const iframe = page.locator('iframe[title="Pollinator Pile-Up game"]');
+  const game = page.frameLocator('iframe[title="Pollinator Pile-Up game"]');
   await game.getByRole("button", { name: /Solo High Score/ }).click();
   const frame = await (await iframe.elementHandle())!.contentFrame();
   const aimSteps = await frame!.evaluate(() => {

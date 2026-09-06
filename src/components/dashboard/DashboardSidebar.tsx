@@ -246,7 +246,7 @@ export default function DashboardSidebar({
                       : "text-amber-400/70"
                   }
                 />
-                <span className="truncate">Pollenator Pile-Up</span>
+                <span className="truncate">Pollinator Pile-Up</span>
               </div>
               <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
                 Game

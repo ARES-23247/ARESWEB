@@ -1,4 +1,4 @@
-# Pollenator Pile-Up
+# Pollinator Pile-Up
 
 Public game page: `/pollen`. Start the repository with `pnpm dev` and open that
 route to exercise the same integration used in production.

@@ -29,7 +29,7 @@ for (const [path, title] of [
   if (response.status !== 200 || !html.includes(title)) process.exitCode = 1;
   console.log(`Game route ${path}: ${response.status}`);
 }
-if (pollen.status !== 200 || !(await pollen.text()).includes("Pollenator Pile-Up")) process.exitCode = 1;
+if (pollen.status !== 200 || !(await pollen.text()).includes("Pollinator Pile-Up")) process.exitCode = 1;
 const game = await fetch(`${origin}/games/pollen/index.html`);
 const gameCsp = game.headers.get("content-security-policy") || "";
 if (game.status !== 200 || game.headers.get("x-frame-options") !== "SAMEORIGIN"
