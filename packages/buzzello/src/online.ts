@@ -1,4 +1,4 @@
-import type { BuzzelloBoard, BuzzelloPlayer } from "./rules";
+import type { BuzzelloBoard, BuzzelloBoardSize, BuzzelloPlayer } from "./rules";
 
 export type OnlineBuzzelloStatus = "waiting" | "active" | "finished";
 
@@ -64,10 +64,7 @@ export function getOnlineBuzzelloPollDelay(
   const safeUnchangedPolls = Number.isFinite(unchangedPolls)
     ? Math.max(0, Math.floor(unchangedPolls))
     : 0;
-  const index = Math.min(
-    safeUnchangedPolls,
-    delays.length - 1,
-  );
+  const index = Math.min(safeUnchangedPolls, delays.length - 1);
   return delays[index];
 }
 
@@ -86,17 +83,20 @@ function isPlayer(value: unknown): value is BuzzelloPlayer {
   return value === "yellow" || value === "black";
 }
 
-function parseHistoryEntry(value: unknown): OnlineBuzzelloHistoryEntry | null {
+function parseHistoryEntry(
+  value: unknown,
+  cellCount: number,
+): OnlineBuzzelloHistoryEntry | null {
   if (typeof value !== "object" || value === null) return null;
   const entry = value as Record<string, unknown>;
   if (
     !isPlayer(entry.player) ||
     !Number.isInteger(entry.index) ||
     (entry.index as number) < 0 ||
-    (entry.index as number) > 60 ||
+    (entry.index as number) >= cellCount ||
     !Number.isInteger(entry.flippedCount) ||
     (entry.flippedCount as number) < 1 ||
-    (entry.flippedCount as number) > 60
+    (entry.flippedCount as number) >= cellCount
   ) {
     return null;
   }
@@ -118,6 +118,7 @@ export function parseOnlineBuzzelloGame(value: unknown): OnlineBuzzelloGame {
   const game = value as Record<string, unknown>;
   const state = game.state as Record<string, unknown> | undefined;
   const board = state?.board;
+  const cellCount = Array.isArray(board) ? board.length : 0;
   const history = state?.history;
   const scores = state?.scores as Record<string, unknown> | undefined;
   const lastMove = state?.lastMove;
@@ -133,14 +134,14 @@ export function parseOnlineBuzzelloGame(value: unknown): OnlineBuzzelloGame {
     game.desiredPlayers !== 2 ||
     !Number.isInteger(game.actionSequence) ||
     !Array.isArray(board) ||
-    board.length !== 61 ||
+    (board.length !== 61 && board.length !== 91) ||
     board.some((cell) => cell !== null && !isPlayer(cell)) ||
     !isPlayer(state?.currentPlayer) ||
     !Number.isInteger(game.version) ||
     !Number.isInteger(state?.moveNumber) ||
     !Array.isArray(history) ||
-    history.length > 55 ||
-    !history.every((entry) => parseHistoryEntry(entry) !== null) ||
+    history.length > cellCount - 6 ||
+    !history.every((entry) => parseHistoryEntry(entry, cellCount) !== null) ||
     (state?.winner !== null &&
       state?.winner !== "draw" &&
       !isPlayer(state?.winner)) ||
@@ -162,14 +163,14 @@ export function parseOnlineBuzzelloGame(value: unknown): OnlineBuzzelloGame {
 
   let parsedLastMove: OnlineBuzzelloGame["lastMove"] = null;
   if (lastMove !== null) {
-    const entry = parseHistoryEntry(lastMove);
+    const entry = parseHistoryEntry(lastMove, cellCount);
     const flipped = (lastMove as Record<string, unknown>)?.flipped;
     if (
       !entry ||
       !Array.isArray(flipped) ||
       flipped.length < 1 ||
       flipped.some(
-        (index) => !Number.isInteger(index) || index < 0 || index > 60,
+        (index) => !Number.isInteger(index) || index < 0 || index >= cellCount,
       )
     ) {
       throw new BuzzelloOnlineError(
@@ -189,7 +190,7 @@ export function parseOnlineBuzzelloGame(value: unknown): OnlineBuzzelloGame {
     currentPlayer: state.currentPlayer,
     version: game.version as number,
     moveNumber: state.moveNumber as number,
-    history: history.map((entry) => parseHistoryEntry(entry)!),
+    history: history.map((entry) => parseHistoryEntry(entry, cellCount)!),
     winner: state.winner as OnlineBuzzelloGame["winner"],
     lastMove: parsedLastMove,
     passedPlayer: state.passedPlayer as BuzzelloPlayer | null,
@@ -203,158 +204,181 @@ export function parseOnlineBuzzelloGame(value: unknown): OnlineBuzzelloGame {
   };
 }
 
-export function createBuzzelloClient(authenticatedFetch: (path: string, init: RequestInit) => Promise<Response>) {
-async function requestBuzzello(
-  path: string,
-  body: Record<string, unknown>,
-  playerToken?: string,
-): Promise<Record<string, unknown>> {
-  const response = await authenticatedFetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(playerToken ? { "X-Game-Player": playerToken } : {}),
-    },
-    body: JSON.stringify(body),
-  });
-  const payload = (await response.json().catch(() => null)) as Record<
-    string,
-    unknown
-  > | null;
-  if (!response.ok) {
-    throw new BuzzelloOnlineError(
-      typeof payload?.error === "string"
-        ? payload.error
-        : "The online match request failed.",
-      typeof payload?.code === "string"
-        ? payload.code
-        : `HTTP_${response.status}`,
-      response.status,
-    );
-  }
-  if (!payload || typeof payload !== "object") {
-    throw new BuzzelloOnlineError(
-      "The server returned an invalid match.",
-      "INVALID_RESPONSE",
-      502,
-    );
-  }
-  return payload;
-}
-
-function parseOnlineBuzzelloSession(
-  payload: Record<string, unknown>,
-): OnlineBuzzelloSession {
-  if (
-    typeof payload.playerToken !== "string" ||
-    !/^[A-Za-z0-9_-]{43}$/u.test(payload.playerToken)
-  ) {
-    throw new BuzzelloOnlineError(
-      "The server returned an invalid match session.",
-      "INVALID_RESPONSE",
-      502,
-    );
-  }
-  return {
-    playerToken: payload.playerToken,
-    game: parseOnlineBuzzelloGame(payload.game),
-  };
-}
-
-async function createOnlineBuzzelloGame(): Promise<{
-  inviteCode: string;
-  playerToken: string;
-  game: OnlineBuzzelloGame;
-}> {
-  const payload = await requestBuzzello("/api/buzzello/games", {});
-  if (
-    typeof payload.inviteCode !== "string" ||
-    payload.inviteCode.length !== 8 ||
-    typeof payload.playerToken !== "string" ||
-    !/^[A-Za-z0-9_-]{43}$/u.test(payload.playerToken)
-  ) {
-    throw new BuzzelloOnlineError(
-      "The server returned an invalid invite.",
-      "INVALID_RESPONSE",
-      502,
-    );
-  }
-  return {
-    inviteCode: payload.inviteCode,
-    playerToken: payload.playerToken,
-    game: parseOnlineBuzzelloGame(payload.game),
-  };
-}
-
-async function joinOnlineBuzzelloGame(
-  code: string,
-): Promise<OnlineBuzzelloSession> {
-  const payload = await requestBuzzello("/api/buzzello/join", {
-    code: code.trim().toUpperCase(),
-  });
-  return parseOnlineBuzzelloSession(payload);
-}
-
-async function findOnlineBuzzelloMatch(): Promise<OnlineBuzzelloSession> {
-  const payload = await requestBuzzello("/api/buzzello/matchmaking", {});
-  return parseOnlineBuzzelloSession(payload);
-}
-
-async function findTeamBuzzelloMatch(): Promise<OnlineBuzzelloSession> {
-  const payload = await requestBuzzello("/api/buzzello/matchmaking/team", {});
-  return parseOnlineBuzzelloSession(payload);
-}
-
-async function syncOnlineBuzzelloGame(
-  knownGame: OnlineBuzzelloGame,
-  playerToken: string,
-): Promise<OnlineBuzzelloSyncResult> {
-  const payload = await requestBuzzello(
-    `/api/buzzello/games/${encodeURIComponent(knownGame.gameId)}/sync`,
-    {
-      knownVersion: knownGame.version,
-      knownStatus: knownGame.status,
-      knownPlayerCount: knownGame.opponentConnected ? 2 : 1,
-    },
-    playerToken,
-  );
-  if (payload.unchanged === true) {
-    if (
-      !Number.isInteger(payload.syncsRemaining) ||
-      (payload.syncsRemaining as number) < 0 ||
-      typeof payload.expiresAt !== "string" ||
-      !Number.isFinite(Date.parse(payload.expiresAt))
-    ) {
+export function createBuzzelloClient(
+  authenticatedFetch: (path: string, init: RequestInit) => Promise<Response>,
+) {
+  async function requestBuzzello(
+    path: string,
+    body: Record<string, unknown>,
+    playerToken?: string,
+  ): Promise<Record<string, unknown>> {
+    const response = await authenticatedFetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(playerToken ? { "X-Game-Player": playerToken } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const payload = (await response.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
+    if (!response.ok) {
+      throw new BuzzelloOnlineError(
+        typeof payload?.error === "string"
+          ? payload.error
+          : "The online match request failed.",
+        typeof payload?.code === "string"
+          ? payload.code
+          : `HTTP_${response.status}`,
+        response.status,
+      );
+    }
+    if (!payload || typeof payload !== "object") {
       throw new BuzzelloOnlineError(
         "The server returned an invalid match.",
         "INVALID_RESPONSE",
         502,
       );
     }
+    return payload;
+  }
+
+  function parseOnlineBuzzelloSession(
+    payload: Record<string, unknown>,
+  ): OnlineBuzzelloSession {
+    if (
+      typeof payload.playerToken !== "string" ||
+      !/^[A-Za-z0-9_-]{43}$/u.test(payload.playerToken)
+    ) {
+      throw new BuzzelloOnlineError(
+        "The server returned an invalid match session.",
+        "INVALID_RESPONSE",
+        502,
+      );
+    }
     return {
-      unchanged: true,
-      syncsRemaining: payload.syncsRemaining as number,
-      expiresAt: payload.expiresAt,
+      playerToken: payload.playerToken,
+      game: parseOnlineBuzzelloGame(payload.game),
     };
   }
-  return { unchanged: false, game: parseOnlineBuzzelloGame(payload.game) };
-}
 
-async function playOnlineBuzzelloMove(
-  gameId: string,
-  index: number,
-  expectedVersion: number,
-  playerToken: string,
-): Promise<OnlineBuzzelloGame> {
-  const payload = await requestBuzzello(
-    `/api/buzzello/games/${encodeURIComponent(gameId)}/moves`,
-    { index, expectedVersion },
-    playerToken,
-  );
-  return parseOnlineBuzzelloGame(payload.game);
-}
+  async function createOnlineBuzzelloGame(
+    boardSize: BuzzelloBoardSize = 61,
+  ): Promise<{
+    inviteCode: string;
+    playerToken: string;
+    game: OnlineBuzzelloGame;
+  }> {
+    const payload = await requestBuzzello(
+      "/api/buzzello/games",
+      boardSize === 61 ? {} : { boardSize },
+    );
+    if (
+      typeof payload.inviteCode !== "string" ||
+      payload.inviteCode.length !== 8 ||
+      typeof payload.playerToken !== "string" ||
+      !/^[A-Za-z0-9_-]{43}$/u.test(payload.playerToken)
+    ) {
+      throw new BuzzelloOnlineError(
+        "The server returned an invalid invite.",
+        "INVALID_RESPONSE",
+        502,
+      );
+    }
+    return {
+      inviteCode: payload.inviteCode,
+      playerToken: payload.playerToken,
+      game: parseOnlineBuzzelloGame(payload.game),
+    };
+  }
 
-return { createOnlineBuzzelloGame, joinOnlineBuzzelloGame, findOnlineBuzzelloMatch, findTeamBuzzelloMatch, syncOnlineBuzzelloGame, playOnlineBuzzelloMove };
-}
+  async function joinOnlineBuzzelloGame(
+    code: string,
+  ): Promise<OnlineBuzzelloSession> {
+    const payload = await requestBuzzello("/api/buzzello/join", {
+      code: code.trim().toUpperCase(),
+    });
+    return parseOnlineBuzzelloSession(payload);
+  }
 
+  async function findOnlineBuzzelloMatch(
+    boardSize: BuzzelloBoardSize = 61,
+  ): Promise<OnlineBuzzelloSession> {
+    const payload = await requestBuzzello(
+      "/api/buzzello/matchmaking",
+      boardSize === 61 ? {} : { boardSize },
+    );
+    return parseOnlineBuzzelloSession(payload);
+  }
+
+  async function findTeamBuzzelloMatch(
+    boardSize: BuzzelloBoardSize = 61,
+  ): Promise<OnlineBuzzelloSession> {
+    const payload = await requestBuzzello(
+      "/api/buzzello/matchmaking/team",
+      boardSize === 61 ? {} : { boardSize },
+    );
+    return parseOnlineBuzzelloSession(payload);
+  }
+
+  async function syncOnlineBuzzelloGame(
+    knownGame: OnlineBuzzelloGame,
+    playerToken: string,
+  ): Promise<OnlineBuzzelloSyncResult> {
+    const payload = await requestBuzzello(
+      `/api/buzzello/games/${encodeURIComponent(knownGame.gameId)}/sync`,
+      {
+        knownVersion: knownGame.version,
+        knownStatus: knownGame.status,
+        knownPlayerCount: knownGame.opponentConnected ? 2 : 1,
+      },
+      playerToken,
+    );
+    if (payload.unchanged === true) {
+      if (
+        !Number.isInteger(payload.syncsRemaining) ||
+        (payload.syncsRemaining as number) < 0 ||
+        typeof payload.expiresAt !== "string" ||
+        !Number.isFinite(Date.parse(payload.expiresAt))
+      ) {
+        throw new BuzzelloOnlineError(
+          "The server returned an invalid match.",
+          "INVALID_RESPONSE",
+          502,
+        );
+      }
+      return {
+        unchanged: true,
+        syncsRemaining: payload.syncsRemaining as number,
+        expiresAt: payload.expiresAt,
+      };
+    }
+    return { unchanged: false, game: parseOnlineBuzzelloGame(payload.game) };
+  }
+
+  async function playOnlineBuzzelloMove(
+    gameId: string,
+    index: number,
+    expectedVersion: number,
+    playerToken: string,
+  ): Promise<OnlineBuzzelloGame> {
+    const payload = await requestBuzzello(
+      `/api/buzzello/games/${encodeURIComponent(gameId)}/moves`,
+      { index, expectedVersion },
+      playerToken,
+    );
+    return parseOnlineBuzzelloGame(payload.game);
+  }
+
+  return {
+    createOnlineBuzzelloGame,
+    joinOnlineBuzzelloGame,
+    findOnlineBuzzelloMatch,
+    findTeamBuzzelloMatch,
+    syncOnlineBuzzelloGame,
+    playOnlineBuzzelloMove,
+  };
+}
 export type BuzzelloClient = ReturnType<typeof createBuzzelloClient>;

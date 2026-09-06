@@ -26,7 +26,7 @@ const authorizationMiddleware = new Set([
 const explicitNonFirebaseRoutes = new Map([
   ["buzzello.ts:POST:/games", {
     rationale: "guest friend-game creation; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
-    requiredSource: [/createQuota/u, /validate\(emptyBodySchema\)/u, /service\.createFriendGame\(\)/u],
+    requiredSource: [/createQuota/u, /validate\(createSchema\)/u, /req\.body\.boardSize === 91 \? largeService : service/u, /\.createFriendGame\(\)/u],
   }],
   ["buzzello.ts:POST:/join", {
     rationale: "guest invite redemption; globally requires App Check and locally requires a bounded invite capability, durable quotas, and strict validation",
@@ -34,7 +34,7 @@ const explicitNonFirebaseRoutes = new Map([
   }],
   ["buzzello.ts:POST:/matchmaking", {
     rationale: "blind guest matchmaking; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
-    requiredSource: [/guestMatchmakingQuota/u, /validate\(emptyBodySchema\)/u, /service\.matchmake\("guest"\)/u],
+    requiredSource: [/guestMatchmakingQuota/u, /validate\(createSchema\)/u, /req\.body\.boardSize === 91 \? largeService : service/u, /\.matchmake\("guest"\)/u],
   }],
   ["buzzello.ts:POST:/games/:gameId/sync", {
     rationale: "match-scoped guest access authenticated by a random capability whose HMAC is stored server-side, with durable and per-match quotas",

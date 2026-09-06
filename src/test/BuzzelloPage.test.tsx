@@ -20,6 +20,19 @@ function renderPage() {
 }
 
 describe("BUZZELLO page", () => {
+  it("starts the large edition and preserves its size after undo", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("radio", {name:"Large — 91 cells"}));
+    fireEvent.click(screen.getByRole("button", {name:/pass & play/i}));
+    const board=screen.getByRole("grid",{name:/BUZZELLO board/i});
+    expect(within(board).getAllByRole("gridcell")).toHaveLength(91);
+    expect(within(board).getByRole("gridcell",{name:"q 5, r 0: empty"})).toBeInTheDocument();
+    fireEvent.click(within(board).getAllByRole("gridcell").find(cell=>cell.getAttribute("data-legal")==="true")!);
+    fireEvent.click(screen.getByRole("button",{name:"Undo move"}));
+    expect(within(board).getAllByRole("gridcell")).toHaveLength(91);
+    expect(board.querySelectorAll(".buzzello-piece")).toHaveLength(6);
+  });
+
   beforeEach(() => {
     window.history.replaceState(null, "", "/buzzello");
   });

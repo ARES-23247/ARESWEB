@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import {
@@ -30,16 +31,10 @@ import {
 import { Button, IconButton } from "@ares/ui/button";
 import { DialogShell, Drawer } from "@ares/ui/dialog";
 import {
-  BUZZELLO_COORDINATES,
-  applyBuzzelloMove,
-  createBuzzelloInitialBoard,
-  formatBuzzelloCoordinate,
-  getBuzzelloCellIndex,
-  getBuzzelloLegalMoves,
   getBuzzelloScores,
   getBuzzelloWinner,
-  resolveBuzzelloTurn,
-  selectBuzzelloAiMove,
+  getBuzzelloRules,
+  type BuzzelloBoardSize,
   type BuzzelloBoard,
   type BuzzelloDifficulty,
   type BuzzelloPlayer,
@@ -119,9 +114,11 @@ function playerName(player: BuzzelloPlayer): string {
   return player === "yellow" ? "Yellow" : "Black";
 }
 
-function createStartingSnapshot(): BuzzelloSnapshot {
+function createStartingSnapshot(
+  boardSize: BuzzelloBoardSize = 61,
+): BuzzelloSnapshot {
   return {
-    board: createBuzzelloInitialBoard(),
+    board: getBuzzelloRules(boardSize).createBuzzelloInitialBoard(),
     currentPlayer: "yellow",
     gameOver: false,
     history: [],
@@ -264,6 +261,12 @@ function BuzzelloBoardView({
   disabled,
   onMove,
 }: BuzzelloBoardViewProps) {
+  const {
+    BUZZELLO_COORDINATES,
+    BUZZELLO_BOARD_RADIUS: radius,
+    getBuzzelloCellIndex,
+    formatBuzzelloCoordinate,
+  } = getBuzzelloRules(board.length);
   const centerIndex = getBuzzelloCellIndex(0, 0) ?? 0;
   const [focusedIndex, setFocusedIndex] = useState(centerIndex);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
@@ -309,6 +312,13 @@ function BuzzelloBoardView({
     <div className="buzzello-board-wrap" tabIndex={-1}>
       <div
         className="buzzello-board mx-auto w-full max-w-[760px] rounded-2xl"
+        style={
+          {
+            aspectRatio: `${3 * radius + 2} / ${(2 * radius + 1) * Math.sqrt(3)}`,
+            "--buzzello-cell-width": `${192 / (3 * radius + 2)}%`,
+            "--buzzello-cell-height": `${96 / (2 * radius + 1)}%`,
+          } as CSSProperties
+        }
         role="grid"
         aria-label={`BUZZELLO board. ${playerName(currentPlayer)} to move. Use arrow keys to move between cells and Enter or Space to play a legal move.`}
       >
@@ -325,9 +335,9 @@ function BuzzelloBoardView({
                 ? "open center, empty"
                 : "empty";
           // Preserve the regular flat-top geometry inside a 2% safety inset.
-          // A radius-4 grid spans 14 hex radii wide and 9√3 radii tall.
-          const left = 50 + q * (72 / 7);
-          const top = 50 + (r + q / 2) * (32 / 3);
+          // Dimensions scale with the chosen radius while hexagons stay regular.
+          const left = 50 + (q * 144) / (3 * radius + 2);
+          const top = 50 + ((r + q / 2) * 96) / (2 * radius + 1);
 
           return (
             <button
@@ -380,9 +390,23 @@ function BuzzelloBoardView({
   );
 }
 
-export default function BuzzelloPage({ online, physicalGameLink }: { online: BuzzelloClient; physicalGameLink?: ReactNode }) {
-  const { createOnlineBuzzelloGame, joinOnlineBuzzelloGame, findOnlineBuzzelloMatch, findTeamBuzzelloMatch, syncOnlineBuzzelloGame, playOnlineBuzzelloMove } = online;
+export default function BuzzelloPage({
+  online,
+  physicalGameLink,
+}: {
+  online: BuzzelloClient;
+  physicalGameLink?: ReactNode;
+}) {
+  const {
+    createOnlineBuzzelloGame,
+    joinOnlineBuzzelloGame,
+    findOnlineBuzzelloMatch,
+    findTeamBuzzelloMatch,
+    syncOnlineBuzzelloGame,
+    playOnlineBuzzelloMove,
+  } = online;
   const fullscreen = useGameFullscreen();
+  const [boardSize, setBoardSize] = useState<BuzzelloBoardSize>(61);
   const [mode, setMode] = useState<BuzzelloMode>("medium");
   const [timeline, setTimeline] = useState<BuzzelloSnapshot[]>(() => [
     createStartingSnapshot(),
@@ -408,10 +432,17 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
   const aiRequestRef = useRef(0);
   const rulesTriggerRef = useRef<HTMLButtonElement>(null);
   const current = timeline[cursor];
+  const {
+    applyBuzzelloMove,
+    formatBuzzelloCoordinate,
+    getBuzzelloLegalMoves,
+    resolveBuzzelloTurn,
+    selectBuzzelloAiMove,
+  } = getBuzzelloRules(current.board.length);
   const scores = getBuzzelloScores(current.board);
   const legalMoves = useMemo(
     () => getBuzzelloLegalMoves(current.board, current.currentPlayer),
-    [current.board, current.currentPlayer],
+    [current.board, current.currentPlayer, getBuzzelloLegalMoves],
   );
   const legalMoveFlips = useMemo(
     () => new Map(legalMoves.map((move) => [move.index, move.flips])),
@@ -438,26 +469,30 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
     );
   }, []);
 
-  const startGame = useCallback((nextMode: BuzzelloMode) => {
-    if (nextMode === "online") return;
-    setMode(nextMode);
-    setTimeline([createStartingSnapshot()]);
-    setCursor(0);
-    setAiThinking(false);
-    setGameOverOpen(false);
-    setHistoryOpen(false);
-    setNewGameOpen(false);
-    setOnlineGame(null);
-    setOnlineInviteCode(null);
-    setOnlineShareLink(null);
-    setOnlineCopyStatus(null);
-    setOnlineError(null);
-    onlinePlayerTokenRef.current = null;
-    onlineGameRef.current = null;
-  }, []);
+  const startGame = useCallback(
+    (nextMode: BuzzelloMode) => {
+      if (nextMode === "online") return;
+      setMode(nextMode);
+      setTimeline([createStartingSnapshot(boardSize)]);
+      setCursor(0);
+      setAiThinking(false);
+      setGameOverOpen(false);
+      setHistoryOpen(false);
+      setNewGameOpen(false);
+      setOnlineGame(null);
+      setOnlineInviteCode(null);
+      setOnlineShareLink(null);
+      setOnlineCopyStatus(null);
+      setOnlineError(null);
+      onlinePlayerTokenRef.current = null;
+      onlineGameRef.current = null;
+    },
+    [boardSize],
+  );
 
   const applyOnlineGame = useCallback((game: OnlineBuzzelloGame) => {
     setMode("online");
+    setBoardSize(game.board.length === 91 ? 91 : 61);
     onlineGameRef.current = game;
     setOnlineGame(game);
     setTimeline([onlineGameSnapshot(game)]);
@@ -472,7 +507,7 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
     setOnlineBusy(true);
     setOnlineError(null);
     try {
-      const result = await createOnlineBuzzelloGame();
+      const result = await createOnlineBuzzelloGame(boardSize);
       onlinePlayerTokenRef.current = result.playerToken;
       setOnlineInviteCode(result.inviteCode);
       const shareUrl = new URL("/buzzello", window.location.origin);
@@ -489,13 +524,13 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
     } finally {
       setOnlineBusy(false);
     }
-  }, [applyOnlineGame, createOnlineBuzzelloGame]);
+  }, [applyOnlineGame, boardSize, createOnlineBuzzelloGame]);
 
   const findOnlineMatch = useCallback(async () => {
     setOnlineBusy(true);
     setOnlineError(null);
     try {
-      const result = await findOnlineBuzzelloMatch();
+      const result = await findOnlineBuzzelloMatch(boardSize);
       onlinePlayerTokenRef.current = result.playerToken;
       setOnlineInviteCode(null);
       setOnlineShareLink(null);
@@ -510,13 +545,13 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
     } finally {
       setOnlineBusy(false);
     }
-  }, [applyOnlineGame, findOnlineBuzzelloMatch]);
+  }, [applyOnlineGame, boardSize, findOnlineBuzzelloMatch]);
 
   const findTeamMatch = useCallback(async () => {
     setOnlineBusy(true);
     setOnlineError(null);
     try {
-      const result = await findTeamBuzzelloMatch();
+      const result = await findTeamBuzzelloMatch(boardSize);
       onlinePlayerTokenRef.current = result.playerToken;
       setOnlineInviteCode(null);
       setOnlineShareLink(null);
@@ -531,7 +566,7 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
     } finally {
       setOnlineBusy(false);
     }
-  }, [applyOnlineGame, findTeamBuzzelloMatch]);
+  }, [applyOnlineGame, boardSize, findTeamBuzzelloMatch]);
 
   const joinOnlineGame = useCallback(async () => {
     setOnlineBusy(true);
@@ -617,7 +652,14 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
         setGameOverOpen(true);
       }
     },
-    [current, cursor, legalMoveFlips, playSound],
+    [
+      current,
+      cursor,
+      legalMoveFlips,
+      playSound,
+      applyBuzzelloMove,
+      resolveBuzzelloTurn,
+    ],
   );
 
   const commitOnlineMove = useCallback(
@@ -654,7 +696,13 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
         setOnlineBusy(false);
       }
     },
-    [applyOnlineGame, onlineBusy, onlineGame, playSound, playOnlineBuzzelloMove],
+    [
+      applyOnlineGame,
+      onlineBusy,
+      onlineGame,
+      playSound,
+      playOnlineBuzzelloMove,
+    ],
   );
 
   const shouldPollOnlineGame = Boolean(
@@ -757,10 +805,10 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
+    syncOnlineBuzzelloGame,
     applyOnlineGame,
     isOnlineMode,
     onlinePollingStopped,
-    syncOnlineBuzzelloGame,
     pollingGameId,
     shouldPollOnlineGame,
   ]);
@@ -826,7 +874,7 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
       window.clearTimeout(fallbackTimer);
       worker?.terminate();
     };
-  }, [commitMove, current.board, isAiTurn, mode]);
+  }, [commitMove, current.board, isAiTurn, mode, selectBuzzelloAiMove]);
 
   const undo = () => {
     if (cursor === 0 || aiThinking) return;
@@ -882,8 +930,6 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
       className="game-fullscreen-target buzzello-shell min-h-screen bg-obsidian px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8"
       data-game-fullscreen={fullscreen.isFullscreen || undefined}
     >
-      
-
       <div className="mx-auto max-w-[1500px]">
         <header className="buzzello-hero relative overflow-hidden rounded-2xl px-4 py-5 shadow-2xl sm:px-8 sm:py-7">
           <div
@@ -905,7 +951,9 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
                 Surround. Convert. Control the hive. Play locally, challenge a
                 local AI, or invite one remote guest to a chat-free match.
               </p>
-              {physicalGameLink && <div className="mt-2">{physicalGameLink}</div>}
+              {physicalGameLink && (
+                <div className="mt-2">{physicalGameLink}</div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <GameFullscreenButton
@@ -960,7 +1008,9 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
                   Tournament board
                 </h2>
                 <p className="mt-1 text-xs text-marble/60">
-                  {modeName(mode)} · {scores.empty} open cells
+                  {modeName(mode)} ·{" "}
+                  {current.board.length === 91 ? "Large" : "Classic"} ·{" "}
+                  {scores.empty} open cells
                 </p>
               </div>
               <div className="flex shrink-0 gap-1 sm:gap-2">
@@ -1072,6 +1122,7 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
             </div>
 
             <BuzzelloBoardView
+              key={current.board.length}
               board={current.board}
               currentPlayer={current.currentPlayer}
               legalMoveFlips={legalMoveFlips}
@@ -1293,6 +1344,24 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
         size="lg"
         showClose={current.history.length > 0 || isOnlineMode}
       >
+        <fieldset className="mb-4 flex flex-wrap gap-4">
+          <legend className="mb-2 font-bold">Board size</legend>
+          {([61, 91] as const).map((size) => (
+            <label
+              key={size}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/30 p-3"
+            >
+              <input
+                type="radio"
+                name="buzzello-board-size"
+                value={size}
+                checked={boardSize === size}
+                onChange={() => setBoardSize(size)}
+              />
+              {size === 61 ? "Classic — 61 cells" : "Large — 91 cells"}
+            </label>
+          ))}
+        </fieldset>
         <div className="grid gap-3 sm:grid-cols-2">
           {MODE_DETAILS.map(({ id, name, description, icon: Icon }) => (
             <button
@@ -1482,8 +1551,8 @@ export default function BuzzelloPage({ online, physicalGameLink }: { online: Buz
             </h3>
             <p className="mt-1">
               The center starts empty. Six alternating pieces surround it, with
-              Yellow moving first. The board contains 61 cells across six
-              movement directions.
+              Yellow moving first. Choose Classic (61 cells) or Large (91
+              cells); both use six movement directions.
             </p>
           </section>
           <section>
