@@ -215,7 +215,7 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
         </div>
         <nav aria-label="More ARES games">
           {navigation}
-          
+
         </nav>
       </header>
       <div className="buzzhex-layout">
@@ -663,4 +663,3 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
     </main>
   );
 }
-
