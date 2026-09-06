@@ -1,6 +1,8 @@
 # Arcade workspace architecture
 
-The website and games share one pnpm workspace and one protected release flow.
+The website and games share one Git repository, one pnpm workspace, and one
+protected release flow. The game packages are private workspace packages, not
+Git submodules or separately published repositories.
 The website stays in `src/`; the existing APIs and game process stay in
 `functions/`. Public URLs and Firebase/Cloud Run service identities are unchanged.
 
@@ -8,6 +10,7 @@ The website stays in `src/`; the existing APIs and game process stay in
 | --- | --- |
 | `src/app/arcade/`, navigation | Arcade discovery and website navigation |
 | `src/app/buzzle/`, `src/app/buzzello/` | Thin route wrappers and SEO |
+| `src/app/pollen/` | Website wrapper, opaque game iframe, fullscreen controls, and bounded score bridge |
 | `src/lib/*Online.ts` | Bind package client factories to the website's authenticated transport |
 | `packages/buzzle/` | Rules, AI, workers, game UI, dictionary lookup, physical tools, canonical lexicon |
 | `packages/buzzello/` | Rules, AI, worker, game UI, online client contract |
@@ -21,7 +24,12 @@ import `src/` or Firebase authentication. The site passes a stable online client
 to each game component; each factory receives the authenticated request function.
 Shared rules import geometry only and can execute without React, DOM or Node APIs.
 UI packages use the website's Tailwind/design tokens; `globals.css` explicitly
-scans their sources. Existing `src/lib` and UI re-exports preserve import
+scans their sources. Keep its CSS imports consecutive, with the package
+`@source` directive after all imports. An intervening directive makes PostCSS
+drop the design-token import and breaks the site's colors despite a successful
+build. The Arcade E2E test checks the compiled token and primary button color;
+visually inspect the built site as well as testing its interactions.
+Existing `src/lib` and UI re-exports preserve import
 compatibility while consumers migrate. Do not add new logic to those re-exports.
 
 ## Persisted online compatibility
