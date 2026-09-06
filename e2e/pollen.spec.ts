@@ -57,3 +57,36 @@ test("Ranger Dave takes a turn and the isolated game stores only a device score"
   await game.getByRole("button", { name: /Change Game Mode/ }).click();
   await expect(game.getByRole("button", { name: /Solo High Score/ })).toBeVisible();
 });
+
+test("the wider flower visibly leans under an off-center heavy drop", async ({ page }, testInfo) => {
+  await page.goto("/pollen");
+  const iframe = page.locator('iframe[title="Pollenator Pile-Up game"]');
+  const game = page.frameLocator('iframe[title="Pollenator Pile-Up game"]');
+  await game.getByRole("button", { name: /Solo High Score/ }).click();
+  const frame = await (await iframe.elementHandle())!.contentFrame();
+  const aimSteps = await frame!.evaluate(() => {
+    const scope = window as unknown as {
+      game: { currentPollinator: unknown; width: number; flower: { headWidth: number } };
+      POLLINATOR_TYPES: { MOTHMAN: unknown };
+    };
+    // Fix the random roster, then use the real controls and collision simulation.
+    scope.game.currentPollinator = scope.POLLINATOR_TYPES.MOTHMAN;
+    return Math.floor(scope.game.flower.headWidth * 0.3 / 15);
+  });
+  const canvas = game.locator("#game-canvas");
+  await canvas.focus();
+  for (let i = 0; i < aimSteps; i++) await canvas.press("ArrowRight");
+  await canvas.press("Space");
+  await expect(game.locator("#hud-critters-val")).toHaveText("1", { timeout: 15000 });
+  await expect.poll(() => frame!.evaluate(() => {
+    const scope = window as unknown as { game: { flower: { tiltAngle: number } } };
+    return scope.game.flower.tiltAngle;
+  })).toBeGreaterThan(0.02);
+  const dimensions = await frame!.evaluate(() => {
+    const scope = window as unknown as { game: { width: number; flower: { headWidth: number } } };
+    return { canvas: scope.game.width, flower: scope.game.flower.headWidth };
+  });
+  expect(dimensions.flower).toBe(Math.min(360, dimensions.canvas - 32));
+  await expect(game.locator("#game-over-modal")).not.toBeVisible();
+  await iframe.screenshot({ path: testInfo.outputPath("flower-tilt.png") });
+});
