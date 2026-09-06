@@ -13,6 +13,7 @@ The website stays in `src/`; the existing APIs and game process stay in
 | `src/app/pollen/` | Website wrapper, opaque game iframe, fullscreen controls, and bounded score bridge |
 | `src/lib/*Online.ts` | Bind package client factories to the website's authenticated transport |
 | `packages/buzzle/` | Rules, AI, workers, game UI, dictionary lookup, physical tools, canonical lexicon |
+| `packages/buzzhex/` | Local Hex rules and UI; thin site wrapper at `/buzzhex` |
 | `packages/buzzello/` | Rules, AI, worker, game UI, online client contract |
 | `packages/pollenator/public/` | Classic-script physics, rendering, local game UI, assets and dependency license |
 | `packages/game-common/` | Hex geometry and fullscreen behavior |

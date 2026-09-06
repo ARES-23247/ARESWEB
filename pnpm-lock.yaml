@@ -28,6 +28,9 @@ importers:
       '@ares/buzzello':
         specifier: workspace:*
         version: link:packages/buzzello
+      '@ares/buzzhex':
+        specifier: workspace:*
+        version: link:packages/buzzhex
       '@ares/buzzle':
         specifier: workspace:*
         version: link:packages/buzzle
@@ -251,6 +254,21 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1)(vite@8.2.2(@types/node@26.2.0)(jiti@2.7.0)(terser@5.49.2)(yaml@2.9.0))
 
   packages/buzzello:
+    dependencies:
+      '@ares/game-common':
+        specifier: workspace:*
+        version: link:../game-common
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+
+  packages/buzzhex:
     dependencies:
       '@ares/game-common':
         specifier: workspace:*

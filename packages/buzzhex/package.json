@@ -1,0 +1,9 @@
+{
+  "name": "@ares/buzzhex",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { "./game": "./src/Game.tsx", "./rules": "./src/rules.ts" },
+  "dependencies": { "@ares/ui": "workspace:*", "@ares/game-common": "workspace:*", "lucide-react": "^1.33.0" },
+  "peerDependencies": { "react": "^19.2.0" }
+}

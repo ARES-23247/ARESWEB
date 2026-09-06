@@ -15,6 +15,7 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   const main = page.getByRole("main").last();
   await expect(main.getByRole("link", { name: "Play BUZZLE", exact: true })).toHaveAttribute("href", "/buzzle");
   await expect(main.getByRole("link", { name: "Play BUZZELLO", exact: true })).toHaveAttribute("href", "/buzzello");
+  await expect(main.getByRole("link", { name: "Play BUZZHEX", exact: true })).toHaveAttribute("href", "/buzzhex");
   await expect(main.getByRole("link", { name: "Play Pollenator Pile-Up", exact: true })).toHaveAttribute("href", "/pollen");
   const printBuzzle = main.getByRole("link", { name: "3D print BUZZLE on Printables (opens in a new tab)", exact: true });
   await expect(printBuzzle).toHaveAttribute("href", "https://www.printables.com/model/1834054-buzzle-biobuzz-hex-word-game-board-individual-tile");

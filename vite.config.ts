@@ -184,6 +184,7 @@ export default defineConfig({
       // administrative reliability surface. A listed module therefore reports
       // 0% instead of disappearing when its importing test is removed.
       include: [
+        "packages/buzzhex/src/rules.ts",
         "src/lib/buzzello.ts",
         "src/lib/buzzelloOnline.ts",
         "src/lib/buzzle.ts",
@@ -271,6 +272,7 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
+        "packages/buzzhex/src/rules.ts": { lines: 85, functions: 100 },
         "packages/pollenator/public/js/physics.js": { lines: 85, functions: 100 },
         "scripts/prepare-game-packages.mjs": { lines: 85, functions: 100 },
         "packages/game-common/src/hexGrid.ts": { lines: 85, functions: 100 },
