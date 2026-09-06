@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import {
@@ -379,7 +380,7 @@ function BuzzelloBoardView({
   );
 }
 
-export default function BuzzelloPage({ online }: { online: BuzzelloClient }) {
+export default function BuzzelloPage({ online, physicalGameLink }: { online: BuzzelloClient; physicalGameLink?: ReactNode }) {
   const { createOnlineBuzzelloGame, joinOnlineBuzzelloGame, findOnlineBuzzelloMatch, findTeamBuzzelloMatch, syncOnlineBuzzelloGame, playOnlineBuzzelloMove } = online;
   const fullscreen = useGameFullscreen();
   const [mode, setMode] = useState<BuzzelloMode>("medium");
@@ -904,6 +905,7 @@ export default function BuzzelloPage({ online }: { online: BuzzelloClient }) {
                 Surround. Convert. Control the hive. Play locally, challenge a
                 local AI, or invite one remote guest to a chat-free match.
               </p>
+              {physicalGameLink && <div className="mt-2">{physicalGameLink}</div>}
             </div>
             <div className="flex flex-wrap gap-2">
               <GameFullscreenButton

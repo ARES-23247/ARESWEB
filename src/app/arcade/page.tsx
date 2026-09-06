@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, Gamepad2 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ARCADE_GAMES } from "@/components/navigation/navItems";
+import { GamePrintablesLink } from "@/components/games/GamePrintablesLink";
 
 export default function ArcadePage() {
   return (
@@ -20,9 +21,14 @@ export default function ArcadePage() {
             <p className="mb-3 text-xs font-semibold leading-relaxed text-ares-gold">{modes}</p>
             <h2 className="font-heading text-2xl font-black text-white">{label}</h2>
             <p className="mb-8 mt-3 text-sm leading-relaxed text-marble/80">{description}</p>
-            <Link to={to} className="mt-auto inline-flex min-h-11 items-center justify-between gap-3 rounded-lg bg-ares-red px-4 py-3 font-bold text-white transition-colors hover:bg-ares-red/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian">
-              Play {label}<ArrowRight aria-hidden="true" size={18} />
-            </Link>
+            <div className="mt-auto flex flex-col gap-3 lg:min-h-28">
+              <Link to={to} className="inline-flex min-h-11 items-center justify-between gap-3 rounded-lg bg-ares-red px-4 py-3 font-bold text-white transition-colors hover:bg-ares-red/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian">
+                Play {label}<ArrowRight aria-hidden="true" size={18} />
+              </Link>
+              {(label === "BUZZLE" || label === "BUZZELLO") && (
+                <GamePrintablesLink game={label} />
+              )}
+            </div>
           </article>
         ))}
       </section>
