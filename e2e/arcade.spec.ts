@@ -16,6 +16,11 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   await expect(main.getByRole("link", { name: "Play BUZZLE", exact: true })).toHaveAttribute("href", "/buzzle");
   await expect(main.getByRole("link", { name: "Play BUZZELLO", exact: true })).toHaveAttribute("href", "/buzzello");
   await expect(main.getByRole("link", { name: "Play Pollenator Pile-Up", exact: true })).toHaveAttribute("href", "/pollen");
+  const printBuzzle = main.getByRole("link", { name: "3D print BUZZLE on Printables (opens in a new tab)", exact: true });
+  await expect(printBuzzle).toHaveAttribute("href", "https://www.printables.com/model/1834054-buzzle-biobuzz-hex-word-game-board-individual-tile");
+  await expect(printBuzzle).toHaveAttribute("target", "_blank");
+  await expect(printBuzzle).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(main.getByRole("link", { name: "3D print BUZZELLO on Printables (opens in a new tab)", exact: true })).toHaveAttribute("href", "https://www.printables.com/model/1834053-buzzello-biobuzz-hex-strategy-board-reversible-pie");
   await nav.getByRole("button", { name: "Resources", exact: true }).click();
   await expect(nav.getByRole("link", { name: /BUZZLE|Pollenator/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
@@ -32,4 +37,5 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   await main.getByRole("link", { name: "BUZZLE Word Tools", exact: true }).click();
   await expect(page).toHaveURL(/\/buzzle\/word-tools$/);
   await expect(page.getByRole("heading", { name: "Word Tools", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "3D print BUZZLE on Printables (opens in a new tab)", exact: true })).toBeVisible();
 });
