@@ -45,11 +45,50 @@ instruction tree. Keep tool entry points as references to this guide, not copied
 policies. See [docs/AGENT_SETUP.md](docs/AGENT_SETUP.md) for discovery checks.
 Preserve other contributors' work; use an isolated worktree when changes overlap.
 
-Edit canonical game packages, not the generated `functions/src/generated/games/`,
-`public/games/pollen/`, or dictionary deployment copies. Run `pnpm games:prepare`
-after changing shared rules while a backend development process is running.
-Keep packages independent of website source; the site injects authenticated
-online clients. Preserve online board-index conversions and server validation.
+## Arcade workspace ownership
+
+This is one Git repository with private pnpm workspace packages, not Git
+submodules or independently deployed game repositories. `pnpm-workspace.yaml`
+includes the root website, `functions`, and `packages/*`. Read
+[docs/GAME_ARCHITECTURE.md](docs/GAME_ARCHITECTURE.md) before changing a game.
+
+| Edit here | Owned behavior |
+| --- | --- |
+| `src/app/arcade/`, `src/App.tsx`, website navigation | Arcade discovery, routes, and navigation |
+| `src/app/buzzle/`, `src/app/buzzello/`, `src/app/pollen/` | Website route/SEO wrappers; Pollenator iframe and bounded score bridge |
+| `src/lib/buzzleOnline.ts`, `src/lib/buzzelloOnline.ts` | Bind game clients to the site's authenticated transport |
+| `packages/buzzle/` | Word-game rules, AI, workers, UI, dictionary, physical Word Tools, and canonical lexicon |
+| `packages/buzzello/` | Black/yellow strategy-game rules, AI, worker, UI, and online client |
+| `packages/pollenator/public/` | Pollenator scripts, physics, game UI, and assets |
+| `packages/game-common/`, `packages/ui/` | Shared hex geometry/fullscreen behavior and UI primitives |
+| `functions/src/lib/`, `functions/src/apps/game.ts` | Existing authoritative online match adapters and game service |
+
+- Keep game packages independent of website source and Firebase authentication.
+  The website injects stable authenticated clients. Declare package exports and
+  dependencies in each package manifest. Keep pure rules independent of UI and
+  environment APIs; do not put new logic in compatibility re-exports under `src/`.
+- Edit canonical sources, never `functions/src/generated/games/`,
+  `public/games/pollen/`, `public/data/buzzle-words.txt`,
+  `public/data/buzzle-words.meta.json`, or `functions/data/buzzle-words.txt`.
+  These are ignored deployment copies produced by
+  `scripts/prepare-game-packages.mjs`. Run root `pnpm games:prepare` again after
+  rule or static-game edits while development processes remain open.
+- Preserve BUZZELLO's 61-cell column-major order and BUZZLE's 217-cell
+  row-major local / column-major persisted conversion through
+  `BUZZLE_ONLINE_INDICES`. Shared rules do not replace server validation,
+  authorization, cryptographic randomness, or private rack filtering.
+- Keep `/arcade`, `/buzzle`, `/buzzello`, `/pollen`, and `/buzzle/word-tools`
+  stable. Pollenator remains a local game in an opaque iframe. Add any future
+  online game adapter to the existing backend unless a different architecture
+  is explicitly agreed; a new package alone does not require a new service.
+- Build from the repository root. Keep Functions' standalone npm deployment
+  lock and compiled artifact flow; the game Docker build also uses root context
+  with `functions/Dockerfile.game.dockerignore`. Follow the shared release
+  workflow rather than deploying packages separately.
+- In `src/app/globals.css`, keep all CSS `@import` statements consecutive and
+  before Tailwind `@source`. Putting `@source` between imports drops the design
+  tokens during compilation. Verify rendered colors in the built browser tests
+  and inspect screenshots before release; source-token tests alone miss this.
 
 ## Required engineering boundaries
 
