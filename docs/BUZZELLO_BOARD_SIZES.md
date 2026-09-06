@@ -3,8 +3,12 @@
 Classic has 61 cells (radius 4); Large has 91 (radius 5). Both retain the
 alternating six-piece opening, open center, Yellow first move, six-direction
 flanking, and existing pass/game-over rules. The physical versions use the same
-1.3-inch pieces. Users choose the size before choosing a mode. Classic remains
-the default, including requests from older clients that omit boardSize.
+1.3-inch pieces. Large 91 is the default selection and our preferred version:
+we find it plays better. Classic 61 remains an explicit option. New local, AI,
+friend-invite, guest and team matches use the selected size.
+
+For compatibility, older API clients that omit boardSize still receive Classic 61.
+The current UI explicitly sends its selected size; existing matches keep their board.
 
 POST /api/buzzello/games, /matchmaking, and /matchmaking/team accept an optional
 boardSize of exactly 61 or 91. Other values are rejected. Invite joining always

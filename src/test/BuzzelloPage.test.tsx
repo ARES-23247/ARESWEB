@@ -20,15 +20,24 @@ function renderPage() {
 }
 
 describe("BUZZELLO page", () => {
-  it("starts the large edition and preserves its size after undo", () => {
+  it("defaults to our preferred large edition and preserves its size after undo", () => {
     renderPage();
-    fireEvent.click(screen.getByRole("radio", {name:"Large — 91 cells"}));
-    fireEvent.click(screen.getByRole("button", {name:/pass & play/i}));
-    const board=screen.getByRole("grid",{name:/BUZZELLO board/i});
+    expect(
+      screen.getByRole("radio", { name: "Large — 91 cells (preferred)" }),
+    ).toBeChecked();
+    expect(screen.getByText(/We prefer the 91-cell board/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /pass & play/i }));
+    const board = screen.getByRole("grid", { name: /BUZZELLO board/i });
     expect(within(board).getAllByRole("gridcell")).toHaveLength(91);
-    expect(within(board).getByRole("gridcell",{name:"q 5, r 0: empty"})).toBeInTheDocument();
-    fireEvent.click(within(board).getAllByRole("gridcell").find(cell=>cell.getAttribute("data-legal")==="true")!);
-    fireEvent.click(screen.getByRole("button",{name:"Undo move"}));
+    expect(
+      within(board).getByRole("gridcell", { name: "q 5, r 0: empty" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(board)
+        .getAllByRole("gridcell")
+        .find((cell) => cell.getAttribute("data-legal") === "true")!,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Undo move" }));
     expect(within(board).getAllByRole("gridcell")).toHaveLength(91);
     expect(board.querySelectorAll(".buzzello-piece")).toHaveLength(6);
   });
@@ -44,14 +53,17 @@ describe("BUZZELLO page", () => {
     fireEvent.click(screen.getByRole("button", { name: /pass & play/i }));
     fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
     expect(shell).toHaveAttribute("data-game-fullscreen", "true");
-    expect(screen.getByRole("button", { name: "Exit full screen" })).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: "Exit full screen" }),
+    ).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(shell).not.toHaveAttribute("data-game-fullscreen");
   });
 
-  it("starts a local match, plays a legal move, and supports undo", () => {
+  it("still offers a Classic local match, legal moves, and undo", () => {
     renderPage();
+    fireEvent.click(screen.getByRole("radio", { name: "Classic — 61 cells" }));
 
     expect(
       screen.getByRole("heading", { name: /start a new buzzello match/i }),
