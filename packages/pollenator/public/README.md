@@ -12,6 +12,10 @@ Physics advances at a fixed 120 steps per second with interpolated rendering,
 independent of display refresh rate. A paused tab discards elapsed background
 time. Turns advance only after sustained supported, slow contact. Physical mass
 follows the roster weight ratios, including the heavy Mothman piece.
+The blossom's visible petals and collision surface widen together, up to 360
+pixels, with room at the edges on phones. Off-center loads lean the flower toward
+the heavier side; placing weight on the opposite side brings it back toward
+level. The damped stem and firmer support on smaller screens limit impact wobble.
 
 ## Controls
 
@@ -46,7 +50,8 @@ The upstream MIT license is retained in `lib/LICENSE-Matter.txt`.
 `src/test/PollenPage.test.tsx` checks score validation, source isolation, and
 storage failures. `src/test/pollenPhysics.test.ts` exercises the shipped Matter.js
 engine at multiple display rates, all five critters, stacks, missed drops,
-restart, and heavy-piece settling. The fixed-step clock has a coverage ratchet.
+restart, heavy-piece settling, sustained weight-driven tilt, counterbalancing,
+and responsive flower sizing. The fixed-step clock has a coverage ratchet.
 `e2e/pollen.spec.ts` covers public entry, keyboard play,
 turns, fullscreen, small screens, the local opponent, and sandboxed score saving.
 `check-hosting-emulator.mjs` checks the deployed route and framing headers.
