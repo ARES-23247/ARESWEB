@@ -148,3 +148,25 @@ test("keeps the hex board playable without horizontal scrolling on a narrow phon
     ),
   ).toBe(true);
 });
+
+test("large BUZZELLO keeps all 91 cells within the responsive board", async ({page}) => {
+  await page.goto("/buzzello");
+  const setup=page.getByRole("dialog",{name:"Start a new BUZZELLO match"});
+  await setup.getByRole("radio",{name:"Large — 91 cells"}).check();
+  await setup.getByRole("button",{name:/Pass & Play/}).click();
+  const board=page.getByRole("grid",{name:/BUZZELLO board/});
+  await expect(board.getByRole("gridcell")).toHaveCount(91);
+  const bounds=await board.boundingBox();
+  expect(bounds).not.toBeNull();
+  for(const cell of await board.getByRole("gridcell").all()) {
+    const rect=await cell.boundingBox();
+    expect(rect!.x).toBeGreaterThanOrEqual(bounds!.x);
+    expect(rect!.y).toBeGreaterThanOrEqual(bounds!.y);
+    expect(rect!.x+rect!.width).toBeLessThanOrEqual(bounds!.x+bounds!.width);
+    expect(rect!.y+rect!.height).toBeLessThanOrEqual(bounds!.y+bounds!.height);
+  }
+  await board.locator('[data-legal="true"]').first().click();
+  await expect(page.getByRole("status",{name:"Current turn"})).toHaveText("Black’s turn");
+  await page.getByRole("button",{name:"Undo move"}).click();
+  await expect(board.locator(".buzzello-piece")).toHaveCount(6);
+});

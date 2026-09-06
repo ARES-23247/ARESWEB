@@ -19,6 +19,8 @@ export interface GameDefinition<
   TPlayerLabel extends string,
 > {
   gameType: string;
+  /** Server-owned queue partition for compatible board variants. */
+  matchmakingVariant?: string;
   minPlayers: number;
   maxPlayers: number;
   defaultMatchSize: number;
@@ -443,7 +445,8 @@ export class GameMatchService<
     const now = Date.now();
     const waitingGameId = randomUUID();
     const playerToken = createPlayerToken();
-    const slotId = `${this.definition.gameType}-${audience}-${playerCount}`;
+    const variant = this.definition.matchmakingVariant;
+    const slotId = `${this.definition.gameType}-${audience}-${playerCount}${variant ? `-${variant}` : ""}`;
     const slotRef = adminDb.collection(MATCHMAKING_COLLECTION).doc(slotId);
     const result = await adminDb.runTransaction(async (transaction) => {
       const slotSnapshot = await transaction.get(slotRef);
