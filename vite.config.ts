@@ -185,6 +185,7 @@ export default defineConfig({
       // 0% instead of disappearing when its importing test is removed.
       include: [
         "packages/buzzhex/src/rules.ts",
+        "packages/buzzhex/src/ai.ts",
         "src/lib/buzzello.ts",
         "src/lib/buzzelloOnline.ts",
         "src/lib/buzzle.ts",
@@ -272,6 +273,7 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
+        "packages/buzzhex/src/ai.ts": { lines: 85, functions: 100 },
         "packages/buzzhex/src/rules.ts": { lines: 85, functions: 100 },
         "packages/pollinator/public/js/physics.js": { lines: 85, functions: 100 },
         "scripts/prepare-game-packages.mjs": { lines: 85, functions: 100 },

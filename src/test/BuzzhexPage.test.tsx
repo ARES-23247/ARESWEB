@@ -1,7 +1,14 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BuzzhexPage from "@/app/buzzhex/page";
 import { BUZZHEX_SAVE_KEY } from "@ares/buzzhex/rules";
 
@@ -19,6 +26,119 @@ const cell = (label: string) =>
 describe("BUZZHEX page", () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function computerGame(level = "medium") {
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    fireEvent.change(screen.getByLabelText("Opponent"), {
+      target: { value: "computer" },
+    });
+    fireEvent.change(screen.getByLabelText("Difficulty"), {
+      target: { value: level },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Start new game" }));
+  }
+
+  it("links the published physical board and offers three computer levels", () => {
+    page();
+    expect(
+      screen.getByRole("link", { name: /3D print BUZZHEX on Printables/ }),
+    ).toHaveAttribute(
+      "href",
+      "https://www.printables.com/model/1834842-buzzhex-11-x-11-hex-strategy-game-reuse-your-buzze",
+    );
+    computerGame("hard");
+    expect(JSON.parse(localStorage.getItem(BUZZHEX_SAVE_KEY)!)).toMatchObject({
+      mode: "computer",
+      difficulty: "hard",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    expect(
+      within(screen.getByLabelText("Difficulty"))
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Easy", "Medium", "Hard"]);
+  });
+
+  it("locks computer turns, reverses the whole turn after a swap, and rejects stale replies", async () => {
+    const workers: {
+      onmessage: ((event: { data: unknown }) => void) | null;
+      postMessage: ReturnType<typeof vi.fn>;
+      terminate: ReturnType<typeof vi.fn>;
+    }[] = [];
+    vi.stubGlobal(
+      "Worker",
+      class {
+        onmessage = null;
+        postMessage = vi.fn();
+        terminate = vi.fn();
+        constructor() {
+          workers.push(this);
+        }
+      },
+    );
+    const view = page();
+    computerGame();
+    fireEvent.click(cell("F6"));
+    expect(cell("F7")).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(cell("F7"));
+    expect(cell("F7")).toBeInTheDocument();
+    await waitFor(() => expect(workers).toHaveLength(1));
+    act(() => workers[0].onmessage!({ data: { type: "swap" } }));
+    expect(
+      screen.getByRole("status", { name: "Current turn" }),
+    ).toHaveTextContent("Player 1 · Yellow to move");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Undo your last turn" }),
+    );
+    expect(cell("F6")).toBeInTheDocument();
+    fireEvent.click(cell("A1"));
+    await waitFor(() => expect(workers).toHaveLength(2));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Undo your last turn" }),
+    );
+    act(() => workers[1].onmessage!({ data: { type: "place", index: 60 } }));
+    expect(cell("A1")).toBeInTheDocument();
+    expect(cell("F6")).toBeInTheDocument();
+    expect(workers[1].terminate).toHaveBeenCalled();
+    view.unmount();
+    page();
+    expect(
+      screen.getByRole("button", { name: "Undo your last turn" }),
+    ).toBeDisabled();
+  });
+
+  it("reports unavailable workers and allows retry and switching back to local play", async () => {
+    const start = vi.fn();
+    vi.stubGlobal(
+      "Worker",
+      class {
+        constructor() {
+          start();
+          throw new Error("unavailable");
+        }
+      },
+    );
+    page();
+    computerGame("easy");
+    fireEvent.click(cell("A1"));
+    await screen.findByRole("button", { name: "Retry computer move" });
+    expect(screen.getByRole("alert")).toHaveTextContent("could not choose");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retry computer move" }),
+    );
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    fireEvent.change(screen.getByLabelText("Opponent"), {
+      target: { value: "local" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Start new game" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(cell("A1"));
+    expect(
+      screen.getByRole("button", { name: "Swap colors" }),
+    ).toBeInTheDocument();
   });
   it("renders 121 cells, exact tile assets, opening swap, and undo", () => {
     page();

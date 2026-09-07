@@ -22,6 +22,7 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   await expect(printBuzzle).toHaveAttribute("target", "_blank");
   await expect(printBuzzle).toHaveAttribute("rel", "noopener noreferrer");
   await expect(main.getByRole("link", { name: "3D print BUZZELLO on Printables (opens in a new tab)", exact: true })).toHaveAttribute("href", "https://www.printables.com/model/1834053-buzzello-biobuzz-hex-strategy-board-reversible-pie");
+  await expect(main.getByRole("link", { name: /3D print BUZZHEX on Printables/ })).toHaveAttribute("href", "https://www.printables.com/model/1834842-buzzhex-11-x-11-hex-strategy-game-reuse-your-buzze");
   await nav.getByRole("button", { name: "Resources", exact: true }).click();
   await expect(nav.getByRole("link", { name: /BUZZLE|Pollinator/ })).toHaveCount(0);
   await page.keyboard.press("Escape");

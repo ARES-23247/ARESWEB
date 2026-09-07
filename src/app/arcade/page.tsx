@@ -25,7 +25,7 @@ export default function ArcadePage() {
               <Link to={to} className="inline-flex min-h-11 items-center justify-between gap-3 rounded-lg bg-ares-red px-4 py-3 font-bold text-white transition-colors hover:bg-ares-red/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-4 focus-visible:ring-offset-obsidian">
                 Play {label}<ArrowRight aria-hidden="true" size={18} />
               </Link>
-              {(label === "BUZZLE" || label === "BUZZELLO") && (
+              {(label === "BUZZHEX" || label === "BUZZLE" || label === "BUZZELLO") && (
                 <GamePrintablesLink game={label} />
               )}
             </div>

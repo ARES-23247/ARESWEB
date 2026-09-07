@@ -1,5 +1,51 @@
 import { expect, test } from "./fixtures";
 
+for (const difficulty of ["easy", "medium", "hard"]) {
+  test(`BUZZHEX ${difficulty} computer responds, saves, and undoes`, async ({
+    page,
+  }) => {
+    await page.goto("/buzzhex");
+    await expect(
+      page.getByRole("link", { name: /3D print BUZZHEX/ }),
+    ).toHaveAttribute("href", /printables.com\/model\/1834842-/);
+    await page.getByRole("button", { name: "New game", exact: true }).click();
+    await page.getByLabel("Opponent", { exact: true }).selectOption("computer");
+    await page
+      .getByLabel("Difficulty", { exact: true })
+      .selectOption(difficulty);
+    await page.getByRole("button", { name: "Start new game" }).click();
+    // Keyboard placement works on touch and desktop without a synthetic tap.
+    await page.getByRole("button", { name: "F6, empty" }).focus();
+    await page.keyboard.press("Enter");
+    const status = page.getByRole("status", {
+      name: "Current turn",
+      exact: true,
+    });
+    await expect(status).toHaveText(/Player 1.*to move/);
+    if (difficulty !== "easy") {
+      await expect(
+        page.getByRole("button", { name: "F6, Black, Computer" }),
+      ).toBeAttached();
+      await expect(status).toHaveText(/Yellow to move/);
+    }
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: "Undo your last turn" }),
+    ).toBeEnabled();
+    await page.getByRole("button", { name: "Undo your last turn" }).click();
+    await expect(page.locator('[data-owner="empty"]')).toHaveCount(121);
+    await page.getByRole("button", { name: "A1, empty" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(status).toHaveText(/Player 1.*to move/);
+    if (difficulty !== "easy")
+      await expect(page.locator('[data-owner="yellow"]')).toHaveCount(1);
+    await page.screenshot({
+      path: `test-results/buzzhex-ai-${difficulty}-${test.info().project.name}.png`,
+      fullPage: true,
+    });
+  });
+}
+
 test("BUZZHEX plays, swaps, restores, undoes, and resets", async ({
   page,
   isMobile,

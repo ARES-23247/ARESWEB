@@ -2,7 +2,8 @@
 
 BUZZHEX is playable at `/buzzhex`, alongside the existing `/buzzello` and
 `/buzzle` games. Open Arcade > BUZZHEX from the site navigation.
-This implementation is local two-player play on one device.
+Play two players on one device or choose Computer in New game. Computer mode
+offers Easy, Medium, and Hard. You open as Black; the computer may swap colors.
 
 ## Game and assets
 
@@ -31,6 +32,7 @@ This implementation is local two-player play on one device.
 ## Code
 
 - `packages/buzzhex/src/rules.ts`: pure game engine, board geometry, serialization.
+- `packages/buzzhex/src/ai.ts` and `buzzhex-ai.worker.ts`: bounded computer search.
 - `packages/buzzhex/src/Game.tsx` and `buzzhex.css`: screen and input controls.
 - `src/app/buzzhex/page.tsx`: website SEO and navigation wrapper.
 - `src/test/buzzhex.test.ts`, `src/test/BuzzhexPage.test.tsx`: engine and UI tests.
@@ -38,7 +40,7 @@ This implementation is local two-player play on one device.
   and winning-after-swap/drag-rejection browser flows.
 - `src/App.tsx` and navigation: lazy route and Resources entry.
 - `scripts/prerender-static-routes.mjs` and `firebase.json`: route metadata and
-  static hosting rewrite. No production deployment has been performed.
+  static hosting rewrite.
 
 ## Run and verify
 
@@ -54,8 +56,20 @@ pnpm exec playwright test e2e/buzzhex.spec.ts --workers=2
 The complete repository gate is defined in AGENTS.md. Do not weaken its
 coverage, security, lint, or bundle thresholds. Local browser progress is not
 an offline app-install promise: loading the site still needs available assets.
-Online multiplayer and computer opponents remain features of the existing
-other games; BUZZHEX currently offers same-device human play.
+BUZZHEX has no online multiplayer. Computer moves run locally in a dedicated
+worker. Easy varies legal moves and takes immediate wins; Medium evaluates
+shortest connection paths and blocks immediate losses; Hard additionally checks
+the best opponent reply to eight candidate moves. These are bounded heuristic
+levels, not a claim of perfect Hex play.
+
+Undo in computer mode removes the last human turn and its computer reply,
+including a swap. Undo, reset, and navigation cancel pending search; a failed
+worker shows Retry. Mode and difficulty are validated optional fields in the
+existing v1 save, so older two-player saves still restore.
+
+The game header and Arcade card link to the published physical board:
+https://www.printables.com/model/1834842-buzzhex-11-x-11-hex-strategy-game-reuse-your-buzze
+The model identity comes from the physical project publishing manifest.
 
 ## Prototype validation record (2026-09-05)
 

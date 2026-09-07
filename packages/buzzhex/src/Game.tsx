@@ -1,5 +1,6 @@
 import {
   useRef,
+  useEffect,
   useState,
   type ReactNode,
   type CSSProperties,
@@ -35,6 +36,7 @@ import {
   type HexSession,
   type HexColor,
 } from "./rules";
+import type { HexDifficulty } from "./ai";
 import "./buzzhex.css";
 
 const TILE = "/images/games/buzzhex/buzzello-tile-";
@@ -66,8 +68,31 @@ function readSession(): HexSession & { notice: string } {
   }
 }
 
-export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
+function persist(next: HexSession) {
+  let notice = "Saved on this device.";
+  try {
+    localStorage.setItem(BUZZHEX_SAVE_KEY, encodeHexSave(next));
+  } catch {
+    notice =
+      "Your game is playable, but browser storage could not save it. Keep this tab open.";
+  }
+  return { ...next, notice };
+}
+
+export default function BuzzhexGame({
+  navigation,
+  printables,
+}: {
+  navigation: ReactNode;
+  printables?: ReactNode;
+}) {
   const [session, setSession] = useState(readSession);
+  const [draftMode, setDraftMode] = useState(session.mode ?? "local");
+  const [draftDifficulty, setDraftDifficulty] = useState<HexDifficulty>(
+    session.difficulty ?? "medium",
+  );
+  const [aiError, setAiError] = useState("");
+  const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [focused, setFocused] = useState(60);
   const [hovered, setHovered] = useState<number | null>(null);
@@ -91,7 +116,80 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
   const cancelled = useRef(false);
   const viewport = useRef<HTMLDivElement>(null);
   const { isFullscreen, targetRef, toggleFullscreen } = useGameFullscreen();
-  const { game, names } = session;
+  const { game } = session;
+  const computer = session.mode === "computer";
+  const difficulty = session.difficulty ?? "medium";
+  const names: [string, string] = [
+    session.names[0],
+    computer ? "Computer" : session.names[1],
+  ];
+  const computerTurn = computer && game.current === 1 && game.winner === null;
+
+  useEffect(() => {
+    if (
+      session.mode !== "computer" ||
+      session.game.current !== 1 ||
+      session.game.winner !== null
+    )
+      return;
+    let worker: Worker | undefined;
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const fail = () => {
+      if (!cancelled)
+        setAiError(
+          "The computer could not choose a move. Retry, or undo your last turn.",
+        );
+      cancelled = true;
+      worker?.terminate();
+      clearTimeout(timeout);
+    };
+    const delay = setTimeout(() => {
+      try {
+        worker = new Worker(
+          new URL("./buzzhex-ai.worker.ts", import.meta.url),
+          { type: "module" },
+        );
+        worker.onerror = fail;
+        worker.onmessageerror = fail;
+        worker.onmessage = (event: MessageEvent<HexAction | null>) => {
+          if (cancelled) return;
+          const action = event.data;
+          if (!action || (action.type !== "swap" && action.type !== "place")) {
+            fail();
+            return;
+          }
+          const next = applyHexAction(session.game, action);
+          if (!next) {
+            fail();
+            return;
+          }
+          worker?.terminate();
+          clearTimeout(timeout);
+          setSession(persist({ ...session, game: next }));
+          setAnnouncement(
+            action.type === "swap"
+              ? "Computer swapped colors. You play Yellow next."
+              : `Computer placed at ${HEX_CELLS[action.index].label}.`,
+          );
+          setSelected(null);
+        };
+        timeout = setTimeout(fail, 15000);
+        worker.postMessage({
+          game: session.game,
+          difficulty: session.difficulty ?? "medium",
+        });
+      } catch {
+        fail();
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(delay);
+      clearTimeout(timeout);
+      worker?.terminate();
+    };
+  }, [session, retry]);
   const currentColor = game.colors[game.current];
   const placements = game.board.filter(Boolean).length;
   const last = game.history.findLast(
@@ -103,28 +201,24 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
       : `${names[game.winner]} wins as ${colorName(game.colors[game.winner])}!`;
 
   function save(next: HexSession, message: string) {
-    let notice = "Saved on this device.";
-    try {
-      localStorage.setItem(BUZZHEX_SAVE_KEY, encodeHexSave(next));
-    } catch {
-      notice =
-        "Your game is playable, but browser storage could not save it. Keep this tab open.";
-    }
-    setSession({ ...next, notice });
+    setAiError("");
+    setSession(persist(next));
     setAnnouncement(message);
   }
   function act(action: HexAction) {
+    if (computerTurn) return;
     const next = applyHexAction(game, action);
     if (!next) return;
     const message =
       action.type === "swap"
         ? `${names[1]} swapped colors. ${names[0]} plays Yellow next.`
         : `${names[game.current]} placed ${colorName(currentColor)} at ${HEX_CELLS[action.index].label}.`;
-    save({ game: next, names }, message);
+    save({ ...session, game: next }, message);
     setSelected(null);
   }
   function choose(index: number, touch = false) {
     setFocused(index);
+    if (computerTurn) return;
     if (game.winner !== null || game.board[index] !== null) {
       setSelected(index);
       return;
@@ -206,7 +300,8 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
       <header className="buzzhex-header">
         <div>
           <p className="buzzhex-eyebrow">
-            ARES games / Two players / One device
+            ARES games /{" "}
+            {computer ? `Computer · ${difficulty}` : "Two players / One device"}
           </p>
           <h1>
             BUZZHEX<span>Connect the hive.</span>
@@ -215,7 +310,7 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
         </div>
         <nav aria-label="More ARES games">
           {navigation}
-
+          {printables}
         </nav>
       </header>
       <div className="buzzhex-layout">
@@ -299,6 +394,7 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
                 const isSelected = selected === cell.index;
                 const preview =
                   !owner &&
+                  !computerTurn &&
                   game.winner === null &&
                   (isSelected || hovered === cell.index);
                 const winning = game.path.includes(cell.index);
@@ -312,7 +408,9 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
                     role="button"
                     tabIndex={focused === cell.index ? 0 : -1}
                     aria-label={`${cell.label}, ${owner ? `${colorName(owner)}, ${human}` : "empty"}${winning ? ", winning path" : ""}`}
-                    aria-disabled={!!owner || game.winner !== null}
+                    aria-disabled={
+                      !!owner || game.winner !== null || computerTurn
+                    }
                     aria-pressed={isSelected}
                     data-cell={cell.label}
                     data-owner={owner ?? "empty"}
@@ -396,7 +494,8 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             </p>
             {selected !== null &&
               !game.board[selected] &&
-              game.winner === null && (
+              game.winner === null &&
+              !computerTurn && (
                 <Button onClick={() => act({ type: "place", index: selected })}>
                   Place {colorName(currentColor)} at {HEX_CELLS[selected].label}
                 </Button>
@@ -417,13 +516,32 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             <span>
               {game.winner === null ? "YOUR NEXT CONNECTION" : "CONNECTED!"}
             </span>
-            <h2>{status}</h2>
+            <h2>
+              {computerTurn
+                ? aiError
+                  ? "Computer paused"
+                  : "Computer is thinking…"
+                : status}
+            </h2>
             <p>
               {game.winner === null
                 ? "Connect your matching edges. Every tile stays put."
                 : "The highlighted chain joins both goal edges."}
             </p>
           </div>
+          {aiError && (
+            <div role="alert">
+              <p>{aiError}</p>
+              <Button
+                onClick={() => {
+                  setAiError("");
+                  setRetry((value) => value + 1);
+                }}
+              >
+                Retry computer move
+              </Button>
+            </div>
+          )}
           <div className="buzzhex-players">
             {names.map((name, player) => (
               <div
@@ -441,7 +559,7 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
                   <strong>{name}</strong>
                   <span>
                     {colorName(game.colors[player])} ·{" "}
-                    {game.colors[player] === "black" ? "A → K" : "1 → 11"}
+                    {game.colors[player] === "black" ? "A â†’ K" : "1 â†’ 11"}
                   </span>
                 </div>
               </div>
@@ -451,13 +569,13 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             ref={namesRef}
             variant="ghost"
             onClick={() => {
-              setDraftNames(names);
+              setDraftNames(session.names);
               setDialog("names");
             }}
           >
             Edit player names
           </Button>
-          {canSwapHex(game) && (
+          {canSwapHex(game) && !computerTurn && (
             <div className="buzzhex-swap">
               <h3>Keep it, or swap?</h3>
               <p>
@@ -476,15 +594,24 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
               variant="secondary"
               disabled={!game.history.length}
               onClick={() => {
+                let next = undoHexAction(game);
+                if (
+                  computer &&
+                  game.history.at(-1)?.player === 1 &&
+                  next.history.length
+                )
+                  next = undoHexAction(next);
                 save(
-                  { game: undoHexAction(game), names },
-                  "Last action undone.",
+                  { ...session, game: next },
+                  computer
+                    ? "Your last turn and computer reply undone."
+                    : "Last action undone.",
                 );
                 setSelected(null);
               }}
             >
               <Undo2 size={17} aria-hidden="true" />
-              Undo last action
+              {computer ? "Undo your last turn" : "Undo last action"}
             </Button>
             <Button
               ref={rulesRef}
@@ -497,7 +624,11 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             <Button
               ref={resetRef}
               variant="secondary"
-              onClick={() => setDialog("reset")}
+              onClick={() => {
+                setDraftMode(session.mode ?? "local");
+                setDraftDifficulty(difficulty);
+                setDialog("reset");
+              }}
             >
               <RotateCcw size={17} aria-hidden="true" />
               New game
@@ -563,6 +694,13 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             The first connection wins immediately. There are no captures, flips,
             passes, points, or draws.
           </p>
+          <h3>Play the computer</h3>
+          <p>
+            Choose Computer in New game. You open as Black. Easy varies its
+            moves; Medium builds connections and blocks immediate threats; Hard
+            also examines the opponent’s replies. The computer may use the
+            opening swap. Your game and difficulty save in this browser.
+          </p>
           <h3>The opening swap</h3>
           <p>
             After the first black tile, Player 2 may swap colors instead of
@@ -571,8 +709,8 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             Yellow declines the offer. You can swap only once.
           </p>
           <p>
-            Undo is a convenience for casual play. It also reverses a swap or
-            winning move.
+            Undo also reverses a swap or winning move. Against the computer, it
+            takes back your last turn and the computer’s reply.
           </p>
           <p>
             Based on{" "}
@@ -603,7 +741,12 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             <Button
               onClick={() => {
                 save(
-                  { game: createHexGame(), names },
+                  {
+                    ...session,
+                    game: createHexGame(),
+                    mode: draftMode,
+                    difficulty: draftDifficulty,
+                  },
                   "New game. Player 1 opens as Black.",
                 );
                 setSelected(null);
@@ -614,7 +757,42 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             </Button>
           </>
         }
-      />
+      >
+        <div className="buzzhex-settings">
+          <label>
+            Opponent
+            <select
+              value={draftMode}
+              onChange={(event) =>
+                setDraftMode(event.target.value as "local" | "computer")
+              }
+            >
+              <option value="local">Two players on this device</option>
+              <option value="computer">Computer</option>
+            </select>
+          </label>
+          {draftMode === "computer" && (
+            <>
+              <label>
+                Difficulty
+                <select
+                  value={draftDifficulty}
+                  onChange={(event) =>
+                    setDraftDifficulty(event.target.value as HexDifficulty)
+                  }
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+              <p>
+                You open as Black. The computer can swap after your first tile.
+              </p>
+            </>
+          )}
+        </div>
+      </DialogShell>
       <DialogShell
         open={dialog === "names"}
         onOpenChange={(open) => {
@@ -630,7 +808,7 @@ export default function BuzzhexGame({ navigation }: { navigation: ReactNode }) {
             event.preventDefault();
             save(
               {
-                game,
+                ...session,
                 names: [
                   draftNames[0].trim() || "Player 1",
                   draftNames[1].trim() || "Player 2",

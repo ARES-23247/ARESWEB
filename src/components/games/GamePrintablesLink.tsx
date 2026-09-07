@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 
 const PRINTABLES_URLS = {
+  BUZZHEX: "https://www.printables.com/model/1834842-buzzhex-11-x-11-hex-strategy-game-reuse-your-buzze",
   BUZZLE: "https://www.printables.com/model/1834054-buzzle-biobuzz-hex-word-game-board-individual-tile",
   BUZZELLO: "https://www.printables.com/model/1834053-buzzello-biobuzz-hex-strategy-board-reversible-pie",
 } as const;
