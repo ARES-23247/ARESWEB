@@ -158,6 +158,7 @@ pnpm install --frozen-lockfile
 pnpm run validate:agents
 pnpm run check:route-security
 pnpm run validate:functions-deploy-lock
+pnpm run test:release-tooling
 pnpm run lint
 pnpm --filter functions lint
 pnpm run typecheck
@@ -174,6 +175,11 @@ pnpm audit --prod --audit-level=high
 Coverage floors are ratchets, not targets. New utilities and API routes must meet
 85% line and 100% function coverage. Use Playwright for major user flows, and
 Firebase Emulator Suite tests for Firestore or Storage rule behavior.
+
+For focused iteration, see [docs/AREA_TESTING_AND_RELEASE_PLAN.md](docs/AREA_TESTING_AND_RELEASE_PLAN.md)
+and `pnpm test:affected --base origin/master`. Area selection is currently
+observation-only in CI and does not replace the full handoff gate above. Browser
+CI runs two isolated shards; the aggregate gate requires their complete reports.
 
 See `docs/SECURITY_OPERATIONS.md` for required secret and deployment controls.
 The protected workflow also checks runtime, security observability, Academy

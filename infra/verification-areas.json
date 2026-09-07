@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "mode": "observe",
+  "shared": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "functions/package*.json",
+    "packages/*/package.json",
+    "packages/ui/**",
+    "packages/game-common/**",
+    "src/App.tsx",
+    "src/app/globals.css",
+    "src/app/layout.tsx",
+    "src/lib/api.ts",
+    "src/lib/firebase*",
+    "src/lib/auth*",
+    "src/context/**",
+    "src/contexts/**",
+    "functions/src/middleware/**",
+    "functions/src/apiApp.ts",
+    "functions/src/apps/**",
+    "functions/src/index.ts",
+    "functions/src/functionConfig.ts",
+    "functions/src/generated/**",
+    "public/games/**",
+    "public/data/**",
+    ".github/**",
+    "infra/**",
+    "scripts/**",
+    "*.config.*",
+    "firebase.json",
+    "firestore.*",
+    "storage.rules",
+    "AGENTS.md",
+    ".agents/**"
+  ],
+  "smoke": [
+    "e2e/navigation.spec.ts",
+    "e2e/auth.spec.ts"
+  ],
+  "areas": {
+    "waggle": {
+      "paths": [
+        "packages/waggle-way/**",
+        "src/app/waggle-way/**",
+        "src/lib/waggleCommunity*",
+        "src/lib/__tests__/waggle*",
+        "functions/src/routes/waggleWay*",
+        "functions/src/routes/__tests__/waggleWay*",
+        "functions/src/lib/waggle*",
+        "functions/src/lib/__tests__/waggle*",
+        "e2e/waggle*.spec.ts",
+        "src/lib/__tests__/waggleCommunity*",
+        "src/test/[Ww]aggle*"
+      ],
+      "e2e": [
+        "e2e/waggle*.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting",
+        "game",
+        "cleanupWaggleGardens"
+      ]
+    },
+    "buzzle": {
+      "paths": [
+        "packages/buzzle/**",
+        "src/app/buzzle/**",
+        "src/lib/buzzle*",
+        "src/lib/__tests__/buzzle*",
+        "functions/src/routes/buzzle*",
+        "functions/src/lib/buzzle*",
+        "e2e/buzzle*.spec.ts",
+        "functions/src/routes/__tests__/buzzle*",
+        "functions/src/lib/__tests__/buzzle*",
+        "src/test/[Bb]uzzle*"
+      ],
+      "e2e": [
+        "e2e/buzzle*.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting",
+        "game"
+      ]
+    },
+    "buzzello": {
+      "paths": [
+        "packages/buzzello/**",
+        "src/app/buzzello/**",
+        "src/lib/buzzello*",
+        "src/lib/__tests__/buzzello*",
+        "functions/src/routes/buzzello*",
+        "functions/src/lib/buzzello*",
+        "e2e/buzzello.spec.ts",
+        "functions/src/routes/__tests__/buzzello*",
+        "functions/src/lib/__tests__/buzzello*",
+        "src/test/[Bb]uzzello*"
+      ],
+      "e2e": [
+        "e2e/buzzello.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting",
+        "game"
+      ]
+    },
+    "buzzhex": {
+      "paths": [
+        "packages/buzzhex/**",
+        "src/app/buzzhex/**",
+        "e2e/buzzhex.spec.ts",
+        "src/test/[Bb]uzzhex*"
+      ],
+      "e2e": [
+        "e2e/buzzhex.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting"
+      ]
+    },
+    "pollinator": {
+      "paths": [
+        "packages/pollinator/**",
+        "src/app/pollen/**",
+        "e2e/pollen.spec.ts",
+        "src/test/Pollinator*",
+        "src/test/Pollen*"
+      ],
+      "e2e": [
+        "e2e/pollen.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting"
+      ]
+    },
+    "arcade": {
+      "paths": [
+        "src/app/arcade/**",
+        "e2e/arcade.spec.ts",
+        "e2e/games-fullscreen.spec.ts",
+        "src/test/Arcade*",
+        "src/test/GameFullscreen*"
+      ],
+      "e2e": [
+        "e2e/arcade.spec.ts",
+        "e2e/games-fullscreen.spec.ts"
+      ],
+      "dependsOn": [
+        "waggle",
+        "buzzle",
+        "buzzello",
+        "buzzhex",
+        "pollinator"
+      ],
+      "components": [
+        "hosting"
+      ]
+    },
+    "editor": {
+      "paths": [
+        "src/components/editor/**",
+        "src/components/Simulation*",
+        "src/hooks/useSimulation*",
+        "src/hooks/useCodeCompiler*",
+        "src/hooks/useMonacoEditor*",
+        "src/sims/**",
+        "src/lib/simulation*",
+        "src/lib/__tests__/simulation*",
+        "e2e/editor.spec.ts",
+        "src/hooks/__tests__/useSimulation*",
+        "src/hooks/__tests__/useCodeCompiler*",
+        "src/hooks/__tests__/useMonacoEditor*",
+        "src/test/*Editor*",
+        "src/test/*Simulation*",
+        "src/test/*Compiler*"
+      ],
+      "e2e": [
+        "e2e/editor.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting",
+        "communicationsApi",
+        "refreshSimulationArtifacts"
+      ]
+    },
+    "academy": {
+      "paths": [
+        "src/app/academy/**",
+        "src/app/dashboard/academy/**",
+        "content/learning/**",
+        "src/lib/learning*",
+        "src/lib/academy*",
+        "src/hooks/useAcademyProgress*",
+        "e2e/academy.spec.ts",
+        "src/lib/__tests__/learning*",
+        "src/lib/__tests__/academy*",
+        "src/hooks/__tests__/useAcademyProgress*",
+        "src/test/Academy*",
+        "src/test/Learning*",
+        "src/test/*Lab*",
+        "src/test/*Evidence*"
+      ],
+      "e2e": [
+        "e2e/academy.spec.ts"
+      ],
+      "dependsOn": [
+        "editor"
+      ],
+      "components": [
+        "hosting",
+        "publicApi",
+        "communicationsApi"
+      ]
+    },
+    "team": {
+      "paths": [
+        "src/app/dashboard/tasks/**",
+        "src/app/dashboard/events/**",
+        "src/app/dashboard/tournaments/**",
+        "src/app/dashboard/profile/**",
+        "src/app/dashboard/users/**",
+        "functions/src/routes/tasks*",
+        "functions/src/routes/profile*",
+        "functions/src/routes/calendar*",
+        "functions/src/routes/tournament*",
+        "e2e/tasks.spec.ts",
+        "e2e/events.spec.ts",
+        "e2e/email-roster.spec.ts",
+        "functions/src/routes/__tests__/tasks*",
+        "functions/src/routes/__tests__/profile*",
+        "functions/src/routes/__tests__/calendar*",
+        "functions/src/routes/__tests__/tournament*",
+        "src/test/Task*",
+        "src/test/DashboardTask*",
+        "src/test/Event*",
+        "src/test/Calendar*",
+        "src/test/*Roster*",
+        "src/test/DashboardProfile*"
+      ],
+      "e2e": [
+        "e2e/tasks.spec.ts",
+        "e2e/events.spec.ts",
+        "e2e/email-roster.spec.ts"
+      ],
+      "dependsOn": [
+        "integrations"
+      ],
+      "components": [
+        "hosting",
+        "coreApi",
+        "publicApi",
+        "communicationsApi",
+        "taskDueDigest"
+      ]
+    },
+    "media": {
+      "paths": [
+        "src/app/dashboard/documents/**",
+        "src/app/dashboard/videos/**",
+        "src/app/dashboard/photos/**",
+        "src/app/gallery/**",
+        "src/components/docs/**",
+        "functions/src/routes/photos*",
+        "functions/src/routes/albums*",
+        "functions/src/routes/videos*",
+        "functions/src/routes/drive*",
+        "functions/src/routes/__tests__/photos*",
+        "functions/src/routes/__tests__/albums*",
+        "functions/src/routes/__tests__/videos*",
+        "functions/src/routes/__tests__/drive*",
+        "src/test/Doc*",
+        "src/test/*Photo*",
+        "src/test/*Video*",
+        "src/test/*Media*",
+        "src/test/*Drive*"
+      ],
+      "e2e": [
+        "e2e/public-routes.spec.ts",
+        "e2e/editor.spec.ts"
+      ],
+      "dependsOn": [
+        "editor"
+      ],
+      "components": [
+        "hosting",
+        "mediaApi",
+        "driveApi",
+        "syncGoogleDriveChanges"
+      ]
+    },
+    "public": {
+      "paths": [
+        "src/app/about/**",
+        "src/app/blog/**",
+        "src/app/outreach/**",
+        "src/app/robots/**",
+        "src/app/sponsors/**",
+        "src/app/calendar/**",
+        "functions/src/routes/content*",
+        "functions/src/routes/robots*",
+        "functions/src/routes/sponsors*",
+        "functions/src/routes/outreach*",
+        "e2e/public-routes.spec.ts",
+        "functions/src/routes/__tests__/content*",
+        "functions/src/routes/__tests__/robots*",
+        "functions/src/routes/__tests__/sponsors*",
+        "functions/src/routes/__tests__/outreach*",
+        "src/test/About*",
+        "src/test/Blog*",
+        "src/test/Sponsor*",
+        "src/test/Public*",
+        "src/test/Outreach*"
+      ],
+      "e2e": [
+        "e2e/public-routes.spec.ts"
+      ],
+      "dependsOn": [
+        "media"
+      ],
+      "components": [
+        "hosting",
+        "publicApi",
+        "coreApi",
+        "refreshPublicSitemap"
+      ]
+    },
+    "commerce": {
+      "paths": [
+        "src/app/store/**",
+        "src/app/dashboard/store/**",
+        "src/app/dashboard/finance/**",
+        "functions/src/routes/store*",
+        "functions/src/routes/finance*",
+        "e2e/store.spec.ts",
+        "functions/src/routes/__tests__/store*",
+        "functions/src/routes/__tests__/finance*",
+        "src/test/Store*",
+        "src/test/Finance*",
+        "src/test/finance*"
+      ],
+      "e2e": [
+        "e2e/store.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting",
+        "publicApi"
+      ]
+    },
+    "integrations": {
+      "paths": [
+        "functions/src/routes/studioIntegrations*",
+        "functions/src/routes/webhooks*",
+        "functions/src/routes/zulip*",
+        "functions/src/routes/__tests__/studioIntegrations*",
+        "functions/src/routes/__tests__/webhooks*",
+        "functions/src/routes/__tests__/zulip*",
+        "src/test/*Zulip*",
+        "src/test/*Integration*"
+      ],
+      "e2e": [
+        "e2e/tasks.spec.ts",
+        "e2e/editor.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "communicationsApi"
+      ]
+    }
+  }
+}
