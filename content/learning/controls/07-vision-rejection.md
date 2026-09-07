@@ -18,7 +18,7 @@ By the end, you will be able to:
 - use a rejection reason without pretending it names every failed check; and
 - plan a private, repeatable camera test at surveyed field points.
 
-This lesson matches ARES 17.0.1 and Studio 7.0.2. Its source links point to one reviewed commit in
+This lesson matches ARES 17.0.2 and Studio 7.0.3. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The lab uses a short checklist and straight-line math. Its detailed gate explanations are teaching
@@ -103,7 +103,8 @@ These are current runtime reason names:
 | ------------------------------------------------- | ------------------------------------------------------- |
 | `prefilter_rejected`                              | The Boolean physical/configuration prefilter removed it. |
 | `empty_history`                                   | The Store has no pose sample for delayed replay.         |
-| `high_ambiguity` or `nan_measurement`             | Ambiguity is too high, or the pose contains `NaN`.       |
+| `high_ambiguity` or `nan_measurement`             | Ambiguity is too high or non-finite, or pose data is non-finite. |
+| `vision_out_of_order`                            | Capture time is older than the last accepted vision frame. |
 | `no_tags`, `invalid_std_devs`, `invalid_threshold` | A required estimator input is not usable.                |
 | `vision_too_old`                                  | Capture time is older than saved pose history.           |
 | `non_positive_definite_innovation_covariance`     | The combined uncertainty cannot be used safely.          |

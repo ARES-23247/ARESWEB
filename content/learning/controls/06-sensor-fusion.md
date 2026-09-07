@@ -17,7 +17,7 @@ In this lesson, you will:
 - test the result against an independent truth value; and
 - connect a simple one-dimensional model to the real ARES estimator.
 
-This lesson matches ARES 17.0.1 and Studio 7.0.2. Its source links point to one reviewed commit in
+This lesson matches ARES 17.0.2 and Studio 7.0.3. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The interactive lab uses a weighted average on one straight line. It is the one-dimensional form of
@@ -88,6 +88,11 @@ accepted camera observation updates the matching capture time, including a point
 samples, and then replays later motion. Comparing delayed vision only with the newest pose would make
 a moving robot appear wrong. Redux publishes an immutable estimator snapshot; it does not expose the
 mutable replay history.
+
+ARES rejects a capture time older than the last accepted vision frame as `vision_out_of_order`.
+Frames at the same capture time can still be accepted. This protects later camera corrections:
+the replay history stores odometry, not a full history of camera updates. Invalid innovation values
+are rejected even when statistical outlier gating is off.
 
 The camera adapter must subtract latency exactly once and send a capture timestamp. Subtracting it
 again shifts the frame too far into the past. Using receipt time moves it too far forward. Drive and

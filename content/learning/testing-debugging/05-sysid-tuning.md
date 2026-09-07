@@ -9,7 +9,7 @@ small, declared value change improve one recorded result?
 This lesson keeps those jobs separate. You will trace a SysId safety envelope, then judge one
 invented tuning comparison. You will not move a robot or change a real tuning profile.
 
-The source examples match ARES 17.0.1 and Studio 7.0.2. The links below are pinned to the exact
+The source examples match ARES 17.0.2 and Studio 7.0.3. The links below are pinned to the exact
 monorepo commit used for this lesson.
 
 Complete [Build a Fault Tree and Isolate a Cause](/academy/testing-fault-tree?path=testing-debugging-commissioning),
@@ -47,6 +47,10 @@ The current shared ARES manager has two routine shapes. A quasistatic test ramps
 volts per second. A dynamic test uses a step. The exact direction depends on the mechanism. Every
 shared routine stops after five seconds. Linear, angular, elevator, and arm tests also have travel
 checks. Invalid position, heading, velocity, or time data stops the shared routine.
+
+The FTC track-width sample now includes wheelbase in meters as its seventh value. The linear
+sample includes encoder ticks in its third value. Match the sample shape to the pinned Studio
+reader before comparing a fit; do not reuse an older column map without checking it.
 
 Those checks are not the whole platform safety system. Studio first requires the connected runtime
 to advertise the selected mechanism. FTC motion also needs a STOP-first handshake. The enable token

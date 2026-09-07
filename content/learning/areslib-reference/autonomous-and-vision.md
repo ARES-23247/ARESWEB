@@ -8,7 +8,7 @@ those three ideas without treating a clean simulation as proof of a physical rob
 
 Read [ARESLib architecture and ownership](/docs/areslib-fundamentals) first. It helps to know that a
 pose has X, Y, and heading. Keep the current routines, localization, and coordinate sources open.
-This page applies to ARES 17.0.1 and Studio 7.0.2.
+This page applies to ARES 17.0.2 and Studio 7.0.3.
 
 ## Vocabulary
 
@@ -39,6 +39,9 @@ different meaning.
 Now suppose a camera result arrives 120 milliseconds after capture. The estimator has already moved
 forward. Code should not pretend the result describes the present. It uses the capture timestamp,
 checks the measurement, updates the matching point in pose history, and replays later motion to now.
+
+Its capture time must not be older than the last accepted vision frame. ARES reports
+`vision_out_of_order` for that case because odometry replay cannot restore later camera corrections.
 Latency is removed once, not in both the camera adapter and estimator.
 
 The measurement stays rejected when its tag is unknown, ambiguity is too high, or uncertainty is
