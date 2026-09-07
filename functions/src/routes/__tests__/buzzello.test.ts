@@ -183,6 +183,36 @@ afterAll(async () => {
 });
 
 describe("BUZZELLO online routes", () => {
+  it("creates large private matches and preserves the invited board size", async () => {
+    const response=await post("/games",{boardSize:91});
+    expect(response.status).toBe(201);
+    const created=await response.json() as MatchResponse;
+    expect(created.game.state.board).toHaveLength(91);
+    const joinedResponse=await post("/join",{code:created.inviteCode});
+    expect(joinedResponse.status).toBe(200);
+    const joined=await joinedResponse.json() as MatchResponse;
+    expect(joined.game.state.board).toHaveLength(91);
+    const {getBuzzelloServerRules}=await import("../../lib/buzzelloGame");
+    const move=getBuzzelloServerRules(91).getBuzzelloLegalMoves(created.game.state.board,"yellow").find(move=>move.index>60)!;
+    expect(move.index).toBeGreaterThan(60);
+    const played=await post(
+      "/games/"+created.game.gameId+"/moves", {index:move.index,expectedVersion:1},
+      {"X-Game-Player":created.playerToken});
+    expect(played.status).toBe(200);
+    expect((await played.json() as MatchResponse).game.state.board).toHaveLength(91);
+    expect((await post("/games",{boardSize:62})).status).toBe(400);
+  });
+  it("keeps classic and large matchmaking queues separate", async () => {
+    const classic=await (await post("/matchmaking",{boardSize:61})).json() as MatchResponse;
+    const large=await (await post("/matchmaking",{boardSize:91})).json() as MatchResponse;
+    expect(large.game.gameId).not.toBe(classic.game.gameId);
+    expect(large.game.status).toBe("waiting");
+    const joined=await (await post("/matchmaking",{boardSize:91})).json() as MatchResponse;
+    expect(joined.game.gameId).toBe(large.game.gameId);
+    expect(joined.game.status).toBe("active");
+    expect(joined.game.state.board).toHaveLength(91);
+  });
+
   it("charges every operation against one bounded calendar-month resource budget", () => {
     expect(GAME_MONTHLY_RESOURCE_UNITS).toBe(500_000);
     const gameBudgets = quotaConfigurations

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type ReactNode,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import {
@@ -289,7 +290,7 @@ function BuzzleBoardView({
   );
 }
 
-export default function BuzzlePage({ online }: { online: BuzzleClient }) {
+export default function BuzzlePage({ online, physicalGameLink }: { online: BuzzleClient; physicalGameLink?: ReactNode }) {
   const { createOnlineBuzzleGame, joinOnlineBuzzleGame, findOnlineBuzzleMatch, findTeamBuzzleMatch, syncOnlineBuzzleGame, playOnlineBuzzleAction } = online;
   const fullscreen = useGameFullscreen();
   const inviteFromHash = useRef(
@@ -680,6 +681,7 @@ export default function BuzzlePage({ online }: { online: BuzzleClient }) {
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/75 sm:text-base">
                 Build connected words across all three axes of a 217-cell hive. Every crossing scores.
               </p>
+              {physicalGameLink && <div className="mt-2">{physicalGameLink}</div>}
             </div>
             <div className="flex flex-wrap gap-2">
               <a className="buzzle-secondary-action" href="/buzzle/word-tools">Physical play tools</a>

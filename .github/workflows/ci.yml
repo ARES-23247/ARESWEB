@@ -128,6 +128,11 @@ jobs:
             if (word.createBuzzleGame().board.length !== 217 || board.createBuzzelloInitialBoard().length !== 61) throw new Error("Missing shared game rules");
             if (!require("node:fs").readFileSync("data/buzzle-words.txt", "utf8").includes("\nqi\n")) throw new Error("Missing deployed lexicon");
           '
+          GAME_CPU=$(node -p 'require("./infra/gcp/game-service.json").runtime.cpu')
+          GAME_MEMORY=$(node -p 'require("./infra/gcp/game-service.json").runtime.memoryMiB')
+          docker run --rm --network none --cpus "$GAME_CPU" --memory "${GAME_MEMORY}m" \
+            --mount "type=bind,source=$PWD/scripts/check-waggle-container.mjs,target=/tmp/check-waggle-container.mjs,readonly" \
+            --entrypoint node aresweb-game-ci /tmp/check-waggle-container.mjs /app/lib
 
       - name: Verify Hosting route status behavior
         run: pnpm exec firebase emulators:exec --only hosting,functions --project aresweb-ci "node scripts/check-hosting-emulator.mjs"

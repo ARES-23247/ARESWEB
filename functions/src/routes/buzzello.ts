@@ -1,7 +1,10 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { buzzelloGameDefinition } from "../lib/buzzelloGameDefinition";
+import {
+  buzzelloGameDefinition,
+  createBuzzelloGameDefinition,
+} from "../lib/buzzelloGameDefinition";
 import {
   GameMatchService,
   generateGameInviteCode,
@@ -12,10 +15,14 @@ import { asyncHandler } from "../lib/utils";
 import { ensureTeamMember } from "../middleware/auth";
 import { distributedQuotas } from "../middleware/distributedQuota";
 import { requireRouteParam, validate } from "../middleware/validation";
-import { GAME_MONTHLY_RESOURCE_SCOPE, GAME_MONTHLY_RESOURCE_UNITS } from "../lib/gameResourceBudget";
+import {
+  GAME_MONTHLY_RESOURCE_SCOPE,
+  GAME_MONTHLY_RESOURCE_UNITS,
+} from "../lib/gameResourceBudget";
 
 const router = express.Router();
 const service = new GameMatchService(buzzelloGameDefinition);
+const largeService = new GameMatchService(createBuzzelloGameDefinition(91));
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 export { GAME_MONTHLY_RESOURCE_UNITS } from "../lib/gameResourceBudget";
@@ -29,7 +36,9 @@ const gameMonthlyBudget = (cost: number) => ({
   retentionMs: 32 * DAY_MS,
 });
 
-const emptyBodySchema = z.object({}).strict();
+const createSchema = z
+  .object({ boardSize: z.union([z.literal(61), z.literal(91)]).default(61) })
+  .strict();
 const joinSchema = z
   .object({
     code: z
@@ -42,13 +51,13 @@ const joinSchema = z
   .strict();
 const moveSchema = z
   .object({
-    index: z.number().int().min(0).max(60),
-    expectedVersion: z.number().int().min(1).max(56),
+    index: z.number().int().min(0).max(90),
+    expectedVersion: z.number().int().min(1).max(86),
   })
   .strict();
 const syncSchema = z
   .object({
-    knownVersion: z.number().int().min(1).max(56).optional(),
+    knownVersion: z.number().int().min(1).max(86).optional(),
     knownStatus: z.enum(["waiting", "active", "finished"]).optional(),
     knownPlayerCount: z.number().int().min(1).max(2).optional(),
   })
@@ -128,9 +137,11 @@ router.get("/health", (_req, res) => {
 router.post(
   "/games",
   createQuota,
-  validate(emptyBodySchema),
-  asyncHandler(async (_req, res) => {
-    const result = await service.createFriendGame();
+  validate(createSchema),
+  asyncHandler(async (req, res) => {
+    const result = await (
+      req.body.boardSize === 91 ? largeService : service
+    ).createFriendGame();
     res.status(201).json({ success: true, ...result });
   }),
 );
@@ -149,9 +160,11 @@ router.post(
 router.post(
   "/matchmaking",
   guestMatchmakingQuota,
-  validate(emptyBodySchema),
-  asyncHandler(async (_req, res) => {
-    const result = await service.matchmake("guest");
+  validate(createSchema),
+  asyncHandler(async (req, res) => {
+    const result = await (
+      req.body.boardSize === 91 ? largeService : service
+    ).matchmake("guest");
     res.status(result.matched ? 200 : 201).json({ success: true, ...result });
   }),
 );
@@ -160,9 +173,11 @@ router.post(
   "/matchmaking/team",
   ensureTeamMember,
   teamMatchmakingQuota,
-  validate(emptyBodySchema),
-  asyncHandler(async (_req, res) => {
-    const result = await service.matchmake("team");
+  validate(createSchema),
+  asyncHandler(async (req, res) => {
+    const result = await (
+      req.body.boardSize === 91 ? largeService : service
+    ).matchmake("team");
     res.status(result.matched ? 200 : 201).json({ success: true, ...result });
   }),
 );
@@ -174,8 +189,9 @@ router.post(
   asyncHandler(async (req, res) => {
     const gameId = requireRouteParam(req.params.gameId, "game ID");
     const game = await service.sync(gameId, requireGamePlayerToken(req));
-    const { knownVersion, knownStatus, knownPlayerCount } =
-      req.body as z.infer<typeof syncSchema>;
+    const { knownVersion, knownStatus, knownPlayerCount } = req.body as z.infer<
+      typeof syncSchema
+    >;
     if (
       knownVersion !== undefined &&
       knownStatus !== undefined &&

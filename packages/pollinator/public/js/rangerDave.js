@@ -106,7 +106,7 @@ class RangerDaveBot {
     // Counter-balancing heuristic:
     // If tilt is negative (leaning left), Dave aims to the right (positive offset)
     // If tilt is positive (leaning right), Dave aims to the left (negative offset)
-    const maxOffset = 75; // Stay well within the 240px flower head
+    const maxOffset = flower.headWidth * 0.3; // Stay inside the current landing surface.
     let targetOffset = 0;
 
     if (Math.abs(tilt) > 0.05) {

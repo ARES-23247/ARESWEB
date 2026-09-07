@@ -351,6 +351,10 @@
         "destination": "/prerender/buzzle.html"
       },
       {
+        "source": "/buzzhex",
+        "destination": "/prerender/buzzhex.html"
+      },
+      {
         "source": "/arcade",
         "destination": "/prerender/arcade.html"
       },

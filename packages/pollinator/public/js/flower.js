@@ -8,7 +8,7 @@ class RhododendronFlower {
     this.groundY = groundY;
     this.flowerY = flowerY;
 
-    this.headWidth = 240;
+    this.headWidth = Math.min(360, centerX * 2 - 32);
     this.headHeight = 36;
     this.tiltAngle = 0;
     this.maxTiltLimit = 0.72; // ~41 degrees - beyond this is catastrophe!
@@ -27,31 +27,32 @@ class RhododendronFlower {
 
     // 2. Main Blossom Landing Head (Compound shape for cupped petals)
     // Central bed
-    const bed = Bodies.rectangle(this.centerX, this.flowerY, this.headWidth * 0.75, 20, {
+    const bed = Bodies.rectangle(this.centerX, this.flowerY, this.headWidth * 0.8, 20, {
       chamfer: { radius: 8 },
       friction: 0.85
     });
 
     // Left petal lip (angled up slightly)
-    const leftLip = Bodies.rectangle(this.centerX - this.headWidth * 0.44, this.flowerY - 10, 50, 18, {
-      chamfer: { radius: 6 },
-      friction: 0.9,
-      angle: -0.22
-    });
-
-    // Right petal lip (angled up slightly)
-    const rightLip = Bodies.rectangle(this.centerX + this.headWidth * 0.44, this.flowerY - 10, 50, 18, {
+    const leftLip = Bodies.rectangle(this.centerX - this.headWidth * 0.42, this.flowerY - 6, this.headWidth * 0.16, 18, {
       chamfer: { radius: 6 },
       friction: 0.9,
       angle: 0.22
     });
 
+    // Right petal lip (angled up slightly)
+    const rightLip = Bodies.rectangle(this.centerX + this.headWidth * 0.42, this.flowerY - 6, this.headWidth * 0.16, 18, {
+      chamfer: { radius: 6 },
+      friction: 0.9,
+      angle: -0.22
+    });
+
     this.head = Body.create({
       parts: [bed, leftLip, rightLip],
       friction: 0.88,
-      restitution: 0.12,
-      density: 0.008 // Heavy enough to support bugs, but responds to their weight
+      restitution: 0.08,
+      frictionAir: 0.15 // Dampen impact oscillation without holding the flower level.
     });
+    Body.setPosition(this.head, { x: this.centerX, y: this.flowerY });
     this.head.isFlowerHead = true;
 
     // 3. Central Pivot Pin / Hinge
@@ -59,6 +60,7 @@ class RhododendronFlower {
       pointA: { x: this.centerX, y: this.flowerY },
       bodyB: this.head,
       pointB: { x: 0, y: 0 },
+      length: 0,
       stiffness: 1.0,
       damping: 0.1
     });
@@ -69,7 +71,7 @@ class RhododendronFlower {
       pointA: { x: this.centerX - springDist, y: this.flowerY + 80 },
       bodyB: this.head,
       pointB: { x: -springDist, y: 0 },
-      stiffness: 0.016, // Organic springiness
+      stiffness: this.getSpringStiffness(),
       damping: 0.05
     });
 
@@ -77,7 +79,7 @@ class RhododendronFlower {
       pointA: { x: this.centerX + springDist, y: this.flowerY + 80 },
       bodyB: this.head,
       pointB: { x: springDist, y: 0 },
-      stiffness: 0.016,
+      stiffness: this.getSpringStiffness(),
       damping: 0.05
     });
 
@@ -92,6 +94,23 @@ class RhododendronFlower {
 
   update() {
     this.tiltAngle = this.head.angle;
+  }
+
+  getSpringStiffness() {
+    // Full-size critters occupy more of a narrow phone's flower. Firmer support
+    // there limits impact overshoot while still yielding to an unbalanced load.
+    return 0.0015 * Math.pow(360 / this.headWidth, 3);
+  }
+
+  resize(availableWidth) {
+    const width = Math.min(360, availableWidth - 32);
+    const angle = this.head.angle;
+    // Scale in the flower's local axes so resizing a tilted game preserves its pose.
+    Matter.Body.setAngle(this.head, 0);
+    Matter.Body.scale(this.head, width / this.headWidth, 1);
+    Matter.Body.setAngle(this.head, angle);
+    this.headWidth = width;
+    this.leftSpring.stiffness = this.rightSpring.stiffness = this.getSpringStiffness();
   }
 
   // Returns normalized danger factor: 0.0 (perfectly level) to 1.0 (tipping point)
@@ -127,7 +146,7 @@ class RhododendronFlower {
     ctx.beginPath();
     ctx.moveTo(this.centerX, this.groundY);
     // Control points follow head sway
-    const ctrlX = this.centerX + (hx - this.centerX) * 0.45;
+    const ctrlX = this.centerX + (hx - this.centerX) * 0.45 - Math.sin(angle) * 65;
     const ctrlY = this.groundY - (this.groundY - hy) * 0.55;
     ctx.quadraticCurveTo(ctrlX, ctrlY, hx, hy + 10);
     ctx.stroke();
@@ -158,6 +177,8 @@ class RhododendronFlower {
     ctx.save();
     ctx.translate(hx, hy);
     ctx.rotate(angle);
+    // The drawn petal cluster spans roughly 200 units; match the landing surface.
+    ctx.scale(this.headWidth / 200, 1);
 
     // Back petals (deeper darker fuchsia)
     this.drawPetal(ctx, -75, -8, -0.35, 48, 38, '#ad1457', '#880e4f');

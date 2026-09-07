@@ -9,20 +9,20 @@ interface Clock {
   advance(elapsedMs: number, step: (ms: number) => void): void;
 }
 // This is a classic script in the opaque game, imported here for instrumentation.
-const clockModule = "../../packages/pollenator/public/js/physics.js";
+const clockModule = "../../packages/pollinator/public/js/physics.js";
 await import(clockModule);
 const ClockClass = (window as unknown as { PollenPhysicsClock: new () => Clock }).PollenPhysicsClock;
 
-function simulation() {
+function simulation(width = 800) {
   const context = createContext({ window: { addEventListener() {} } });
   for (const file of ["lib/matter.min.js", "js/flower.js", "js/pollinators.js", "js/physics.js", "js/game.js"]) {
-    runInContext(readFileSync(resolve("packages/pollenator/public", file), "utf8"), context);
+    runInContext(readFileSync(resolve("packages/pollinator/public", file), "utf8"), context);
   }
   runInContext(`
     window.audioManager = new Proxy({}, { get: () => () => {} });
     const game = Object.create(PollenGame.prototype);
     Object.assign(game, {
-      width: 800, height: 800, dropY: 85, landedBodies: [], activeBody: null,
+      width: ${width}, height: 800, dropY: 85, landedBodies: [], activeBody: null,
       physicsClock: new window.PollenPhysicsClock(),
       ui: { updateHUD() {}, drawPreview() {}, showGameOver() {} },
       background: { setTimeTarget() {}, update() {} }, rangerDave: { isThinking: false }
@@ -144,5 +144,74 @@ describe("Pollen simulation timing and settling", () => {
     `)).toBe(2);
     expect(run("heavy.mass / game.landedBodies[0].mass;")).toBeCloseTo(5 / 1.8);
     expect(run("game.state;")).toBe("aiming");
+  });
+
+  it("supports drops on the broader petals and keeps the resized flower inside the canvas", () => {
+    const run = simulation();
+    expect(run("game.flower.headWidth")).toBe(360);
+    expect(run(`
+      game.restart(); game.currentPollinator = window.POLLINATOR_TYPES.BEE;
+      game.dropX = 545; game.dropPollinator();
+      for (let i = 0; i < 120 * 8; i++) game.update(0.5);
+      game.crittersLanded;
+    `)).toBe(1);
+    expect(run(`
+      const previousAngle = game.flower.head.angle;
+      game.flower.resize(260);
+      Math.abs(game.flower.head.angle - previousAngle);
+    `)).toBeLessThan(1e-10);
+    expect(run("game.flower.headWidth")).toBe(228);
+    expect(run("game.flower.head.bounds.max.x - game.flower.head.bounds.min.x")).toBeLessThan(240);
+    expect(run("game.flower.resize(800); game.flower.headWidth")).toBe(360);
+  });
+
+  it("leans toward off-center weight, with heavier critters causing a larger sustained tilt", () => {
+    const tilt = (type: string, offset: number) => {
+      const run = simulation();
+      const result = JSON.parse(run(`
+        game.restart(); game.currentPollinator = window.POLLINATOR_TYPES.${type};
+        game.dropX = 400 + ${offset}; game.dropPollinator();
+        for (let i = 0; i < 120 * 8; i++) game.update(0.5);
+        JSON.stringify({ angle: game.flower.head.angle, count: game.crittersLanded, state: game.state });
+      `));
+      expect(result).toMatchObject({ count: 1, state: "aiming" });
+      return result.angle as number;
+    };
+    expect(Math.abs(tilt("BEE", 0))).toBeLessThan(0.005);
+    const right = tilt("BEE", 110);
+    expect(right).toBeGreaterThan(0.025);
+    expect(tilt("BEE", -110)).toBeLessThan(-0.025);
+    expect(tilt("MOTHMAN", 110)).toBeGreaterThan(right * 3);
+  });
+
+  it("recovers toward level when the player counterbalances the load and resets the tilt", () => {
+    const run = simulation();
+    const result = JSON.parse(run(`
+      game.restart(); game.currentPollinator = window.POLLINATOR_TYPES.BEE;
+      game.dropX = 510; game.dropPollinator();
+      for (let i = 0; i < 120 * 8; i++) game.update(0.5);
+      const unbalanced = game.flower.head.angle;
+      game.currentPollinator = window.POLLINATOR_TYPES.BEE;
+      game.dropX = 290; game.dropPollinator();
+      for (let i = 0; i < 120 * 8; i++) game.update(0.5);
+      JSON.stringify({ unbalanced, balanced: game.flower.head.angle, count: game.crittersLanded });
+    `));
+    expect(result.count).toBe(2);
+    expect(Math.abs(result.balanced)).toBeLessThan(result.unbalanced * 0.6);
+    expect(run("game.restart(); game.flower.getDangerFactor()")).toBe(0);
+  });
+
+  it.each([240, 260, 320])("allows a heavy off-center critter to settle on a %ipx phone canvas", (width) => {
+    const run = simulation(width);
+    const result = JSON.parse(run(`
+      game.restart(); game.currentPollinator = window.POLLINATOR_TYPES.MOTHMAN;
+      game.dropX = game.width / 2 + Math.floor(game.flower.headWidth * 0.3 / 15) * 15;
+      game.dropPollinator();
+      for (let i = 0; i < 120 * 8; i++) game.update(0.5);
+      JSON.stringify({ count: game.crittersLanded, state: game.state, angle: game.flower.head.angle });
+    `));
+    expect(result).toMatchObject({ count: 1, state: "aiming" });
+    expect(result.angle).toBeGreaterThan(0.02);
+    expect(result.angle).toBeLessThan(0.2);
   });
 });

@@ -90,8 +90,8 @@
 
 .buzzello-cell {
   position: absolute;
-  width: 13.714%;
-  height: 10.667%;
+  width: var(--buzzello-cell-width, 13.714%);
+  height: var(--buzzello-cell-height, 10.667%);
   transform: translate(-50%, -50%);
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   border: 0;

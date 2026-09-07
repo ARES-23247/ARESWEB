@@ -83,6 +83,7 @@ class PollenGame {
         this.flower.centerX = this.width / 2;
         this.flower.groundY = this.height - 20;
         this.flower.flowerY = this.height * 0.58;
+        this.flower.resize(this.width);
         Matter.Body.setPosition(this.flower.groundAnchor, { x: this.flower.centerX, y: this.flower.groundY });
         this.dropX = Math.max(60, Math.min(this.width - 60, this.dropX + dx));
       }

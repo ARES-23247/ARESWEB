@@ -1,11 +1,8 @@
 import { ApiError } from "../middleware/errorHandler";
 import {
-  BUZZELLO_MAX_MOVES,
-  applyBuzzelloMove,
-  assertBuzzelloBoard,
-  createBuzzelloInitialBoard,
+  getBuzzelloServerRules,
+  type BuzzelloBoardSize,
   getBuzzelloScores,
-  resolveBuzzelloTurn,
   type BuzzelloBoard,
   type BuzzelloPlayer,
 } from "./buzzelloGame";
@@ -42,17 +39,20 @@ type BuzzelloPlayerView = Record<string, unknown> & {
   scores: Record<BuzzelloPlayer, number>;
 };
 
-function parseHistoryEntry(value: unknown): BuzzelloHistoryEntry | null {
+function parseHistoryEntry(
+  value: unknown,
+  cellCount: number,
+): BuzzelloHistoryEntry | null {
   if (typeof value !== "object" || value === null) return null;
   const entry = value as Partial<BuzzelloHistoryEntry>;
   if (
     (entry.player !== "yellow" && entry.player !== "black") ||
     !Number.isSafeInteger(entry.index) ||
     (entry.index as number) < 0 ||
-    (entry.index as number) >= 61 ||
+    (entry.index as number) >= cellCount ||
     !Number.isSafeInteger(entry.flippedCount) ||
     (entry.flippedCount as number) < 1 ||
-    (entry.flippedCount as number) >= 61
+    (entry.flippedCount as number) >= cellCount
   ) {
     return null;
   }
@@ -68,17 +68,21 @@ export function parseBuzzelloGameState(value: unknown): BuzzelloGameState {
     throw new Error("Invalid BUZZELLO state.");
   }
   const data = value as Partial<BuzzelloGameState>;
-  const board = assertBuzzelloBoard(data.board);
+  const rules = getBuzzelloServerRules(
+    Array.isArray(data.board) ? data.board.length : 0,
+  );
+  const board = rules.assertBuzzelloBoard(data.board);
+  const cellCount = board.length;
   const history = Array.isArray(data.history)
-    ? data.history.map(parseHistoryEntry)
+    ? data.history.map((entry) => parseHistoryEntry(entry, cellCount))
     : [];
-  const lastMoveEntry = parseHistoryEntry(data.lastMove);
+  const lastMoveEntry = parseHistoryEntry(data.lastMove, cellCount);
   const flipped = data.lastMove?.flipped;
   if (
     (data.currentPlayer !== "yellow" && data.currentPlayer !== "black") ||
     !Number.isSafeInteger(data.moveNumber) ||
     (data.moveNumber as number) < 0 ||
-    (data.moveNumber as number) > BUZZELLO_MAX_MOVES ||
+    (data.moveNumber as number) > cellCount - 6 ||
     history.length !== data.moveNumber ||
     history.some((entry) => entry === null) ||
     (data.winner !== null &&
@@ -96,7 +100,7 @@ export function parseBuzzelloGameState(value: unknown): BuzzelloGameState {
           (index) =>
             !Number.isSafeInteger(index) ||
             (index as number) < 0 ||
-            (index as number) >= 61,
+            (index as number) >= cellCount,
         )))
   ) {
     throw new Error("Invalid BUZZELLO state.");
@@ -115,67 +119,76 @@ export function parseBuzzelloGameState(value: unknown): BuzzelloGameState {
   };
 }
 
-export const buzzelloGameDefinition: GameDefinition<
+export function createBuzzelloGameDefinition(
+  boardSize: BuzzelloBoardSize = 61,
+): GameDefinition<
   BuzzelloGameState,
   BuzzelloAction,
   BuzzelloPlayerView,
   BuzzelloPlayer
-> = {
-  gameType: "buzzello",
-  minPlayers: 2,
-  maxPlayers: 2,
-  defaultMatchSize: 2,
-  maxActions: BUZZELLO_MAX_MOVES,
-  actionPolicy: "sequential",
-  createInitialState: () => ({
-    board: createBuzzelloInitialBoard(),
-    currentPlayer: "yellow",
-    moveNumber: 0,
-    history: [],
-    winner: null,
-    lastMove: null,
-    passedPlayer: null,
-  }),
-  parseState: parseBuzzelloGameState,
-  activePlayerIndex: (state) => (state.currentPlayer === "yellow" ? 0 : 1),
-  applyAction: (state, playerIndex, action) => {
-    const player: BuzzelloPlayer = playerIndex === 0 ? "yellow" : "black";
-    let applied: ReturnType<typeof applyBuzzelloMove>;
-    try {
-      applied = applyBuzzelloMove(state.board, player, action.index);
-    } catch {
-      throw new ApiError(
-        400,
-        "That is not a legal move.",
-        "BUZZELLO_ILLEGAL_MOVE",
-      );
-    }
-    const resolution = resolveBuzzelloTurn(applied.board, player);
-    const historyEntry: BuzzelloHistoryEntry = {
-      player,
-      index: action.index,
-      flippedCount: applied.flips.length,
-    };
-    return {
-      board: applied.board,
-      currentPlayer: resolution.currentPlayer,
-      moveNumber: state.moveNumber + 1,
-      history: [...state.history, historyEntry],
-      winner: resolution.winner,
-      lastMove: { ...historyEntry, flipped: applied.flips },
-      passedPlayer: resolution.passedPlayer,
-    };
-  },
-  isFinished: (state) => state.winner !== null,
-  playerLabel: (playerIndex) => (playerIndex === 0 ? "yellow" : "black"),
-  toPlayerView: (state) => ({
-    board: state.board,
-    currentPlayer: state.currentPlayer,
-    moveNumber: state.moveNumber,
-    history: state.history,
-    winner: state.winner,
-    lastMove: state.lastMove,
-    passedPlayer: state.passedPlayer,
-    scores: getBuzzelloScores(state.board),
-  }),
-};
+> {
+  const initialRules = getBuzzelloServerRules(boardSize);
+  return {
+    gameType: "buzzello",
+    minPlayers: 2,
+    maxPlayers: 2,
+    defaultMatchSize: 2,
+    maxActions: 85,
+    matchmakingVariant: boardSize === 91 ? "large" : undefined,
+    actionPolicy: "sequential",
+    createInitialState: () => ({
+      board: initialRules.createBuzzelloInitialBoard(),
+      currentPlayer: "yellow",
+      moveNumber: 0,
+      history: [],
+      winner: null,
+      lastMove: null,
+      passedPlayer: null,
+    }),
+    parseState: parseBuzzelloGameState,
+    activePlayerIndex: (state) => (state.currentPlayer === "yellow" ? 0 : 1),
+    applyAction: (state, playerIndex, action) => {
+      const player: BuzzelloPlayer = playerIndex === 0 ? "yellow" : "black";
+      const rules = getBuzzelloServerRules(state.board.length);
+      let applied: ReturnType<typeof rules.applyBuzzelloMove>;
+      try {
+        applied = rules.applyBuzzelloMove(state.board, player, action.index);
+      } catch {
+        throw new ApiError(
+          400,
+          "That is not a legal move.",
+          "BUZZELLO_ILLEGAL_MOVE",
+        );
+      }
+      const resolution = rules.resolveBuzzelloTurn(applied.board, player);
+      const historyEntry: BuzzelloHistoryEntry = {
+        player,
+        index: action.index,
+        flippedCount: applied.flips.length,
+      };
+      return {
+        board: applied.board,
+        currentPlayer: resolution.currentPlayer,
+        moveNumber: state.moveNumber + 1,
+        history: [...state.history, historyEntry],
+        winner: resolution.winner,
+        lastMove: { ...historyEntry, flipped: applied.flips },
+        passedPlayer: resolution.passedPlayer,
+      };
+    },
+    isFinished: (state) => state.winner !== null,
+    playerLabel: (playerIndex) => (playerIndex === 0 ? "yellow" : "black"),
+    toPlayerView: (state) => ({
+      board: state.board,
+      currentPlayer: state.currentPlayer,
+      moveNumber: state.moveNumber,
+      history: state.history,
+      winner: state.winner,
+      lastMove: state.lastMove,
+      passedPlayer: state.passedPlayer,
+      scores: getBuzzelloScores(state.board),
+    }),
+  };
+}
+
+export const buzzelloGameDefinition = createBuzzelloGameDefinition();

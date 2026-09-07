@@ -36,10 +36,10 @@ export default function PollenPage() {
 
   return (
     <section ref={targetRef} aria-labelledby="pollen-title" data-game-fullscreen={isFullscreen} className={`pollen-page game-fullscreen-target ${isFullscreen ? "pollen-fullscreen" : ""}`}>
-      <SEO title="Pollenator Pile-Up" description="Balance Appalachian critters on a flower. Play solo, pass and play on one device, or challenge Ranger Dave." />
+      <SEO title="Pollinator Pile-Up" description="Balance Appalachian critters on a flower. Play solo, pass and play on one device, or challenge Ranger Dave." />
       <header className="pollen-heading">
         <div>
-          <h1 id="pollen-title" className="font-heading text-xl font-black text-white">Pollenator Pile-Up</h1>
+          <h1 id="pollen-title" className="font-heading text-xl font-black text-white">Pollinator Pile-Up</h1>
           {!isFullscreen && <p className="mt-2 text-sm text-marble/80">Play solo, share this device with a friend, or challenge Ranger Dave. No sign-in needed.</p>}
         </div>
         <GameFullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
@@ -48,7 +48,7 @@ export default function PollenPage() {
         <Link to="/arcade">All arcade games</Link>
         <Link to="/buzzle">BUZZLE</Link><Link to="/buzzello">BUZZELLO</Link><Link to="/">Team home</Link>
       </nav>}
-      <iframe ref={frame} src="/games/pollen/index.html" title="Pollenator Pile-Up game" sandbox="allow-scripts" className="pollen-frame" />
+      <iframe ref={frame} src="/games/pollen/index.html" title="Pollinator Pile-Up game" sandbox="allow-scripts" className="pollen-frame" />
       {!isFullscreen && <p role="status" className="mt-3 text-sm text-marble/75">
         {storageUnavailable ? "Browser storage is unavailable. Your best score lasts for this game session." : "Best scores stay on this device when browser storage is available."}
       </p>}

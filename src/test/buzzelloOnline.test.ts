@@ -59,6 +59,19 @@ function jsonResponse(payload: unknown, status = 200): Response {
 }
 
 describe("BUZZELLO online client", () => {
+  it("accepts large-board outer indices but rejects them on the classic board", () => {
+    const fixture=gameFixture();
+    fixture.state.board=Array.from({length:91},()=>null);
+    fixture.state.history[0].index=90;
+    fixture.state.lastMove.index=90;
+    fixture.state.lastMove.flipped=[89];
+    expect(parseOnlineBuzzelloGame(fixture).board).toHaveLength(91);
+    fixture.state.board=Array.from({length:61},()=>null);
+    expect(()=>parseOnlineBuzzelloGame(fixture)).toThrow(BuzzelloOnlineError);
+    fixture.state.board=Array.from({length:90},()=>null);
+    expect(()=>parseOnlineBuzzelloGame(fixture)).toThrow(BuzzelloOnlineError);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

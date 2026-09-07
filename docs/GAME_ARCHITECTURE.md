@@ -1,6 +1,8 @@
 # Arcade workspace architecture
 
-The website and games share one pnpm workspace and one protected release flow.
+The website and games share one Git repository, one pnpm workspace, and one
+protected release flow. The game packages are private workspace packages, not
+Git submodules or separately published repositories.
 The website stays in `src/`; the existing APIs and game process stay in
 `functions/`. Public URLs and Firebase/Cloud Run service identities are unchanged.
 
@@ -8,11 +10,13 @@ The website stays in `src/`; the existing APIs and game process stay in
 | --- | --- |
 | `src/app/arcade/`, navigation | Arcade discovery and website navigation |
 | `src/app/buzzle/`, `src/app/buzzello/` | Thin route wrappers and SEO |
+| `src/app/pollen/` | Website wrapper, opaque game iframe, fullscreen controls, and bounded score bridge |
 | `src/lib/*Online.ts` | Bind package client factories to the website's authenticated transport |
 | `packages/buzzle/` | Rules, AI, workers, game UI, dictionary lookup, physical tools, canonical lexicon |
+| `packages/buzzhex/` | Local Hex rules and UI; thin site wrapper at `/buzzhex` |
 | `packages/buzzello/` | Rules, AI, worker, game UI, online client contract |
 | `packages/waggle-way/` | Pure swarm engine, level schema, campaign, local builder, persistence, replay and community contracts; thin site wrappers in `src/app/waggle-way/` |
-| `packages/pollenator/public/` | Classic-script physics, rendering, local game UI, assets and dependency license |
+| `packages/pollinator/public/` | Classic-script physics, rendering, local game UI, assets and dependency license |
 | `packages/game-common/` | Hex geometry and fullscreen behavior |
 | `packages/ui/` | Existing shared buttons, dialogs and class-name utility |
 | `functions/src/lib/*Game*.ts` | Validate persisted state/actions, authoritative match adapters, private DTOs |
@@ -22,7 +26,12 @@ import `src/` or Firebase authentication. The site passes a stable online client
 to each game component; each factory receives the authenticated request function.
 Shared rules import geometry only and can execute without React, DOM or Node APIs.
 UI packages use the website's Tailwind/design tokens; `globals.css` explicitly
-scans their sources. Existing `src/lib` and UI re-exports preserve import
+scans their sources. Keep its CSS imports consecutive, with the package
+`@source` directive after all imports. An intervening directive makes PostCSS
+drop the design-token import and breaks the site's colors despite a successful
+build. The Arcade E2E test checks the compiled token and primary button color;
+visually inspect the built site as well as testing its interactions.
+Existing `src/lib` and UI re-exports preserve import
 compatibility while consumers migrate. Do not add new logic to those re-exports.
 
 ## Persisted online compatibility
@@ -40,7 +49,7 @@ the complete stored state, uses cryptographic randomness, retains bounded match
 budgets, and exposes only the requesting player's rack. Shared rule errors carry
 stable codes that the server maps to `ApiError`; unexpected errors still propagate
 to the existing global handler. API paths, match envelopes and authentication are
-unchanged. Pollenator remains a device-only game in an opaque `allow-scripts`
+unchanged. Pollinator remains a device-only game in an opaque `allow-scripts`
 iframe, with the existing bounded host score bridge.
 
 Waggle Way's community API uses the existing game service at `/api/waggle-way`.
@@ -69,10 +78,10 @@ pnpm build
 Installation, frontend dev/build and backend build run `games:prepare`. It stages
 canonical rules into `functions/src/generated/games/`, rewriting the known
 geometry package import to a local import for the existing CommonJS compiler.
-It also stages Pollenator into `public/games/pollen/` and the single BUZZLE lexicon
+It also stages Pollinator into `public/games/pollen/` and the single BUZZLE lexicon
 into the existing browser and server data locations. These deployment copies are
 ignored and must never be edited. Run preparation again after shared-rule edits
-when keeping a backend process open. Pollenator source edits require preparation
+when keeping a backend process open. Pollinator source edits require preparation
 and a page reload during development.
 
 `pnpm games:generate-lexicon` updates the canonical package lexicon and its existing

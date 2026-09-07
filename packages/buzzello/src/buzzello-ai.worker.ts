@@ -1,5 +1,5 @@
 import {
-  selectBuzzelloAiMove,
+  getBuzzelloRules,
   type BuzzelloBoard,
   type BuzzelloDifficulty,
   type BuzzelloPlayer,
@@ -19,7 +19,11 @@ interface BuzzelloAiResponse {
 
 self.addEventListener("message", (event: MessageEvent<BuzzelloAiRequest>) => {
   const { requestId, board, player, difficulty } = event.data;
-  const move = selectBuzzelloAiMove(board, player, difficulty);
+  const move = getBuzzelloRules(board.length).selectBuzzelloAiMove(
+    board,
+    player,
+    difficulty,
+  );
   const response: BuzzelloAiResponse = {
     requestId,
     moveIndex: move?.index ?? null,

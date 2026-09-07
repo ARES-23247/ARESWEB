@@ -40,6 +40,15 @@ check the workspace rule in Customizations → Rules is Always On, then start a
 new conversation and ask it to identify the shared guide and relevant skill.
 If skill discovery is unavailable, the links in `AGENTS.md` provide direct access.
 
+For Arcade work, ask the agent to identify the five packages under `packages/`,
+the website route wrappers, and the existing backend before editing. It should
+read the Arcade workspace ownership section of `AGENTS.md` and
+`docs/GAME_ARCHITECTURE.md`, recognize generated deployment copies, and preserve
+the shared-rule and authenticated-client boundaries. If it describes separate
+Git submodules or proposes editing `public/games/pollen/` as source, reload the
+repository instructions and check that the checkout includes the workspace
+reorganization. Do not copy this architecture into per-client instruction files.
+
 Repository validation proves file availability and wiring; it does not inspect
 another contributor's running client. Personal context, disabled skills, custom
 ignore settings, workspace trust, and managed policies can affect a session.

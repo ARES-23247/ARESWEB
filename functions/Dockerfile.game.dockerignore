@@ -23,7 +23,7 @@ functions/src/generated/
 !packages/waggle-way/src/core/community.ts
 !packages/buzzle/data/
 !packages/buzzle/data/**
-!packages/pollenator/public/
-!packages/pollenator/public/**
+!packages/pollinator/public/
+!packages/pollinator/public/**
 !scripts/
 !scripts/prepare-game-packages.mjs
