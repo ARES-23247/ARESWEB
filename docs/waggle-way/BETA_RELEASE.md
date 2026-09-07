@@ -1,8 +1,9 @@
 # Waggle Way beta release candidate
 
 Prepared 2026-09-07 after the user accepted preparation of a beta PR and release
-checks. Production deployment remains the final approval step. Nothing in this
-record claims that the full redesign goal is complete.
+checks. The subsequent instruction to work on the other PRs and get everything
+clean on master authorizes integration through the protected release workflow.
+Nothing in this record claims that the full redesign goal is complete.
 
 ## Included behavior
 
@@ -33,7 +34,7 @@ physical-phone touch/fullscreen check and screen-reader review remain unrecorded
 browser device emulation does not establish either.
 
 Use the repository's normal reviewed PR and protected CI workflow. After checks
-and final deployment approval, merge through the normal protected path, follow
+pass, merge through the normal protected path, follow
 the deployment run to completion, then verify the live game, builder, route
 headers and community error/authorization behavior. Do not bypass the workflow
 with a direct Functions or Hosting deployment.

@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "exports": { "./ai": "./src/ai.ts", "./game": "./src/Game.tsx", "./rules": "./src/rules.ts" },
-  "dependencies": { "@ares/ui": "workspace:*", "@ares/game-common": "workspace:*", "lucide-react": "^1.33.0" },
+  "dependencies": { "@ares/ui": "workspace:*", "@ares/game-common": "workspace:*", "lucide-react": "^1.41.0" },
   "peerDependencies": { "react": "^19.2.0" }
 }

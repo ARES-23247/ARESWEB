@@ -105,6 +105,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      // monaco-vim 0.4.4 still imports the pre-0.56 private editor path.
+      "monaco-editor/esm/vs/editor/editor.api": "monaco-editor/editor",
     },
     dedupe: ["react", "react-dom"],
   },
