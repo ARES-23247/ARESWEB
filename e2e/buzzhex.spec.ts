@@ -9,9 +9,9 @@ for (const difficulty of ["easy", "medium", "hard"]) {
       page.getByRole("link", { name: /3D print BUZZHEX/ }),
     ).toHaveAttribute("href", /printables.com\/model\/1834842-/);
     await page.getByRole("button", { name: "New game", exact: true }).click();
-    await page.getByLabel("Opponent", { exact: true }).selectOption("computer");
+    await page.getByRole("combobox", { name: "Opponent", exact: true }).selectOption("computer");
     await page
-      .getByLabel("Difficulty", { exact: true })
+      .getByRole("combobox", { name: "Difficulty", exact: true })
       .selectOption(difficulty);
     await page.getByRole("button", { name: "Start new game" }).click();
     // Keyboard placement works on touch and desktop without a synthetic tap.
