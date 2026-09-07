@@ -559,7 +559,7 @@ export default function BuzzhexGame({
                   <strong>{name}</strong>
                   <span>
                     {colorName(game.colors[player])} ·{" "}
-                    {game.colors[player] === "black" ? "A â†’ K" : "1 â†’ 11"}
+                    {game.colors[player] === "black" ? "A → K" : "1 → 11"}
                   </span>
                 </div>
               </div>
