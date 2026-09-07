@@ -46,6 +46,11 @@ describe("production deployment workflow", () => {
     expect(browsers).toContain("--shard=${{ matrix.shard }}/2");
     expect(browsers).toContain("name: e2e-shard-${{ matrix.shard }}");
     expect(browsers).toContain("if-no-files-found: error");
+    const jobTimeout = Number(browsers.match(/^    timeout-minutes: (\d+)/m)?.[1]);
+    const suiteTimeout = Number(workflowStep("Run local E2E suite").match(/timeout-minutes: (\d+)/)?.[1]);
+    expect(suiteTimeout).toBeGreaterThan(0);
+    expect(jobTimeout - suiteTimeout).toBeGreaterThanOrEqual(3);
+    expect(workflowStep("Upload Playwright diagnostics")).toContain("failure() || cancelled()");
     expect(workflowJob("test-gate")).toContain("node scripts/check-e2e-shards.mjs ci-report");
     const verify = workflowJob("verify");
     expect(verify).toContain("scripts/affected-areas.mjs");

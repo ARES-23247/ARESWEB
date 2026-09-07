@@ -6,8 +6,9 @@ test.describe("Kanban Task Board status movement tests", () => {
     loginAs,
   }) => {
     await loginAs("admin");
-    // 1. Navigate to tasks board
-    await page.goto("/dashboard/tasks");
+    // External avatars may still be loading when the board is usable.
+    // Keep the explicit heading, card, and movement assertions as readiness checks.
+    await page.goto("/dashboard/tasks", { waitUntil: "domcontentloaded" });
 
     await expect(
       page.getByRole("heading", { name: "Kanban Tasks" }),
@@ -34,7 +35,7 @@ test.describe("Kanban Task Board status movement tests", () => {
 
   test("opens the exact task card from a ?task= deep link", async ({ page, loginAs }) => {
     await loginAs("admin");
-    await page.goto("/dashboard/tasks?task=task_1");
+    await page.goto("/dashboard/tasks?task=task_1", { waitUntil: "domcontentloaded" });
 
     const dialog = page.getByRole("dialog", { name: "Task Card Details" });
     await expect(dialog).toBeVisible({ timeout: 15000 });
@@ -46,7 +47,7 @@ test.describe("Kanban Task Board status movement tests", () => {
     loginAs,
   }) => {
     await loginAs("admin");
-    await page.goto("/dashboard/tasks");
+    await page.goto("/dashboard/tasks", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("heading", { name: "Kanban Tasks" }),
     ).toBeVisible({ timeout: 15000 });
