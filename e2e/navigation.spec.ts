@@ -361,6 +361,26 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     // permits service workers and validates the application rather than the shim.
     test.use({ serviceWorkers: "allow" });
 
+    test("bundled editor accepts edits and runs a simulation without a stale loading notice", async ({ page }) => {
+      await page.goto("/academy/playground");
+      const editor = page.getByRole("textbox", { name: "Editor content", exact: true });
+      // Firefox's Monaco input is zero-width until the visible editor receives focus.
+      const surface = page.getByRole("code").filter({ has: editor });
+      await expect(surface).toBeVisible();
+      await surface.click();
+      await expect(editor).toBeFocused();
+      // Desktop Safari emulates macOS even when the test runner is Windows/Linux.
+      const macShortcuts = await page.evaluate(() => navigator.userAgent.includes("Macintosh"));
+      await editor.press(macShortcuts ? "Meta+A" : "Control+A");
+      await editor.pressSequentially("import React from 'react';\nexport default function SimComponent() { return <div>Editor release check</div>; }", { delay: 20 });
+      await expect(surface).toContainText("Editor release check");
+      await page.getByRole("button", { name: "Run", exact: true }).click();
+      await expect(page.frameLocator('iframe[title="Simulation Preview"]').getByText("Editor release check", { exact: true })).toBeVisible();
+      // The previous bug reintroduced this notice three seconds after a fast mount.
+      await page.waitForTimeout(3200);
+      await expect(page.getByText("Loading the code editor and language tools…", { exact: true })).toBeHidden();
+    });
+
     test("simulation playground remains usable at a 320px mobile viewport", async ({
       page,
     }) => {

@@ -105,6 +105,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      // monaco-vim 0.4.4 still imports the pre-0.56 private editor path.
+      "monaco-editor/esm/vs/editor/editor.api": "monaco-editor/editor",
     },
     dedupe: ["react", "react-dom"],
   },
@@ -184,6 +186,12 @@ export default defineConfig({
       // administrative reliability surface. A listed module therefore reports
       // 0% instead of disappearing when its importing test is removed.
       include: [
+        "packages/waggle-way/src/core/*.ts",
+        "packages/waggle-way/src/communityClient.ts",
+        "packages/waggle-way/src/workshopState.ts",
+        "src/lib/waggleCommunity.ts",
+        "packages/waggle-way/src/ui/useGhostReplay.ts",
+        "packages/waggle-way/src/ui/ghost.worker.ts",
         "packages/buzzhex/src/rules.ts",
         "packages/buzzhex/src/ai.ts",
         "src/lib/buzzello.ts",
@@ -273,6 +281,11 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
+        "packages/waggle-way/src/core/*.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/communityClient.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/workshopState.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/ui/useGhostReplay.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/ui/ghost.worker.ts": { lines: 85, functions: 100 },
         "packages/buzzhex/src/ai.ts": { lines: 85, functions: 100 },
         "packages/buzzhex/src/rules.ts": { lines: 85, functions: 100 },
         "packages/pollinator/public/js/physics.js": { lines: 85, functions: 100 },

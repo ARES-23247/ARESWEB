@@ -90,7 +90,8 @@ export default function LayoutWrapper({
     </div>
   );
 
-  if (isDashboard) {
+  // Waggle Way owns an immersive game shell with an explicit Arcade exit.
+  if (isDashboard || pathname === "/waggle-way" || pathname === "/waggle-way/builder") {
     return (
       <div className="min-h-screen bg-obsidian text-marble flex flex-col">
         <SkipLink />

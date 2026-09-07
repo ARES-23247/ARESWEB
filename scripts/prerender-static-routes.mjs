@@ -29,6 +29,12 @@ export const staticPageMetadata = [
   ["/pollen", "Pollinator Pile-Up", "Balance Appalachian critters on a blossom. Play solo, share a device, or challenge Ranger Dave.", false, [
     ["Appalachian blossom balance", "Stack critters without tipping the flower. Play solo, pass and play on the same device, or challenge the local computer opponent. No sign-in is needed. Best scores stay on your device. <a href=\"/buzzle\">Play BUZZLE</a> or <a href=\"/buzzello\">play BUZZELLO</a>."],
   ]],
+  ["/waggle-way", "Waggle Way · Story gardens", "Guide a hive to flowers in thirty puzzles with dances, fans and shelter leaves, or build a local garden.", true, [
+    ["Guide the hive", "Try thirty puzzles across Sunny Garden, Breezy Meadow, Glasshouse, Rainy Garden and Wildflower Valley in Waggle Way, or <a href=\"/waggle-way/builder\">open the garden workshop</a> to build and test a local puzzle."],
+  ]],
+  ["/waggle-way/builder", "Waggle Way · Garden workshop", "Build and test a local bee puzzle with dancing guides and fans.", true, [
+    ["Build a garden", "Place a hive, flowers, guides, fans, branches, water, and shelter leaves. Supply extra tools for players to place. Save gardens in this browser or export a level file. <a href=\"/waggle-way\">Play the campaign puzzles</a>. Online publishing is not yet available."],
+  ]],
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission.", false, [
     ["Who we are", "ARES 23247 is the Appalachian Robotics & Engineering Society, a student-led FIRST® Tech Challenge team from Morgantown, West Virginia. Students design, build, and program competition robots while coaches and mentors guide engineering, business, and outreach work. <a href=\"/seasons\">See our seasons and legacy</a> or <a href=\"/join\">apply to join</a>."],
     ["What we value", "The team emphasizes gracious professionalism, hands-on engineering, and community impact. Explore our <a href=\"/outreach\">outreach programs</a> or meet <a href=\"/robots\">the robots we have built</a>."],

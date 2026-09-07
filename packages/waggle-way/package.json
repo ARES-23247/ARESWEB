@@ -1,0 +1,27 @@
+{
+  "name": "@ares/waggle-way",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./game": "./src/Game.tsx",
+    "./builder": "./src/Builder.tsx",
+    "./campaign": "./src/content/campaign.ts",
+    "./engine": "./src/core/engine.ts",
+    "./level": "./src/core/level.ts",
+    "./editor": "./src/core/editor.ts",
+    "./storage": "./src/core/storage.ts",
+    "./progress": "./src/core/progress.ts",
+    "./replay": "./src/core/replay.ts",
+    "./community": "./src/core/community.ts",
+    "./community-client": "./src/communityClient.ts"
+  },
+  "dependencies": {
+    "@ares/ui": "workspace:*",
+    "@ares/game-common": "workspace:*",
+    "lucide-react": "^1.41.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}

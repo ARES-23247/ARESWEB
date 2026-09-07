@@ -95,6 +95,10 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm run test:coverage
 
+      # The verification worker runs the real compiled artifact in integration tests.
+      - name: Build Cloud Functions
+        run: pnpm --filter functions build
+
       - name: Run Cloud Functions tests with coverage
         run: pnpm --filter functions test:coverage
 
@@ -115,9 +119,6 @@ jobs:
       - name: Enforce bundle budgets
         run: node scripts/check-bundle-size.mjs
 
-      - name: Build Cloud Functions
-        run: pnpm --filter functions build
-
       - name: Verify standalone game container
         run: |
           docker build --file functions/Dockerfile.game --tag aresweb-game-ci .
@@ -127,6 +128,11 @@ jobs:
             if (word.createBuzzleGame().board.length !== 217 || board.createBuzzelloInitialBoard().length !== 61) throw new Error("Missing shared game rules");
             if (!require("node:fs").readFileSync("data/buzzle-words.txt", "utf8").includes("\nqi\n")) throw new Error("Missing deployed lexicon");
           '
+          GAME_CPU=$(node -p 'require("./infra/gcp/game-service.json").runtime.cpu')
+          GAME_MEMORY=$(node -p 'require("./infra/gcp/game-service.json").runtime.memoryMiB')
+          docker run --rm --network none --cpus "$GAME_CPU" --memory "${GAME_MEMORY}m" \
+            --mount "type=bind,source=$PWD/scripts/check-waggle-container.mjs,target=/tmp/check-waggle-container.mjs,readonly" \
+            --entrypoint node aresweb-game-ci /tmp/check-waggle-container.mjs /app/lib
 
       - name: Verify Hosting route status behavior
         run: pnpm exec firebase emulators:exec --only hosting,functions --project aresweb-ci "node scripts/check-hosting-emulator.mjs"

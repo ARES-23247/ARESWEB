@@ -40,6 +40,7 @@ export const TEAM_LINKS: NavItemConfig[] = [
 ];
 
 export const ARCADE_GAMES = [
+  { label: "Waggle Way", to: "/waggle-way", icon: Flower2, iconColor: "text-ares-gold", description: "Guide a hive to flowers with dances, fans and shelter leaves. Play thirty puzzles or build a garden in the workshop.", modes: "Swarm puzzle · Solo playtest" },
   { label: "BUZZHEX", to: "/buzzhex", icon: Hexagon, iconColor: "text-ares-gold", description: "Connect opposite edges of an 11 × 11 hex board. Place tiles, swap opening colors, and find your path across the hive.", modes: "Connection strategy · 2 players or computer" },
   { label: "BUZZLE", to: "/buzzle", icon: Hexagon, iconColor: "text-ares-gold", description: "Build words in three directions on a hexagonal board. Find your next move with legal word references and dictionary help.", modes: "Word game · 2–4 players" },
   { label: "BUZZELLO", to: "/buzzello", icon: Hexagon, iconColor: "text-ares-cyan", description: "Outthink your opponent, flip pieces, and claim the hexagonal board. Share a device or challenge the computer.", modes: "Strategy · 2 players or computer" },

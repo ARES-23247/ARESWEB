@@ -211,7 +211,7 @@ export function imageUri(contract, tag) {
 export function validateRepositoryWiring(contract, root = process.cwd()) {
   const read = (path) => readFileSync(resolve(root, path), "utf8");
   const firebase = JSON.parse(read("firebase.json"));
-  const source = "/api/@(buzzello|buzzle){,/**}";
+  const source = "/api/@(buzzello|buzzle|waggle-way){,/**}";
   const gameRewrites = (firebase.hosting?.rewrites ?? [])
     .filter((candidate) => candidate?.run?.serviceId === contract.serviceId);
   const rewrite = gameRewrites[0];
@@ -222,10 +222,19 @@ export function validateRepositoryWiring(contract, root = process.cwd()) {
     || rewrite.run.pinTag !== true
     || rewrite.function !== undefined
   ) {
-    throw new Error(`Firebase Hosting must route both game APIs through one ${source} rewrite to the pinned game Cloud Run service`);
+    throw new Error(`Firebase Hosting must route all three game APIs through one ${source} rewrite to the pinned game Cloud Run service`);
   }
 
   const dockerfile = read("functions/Dockerfile.game");
+  const dockerInputs = read("functions/Dockerfile.game.dockerignore").split(/\r?\n/u);
+  for (const name of ["level", "weather", "engine", "replay", "community"]) {
+    if (!dockerInputs.includes(`!packages/waggle-way/src/core/${name}.ts`)) {
+      throw new Error(`Game Docker context is missing canonical Waggle Way ${name} rules`);
+    }
+  }
+  if (!dockerInputs.includes("!packages/waggle-way/src/core/")) {
+    throw new Error("Game Docker context must include the Waggle Way core directory");
+  }
   for (const pattern of [
     /FROM node:24\.18\.0-bookworm-slim/u,
     /npm ci/u,
@@ -242,6 +251,7 @@ export function validateRepositoryWiring(contract, root = process.cwd()) {
   const routeSources = [
     read("functions/src/routes/buzzello.ts"),
     read("functions/src/routes/buzzle.ts"),
+    read("functions/src/routes/waggleWay.ts"),
   ];
   const budgetSource = read("functions/src/lib/gameResourceBudget.ts");
   const sourceUnitLiteral = String(contract.monthlyResourceUnits).replace(/\B(?=(\d{3})+(?!\d))/gu, "_");

@@ -8,11 +8,11 @@ import { GamePrintablesLink } from "@/components/games/GamePrintablesLink";
 export default function ArcadePage() {
   return (
     <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-16">
-      <SEO title="ARES Arcade" description="Play BUZZHEX, BUZZLE, BUZZELLO, and Pollinator Pile-Up. Explore word games, hexagonal strategy, and physics challenges from ARES 23247." />
+      <SEO title="ARES Arcade" description="Play BUZZHEX, BUZZLE, BUZZELLO, Pollinator Pile-Up, and the Waggle Way beta. Explore word games, hexagonal strategy, and physics challenges from ARES 23247." />
       <PageHeader
         eyebrow={<><Gamepad2 aria-hidden="true" size={18} /> Play, think, try again</>}
         title="ARES Arcade"
-        description="A word challenge, a battle for the board, or one more critter on the flower. Pick a game and make your next move."
+        description="Solve a word challenge, battle for the board, stack critters, or guide a hive to the flowers. Pick a game and make your next move."
       />
       <section aria-label="Games" className="my-8 grid gap-5 md:grid-cols-2">
         {ARCADE_GAMES.map(({ label, to, icon: Icon, iconColor, description, modes }) => (

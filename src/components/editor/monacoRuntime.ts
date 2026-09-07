@@ -1,10 +1,10 @@
 import { loader } from "@monaco-editor/react";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import TypeScriptWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution";
-import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution";
-import * as typescriptLanguage from "monaco-editor/esm/vs/language/typescript/monaco.contribution";
+import * as monaco from "monaco-editor/editor";
+import EditorWorker from "monaco-editor/editor/editor.worker?worker";
+import TypeScriptWorker from "monaco-editor/languages/features/typescript/ts.worker?worker";
+import "monaco-editor/languages/definitions/javascript/register";
+import "monaco-editor/languages/definitions/typescript/register";
+import * as typescriptLanguage from "monaco-editor/languages/features/typescript/register";
 
 interface MonacoWorkerEnvironment {
   getWorker: (_moduleId: string, label: string) => Worker;

@@ -15,6 +15,8 @@ export interface ApiRouteMount {
 
 interface CreateApiAppOptions {
   routes: readonly ApiRouteMount[];
+  /** These routers own body parsing and must authenticate/quota mutations first. */
+  preBodyRoutes?: readonly ApiRouteMount[];
   enableLargePhotoUpload?: boolean;
   globalRequestLimit?: {
     max: number;
@@ -39,6 +41,7 @@ const corsOptions: cors.CorsOptions = {
 /** Build an isolated API process with the same security middleware contract. */
 export function createApiApp({
   routes,
+  preBodyRoutes = [],
   enableLargePhotoUpload = false,
   globalRequestLimit,
 }: CreateApiAppOptions) {
@@ -87,6 +90,7 @@ export function createApiApp({
     );
   }
 
+  for (const route of preBodyRoutes) app.use(route.path, route.router);
   app.use(express.json({ limit: "1mb" }));
   for (const route of routes) app.use(route.path, route.router);
 

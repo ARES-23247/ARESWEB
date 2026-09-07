@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { driveSyncMock, sitemapRefreshMock, simulationsRefreshMock } = vi.hoisted(() => ({
+const {
+  driveSyncMock,
+  sitemapRefreshMock,
+  simulationsRefreshMock,
+  waggleCleanupMock,
+} = vi.hoisted(() => ({
   driveSyncMock: vi.fn(),
   sitemapRefreshMock: vi.fn(),
   simulationsRefreshMock: vi.fn(),
+  waggleCleanupMock: vi.fn(),
+}));
+vi.mock("../lib/waggleCommunityCleanup", () => ({
+  cleanupWaggleCommunity: waggleCleanupMock,
 }));
 vi.mock("../lib/googleDriveLibrary", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/googleDriveLibrary")>()),
@@ -48,6 +57,7 @@ import {
   GAME_SERVICE_SECRET_BINDINGS,
   RUNTIME_SERVICE_ACCOUNTS,
   cleanupOldInquiries,
+  cleanupWaggleGardens,
   communicationsApi,
   coreApi,
   driveApi,
@@ -62,6 +72,49 @@ import { driveApp } from "../apps/drive";
 import { mediaApp } from "../apps/media";
 import { publicApp } from "../apps/public";
 import { adminDb } from "../lib/firebase-admin";
+
+describe("bounded Waggle garden retention", () => {
+  it("runs one private pass every fifteen minutes under the existing game identity", async () => {
+    const endpoint = (cleanupWaggleGardens as unknown as { __endpoint: object })
+      .__endpoint;
+    expect(endpoint).toMatchObject({
+      availableMemoryMb: 256,
+      timeoutSeconds: 60,
+      concurrency: 1,
+      maxInstances: 1,
+      cpu: "gcf_gen1",
+      serviceAccountEmail: RUNTIME_SERVICE_ACCOUNTS.gameService,
+      scheduleTrigger: {
+        schedule: "every 15 minutes",
+        timeZone: "Etc/UTC",
+        retryConfig: { retryCount: 0 },
+      },
+    });
+    expect(endpoint).not.toHaveProperty("httpsTrigger");
+    expect(endpoint).not.toHaveProperty("secretEnvironmentVariables");
+    waggleCleanupMock
+      .mockReset()
+      .mockResolvedValue({ heads: 12, revisions: 25, reports: 25, events: 25 });
+    await cleanupWaggleGardens.run({
+      scheduleTime: "2026-09-06T12:00:00Z",
+      jobName: "retention-fixture",
+    });
+    expect(waggleCleanupMock).toHaveBeenCalledTimes(1);
+    expect(waggleCleanupMock).toHaveBeenCalledWith();
+  });
+  it("keeps a failed pass failed without exposing storage identifiers", async () => {
+    waggleCleanupMock
+      .mockReset()
+      .mockRejectedValue(new Error("private document identifier"));
+    await expect(
+      cleanupWaggleGardens.run({
+        scheduleTime: "2026-09-06T12:15:00Z",
+        jobName: "retention-fixture",
+      }),
+    ).rejects.toThrow("Waggle garden retention failed.");
+    expect(waggleCleanupMock).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("cleanupOldInquiries scheduled function", () => {
   let mockGet: any;
@@ -149,14 +202,18 @@ describe("public artifact refresh schedules", () => {
   it("refreshes the sitemap with the public runtime and strict bounds", async () => {
     sitemapRefreshMock.mockResolvedValue(undefined);
     const endpoint = (refreshPublicSitemap as any).__endpoint;
-    expect(endpoint.scheduleTrigger).toEqual(expect.objectContaining({
-      schedule: "every 30 minutes",
-      retryConfig: expect.objectContaining({retryCount: 3}),
-    }));
+    expect(endpoint.scheduleTrigger).toEqual(
+      expect.objectContaining({
+        schedule: "every 30 minutes",
+        retryConfig: expect.objectContaining({ retryCount: 3 }),
+      }),
+    );
     expect(endpoint.availableMemoryMb).toBe(256);
     expect(endpoint.concurrency).toBe(1);
     expect(endpoint.maxInstances).toBe(1);
-    expect(endpoint.serviceAccountEmail).toBe(RUNTIME_SERVICE_ACCOUNTS.publicApi);
+    expect(endpoint.serviceAccountEmail).toBe(
+      RUNTIME_SERVICE_ACCOUNTS.publicApi,
+    );
 
     await (refreshPublicSitemap as any).run({});
     expect(sitemapRefreshMock).toHaveBeenCalledOnce();
@@ -165,14 +222,20 @@ describe("public artifact refresh schedules", () => {
   it("refreshes simulations with only the repository credential", async () => {
     simulationsRefreshMock.mockResolvedValue(undefined);
     const endpoint = (refreshSimulationArtifacts as any).__endpoint;
-    expect(endpoint.scheduleTrigger).toEqual(expect.objectContaining({
-      schedule: "every 30 minutes",
-      retryConfig: expect.objectContaining({retryCount: 3}),
-    }));
-    expect(endpoint.secretEnvironmentVariables.map((secret: { key: string }) => secret.key)).toEqual([
-      "GITHUB_PAT",
-    ]);
-    expect(endpoint.serviceAccountEmail).toBe(RUNTIME_SERVICE_ACCOUNTS.communicationsApi);
+    expect(endpoint.scheduleTrigger).toEqual(
+      expect.objectContaining({
+        schedule: "every 30 minutes",
+        retryConfig: expect.objectContaining({ retryCount: 3 }),
+      }),
+    );
+    expect(
+      endpoint.secretEnvironmentVariables.map(
+        (secret: { key: string }) => secret.key,
+      ),
+    ).toEqual(["GITHUB_PAT"]);
+    expect(endpoint.serviceAccountEmail).toBe(
+      RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
+    );
 
     await (refreshSimulationArtifacts as any).run({});
     expect(simulationsRefreshMock).toHaveBeenCalledOnce();
@@ -281,7 +344,11 @@ describe("Express App Endpoints", () => {
   });
 
   it("authenticates and quotas sponsor logos before allocating the raw upload body", () => {
-    const expectedNames = ["ensureAdmin", "enforceDistributedQuota", "rawParser"];
+    const expectedNames = [
+      "ensureAdmin",
+      "enforceDistributedQuota",
+      "rawParser",
+    ];
     const uploadLayers = stackFor(mediaApp).filter(
       (layer: any) =>
         expectedNames.includes(layer.name) &&
@@ -344,10 +411,9 @@ describe("Express App Endpoints", () => {
     expect(new Set(Object.values(API_ROUTE_GROUPS).flat()).size).toBe(
       Object.values(API_ROUTE_GROUPS).flat().length,
     );
-    expect(API_ROUTE_GROUPS.public).toEqual(expect.arrayContaining([
-      "/api/seasons",
-      "/api/awards",
-    ]));
+    expect(API_ROUTE_GROUPS.public).toEqual(
+      expect.arrayContaining(["/api/seasons", "/api/awards"]),
+    );
 
     const communicationsEndpoint = (
       communicationsApi as unknown as {

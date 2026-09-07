@@ -29,6 +29,11 @@ function isArchivedAuthorization(data: FirebaseFirestore.DocumentData | undefine
   return data?.isDeleted === true || data?.isDeleted === 1;
 }
 
+/** Recheck the current record inside transactions that follow expensive work. */
+export function currentAuthorizationRole(data: FirebaseFirestore.DocumentData | undefined): ActiveAuthorizationRole | null {
+  return isArchivedAuthorization(data) ? null : normalizeActiveRole(data?.role);
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown authentication error";
 }

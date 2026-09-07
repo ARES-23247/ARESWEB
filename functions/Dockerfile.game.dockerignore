@@ -15,6 +15,12 @@ functions/src/generated/
 !packages/buzzle/src/rules.ts
 !packages/buzzello/src/rules.ts
 !packages/game-common/src/hexGrid.ts
+!packages/waggle-way/src/core/
+!packages/waggle-way/src/core/level.ts
+!packages/waggle-way/src/core/weather.ts
+!packages/waggle-way/src/core/engine.ts
+!packages/waggle-way/src/core/replay.ts
+!packages/waggle-way/src/core/community.ts
 !packages/buzzle/data/
 !packages/buzzle/data/**
 !packages/pollinator/public/

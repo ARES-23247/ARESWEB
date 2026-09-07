@@ -15,6 +15,7 @@ The website stays in `src/`; the existing APIs and game process stay in
 | `packages/buzzle/` | Rules, AI, workers, game UI, dictionary lookup, physical tools, canonical lexicon |
 | `packages/buzzhex/` | Local Hex rules and UI; thin site wrapper at `/buzzhex` |
 | `packages/buzzello/` | Rules, AI, worker, game UI, online client contract |
+| `packages/waggle-way/` | Pure swarm engine, level schema, campaign, local builder, persistence, replay and community contracts; thin site wrappers in `src/app/waggle-way/` |
 | `packages/pollinator/public/` | Classic-script physics, rendering, local game UI, assets and dependency license |
 | `packages/game-common/` | Hex geometry and fullscreen behavior |
 | `packages/ui/` | Existing shared buttons, dialogs and class-name utility |
@@ -50,6 +51,17 @@ stable codes that the server maps to `ApiError`; unexpected errors still propaga
 to the existing global handler. API paths, match envelopes and authentication are
 unchanged. Pollinator remains a device-only game in an opaque `allow-scripts`
 iframe, with the existing bounded host score bridge.
+
+Waggle Way's community API uses the existing game service at `/api/waggle-way`.
+Its router owns bounded body parsing after authentication and durable quotas;
+`createApiApp.preBodyRoutes` mounts it after shared CORS, App Check and request
+ceilings, before generic JSON parsing. Server transactions own publication,
+moderation and lineage. Reports and discovery return explicit DTOs from private
+collections. The compiled verifier runs the staged rules in a bounded Node worker.
+The website injects authenticated transport through `src/lib/waggleCommunity.ts`;
+the package owns the client and in-game guest browse/play/report dialog. Publishing,
+moderator interfaces, remix authoring and scheduled retirement wiring remain in progress;
+see `docs/waggle-way/COMMUNITY_PLAN.md` for the implemented transport contract.
 
 ## Build and deployment
 

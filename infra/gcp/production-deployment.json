@@ -28,6 +28,18 @@
   },
   "functions": [
     {
+      "id": "cleanupWaggleGardens",
+      "trigger": "schedule",
+      "runServiceId": "cleanupwagglegardens",
+      "serviceAccount": "aresweb-game-runtime@aresfirst-portal.iam.gserviceaccount.com",
+      "public": false,
+      "secrets": [],
+      "timeoutSeconds": 60,
+      "availableMemoryMb": 256,
+      "maxInstances": 1,
+      "concurrency": 1
+    },
+    {
       "id": "cleanupOldInquiries",
       "trigger": "schedule",
       "runServiceId": "cleanupoldinquiries",
@@ -247,6 +259,15 @@
         "status": 200,
         "contentType": "application/json",
         "validJson": true
+      },
+      {
+        "name": "community garden API",
+        "origin": "hosting",
+        "path": "/api/waggle-way/gardens",
+        "status": 200,
+        "contentType": "application/json",
+        "validJson": true,
+        "headerIncludes": { "cache-control": ["no-store"] }
       },
       {
         "name": "bounded online game service",

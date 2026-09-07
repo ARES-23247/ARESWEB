@@ -1,8 +1,10 @@
 import { createApiApp } from "../apiApp";
 import buzzelloRouter from "../routes/buzzello";
 import buzzleRouter from "../routes/buzzle";
+import { createWaggleWayRouter } from "../routes/waggleWay";
 
 export const gameApp = createApiApp({
+  preBodyRoutes: [{ path: "/api/waggle-way", router: createWaggleWayRouter() }],
   routes: [
     { path: "/api/buzzello", router: buzzelloRouter },
     { path: "/api/buzzle", router: buzzleRouter },
