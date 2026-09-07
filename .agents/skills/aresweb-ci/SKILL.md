@@ -36,8 +36,8 @@ the selector, shard completeness, and release readiness coverage gate. See
 - Never add service-account JSON, refresh tokens, or long-lived deploy secrets.
 
 Production delivery uses `.github/workflows/ci.yml` after a protected merge to
-`master`: build the verified artifact, deploy the bounded game Cloud Run image,
-wait for declared indexes, deploy the declared Functions, verify game HTTP
+`master`: build the verified artifact, deploy and wait for declared indexes,
+deploy the bounded game Cloud Run image and declared Functions, verify game HTTP
 readiness, switch Hosting/rules, then verify live health and browser security.
 The manual `Verify Current Production` workflow repeats read-only health/browser
 verification without redeployment; it does not erase an earlier failure or prove
