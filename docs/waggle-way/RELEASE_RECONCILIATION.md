@@ -31,7 +31,7 @@ Monaco 0.56 also requires its supported ESM entry points; the editor imports are
 updated, with a narrow compatibility alias for monaco-vim's old editor import.
 The renamed `editor-*` chunk stays in the existing optional-editor budget;
 neither that budget nor the website budget is increased. A browser regression
-checks actual editing, running the default simulation and clearing the loading
+checks actual editing, running the edited simulation and clearing the loading
 notice after successful editor initialization.
 
 Fresh frozen installation, deployment lock validation, lint, TypeScript and
