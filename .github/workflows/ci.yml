@@ -95,6 +95,10 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm run test:coverage
 
+      # The verification worker runs the real compiled artifact in integration tests.
+      - name: Build Cloud Functions
+        run: pnpm --filter functions build
+
       - name: Run Cloud Functions tests with coverage
         run: pnpm --filter functions test:coverage
 
@@ -114,9 +118,6 @@ jobs:
 
       - name: Enforce bundle budgets
         run: node scripts/check-bundle-size.mjs
-
-      - name: Build Cloud Functions
-        run: pnpm --filter functions build
 
       - name: Verify standalone game container
         run: |

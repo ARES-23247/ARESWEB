@@ -10,7 +10,7 @@ interface FieldOverride {
 }
 
 describe("Firestore index source of truth", () => {
-  it("keeps distributed quota expiry enabled and unindexed", () => {
+  it("keeps distributed quota and private garden audit expiry enabled and unindexed", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firestore.indexes.json"), "utf8"),
     ) as { fieldOverrides: FieldOverride[] };
@@ -20,6 +20,12 @@ describe("Firestore index source of truth", () => {
       fieldPath: "expiresAt",
       ttl: true,
       indexes: [],
+    });
+    expect(config.fieldOverrides).toContainEqual({
+      collectionGroup: "waggle_events",
+      fieldPath: "expiresAt",
+      ttl: true,
+      indexes: [{ order: "ASCENDING", queryScope: "COLLECTION" }],
     });
   });
 

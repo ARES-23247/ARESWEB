@@ -94,6 +94,7 @@ describe("production deployment contract", () => {
   it("loads and validates the checked-in production contract", () => {
     const contract = loadContract("infra/gcp/production-deployment.json");
     expect(contract.functions.map(({ id }) => id)).toEqual([
+      "cleanupWaggleGardens",
       "cleanupOldInquiries",
       "communicationsApi",
       "coreApi",

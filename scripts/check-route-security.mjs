@@ -24,6 +24,10 @@ const authorizationMiddleware = new Set([
 ]);
 
 const explicitNonFirebaseRoutes = new Map([
+  ["waggleWay.ts:POST:/gardens/:id/report", {
+    rationale: "guest categorical reports; shared App Check, durable IP/project quotas, bounded JSON and strict server validation",
+    requiredSource: [/reportQuota/u, /smallBody/u, /reports\.report\(req\.params\.id, req\.body\)/u],
+  }],
   ["buzzello.ts:POST:/games", {
     rationale: "guest friend-game creation; globally requires App Check and locally requires durable IP/project quotas plus strict validation",
     requiredSource: [/createQuota/u, /validate\(emptyBodySchema\)/u, /service\.createFriendGame\(\)/u],

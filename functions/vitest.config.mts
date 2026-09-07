@@ -13,8 +13,10 @@ export default defineConfig({
     coverage: {
       // Canonical package rules retain their coverage ratchets in the root suite.
       // These deployment copies are generated verbatim and tested through the adapters below.
-      exclude: ["src/generated/**", "**/*.{test,spec}.ts"],
+      exclude: ["src/generated/**", "**/*.{test,spec}.ts", "src/lib/__tests__/helpers/**"],
       thresholds: {
+        "src/lib/waggle*.ts": { lines: 85, functions: 100 },
+        "src/routes/waggleWay.ts": { lines: 85, functions: 100 },
         "src/lib/contentVisibility.ts": {
           lines: 100,
           functions: 100,

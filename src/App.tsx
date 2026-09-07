@@ -31,6 +31,8 @@ const BrandPage = lazy(() => import("@/app/brand/page"));
 const BuzzelloPage = lazy(() => import("@/app/buzzello/page"));
 const BuzzlePage = lazy(() => import("@/app/buzzle/page"));
 const BuzzleWordToolsPage = lazy(() => import("@/app/buzzle/word-tools/page"));
+const WaggleWayPage = lazy(() => import("@/app/waggle-way/page"));
+const WaggleWayBuilderPage = lazy(() => import("@/app/waggle-way/builder/page"));
 const PollenPage = lazy(() => import("@/app/pollen/page"));
 const BlogFeedPage = lazy(() => import("@/app/blog/page"));
 const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
@@ -131,6 +133,8 @@ export default function App() {
                   <Route path="/buzzle" element={<BuzzlePage />} />
                   <Route path="/buzzle/word-tools" element={<BuzzleWordToolsPage />} />
                   <Route path="/pollen" element={<PollenPage />} />
+                  <Route path="/waggle-way" element={<WaggleWayPage />} />
+                  <Route path="/waggle-way/builder" element={<WaggleWayBuilderPage />} />
                   <Route path="/blog" element={<BlogFeedPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />

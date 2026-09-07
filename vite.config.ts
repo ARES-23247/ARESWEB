@@ -184,6 +184,12 @@ export default defineConfig({
       // administrative reliability surface. A listed module therefore reports
       // 0% instead of disappearing when its importing test is removed.
       include: [
+        "packages/waggle-way/src/core/*.ts",
+        "packages/waggle-way/src/communityClient.ts",
+        "packages/waggle-way/src/workshopState.ts",
+        "src/lib/waggleCommunity.ts",
+        "packages/waggle-way/src/ui/useGhostReplay.ts",
+        "packages/waggle-way/src/ui/ghost.worker.ts",
         "src/lib/buzzello.ts",
         "src/lib/buzzelloOnline.ts",
         "src/lib/buzzle.ts",
@@ -271,6 +277,11 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
+        "packages/waggle-way/src/core/*.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/communityClient.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/workshopState.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/ui/useGhostReplay.ts": { lines: 85, functions: 100 },
+        "packages/waggle-way/src/ui/ghost.worker.ts": { lines: 85, functions: 100 },
         "packages/pollenator/public/js/physics.js": { lines: 85, functions: 100 },
         "scripts/prepare-game-packages.mjs": { lines: 85, functions: 100 },
         "packages/game-common/src/hexGrid.ts": { lines: 85, functions: 100 },

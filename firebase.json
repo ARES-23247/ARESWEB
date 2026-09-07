@@ -235,7 +235,7 @@
         "function": "coreApi"
       },
       {
-        "source": "/api/@(buzzello|buzzle){,/**}",
+        "source": "/api/@(buzzello|buzzle|waggle-way){,/**}",
         "run": {
           "serviceId": "aresweb-game-api",
           "region": "us-central1",
@@ -353,6 +353,14 @@
       {
         "source": "/arcade",
         "destination": "/prerender/arcade.html"
+      },
+      {
+        "source": "/waggle-way",
+        "destination": "/prerender/waggle-way.html"
+      },
+      {
+        "source": "/waggle-way/builder",
+        "destination": "/prerender/waggle-way-builder.html"
       },
       {
         "source": "/pollen",

@@ -968,6 +968,33 @@ describe("Robot fleet rules", () => {
 });
 
 describe("Media API boundary rules", () => {
+  it("keeps all community garden records and nested revisions private even when marked published", async () => {
+    const paths = [
+      "waggle_levels/garden", "waggle_levels/garden/revisions/1",
+      "waggle_creator_limits/creator", "waggle_events/garden_1", "waggle_reports/report",
+    ];
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      for (const path of paths) await setDoc(doc(context.firestore(), path), {
+        ownerUid: "creator", visibility: "published", isDeleted: false,
+      });
+    });
+    const databases = [testEnvironment.unauthenticatedContext().firestore()];
+    for (const role of ["member", "mentor", "coach", "admin"]) {
+      const uid = role === "member" ? "creator" : `community-${role}`;
+      await seedAuthorizedUser(uid, role);
+      databases.push(testEnvironment.authenticatedContext(uid).firestore());
+    }
+    for (const database of databases) {
+      for (const path of paths) {
+        const reference = doc(database, path);
+        await assertFails(getDoc(reference));
+        await assertFails(getDocs(collection(database, path.slice(0, path.lastIndexOf("/")))));
+        await assertFails(setDoc(reference, { ownerUid: "creator", visibility: "published", isDeleted: false }));
+        await assertFails(updateDoc(reference, { visibility: "published" }));
+        await assertFails(deleteDoc(reference));
+      }
+    }
+  });
   it("keeps photo, album, video, and runtime settings documents server-only", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedDocument("imported_photos", "photo-1", {

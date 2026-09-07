@@ -38,7 +38,9 @@ describe("dependency security contracts", () => {
       once(event: "error", listener: (error: Error) => void): FilterStream;
       write(token: FilterToken): boolean;
     };
-    const FilterBase = require("stream-json/filters/FilterBase") as new (
+    // Check the dependency actually loaded by Firebase CLI, regardless of pnpm hoisting.
+    const firebaseRequire = createRequire(require.resolve("firebase-tools/package.json"));
+    const FilterBase = firebaseRequire("stream-json/filters/FilterBase") as new (
       options: { filter: string; maxDepth: number },
     ) => FilterStream;
     class TestFilter extends FilterBase {

@@ -40,6 +40,7 @@ export const TEAM_LINKS: NavItemConfig[] = [
 ];
 
 export const ARCADE_GAMES = [
+  { label: "Waggle Way", to: "/waggle-way", icon: Flower2, iconColor: "text-ares-gold", description: "Guide a hive to flowers with dances, fans and shelter leaves. Play thirty puzzles or build a garden in the workshop.", modes: "Swarm puzzle · Solo playtest" },
   { label: "BUZZLE", to: "/buzzle", icon: Hexagon, iconColor: "text-ares-gold", description: "Build words in three directions on a hexagonal board. Find your next move with legal word references and dictionary help.", modes: "Word game · 2–4 players" },
   { label: "BUZZELLO", to: "/buzzello", icon: Hexagon, iconColor: "text-ares-cyan", description: "Outthink your opponent, flip pieces, and claim the hexagonal board. Share a device or challenge the computer.", modes: "Strategy · 2 players or computer" },
   { label: "Pollenator Pile-Up", to: "/pollen", icon: Flower2, iconColor: "text-ares-gold", description: "Balance Appalachian critters on a swaying flower. Stack carefully, keep your balance, and watch for Mothman.", modes: "Balance · Solo, shared device, or computer" },

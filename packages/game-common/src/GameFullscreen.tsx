@@ -38,7 +38,10 @@ export function useGameFullscreen() {
     void requestFullscreen.call(document.documentElement).then(
       () => {
         if (!isActive.current) {
-          if (document.fullscreenElement && typeof document.exitFullscreen === "function") {
+          if (
+            document.fullscreenElement &&
+            typeof document.exitFullscreen === "function"
+          ) {
             void document.exitFullscreen().catch(ignoreFullscreenExitError);
           }
           return;
@@ -65,6 +68,18 @@ export function useGameFullscreen() {
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Escape belongs to the active dialog before it belongs to the game.
+      // Its event path survives a dialog unmounting during capture handlers.
+      if (
+        event.defaultPrevented ||
+        event
+          .composedPath()
+          .some(
+            (node) =>
+              node instanceof Element && node.getAttribute("role") === "dialog",
+          )
+      )
+        return;
       if (event.key === "Escape" && !document.fullscreenElement) {
         exitFullscreen();
       }

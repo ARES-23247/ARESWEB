@@ -1,0 +1,2108 @@
+@font-face {
+  font-family: "Waggle Pixel";
+  src: url("./assets/fonts/PixelifySans.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.ww-page {
+  --ww-accent: var(--ares-gold);
+  max-width: 1440px;
+  margin: auto;
+  padding: 3rem 1.5rem;
+  color: var(--ares-text-primary);
+}
+.ww-garden-meadow {
+  --ww-accent: var(--ares-success);
+}
+.ww-garden-meadow .ww-scene {
+  border-color: var(--ares-success);
+}
+@media (max-width: 600px) {
+  .ww-page .ww-campaign-list {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+.ww-shelter rect {
+  fill: var(--ares-app-background);
+  stroke: var(--ares-success);
+  stroke-width: 0.04;
+}
+.ww-shelter path {
+  fill: none;
+  stroke: var(--ares-success);
+  stroke-width: 0.05;
+}
+.ww-tool-supply,
+.ww-supply-edit {
+  margin: 1rem 0;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--ares-border);
+}
+.ww-session[data-game-fullscreen="true"] {
+  max-width: none;
+  padding: 1rem;
+  background: var(--ares-app-background);
+}
+.ww-preferences {
+  margin: 1rem 0;
+}
+.ww-bee-guiding .ww-wing {
+  animation: ww-guide-wings 0.8s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes ww-guide-wings {
+  to {
+    transform: rotate(18deg);
+  }
+}
+[data-reduced-motion="true"] .ww-bee-guiding .ww-wing {
+  animation: none;
+}
+[data-paused="true"] .ww-bee-guiding .ww-wing {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ww-bee-guiding .ww-wing {
+    animation: none;
+  }
+}
+.ww-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 2rem;
+  padding-bottom: 2rem;
+}
+.ww-eyebrow {
+  color: var(--ww-accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.ww-header h1 {
+  font-size: clamp(2.4rem, 7vw, 5.5rem);
+  letter-spacing: -0.06em;
+  line-height: 1.05;
+  margin: 0.5rem 0 1rem;
+}
+.ww-header p:not(.ww-eyebrow) {
+  max-width: 42rem;
+  color: var(--ares-text-secondary);
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+.ww-header a,
+.ww-page a {
+  color: var(--ww-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.ww-page h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+.ww-campaign-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+  list-style: none;
+  margin: 1.2rem 0;
+  padding: 0;
+}
+.ww-campaign-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 0.55rem;
+  text-align: left;
+  padding: 1rem;
+  background: var(--ares-app-background);
+  border: 1px solid var(--ares-border);
+  border-radius: 0.8rem;
+  color: var(--ares-text-primary);
+}
+.ww-campaign-card[aria-pressed="true"] {
+  border-color: var(--ww-accent);
+  box-shadow: inset 0 0 0 1px var(--ww-accent);
+}
+.ww-campaign-card:disabled {
+  cursor: not-allowed;
+}
+.ww-campaign-card span:not(.ww-level-number),
+.ww-campaign-card small {
+  color: var(--ares-text-secondary);
+}
+.ww-level-number {
+  color: var(--ww-accent);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.ww-hints,
+.ww-session-heading {
+  margin: 1rem 0;
+}
+.ww-hints ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+  line-height: 1.6;
+}
+.ww-page h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+.ww-panel {
+  padding: 1.2rem;
+  background: var(--ares-app-surface);
+  border: 1px solid var(--ares-border);
+  border-radius: 1rem;
+  min-width: 0;
+}
+.ww-panel p {
+  line-height: 1.5;
+  margin: 0.8rem 0;
+}
+.ww-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 1rem;
+  align-items: start;
+  margin: 1rem 0;
+}
+.ww-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+.ww-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.8rem;
+}
+.ww-toolbar label {
+  margin-bottom: 0;
+}
+.ww-page input,
+.ww-page select,
+.ww-page textarea {
+  background: var(--ares-app-background);
+  color: var(--ares-text-primary);
+  border: 1px solid var(--ares-border);
+  border-radius: 0.4rem;
+  padding: 0.65rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.ww-page :is(input, select, textarea, button, a, summary):focus-visible {
+  outline: 3px solid var(--ww-accent);
+  outline-offset: 3px;
+}
+.ww-page button {
+  min-height: 44px;
+}
+.ww-page input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--ww-accent);
+}
+.ww-view-controls label {
+  flex-direction: row;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+.ww-page summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.35rem;
+}
+.ww-caption {
+  color: var(--ares-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.ww-notice {
+  min-height: 3rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--ares-app-surface-elevated);
+  border-left: 3px solid var(--ww-accent);
+  border-radius: 0.3rem;
+}
+.ww-error {
+  border-color: var(--ares-danger);
+}
+.ww-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.3rem;
+  padding: 1rem 0;
+}
+.ww-stats span {
+  display: flex;
+  flex-direction: column;
+  color: var(--ares-text-secondary);
+  font-size: 0.8rem;
+}
+.ww-stats strong {
+  font-size: 1.6rem;
+  color: var(--ww-accent);
+}
+.ww-scene {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--ares-border);
+  border-radius: 1rem;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.ww-scene-background {
+  fill: var(--ares-app-background);
+}
+.ww-grid-line {
+  fill: none;
+  stroke: var(--ares-border);
+  stroke-width: 0.015;
+  opacity: 0.24;
+}
+.ww-hive,
+.ww-honey-fill {
+  fill: var(--ares-gold);
+}
+.ww-dark-fill {
+  fill: var(--ares-on-bright-accent);
+}
+.ww-ink {
+  fill: none;
+  stroke: var(--ares-on-bright-accent);
+  stroke-width: 0.05;
+}
+.ww-flowers > rect {
+  fill: var(--ares-app-surface-elevated);
+  stroke: var(--ares-success);
+  stroke-width: 0.06;
+}
+.ww-stem {
+  stroke: var(--ares-success);
+  stroke-width: 0.07;
+}
+.ww-petals {
+  fill: var(--marble);
+}
+.ww-terrain rect {
+  fill: var(--ares-bronze);
+}
+.ww-water rect {
+  fill: var(--ares-app-surface-elevated);
+  stroke: var(--ares-danger);
+  stroke-width: 0.06;
+}
+.ww-water text {
+  fill: var(--ares-danger);
+}
+.ww-perch rect {
+  fill: var(--ares-app-surface-elevated);
+  stroke: var(--ww-accent);
+  stroke-width: 0.05;
+}
+.ww-perch path {
+  fill: none;
+  stroke: var(--ww-accent);
+  stroke-width: 0.08;
+}
+.ww-perch text {
+  fill: var(--ww-accent);
+}
+.ww-fan rect {
+  fill: var(--ares-app-surface-elevated);
+  stroke: var(--ares-text-primary);
+  stroke-width: 0.04;
+}
+.ww-fan circle,
+.ww-fan path {
+  fill: none;
+  stroke: var(--ares-text-primary);
+  stroke-width: 0.05;
+}
+.ww-object-text {
+  font-size: 0.5px;
+  text-anchor: middle;
+  font-family: system-ui;
+  font-weight: 800;
+}
+.ww-direction {
+  fill: none;
+  stroke: var(--ww-accent);
+  stroke-width: 0.055;
+}
+.ww-selection-outline {
+  fill: none;
+  stroke: var(--marble);
+  stroke-width: 0.06;
+  stroke-dasharray: 0.14 0.07;
+  pointer-events: none;
+}
+.ww-wind {
+  stroke: var(--ww-accent);
+  stroke-width: 0.035;
+  opacity: 0.7;
+  fill: none;
+}
+.ww-influence {
+  fill: none;
+  stroke: var(--ww-accent);
+  stroke-width: 0.035;
+  stroke-dasharray: 0.15 0.12;
+}
+.ww-preview {
+  fill: none;
+  stroke: var(--marble);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.15 0.1;
+}
+.ww-wing {
+  fill: var(--marble);
+  stroke: var(--ares-app-background);
+  stroke-width: 0.015;
+}
+.ww-bee-stripe {
+  stroke: var(--ares-on-bright-accent);
+  stroke-width: 0.06;
+}
+.ww-win-label {
+  fill: var(--ww-accent);
+  font-size: 0.55px;
+  font-weight: 800;
+}
+.ww-bee-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem;
+  max-height: 22rem;
+  overflow: auto;
+}
+.ww-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.ww-palette button[aria-pressed="true"] {
+  outline: 2px solid var(--ww-accent);
+  outline-offset: 2px;
+}
+.ww-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.ww-form-grid .ww-wide {
+  grid-column: 1 / -1;
+}
+.ww-scroll-scene {
+  overflow: auto;
+  max-height: 75vh;
+  border-radius: 1rem;
+}
+@media (max-width: 900px) {
+  .ww-workspace {
+    grid-template-columns: 1fr;
+  }
+  .ww-header {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .ww-page {
+    padding: 2rem 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ww-page * {
+    scroll-behavior: auto;
+  }
+}
+
+.ww-glasshouse-piece rect {
+  fill: var(--ares-app-background);
+  stroke: var(--ares-gold);
+  stroke-width: 0.05;
+}
+.ww-glasshouse-piece path {
+  fill: none;
+  stroke: var(--ares-gold);
+  stroke-width: 0.07;
+}
+.ww-glasshouse-piece text {
+  fill: var(--ares-text-primary);
+  font-size: 0.25px;
+}
+.ww-state-open rect,
+.ww-state-closing rect {
+  stroke-dasharray: 0.12 0.08;
+}
+.ww-state-open rect {
+  stroke: var(--ares-success);
+}
+.ww-gate-link {
+  fill: none;
+  stroke: var(--ares-gold);
+  stroke-width: 0.035;
+  stroke-dasharray: 0.16 0.12;
+}
+
+.ww-rain-zone rect {
+  stroke: var(--ares-text-secondary);
+  stroke-width: 0.035;
+  stroke-dasharray: 0.12 0.12;
+}
+.ww-weather-warning rect {
+  stroke: var(--ares-gold);
+  stroke-width: 0.06;
+  stroke-dasharray: 0.25 0.08;
+}
+.ww-weather-rain rect {
+  stroke: var(--ares-red);
+  stroke-width: 0.06;
+  stroke-dasharray: none;
+}
+.ww-rain-streak {
+  stroke: var(--ares-text-primary);
+  stroke-width: 0.045;
+}
+.ww-garden-glasshouse .ww-scene {
+  border-color: var(--ares-bronze);
+}
+.ww-garden-glasshouse .ww-grid-line {
+  stroke: var(--ares-bronze);
+  opacity: 0.22;
+}
+/* The garden is the primary surface; controls sit in a shallow dock. */
+.ww-page {
+  padding: 1rem 1.25rem 2rem;
+}
+.ww-header {
+  padding-bottom: 0.6rem;
+  align-items: center;
+  gap: 1rem;
+}
+.ww-header h1 {
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  margin: 0.15rem 0;
+  letter-spacing: -0.04em;
+}
+.ww-eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+}
+.ww-session-heading {
+  margin: 0.5rem 0;
+}
+.ww-session-heading h2 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+.ww-session-heading p {
+  font-size: 0.9rem;
+  color: var(--ares-text-secondary);
+  max-width: 80ch;
+}
+.ww-run-toolbar {
+  gap: 0.4rem;
+  margin: 0.6rem 0;
+}
+.ww-navigation {
+  display: flex;
+  gap: 0.4rem;
+}
+.ww-stats {
+  gap: 0.6rem 1.2rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.7rem;
+  background: var(--ares-app-surface);
+}
+.ww-stats span {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.ww-stats strong {
+  font-size: 1.15rem;
+}
+.ww-notice {
+  min-height: 0;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+.ww-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.ww-scene {
+  border: 2px solid var(--ares-bronze);
+  border-radius: 0.9rem;
+  background: #718958;
+  box-shadow: 0 12px 35px #0004;
+  touch-action: none;
+}
+.ww-scene-background {
+  fill: #a1b681;
+}
+.ww-grid-line {
+  stroke: #365541;
+  opacity: 0.3;
+}
+.ww-action-dock,
+.ww-builder-dock {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--ares-border);
+  border-radius: 0.9rem;
+  background: var(--ares-app-surface);
+}
+.ww-selected-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+}
+.ww-selected-controls > p {
+  max-width: 30rem;
+  font-size: 0.85rem;
+}
+.ww-selected-controls .ww-caption {
+  max-width: 22rem;
+  font-size: 0.75rem;
+}
+.ww-object-picker {
+  min-width: 10rem;
+}
+.ww-object-picker[open] {
+  flex-basis: 100%;
+}
+.ww-object-picker label {
+  max-width: 25rem;
+}
+.ww-direction-control {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.ww-direction-control > p {
+  max-width: 8rem;
+  font-size: 0.8rem;
+}
+.ww-compass {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ww-compass button {
+  padding: 0;
+  border: 1px solid var(--ares-border);
+  border-radius: 0.55rem;
+  background: var(--ares-app-background);
+  color: var(--ares-text-primary);
+  font-size: 1.4rem;
+}
+.ww-compass button[aria-pressed="true"] {
+  background: var(--ares-gold);
+  color: var(--ares-on-bright-accent);
+  border-color: var(--ares-gold);
+}
+.ww-compass button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ww-compass-center {
+  display: grid;
+  place-items: center;
+  color: var(--ares-gold);
+}
+.ww-tool-supply {
+  padding: 0 0 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.ww-tool-tray,
+.ww-builder-dock {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.ww-tool-tray button,
+.ww-palette button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+}
+.ww-tool-tray button[draggable="true"],
+.ww-palette button[draggable="true"] {
+  cursor: grab;
+}
+.ww-tool-tray button[aria-pressed="true"] {
+  outline: 2px solid var(--ares-gold);
+  outline-offset: 2px;
+}
+.ww-piece-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: visible;
+  pointer-events: none;
+}
+.ww-piece-icon .ww-piece-state {
+  display: none;
+}
+.ww-palette {
+  padding: 0.7rem 0;
+}
+.ww-builder-dock label {
+  margin: 0;
+}
+.ww-panel {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.65rem;
+}
+.ww-piece-shadow {
+  fill: #213729;
+  opacity: 0.3;
+}
+.ww-piece-state {
+  font-size: 0.24px;
+  font-weight: 800;
+  fill: #213729;
+  stroke: #fff9df;
+  stroke-width: 0.065;
+  paint-order: stroke;
+}
+.ww-bee-body {
+  fill: #f3cb55;
+  stroke: #54452b;
+  stroke-width: 0.04;
+}
+.ww-bee-shine {
+  fill: #fff2af;
+}
+.ww-bee {
+  filter: drop-shadow(0.045px 0.07px 0.035px #21372988);
+}
+.ww-wing {
+  fill: #fffbe3;
+  stroke: #55736b;
+  stroke-width: 0.025;
+}
+.ww-direction {
+  stroke: #3b482a;
+  stroke-width: 0.07;
+  filter: drop-shadow(0 0 0.04px #fff3bf);
+}
+.ww-turn-handle {
+  cursor: grab;
+  touch-action: none;
+}
+.ww-turn-handle:active {
+  cursor: grabbing;
+}
+.ww-turn-knob {
+  fill: #fff1b2;
+  stroke: #3b482a;
+  stroke-width: 0.06;
+}
+.ww-selection-outline {
+  stroke: #3b482a;
+  stroke-width: 0.075;
+  filter: drop-shadow(0 0 0.03px #fff3bf);
+}
+.ww-influence,
+.ww-wind,
+.ww-gate-link {
+  stroke: #405731;
+}
+.ww-preview {
+  stroke: #443e68;
+}
+.ww-win-label {
+  fill: #314628;
+  stroke: #fff5d6;
+  stroke-width: 0.07;
+  paint-order: stroke;
+}
+.ww-rain-zone rect {
+  stroke: #455e65;
+}
+.ww-weather-warning rect {
+  stroke: #906219;
+}
+.ww-weather-rain rect {
+  stroke: #9c4037;
+}
+.ww-rain-streak {
+  stroke: #416c82;
+}
+.ww-map-dialog {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .ww-page {
+    padding: 0.7rem 0.65rem 1.5rem;
+  }
+  .ww-header {
+    flex-direction: row;
+  }
+  .ww-run-toolbar {
+    gap: 0.3rem;
+  }
+  .ww-run-toolbar button {
+    padding-inline: 0.65rem;
+    font-size: 0.8rem;
+  }
+  .ww-stats {
+    gap: 0.3rem 0.8rem;
+  }
+  .ww-selected-controls {
+    gap: 0.65rem;
+  }
+  .ww-direction-control > p {
+    max-width: 6rem;
+  }
+  .ww-session-heading p {
+    font-size: 0.8rem;
+  }
+}
+.ww-header .ww-toolbar {
+  margin: 0;
+  gap: 1.25rem;
+}
+.ww-compass {
+  grid-template-columns: repeat(8, 44px);
+}
+.ww-direction-control .ww-caption {
+  max-width: 8rem;
+}
+.ww-playfield .ww-scene {
+  height: clamp(290px, calc(100dvh - 310px), 760px);
+}
+.ww-builder-workspace .ww-scene {
+  max-height: 65dvh;
+}
+.ww-page {
+  --ares-app-surface: #23372d;
+  --ares-app-surface-elevated: #304335;
+  --ares-app-background: #19291f;
+}
+.ww-page button:not(.ww-campaign-card):not(:disabled):hover {
+  border-color: var(--ares-gold);
+}
+.ww-page .ww-run-toolbar > button:nth-of-type(1) {
+  background: var(--ares-gold);
+  color: var(--ares-on-bright-accent);
+  border-color: var(--ares-gold);
+}
+@media (max-width: 600px) {
+  .ww-compass {
+    grid-template-columns: repeat(4, 44px);
+  }
+  .ww-playfield .ww-scene {
+    height: auto;
+    min-height: 0;
+  }
+  .ww-header .ww-toolbar {
+    gap: 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+.ww-page > .ww-header {
+  min-height: 40px;
+  padding-bottom: 0.25rem;
+}
+.ww-header h1 {
+  font-size: 1.65rem;
+}
+.ww-header .ww-eyebrow {
+  margin: 0;
+  font-size: 0.6rem;
+}
+.ww-session-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.3rem 0;
+}
+.ww-session-heading h2 {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.ww-session-heading p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.ww-run-toolbar {
+  margin: 0.35rem 0;
+}
+.ww-run-toolbar label {
+  flex-direction: row;
+  align-items: center;
+}
+.ww-stats {
+  padding-block: 0.25rem;
+}
+.ww-playfield .ww-scene {
+  height: clamp(290px, calc(100dvh - 275px), 760px);
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+}
+.ww-direction-control .ww-caption {
+  font-size: 0.7rem;
+  max-width: 6rem;
+}
+.ww-selected-controls {
+  gap: 0.5rem 0.75rem;
+}
+.ww-selected-controls .ww-caption {
+  max-width: 12rem;
+}
+@media (max-width: 600px) {
+  .ww-session-heading {
+    display: block;
+  }
+  .ww-playfield .ww-scene {
+    width: 100%;
+    height: auto;
+  }
+}
+.ww-page button.bg-ares-red {
+  background: var(--ares-gold);
+  color: var(--ares-on-bright-accent);
+  border-color: var(--ares-gold);
+}
+.ww-session > details.ww-panel,
+.ww-hints {
+  display: inline-block;
+  vertical-align: top;
+  margin-right: 0.5rem;
+}
+.ww-session > details.ww-panel[open],
+.ww-hints[open] {
+  display: block;
+}
+.ww-tray-button {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.ww-tray-button:active {
+  cursor: grabbing;
+}
+.ww-drag-ghost {
+  position: fixed;
+  z-index: 160;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  padding: 0.4rem;
+  border-radius: 0.65rem;
+  background: var(--ares-app-surface);
+  border: 2px solid var(--ares-gold);
+  box-shadow: 0 5px 16px #0006;
+}
+.ww-drag-ghost .ww-piece-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.ww-builder-workspace .ww-scene {
+  max-height: none;
+}
+
+.ww-optional-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0.5rem 0;
+  color: var(--ares-text-primary);
+  font-size: 0.85rem;
+}
+.ww-optional-goals > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.ww-optional-goals svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+.ww-ghost-summary {
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px dashed var(--ares-text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ares-text-primary);
+}
+.ww-ghost-summary p {
+  margin: 0.15rem 0;
+}
+.ww-ghost-timeline {
+  display: flex;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ww-ghost-timeline label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ww-ghost-timeline input[type="range"] {
+  min-height: 44px;
+  width: 12rem;
+  max-width: 100%;
+  accent-color: var(--ww-accent);
+}
+.ww-ghost-outline,
+.ww-ghost-heading {
+  fill: none;
+  stroke: var(--ares-text-primary);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.13 0.08;
+  filter: drop-shadow(0 0.03px 0.025px var(--ares-app-background));
+}
+.ww-ghost-heading {
+  stroke-dasharray: none;
+}
+.ww-ghost-label {
+  fill: var(--ares-text-primary);
+  stroke: var(--ares-app-background);
+  stroke-width: 0.065;
+  paint-order: stroke;
+  font-size: 0.28px;
+  font-weight: 800;
+}
+
+/* One game window. All secondary information opens over this frame. */
+.ww-game-page {
+  max-width: min(1360px, calc((100dvh - 370px) * 1.715 + 52px));
+  min-width: min(100%, 760px);
+  width: 100%;
+  padding: 1rem 1.5rem;
+}
+.ww-game-page > .ww-header {
+  padding: 0 0.4rem 0.9rem;
+}
+.ww-game-page .ww-header h1 {
+  font-size: 1.45rem;
+}
+.ww-game-window,
+.ww-workshop-window {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: min(880px, calc(100dvh - 100px));
+  min-height: 620px;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--ares-bronze);
+  border-radius: 1.5rem;
+  background: linear-gradient(
+    145deg,
+    var(--ares-app-surface-elevated),
+    var(--ares-app-background) 45%
+  );
+  box-shadow:
+    inset 0 1px 0 var(--ares-bronze),
+    0 24px 70px #0006;
+}
+.ww-workshop-window[hidden] {
+  display: none;
+}
+.ww-workshop-window {
+  overflow-wrap: anywhere;
+}
+.ww-workshop-window > * {
+  flex: none;
+}
+.ww-review-check,
+.ww-review-reason {
+  display: block;
+  margin-block: 1rem;
+}
+.ww-review-reason select {
+  display: block;
+  max-width: 100%;
+}
+.ww-review-flight {
+  height: auto;
+  min-height: 0;
+}
+.ww-review-flight .ww-playfield {
+  flex: none;
+  min-height: 150px;
+}
+.ww-workshop-window[data-game-fullscreen="true"] {
+  max-width: none;
+  min-height: 0;
+  border-radius: 0;
+}
+.ww-game-window .ww-session-heading {
+  flex: none;
+  margin: 0;
+  padding: 0.15rem 0.6rem 0.65rem;
+  justify-content: space-between;
+}
+.ww-game-window .ww-session-heading h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: -0.015em;
+}
+.ww-chapter {
+  color: var(--ares-gold);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ww-game-window .ww-run-toolbar {
+  flex: none;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.4rem;
+  background: var(--ares-app-background);
+  border: 1px solid var(--ares-border);
+  border-radius: 0.85rem 0.85rem 0 0;
+}
+.ww-game-window .ww-run-toolbar button {
+  border-radius: 0.6rem;
+  padding-inline: 0.7rem;
+  font-size: 0.8rem;
+}
+.ww-game-window .ww-run-toolbar label {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+.ww-game-window .ww-run-toolbar select {
+  min-height: 44px;
+  padding: 0.4rem;
+}
+.ww-game-window .ww-stats {
+  flex: none;
+  justify-content: center;
+  gap: 0.3rem 1.35rem;
+  border-radius: 0;
+  border-inline: 1px solid var(--ares-border);
+  padding: 0.35rem 0.7rem;
+  background: var(--ares-app-background);
+}
+.ww-game-window .ww-stats span {
+  font-size: 0.7rem;
+}
+.ww-game-window .ww-stats strong {
+  font-size: 1rem;
+}
+.ww-game-window .ww-play-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 350px;
+  margin: 0;
+  gap: 0;
+}
+.ww-game-window .ww-playfield {
+  flex: 1;
+  min-height: 180px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: var(--ares-app-background);
+  border-inline: 1px solid var(--ares-border);
+  overflow: hidden;
+}
+.ww-game-window .ww-playfield .ww-scene {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--ares-app-background);
+}
+.ww-game-window .ww-playfield > p {
+  position: absolute;
+  bottom: 0.5rem;
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--ares-app-background);
+}
+.ww-game-window .ww-action-dock {
+  flex: none;
+  max-height: 170px;
+  overflow: auto;
+  padding: 0.65rem;
+  border-radius: 0 0 0.85rem 0.85rem;
+  background: linear-gradient(
+    var(--ares-app-surface-elevated),
+    var(--ares-app-surface)
+  );
+  box-shadow: inset 0 1px 0 var(--ares-bronze);
+}
+.ww-game-window .ww-selected-controls {
+  justify-content: center;
+}
+.ww-game-window .ww-object-picker summary {
+  font-size: 0.8rem;
+  min-height: 44px;
+  align-content: center;
+}
+.ww-game-window .ww-direction-control {
+  gap: 0.55rem;
+}
+.ww-game-window .ww-direction-control .ww-caption {
+  max-width: 6rem;
+}
+.ww-game-window .ww-tool-supply {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.5rem;
+}
+.ww-game-window .ww-tool-supply > .ww-caption {
+  flex: 1;
+  min-width: 10rem;
+  font-size: 0.7rem;
+}
+.ww-game-window .ww-tool-tray {
+  gap: 0.4rem;
+}
+.ww-game-window .ww-tool-tray button {
+  flex-direction: row;
+  align-items: center;
+  border-radius: 0.65rem;
+}
+.ww-game-window > .ww-notice {
+  flex: none;
+  margin: 0.4rem 0 0;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  border-left: 0;
+  background: transparent;
+}
+.ww-utility-bar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 0.9rem;
+}
+.ww-utility-bar > details.ww-panel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.ww-utility-bar > details > summary {
+  min-height: 44px;
+  align-content: center;
+  font-size: 0.7rem;
+  color: var(--ares-text-secondary);
+}
+.ww-utility-bar > details[open] > summary {
+  color: var(--ares-gold);
+}
+.ww-utility-bar > details > .ww-panel-content {
+  position: absolute;
+  z-index: 5;
+  bottom: 65px;
+  left: 1rem;
+  right: 1rem;
+  max-height: min(420px, 60%);
+  overflow: auto;
+  padding: 1.2rem;
+  border: 1px solid var(--ares-bronze);
+  border-radius: 1rem;
+  background: var(--ares-app-background);
+  box-shadow: 0 -8px 35px #0006;
+}
+.ww-game-window .ww-optional-goals {
+  flex: none;
+  justify-content: center;
+  margin: 0;
+  padding: 0.2rem;
+  font-size: 0.7rem;
+  background: var(--ares-app-background);
+}
+.ww-game-window .ww-ghost-summary {
+  flex: none;
+  max-height: 140px;
+  overflow: auto;
+  margin: 0;
+  background: var(--ares-app-background);
+}
+.ww-session.ww-game-window[data-game-fullscreen="true"] {
+  height: 100dvh;
+  min-height: 0;
+  border-radius: 0;
+  padding-inline: max(
+    0.75rem,
+    env(safe-area-inset-left),
+    env(safe-area-inset-right)
+  );
+}
+@media (max-width: 800px) {
+  .ww-game-page {
+    padding: 0.65rem;
+  }
+  .ww-game-window {
+    height: calc(100dvh - 95px);
+    min-height: 700px;
+    padding: 0.45rem;
+    border-radius: 1rem;
+  }
+  .ww-game-window .ww-session-heading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 0.7rem;
+    padding: 0.3rem;
+  }
+  .ww-game-window .ww-session-heading h2 {
+    font-size: 0.95rem;
+  }
+  .ww-chapter {
+    font-size: 0.6rem;
+  }
+  .ww-game-window .ww-action-dock {
+    max-height: 210px;
+  }
+  .ww-game-window .ww-selected-controls {
+    justify-content: flex-start;
+  }
+  .ww-game-window .ww-stats {
+    gap: 0.25rem 0.6rem;
+  }
+  .ww-game-window .ww-compass {
+    grid-template-columns: repeat(8, 44px);
+  }
+  .ww-game-window .ww-direction-control {
+    flex-wrap: wrap;
+  }
+  .ww-game-window .ww-direction-control .ww-caption {
+    max-width: none;
+  }
+  .ww-utility-bar {
+    gap: 0 0.45rem;
+  }
+  .ww-utility-bar > details > .ww-panel-content {
+    bottom: 100px;
+  }
+}
+@media (max-width: 400px) {
+  .ww-game-window .ww-compass {
+    grid-template-columns: repeat(4, 44px);
+  }
+}
+@media (max-height: 600px) and (min-width: 700px) {
+  .ww-game-window .ww-playfield {
+    min-height: 100px;
+  }
+  .ww-game-window .ww-action-dock {
+    max-height: 105px;
+  }
+}
+
+@media (max-width: 800px) {
+  .ww-game-window .ww-compact-button {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .ww-game-window .ww-compact-button span {
+    display: none;
+  }
+  .ww-game-window .ww-object-picker {
+    flex: 1;
+    min-width: 8rem;
+  }
+  .ww-game-window .ww-object-picker summary {
+    font-size: 0.7rem;
+  }
+  .ww-game-window .ww-helper-action {
+    order: 1;
+  }
+  .ww-game-window .ww-direction-control {
+    order: 2;
+  }
+  .ww-game-window .ww-selected-controls > details:not(.ww-object-picker) {
+    order: 3;
+  }
+}
+
+@media (max-width: 800px) {
+  .ww-game-window .ww-play-workspace {
+    min-height: 390px;
+  }
+}
+@media (max-height: 600px) and (min-width: 700px) {
+  .ww-game-window .ww-play-workspace {
+    min-height: 205px;
+  }
+}
+
+@media (max-height: 950px) {
+  .ww-game-window .ww-run-toolbar .ww-compact-button {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .ww-game-window .ww-run-toolbar .ww-compact-button span {
+    display: none;
+  }
+  .ww-game-window .ww-selected-controls .ww-object-picker {
+    min-width: 0;
+  }
+  .ww-game-window .ww-selected-controls .ww-object-picker summary {
+    max-width: 9rem;
+  }
+  .ww-game-window .ww-selected-controls .ww-direction-control .ww-caption {
+    display: none;
+  }
+}
+.ww-community-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin-block: 1rem;
+}
+.ww-community {
+  overflow-wrap: anywhere;
+}
+.ww-community-dialog {
+  background: var(--ares-app-background);
+  border-color: var(--ares-bronze);
+  max-width: 960px;
+}
+.ww-community-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ares-gold);
+  border-radius: 1rem;
+  padding: 0 1rem 1rem;
+  background: var(--ares-app-background);
+  text-align: left;
+  color: var(--ares-text-primary);
+  overflow-wrap: anywhere;
+}
+.ww-community-card-art {
+  display: grid;
+  place-items: center;
+  height: 90px;
+  margin: 0 -1rem 0.45rem;
+  width: calc(100% + 2rem);
+  background: url("./assets/sunny-overhead-v2.webp") center / cover;
+}
+.ww-community-meadow .ww-community-card-art {
+  background-image: url("./assets/meadow-overhead-v2.webp");
+}
+.ww-community-glasshouse .ww-community-card-art {
+  background-image: url("./assets/glasshouse-overhead-v2.webp");
+}
+.ww-community-rainy .ww-community-card-art {
+  background-image: url("./assets/rainy-overhead-v2.webp");
+}
+.ww-community-wildflower .ww-community-card-art {
+  background-image: url("./assets/wildflower-overhead-v2.webp");
+}
+.ww-community-card-art .ww-piece-icon {
+  width: 3rem;
+  height: 3rem;
+}
+.ww-community-features {
+  font-size: 0.8rem;
+}
+.ww-community-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0;
+  border: 0;
+}
+.ww-community-filters label {
+  flex: 1 1 150px;
+}
+.ww-community-preview {
+  margin-block: 1rem;
+  margin-inline: auto;
+  width: 100%;
+}
+.ww-community-preview .ww-scene {
+  height: auto;
+}
+.ww-community-instructions {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ww-community-parent {
+  text-decoration: underline;
+  min-height: 44px;
+}
+.ww-community-report {
+  margin-block: 1rem;
+}
+.ww-community-report summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.ww-community-report form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Game-owned pixel palette. These tokens are scoped to game surfaces, including dialogs. */
+.ww-page {
+  --ww-ink: #172a2b;
+  --ww-paper: #fff4d2;
+  --ww-honey: #efb84a;
+  --ww-edge: #72928e;
+  --ares-app-background: #172a2b;
+  --ares-app-surface: #253c36;
+  --ares-app-surface-elevated: #344b43;
+  --ares-text-primary: #fff4d2;
+  --ares-text-secondary: #c7d6b1;
+  --ares-gold: #efb84a;
+  --ares-cyan: var(--ww-paper);
+  --ares-bronze: #72928e;
+  --ares-border: #72928e;
+  --ares-on-bright-accent: #172a2b;
+  --ww-accent: #efb84a;
+  font-family: "Waggle Pixel", "Courier New", monospace;
+  color: var(--ww-paper);
+}
+.ww-page :is(button, input, select, textarea) {
+  font: inherit;
+}
+.ww-page :is(h1, h2, h3, .ww-eyebrow, .ww-chapter) {
+  font-family: "Waggle Pixel", "Courier New", monospace;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+.ww-page .ww-header h1 {
+  color: var(--ww-honey);
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--ww-ink);
+}
+.ww-page .ww-game-window,
+.ww-page .ww-workshop-window {
+  border: 4px solid var(--ww-edge);
+  border-radius: 0;
+  background: var(--ares-app-background);
+  box-shadow:
+    0 0 0 4px var(--ww-ink),
+    8px 8px 0 #101c20;
+}
+.ww-page .ww-session-heading {
+  border-bottom: 2px solid var(--ww-edge);
+  margin-bottom: 0.4rem;
+}
+.ww-page
+  :is(
+    button,
+    select,
+    input:not([type="checkbox"]):not([type="range"]),
+    textarea
+  ),
+.ww-page .ww-campaign-card,
+.ww-page .ww-community-card {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: 2px 2px 0 var(--ww-ink);
+}
+.ww-page button:not(:disabled):active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+.ww-page :is(button, a, summary, input, select, textarea):focus-visible {
+  outline: 3px solid var(--ww-paper);
+  outline-offset: 3px;
+  --tw-ring-color: var(--ww-paper);
+  box-shadow: 0 0 0 2px var(--ww-ink);
+}
+.ww-page
+  :is(
+    .ww-panel,
+    .ww-action-dock,
+    .ww-scene,
+    .ww-run-toolbar,
+    .ww-stats,
+    .ww-panel-content
+  ) {
+  border-radius: 0;
+}
+.ww-page .ww-action-dock {
+  background: var(--ares-app-surface);
+  border-top: 3px solid var(--ww-edge);
+  box-shadow: none;
+}
+.ww-page .ww-run-toolbar {
+  background: var(--ares-app-surface);
+}
+.ww-page .ww-scene {
+  image-rendering: pixelated;
+  filter: none;
+}
+.ww-page .ww-scene text {
+  font-family: "Waggle Pixel", "Courier New", monospace;
+}
+.ww-page .ww-piece-state {
+  fill: var(--ww-paper);
+  stroke: var(--ww-ink);
+  stroke-width: 0.085;
+  paint-order: stroke;
+  font-weight: 900;
+  letter-spacing: 0.025px;
+}
+.ww-page .ww-piece,
+.ww-page .ww-bee,
+.ww-page .ww-piece-icon {
+  filter: none;
+}
+.ww-page .ww-piece-icon {
+  image-rendering: pixelated;
+}
+.ww-page .ww-community-card-art {
+  background: repeating-conic-gradient(#537947 0% 25%, #719253 0% 50%) 0 0 /
+    24px 24px;
+}
+.ww-page.ww-map-dialog {
+  border: 4px solid var(--ww-edge);
+  border-radius: 0;
+  background: var(--ares-app-background);
+  box-shadow: 8px 8px 0 #101c20;
+}
+.ww-page .ww-tool-tray button,
+.ww-page .ww-compass button {
+  border-radius: 0;
+}
+
+.ww-page .ww-title-screen {
+  min-height: 580px;
+  height: min(840px, calc(100dvh - 48px));
+  overflow: hidden;
+  padding: 0;
+  background: #719253;
+}
+.ww-title-garden {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.ww-title-toolbar,
+.ww-title-content,
+.ww-title-footer {
+  position: relative;
+  z-index: 1;
+}
+.ww-title-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--ww-ink);
+  color: var(--ww-paper);
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.ww-title-toolbar button {
+  min-height: 44px;
+}
+.ww-title-content {
+  width: min(88%, 660px);
+  margin: clamp(2rem, 8dvh, 5rem) auto 12rem;
+  padding: 1.5rem 1rem 1.75rem;
+  text-align: center;
+  background: #253c36;
+  border: 4px solid var(--ww-ink);
+  box-shadow:
+    0 0 0 4px #bbd581,
+    8px 8px 0 #344b43;
+}
+.ww-title-content h1 {
+  margin: 1rem 0;
+}
+.ww-title-content h1 svg {
+  width: 100%;
+  max-height: 110px;
+}
+.ww-title-kicker {
+  color: #bbd581;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  font-weight: bold;
+}
+.ww-title-promise {
+  line-height: 1.7;
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  color: var(--ww-paper);
+  margin-bottom: 1.5rem;
+}
+.ww-page .ww-title-play {
+  display: inline-flex;
+  justify-content: space-between;
+  gap: 2rem;
+  min-height: 52px;
+  padding: 0.75rem 1.5rem;
+  background: var(--ww-honey);
+  border: 2px solid var(--ww-ink);
+  box-shadow: 4px 4px 0 var(--ww-ink);
+  color: var(--ww-ink);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.ww-title-links {
+  margin-top: 1rem;
+}
+.ww-title-original {
+  margin-top: 1rem;
+}
+.ww-grid-play .ww-tool-supply {
+  margin: 0 0 0.4rem;
+  padding: 0 0 0.4rem;
+}
+.ww-grid-play .ww-tool-supply > details {
+  font-size: 0.75rem;
+}
+.ww-grid-play .ww-compact-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+.ww-grid-play .ww-compact-heading select {
+  min-height: 44px;
+  max-width: 8rem;
+}
+.ww-grid-play .ww-dance-rules {
+  font-size: 0.75rem;
+}
+.ww-grid-play .ww-dance-rules summary {
+  min-height: 44px;
+  align-content: center;
+}
+.ww-grid-play .ww-dance-rules[open] {
+  flex-basis: 100%;
+}
+.ww-grid-play .ww-play-workspace {
+  min-height: auto;
+}
+.ww-game-window.ww-grid-play .ww-action-dock {
+  max-height: none;
+  overflow: visible;
+}
+.ww-grid-play .ww-helper-action {
+  order: -2;
+}
+.ww-grid-play .ww-compact-heading {
+  order: -1;
+}
+
+/* New-rule play keeps the flight board separate from detailed controls. */
+.ww-page .ww-game-window.ww-grid-play {
+  min-height: 580px;
+  padding: 0.5rem;
+}
+.ww-page .ww-game-window.ww-grid-play[data-game-fullscreen="true"] {
+  min-height: 0;
+  height: 100dvh;
+}
+.ww-game-window.ww-grid-play .ww-play-workspace,
+.ww-game-window.ww-grid-play .ww-playfield {
+  min-height: 0;
+}
+.ww-grid-play .ww-run-toolbar .ww-compact-button {
+  width: 44px;
+  min-width: 44px;
+  padding-inline: 0;
+}
+.ww-grid-play .ww-run-toolbar .ww-compact-button span {
+  display: none;
+}
+.ww-grid-play .ww-run-toolbar .ww-speed-control {
+  margin-left: auto;
+}
+.ww-grid-play .ww-speed-control select {
+  width: 3.5rem;
+}
+.ww-game-window.ww-grid-play .ww-stats span {
+  font-size: 0.875rem;
+}
+.ww-game-window.ww-grid-play .ww-action-dock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+  padding: 0.45rem;
+}
+.ww-game-window.ww-grid-play .ww-tool-supply {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ww-grid-play .ww-tool-supply > .ww-tool-tray {
+  flex: 1;
+}
+.ww-grid-play .ww-tool-tray button {
+  min-height: 44px;
+  padding: 0.2rem 0.5rem;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+.ww-grid-play .ww-tool-tray .ww-piece-icon {
+  width: 28px;
+  height: 28px;
+}
+.ww-quick-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.ww-selection-name {
+  flex: 1;
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+.ww-grid-play .ww-helper-action button {
+  min-height: 44px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.75rem;
+}
+.ww-grid-play .ww-helper-action {
+  order: initial;
+}
+.ww-game-panel > summary {
+  min-height: 44px;
+  align-content: center;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 2px solid var(--ww-edge);
+  background: var(--ww-ink);
+  cursor: pointer;
+}
+.ww-game-panel[open] > summary {
+  border-color: var(--ww-honey);
+  color: var(--ww-honey);
+}
+.ww-floating-panel {
+  position: absolute;
+  z-index: 8;
+  inset: auto 0.5rem 4.5rem;
+  max-height: min(420px, 65%);
+  overflow: auto;
+  padding: 0.75rem;
+  border: 3px solid var(--ww-edge);
+  background: var(--ww-ink);
+  box-shadow: 4px 4px 0 #101c20;
+}
+.ww-floating-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.ww-floating-heading button {
+  min-height: 44px;
+  padding: 0.3rem 0.65rem;
+  background: var(--ares-app-surface);
+  border: 2px solid var(--ww-edge);
+}
+.ww-floating-panel .ww-selected-controls {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin-top: 0.5rem;
+  gap: 0.5rem;
+}
+.ww-grid-play
+  .ww-floating-panel
+  :is(.ww-compact-heading, .ww-object-picker, .ww-dance-rules) {
+  order: initial;
+  min-width: 0;
+}
+.ww-floating-panel .ww-object-picker summary {
+  font-size: 0.8rem;
+}
+.ww-floating-panel .ww-object-picker select {
+  max-width: 100%;
+}
+.ww-grid-play .ww-utility-bar > details > summary {
+  padding-inline: 0.35rem;
+  font-size: 0.75rem;
+}
+@media (min-width: 601px) {
+  .ww-game-window.ww-grid-play .ww-action-dock {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .ww-game-window.ww-grid-play .ww-tool-supply {
+    flex: 1;
+    min-width: 14rem;
+  }
+  .ww-grid-play .ww-quick-tools .ww-selection-name {
+    max-width: 5rem;
+  }
+}
+@media (max-width: 600px) {
+  .ww-page .ww-game-window.ww-grid-play:not([data-game-fullscreen="true"]) {
+    height: auto;
+    min-height: 0;
+  }
+  .ww-game-window.ww-grid-play .ww-play-workspace {
+    min-height: 0;
+    flex: none;
+  }
+  .ww-game-window.ww-grid-play .ww-playfield {
+    flex: none;
+    min-height: 0;
+    aspect-ratio: var(--ww-board-aspect);
+  }
+  .ww-game-window.ww-grid-play .ww-playfield .ww-scene {
+    height: auto;
+  }
+  .ww-game-window.ww-grid-play .ww-run-toolbar {
+    padding: 0.25rem;
+    gap: 0.25rem;
+  }
+  .ww-game-window.ww-grid-play .ww-session-heading {
+    gap: 0.2rem;
+  }
+  .ww-game-window.ww-grid-play .ww-session-heading .ww-chapter {
+    flex-basis: 100%;
+    font-size: 0.6rem;
+  }
+  .ww-game-window.ww-grid-play .ww-stats {
+    gap: 0.25rem 0.6rem;
+    padding: 0.4rem 0.25rem;
+  }
+  .ww-grid-play .ww-selection-name {
+    max-width: 5rem;
+  }
+  .ww-game-window.ww-grid-play .ww-playfield > p {
+    font-size: 0.7rem;
+  }
+}
+.ww-title-links .ww-toolbar {
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 0;
+}
+
+/* Version-6 workshop shares the game's compact controls and overlay panels. */
+.ww-practice-list {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+}
+.ww-practice-list button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border: 2px solid var(--ww-edge);
+  background: var(--ww-ink);
+}
+.ww-practice-list button[aria-pressed="true"] {
+  border-color: var(--ww-honey);
+}
+.ww-practice-list strong,
+.ww-practice-list small {
+  display: block;
+}
+.ww-practice-list small {
+  margin-top: 0.2rem;
+  color: var(--ww-paper);
+}
+.ww-practice-number {
+  font-size: 1.5rem;
+  color: var(--ww-honey);
+}
+.ww-grid-play .ww-practice-menu-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem;
+}
+.ww-page .ww-workshop-window.ww-grid-workshop {
+  height: auto;
+  min-height: 0;
+  padding: 0.5rem;
+}
+.ww-page .ww-workshop-window.ww-grid-workshop[data-game-fullscreen="true"] {
+  height: 100dvh;
+  min-height: 0;
+  overflow: auto;
+}
+.ww-grid-workshop .ww-builder-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+.ww-grid-workshop .ww-scroll-scene {
+  max-height: 50dvh;
+  border-radius: 0;
+}
+.ww-grid-workshop .ww-workshop-toolbar {
+  gap: 0.3rem;
+  margin-block: 0 0.35rem;
+}
+.ww-grid-workshop .ww-workshop-toolbar > button {
+  min-height: 44px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+}
+.ww-grid-workshop .ww-workshop-toolbar .ww-compact-button {
+  width: 44px;
+  min-width: 44px;
+  padding-inline: 0;
+}
+.ww-grid-workshop .ww-workshop-toolbar .ww-compact-button span {
+  display: none;
+}
+.ww-grid-workshop .ww-palette-groups {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+.ww-grid-workshop .ww-palette-groups button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.25rem;
+  font-size: 0.8rem;
+}
+.ww-grid-workshop .ww-palette-groups button[aria-pressed="true"] {
+  background: var(--ww-honey);
+  color: var(--ww-ink);
+}
+.ww-grid-workshop .ww-palette {
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+}
+.ww-grid-workshop .ww-palette button {
+  min-height: 44px;
+  flex-direction: row;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.75rem;
+}
+.ww-grid-workshop .ww-palette .ww-piece-icon {
+  width: 24px;
+  height: 24px;
+}
+.ww-grid-workshop .ww-builder-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0;
+  padding: 0.4rem;
+}
+.ww-grid-workshop .ww-builder-dock > label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+.ww-grid-workshop .ww-builder-dock select {
+  max-width: 100%;
+}
+.ww-workshop-menus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.ww-grid-workshop .ww-floating-panel {
+  position: fixed;
+  inset: 15dvh max(1rem, calc((100vw - 680px) / 2)) auto;
+  max-height: 70dvh;
+}
+.ww-grid-workshop .ww-caption {
+  font-size: 0.8rem;
+  margin-block: 0.35rem;
+}
+.ww-grid-workshop .ww-view-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  margin-block: 0.35rem;
+}
+.ww-title-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.ww-title-footer {
+  margin: auto 0 0;
+  padding: 0.75rem;
+  background: var(--ww-ink);
+  text-align: center;
+  color: var(--ww-paper);
+  font-size: 0.75rem;
+}
+@media (max-width: 600px) {
+  .ww-title-toolbar {
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.65rem;
+  }
+  .ww-title-toolbar button span {
+    max-width: 6rem;
+  }
+  .ww-title-content {
+    width: 88%;
+    padding-inline: 0.75rem;
+    margin-top: 2.5rem;
+  }
+  .ww-title-kicker {
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+  }
+}
+@media (max-height: 650px) {
+  .ww-page .ww-title-screen {
+    overflow-y: auto;
+  }
+  .ww-title-content {
+    margin-block: 2rem 8rem;
+  }
+}

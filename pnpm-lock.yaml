@@ -19,6 +19,7 @@ overrides:
   qs: ^6.16.0
 
 patchedDependencies:
+  glob-slash@1.0.0: 15c45d4c84e33fe47fbd595702b15f3d2b856afc68409c912a9e7ce53a37a750
   stream-json@1.9.1: a2ca277fdcb4435ad6d9dc50fdc9518fe70fe445cc3b73d951576c371fb6748a
 
 importers:
@@ -40,6 +41,9 @@ importers:
       '@ares/ui':
         specifier: workspace:*
         version: link:packages/ui
+      '@ares/waggle-way':
+        specifier: workspace:*
+        version: link:packages/waggle-way
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -317,6 +321,21 @@ importers:
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
+
+  packages/waggle-way:
+    dependencies:
+      '@ares/game-common':
+        specifier: workspace:*
+        version: link:../game-common
+      '@ares/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
 
 packages:
 
@@ -11086,11 +11105,11 @@ snapshots:
     dependencies:
       is-glob: 4.0.3
 
-  glob-slash@1.0.0: {}
+  glob-slash@1.0.0(patch_hash=15c45d4c84e33fe47fbd595702b15f3d2b856afc68409c912a9e7ce53a37a750): {}
 
   glob-slasher@1.0.1:
     dependencies:
-      glob-slash: 1.0.0
+      glob-slash: 1.0.0(patch_hash=15c45d4c84e33fe47fbd595702b15f3d2b856afc68409c912a9e7ce53a37a750)
       lodash.isobject: 2.4.1
       toxic: 1.0.1
 

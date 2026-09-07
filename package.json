@@ -27,6 +27,7 @@
     "test:rules": "firebase emulators:exec --project aresweb-ci --only firestore,storage \"node node_modules/vitest/vitest.mjs run --config vitest.rules.config.ts\"",
     "test:functions-emulator": "firebase emulators:exec --project aresweb-ci --only firestore \"pnpm --filter functions test:emulator\"",
     "test:e2e": "playwright test",
+    "test:waggle:live": "playwright test --config playwright.waggle-live.config.ts",
     "appcheck:storage-observe": "node scripts/check-storage-app-check-observation.mjs",
     "media:inventory": "node scripts/inventory-media-references.mjs",
     "media:migrate": "node scripts/migrate-media-references.mjs",
@@ -77,7 +78,8 @@
     "@ares/game-common": "workspace:*",
     "@ares/buzzello": "workspace:*",
     "@ares/buzzle": "workspace:*",
-    "@ares/pollenator": "workspace:*"
+    "@ares/pollenator": "workspace:*",
+    "@ares/waggle-way": "workspace:*"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

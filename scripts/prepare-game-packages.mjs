@@ -10,6 +10,11 @@ export function prepareGamePackages(root = repository) {
     ["game-common/src/hexGrid.ts", "hexGrid.ts"],
     ["buzzello/src/rules.ts", "buzzello.ts"],
     ["buzzle/src/rules.ts", "buzzle.ts"],
+    ["waggle-way/src/core/level.ts", "waggle-way/level.ts"],
+    ["waggle-way/src/core/weather.ts", "waggle-way/weather.ts"],
+    ["waggle-way/src/core/engine.ts", "waggle-way/engine.ts"],
+    ["waggle-way/src/core/replay.ts", "waggle-way/replay.ts"],
+    ["waggle-way/src/core/community.ts", "waggle-way/community.ts"],
   ];
   for (const [source, name] of rules) {
     const target = resolve(root, "functions/src/generated/games", name);

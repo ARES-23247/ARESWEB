@@ -141,9 +141,11 @@ describe("buzzleGameDefinition", () => {
     });
     expect(opened.board[indexFor(0, 0)]).toMatchObject({ id: "?-1", letter: "A", points: 0 });
 
+    // Use a known letter so a randomly dealt blank cannot mask the connection check.
+    putTileInRack(opened, "E-1", 0, 1);
     expect(() => buzzleGameDefinition.applyAction(opened, 1, {
       type: "play",
-      placements: [{ index: indexFor(-6, 0), tileId: opened.players[1].rack[0].id }],
+      placements: [{ index: indexFor(-6, 0), tileId: "E-1" }],
     })).toThrow(/connect/u);
   });
 

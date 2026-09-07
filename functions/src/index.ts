@@ -150,6 +150,39 @@ export const cleanupOldInquiries = onSchedule(
   },
 );
 
+/** Game-owned retention is independent of public traffic and cannot scan descendants. */
+export const cleanupWaggleGardens = onSchedule(
+  {
+    schedule: "every 15 minutes",
+    timeZone: "Etc/UTC",
+    retryCount: 0,
+    memory: "256MiB",
+    cpu: "gcf_gen1",
+    timeoutSeconds: 60,
+    concurrency: 1,
+    maxInstances: 1,
+    serviceAccount: RUNTIME_SERVICE_ACCOUNTS.gameService,
+  },
+  async (_event) => {
+    try {
+      const { cleanupWaggleCommunity } =
+        await import("./lib/waggleCommunityCleanup");
+      const counts = await cleanupWaggleCommunity();
+      logger.info(
+        "waggleRetention",
+        "Waggle garden retention pass completed",
+        counts,
+      );
+    } catch (error) {
+      logger.error("waggleRetention", "Waggle garden retention pass failed", {
+        reason: error instanceof Error ? error.name : "unknown",
+      });
+      // Preserve scheduler failure without exposing document paths in platform logs.
+      throw new Error("Waggle garden retention failed.");
+    }
+  },
+);
+
 /**
  * Rebuilds the durable public sitemap out of band so anonymous requests never
  * fan out across the published Firestore collections.
@@ -236,7 +269,7 @@ export const syncGoogleDriveChanges = onSchedule(
       "GOOGLE_DRIVE_REFRESH_TOKEN",
     ],
     retryCount: 3,
-},
+  },
   async (_event) => {
     try {
       await syncImportedDriveChanges();

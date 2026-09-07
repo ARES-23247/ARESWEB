@@ -18,6 +18,8 @@ overrides:
   qs: ^6.16.0
 
 patchedDependencies:
+  # Superstatic's Hosting header matcher expects URL/glob separators on Windows too.
+  glob-slash@1.0.0: patches/glob-slash@1.0.0.patch
   # firebase-tools still loads stream-json through its CommonJS 1.x paths,
   # which are incompatible with the ESM-only fixed major. Backport the
   # upstream nesting-depth guard for GHSA-528h-pc64-c93x until it upgrades.
