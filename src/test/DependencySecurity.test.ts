@@ -5,6 +5,9 @@ import { describe, expect, it } from "vitest";
 
 const workspaceRoot = resolve(import.meta.dirname, "../..");
 const require = createRequire(import.meta.url);
+// Resolve the transitive dependency from its actual consumer under pnpm's
+// isolated linker, rather than relying on a root-level hoisted installation.
+const firebaseRequire = createRequire(require.resolve("firebase-tools/package.json"));
 
 describe("dependency security contracts", () => {
   it("keeps every qs resolution on the patched release line", () => {
@@ -38,7 +41,7 @@ describe("dependency security contracts", () => {
       once(event: "error", listener: (error: Error) => void): FilterStream;
       write(token: FilterToken): boolean;
     };
-    const FilterBase = require("stream-json/filters/FilterBase") as new (
+    const FilterBase = firebaseRequire("stream-json/filters/FilterBase") as new (
       options: { filter: string; maxDepth: number },
     ) => FilterStream;
     class TestFilter extends FilterBase {
