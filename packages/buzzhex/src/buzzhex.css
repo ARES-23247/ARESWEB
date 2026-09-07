@@ -426,3 +426,26 @@
     color: var(--ares-gold);
   }
 }
+
+.buzzhex-settings {
+  display: grid;
+  gap: 1rem;
+}
+.buzzhex-settings label {
+  display: grid;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+.buzzhex-settings select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem;
+  border: 1px solid var(--ares-gold);
+  border-radius: 0.5rem;
+  color: var(--marble);
+  background: var(--obsidian);
+}
+.buzzhex-settings select:focus-visible {
+  outline: 2px solid var(--ares-cyan);
+  outline-offset: 3px;
+}

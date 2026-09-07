@@ -228,30 +228,6 @@ export default function DashboardSidebar({
               currentPath={pathname}
               onNavigate={onCloseMobile}
             />
-            <Link
-              to="/pollen"
-              onClick={onCloseMobile}
-              className={`flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider transition-all ares-cut-sm border ${
-                pathname === "/pollen"
-                  ? "bg-amber-500/20 text-white border-amber-400/50 shadow-[0_0_15px_rgba(255,179,0,0.2)]"
-                  : "text-marble hover:bg-white/5 hover:text-white border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-3 truncate">
-                <Sparkles
-                  size={16}
-                  className={
-                    pathname === "/pollen"
-                      ? "text-amber-300 animate-pulse"
-                      : "text-amber-400/70"
-                  }
-                />
-                <span className="truncate">Pollinator Pile-Up</span>
-              </div>
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                Game
-              </span>
-            </Link>
           </div>
         </div>
 

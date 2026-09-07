@@ -18,6 +18,8 @@ export interface HexState {
   path: number[];
 }
 export interface HexSession {
+  mode?: "local" | "computer";
+  difficulty?: "easy" | "medium" | "hard";
   game: HexState;
   names: [string, string];
 }
@@ -154,6 +156,8 @@ export function undoHexAction(state: HexState): HexState {
 export function encodeHexSave(session: HexSession): string {
   return JSON.stringify({
     version: 1,
+    mode: session.mode,
+    difficulty: session.difficulty,
     names: session.names,
     actions: session.game.history.map((entry) => entry.action),
   });
@@ -183,6 +187,15 @@ export function decodeHexSave(raw: string): HexSession | null {
       value.actions.length > 122
     )
       return null;
+    if ("mode" in value && value.mode !== "local" && value.mode !== "computer")
+      return null;
+    if (
+      "difficulty" in value &&
+      value.difficulty !== "easy" &&
+      value.difficulty !== "medium" &&
+      value.difficulty !== "hard"
+    )
+      return null;
     let game = createHexGame();
     for (const action of value.actions) {
       if (
@@ -200,7 +213,14 @@ export function decodeHexSave(raw: string): HexSession | null {
       if (!next) return null;
       game = next;
     }
-    return { game, names: [value.names[0], value.names[1]] };
+    return {
+      game,
+      names: [value.names[0], value.names[1]],
+      ...("mode" in value ? { mode: value.mode as HexSession["mode"] } : {}),
+      ...("difficulty" in value
+        ? { difficulty: value.difficulty as HexSession["difficulty"] }
+        : {}),
+    };
   } catch {
     return null;
   }
