@@ -1,4 +1,5 @@
 import express, { type RequestHandler } from "express";
+import rateLimit from "express-rate-limit";
 import { createWaggleCommunityMutations } from "../lib/waggleCommunityMutations";
 import { createWaggleCommunityReads } from "../lib/waggleCommunityReads";
 import { createWaggleCommunityReports } from "../lib/waggleCommunityReports";
@@ -112,6 +113,15 @@ export function createWaggleWayRouter(
   reports = createWaggleCommunityReports(),
 ) {
   const router = express.Router();
+  // Keep authentication protected even when this router is mounted separately.
+  // Durable user/IP/project quotas below remain the cross-instance authority.
+  router.use(rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    message: { error: "Too many garden requests. Please wait and try again." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  }));
   router.use((_req, res, next) => {
     res.set("Cache-Control", "private, no-store");
     next();

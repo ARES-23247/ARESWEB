@@ -29,10 +29,25 @@ workspace lock and Functions npm lock were regenerated from the combined
 manifests. Waggle's shared icon dependency follows the updated Arcade packages.
 Monaco 0.56 also requires its supported ESM entry points; the editor imports are
 updated, with a narrow compatibility alias for monaco-vim's old editor import.
+The renamed `editor-*` chunk stays in the existing optional-editor budget;
+neither that budget nor the website budget is increased. A browser regression
+checks actual editing, running the default simulation and clearing the loading
+notice after successful editor initialization.
 
 Fresh frozen installation, deployment lock validation, lint, TypeScript and
 Functions build pass locally. Full release CI is required for the combined
 artifact; historical beta results do not substitute for it.
+
+Initial CI's CodeQL check could not infer the shared application limiter through
+the router factory. The Waggle router now additionally applies its own explicit
+300-request/15-minute IP ceiling before authentication, retaining all durable
+quotas. An HTTP test verifies 300 rejected authentication attempts followed by
+429 without another token verification, including when mounted separately.
+
+The original master checkout's 105 changed/untracked files are preserved locally
+in stash `7828a67b928d1e9b467b19bb50a18781a6886d2c` and backup reference
+`refs/backups/master-before-pr-reconciliation-2026-09-07`. This backup is not
+part of the release or a remote push.
 
 ## Release evidence
 

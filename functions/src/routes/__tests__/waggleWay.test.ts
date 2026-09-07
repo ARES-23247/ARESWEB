@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import express from "express";
 import {
   afterAll,
   beforeAll,
@@ -13,6 +14,7 @@ import type { WaggleStore } from "../../lib/__tests__/helpers/waggleStore";
 const state = vi.hoisted(() => ({
   db: null as unknown as WaggleStore,
   proofCalls: 0,
+  authCalls: 0,
 }));
 vi.mock("../../lib/firebase-admin", async () => {
   const { WaggleStore } =
@@ -22,6 +24,7 @@ vi.mock("../../lib/firebase-admin", async () => {
     adminDb: state.db.firestore,
     adminAuth: {
       verifyIdToken: async (token: string) => {
+        state.authCalls++;
         if (token === "invalid") throw new Error("Invalid token");
         return { uid: token, email_verified: true };
       },
@@ -41,6 +44,7 @@ vi.mock("../../lib/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 import { createApiApp } from "../../apiApp";
+import { globalErrorHandler } from "../../middleware/errorHandler";
 import { createWaggleWayRouter } from "../waggleWay";
 import { createWaggleCommunityMutations } from "../../lib/waggleCommunityMutations";
 import { evaluateWaggleProof } from "../../lib/waggleProof";
@@ -113,6 +117,7 @@ beforeEach(() => {
   state.db.failRead = "";
   state.db.failWrite = "";
   state.proofCalls = 0;
+  state.authCalls = 0;
   for (const [uid, role, isDeleted] of [
     ["member", "member", false],
     ["coach", "coach", false],
@@ -139,6 +144,29 @@ afterAll(async () => {
 });
 
 describe("Waggle Way complete HTTP middleware chain", () => {
+  it("limits repeated authentication before parsing even when mounted separately", async () => {
+    const app = express();
+    app.use("/api/waggle-way", createWaggleWayRouter());
+    app.use(globalErrorHandler);
+    const isolated = createServer(app);
+    await new Promise<void>((resolve) => isolated.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${(isolated.address() as AddressInfo).port}/api/waggle-way/mine`;
+    try {
+      for (let attempt = 0; attempt < 300; attempt++) {
+        const response = await fetch(url, { headers: { Authorization: "Bearer invalid" } });
+        expect(response.status).toBe(401);
+        await response.text();
+      }
+      expect(state.authCalls).toBe(300);
+      const blocked = await fetch(url, { headers: { Authorization: "Bearer invalid" } });
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get("retry-after")).toBeTruthy();
+      expect(state.authCalls).toBe(300);
+      expect(state.proofCalls).toBe(0);
+    } finally {
+      await new Promise<void>((resolve, reject) => isolated.close((error) => error ? reject(error) : resolve()));
+    }
+  });
   it("publishes only an approved revision, manages owner drafts, and resolves a guest report", async () => {
     expect(await (await request("/gardens")).json()).toEqual({
       gardens: [],

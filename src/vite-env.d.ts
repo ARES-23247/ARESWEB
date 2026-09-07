@@ -69,4 +69,3 @@ interface Window {
     };
   };
 }
-

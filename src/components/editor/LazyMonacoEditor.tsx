@@ -7,7 +7,7 @@
  * Monaco is bundled from the lockfile rather than fetched from a runtime CDN.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertCircle, RotateCw } from "lucide-react";
 import "./monacoRuntime";
 import MonacoEditor, {
@@ -69,11 +69,12 @@ export default function LazyMonacoEditor({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
+  const mounted = useRef(false);
 
   // 3-second timeout detection
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setTimedOut(true);
+      if (!mounted.current) setTimedOut(true);
     }, 3000);
 
     return () => clearTimeout(timeoutId);
@@ -107,6 +108,7 @@ export default function LazyMonacoEditor({
         loading={<EditorSkeleton />}
         onMount={(editor, monaco) => {
           // Clear timeout on successful mount
+          mounted.current = true;
           setTimedOut(false);
           originalOnMount?.(editor, monaco);
         }}

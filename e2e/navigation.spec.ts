@@ -361,6 +361,25 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     // permits service workers and validates the application rather than the shim.
     test.use({ serviceWorkers: "allow" });
 
+    test("bundled editor accepts edits and runs the default simulation without a stale loading notice", async ({ page }) => {
+      await page.goto("/academy/playground");
+      const editor = page.getByRole("textbox", { name: "Editor content", exact: true });
+      // Firefox's Monaco input is zero-width until the visible editor receives focus.
+      const surface = page.getByRole("code").filter({ has: editor });
+      await expect(surface).toBeVisible();
+      await surface.click();
+      await expect(editor).toBeFocused();
+      await editor.press("ControlOrMeta+Home");
+      await editor.pressSequentially("// Editor release check");
+      await editor.press("Enter");
+      await expect(surface).toContainText("// Editor release check");
+      await page.getByRole("button", { name: "Run", exact: true }).click();
+      await expect(page.frameLocator('iframe[title="Simulation Preview"]').getByText("Blank Simulation", { exact: true })).toBeVisible();
+      // The previous bug reintroduced this notice three seconds after a fast mount.
+      await page.waitForTimeout(3200);
+      await expect(page.getByText("Loading the code editor and language tools…", { exact: true })).toBeHidden();
+    });
+
     test("simulation playground remains usable at a 320px mobile viewport", async ({
       page,
     }) => {
