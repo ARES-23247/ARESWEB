@@ -75,9 +75,11 @@ describe("revision review and report handling", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Review Clover crossing" }),
     );
-    expect(
-      await screen.findByRole("heading", { name: level.title, level: 3 }),
-    ).toHaveFocus();
+    const previewHeading = await screen.findByRole("heading", {
+      name: level.title,
+      level: 3,
+    });
+    await waitFor(() => expect(previewHeading).toHaveFocus());
     expect(
       screen.getByRole("button", { name: "Approve and publish" }),
     ).toBeDisabled();
@@ -391,9 +393,11 @@ describe("public remix entry", () => {
     });
     fetcher.mockResolvedValueOnce(Response.json(garden));
     show();
-    expect(
-      await screen.findByRole("heading", { name: level.title, level: 3 }),
-    ).toHaveFocus();
+    const previewHeading = await screen.findByRole("heading", {
+      name: level.title,
+      level: 3,
+    });
+    await waitFor(() => expect(previewHeading).toHaveFocus());
     expect(
       screen.getByText(/This garden changed since you selected it/),
     ).toBeVisible();
