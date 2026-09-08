@@ -113,6 +113,7 @@ export default function TitleScreen({
         <Button className="ww-title-play" onClick={onPlay} data-start-garden>
           Play gardens <span aria-hidden="true">▶</span>
         </Button>
+        <p>11 adventure gardens · 30 original gardens</p>
         <div className="ww-title-original">
           <Button variant="secondary" onClick={onOriginalCampaign}>
             Original gardens

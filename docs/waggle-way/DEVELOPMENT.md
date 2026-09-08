@@ -1,19 +1,21 @@
 # Waggle Way local development
 
-Updated: 2026-09-07. Use the isolated `codex/waggle-way` worktree at
-`C:\Users\david\dev\robotics\ftc\ARESWEB\scratch\waggle-way`.
-The parent checkout contains earlier work and is not this game's active source.
+Updated: 2026-09-07. Current campaign conversion work is isolated on
+`codex/waggle-campaign-conversion` at
+`C:\Users\david\dev\robotics\ftc\ARESWEB\scratch\waggle-campaign`, based on
+PR #266's verified area-testing foundation. Earlier `scratch/waggle-way` work is
+preserved. Use port 3041 for this checkout to avoid another task's dev server.
 
 ## Live iteration
 
 Run from that worktree root, using Node 24.15+ in the Node 24 line and pnpm 11.21.0:
 
 ```powershell
-pnpm run dev --host 127.0.0.1 --port 3040 --strictPort
+pnpm run dev --host 127.0.0.1 --port 3041 --strictPort
 ```
 
-Open <http://127.0.0.1:3040/waggle-way> for play or
-<http://127.0.0.1:3040/waggle-way/builder> for the workshop. Keep the server running.
+Open <http://127.0.0.1:3041/waggle-way> for play or
+<http://127.0.0.1:3041/waggle-way/builder> for the workshop. Keep the server running.
 The existing `dev` script prepares game packages once and starts Vite; it does
 not build/prerender the entire production website. Vite serves source modules
 and updates code/styles on save. Some module changes reload the page or reset
@@ -25,10 +27,10 @@ page errors. This verifies startup, not all gameplay or backend operations.
 The process must be restarted after it is stopped or the machine restarts.
 
 Port 3039 is the existing built preview. `vite preview` serves `dist`, so source
-edits do not update that preview until another build. Use 3040 for everyday
+edits do not update that preview until another build. Use 3041 for everyday
 visual/gameplay feedback. Dev PWA support is disabled in the current Vite config;
 this separate origin also avoids reusing the preview's service worker.
-If 3040 is occupied, inspect its owner or choose another explicit port; do not
+If 3041 is occupied, inspect its owner or choose another explicit port; do not
 terminate an unknown process.
 
 ## Focused checks while editing
@@ -45,11 +47,12 @@ iteration and direct interaction checks. Local game browser flows can now run
 against Vite without a production build:
 
 ```powershell
+$env:ARES_WAGGLE_LIVE_PORT = "3041"
 pnpm run test:waggle:live --project=chromium --grep "pixel title|one game window"
 ```
 
-`playwright.waggle-live.config.ts` uses port 3040, reusing the local dev server
-or starting it when absent. Run it from the active worktree and ensure any
+`playwright.waggle-live.config.ts` defaults to port 3040; the override above
+selects 3041 for this checkout, reusing its dev server or starting it when absent. Run it from the active worktree and ensure any
 existing server belongs to that checkout. `ARES_WAGGLE_LIVE_PORT` selects another
 explicit port. It includes only `waggle-way.spec.ts` local play/workshop flows;
 authenticated community and PWA tests remain in the normal E2E configuration.
@@ -79,3 +82,24 @@ required CI checks. This workflow changes iteration speed, not coverage floors,
 security boundaries or release requirements. Record actual results and remaining
 limitations in [implementation progress](IMPLEMENTATION_PROGRESS.md).
 Production deployment still requires explicit approval.
+
+
+## Game CI direction
+
+Use the existing pipeline with affected-game jobs and one required aggregate,
+not a separate release system for each game. PR #266 provides focused local
+selection and full-suite browser sharding; selection in CI is still advisory.
+Game-only selective PR checks and component deployment fingerprints/ledger are
+later stages in [the area testing plan](../AREA_TESTING_AND_RELEASE_PLAN.md).
+Until their dependency coverage is proven, full handoff/release checks remain
+required. Shared engine changes also need server proof-verification coverage;
+shared UI/auth/build changes fan out beyond Waggle Way. Local Vite and the live
+browser config already avoid a production website rebuild during UI iteration.
+
+
+The current conversion's observation report selected the full gate because
+`docs/waggle-way/*` is not yet assigned in the ownership manifest. Game source
+and tests are mapped. Add explicit ownership for the game planning documents
+with selector regression evidence during the next CI rollout step; do not
+ignore unmapped files just to obtain a smaller suite. Use the focused live-game
+commands above while that observation mapping is refined.

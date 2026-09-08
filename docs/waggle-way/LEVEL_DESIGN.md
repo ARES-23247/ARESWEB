@@ -221,3 +221,47 @@ Keep old levels and replays on their exact rules versions. Re-author and migrate
 deliberately; do not overwrite old IDs/content and call old solution evidence
 validation of the redesigned campaign. Future publication requires matching
 server rules verification before accepting these new mechanics.
+
+
+## Conversion batch and challenge criteria — 2026-09-07
+
+The user authorized further conversion after reviewing the improved slice, then
+requested harder puzzles and larger boards with mobile panning. The main play
+route now contains the five `pixel-*` teaching gardens followed by this first
+batch. These six `route-*` IDs are new definitions, not replacements for legacy
+IDs. The thirty-level chapter table above remains a future campaign brief; it
+must not be presented as thirty converted levels.
+
+| ID | Garden | Board | Required decision |
+| --- | --- | --- | --- |
+| route-06 | Open Sesame | 24 × 16 | Combine a switch operator with a freely placed left dancer; rescue both |
+| route-07 | After You | 24 × 16 | Give the operator a separate safe exit above a partition |
+| route-08 | Two Doors | 32 × 16 | Rescue upstream operators while downstream shutters remain open |
+| route-09 | Change of Shift | 28 × 16 | Gather the group and release the operator before recruiting a dancer under a one-job cap |
+| route-10 | Two Wet Crossings | 28 × 16 | Protect two staggered spray lanes with two covers and a limited dancer |
+| route-11 | Glasshouse Escape | 32 × 20 | Combine rally departure, two operators, spray protection, and final helper rescue |
+
+Each challenge requires all eight bees. No-input attempts fail. The test suite
+checks complete builder round trips and deterministic all-bees replays, omitted
+setup actions, and the wrong operator release order. These are bounded bypass
+checks, not exhaustive searches over all possible commands. In particular, a
+failed static route with one omitted cover does not prove that a player cannot
+reuse a movable cover with clever timing. Alternative clever
+solutions are welcome; reject accidental shortcuts that remove a level's main
+lesson, not every solution different from the author's.
+
+Increase difficulty through route tradeoffs, constrained simultaneous helper
+jobs, limited dance uses, operator escape routes, and combinations of already
+introduced mechanics. Reserve tight timing for optional mastery goals; pause and
+precise placement remain available. Reusing a *helper job* does not refund a
+spent dance use. New switch/fan tradeoffs, duct transport, honey carrying and lift
+dances require shared engine/workshop rules before campaign use.
+
+Use compact boards for teaching. Larger boards should contain several meaningful
+areas and intermediate decisions rather than empty travel time. Start this
+batch at 24–32 columns and 16–20 rows; the schema's 128 × 72 limit is a technical
+ceiling, not a target. The play camera keeps tools and counters stationary,
+separates panning from placement, offers zoom/fit and hive/flowers/helper
+recentering, and keeps camera state out of replay physics. Workshop currently
+retains its existing zoom/scroll controls; matching direct pan controls and a
+minimap/offscreen indicators remain follow-up work.

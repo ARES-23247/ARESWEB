@@ -1,9 +1,62 @@
 # Waggle Way implementation progress
 
-Updated: 2026-09-07. Local work only; nothing deployed. Latest user direction
-prioritizes the pixel-art redesign; prior implementation acceptance remains open.
+Updated: 2026-09-07. Current worktree: `scratch/waggle-campaign`, branch
+`codex/waggle-campaign-conversion`, based on PR #266 head 5888ae23.
 
-## Latest status — 2026-09-07
+## Current conversion batch — 2026-09-07
+
+The user explicitly requested continued conversion, challenging puzzles, and
+larger boards with mobile panning. This supersedes the earlier expansion hold.
+Six new version-7 challenge definitions now follow the five teaching gardens.
+All require eight rescues and use freely placed dancers, limited helper jobs,
+shutters, rallies and spray protection. The original 30 levels and their exact
+IDs/rules/progress remain available. No new schema or physics is introduced.
+
+The main menu states both level counts. Completed gardens expose Next garden
+beside the play controls, including when progress was saved in an earlier visit;
+the last new garden links to the original campaign. Save failures remain errors
+and do not prevent in-session advancement. The play camera separates pan mode
+from placement, provides zoom/fit and hive/flowers/helper centering, and preserves
+SVG coordinate conversion and deterministic simulation. Boards reach 32 × 20 in
+this batch; the workshop retains its existing zoom/scroll controls.
+
+Initial validation: all six all-bees routes and exact replay/builder round trips
+pass. Missing setup actions and incorrect operator order fail as intended.
+Focused camera browser checks passed in all five supported projects, including
+a real Chromium touch-event drag. A mobile camera-height regression initially
+clipped the release button; the height was corrected and its existing visibility,
+rescue and fullscreen checks passed on recheck. Final local evidence is below.
+Human difficulty/playability and physical-device review remain open.
+
+Final local verification for this batch:
+
+- Frozen dependency install, agent/route/deployment-lock checks, root and Functions
+  lint, TypeScript, Functions build, emulator rules, production build/prerender,
+  bundle limits and production dependency audit pass.
+- Frontend coverage: 1,642 tests across 277 files; Functions coverage: 1,011 tests
+  across 83 files; Firestore/Storage rules: 34 tests. Existing coverage floors hold.
+- Initial full browser run: 430/433 passed. The iPhone release control was partly
+  clipped; the mobile toolbar/counters and camera height were corrected.
+- Final production-style Waggle recheck: 123/125 passed across the five browser
+  projects, including all gameplay/camera cases. Two desktop WebKit community
+  playtests again reached their existing animation deadline under concurrent
+  execution. Both passed against the same built artifact with CI's one-worker
+  setting (2/2); their assertions and timeouts were unchanged. Do not describe
+  this as a clean 433-case single run. No root cause beyond the observed
+  concurrency-sensitive timing is claimed.
+- Camera evidence includes touch dragging in Chromium, pointer panning in all
+  projects, helper recentering after zoom/scroll, precise placement, fit geometry,
+  guide rescue, saved progression and fullscreen. Screenshots were inspected.
+- Logs are in this worktree's ignored `.tmp/gate-*.log`, `.tmp/review-single.log`,
+  with images under `test-results/campaign-final/` and earlier live-test outputs.
+  Protected remote CI is still required for release; no production approval or
+  deployment is implied by this local verification.
+
+
+## Earlier implementation history
+
+The entries below describe their original worktree and review state at the time;
+they do not override the current conversion authorization above.
 
 ### Positive visual feedback and release-readiness discussion
 

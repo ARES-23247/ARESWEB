@@ -1,18 +1,16 @@
 # Waggle Way redesign goal series
 
-Created 2026-09-07 at the user's request. One active implementation goal tracks
-the five phases below. Phases 1–2 are in progress: pixel art/title entry and an
-independent version-7 dancer slice exist locally with focused checks. No phase
-is accepted or complete. No deadline or token budget was requested.
+Updated 2026-09-07. The user reviewed the revised practice slice as looking
+better and explicitly authorized continued campaign conversion, with more
+challenging puzzles. The earlier hold on expansion pending slice feedback is
+therefore lifted. This does not constitute acceptance of every later level or a
+production deployment approval. No deadline or token budget was requested.
 
-Latest local iterations add compact play/workshop controls and a bundled pixel
-font, with browser/device panel, focus, rescue and fullscreen checks. A mixed
-dancer garden now passes real create/save/test/reopen checks in all five browser
-projects. Five practice gardens now teach pointing, relative turns, reversal,
-bounce and a covered spray crossing; all-bees routes and browser play checks
-exist, while human slice/workshop review remains open. See
-[implementation evidence](IMPLEMENTATION_PROGRESS.md). These checks do not
-advance the campaign expansion gate or stand in for the user's slice review.
+The current conversion batch adds six version-7 glasshouse challenges after the
+five teaching gardens, preserving all 30 original levels and their progress.
+Larger boards and a panning play camera are part of this batch. Full human
+difficulty review remains open; deterministic solutions and bypass checks are
+engineering evidence, not proof of fun. See [implementation evidence](IMPLEMENTATION_PROGRESS.md).
 
 The user endorsed the later industrial/urban campaign and honey-recovery factory
 direction. Include that arc in this goal; exact chapter names, level allocation,
@@ -118,8 +116,8 @@ requiring explicit approval.
 
 ## Working boundaries
 
-- Work in `scratch/waggle-way` on `codex/waggle-way`; preserve unrelated edits.
-- Follow [live development](DEVELOPMENT.md): port 3040 for source updates and
+- Work in `scratch/waggle-campaign` on `codex/waggle-campaign-conversion`; preserve unrelated edits.
+- Follow [live development](DEVELOPMENT.md): port 3041 for source updates and
   focused checks while iterating, full required checks at code handoff.
 - Preserve legacy rules versions and require explicit, recoverable upgrades.
 - Preserve saved community work and its unfinished verification. Additional

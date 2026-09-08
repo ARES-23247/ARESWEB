@@ -88,6 +88,10 @@ test("first-flight dancer drags onto open ground and rescues its hive above safe
     page.getByText("6 bees reached the flowers.", { exact: true }),
   ).toBeVisible({ timeout: 10000 });
   await expect(stock).toBeDisabled();
+  await page.getByRole("button", { name: "Next garden", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Two Little Turns", exact: true }),
+  ).toBeFocused();
   await page.goto("/waggle-way/builder");
   await showDetails(page, "Files and saved gardens");
   const definition = serializeLevel(FIRST_FLIGHT);
@@ -143,10 +147,10 @@ for (const practice of [
       .getByRole("button", { name: "Play gardens", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Choose practice garden", exact: true })
+      .getByRole("button", { name: "Choose adventure garden", exact: true })
       .click();
-    const menu = page.getByRole("dialog", { name: "Practice gardens" });
-    await expect(menu.locator(".ww-practice-list button")).toHaveCount(5);
+    const menu = page.getByRole("dialog", { name: "Adventure gardens" });
+    await expect(menu.locator(".ww-practice-list button")).toHaveCount(11);
     await menu
       .getByRole("button", { name: new RegExp(practice.title) })
       .click();
@@ -246,11 +250,11 @@ for (const practice of [
       .getByRole("button", { name: "Play gardens", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Choose practice garden", exact: true })
+      .getByRole("button", { name: "Choose adventure garden", exact: true })
       .click();
     await expect(
       page
-        .getByRole("dialog", { name: "Practice gardens" })
+        .getByRole("dialog", { name: "Adventure gardens" })
         .getByRole("button", { name: new RegExp(practice.title) }),
     ).toContainText("6/6 bees rescued");
   });
@@ -1550,4 +1554,104 @@ test("pollen and a garden theme survive authoring, delivery and reopening", asyn
     "#537947",
   );
   await expect(scene.locator(".ww-ground-flowers path")).toHaveCount(1);
+});
+
+test("large adventure board pans without placing tools and finds offscreen helpers", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/waggle-way");
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  await page.getByRole("button", { name: "Choose adventure garden" }).click();
+  await page
+    .getByRole("dialog", { name: "Adventure gardens" })
+    .getByRole("button", { name: /Two Doors/ })
+    .click();
+  const camera = page.getByRole("group", { name: "Board camera" });
+  const viewport = page.getByRole("region", { name: /^Garden viewport/ });
+  await camera.getByRole("button", { name: "Zoom in on board" }).click();
+  await camera.getByRole("button", { name: "Flowers", exact: true }).click();
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0);
+  const before = await viewport.evaluate((element) => element.scrollLeft);
+  await camera.getByRole("button", { name: "Pan board", exact: true }).click();
+  await viewport.scrollIntoViewIfNeeded();
+  const bounds = (await viewport.boundingBox())!;
+  const from = {
+    x: bounds.x + bounds.width * 0.25,
+    y: bounds.y + bounds.height * 0.5,
+  };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + Math.min(180, bounds.width * 0.5), from.y, {
+    steps: 10,
+  });
+  await page.mouse.up();
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollLeft))
+    .toBeLessThan(before);
+  await expect(page.locator(".ww-stats")).toContainText(/0\s*Helpers/);
+  await expect(
+    page.getByRole("button", { name: /Dancing bee · Left 90° · 1 remaining/ }),
+  ).toBeEnabled();
+  // A captured touch drag exercises the same camera without browser page scroll.
+  if (testInfo.project.name === "mobile-chromium") {
+    const session = await page.context().newCDPSession(page);
+    const left = await viewport.evaluate((element) => element.scrollLeft);
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: from.x + 100, y: from.y }],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: from.x, y: from.y }],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await expect
+      .poll(() => viewport.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(left);
+    await session.detach();
+  }
+  await camera.getByRole("button", { name: "Pan board", exact: true }).click();
+  await showDetails(page, /^Place precisely$/);
+  await page
+    .getByRole("spinbutton", { name: "Tool placement column", exact: true })
+    .fill("28");
+  await page
+    .getByRole("spinbutton", { name: "Tool placement row", exact: true })
+    .fill("12");
+  await page
+    .getByRole("button", { name: "Place supplied tool", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Close place precisely", exact: true })
+    .click();
+  await camera.getByRole("button", { name: "Find helper (1)" }).click();
+  const point = await page.locator(".ww-scene").evaluate((element) => {
+    const point = new DOMPoint(28.5, 12.5).matrixTransform(
+      (element as SVGSVGElement).getScreenCTM()!,
+    );
+    return { x: point.x, y: point.y };
+  });
+  const visible = (await viewport.boundingBox())!;
+  expect(point.x).toBeGreaterThan(visible.x);
+  expect(point.x).toBeLessThan(visible.x + visible.width);
+  expect(point.y).toBeGreaterThan(visible.y);
+  expect(point.y).toBeLessThan(visible.y + visible.height);
+  await page.mouse.click(point.x, point.y);
+  await expect(
+    page.getByRole("button", { name: "Release guide", exact: true }),
+  ).toBeEnabled();
+  await camera.getByRole("button", { name: "Fit", exact: true }).click();
+  const geometry = await viewport.evaluate((element) => ({
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width + 1);
+  await page
+    .locator(".ww-game-window")
+    .screenshot({ path: testInfo.outputPath("large-board-camera.png") });
 });

@@ -12,7 +12,10 @@ replay usability review remains open. See
 The immediate priority, revised 2026-09-07, is the [pixel-art redesign](PIXEL_ART_PIVOT.md):
 one complete top-down level, matching standalone game UI and workshop, direct
 grid interaction, fullscreen and understandable spray/industrial hazards.
-Review that slice with the user before broader campaign or community expansion.
+The user has now reviewed the slice positively and authorized harder campaign
+conversions and larger boards with mobile panning. The first new batch contains
+six glasshouse challenges after the five teaching gardens; community expansion
+is still a separate scope.
 Use the [live development loop](DEVELOPMENT.md) for iterative feedback.
 
 See [replay and recovery](REPLAY_AND_RECOVERY.md) for the implemented M7 workflow

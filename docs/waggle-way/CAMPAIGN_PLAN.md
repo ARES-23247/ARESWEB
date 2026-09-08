@@ -1,7 +1,9 @@
 # Waggle Way campaign plan
 
-Status: implementation active, 2026-09-05. Levels 01–30 are locally playable.
-Human campaign acceptance remains open; nothing has been deployed.
+Status: updated 2026-09-07. Thirty original levels are preserved separately.
+The current local main route contains five teaching gardens and six version-7
+challenge conversions; see LEVEL_DESIGN.md for their IDs and boards. Human
+difficulty acceptance of this new batch remains open.
 
 ## Redesign priority — 2026-09-07
 
@@ -14,10 +16,11 @@ new rules; historical perch-based briefs below describe the legacy prototype.
 The [redesigned level specification](LEVEL_DESIGN.md) now records the proposed
 30-level replacement progression and per-level teaching briefs, including urban
 obstacles, industrial controls and the honey-recovery finale. It owns the new
-content design; implementation evidence below remains scoped to legacy puzzles.
+content design; the older implementation evidence below remains scoped to legacy puzzles.
 
-The [pixel-art pivot](PIXEL_ART_PIVOT.md) requires a complete redesigned level
-and workshop review before expanding the new treatment across this campaign.
+The user has now reviewed the improved slice positively and explicitly
+authorized further conversion with challenging puzzles and mobile panning.
+This supersedes the earlier hold on expansion in the pixel-art pivot record.
 Keep the 30-level target. The five existing gardens and briefs below describe
 the legacy prototype; names, grouping and puzzle layouts may change. Backyard,
 greenhouse, irrigation works and rooftop settings are proposals, not a finalized

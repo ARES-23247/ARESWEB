@@ -201,3 +201,25 @@ Do not count an automated script as a human screen-reader or difficulty test.
 M4 remains open until the unfinished manual tasks and device-render measurements
 have recorded evidence and any material findings are addressed. Do not advertise
 WCAG conformance or a completed 30-level release based on this slice.
+
+
+## Challenge conversion and larger boards — pending player review
+
+The user authorized this batch after positive slice feedback. Check Open Sesame,
+After You, Two Doors, Change of Shift, Two Wet Crossings and Glasshouse Escape in
+the Adventure gardens chooser. The first five lessons remain available, and the
+30 original gardens have a separate title-screen entry.
+
+- Can the player explain why each operator must leave in a particular order?
+- Does Change of Shift feel like planning with one helper job, with pause making
+  recruitment manageable, rather than a test of tapping speed?
+- Can a required tool be omitted or an obvious direct path bypass the main idea?
+  Record the alternate route; clever intended alternatives need not be removed.
+- Does mobile panning keep the hive, hazards and last helper findable? Verify
+  switching back to placement, guide dragging after pan/zoom, Fit, and fullscreen.
+- Is Next garden obvious after a win, including after returning to a saved game?
+- Do the larger boards justify their travel time with decisions? Identify empty
+  stretches to shorten before authoring additional industrial chapters.
+
+Automated solution and browser checks are recorded in implementation progress.
+Physical-device, screen-reader and subjective difficulty acceptance are pending.
