@@ -88,7 +88,7 @@
       "signal": "Cloud Firestore document reads and writes",
       "scope": ["aresfirst-portal"],
       "windowSeconds": 900,
-      "action": "Alert on a 3x increase over the trailing seven-day same-hour baseline."
+      "action": "Alert separately when rolling 15-minute reads exceed 5000 or writes exceed 1000 continuously for 600 seconds, evaluated every 60 seconds. Scope both queries to project_id=aresfirst-portal. Do not alert on percentage growth alone at low volume."
     },
     {
       "signal": "Vertex AI request and token usage",
