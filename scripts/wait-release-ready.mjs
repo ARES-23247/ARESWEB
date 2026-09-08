@@ -75,7 +75,7 @@ export async function waitReady(
   )
     throw new Error("Invalid readiness deadline");
   const deadline = now() + timeoutMs;
-  let last = "not ready";
+  let last;
   do {
     const result = await check();
     if (result.length === 0) return;
