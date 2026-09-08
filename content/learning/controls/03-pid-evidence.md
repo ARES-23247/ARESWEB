@@ -10,7 +10,7 @@ Complete [Predict Motion with Feedforward](/academy/controls-motor-model-feedfor
 first. You should be able to read a time graph, name the units in a calculation, and explain why a
 prediction and a feedback correction are different jobs.
 
-This lesson follows ARES 17.0.1 and Studio 7.0.2. Its source links are pinned to the exact public
+This lesson follows ARES 17.0.2 and Studio 7.0.3. Its source links are pinned to the exact public
 monorepo commit used for review. The browser activities do not run the Kotlin controller.
 
 In this lesson, you will:
@@ -70,6 +70,10 @@ PID output before limits = 0.20 + 0.035 - 0.08 = 0.155
 The minus sign makes D oppose a changing measurement. Using measurement rate also avoids a sudden D
 jump when only the setpoint changes. The first calculation after `reset()` uses a rate of zero.
 
+For a continuous angle input, ARES also wraps the measurement change before dividing by elapsed
+time. Crossing the angle boundary should not create a false full-turn D correction. The position
+error uses the same half-range wrapping rule.
+
 ## Visual model
 
 ```mermaid
@@ -115,7 +119,7 @@ classroom cases and does not run Kotlin or a motor.
 
 <arespidtracelab />
 
-Now use the **ARES 17.0.1 source trace** in the same activity:
+Now use the **ARES 17.0.2 source trace** in the same activity:
 
 1. Choose **Worked step**. Confirm the final output is `0.155`.
 2. Choose **First after reset**. Explain why the D term is zero.
