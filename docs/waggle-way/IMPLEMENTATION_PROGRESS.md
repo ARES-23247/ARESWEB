@@ -1,7 +1,41 @@
 # Waggle Way implementation progress
 
-Updated: 2026-09-07. Current worktree: `scratch/waggle-campaign`, branch
+Updated: 2026-09-08. Current worktree: `scratch/waggle-campaign`, branch
 `codex/waggle-campaign-conversion`, based on PR #266 head 5888ae23.
+
+## Garden library and readable numerals — 2026-09-08
+
+The game chooser now separates five learning gardens and six Glasshouse
+challenges, with a jump control for mobile/keyboard users and direct access to
+the 30 original gardens. Its toolbar button is explicitly labeled Gardens.
+Numerals fall back to a clear monospace font across game and workshop UI,
+including rescue counts and supplies; the bundled pixel font remains unmodified.
+
+The user's screenshot was of the old five-garden dialog. The current checkout
+already contained 11 gardens, but its port-3041 server had stopped. Restarting
+that checkout and checking the actual browser confirmed the new library.
+
+Previous commit 2381e90 passed remote verification run 34178682355, including
+both browser shards and the required gate. PR #267 remains a draft stacked on
+#266; no production deployment has occurred. UI follow-up validation: frozen install, agent/route/deployment-lock guards,
+root and Functions lint, TypeScript, Functions build, production build/prerender,
+bundle limits and production audit pass. Frontend coverage passes 1,643 tests in
+277 files; Functions coverage passes 1,011 tests in 83 files; emulator rules pass
+34 tests. The targeted chooser and first-flight checks pass in all five browser
+projects, including keyboard chapter jumping, selection/return focus, original
+campaign access and mobile guide-release visibility. Desktop and mobile chooser
+screenshots were inspected. The initial WebKit font assertion needed to accept
+its equivalent unquoted CSS font-family serialization; the actual font and
+navigation assertions remain in place.
+
+The full built-site browser run completed 436/438 tests successfully, including
+all 130 Waggle gameplay/workshop/community cases. Two desktop WebKit BUZZHEX
+opening-move assertions failed during the two-worker run. Both passed unchanged
+against the same built artifact with CI's one-worker setting (2/2, 9.8 seconds).
+No BUZZHEX implementation or assertions were changed. This is not a clean
+438-case single-run result; no root cause beyond the observed recheck is claimed.
+Logs: `.tmp/library-full-browser.log`, `.tmp/library-buzzhex-recheck.log` and
+`.tmp/gate-*.log`.
 
 ## Current conversion batch — 2026-09-07
 

@@ -4,6 +4,8 @@
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
+  /* Use the monospace fallback for distinct 2/5 shapes throughout the game. */
+  unicode-range: U+0000-002F, U+003A-10FFFF;
 }
 
 .ww-page {
@@ -2172,5 +2174,89 @@
 @media (max-width: 600px) {
   .ww-camera-viewport {
     min-height: 160px;
+  }
+}
+
+/* A compact chapter library, with readable numerals even inside pixel headings. */
+.ww-page.ww-garden-library {
+  width: min(1000px, calc(100% - 2rem));
+  max-width: 1000px;
+  padding: 1.25rem;
+}
+.ww-garden-library-intro,
+.ww-garden-library-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ww-garden-library-intro p,
+.ww-garden-library-footer p {
+  margin: 0;
+}
+.ww-garden-chapters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.ww-garden-chapters h3 {
+  color: var(--ww-honey);
+  font-size: 1.15rem;
+  scroll-margin-top: 1rem;
+}
+.ww-garden-chapter-detail {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--ares-text-secondary);
+}
+.ww-garden-library .ww-practice-list button {
+  min-height: 90px;
+  height: 100%;
+  padding: 0.6rem 0.75rem;
+}
+.ww-garden-library .ww-practice-list button:hover {
+  background: var(--ares-app-surface);
+  border-color: var(--ww-honey);
+}
+.ww-garden-library .ww-practice-list button[aria-pressed="true"] {
+  background: var(--ares-app-surface);
+  box-shadow: inset 4px 0 var(--ww-honey);
+}
+.ww-garden-library .ww-practice-number {
+  flex: 0 0 2ch;
+  font-family: "Courier New", monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ww-garden-library .ww-garden-result {
+  color: var(--ares-text-secondary);
+}
+.ww-garden-library-footer {
+  border-top: 2px solid var(--ww-edge);
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+}
+.ww-garden-save-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ares-text-secondary);
+}
+.ww-grid-play .ww-practice-menu-button {
+  gap: 0.4rem;
+}
+@media (max-width: 640px) {
+  .ww-page.ww-garden-library {
+    padding: 1rem;
+  }
+  .ww-garden-chapters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ww-garden-library-intro,
+  .ww-garden-library-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 }

@@ -19,3 +19,8 @@ Local `PixelifySans.ttf`: 79,160 bytes, SHA-256
 `9ba86cd010a4de309d263ceff8e8044092c9db7efda869620cb9ff1c4389e8a5`.
 Only the local filename changed. The font is referenced by the package CSS and
 served by Vite; no Google Fonts request is made by the game.
+
+The game CSS excludes ASCII digits from the pixel face with `unicode-range`.
+Numbers use the monospace fallback so 2 and 5 remain distinct from letters in
+level labels, rescue totals, tool quantities, and workshop controls. The bundled
+font itself remains unmodified.

@@ -16,7 +16,7 @@ describe("Waggle Way title-to-play flow", () => {
       screen.getByRole("button", { name: "Choose adventure garden" }),
     );
     const dialog = screen.getByRole("dialog", { name: "Adventure gardens" });
-    expect(within(dialog).getAllByText("Saving unavailable")).toHaveLength(11);
+    expect(within(dialog).getAllByText(/Saving unavailable/)).toHaveLength(11);
     fireEvent.click(
       within(dialog).getByRole("button", { name: /Watch the Spray/ }),
     );
@@ -25,6 +25,43 @@ describe("Waggle Way title-to-play flow", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Open hive" })).toBeEnabled();
     expect(localStorage.getItem(PROGRESS_KEY)).toBe("unreadable");
+  });
+  it("exposes learning, challenge and original gardens from the same chooser", () => {
+    render(<Game workshopLink={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Play gardens" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Choose adventure garden" }),
+    );
+    expect(
+      within(
+        screen.getByRole("region", { name: "Learn the dances" }),
+      ).getAllByRole("button"),
+    ).toHaveLength(5);
+    expect(
+      within(
+        screen.getByRole("region", { name: "Glasshouse challenges" }),
+      ).getAllByRole("button"),
+    ).toHaveLength(6);
+    fireEvent.click(screen.getByRole("button", { name: /Glasshouse Escape/ }));
+    expect(
+      screen.getByRole("heading", { name: "Glasshouse Escape" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Choose adventure garden" }),
+    ).toHaveTextContent("11/11");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Choose adventure garden" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play 30 original gardens" }),
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Adventure gardens" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open hive" })).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Choose adventure garden" }),
+    ).not.toBeInTheDocument();
   });
   it("opens at a named title screen and moves focus into the unstarted garden", () => {
     render(<Game workshopLink={<a href="/waggle-way/builder">Workshop</a>} />);

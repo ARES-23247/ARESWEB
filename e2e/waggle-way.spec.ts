@@ -1655,3 +1655,55 @@ test("large adventure board pans without placing tools and finds offscreen helpe
     .locator(".ww-game-window")
     .screenshot({ path: testInfo.outputPath("large-board-camera.png") });
 });
+
+test("garden library exposes challenges and readable level numbers", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/waggle-way");
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  const chooser = page.getByRole("button", { name: "Choose adventure garden" });
+  await expect(chooser).toContainText("Gardens");
+  await chooser.click();
+  const dialog = page.getByRole("dialog", { name: "Adventure gardens" });
+  await expect(
+    dialog
+      .getByRole("region", { name: "Learn the dances" })
+      .getByRole("button"),
+  ).toHaveCount(5);
+  await expect(
+    dialog
+      .getByRole("region", { name: "Glasshouse challenges" })
+      .getByRole("button"),
+  ).toHaveCount(6);
+  await page.evaluate(() => document.fonts.ready);
+  await expect(dialog.locator(".ww-practice-number").nth(1)).toHaveCSS(
+    "font-family",
+    /^"?Courier New"?, monospace$/,
+  );
+  await dialog.screenshot({ path: testInfo.outputPath("garden-library.png") });
+  await dialog.getByRole("button", { name: "Jump to challenges" }).click();
+  const heading = dialog.getByRole("heading", {
+    name: "Glasshouse challenges",
+  });
+  await expect(heading).toBeFocused();
+  await expect(heading).toBeInViewport();
+  await page.keyboard.press("Tab");
+  await expect(
+    dialog.getByRole("button", { name: /Open Sesame/ }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Open Sesame" }),
+  ).toBeFocused();
+  await chooser.click();
+  await page.keyboard.press("Escape");
+  await expect(chooser).toBeFocused();
+  await chooser.click();
+  await dialog
+    .getByRole("button", { name: "Play 30 original gardens" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Open hive", exact: true }),
+  ).toBeVisible();
+  await expect(chooser).toHaveCount(0);
+});
