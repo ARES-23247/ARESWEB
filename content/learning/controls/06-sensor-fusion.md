@@ -89,10 +89,9 @@ samples, and then replays later motion. Comparing delayed vision only with the n
 a moving robot appear wrong. Redux publishes an immutable estimator snapshot; it does not expose the
 mutable replay history.
 
-ARES rejects a capture time older than the last accepted vision frame as `vision_out_of_order`.
-Frames at the same capture time can still be accepted. This protects later camera corrections:
-the replay history stores odometry, not a full history of camera updates. Invalid innovation values
-are rejected even when statistical outlier gating is off.
+A frame older than the most recently accepted vision capture time is rejected as
+`vision_out_of_order`. Replaying wheel motion cannot restore a later camera correction that it
+would erase. Independent frames with the same capture time remain supported.
 
 The camera adapter must subtract latency exactly once and send a capture timestamp. Subtracting it
 again shifts the frame too far into the past. Using receipt time moves it too far forward. Drive and

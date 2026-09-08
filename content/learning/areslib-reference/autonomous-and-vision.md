@@ -39,10 +39,11 @@ different meaning.
 Now suppose a camera result arrives 120 milliseconds after capture. The estimator has already moved
 forward. Code should not pretend the result describes the present. It uses the capture timestamp,
 checks the measurement, updates the matching point in pose history, and replays later motion to now.
-
-Its capture time must not be older than the last accepted vision frame. ARES reports
-`vision_out_of_order` for that case because odometry replay cannot restore later camera corrections.
 Latency is removed once, not in both the camera adapter and estimator.
+
+Capture times must not precede the most recently accepted vision frame. Such an update is rejected
+as `vision_out_of_order`, because wheel-motion replay cannot reconstruct later camera corrections.
+Independent observations at the same capture time remain supported.
 
 The measurement stays rejected when its tag is unknown, ambiguity is too high, or uncertainty is
 not valid. It also fails when capture time falls outside history or the pose jump breaks a reviewed

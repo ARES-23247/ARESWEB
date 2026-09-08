@@ -3,6 +3,17 @@
 Updated: 2026-09-08. Current worktree: `scratch/waggle-campaign`, branch
 `codex/waggle-campaign-conversion`, based on PR #266 head 5888ae23.
 
+## Authorized release integration — 2026-09-08
+
+The user explicitly requested deployment of the game update. Master advanced to
+9735075c (sign-in recovery, PR #268), which independently completed the same
+ARES 17.0.2 source refresh as the prerequisite PR #266. Release integration keeps
+master's complete Academy source, provenance and review-digest set, including
+its later motion-profile correction, instead of duplicating overlapping lesson
+paragraphs. The game and CI/release-readiness changes from #266 are being
+released together through PR #267 targeting master, with full protected checks.
+The earlier stacked-PR instructions below describe the previous review state.
+
 ## Garden library and readable numerals — 2026-09-08
 
 The game chooser now separates five learning gardens and six Glasshouse

@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { PublicDataState } from "@/components/PublicDataState";
 import { formatDateOnly } from "@/lib/dateOnly";
-import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 import PublicResults from "./PublicResults";
 
 export default function TournamentsFeedPage() {
@@ -152,7 +151,6 @@ export default function TournamentsFeedPage() {
             >
               Sign In with Google
             </button>
-            <AuthErrorNotice />
 
             {user && authorizedUser?.role === "unverified" && (
               <div className="mt-6 p-4 bg-ares-red/10 border border-ares-red/30 rounded-lg flex items-start gap-2.5 text-left">

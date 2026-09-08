@@ -38,11 +38,6 @@ consumer checks. A public API change also needs a reviewed API baseline.
 Do not run the largest command first and call that a plan. A useful plan starts with the smallest
 test that can explain a mistake. It then expands to every boundary that could be affected.
 
-The current monorepo CI selects changed products and their consumers through one shared scope
-resolver. A gateway-only change can select gateway tests; a shared Studio-model change selects all
-three Studio modules. Shared ARESLib changes select the full matrix. Stable result checks reject
-missing or failed selected work. Manual runs select all scopes for their workflow.
-
 | Changed boundary | First useful evidence | Required wider evidence |
 | --- | --- | --- |
 | Documentation only | link and policy checks | review the rendered document |
@@ -50,6 +45,10 @@ missing or failed selected work. Manual runs select all scopes for their workflo
 | Shared ARESLib behavior | focused and module tests | unique candidate through every affected consumer |
 | Public ARESLib API | focused tests and API review | unique candidate through every affected consumer |
 | Final released dependency | clean remote resolve | representative student build without sibling source |
+
+Current monorepo CI selects changed products and their consumers. Unaffected jobs report skips;
+the final result check must still pass for the selected work. Shared ARESLib changes select the
+full consumer matrix. Manual workflow runs select every scope in that workflow.
 
 ## Worked example
 

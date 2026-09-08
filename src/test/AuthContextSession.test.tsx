@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -32,6 +32,7 @@ vi.mock("firebase/auth", () => ({
 }));
 
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import AuthErrorNotice from "../components/navigation/AuthErrorNotice";
 
 function SessionProbe() {
   const { user, authorizedUser, loading } = useAuth();
@@ -70,6 +71,8 @@ describe("AuthProvider backend session linking", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
@@ -116,9 +119,68 @@ describe("AuthProvider backend session linking", () => {
       "/api/profiles/session",
       {
         method: "POST",
+        signal: expect.any(AbortSignal),
         headers: { "Content-Type": "application/json" },
       },
     );
+  });
+
+  it("ends a stalled production Auth restore with a visible recovery action", async () => {
+    vi.stubEnv("DEV", false);
+    vi.useFakeTimers();
+    mocks.onAuthStateChanged.mockImplementation(() => vi.fn());
+    render(<AuthProvider><SessionProbe /><AuthErrorNotice /></AuthProvider>);
+
+    await act(() => vi.advanceTimersByTimeAsync(20_000));
+
+    expect(screen.getByLabelText("session state")).toHaveTextContent("signed-out:no-role");
+    expect(screen.getByRole("alert")).toHaveTextContent("Session verification timed out");
+    expect(screen.getByRole("button", { name: "Reload sign-in" })).toBeInTheDocument();
+  });
+
+  it("aborts stalled session verification and ignores its late authorization result", async () => {
+    vi.useFakeTimers();
+    let finish!: (response: Response) => void;
+    mocks.authenticatedFetch.mockReturnValue(new Promise<Response>((resolve) => { finish = resolve; }));
+    render(<AuthProvider><SessionProbe /><AuthErrorNotice /></AuthProvider>);
+    await act(async () => {});
+    const signal = mocks.authenticatedFetch.mock.calls[0][1].signal as AbortSignal;
+
+    await act(() => vi.advanceTimersByTimeAsync(20_000));
+    expect(signal.aborted).toBe(true);
+    expect(screen.getByLabelText("session state")).toHaveTextContent("firebase-user-1:no-role");
+    expect(screen.getByRole("alert")).toHaveTextContent("Session verification timed out");
+
+    await act(async () => { finish(new Response(JSON.stringify({ authorizedUser: { role: "admin" } }))); });
+    expect(screen.getByLabelText("session state")).toHaveTextContent("firebase-user-1:no-role");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("does not restore a prior account's role after a signed-out auth event", async () => {
+    let finish!: (response: Response) => void;
+    mocks.authenticatedFetch.mockReturnValue(new Promise<Response>((resolve) => { finish = resolve; }));
+    render(<AuthProvider><SessionProbe /></AuthProvider>);
+    await waitFor(() => expect(mocks.authenticatedFetch).toHaveBeenCalled());
+    const notifyAuth = mocks.onAuthStateChanged.mock.calls[0][1];
+    await act(async () => { await notifyAuth(null); });
+    await act(async () => { finish(new Response(JSON.stringify({ authorizedUser: { role: "admin" } }))); });
+    expect(screen.getByLabelText("session state")).toHaveTextContent("signed-out:no-role");
+  });
+
+  it("bounds a stalled response body and permits a fresh verified session after recovery", async () => {
+    vi.useFakeTimers();
+    let finishBody!: (value: unknown) => void;
+    mocks.authenticatedFetch.mockResolvedValue({ ok: true, json: () => new Promise((resolve) => { finishBody = resolve; }) });
+    render(<AuthProvider><SessionProbe /><AuthErrorNotice /></AuthProvider>);
+    await act(async () => {});
+    await act(() => vi.advanceTimersByTimeAsync(20_000));
+    await act(async () => { finishBody({ authorizedUser: { role: "admin" } }); });
+    expect(screen.getByLabelText("session state")).toHaveTextContent("firebase-user-1:no-role");
+
+    mocks.authenticatedFetch.mockResolvedValue(new Response(JSON.stringify({ authorizedUser: { role: "member" } })));
+    await act(async () => { await mocks.onAuthStateChanged.mock.calls[0][1](mocks.currentUser); });
+    expect(screen.getByLabelText("session state")).toHaveTextContent("firebase-user-1:member");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("keeps the user signed in but grants no role when session linking fails", async () => {

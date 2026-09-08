@@ -64,6 +64,10 @@ ARES finds the stored pose at capture time, applies the accepted correction ther
 later motion. If the capture time is older than the stored history, ARES rejects it as
 `vision_too_old`.
 
+A frame can still be inside that history but older than a camera correction already accepted.
+ARES rejects that case as `vision_out_of_order`; wheel-motion replay cannot restore later camera
+corrections. Independent observations with the same capture time remain supported.
+
 The camera adapter subtracts latency once before dispatch. If another layer subtracts it again, the
 frame appears older than it was. If no layer subtracts it, receipt time can be mistaken for capture
 time.
@@ -103,10 +107,10 @@ These are current runtime reason names:
 | ------------------------------------------------- | ------------------------------------------------------- |
 | `prefilter_rejected`                              | The Boolean physical/configuration prefilter removed it. |
 | `empty_history`                                   | The Store has no pose sample for delayed replay.         |
-| `high_ambiguity` or `nan_measurement`             | Ambiguity is too high or non-finite, or pose data is non-finite. |
-| `vision_out_of_order`                            | Capture time is older than the last accepted vision frame. |
+| `high_ambiguity` or `nan_measurement`             | Ambiguity is too high or non-finite, or pose values are non-finite. |
 | `no_tags`, `invalid_std_devs`, `invalid_threshold` | A required estimator input is not usable.                |
 | `vision_too_old`                                  | Capture time is older than saved pose history.           |
+| `vision_out_of_order`                             | Capture time precedes an already accepted vision frame. |
 | `non_positive_definite_innovation_covariance`     | The combined uncertainty cannot be used safely.          |
 | `invalid_innovation` or `mahalanobis_rejected`    | NIS is invalid or above the selected threshold.          |
 | `external_filter_rejected`                        | A platform-owned estimator rejected the frame.           |

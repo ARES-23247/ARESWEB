@@ -40,6 +40,11 @@ real ARES profile is more general, but this smaller model makes the main pattern
 A profile is a plan, not a motor command and not a safety guarantee. Feedback follows the plan.
 Hardware limits, output guards, and stop conditions remain separate.
 
+ARES path timing has another boundary. Its S-curve parameterizer makes a spatial starting profile
+with approximate acceleration ramps. The jerk-limited provider checks sampled acceleration and
+jerk, then stretches time when needed. It scales translation and rotation together. These sampled
+checks do not prove continuous jerk limits through path corners or model drivetrain forces.
+
 ## Worked example
 
 Plan a `3 m` rest-to-rest move. Set maximum velocity to `2 m/s` and maximum acceleration to

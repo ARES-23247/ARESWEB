@@ -48,9 +48,9 @@ volts per second. A dynamic test uses a step. The exact direction depends on the
 shared routine stops after five seconds. Linear, angular, elevator, and arm tests also have travel
 checks. Invalid position, heading, velocity, or time data stops the shared routine.
 
-The FTC track-width sample now includes wheelbase in meters as its seventh value. The linear
-sample includes encoder ticks in its third value. Match the sample shape to the pinned Studio
-reader before comparing a fit; do not reuse an older column map without checking it.
+FTC calibration logs must match the selected test. The track-width payload includes wheelbase in
+meters after heading. The linear payload carries measured encoder ticks in its third field, not a
+zero placeholder. Keep those fields and units when checking a calibration export.
 
 Those checks are not the whole platform safety system. Studio first requires the connected runtime
 to advertise the selected mechanism. FTC motion also needs a STOP-first handshake. The enable token

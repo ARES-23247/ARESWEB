@@ -70,9 +70,9 @@ PID output before limits = 0.20 + 0.035 - 0.08 = 0.155
 The minus sign makes D oppose a changing measurement. Using measurement rate also avoids a sudden D
 jump when only the setpoint changes. The first calculation after `reset()` uses a rate of zero.
 
-For a continuous angle input, ARES 17.0.2 wraps both position error and the change in measurement.
-Crossing the angle boundary therefore uses the short wrapped change for D. The classroom tracer
-below does not model continuous angles.
+For a continuous angle input, ARES also wraps the measurement change before dividing by elapsed
+time. Crossing the angle boundary should not create a false full-turn D correction. The position
+error uses the same half-range wrapping rule.
 
 ## Visual model
 

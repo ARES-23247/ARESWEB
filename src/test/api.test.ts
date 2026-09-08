@@ -37,6 +37,16 @@ describe("authenticatedFetch", () => {
     expect(headers.get("Content-Type")).toBe("application/json");
   });
 
+  it.each(["before auth", "during auth", "during App Check"])("does not send an aborted request %s", async (stage) => {
+    const controller = new AbortController();
+    if (stage === "before auth") controller.abort();
+    if (stage === "during auth") firebaseMocks.getIdToken.mockImplementation(async () => { controller.abort(); return "token"; });
+    if (stage === "during App Check") firebaseMocks.getAppCheckHeader.mockImplementation(async () => { controller.abort(); return {}; });
+
+    await expect(authenticatedFetch("/api/profiles/session", { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("does not invent an Authorization header without a signed-in user token", async () => {
     firebaseMocks.getIdToken.mockResolvedValue(undefined);
     await authenticatedFetch("/api/public");
