@@ -43,7 +43,9 @@
     "content:migrate": "node scripts/migrate-learning-content.mjs",
     "test:content-migration": "vitest run --config vitest.learning-migration.config.mts",
     "games:prepare": "node scripts/prepare-game-packages.mjs",
-    "prepare": "node scripts/prepare-game-packages.mjs"
+    "prepare": "node scripts/prepare-game-packages.mjs",
+    "test:affected": "node scripts/affected-areas.mjs",
+    "test:release-tooling": "vitest run --config vitest.release-tooling.config.mts --coverage"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

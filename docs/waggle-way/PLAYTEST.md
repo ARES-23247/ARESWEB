@@ -1,14 +1,31 @@
 # Waggle Way campaign playtest record
 
-Updated: 2026-09-07. Current scope: five version-7 pixel-art practice gardens and
-the local workshop. Historical evidence below covers the thirty legacy
-Sunny Garden/Breezy Meadow/Glasshouse/Rainy Garden/Wildflower Valley puzzles.
-Current automated results and historical migration checks are distinguished in
-IMPLEMENTATION_PROGRESS.md.
-This record distinguishes automated and visual observations from human playtests.
-Player feedback has been received; a structured screen-reader session has not been completed.
+Updated: 2026-09-08. Current scope: five version-7 learning gardens, six
+Glasshouse challenges and the local workshop. The 30 original gardens remain
+separately accessible with their earlier rules. This record distinguishes human
+feedback, automated verification and historical evidence. A structured
+screen-reader session has not been completed.
 
-## Latest feedback and next review — recorded 2026-09-07
+## Garden library and numeral feedback — 2026-09-08
+
+The user reported that Play gardens still showed only five practice gardens and
+that the pixel font made 2 and 5 difficult to read. Their screenshot captured
+the old Practice gardens dialog. The port-3041 development server was no longer
+running when inspected; the campaign checkout was restarted and the actual
+browser page verified with all 11 current-rule gardens.
+
+The chooser now groups five learning gardens and six Glasshouse challenges,
+provides a keyboard-accessible jump to challenges for small screens, and links
+to the 30 original gardens. Its toolbar control is labeled Gardens rather than
+an unexplained fraction. ASCII digits use a clear monospace fallback throughout
+the game and workshop; pixel lettering and artwork remain unchanged.
+
+Review the current build at `http://127.0.0.1:3041/waggle-way`: Play gardens,
+then Gardens. Human acceptance of this revision remains open. Automated checks
+cover selecting challenges, reaching the original campaign, keyboard focus,
+Escape restoration, mobile controls and font rendering in five browser projects.
+
+## Earlier feedback and next review — recorded 2026-09-07
 
 Latest follow-up: the user said the game looks "a lot better" and asked whether
 to deploy or refine it first. This supports the current visual direction and
@@ -31,9 +48,9 @@ reopens a small level. Review coherent pixel visuals and readable embedded and
 fullscreen views on desktop and touch. Record observations before expanding it.
 The historical tasks and evidence further below apply to the legacy prototype.
 
-## New dancer and bounce review
+## Earlier dancer and bounce review
 
-The local practice slice is available from **Play gardens**, then the **1/5**
+The earlier local practice slice was available from **Play gardens**, then the **1/5**
 button at `http://127.0.0.1:3040/waggle-way`. Its five gardens are First Waggle,
 Two Little Turns, Turn It Around, Bounce Back and Watch the Spray. Any garden
 can be selected; switching gardens starts a fresh attempt. Successful rescue
@@ -201,3 +218,25 @@ Do not count an automated script as a human screen-reader or difficulty test.
 M4 remains open until the unfinished manual tasks and device-render measurements
 have recorded evidence and any material findings are addressed. Do not advertise
 WCAG conformance or a completed 30-level release based on this slice.
+
+
+## Challenge conversion and larger boards — pending player review
+
+The user authorized this batch after positive slice feedback. Check Open Sesame,
+After You, Two Doors, Change of Shift, Two Wet Crossings and Glasshouse Escape in
+the Adventure gardens chooser. The first five lessons remain available, and the
+30 original gardens have a separate title-screen entry.
+
+- Can the player explain why each operator must leave in a particular order?
+- Does Change of Shift feel like planning with one helper job, with pause making
+  recruitment manageable, rather than a test of tapping speed?
+- Can a required tool be omitted or an obvious direct path bypass the main idea?
+  Record the alternate route; clever intended alternatives need not be removed.
+- Does mobile panning keep the hive, hazards and last helper findable? Verify
+  switching back to placement, guide dragging after pan/zoom, Fit, and fullscreen.
+- Is Next garden obvious after a win, including after returning to a saved game?
+- Do the larger boards justify their travel time with decisions? Identify empty
+  stretches to shorten before authoring additional industrial chapters.
+
+Automated solution and browser checks are recorded in implementation progress.
+Physical-device, screen-reader and subjective difficulty acceptance are pending.

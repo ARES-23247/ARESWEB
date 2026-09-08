@@ -8,7 +8,7 @@ const ALLOWED_BUILD_PROJECT_ROLES = ["roles/logging.logWriter"];
 const ALLOWED_BUILD_ARTIFACT_ROLES = ["roles/artifactregistry.writer"];
 const ALLOWED_BUILD_STORAGE_ROLES = ["roles/storage.objectViewer"];
 
-function runGcloud(command, args, options) {
+export function runGcloud(command, args, options) {
   if (process.platform !== "win32") return execFileSync(command, args, options);
   const scriptPath = execFileSync("where.exe", ["gcloud.ps1"], {
     encoding: "utf8",

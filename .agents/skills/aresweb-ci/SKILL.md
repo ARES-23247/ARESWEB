@@ -14,6 +14,12 @@ and `.github/workflows/ci.yml` as authoritative.
 Run the root `AGENTS.md` verification gate, including both frontend and Functions lint.
 Use focused tests while iterating, then run the full gate before handoff.
 
+`pnpm test:affected --base origin/master` reports conservative area ownership;
+add `--suite unit --run` or `--suite e2e --run` for local iteration. CI remains
+in observation mode and runs the full gate. Run `pnpm test:release-tooling` for
+the selector, shard completeness, and release readiness coverage gate. See
+`docs/AREA_TESTING_AND_RELEASE_PLAN.md` for rollout prerequisites.
+
 - Do not lower thresholds, exclude changed production code, or replace failing
   tests with mocks that bypass the behavior under test.
 - Require 85% line and 100% function coverage for new utilities and API routes.
@@ -30,9 +36,12 @@ Use focused tests while iterating, then run the full gate before handoff.
 - Never add service-account JSON, refresh tokens, or long-lived deploy secrets.
 
 Production delivery uses `.github/workflows/ci.yml` after a protected merge to
-`master`: build the verified artifact, deploy the bounded game Cloud Run image,
-deploy the declared Functions, switch Hosting/rules, then verify live health and
-browser security. Check the run's final result; a merge is not a completed deploy.
+`master`: build the verified artifact, deploy and wait for declared indexes,
+deploy the bounded game Cloud Run image and declared Functions, verify game HTTP
+readiness, switch Hosting/rules, then verify live health and browser security.
+The manual `Verify Current Production` workflow repeats read-only health/browser
+verification without redeployment; it does not erase an earlier failure or prove
+a commit was deployed. Check the run's final result; a merge is not a completed deploy.
 Do not use the package's direct Functions deploy command to bypass this workflow.
 
 Do not deploy, rotate secrets, change environments, or mutate production data

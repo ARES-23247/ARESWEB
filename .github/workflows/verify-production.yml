@@ -1,0 +1,43 @@
+name: Verify Current Production
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NODE_VERSION: "24.18.0"
+  PNPM_VERSION: "11.21.0"
+jobs:
+  verify:
+    name: Public health and browser verification (no deployment)
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install browser-smoke dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify current public production health
+        run: node scripts/check-production-health.mjs --deployment-id "${{ github.sha }}" --primary-origin https://aresfirst-portal.web.app
+
+      - name: Verify production GA4 and App Check without storing inquiry data
+        run: >-
+          node scripts/check-production-browser.mjs
+          --deployment-id "${{ github.sha }}"
+          --origin "https://aresfirst-portal.web.app"

@@ -24,6 +24,7 @@ import {
 } from "../core/engine";
 import { DIRECTION_NAMES, type LevelDefinition } from "../core/level";
 import GardenScene, { OBJECT_LABELS, PieceIcon } from "./GardenScene";
+import GardenViewport from "./GardenViewport";
 import ToolTrayButton from "./ToolTrayButton";
 import GamePanel from "./GamePanel";
 import DirectionPad from "./DirectionPad";
@@ -583,40 +584,42 @@ export default function GameSession({
               : undefined
           }
         >
-          <GardenScene
-            level={level}
-            run={run}
-            ghostBees={ghost.frame?.bees}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setPlacingStock(false);
-            }}
-            onInteract={() => setPlaying(false)}
-            onDropTool={(id, x, y) => {
-              setPlaying(false);
-              placeStock(x, y, id);
-              setPlacingStock(false);
-            }}
-            onTurn={(objectId, direction) => {
-              setPlaying(false);
-              const object = current.current.objects.find(
-                (item) => item.id === objectId,
-              )!;
-              command({
-                type: "adjust",
-                objectId,
-                direction,
-                strength: object.strength,
-              });
-            }}
-            onPlace={placingStock ? placeStock : undefined}
-            onMove={(objectId, x, y) =>
-              command({ type: "move", objectId, x, y })
-            }
-            overlays={overlays}
-            preview={route}
-          />
+          <GardenViewport level={level} run={run} enabled={gridPlay}>
+            <GardenScene
+              level={level}
+              run={run}
+              ghostBees={ghost.frame?.bees}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                setPlacingStock(false);
+              }}
+              onInteract={() => setPlaying(false)}
+              onDropTool={(id, x, y) => {
+                setPlaying(false);
+                placeStock(x, y, id);
+                setPlacingStock(false);
+              }}
+              onTurn={(objectId, direction) => {
+                setPlaying(false);
+                const object = current.current.objects.find(
+                  (item) => item.id === objectId,
+                )!;
+                command({
+                  type: "adjust",
+                  objectId,
+                  direction,
+                  strength: object.strength,
+                });
+              }}
+              onPlace={placingStock ? placeStock : undefined}
+              onMove={(objectId, x, y) =>
+                command({ type: "move", objectId, x, y })
+              }
+              overlays={overlays}
+              preview={route}
+            />
+          </GardenViewport>
           {previewActive && (
             <p role="status" className="ww-caption">
               {preview.source !== run

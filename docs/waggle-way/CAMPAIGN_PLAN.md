@@ -1,7 +1,9 @@
 # Waggle Way campaign plan
 
-Status: implementation active, 2026-09-05. Levels 01–30 are locally playable.
-Human campaign acceptance remains open; nothing has been deployed.
+Status: updated 2026-09-07. Thirty original levels are preserved separately.
+The current local main route contains five teaching gardens and six version-7
+challenge conversions; see LEVEL_DESIGN.md for their IDs and boards. Human
+difficulty acceptance of this new batch remains open.
 
 ## Redesign priority — 2026-09-07
 
@@ -14,10 +16,11 @@ new rules; historical perch-based briefs below describe the legacy prototype.
 The [redesigned level specification](LEVEL_DESIGN.md) now records the proposed
 30-level replacement progression and per-level teaching briefs, including urban
 obstacles, industrial controls and the honey-recovery finale. It owns the new
-content design; implementation evidence below remains scoped to legacy puzzles.
+content design; the older implementation evidence below remains scoped to legacy puzzles.
 
-The [pixel-art pivot](PIXEL_ART_PIVOT.md) requires a complete redesigned level
-and workshop review before expanding the new treatment across this campaign.
+The user has now reviewed the improved slice positively and explicitly
+authorized further conversion with challenging puzzles and mobile panning.
+This supersedes the earlier hold on expansion in the pixel-art pivot record.
 Keep the 30-level target. The five existing gardens and briefs below describe
 the legacy prototype; names, grouping and puzzle layouts may change. Backyard,
 greenhouse, irrigation works and rooftop settings are proposals, not a finalized
@@ -233,10 +236,12 @@ challenges where meaningful and pollen goals after pollen is introduced. These
 provide replay value without inflating the campaign count. No mandatory speed
 medals; pausing and accessibility controls do not invalidate achievements.
 
-Proposed progression: completing a level unlocks the next; optional challenges
-never gate progression. A clearly labeled skip unlocks the next puzzle without
-marking the skipped one completed. Preserve completed, skipped, and optional-goal
-states separately so difficult puzzles do not block access to the rest of the game.
+Level access is open: players can choose any of the 30 original puzzles or the
+11 current-rule gardens immediately, including across chapters. Selecting a later
+puzzle does not write skipped or completed records for earlier puzzles. The
+explicit Skip this puzzle action remains available for recording a skip and
+moving forward one puzzle. Keep completed, skipped and optional-goal results
+separate; none of them restrict level selection.
 
 ## Per-level acceptance
 

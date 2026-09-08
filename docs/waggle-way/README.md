@@ -1,13 +1,15 @@
 # Waggle Way planning index
 
-Status: implementation goal active; thirty puzzles and local builder implemented;
-ghost comparison is implemented; player acceptance and community workflows remain open.
-Created: 2026-09-05. Working title: **Waggle Way**, subject to change.
+Status: campaign conversion underway, 2026-09-07. The main play route now has
+11 version-7 gardens (five teaching, six challenge conversions); the original
+30-level campaign and saved progress remain separate. The six new challenges
+and play camera are local changes pending release. Player difficulty review
+remains open.
 
 Implementation follows [Arcade workspace architecture](../GAME_ARCHITECTURE.md):
 `packages/waggle-way/` owns the game; website pages are thin route wrappers.
-Run development and verification from the isolated `codex/waggle-way` worktree
-at `scratch/waggle-way`. See the progress record for current verification.
+See [development](DEVELOPMENT.md) for the current isolated checkout and
+[progress](IMPLEMENTATION_PROGRESS.md) for validation evidence.
 
 ## Purpose
 
@@ -34,8 +36,9 @@ and WW-21 in the requirements. Prototype in phase 3 after the current slice
 review; this is documented direction, not an implemented fifth dance.
 
 The finite-use refund policy and exact bounce response are prototype defaults
-to validate, not additional user-approved decisions. Larger scrolling levels
-remain later scope in phases 3–4, after the compact slice and workshop review.
+to validate, not additional user-approved decisions. Larger boards and a panning play camera are now part of the first challenge
+conversion batch. Further industrial mechanics and workshop camera parity remain
+follow-up scope.
 
 Plan a bee-themed browser puzzle game in which players guide a hive to a flower
 field using dances, airflow, and environmental tools. Include a player-facing

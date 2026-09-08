@@ -188,3 +188,23 @@ test pass does not establish completion of the 30-level campaign or future modes
 M6 implementation boundaries, resource defaults and required evidence are recorded
 in [the community contract](COMMUNITY_PLAN.md). Routes are mounted locally in the
 existing game service; production deployment is not authorized by these changes.
+
+
+## Play camera implementation — 2026-09-07
+
+`ui/GardenViewport.tsx` owns visual scroll position, bounded tile zoom and fit
+mode. The engine still simulates the entire grid with fixed-point coordinates.
+The SVG retains its full-world viewBox; pointer placement uses its screen matrix,
+so scrolling and zoom do not change grid coordinates or replay commands. Large
+new-rule boards start with 32-pixel cells near the hive; fit gives an overview.
+Legacy play retains its prior view. Camera state is not serialized into levels,
+proofs, or progress.
+
+An explicit Pan board toggle captures pointer gestures and disables scene input
+while panning. Placement mode restores the existing drag/drop and precise
+coordinate controls. Arrow-key/native scrolling and hive/flowers/helper buttons
+provide alternatives to dragging. Pointer release, cancellation and lost capture
+end the pan. The HUD/tool dock remain outside the scroll region. Workshop's
+existing zoom/scroll remains unchanged in this batch; shared direct pan controls,
+minimap/offscreen indicators and physical-device performance profiling are still
+follow-ups, not claimed features.

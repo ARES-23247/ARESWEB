@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@ares/ui/button";
 import { DialogShell } from "@ares/ui/dialog";
 import type { useGameFullscreen } from "@ares/game-common/fullscreen";
 import { PRACTICE_GARDENS } from "../content/redesign";
+import { CHALLENGE_GARDENS } from "../content/challenges";
 import { serializeLevel } from "../core/level";
 import { populationCounts, type RunState } from "../core/engine";
 import {
@@ -13,26 +14,37 @@ import {
 } from "../core/progress";
 import GameSession from "./GameSession";
 
+const gardens = [...PRACTICE_GARDENS, ...CHALLENGE_GARDENS];
 const lessons = [
   "Place a dancer and rescue its helper",
   "Left and right depend on the bee's approach",
   "Reverse once, then leave the signal",
   "A solid partition safely turns bees around",
   "Cover a timed spray crossing",
+  "Combine an operator with a free dancer",
+  "Find a separate escape for the operator",
+  "Keep the next shutter open for your helpers",
+  "Reuse a helper job after gathering the hive",
+  "Protect two crossings with limited supplies",
+  "Plan a complete departure through the glasshouse",
 ];
 
 export default function PracticePlayer({
   fullscreen,
   onExit,
+  onOriginalCampaign,
 }: {
   fullscreen: ReturnType<typeof useGameFullscreen>;
   onExit: () => void;
+  onOriginalCampaign: () => void;
 }) {
   const [selected, setSelected] = useState(0);
+  const [completedId, setCompletedId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [restoreToLevel, setRestoreToLevel] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const challengeHeading = useRef<HTMLHeadingElement>(null);
   const [progress, setProgress] = useState<{
     records: LevelProgress[];
     error: string | null;
@@ -49,9 +61,15 @@ export default function PracticePlayer({
       };
     }
   });
-  const level = PRACTICE_GARDENS[selected];
+  const level = gardens[selected];
+  const previousLevel = useRef(level.id);
+  useEffect(() => {
+    if (previousLevel.current !== level.id) heading.current?.focus();
+    previousLevel.current = level.id;
+  }, [level.id]);
   const onResult = useCallback(
     (run: RunState) => {
+      setCompletedId(level.id);
       try {
         setProgress({
           records: saveProgress(localStorage, level, {
@@ -83,71 +101,135 @@ export default function PracticePlayer({
       <DialogShell
         open={menuOpen}
         onOpenChange={setMenuOpen}
-        title="Practice gardens"
+        title="Adventure gardens"
         size="lg"
-        className="ww-page ww-map-dialog"
+        className="ww-page ww-map-dialog ww-garden-library"
         returnFocusRef={restoreToLevel ? heading : menuButton}
       >
-        <p>
-          Five small gardens to learn the hive's signals. Try any garden.
-          Choosing another starts a fresh attempt; completed rescue results save
-          in this browser.
+        <div className="ww-garden-library-intro">
+          <p>11 gardens. Every level is open — choose your next puzzle.</p>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              challengeHeading.current?.scrollIntoView({ block: "start" });
+              challengeHeading.current?.focus({ preventScroll: true });
+            }}
+          >
+            Jump to challenges
+          </Button>
+        </div>
+        <div className="ww-garden-chapters">
+          {[
+            {
+              title: "Learn the dances",
+              detail: "5 short lessons",
+              start: 0,
+              levels: PRACTICE_GARDENS,
+            },
+            {
+              title: "Glasshouse challenges",
+              detail: "6 bigger puzzles · rescue every bee",
+              start: PRACTICE_GARDENS.length,
+              levels: CHALLENGE_GARDENS,
+            },
+          ].map((chapter) => (
+            <section key={chapter.title} aria-label={chapter.title}>
+              <h3
+                ref={chapter.start ? challengeHeading : undefined}
+                tabIndex={-1}
+              >
+                {chapter.title}
+              </h3>
+              <p className="ww-garden-chapter-detail">{chapter.detail}</p>
+              <ol className="ww-practice-list" start={chapter.start + 1}>
+                {chapter.levels.map((garden, chapterIndex) => {
+                  const index = chapter.start + chapterIndex;
+                  const saved = progressFor(progress.records, garden);
+                  return (
+                    <li key={garden.id}>
+                      <button
+                        type="button"
+                        aria-pressed={selected === index}
+                        onClick={() => {
+                          setRestoreToLevel(true);
+                          setSelected(index);
+                          setMenuOpen(false);
+                        }}
+                      >
+                        <span className="ww-practice-number">{index + 1}</span>
+                        <span>
+                          <strong>{garden.title}</strong>
+                          <small>{lessons[index]}</small>
+                          <small className="ww-garden-result">
+                            {selected === index && "Playing · "}
+                            {progress.error
+                              ? "Saving unavailable"
+                              : saved
+                                ? `${saved.bestRescued}/${garden.population} bees rescued`
+                                : "Ready to play"}
+                          </small>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
+        <div className="ww-garden-library-footer">
+          <div>
+            <strong>More to explore</strong>
+            <p>30 original gardens using the earlier perch-based rules.</p>
+          </div>
+          <Button variant="secondary" onClick={onOriginalCampaign}>
+            Play 30 original gardens
+          </Button>
+        </div>
+        <p className="ww-garden-save-note">
+          Choosing a garden starts a fresh attempt. Completed rescues save in
+          this browser.
         </p>
-        <ol className="ww-practice-list">
-          {PRACTICE_GARDENS.map((garden, index) => {
-            const saved = progressFor(progress.records, garden);
-            return (
-              <li key={garden.id}>
-                <button
-                  type="button"
-                  aria-pressed={selected === index}
-                  onClick={() => {
-                    setRestoreToLevel(true);
-                    setSelected(index);
-                    setMenuOpen(false);
-                  }}
-                >
-                  <span className="ww-practice-number">{index + 1}</span>
-                  <span>
-                    <strong>{garden.title}</strong>
-                    <small>{lessons[index]}</small>
-                    <small>
-                      {progress.error
-                        ? "Saving unavailable"
-                        : saved
-                          ? `${saved.bestRescued}/${garden.population} bees rescued`
-                          : "Ready to play"}
-                    </small>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
       </DialogShell>
       <GameSession
         key={serializeLevel(level)}
         level={level}
-        chapter={`Garden beginnings · ${selected + 1} of ${PRACTICE_GARDENS.length}`}
+        chapter={`${selected < 5 ? "Garden beginnings" : "Glasshouse challenges"} · ${selected + 1} of ${gardens.length}`}
         titleRef={heading}
         fullscreenController={fullscreen}
         onExit={onExit}
         exitLabel="Title screen"
         onResult={onResult}
         navigation={
-          <Button
-            ref={menuButton}
-            className="ww-practice-menu-button"
-            variant="secondary"
-            aria-label="Choose practice garden"
-            title="Practice gardens"
-            onClick={() => {
-              setRestoreToLevel(false);
-              setMenuOpen(true);
-            }}
-          >
-            {selected + 1}/{PRACTICE_GARDENS.length}
-          </Button>
+          <>
+            <Button
+              ref={menuButton}
+              className="ww-practice-menu-button"
+              variant="secondary"
+              aria-label="Choose adventure garden"
+              title="Adventure gardens"
+              onClick={() => {
+                setRestoreToLevel(false);
+                setMenuOpen(true);
+              }}
+            >
+              <span>Gardens</span>{" "}
+              <span>
+                {selected + 1}/{gardens.length}
+              </span>
+            </Button>
+            {(completedId === level.id ||
+              progressFor(progress.records, level)?.completed) &&
+              (selected < gardens.length - 1 ? (
+                <Button onClick={() => setSelected(selected + 1)}>
+                  Next garden
+                </Button>
+              ) : (
+                <Button onClick={onOriginalCampaign}>
+                  Play 30 original gardens
+                </Button>
+              ))}
+          </>
         }
       />
     </>

@@ -173,7 +173,9 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
     });
   });
 
-  await page.goto("/academy", { waitUntil: "networkidle" });
+  // The assertions below establish app readiness without waiting for external
+  // fonts or unrelated SDK requests to become idle.
+  await page.goto("/academy", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "ARES Academy" })).toBeVisible();
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "Learning paths" })).toBeVisible();
@@ -225,7 +227,7 @@ test("Academy learning paths and lesson metadata remain usable on a 320px viewpo
   await expect(page.getByRole("heading", { level: 1, name: nextLesson.title })).toBeVisible();
   await expect(page.getByText("Completed locally", { exact: true })).toBeVisible();
 
-  await page.goto("/academy", { waitUntil: "networkidle" });
+  await page.goto("/academy", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("1 of 2 complete on this browser", { exact: true }).first()).toBeVisible();
   await pathButton.focus();
   await page.keyboard.press("Enter");
@@ -268,7 +270,7 @@ test("the replay comparison lab exposes held and missing evidence by keyboard at
     });
   });
 
-  await page.goto("/academy/testing-logs-replay?path=testing-debugging-commissioning", { waitUntil: "networkidle" });
+  await page.goto("/academy/testing-logs-replay?path=testing-debugging-commissioning", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Log Alignment and Comparison Lab" })).toBeVisible();
   await page.getByLabel("Alignment anchor").selectOption("SHARED_EVENT");
 
@@ -298,7 +300,7 @@ test("the match-cycle handoff lab resets phase evidence by keyboard at 320px", a
     });
   });
 
-  await page.goto("/academy/competition-drive-team?path=competition-operations", { waitUntil: "networkidle" });
+  await page.goto("/academy/competition-drive-team?path=competition-operations", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Match Cycle Handoff Scenarios" })).toBeVisible();
   const pitPhase = page.getByRole("radio", { name: "Pit to queue" });
   const fieldPhase = page.getByRole("radio", { name: "Queue to field setup" });
@@ -336,7 +338,7 @@ test("the inspection packet lab preserves evidence limits at 320px", async ({ pa
     });
   });
 
-  await page.goto("/academy/competition-ftc-inspection-pit?path=competition-operations", { waitUntil: "networkidle" });
+  await page.goto("/academy/competition-ftc-inspection-pit?path=competition-operations", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Inspection Packet Evidence Lab" })).toBeVisible();
   const checks = page.getByRole("checkbox");
   await checks.first().focus();
@@ -369,7 +371,7 @@ test("the FRC mode lesson practices guard precedence without claiming runtime pr
   });
 
   await page.goto("/academy/frc-mode-handoffs-and-safe-recovery?path=frc-robot-with-ares", {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   });
   await expect(page.getByRole("heading", { name: "Superstructure State Coordination Lab" })).toBeVisible();
 
@@ -403,7 +405,7 @@ test("the measurement lesson separates nominal values and tolerance limits at 32
   });
 
   await page.goto("/academy/mechanical-measurement-design-notebook?path=mechanical-design-fabrication", {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   });
   await expect(page.getByRole("heading", { name: "Tolerance Stack Lab" })).toBeVisible();
 
@@ -438,7 +440,7 @@ test("the autonomous reference exposes path clearance evidence without page over
   });
 
   await page.goto("/academy/autonomous-and-vision?path=areslib-engineering-reference", {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   });
   await expect(page.getByRole("heading", { name: "Autonomous Path Clearance Lab" })).toBeVisible();
   await expect(page.getByText("Blocked", { exact: true })).toBeVisible();
@@ -471,7 +473,7 @@ test("the first FTC simulation lesson practices bounded evidence without page ov
   });
 
   await page.goto("/academy/run-first-ftc-simulation?path=robotics-foundations", {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
   });
   const screenshot = page.getByRole("img", {
     name: "Studio dashboard showing project and simulator entry points",

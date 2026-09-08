@@ -12,14 +12,12 @@ import type {
 import { CAMPAIGN } from "../content/campaign";
 import { populationCounts, pollenCounts, type RunState } from "../core/engine";
 import {
-  isLevelUnlocked,
   loadProgress,
   progressFor,
   saveProgress,
   type LevelProgress,
 } from "../core/progress";
 
-const levels = CAMPAIGN.map((puzzle) => puzzle.level);
 const gardens = [...new Set(CAMPAIGN.map((puzzle) => puzzle.garden))];
 interface ProgressState {
   records: LevelProgress[];
@@ -129,9 +127,8 @@ export default function CampaignPlayer({
         returnFocusRef={restoreToLevel ? levelHeading : mapButton}
       >
         <p>
-          Thirty puzzles across five gardens. Complete or skip a puzzle to open
-          the next. Optional all-bees, pollen and tool goals never block
-          progress.
+          Thirty puzzles across five gardens. Pick any puzzle — all 30 are open.
+          Optional all-bees, pollen and tool goals never block access.
         </p>
         <label>
           Garden
@@ -150,9 +147,6 @@ export default function CampaignPlayer({
           {CAMPAIGN.map((entry, index) => {
             if (entry.garden !== shownGarden) return null;
             const saved = progressFor(progress.records, entry.level);
-            const unlocked =
-              Boolean(progress.error) ||
-              isLevelUnlocked(levels, progress.records, index);
             const status = saved?.completed
               ? saved.bestRescued === entry.level.population
                 ? "All bees rescued"
@@ -161,15 +155,12 @@ export default function CampaignPlayer({
                 ? "Skipped"
                 : progress.error
                   ? "Progress unavailable"
-                  : unlocked
-                    ? "Ready to play"
-                    : "Complete or skip the previous puzzle";
+                  : "Ready to play";
             return (
               <li key={entry.level.id}>
                 <button
                   type="button"
                   className="ww-campaign-card"
-                  disabled={!unlocked}
                   aria-pressed={selected === index}
                   onClick={() => {
                     setRestoreToLevel(true);

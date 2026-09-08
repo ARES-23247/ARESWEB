@@ -88,6 +88,10 @@ test("first-flight dancer drags onto open ground and rescues its hive above safe
     page.getByText("6 bees reached the flowers.", { exact: true }),
   ).toBeVisible({ timeout: 10000 });
   await expect(stock).toBeDisabled();
+  await page.getByRole("button", { name: "Next garden", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Two Little Turns", exact: true }),
+  ).toBeFocused();
   await page.goto("/waggle-way/builder");
   await showDetails(page, "Files and saved gardens");
   const definition = serializeLevel(FIRST_FLIGHT);
@@ -143,10 +147,10 @@ for (const practice of [
       .getByRole("button", { name: "Play gardens", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Choose practice garden", exact: true })
+      .getByRole("button", { name: "Choose adventure garden", exact: true })
       .click();
-    const menu = page.getByRole("dialog", { name: "Practice gardens" });
-    await expect(menu.locator(".ww-practice-list button")).toHaveCount(5);
+    const menu = page.getByRole("dialog", { name: "Adventure gardens" });
+    await expect(menu.locator(".ww-practice-list button")).toHaveCount(11);
     await menu
       .getByRole("button", { name: new RegExp(practice.title) })
       .click();
@@ -246,11 +250,11 @@ for (const practice of [
       .getByRole("button", { name: "Play gardens", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Choose practice garden", exact: true })
+      .getByRole("button", { name: "Choose adventure garden", exact: true })
       .click();
     await expect(
       page
-        .getByRole("dialog", { name: "Practice gardens" })
+        .getByRole("dialog", { name: "Adventure gardens" })
         .getByRole("button", { name: new RegExp(practice.title) }),
     ).toContainText("6/6 bees rescued");
   });
@@ -694,7 +698,7 @@ async function editPiece(page: Page) {
     await page.getByRole("button", { name: "Edit piece", exact: true }).click();
 }
 
-test("campaign saves a rescue, unlocks the next puzzle, and records an explicit skip", async ({
+test("campaign saves a rescue, offers the next puzzle, and records an explicit skip", async ({
   page,
 }, testInfo) => {
   await page.goto("/arcade");
@@ -711,7 +715,7 @@ test("campaign saves a rescue, unlocks the next puzzle, and records an explicit 
   await openMap(page);
   await expect(
     page.getByRole("button", { name: /02 Across the Pond/ }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await closePanel(page);
   await page.getByRole("button", { name: "Point Up", exact: true }).click();
   await closePanel(page);
@@ -1550,4 +1554,204 @@ test("pollen and a garden theme survive authoring, delivery and reopening", asyn
     "#537947",
   );
   await expect(scene.locator(".ww-ground-flowers path")).toHaveCount(1);
+});
+
+test("large adventure board pans without placing tools and finds offscreen helpers", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/waggle-way");
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  await page.getByRole("button", { name: "Choose adventure garden" }).click();
+  await page
+    .getByRole("dialog", { name: "Adventure gardens" })
+    .getByRole("button", { name: /Two Doors/ })
+    .click();
+  const camera = page.getByRole("group", { name: "Board camera" });
+  const viewport = page.getByRole("region", { name: /^Garden viewport/ });
+  await camera.getByRole("button", { name: "Zoom in on board" }).click();
+  await camera.getByRole("button", { name: "Flowers", exact: true }).click();
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0);
+  const before = await viewport.evaluate((element) => element.scrollLeft);
+  await camera.getByRole("button", { name: "Pan board", exact: true }).click();
+  await viewport.scrollIntoViewIfNeeded();
+  const bounds = (await viewport.boundingBox())!;
+  const from = {
+    x: bounds.x + bounds.width * 0.25,
+    y: bounds.y + bounds.height * 0.5,
+  };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + Math.min(180, bounds.width * 0.5), from.y, {
+    steps: 10,
+  });
+  await page.mouse.up();
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollLeft))
+    .toBeLessThan(before);
+  await expect(page.locator(".ww-stats")).toContainText(/0\s*Helpers/);
+  await expect(
+    page.getByRole("button", { name: /Dancing bee · Left 90° · 1 remaining/ }),
+  ).toBeEnabled();
+  // A captured touch drag exercises the same camera without browser page scroll.
+  if (testInfo.project.name === "mobile-chromium") {
+    const session = await page.context().newCDPSession(page);
+    const left = await viewport.evaluate((element) => element.scrollLeft);
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: from.x + 100, y: from.y }],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: from.x, y: from.y }],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await expect
+      .poll(() => viewport.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(left);
+    await session.detach();
+  }
+  await camera.getByRole("button", { name: "Pan board", exact: true }).click();
+  await showDetails(page, /^Place precisely$/);
+  await page
+    .getByRole("spinbutton", { name: "Tool placement column", exact: true })
+    .fill("28");
+  await page
+    .getByRole("spinbutton", { name: "Tool placement row", exact: true })
+    .fill("12");
+  await page
+    .getByRole("button", { name: "Place supplied tool", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Close place precisely", exact: true })
+    .click();
+  await camera.getByRole("button", { name: "Find helper (1)" }).click();
+  const point = await page.locator(".ww-scene").evaluate((element) => {
+    const point = new DOMPoint(28.5, 12.5).matrixTransform(
+      (element as SVGSVGElement).getScreenCTM()!,
+    );
+    return { x: point.x, y: point.y };
+  });
+  const visible = (await viewport.boundingBox())!;
+  expect(point.x).toBeGreaterThan(visible.x);
+  expect(point.x).toBeLessThan(visible.x + visible.width);
+  expect(point.y).toBeGreaterThan(visible.y);
+  expect(point.y).toBeLessThan(visible.y + visible.height);
+  await page.mouse.click(point.x, point.y);
+  await expect(
+    page.getByRole("button", { name: "Release guide", exact: true }),
+  ).toBeEnabled();
+  await camera.getByRole("button", { name: "Fit", exact: true }).click();
+  const geometry = await viewport.evaluate((element) => ({
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width + 1);
+  await page
+    .locator(".ww-game-window")
+    .screenshot({ path: testInfo.outputPath("large-board-camera.png") });
+});
+
+test("garden library exposes challenges and readable level numbers", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/waggle-way");
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  const chooser = page.getByRole("button", { name: "Choose adventure garden" });
+  await expect(chooser).toContainText("Gardens");
+  await chooser.click();
+  const dialog = page.getByRole("dialog", { name: "Adventure gardens" });
+  await expect(
+    dialog
+      .getByRole("region", { name: "Learn the dances" })
+      .getByRole("button"),
+  ).toHaveCount(5);
+  await expect(
+    dialog
+      .getByRole("region", { name: "Glasshouse challenges" })
+      .getByRole("button"),
+  ).toHaveCount(6);
+  await page.evaluate(() => document.fonts.ready);
+  await expect(dialog.locator(".ww-practice-number").nth(1)).toHaveCSS(
+    "font-family",
+    /^"?Courier New"?, monospace$/,
+  );
+  await dialog.screenshot({ path: testInfo.outputPath("garden-library.png") });
+  await dialog.getByRole("button", { name: "Jump to challenges" }).click();
+  const heading = dialog.getByRole("heading", {
+    name: "Glasshouse challenges",
+  });
+  await expect(heading).toBeFocused();
+  await expect(heading).toBeInViewport();
+  await page.keyboard.press("Tab");
+  await expect(
+    dialog.getByRole("button", { name: /Open Sesame/ }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Open Sesame" }),
+  ).toBeFocused();
+  await chooser.click();
+  await page.keyboard.press("Escape");
+  await expect(chooser).toBeFocused();
+  await chooser.click();
+  await dialog
+    .getByRole("button", { name: "Play 30 original gardens" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Open hive", exact: true }),
+  ).toBeVisible();
+  await expect(chooser).toHaveCount(0);
+});
+
+test("original gardens allow jumping straight to the last puzzle without changing saved progress", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/waggle-way");
+  await page
+    .getByRole("button", { name: "Original gardens", exact: true })
+    .click();
+  const before = await page.evaluate(() =>
+    localStorage.getItem("ares.waggle-way.progress.v1"),
+  );
+  await openMap(page);
+  const map = page.getByRole("dialog", { name: "Story gardens" });
+  await map
+    .getByRole("combobox", { name: "Garden", exact: true })
+    .selectOption("Wildflower Valley");
+  await expect(
+    map.getByRole("button", { name: /30 Field of Flowers/ }),
+  ).toBeEnabled();
+  await map.screenshot({
+    path: testInfo.outputPath("open-original-gardens.png"),
+  });
+  await map.getByRole("button", { name: /30 Field of Flowers/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Field of Flowers", exact: true }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Open hive", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("ares.waggle-way.progress.v1"),
+    ),
+  ).toBe(before);
+  await openMap(page);
+  await map
+    .getByRole("combobox", { name: "Garden", exact: true })
+    .selectOption("Sunny Garden");
+  await map.getByRole("button", { name: /01 First Waggle/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "First Waggle", exact: true }),
+  ).toBeFocused();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("ares.waggle-way.progress.v1"),
+    ),
+  ).toBe(before);
 });

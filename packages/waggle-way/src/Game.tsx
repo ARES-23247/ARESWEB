@@ -40,6 +40,7 @@ export default function Game({
           </header>
           {mode === "slice" ? (
             <PracticePlayer
+              onOriginalCampaign={() => setMode("campaign")}
               fullscreen={fullscreen}
               onExit={() => setMode("title")}
             />

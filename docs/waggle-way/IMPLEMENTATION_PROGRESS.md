@@ -1,9 +1,119 @@
 # Waggle Way implementation progress
 
-Updated: 2026-09-07. Local work only; nothing deployed. Latest user direction
-prioritizes the pixel-art redesign; prior implementation acceptance remains open.
+Updated: 2026-09-08. Current worktree: `scratch/waggle-campaign`, branch
+`codex/waggle-campaign-conversion`, based on PR #266 head 5888ae23.
 
-## Latest status — 2026-09-07
+## Direct access to original puzzles — 2026-09-08
+
+During deployment review, the user reported that the original Story gardens
+selector still locked later puzzles. Removed sequential access gating from that
+selector: all 30 original puzzles are directly playable, matching the 11 current
+adventure gardens. Selecting a puzzle leaves completion and skip records intact;
+only an actual rescue or the explicit Skip this puzzle action writes a result.
+The deployment authorization remains active and includes this correction.
+Focused validation passes 31 unit tests and 10 browser cases across all five
+projects, covering direct level-30 access, return to level 1, unchanged saved
+records, actual rescue saving and explicit skip results.
+
+## Authorized release integration — 2026-09-08
+
+The user explicitly requested deployment of the game update. Master advanced to
+9735075c (sign-in recovery, PR #268), which independently completed the same
+ARES 17.0.2 source refresh as the prerequisite PR #266. Release integration keeps
+master's complete Academy source, provenance and review-digest set, including
+its later motion-profile correction, instead of duplicating overlapping lesson
+paragraphs. The game and CI/release-readiness changes from #266 are being
+released together through PR #267 targeting master, with full protected checks.
+The earlier stacked-PR instructions below describe the previous review state.
+
+## Garden library and readable numerals — 2026-09-08
+
+The game chooser now separates five learning gardens and six Glasshouse
+challenges, with a jump control for mobile/keyboard users and direct access to
+the 30 original gardens. Its toolbar button is explicitly labeled Gardens.
+Numerals fall back to a clear monospace font across game and workshop UI,
+including rescue counts and supplies; the bundled pixel font remains unmodified.
+
+The user's screenshot was of the old five-garden dialog. The current checkout
+already contained 11 gardens, but its port-3041 server had stopped. Restarting
+that checkout and checking the actual browser confirmed the new library.
+
+Previous commit 2381e90 passed remote verification run 34178682355, including
+both browser shards and the required gate. PR #267 remains a draft stacked on
+#266; no production deployment has occurred. UI follow-up validation: frozen install, agent/route/deployment-lock guards,
+root and Functions lint, TypeScript, Functions build, production build/prerender,
+bundle limits and production audit pass. Frontend coverage passes 1,643 tests in
+277 files; Functions coverage passes 1,011 tests in 83 files; emulator rules pass
+34 tests. The targeted chooser and first-flight checks pass in all five browser
+projects, including keyboard chapter jumping, selection/return focus, original
+campaign access and mobile guide-release visibility. Desktop and mobile chooser
+screenshots were inspected. The initial WebKit font assertion needed to accept
+its equivalent unquoted CSS font-family serialization; the actual font and
+navigation assertions remain in place.
+
+The full built-site browser run completed 436/438 tests successfully, including
+all 130 Waggle gameplay/workshop/community cases. Two desktop WebKit BUZZHEX
+opening-move assertions failed during the two-worker run. Both passed unchanged
+against the same built artifact with CI's one-worker setting (2/2, 9.8 seconds).
+No BUZZHEX implementation or assertions were changed. This is not a clean
+438-case single-run result; no root cause beyond the observed recheck is claimed.
+Logs: `.tmp/library-full-browser.log`, `.tmp/library-buzzhex-recheck.log` and
+`.tmp/gate-*.log`.
+
+## Current conversion batch — 2026-09-07
+
+The user explicitly requested continued conversion, challenging puzzles, and
+larger boards with mobile panning. This supersedes the earlier expansion hold.
+Six new version-7 challenge definitions now follow the five teaching gardens.
+All require eight rescues and use freely placed dancers, limited helper jobs,
+shutters, rallies and spray protection. The original 30 levels and their exact
+IDs/rules/progress remain available. No new schema or physics is introduced.
+
+The main menu states both level counts. Completed gardens expose Next garden
+beside the play controls, including when progress was saved in an earlier visit;
+the last new garden links to the original campaign. Save failures remain errors
+and do not prevent in-session advancement. The play camera separates pan mode
+from placement, provides zoom/fit and hive/flowers/helper centering, and preserves
+SVG coordinate conversion and deterministic simulation. Boards reach 32 × 20 in
+this batch; the workshop retains its existing zoom/scroll controls.
+
+Initial validation: all six all-bees routes and exact replay/builder round trips
+pass. Missing setup actions and incorrect operator order fail as intended.
+Focused camera browser checks passed in all five supported projects, including
+a real Chromium touch-event drag. A mobile camera-height regression initially
+clipped the release button; the height was corrected and its existing visibility,
+rescue and fullscreen checks passed on recheck. Final local evidence is below.
+Human difficulty/playability and physical-device review remain open.
+
+Final local verification for this batch:
+
+- Frozen dependency install, agent/route/deployment-lock checks, root and Functions
+  lint, TypeScript, Functions build, emulator rules, production build/prerender,
+  bundle limits and production dependency audit pass.
+- Frontend coverage: 1,642 tests across 277 files; Functions coverage: 1,011 tests
+  across 83 files; Firestore/Storage rules: 34 tests. Existing coverage floors hold.
+- Initial full browser run: 430/433 passed. The iPhone release control was partly
+  clipped; the mobile toolbar/counters and camera height were corrected.
+- Final production-style Waggle recheck: 123/125 passed across the five browser
+  projects, including all gameplay/camera cases. Two desktop WebKit community
+  playtests again reached their existing animation deadline under concurrent
+  execution. Both passed against the same built artifact with CI's one-worker
+  setting (2/2); their assertions and timeouts were unchanged. Do not describe
+  this as a clean 433-case single run. No root cause beyond the observed
+  concurrency-sensitive timing is claimed.
+- Camera evidence includes touch dragging in Chromium, pointer panning in all
+  projects, helper recentering after zoom/scroll, precise placement, fit geometry,
+  guide rescue, saved progression and fullscreen. Screenshots were inspected.
+- Logs are in this worktree's ignored `.tmp/gate-*.log`, `.tmp/review-single.log`,
+  with images under `test-results/campaign-final/` and earlier live-test outputs.
+  Protected remote CI is still required for release; no production approval or
+  deployment is implied by this local verification.
+
+
+## Earlier implementation history
+
+The entries below describe their original worktree and review state at the time;
+they do not override the current conversion authorization above.
 
 ### Positive visual feedback and release-readiness discussion
 

@@ -39,6 +39,48 @@ function workflowJob(id: string): string {
 }
 
 describe("production deployment workflow", () => {
+  it("requires complete isolated browser shards while area selection stays observational", () => {
+    const browsers = workflowJob("e2e-tests");
+    expect(browsers).toContain("shard: [1, 2]");
+    expect(browsers).toContain("fail-fast: false");
+    expect(browsers).toContain("--shard=${{ matrix.shard }}/2");
+    expect(browsers).toContain("name: e2e-shard-${{ matrix.shard }}");
+    expect(browsers).toContain("if-no-files-found: error");
+    const jobTimeout = Number(browsers.match(/^    timeout-minutes: (\d+)/m)?.[1]);
+    const suiteTimeout = Number(workflowStep("Run local E2E suite").match(/timeout-minutes: (\d+)/)?.[1]);
+    expect(suiteTimeout).toBeGreaterThan(0);
+    expect(jobTimeout - suiteTimeout).toBeGreaterThanOrEqual(3);
+    expect(workflowStep("Upload Playwright diagnostics")).toContain("failure() || cancelled()");
+    expect(workflowJob("test-gate")).toContain("node scripts/check-e2e-shards.mjs ci-report");
+    const verify = workflowJob("verify");
+    expect(verify).toContain("scripts/affected-areas.mjs");
+    expect(verify).toContain("pnpm run test:coverage");
+    expect(verify).toContain("pnpm --filter functions test:coverage");
+    expect(verify).not.toContain("outputs.areas");
+  });
+
+  it("waits for indexes and HTTP readiness before Hosting, preserving strict verification", () => {
+    const deploy = workflowJob("deploy-production");
+    const indexes = deploy.indexOf("wait-release-ready.mjs --indexes");
+    const game = deploy.indexOf("wait-release-ready.mjs --game-origin");
+    const hosting = deploy.indexOf("--only hosting,firestore:rules,storage");
+    const health = deploy.indexOf("check-production-health.mjs");
+    expect(indexes).toBeGreaterThan(-1);
+    expect(game).toBeGreaterThan(indexes);
+    expect(hosting).toBeGreaterThan(game);
+    expect(health).toBeGreaterThan(hosting);
+    expect(deploy).toContain("--verify-iam");
+    expect(deploy).not.toContain("continue-on-error");
+  });
+
+  it("can verify current production without deploy credentials or a new deployment", () => {
+    const recovery = readFileSync(resolve(".github/workflows/verify-production.yml"), "utf8");
+    expect(recovery).toContain("workflow_dispatch:");
+    expect(recovery).toContain("github.ref == 'refs/heads/master'");
+    expect(recovery).toContain("scripts/check-production-health.mjs");
+    expect(recovery).toContain("scripts/check-production-browser.mjs");
+    expect(recovery).not.toMatch(/id-token:|firebase deploy|gcloud run deploy|google-github-actions\/auth/);
+  });
   it("runs the expensive validation suites on pull requests, not again after merge", () => {
     for (const jobId of ["verify", "rules-tests", "e2e-tests"]) {
       expect(workflowJob(jobId)).toContain("if: github.event_name != 'push'");
