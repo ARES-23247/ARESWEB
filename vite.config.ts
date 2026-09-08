@@ -180,6 +180,8 @@ export default defineConfig({
       "functions/**",
       "e2e/**",
       "tests/rules/**",
+      "scratch/**",
+      ".pnpm-store/**",
     ],
     coverage: {
       // Explicitly instrument the current security, privacy, public-data, and

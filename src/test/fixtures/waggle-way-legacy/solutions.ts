@@ -1,8 +1,8 @@
 import { WILDFLOWER_SOLUTIONS } from "./wildflower";
 import { GLASSHOUSE_SOLUTIONS } from "./glasshouse";
 import { RAINY_SOLUTIONS } from "./rainy";
-import type { RecordedCommand } from "../core/engine";
-import type { Direction } from "../core/level";
+import type { RecordedCommand } from "../../../../packages/waggle-way/src/core/engine";
+import type { Direction } from "../../../../packages/waggle-way/src/core/level";
 
 export interface CampaignSolution {
   levelId: string;

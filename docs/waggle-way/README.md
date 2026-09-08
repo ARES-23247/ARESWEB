@@ -1,10 +1,11 @@
 # Waggle Way planning index
 
-Status: campaign conversion underway, 2026-09-07. The main play route now has
-11 version-7 gardens (five teaching, six challenge conversions); the original
-30-level campaign and saved progress remain separate. The six new challenges
-and play camera are local changes pending release. Player difficulty review
-remains open.
+Status: 2026-09-08 development batch. One 30-level version-7 campaign replaces
+the old two-campaign menu. Five teaching gardens lead into 25 all-bee challenges.
+The workshop creates current-rule maps; no archived edition is offered. See
+[the current campaign](CURRENT_CAMPAIGN.md) for the actual levels and bounded
+difficulty evidence. Human difficulty review and this batch's release checks
+remain open.
 
 Implementation follows [Arcade workspace architecture](../GAME_ARCHITECTURE.md):
 `packages/waggle-way/` owns the game; website pages are thin route wrappers.

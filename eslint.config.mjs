@@ -18,6 +18,7 @@ export default tseslint.config(
       "test-results/**",
       "ci-report/**",
       "scratch/**",
+      ".pnpm-store/**",
     ],
   },
   {

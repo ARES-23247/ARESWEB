@@ -114,3 +114,11 @@ handoffs. Do not mark a milestone complete based only on files existing.
 
 Release readiness and deployment are separate. Record required operational steps
 and obtain explicit user approval before production deployment or data changes.
+
+## Fresh-game campaign decision — 2026-09-08
+
+The user superseded the parallel original/current campaign approach. The current
+30-level catalogue in [CURRENT_CAMPAIGN.md](CURRENT_CAMPAIGN.md) is the only
+built-in campaign, with current-rule workshop authoring. Archive and migration
+work are out of scope. Honey/lift/pipe mechanics remain future scope; do not
+confuse those proposals with the implemented factory shutter/spray puzzles.

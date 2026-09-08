@@ -1,8 +1,8 @@
-import { editLevel, updateObject } from "../core/editor";
-import { begin, piece, exported } from "./authoring";
+import { editLevel, updateObject } from "../../../../packages/waggle-way/src/core/editor";
+import { begin, piece, exported } from "../../../../packages/waggle-way/src/content/authoring";
 import type { CampaignPuzzle } from "./campaign";
 import type { CampaignSolution } from "./solutions";
-import type { RecordedCommand } from "../core/engine";
+import type { RecordedCommand } from "../../../../packages/waggle-way/src/core/engine";
 
 function betweenShowers() {
   let e = begin(

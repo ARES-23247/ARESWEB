@@ -28,12 +28,10 @@ const wordmark = [...word]
 
 export default function TitleScreen({
   onPlay,
-  onOriginalCampaign,
   links,
   fullscreen,
 }: {
   onPlay: () => void;
-  onOriginalCampaign: () => void;
   links: ReactNode;
   fullscreen: ReturnType<typeof useGameFullscreen>;
 }) {
@@ -113,12 +111,7 @@ export default function TitleScreen({
         <Button className="ww-title-play" onClick={onPlay} data-start-garden>
           Play gardens <span aria-hidden="true">▶</span>
         </Button>
-        <p>11 adventure gardens · 30 original gardens</p>
-        <div className="ww-title-original">
-          <Button variant="secondary" onClick={onOriginalCampaign}>
-            Original gardens
-          </Button>
-        </div>
+        <p>30 gardens · learn the dances, master the escape</p>
         <div className="ww-title-links">{links}</div>
       </div>
       <p className="ww-title-footer">A bee-guiding puzzle & level workshop</p>

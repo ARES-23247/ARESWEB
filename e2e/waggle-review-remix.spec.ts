@@ -3,7 +3,9 @@ import { createBlankLevel } from "@ares/waggle-way/level";
 import { replayRun } from "@ares/waggle-way/replay";
 import type { CommunitySubmission } from "@ares/waggle-way/community";
 
-const level = { ...createBlankLevel(), title: "Clover crossing" };
+// The review API currently accepts format 5; keep its authorization contract
+// fixture explicit and independent of the format-7 game/editor defaults.
+const level = { ...createBlankLevel(5), title: "Clover crossing" };
 const card = {
   id: "approved-parent",
   revision: 1,
@@ -52,7 +54,7 @@ test("a member creates an independent remix with fresh proof and its approved so
     await route.fulfill({ json: { ...owned, id, version: 1 } });
   });
   await page.goto("/waggle-way");
-  await page.getByRole("button", { name: "Original gardens", exact: true }).click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   await page
     .getByRole("button", { name: "Community gardens", exact: true })
     .click();
@@ -235,6 +237,10 @@ for (const role of ["admin", "coach"] as const) {
     });
     await workshop
       .getByRole("button", { name: "Enter full screen", exact: true })
+      .click();
+    await workshop
+      .locator("summary")
+      .filter({ hasText: /^Community$/ })
       .click();
     const opener = workshop.getByRole("button", {
       name: "Review gardens",

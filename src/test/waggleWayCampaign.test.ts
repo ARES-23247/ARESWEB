@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CAMPAIGN } from "@ares/waggle-way/campaign";
-import { CAMPAIGN_SOLUTIONS } from "../../packages/waggle-way/src/content/solutions";
+import { CAMPAIGN } from "./fixtures/waggle-way-legacy/campaign";
+import { CAMPAIGN_SOLUTIONS } from "./fixtures/waggle-way-legacy/solutions";
 import {
   applyCommand,
   createRun,

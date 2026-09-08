@@ -150,7 +150,7 @@ for (const practice of [
       .getByRole("button", { name: "Choose adventure garden", exact: true })
       .click();
     const menu = page.getByRole("dialog", { name: "Adventure gardens" });
-    await expect(menu.locator(".ww-practice-list button")).toHaveCount(11);
+    await expect(menu.locator(".ww-practice-list button")).toHaveCount(30);
     await menu
       .getByRole("button", { name: new RegExp(practice.title) })
       .click();
@@ -265,9 +265,7 @@ test("dancer workshop authors mixed dances and preserves them through a winning 
 }, testInfo) => {
   await page.goto("/waggle-way/builder");
   await showDetails(page, "Files and saved gardens");
-  await page
-    .getByRole("button", { name: "New dancer garden", exact: true })
-    .click();
+  await page.getByRole("button", { name: "New garden", exact: true }).click();
   await expect(page.locator(".ww-grid-workshop")).toBeVisible();
   await page
     .getByRole("button", { name: "Close files and saved gardens", exact: true })
@@ -543,18 +541,14 @@ test("one game window keeps panels contained and fullscreen survives changing ga
     });
   });
   await page.goto("/waggle-way");
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   const frame = page.getByRole("region", {
     name: "Waggle Way game window",
     exact: true,
   });
   await expect(frame).toBeVisible();
   const initial = await frame.boundingBox();
-  const mission = page
-    .locator("summary")
-    .filter({ hasText: "Mission & hints" });
+  const mission = page.locator("summary").filter({ hasText: /^Mission$/ });
   await mission.click();
   await expect(page.locator(".ww-mission .ww-panel-content")).toBeVisible();
   expect((await frame.boundingBox())!.height).toBe(initial!.height);
@@ -576,13 +570,11 @@ test("one game window keeps panels contained and fullscreen survives changing ga
   await expect(frame).toHaveAttribute("data-game-fullscreen", "true");
   await openMap(page);
   await expect(
-    page.getByRole("dialog", { name: "Story gardens" }),
+    page.getByRole("dialog", { name: "Adventure gardens" }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Skip this puzzle", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Two Little Turns/ }).click();
   await expect(
-    page.getByRole("heading", { name: "Across the Pond", exact: true }),
+    page.getByRole("heading", { name: "Two Little Turns", exact: true }),
   ).toBeFocused();
   await expect(frame).toHaveAttribute("data-game-fullscreen", "true");
   await frame.screenshot({ path: testInfo.outputPath("game-fullscreen.png") });
@@ -597,9 +589,7 @@ test("ghost comparison reviews a failed attempt without changing the new hive", 
   page,
 }, testInfo) => {
   await page.goto("/waggle-way");
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
     .selectOption("3");
@@ -632,8 +622,8 @@ test("ghost comparison reviews a failed attempt without changing the new hive", 
     .getByRole("button", { name: "Match current run", exact: true })
     .click();
   await expect(summary).toContainText("tick 0:");
-  await page.getByRole("button", { name: "Point Up", exact: true }).click();
-  await page.getByRole("button", { name: "Assign guide", exact: true }).click();
+  await placeFirstDancer(page);
+  await showDetails(page, /^Tool options$/);
   await page
     .getByRole("button", { name: "Step one tick", exact: true })
     .click();
@@ -642,11 +632,18 @@ test("ghost comparison reviews a failed attempt without changing the new hive", 
   await page
     .locator(".ww-session")
     .screenshot({ path: testInfo.outputPath("ghost-outlines.png") });
-  await showDetails(page, "Inspect individual bees");
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await showDetails(page, /^Bees$/);
   await expect(page.getByText(/^Ghost G1: flying;/)).toBeVisible();
   await expect(page.getByText(/^Bee 1: assigned;/)).toBeVisible();
   await page.waitForTimeout(250); // More than seven engine ticks; a paused comparison must stay at tick 1.
   await expect(summary).toContainText("tick 1:");
+  await page
+    .locator("summary")
+    .filter({ hasText: /^Bees$/ })
+    .click();
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(timeline).toBeDisabled();
   await expect(page.locator(".ww-stats")).toContainText("5/5", {
@@ -666,10 +663,10 @@ test("ghost comparison reviews a failed attempt without changing the new hive", 
   await expect(
     page.getByText("6 bees reached the flowers.", { exact: true }),
   ).toBeVisible({ timeout: 10000 });
-  await page.getByRole("button", { name: "Next puzzle", exact: true }).click();
+  await page.getByRole("button", { name: "Next garden", exact: true }).click();
   await expect(compare).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "Across the Pond", exact: true }),
+    page.getByRole("heading", { name: "Two Little Turns", exact: true }),
   ).toBeVisible();
 });
 
@@ -679,15 +676,27 @@ async function closePanel(page: Page) {
     await dialog
       .getByRole("button", { name: "Close dialog", exact: true })
       .click();
+  else {
+    const close = page.getByRole("button", { name: /^Close / }).first();
+    if (await close.isVisible()) await close.click();
+  }
 }
 async function openMap(page: Page) {
-  if (!(await page.getByRole("dialog", { name: "Story gardens" }).isVisible()))
+  if (
+    !(await page.getByRole("dialog", { name: "Adventure gardens" }).isVisible())
+  )
     await page
-      .getByRole("button", { name: "Choose level", exact: true })
+      .getByRole("button", { name: "Choose adventure garden", exact: true })
       .click();
 }
 async function showDetails(page: Page, title: string | RegExp) {
   const summary = page.locator("summary").filter({ hasText: title });
+  const ancestors = summary.locator("xpath=ancestor::details");
+  for (let i = 0; i < (await ancestors.count()) - 1; i++) {
+    const ancestor = ancestors.nth(i);
+    if ((await ancestor.getAttribute("open")) === null)
+      await ancestor.locator(":scope > summary").click();
+  }
   if ((await summary.locator("..").getAttribute("open")) === null)
     await summary.click();
 }
@@ -698,94 +707,12 @@ async function editPiece(page: Page) {
     await page.getByRole("button", { name: "Edit piece", exact: true }).click();
 }
 
-test("campaign saves a rescue, offers the next puzzle, and records an explicit skip", async ({
-  page,
-}, testInfo) => {
-  await page.goto("/arcade");
-  await page
-    .getByRole("link", { name: "Play Waggle Way", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/waggle-way$/);
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Waggle Way",
-  );
-  await openMap(page);
-  await expect(
-    page.getByRole("button", { name: /02 Across the Pond/ }),
-  ).toBeEnabled();
-  await closePanel(page);
-  await page.getByRole("button", { name: "Point Up", exact: true }).click();
-  await closePanel(page);
-  await page.getByRole("button", { name: "Assign guide", exact: true }).click();
-  await page
-    .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
-  await closePanel(page);
-  await page.getByRole("button", { name: "Open hive", exact: true }).click();
-  await expect(page.locator(".ww-stats")).toContainText("5/5", {
-    timeout: 15000,
-  });
-  await page
-    .getByRole("button", { name: "Release guide", exact: true })
-    .click();
-  await expect(
-    page.getByText("6 bees reached the flowers.", { exact: true }),
-  ).toBeVisible({ timeout: 10000 });
-  await openMap(page);
-  await expect(
-    page.getByRole("button", { name: /01 First Waggle/ }),
-  ).toContainText("All bees rescued");
-  await closePanel(page);
-  await page
-    .locator("section.ww-page")
-    .screenshot({ path: testInfo.outputPath("rescued-hive.png") });
-  await closePanel(page);
-  await page.getByRole("button", { name: "Restart", exact: true }).click();
-  await closePanel(page);
-  await expect(
-    page.getByRole("button", { name: "Open hive", exact: true }),
-  ).toBeEnabled();
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
-  await openMap(page);
-  await expect(
-    page.getByRole("button", { name: /01 First Waggle/ }),
-  ).toContainText("All bees rescued");
-  await openMap(page);
-  await page.getByRole("button", { name: /02 Across the Pond/ }).click();
-  await openMap(page);
-  await page
-    .getByRole("button", { name: "Skip this puzzle", exact: true })
-    .click();
-  await openMap(page);
-  await expect(
-    page.getByRole("button", { name: /02 Across the Pond/ }),
-  ).toContainText("Skipped");
-  await closePanel(page);
-  await expect(
-    page.getByRole("heading", { name: "Mind the Branch", exact: true }),
-  ).toBeVisible();
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
-  await openMap(page);
-  await expect(
-    page.getByRole("button", { name: /03 Mind the Branch/ }),
-  ).toBeEnabled();
-});
-
 test("builder edits, tests, saves, exports, imports, and preserves a rejected draft", async ({
   page,
 }, testInfo) => {
   await page.goto("/waggle-way/builder");
   await closePanel(page);
-  await page.getByRole("button", { name: "Guide perch", exact: true }).click();
+  await page.getByRole("button", { name: "Dancing bee", exact: true }).click();
   await showDetails(page, "Place by coordinates");
   await page.getByLabel("Placement column", { exact: true }).fill("6");
   await showDetails(page, "Place by coordinates");
@@ -798,7 +725,7 @@ test("builder edits, tests, saves, exports, imports, and preserves a rejected dr
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("combobox", { name: "Selected object", exact: true }),
-  ).toHaveValue("perch-1");
+  ).toHaveValue("dancer-1");
   await closePanel(page);
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(
@@ -809,7 +736,7 @@ test("builder edits, tests, saves, exports, imports, and preserves a rejected dr
   await page.getByRole("button", { name: "Redo", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Selected object", exact: true })
-    .selectOption("perch-1");
+    .selectOption("dancer-1");
   await page.getByRole("button", { name: "Save garden", exact: true }).click();
   const downloadWait = page.waitForEvent("download");
   await showDetails(page, "Files and saved gardens");
@@ -842,7 +769,7 @@ test("builder edits, tests, saves, exports, imports, and preserves a rejected dr
     .click();
   await expect(
     page.getByRole("combobox", { name: "Selected object", exact: true }),
-  ).toHaveValue("perch-1");
+  ).toHaveValue("dancer-1");
   await page.reload();
   await showDetails(page, "Files and saved gardens");
   await page.getByRole("button", { name: "Load library", exact: true }).click();
@@ -900,7 +827,7 @@ test("a dance turns the swarm upward and the last guide follows it home", async 
     .getByRole("button", { name: "Apply properties", exact: true })
     .click();
   await closePanel(page);
-  await page.getByRole("button", { name: "Guide perch", exact: true }).click();
+  await page.getByRole("button", { name: "Dancing bee", exact: true }).click();
   await showDetails(page, "Place by coordinates");
   await page.getByLabel("Placement column", { exact: true }).fill("6");
   await showDetails(page, "Place by coordinates");
@@ -939,19 +866,28 @@ test("preferences, keyboard preview, fullscreen and unreadable progress stay usa
   page,
 }) => {
   await page.goto("/waggle-way");
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
-  await page.getByText("Sound and motion", { exact: true }).click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  await showDetails(page, /^Sound$/);
   await page.getByLabel("Reduce extra animation", { exact: true }).check();
+  await page
+    .locator("summary")
+    .filter({ hasText: /^Sound$/ })
+    .click();
   await closePanel(page);
-  await page.getByRole("button", { name: "Assign guide", exact: true }).focus();
-  await page.keyboard.press("Enter");
-  const direction = page.getByRole("button", { name: "Point Up", exact: true });
+  await placeFirstDancer(page, 7);
+  await showDetails(page, /^Tool options$/);
+  const direction = page.getByRole("combobox", {
+    name: "Heading direction",
+    exact: true,
+  });
   await direction.focus();
-  await page.keyboard.press("Enter");
-  await expect(direction).toHaveAttribute("aria-pressed", "true");
-  await showDetails(page, "View and route preview");
+  await page.keyboard.press("End");
+  await page.keyboard.press("ArrowUp");
+  await expect(direction).toHaveValue("6");
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await showDetails(page, /^View$/);
   await page
     .getByLabel("Preview next three seconds while paused", { exact: true })
     .check();
@@ -970,10 +906,8 @@ test("preferences, keyboard preview, fullscreen and unreadable progress stay usa
     .getByRole("button", { name: "Exit full screen", exact: true })
     .click();
   await page.reload();
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
-  await page.getByText("Sound and motion", { exact: true }).click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  await showDetails(page, /^Sound$/);
   await expect(
     page.getByLabel("Reduce extra animation", { exact: true }),
   ).toBeChecked();
@@ -981,15 +915,13 @@ test("preferences, keyboard preview, fullscreen and unreadable progress stay usa
     localStorage.setItem("ares.waggle-way.progress.v1", '{"version":999}'),
   );
   await page.reload();
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("preserved");
   await openMap(page);
-  await page.getByRole("button", { name: /05 Garden Route/ }).click();
+  await page.getByRole("button", { name: /5 Watch the Spray/ }).click();
   await closePanel(page);
   await expect(
-    page.getByRole("heading", { name: "Garden Route", exact: true }),
+    page.getByRole("heading", { name: "Watch the Spray", exact: true }),
   ).toBeFocused();
   expect(
     await page.evaluate(() =>
@@ -1004,6 +936,7 @@ test("every campaign puzzle round-trips through the player workshop", async ({
   await page.goto("/waggle-way/builder");
   await showDetails(page, "Files and saved gardens");
   for (const puzzle of CAMPAIGN) {
+    await showDetails(page, "Files and saved gardens");
     const definition = serializeLevel(puzzle.level);
     await page
       .getByLabel("Import a garden file", { exact: true })
@@ -1013,6 +946,7 @@ test("every campaign puzzle round-trips through the player workshop", async ({
         buffer: Buffer.from(definition),
       });
     await expect(page.getByText(/Garden imported\./)).toBeVisible();
+    await showDetails(page, "Files and saved gardens");
     const downloaded = page.waitForEvent("download");
     await page
       .getByRole("button", { name: "Export garden", exact: true })
@@ -1035,95 +969,58 @@ test("every campaign puzzle round-trips through the player workshop", async ({
   }
 });
 
-test("a supplied shelter makes the meadow crossing safe and can be returned", async ({
+test("a supplied shelter can be placed and returned before a spray crossing", async ({
   page,
-}, testInfo) => {
+}) => {
   await page.goto("/waggle-way");
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
-  for (let i = 0; i < 6; i++) {
-    await openMap(page);
-    await page
-      .getByRole("button", { name: "Skip this puzzle", exact: true })
-      .click();
-  }
-  await expect(
-    page.getByRole("heading", { name: "In the Lee", exact: true }),
-  ).toBeFocused();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   await openMap(page);
-  await expect(
-    page.getByRole("combobox", { name: "Garden", exact: true }),
-  ).toHaveValue("Breezy Meadow");
-  await closePanel(page);
-  await showDetails(page, "Precise tool placement");
-  await page.getByLabel("Tool placement column", { exact: true }).fill("7");
-  await closePanel(page);
-  await showDetails(page, "Precise tool placement");
-  await page.getByLabel("Tool placement row", { exact: true }).fill("8");
-  await page
-    .getByRole("button", { name: "Place supplied tool", exact: true })
-    .click();
+  await page.getByRole("button", { name: /5 Watch the Spray/ }).click();
+  await showDetails(page, /^Place precisely$/);
   const supply = page.getByRole("combobox", {
     name: "Supplied tool",
     exact: true,
   });
-  await expect(supply.locator("option:checked")).toContainText("0 remaining");
-  await page
-    .getByRole("button", { name: "Return tool to supply", exact: true })
-    .click();
-  await expect(supply.locator("option:checked")).toContainText("1 remaining");
+  await supply.selectOption("leaf-cover");
+  await page.getByLabel("Tool placement column", { exact: true }).fill("6");
+  await page.getByLabel("Tool placement row", { exact: true }).fill("5");
   await page
     .getByRole("button", { name: "Place supplied tool", exact: true })
     .click();
+  await expect(supply.locator("option:checked")).toContainText("0 remaining");
   await page
-    .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
-  await closePanel(page);
-  await page.getByRole("button", { name: "Open hive", exact: true }).click();
-  await expect(
-    page.getByText("6 bees reached the flowers.", { exact: true }),
-  ).toBeVisible({ timeout: 15000 });
-  await page.screenshot({
-    path: testInfo.outputPath("sheltered-meadow.png"),
-    fullPage: true,
-  });
+    .getByRole("button", { name: "Close place precisely", exact: true })
+    .click();
+  await showDetails(page, /^Tool options$/);
+  await page
+    .getByRole("button", { name: "Return tool to supply", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await showDetails(page, /^Place precisely$/);
+  await expect(supply.locator("option:checked")).toContainText("1 remaining");
 });
 
-test("a legacy garden upgrades explicitly and authored supplies survive testing and export", async ({
+test("current garden authored supplies survive testing and export", async ({
   page,
 }) => {
   await page.goto("/waggle-way/builder");
-  await showDetails(page, "Files and saved gardens");
-  const legacy = serializeLevel(CAMPAIGN[0].level);
-  await page.getByLabel("Import a garden file", { exact: true }).setInputFiles({
-    name: "legacy.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(legacy),
-  });
-  await closePanel(page);
-  await expect(
-    page.getByRole("button", { name: "Shelter leaf", exact: true }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Upgrade garden format", exact: true })
-    .click();
-  await closePanel(page);
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Upgrade garden format", exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Upgrade garden format", exact: true })
-    .click();
-  await page.getByText("Player tool supply", { exact: true }).click();
+  await showDetails(page, "Player tool supply");
   await page
     .getByRole("button", { name: "Supply shelter leaf", exact: true })
     .click();
-  await page.getByLabel("Supply count", { exact: true }).fill("2");
-  await page.getByRole("button", { name: "Apply supply", exact: true }).click();
+  await page
+    .getByRole("form", { name: "Edit supply-1", exact: true })
+    .getByLabel("Supply count", { exact: true })
+    .fill("2");
+  await page
+    .getByRole("form", { name: "Edit supply-1", exact: true })
+    .getByRole("button", { name: "Apply supply", exact: true })
+    .click();
   await closePanel(page);
   await closePanel(page);
+  await page.getByRole("button", { name: "Landscape", exact: true }).click();
   await page.getByRole("button", { name: "Shelter leaf", exact: true }).click();
   await showDetails(page, "Place by coordinates");
   await page.getByLabel("Placement column", { exact: true }).fill("1");
@@ -1147,7 +1044,10 @@ test("a legacy garden upgrades explicitly and authored supplies survive testing 
   await closePanel(page);
   await page.getByRole("button", { name: "Test garden", exact: true }).click();
   await closePanel(page);
-  await showDetails(page, "Precise tool placement");
+  await showDetails(page, /^Place precisely$/);
+  await page
+    .getByRole("combobox", { name: "Supplied tool", exact: true })
+    .selectOption("supply-1");
   await expect(
     page
       .getByRole("combobox", { name: "Supplied tool", exact: true })
@@ -1163,8 +1063,11 @@ test("a legacy garden upgrades explicitly and authored supplies survive testing 
     .click();
   const raw = await readFile((await (await downloaded).path())!, "utf8");
   const exported = JSON.parse(raw);
-  expect(exported.schemaVersion).toBe(5);
-  expect(exported.inventory[0].count).toBe(2);
+  expect(exported.schemaVersion).toBe(7);
+  expect(
+    exported.inventory.find((tool: { id: string }) => tool.id === "supply-1")
+      .count,
+  ).toBe(2);
   expect(
     exported.objects.find(
       (object: { kind: string }) => object.kind === "shelter",
@@ -1186,7 +1089,15 @@ test("workshop builds linked gates and a rally, rescues the operator, and protec
     ["Linked gate", "10", "7"],
     ["Rally flower", "6", "7"],
   ]) {
+    await closePanel(page);
+    await page
+      .getByRole("button", {
+        name: name === "Rally flower" ? "Guidance" : "Machines",
+        exact: true,
+      })
+      .click();
     await page.getByRole("button", { name, exact: true }).click();
+    await showDetails(page, "Place by coordinates");
     await page.getByLabel("Placement column", { exact: true }).fill(column);
     await page.getByLabel("Placement row", { exact: true }).fill(row);
     await page
@@ -1219,31 +1130,45 @@ test("workshop builds linked gates and a rally, rescues the operator, and protec
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
     .selectOption("3");
-  await closePanel(page);
-  await page.getByRole("button", { name: "Open hive", exact: true }).click();
   await showDetails(page, /choose another/);
   await page
     .getByRole("combobox", { name: "Inspect object", exact: true })
     .selectOption("rally-1");
-  await expect(page.getByText(/7 bees waiting/)).toBeVisible({
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Open hive", exact: true }).click();
+  await expect(page.locator(".ww-stats")).toContainText("7 Waiting", {
     timeout: 15000,
   });
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await showDetails(page, /^Tool options$/);
+  await expect(page.getByText(/7 bees waiting/)).toBeVisible();
   const release = page.getByRole("button", {
     name: "Release rally",
     exact: true,
   });
   await release.focus();
   await page.keyboard.press("Enter");
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(page.locator(".ww-stats")).toContainText("7/8", {
     timeout: 15000,
   });
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   await showDetails(page, /choose another/);
   await page
     .getByRole("combobox", { name: "Inspect object", exact: true })
     .selectOption("switch-1");
   await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Release operator", exact: true })
     .click();
+  await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(
     page.getByText("8 bees reached the flowers.", { exact: true }),
   ).toBeVisible();
@@ -1277,6 +1202,7 @@ test("workshop authors predictable rain and a canopy, freezes time and preserves
 }, testInfo) => {
   await page.goto("/waggle-way/builder");
   await closePanel(page);
+  await page.getByRole("button", { name: "Machines", exact: true }).click();
   await page
     .getByRole("button", { name: "Timed sprinkler", exact: true })
     .click();
@@ -1313,6 +1239,7 @@ test("workshop authors predictable rain and a canopy, freezes time and preserves
     .click();
   await closePanel(page);
   await closePanel(page);
+  await page.getByRole("button", { name: "Landscape", exact: true }).click();
   await page.getByRole("button", { name: "Shelter leaf", exact: true }).click();
   await showDetails(page, "Place by coordinates");
   await page.getByLabel("Placement column", { exact: true }).fill("10");
@@ -1325,8 +1252,9 @@ test("workshop authors predictable rain and a canopy, freezes time and preserves
   await page.getByRole("button", { name: "Test garden", exact: true }).click();
   const forecast = page
     .locator("details")
-    .filter({ has: page.getByText("Sprinkler forecast", { exact: true }) });
+    .filter({ has: page.getByText("Spray", { exact: true }) });
   await expect(forecast).toContainText("rain, 900 ticks until dry");
+  await showDetails(page, /^Tool options$/);
   await page
     .getByRole("button", { name: "Step one tick", exact: true })
     .click();
@@ -1338,6 +1266,9 @@ test("workshop authors predictable rain and a canopy, freezes time and preserves
     .focus();
   await page.keyboard.press("Enter");
   await expect(forecast).toContainText("rain, 898 ticks until dry");
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Enter full screen", exact: true })
     .click();
@@ -1383,7 +1314,7 @@ test("dragging tools and turning arrows works alongside tap and keyboard control
     const screen = p.matrixTransform(svg.getScreenCTM()!);
     return { x: screen.x, y: screen.y };
   });
-  const tool = page.getByRole("button", { name: "Guide perch", exact: true });
+  const tool = page.getByRole("button", { name: "Dancing bee", exact: true });
   // Exercise real pointer movement from the tray into SVG.
   await tool.dragTo(scene, {
     targetPosition: {
@@ -1393,8 +1324,8 @@ test("dragging tools and turning arrows works alongside tap and keyboard control
   });
   await expect(
     page.getByRole("combobox", { name: "Selected object", exact: true }),
-  ).toHaveValue("perch-1");
-  const handle = page.locator('[data-turn-handle="perch-1"]');
+  ).toHaveValue("dancer-1");
+  const handle = page.locator('[data-turn-handle="dancer-1"]');
   await handle.scrollIntoViewIfNeeded();
   const turnTarget = await scene.evaluate((svg: SVGSVGElement) => {
     const p = svg.createSVGPoint();
@@ -1408,18 +1339,25 @@ test("dragging tools and turning arrows works alongside tap and keyboard control
   await page.mouse.down();
   await page.mouse.move(turnTarget.x, turnTarget.y, { steps: 8 });
   await page.mouse.up();
+  await editPiece(page);
   await expect(
-    page.getByRole("button", { name: "Point Up", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Point Right", exact: true }).focus();
-  await page.keyboard.press("Enter");
+    page.getByRole("combobox", { name: "Heading", exact: true }),
+  ).toHaveValue("6");
+  await page.getByRole("combobox", { name: "Heading", exact: true }).focus();
+  await page.keyboard.press("Home");
   await expect(
-    page.getByRole("button", { name: "Point Right", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page.getByRole("combobox", { name: "Heading", exact: true }),
+  ).toHaveValue("0");
+  await page
+    .getByRole("button", { name: "Apply properties", exact: true })
+    .click();
+  await closePanel(page);
   await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await editPiece(page);
   await expect(
-    page.getByRole("button", { name: "Point Up", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page.getByRole("combobox", { name: "Heading", exact: true }),
+  ).toHaveValue("6");
+  await closePanel(page);
   await scene.scrollIntoViewIfNeeded();
   const movePoints = await scene.evaluate((svg: SVGSVGElement) => {
     const p = svg.createSVGPoint();
@@ -1486,6 +1424,7 @@ test("pollen and a garden theme survive authoring, delivery and reopening", asyn
     return { x: screen.x, y: screen.y };
   });
   const bounds = (await scene.boundingBox())!;
+  await page.getByRole("button", { name: "Landscape", exact: true }).click();
   await page
     .getByRole("button", { name: "Pollen", exact: true })
     .dragTo(scene, {
@@ -1516,7 +1455,7 @@ test("pollen and a garden theme survive authoring, delivery and reopening", asyn
   const file = await downloadWait;
   const exported = JSON.parse(await readFile((await file.path())!, "utf8"));
   expect(exported).toMatchObject({
-    schemaVersion: 5,
+    schemaVersion: 7,
     theme: "wildflower",
     objectives: { pollen: 1 },
   });
@@ -1699,36 +1638,33 @@ test("garden library exposes challenges and readable level numbers", async ({
   await page.keyboard.press("Escape");
   await expect(chooser).toBeFocused();
   await chooser.click();
-  await dialog
-    .getByRole("button", { name: "Play 30 original gardens" })
-    .click();
+  for (const [name, count] of [
+    ["City gardens", 6],
+    ["Rain gardens", 6],
+    ["Factory escape", 7],
+  ] as const) {
+    await expect(
+      dialog.getByRole("region", { name }).getByRole("button"),
+    ).toHaveCount(count);
+  }
   await expect(
-    page.getByRole("button", { name: "Open hive", exact: true }),
-  ).toBeVisible();
-  await expect(chooser).toHaveCount(0);
+    dialog.getByRole("button", { name: /archived|original/i }),
+  ).toHaveCount(0);
 });
 
-test("original gardens allow jumping straight to the last puzzle without changing saved progress", async ({
+test("all gardens allow jumping to the finale without changing saved progress", async ({
   page,
 }, testInfo) => {
   await page.goto("/waggle-way");
-  await page
-    .getByRole("button", { name: "Original gardens", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   const before = await page.evaluate(() =>
     localStorage.getItem("ares.waggle-way.progress.v1"),
   );
   await openMap(page);
-  const map = page.getByRole("dialog", { name: "Story gardens" });
-  await map
-    .getByRole("combobox", { name: "Garden", exact: true })
-    .selectOption("Wildflower Valley");
+  const map = page.getByRole("dialog", { name: "Adventure gardens" });
   await expect(
     map.getByRole("button", { name: /30 Field of Flowers/ }),
   ).toBeEnabled();
-  await map.screenshot({
-    path: testInfo.outputPath("open-original-gardens.png"),
-  });
   await map.getByRole("button", { name: /30 Field of Flowers/ }).click();
   await expect(
     page.getByRole("heading", { name: "Field of Flowers", exact: true }),
@@ -1736,16 +1672,19 @@ test("original gardens allow jumping straight to the last puzzle without changin
   await expect(
     page.getByRole("button", { name: "Open hive", exact: true }),
   ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Assign guide", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .locator(".ww-game-window")
+    .screenshot({ path: testInfo.outputPath("current-finale.png") });
   expect(
     await page.evaluate(() =>
       localStorage.getItem("ares.waggle-way.progress.v1"),
     ),
   ).toBe(before);
   await openMap(page);
-  await map
-    .getByRole("combobox", { name: "Garden", exact: true })
-    .selectOption("Sunny Garden");
-  await map.getByRole("button", { name: /01 First Waggle/ }).click();
+  await map.getByRole("button", { name: /1 First Waggle/ }).click();
   await expect(
     page.getByRole("heading", { name: "First Waggle", exact: true }),
   ).toBeFocused();
@@ -1754,4 +1693,140 @@ test("original gardens allow jumping straight to the last puzzle without changin
       localStorage.getItem("ares.waggle-way.progress.v1"),
     ),
   ).toBe(before);
+});
+
+async function placeFirstDancer(page: Page, column = 10) {
+  await showDetails(page, /^Place precisely$/);
+  await page
+    .getByRole("spinbutton", { name: "Tool placement column", exact: true })
+    .fill(String(column));
+  await page
+    .getByRole("spinbutton", { name: "Tool placement row", exact: true })
+    .fill("7");
+  await page
+    .getByRole("button", { name: "Place supplied tool", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Close place precisely", exact: true })
+    .click();
+}
+
+test("Rain Check reuses one shelter after rescuing its operator and brings every helper home", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90000);
+  await page.goto("/waggle-way");
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  await openMap(page);
+  await page
+    .getByRole("dialog", { name: "Adventure gardens" })
+    .getByRole("button", { name: /Rain Check/ })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Rain Check", exact: true }),
+  ).toBeFocused();
+  const selectObject = async (id: string) => {
+    await showDetails(page, /choose another/);
+    await page
+      .getByRole("combobox", { name: "Inspect object", exact: true })
+      .selectOption(id);
+    await page
+      .getByRole("button", { name: "Close tool options", exact: true })
+      .click();
+  };
+  await selectObject("switch-1");
+  await page
+    .getByRole("button", { name: "Assign operator", exact: true })
+    .click();
+  for (const [stock, x, y] of [
+    ["left-dancer", 17, 20],
+    ["right-dancer", 16, 4],
+    ["leaf-cover", 9, 8],
+  ] as const) {
+    await showDetails(page, /^Place precisely$/);
+    await page
+      .getByRole("combobox", { name: "Supplied tool", exact: true })
+      .selectOption(stock);
+    await page
+      .getByLabel("Tool placement column", { exact: true })
+      .fill(String(x));
+    await page
+      .getByLabel("Tool placement row", { exact: true })
+      .fill(String(y));
+    await page
+      .getByRole("button", { name: "Place supplied tool", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Close place precisely", exact: true })
+      .click();
+  }
+  await expect(page.locator(".ww-stats")).toContainText("3 Helpers");
+  await page
+    .getByRole("combobox", { name: "Speed", exact: true })
+    .selectOption("3");
+  await page.getByRole("button", { name: "Open hive", exact: true }).click();
+  await expect(page.locator(".ww-stats")).toContainText("5 Waiting", {
+    timeout: 30000,
+  });
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await selectObject("switch-1");
+  await page
+    .getByRole("button", { name: "Release operator", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Resume", exact: true }).click();
+  await expect(page.locator(".ww-stats")).toContainText("6 Waiting", {
+    timeout: 15000,
+  });
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await selectObject("placed-3");
+  await showDetails(page, /^Precise position$/);
+  await page.getByLabel("Move to column", { exact: true }).fill("22");
+  await page.getByLabel("Move to row", { exact: true }).fill("1");
+  await page.getByRole("button", { name: "Move tool", exact: true }).click();
+  await expect(page.locator(".ww-scene .ww-selected")).toHaveAttribute(
+    "transform",
+    "translate(22 1)",
+  );
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await showDetails(page, /^Place precisely$/);
+  await expect(
+    page
+      .getByRole("combobox", { name: "Supplied tool", exact: true })
+      .locator("option:checked"),
+  ).toContainText("0 remaining");
+  await page
+    .getByRole("button", { name: "Close place precisely", exact: true })
+    .click();
+  await selectObject("rally-1");
+  await showDetails(page, /^Tool options$/);
+  await page
+    .getByRole("button", { name: "Release rally", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Close tool options", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Resume", exact: true }).click();
+  for (const [id, rescued] of [
+    ["placed-1", 6],
+    ["placed-2", 7],
+  ] as const) {
+    await expect(page.locator(".ww-stats")).toContainText(`${rescued}/8`, {
+      timeout: 30000,
+    });
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    await selectObject(id);
+    await page
+      .getByRole("button", { name: "Release guide", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+  }
+  await expect(
+    page.getByText("8 bees reached the flowers.", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(page.locator(".ww-stats")).toContainText("0 Lost");
+  await page
+    .locator(".ww-game-window")
+    .screenshot({ path: testInfo.outputPath("rain-check-reused-shelter.png") });
 });

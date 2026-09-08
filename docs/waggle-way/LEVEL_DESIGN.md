@@ -1,11 +1,10 @@
 # Waggle Way redesigned level specification
 
-Updated 2026-09-07. Status: planned campaign for the active
-[redesign goal series](REDESIGN_GOALS.md). A local First Waggle slice exists;
-the thirty redesigned levels are not implemented or accepted as a campaign.
-The user endorsed pixel art, understandable flight hazards, industrial/urban
-environments and a honey-recovery factory arc. The names, layouts and allocation
-below are proposed design defaults to refine through the first playable slice.
+Updated 2026-09-08. The [current campaign](CURRENT_CAMPAIGN.md) is the source of
+truth for the implemented 30-level batch. All built-in levels now use version7;
+there is no parallel perch campaign. The industrial/honey proposals below remain
+future scope where they differ from that catalogue. Human difficulty acceptance
+is still open.
 
 ## Campaign structure
 

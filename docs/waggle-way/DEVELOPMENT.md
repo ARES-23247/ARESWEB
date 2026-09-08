@@ -103,3 +103,11 @@ and tests are mapped. Add explicit ownership for the game planning documents
 with selector regression evidence during the next CI rollout step; do not
 ignore unmapped files just to obtain a smaller suite. Use the focused live-game
 commands above while that observation mapping is refined.
+
+## Current hard-campaign branch — 2026-09-08
+
+The active batch is `codex/waggle-hard-campaign` in the repository root, based
+on deployed master e50952b0. Its Vite server uses port3042; port3041 belongs to
+the prior checkout. Use `ARES_WAGGLE_LIVE_PORT=3042` for focused local browser
+checks. Vitest ignores scratch worktrees and the local pnpm cache so it tests
+the active checkout once. This changes no production test coverage scope.
