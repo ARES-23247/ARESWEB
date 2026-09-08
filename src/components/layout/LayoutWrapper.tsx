@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SkipLink from "@/components/SkipLink";
 import SiteAnnouncementBanner from "@/components/SiteAnnouncementBanner";
+import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 export default function LayoutWrapper({
   children,
@@ -103,6 +104,7 @@ export default function LayoutWrapper({
           className="flex-grow flex flex-col focus:outline-none"
           style={{ paddingTop: "var(--site-announcement-height, 0px)" }}
         >
+          <AuthErrorNotice />
           {children}
         </main>
       </div>
@@ -121,6 +123,7 @@ export default function LayoutWrapper({
         className="flex-grow focus:outline-none"
         style={{ paddingTop: "calc(6rem + var(--site-announcement-height, 0px))" }}
       >
+        <AuthErrorNotice />
         {children}
       </main>
       <Footer />

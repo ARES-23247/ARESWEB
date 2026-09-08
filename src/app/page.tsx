@@ -14,7 +14,6 @@ import { useAuth } from "@/context/AuthContext";
 import { GreekMeander } from "@/components/GreekMeander";
 import { maskEmail } from "@/lib/utils";
 import SEO from "@/components/SEO";
-import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 export default function Home() {
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
@@ -140,7 +139,6 @@ export default function Home() {
                   >
                     <LogIn size={16} /> Team Member Sign In
                   </button>
-                  <AuthErrorNotice />
                 </div>
                 <Link
                   to="/calendar"

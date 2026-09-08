@@ -7,7 +7,6 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { LogIn, Menu, X, KeyRound } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
 import SEO from "@/components/SEO";
-import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 import { DashboardNotificationsProvider } from "@/context/DashboardNotificationsContext";
 
 export default function DashboardLayout({
@@ -116,7 +115,6 @@ export default function DashboardLayout({
             >
               <LogIn size={16} /> Sign In with Google
             </button>
-            <AuthErrorNotice />
 
             {mockAuthEnabled && (
               <div className="w-full mt-4 pt-4 border-t border-white/5 space-y-2.5">

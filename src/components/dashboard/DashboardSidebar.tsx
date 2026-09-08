@@ -29,7 +29,6 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useDashboardNotifications } from "@/context/DashboardNotificationsContext";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
-import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 interface NavButtonProps {
   tab: string;
@@ -450,7 +449,6 @@ export default function DashboardSidebar({
           >
             <LogOut size={14} /> Sign Out
           </button>
-          <AuthErrorNotice />
         </div>
       </div>
     </aside>
