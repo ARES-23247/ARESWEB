@@ -6,7 +6,7 @@ An ARESLib change can pass one small test and still break an FTC robot, an FRC r
 starter project. This reference shows how to match evidence to the boundary that changed. It also
 explains why one version name must always point to one exact set of library files.
 
-This page applies to ARES 17.0.1 and Studio 7.0.2. Read
+This page applies to ARES 17.0.2 and Studio 7.0.3. Read
 [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Use
 [Test Robot Logic Across Mocks and Simulation](/academy/programming-tests-parity?path=programming-with-ares)
 when you need to compare behavior at two runtime boundaries.
@@ -45,6 +45,10 @@ test that can explain a mistake. It then expands to every boundary that could be
 | Shared ARESLib behavior | focused and module tests | unique candidate through every affected consumer |
 | Public ARESLib API | focused tests and API review | unique candidate through every affected consumer |
 | Final released dependency | clean remote resolve | representative student build without sibling source |
+
+Current monorepo CI selects changed products and their consumers. Unaffected jobs report skips;
+the final result check must still pass for the selected work. Shared ARESLib changes select the
+full consumer matrix. Manual workflow runs select every scope in that workflow.
 
 ## Worked example
 
@@ -96,7 +100,7 @@ Use the lab below to match a change to the smallest complete validation plan.
 
 <releasevalidationlab />
 
-The lab follows the pinned ARES 17.0.1 development and publishing documents. It does not inspect a
+The lab follows the pinned ARES 17.0.2 development and publishing documents. It does not inspect a
 branch, run a build, publish files, or approve a release.
 
 Then create a change card for one real proposed change. Do not edit or publish anything yet.

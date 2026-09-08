@@ -10,7 +10,6 @@ import {
 import { TEAM_LINKS, RESOURCE_LINKS, ARCADE_LINKS } from "./navItems";
 import { NavLinkItem } from "./NavLinkItem";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import AuthErrorNotice from "./AuthErrorNotice";
 
 interface MenuUser {
   uid: string;
@@ -274,7 +273,6 @@ export function MobileNavDrawer({
             >
               Sign In with Google
             </button>
-            <AuthErrorNotice />
           </div>
         )}
       </div>

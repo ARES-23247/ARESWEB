@@ -10,6 +10,11 @@ test("Pollinator is public, playable by keyboard, and supports fullscreen withou
   const iframe = page.locator('iframe[title="Pollinator Pile-Up game"]');
   await expect(iframe).toHaveAttribute("sandbox", "allow-scripts");
   const game = page.frameLocator('iframe[title="Pollinator Pile-Up game"]');
+  await game.locator("#game-canvas").waitFor({ state: "attached" });
+  const frame = await (await iframe.elementHandle())!.contentFrame();
+  // Classic scripts initialize the game at DOMContentLoaded. The mode buttons
+  // exist earlier in the HTML, before their click handlers are attached.
+  await frame!.waitForLoadState("domcontentloaded");
   await game.getByRole("button", { name: /Pass & Play/ }).click();
   // The focusable canvas is the keyboard game surface, with a descriptive label.
   const canvas = game.locator("#game-canvas");
@@ -31,8 +36,10 @@ test("Ranger Dave takes a turn and the isolated game stores only a device score"
   await page.goto("/pollen");
   const iframe = page.locator('iframe[title="Pollinator Pile-Up game"]');
   const game = page.frameLocator('iframe[title="Pollinator Pile-Up game"]');
-  await game.getByRole("button", { name: /Vs. Ranger Dave/ }).click();
+  await game.locator("#game-canvas").waitFor({ state: "attached" });
   const frame = await (await iframe.elementHandle())!.contentFrame();
+  await frame!.waitForLoadState("domcontentloaded");
+  await game.getByRole("button", { name: /Vs. Ranger Dave/ }).click();
   // Reproduce the heavy-on-light contact that previously vibrated indefinitely.
   await frame!.evaluate(() => {
     const scope = window as unknown as {
@@ -62,8 +69,10 @@ test("the wider flower visibly leans under an off-center heavy drop", async ({ p
   await page.goto("/pollen");
   const iframe = page.locator('iframe[title="Pollinator Pile-Up game"]');
   const game = page.frameLocator('iframe[title="Pollinator Pile-Up game"]');
-  await game.getByRole("button", { name: /Solo High Score/ }).click();
+  await game.locator("#game-canvas").waitFor({ state: "attached" });
   const frame = await (await iframe.elementHandle())!.contentFrame();
+  await frame!.waitForLoadState("domcontentloaded");
+  await game.getByRole("button", { name: /Solo High Score/ }).click();
   const aimSteps = await frame!.evaluate(() => {
     const scope = window as unknown as {
       game: { currentPollinator: unknown; width: number; flower: { headWidth: number } };

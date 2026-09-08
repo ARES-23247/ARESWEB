@@ -41,7 +41,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const mockAuthEnabled = import.meta.env.DEV || import.meta.env.MODE === "e2e";
+
+const isMockAuthEnabled = () => import.meta.env.DEV || import.meta.env.MODE === "e2e";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -52,6 +53,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const clearAuthError = useCallback(() => setAuthError(null), []);
   const isMockRef = useRef(false);
+  const verificationRef = useRef<AbortController | null>(null);
+
+  // Auth restoration, token/App Check acquisition, and session linking can
+  // stall independently. Bound the visible wait even before fetch starts.
+  useEffect(() => {
+    if (!loading) return;
+    const timeout = setTimeout(() => {
+      verificationRef.current?.abort();
+      setAuthorizedUser(null);
+      setLoading(false);
+      setAuthError("Session verification timed out. Reload sign-in to try again.");
+      logger.warn("Session verification exceeded its time limit.");
+    }, 20_000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   useEffect(() => {
     // Prime App Check for protected backend and Firestore requests. Do this in
@@ -63,16 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Safety timeout for the developer/E2E bypass lockscreen: if Auth takes
     // more than 1.5 seconds to initialize (e.g., emulators are offline),
-    // force loading to false. Production keeps loading until Auth resolves so
-    // slow connections never flash the signed-out gate at a signed-in member.
-    const safetyTimeout = mockAuthEnabled
+    // force loading to false. Production uses the bounded recovery above.
+    const safetyTimeout = isMockAuthEnabled()
       ? setTimeout(() => {
           setLoading(false);
         }, 1500)
       : null;
 
     // Check if we have a saved mock session in sessionStorage (development/E2E testing)
-    if (mockAuthEnabled && typeof window !== "undefined") {
+    if (isMockAuthEnabled() && typeof window !== "undefined") {
       const savedMock = sessionStorage.getItem("ares_mock_user");
       if (savedMock) {
         try {
@@ -87,25 +102,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      verificationRef.current?.abort();
+      const verification = new AbortController();
+      verificationRef.current = verification;
       if (safetyTimeout !== null) clearTimeout(safetyTimeout);
       if (isMockRef.current) {
         setLoading(false);
         return;
       }
       setUser(currentUser);
+      setAuthorizedUser(null);
+      setAuthError(null);
+      setLoading(true);
 
       if (currentUser && currentUser.email) {
         try {
           // Verify and link user profile securely via functions backend
           const response = await authenticatedFetch("/api/profiles/session", {
             method: "POST",
+            signal: verification.signal,
             headers: {
               "Content-Type": "application/json",
             },
           });
 
+          if (verification.signal.aborted) return;
+
           if (response.ok) {
             const data = await response.json();
+            if (verification.signal.aborted) return;
             if (data.authorizedUser) {
               setAuthorizedUser(data.authorizedUser as AuthorizedUser);
             } else {
@@ -119,12 +144,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               status: response.status,
             });
             setAuthorizedUser(null);
+            setAuthError("We could not verify your team access. Reload sign-in to try again.");
           }
         } catch {
+          if (verification.signal.aborted) return;
           logger.error(
             "Unable to verify the authenticated session with the backend.",
           );
           setAuthorizedUser(null);
+          setAuthError("We could not verify your team access. Check your connection, then reload sign-in.");
         }
       } else {
         // Only reset authorizedUser if we are not in mock user mode
@@ -136,18 +164,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      verificationRef.current?.abort();
       if (safetyTimeout !== null) clearTimeout(safetyTimeout);
       unsubscribe();
     };
   }, []);
 
   const loginWithGoogle = async () => {
+    setAuthError(null);
     setLoading(true);
     const provider = new GoogleAuthProvider();
 
     // Check if emulator is configured and if we are in local environment
     const isLocalEnv =
-      mockAuthEnabled &&
+      isMockAuthEnabled() &&
       typeof window !== "undefined" &&
       (window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1" ||
@@ -218,7 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: string,
     name?: string,
   ) => {
-    if (!mockAuthEnabled) {
+    if (!isMockAuthEnabled()) {
       logger.error(
         "Mock authentication is disabled outside local development and E2E builds.",
       );
@@ -226,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     isMockRef.current = true;
+    verificationRef.current?.abort();
     if (typeof window !== "undefined") {
       sessionStorage.setItem(
         "ares_mock_user",
@@ -300,6 +331,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    verificationRef.current?.abort();
+    setAuthError(null);
     setLoading(true);
     try {
       if ((user && user.uid === "mock_user_123") || isMockRef.current) {
