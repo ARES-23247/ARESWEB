@@ -930,44 +930,47 @@ test("preferences, keyboard preview, fullscreen and unreadable progress stay usa
   ).toBe('{"version":999}');
 });
 
-test("every campaign puzzle round-trips through the player workshop", async ({
-  page,
-}, testInfo) => {
-  await page.goto("/waggle-way/builder");
-  await showDetails(page, "Files and saved gardens");
-  for (const puzzle of CAMPAIGN) {
+// Bound each browser case while retaining import/export/play coverage for all 30 maps.
+for (let offset = 0; offset < CAMPAIGN.length; offset += 6) {
+  test(`campaign puzzles ${offset + 1}–${offset + 6} round-trip through the player workshop`, async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/waggle-way/builder");
     await showDetails(page, "Files and saved gardens");
-    const definition = serializeLevel(puzzle.level);
-    await page
-      .getByLabel("Import a garden file", { exact: true })
-      .setInputFiles({
-        name: `${puzzle.level.id}.json`,
-        mimeType: "application/json",
-        buffer: Buffer.from(definition),
-      });
-    await expect(page.getByText(/Garden imported\./)).toBeVisible();
-    await showDetails(page, "Files and saved gardens");
-    const downloaded = page.waitForEvent("download");
-    await page
-      .getByRole("button", { name: "Export garden", exact: true })
-      .click();
-    const path = await (await downloaded).path();
-    expect(await readFile(path!, "utf8")).toBe(definition);
-    await page
-      .getByRole("button", { name: "Test garden", exact: true })
-      .click();
-    await expect(
-      page.getByRole("heading", { name: puzzle.level.title, exact: true }),
-    ).toBeVisible();
-    if (puzzle.number === 30)
+    for (const puzzle of CAMPAIGN.slice(offset, offset + 6)) {
+      await showDetails(page, "Files and saved gardens");
+      const definition = serializeLevel(puzzle.level);
       await page
-        .locator(".ww-session")
-        .screenshot({ path: testInfo.outputPath("wildflower-finale.png") });
-    await page
-      .getByRole("button", { name: "Return to editor", exact: true })
-      .click();
-  }
-});
+        .getByLabel("Import a garden file", { exact: true })
+        .setInputFiles({
+          name: `${puzzle.level.id}.json`,
+          mimeType: "application/json",
+          buffer: Buffer.from(definition),
+        });
+      await expect(page.getByText(/Garden imported\./)).toBeVisible();
+      await showDetails(page, "Files and saved gardens");
+      const downloaded = page.waitForEvent("download");
+      await page
+        .getByRole("button", { name: "Export garden", exact: true })
+        .click();
+      const path = await (await downloaded).path();
+      expect(await readFile(path!, "utf8")).toBe(definition);
+      await page
+        .getByRole("button", { name: "Test garden", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: puzzle.level.title, exact: true }),
+      ).toBeVisible();
+      if (puzzle.number === 30)
+        await page
+          .locator(".ww-session")
+          .screenshot({ path: testInfo.outputPath("wildflower-finale.png") });
+      await page
+        .getByRole("button", { name: "Return to editor", exact: true })
+        .click();
+    }
+  });
+}
 
 test("a supplied shelter can be placed and returned before a spray crossing", async ({
   page,
