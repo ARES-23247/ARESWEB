@@ -3,6 +3,18 @@
 Updated: 2026-09-08. Current worktree: `scratch/waggle-campaign`, branch
 `codex/waggle-campaign-conversion`, based on PR #266 head 5888ae23.
 
+## Direct access to original puzzles — 2026-09-08
+
+During deployment review, the user reported that the original Story gardens
+selector still locked later puzzles. Removed sequential access gating from that
+selector: all 30 original puzzles are directly playable, matching the 11 current
+adventure gardens. Selecting a puzzle leaves completion and skip records intact;
+only an actual rescue or the explicit Skip this puzzle action writes a result.
+The deployment authorization remains active and includes this correction.
+Focused validation passes 31 unit tests and 10 browser cases across all five
+projects, covering direct level-30 access, return to level 1, unchanged saved
+records, actual rescue saving and explicit skip results.
+
 ## Authorized release integration — 2026-09-08
 
 The user explicitly requested deployment of the game update. Master advanced to

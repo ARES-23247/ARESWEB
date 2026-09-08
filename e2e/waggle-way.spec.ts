@@ -698,7 +698,7 @@ async function editPiece(page: Page) {
     await page.getByRole("button", { name: "Edit piece", exact: true }).click();
 }
 
-test("campaign saves a rescue, unlocks the next puzzle, and records an explicit skip", async ({
+test("campaign saves a rescue, offers the next puzzle, and records an explicit skip", async ({
   page,
 }, testInfo) => {
   await page.goto("/arcade");
@@ -715,7 +715,7 @@ test("campaign saves a rescue, unlocks the next puzzle, and records an explicit 
   await openMap(page);
   await expect(
     page.getByRole("button", { name: /02 Across the Pond/ }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await closePanel(page);
   await page.getByRole("button", { name: "Point Up", exact: true }).click();
   await closePanel(page);
@@ -1706,4 +1706,52 @@ test("garden library exposes challenges and readable level numbers", async ({
     page.getByRole("button", { name: "Open hive", exact: true }),
   ).toBeVisible();
   await expect(chooser).toHaveCount(0);
+});
+
+test("original gardens allow jumping straight to the last puzzle without changing saved progress", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/waggle-way");
+  await page
+    .getByRole("button", { name: "Original gardens", exact: true })
+    .click();
+  const before = await page.evaluate(() =>
+    localStorage.getItem("ares.waggle-way.progress.v1"),
+  );
+  await openMap(page);
+  const map = page.getByRole("dialog", { name: "Story gardens" });
+  await map
+    .getByRole("combobox", { name: "Garden", exact: true })
+    .selectOption("Wildflower Valley");
+  await expect(
+    map.getByRole("button", { name: /30 Field of Flowers/ }),
+  ).toBeEnabled();
+  await map.screenshot({
+    path: testInfo.outputPath("open-original-gardens.png"),
+  });
+  await map.getByRole("button", { name: /30 Field of Flowers/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Field of Flowers", exact: true }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Open hive", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("ares.waggle-way.progress.v1"),
+    ),
+  ).toBe(before);
+  await openMap(page);
+  await map
+    .getByRole("combobox", { name: "Garden", exact: true })
+    .selectOption("Sunny Garden");
+  await map.getByRole("button", { name: /01 First Waggle/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "First Waggle", exact: true }),
+  ).toBeFocused();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("ares.waggle-way.progress.v1"),
+    ),
+  ).toBe(before);
 });

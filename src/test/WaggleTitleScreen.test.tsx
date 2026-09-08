@@ -63,6 +63,25 @@ describe("Waggle Way title-to-play flow", () => {
       screen.queryByRole("button", { name: "Choose adventure garden" }),
     ).not.toBeInTheDocument();
   });
+  it("allows jumping straight to the last original puzzle without writing completion or skip records", () => {
+    render(<Game workshopLink={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Original gardens" }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose level" }));
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Garden" }),
+      { target: { value: "Wildflower Valley" } },
+    );
+    const finalPuzzle = screen.getByRole("button", {
+      name: /30\s*Field of Flowers/,
+    });
+    expect(finalPuzzle).toBeEnabled();
+    fireEvent.click(finalPuzzle);
+    expect(
+      screen.getByRole("heading", { name: "Field of Flowers" }),
+    ).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Open hive" })).toBeEnabled();
+    expect(localStorage.getItem(PROGRESS_KEY)).toBeNull();
+  });
   it("opens at a named title screen and moves focus into the unstarted garden", () => {
     render(<Game workshopLink={<a href="/waggle-way/builder">Workshop</a>} />);
     expect(

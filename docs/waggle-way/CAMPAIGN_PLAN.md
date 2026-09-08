@@ -236,10 +236,12 @@ challenges where meaningful and pollen goals after pollen is introduced. These
 provide replay value without inflating the campaign count. No mandatory speed
 medals; pausing and accessibility controls do not invalidate achievements.
 
-Proposed progression: completing a level unlocks the next; optional challenges
-never gate progression. A clearly labeled skip unlocks the next puzzle without
-marking the skipped one completed. Preserve completed, skipped, and optional-goal
-states separately so difficult puzzles do not block access to the rest of the game.
+Level access is open: players can choose any of the 30 original puzzles or the
+11 current-rule gardens immediately, including across chapters. Selecting a later
+puzzle does not write skipped or completed records for earlier puzzles. The
+explicit Skip this puzzle action remains available for recording a skip and
+moving forward one puzzle. Keep completed, skipped and optional-goal results
+separate; none of them restrict level selection.
 
 ## Per-level acceptance
 
