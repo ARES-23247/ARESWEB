@@ -323,6 +323,15 @@ are still outstanding.
 
 ## Remaining delivery work
 
+CI run 34308906362 verified the latest game code through the build, coverage,
+rules, container and Hosting checks, but both browser shards hit the workflow's
+25-minute execution limit without a logged assertion failure. Their last started
+cases were 218/277 and 160/276, so this is incomplete evidence, not a passing
+browser gate. The workflow now runs two independent browser workers per shard
+to overlap real-time rescues. It retains both isolated shards, all 553 cases,
+individual test timeouts and the strict aggregate completeness check. The next
+full run must establish that this fits the existing job budget reliably.
+
 Human feedback on Open Sesame: the player could not discover how to open the
 shutter and placed the left dancer before it. The mission now explains that
 selecting the purple switch and choosing Assign operator works across the closed
