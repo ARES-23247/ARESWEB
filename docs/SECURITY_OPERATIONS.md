@@ -334,6 +334,13 @@ Cloud Run, Firestore, and Vertex AI. CI validates the definitions with
 metrics, policies, a project-scoped budget, or changing notification channels is
 a production cloud mutation and requires explicit owner approval.
 
+The owner-approved Firestore usage tuning was applied on 2026-09-08. The
+separate read and write policies now alert above 5,000 reads or 1,000 writes in
+a rolling 15-minute window, continuously for 10 minutes, evaluated every minute.
+Both policies remain enabled. Do not restore the former immediate 3x
+seven-day-baseline rule: low-volume changes generated unactionable notifications.
+See [the applied settings and verification](operations/2026-09-08-firestore-alert-tuning.md).
+
 After approval, create each log metric with its exact filter, create the named
 policies against the canonical notification channel, and confirm that every
 policy is enabled. Scope the general ARESWEB budget to project

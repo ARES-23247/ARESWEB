@@ -14,6 +14,9 @@ for (const difficulty of ["easy", "medium", "hard"]) {
       .getByRole("combobox", { name: "Difficulty", exact: true })
       .selectOption(difficulty);
     await page.getByRole("button", { name: "Start new game" }).click();
+    // Wait for the dialog's focus restoration before focusing a board cell.
+    // Otherwise a delayed close effect can redirect Enter back to New game.
+    await expect(page.getByRole("button", { name: "New game", exact: true })).toBeFocused();
     // Keyboard placement works on touch and desktop without a synthetic tap.
     await page.getByRole("button", { name: "F6, empty" }).focus();
     await page.keyboard.press("Enter");
