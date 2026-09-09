@@ -881,6 +881,8 @@ export default function GameSession({
                       <p className="ww-caption">
                         {selected.dance === "point"
                           ? "Points passing bees along the arrow once per entry. The arrow also sets this helper's release direction."
+                          : selected.dance === "lift"
+                            ? "Lifts passing bees for six traveled cells without changing their heading. They cross low barriers, but tall barriers still block and spray remains dangerous. Leave clear landing space: descending inside a low barrier loses the bee. On release, this helper gets its own six-cell lift along the last bee's heading."
                           : `Turns passing bees ${selected.dance === "reverse" ? "around" : `${selected.dance} 90°`} once per entry. ${level.rulesVersion >= 7 ? "On release, the helper follows the last bee it guided. Before guiding anyone, it turns its arrival heading by its dance." : "The arrow sets this helper's release direction."}`}{" "}
                         Release after launch does not refill the dance supply.
                       </p>

@@ -1754,6 +1754,17 @@ test("lift crosses low terrain and rescues its helper through real controls", as
     await page
       .getByRole("button", { name: "Close place precisely", exact: true })
       .click();
+    if (stock === "lift-dancer") {
+      await showDetails(page, /^Tool options$/);
+      await showDetails(page, /^Dance rules$/);
+      await expect(page.locator(".ww-dance-rules")).toContainText(
+        "six traveled cells without changing their heading",
+      );
+      await expect(page.locator(".ww-dance-rules")).not.toContainText("90°");
+      await page
+        .getByRole("button", { name: "Close tool options", exact: true })
+        .click();
+    }
   }
   await expect(page.locator(".ww-stats")).toContainText("3 Helpers");
   await page
