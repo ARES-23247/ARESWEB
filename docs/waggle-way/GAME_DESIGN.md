@@ -137,12 +137,13 @@ departure above. A dead/released guide
 must not duplicate a bee or restore a spent use unexpectedly. Teach both the
 placement limit and the final helper's route before combining dance types.
 
-## Later lift dancer proposal
+## Lift dancer rules
 
 User suggestion, 2026-09-07: a bee signals other bees to fly/hop over obstacles.
-Working name: **lift dancer**. Prototype this after the current slice review,
-alongside the urban/industrial mechanics (WW-21); it is not implemented in
-version 6. The exact rules below are design candidates, not settled behavior.
+Accepted and implemented in the version-8 development batch, 2026-09-08.
+The lift dancer preserves heading and grants six traveled cells of high flight.
+The current campaign teaches it in Across the Pond and combines it with helper
+recovery, route choices and factory barriers. Release verification remains open.
 
 Use a short, explicit higher-flight state while retaining the top-down grid.
 Ordinary water and low ground scenery remain flyable without this ability.
@@ -156,23 +157,27 @@ route, clearance and intended safe return to normal flight before launch. Use
 an elevated sprite/shadow relationship plus a symbol/text indicator, retaining
 readability with reduced motion. Screen-up remains north, not ascent.
 
-Before implementation, settle and test:
+Implemented rules and verification boundaries:
 
-- Whether a lift lasts a fixed distance or tick count, its bounds, and whether
-  another signal can renew it. No indefinite hovering or unbounded chaining.
-- How normal flight resumes, especially if a wall or closed shutter occupies
-  the intended landing cell. Define a predictable blocked-landing response;
-  do not teleport, clip through solids or imply safety the preview cannot prove.
-- Contact priority and interactions with turn dances, bounce, wind, spray,
-  covers, moving machinery and destinations. Height alone grants no unstated
-  spray immunity, and ordinary flight must still obey existing obstacle rules.
-- The lift helper's own release and rescue route, conserved population and
-  finite supplies, including pause, undo and failed placement.
+- Distance is consumed by movement, including wind displacement. Tall barriers
+  and closed gates bounce bees at either height. Low barriers allow high flight;
+  descending inside one causes a landing loss. A different lift signal can
+  renew the allowance; one continuous visit does not renew it every tick.
+- Flowers, pollen and rally points require normal flight. Ordinary water stays
+  safe at either height but cannot host a dancer. Spray remains dangerous at
+  either height; low obstacles do not act as roofs over a spray lane.
+- A released lift helper receives its own six-cell allowance. It may still
+  need another lift farther along the route, so downstream helpers must remain
+  until upstream bees can escape. Finite dance supplies and population remain
+  conserved; releasing a helper does not refund a used dance.
+- The sprite's offset shadow, height symbol and remaining-distance bar expose
+  the state. Inspection reports remaining distance and landing losses. These
+  cues support playtesting; they are not a claim that a route preview proves safety.
 
-Add explicit versioned flight-state and obstacle-clearance data to the shared
-engine, builder, previews and replay only after the prototype rules are chosen.
-Preserve versions 1–6; unknown dance types must be rejected, never interpreted
-as another dance. Publication waits for matching server verification support.
+Version 8 stores explicit lift state and low/tall obstacle clearance. The builder
+authors both, and replay/serialization tests cover them. All built-in maps and
+new workshop gardens use this ruleset. Older internal fixtures are not a second
+playable campaign. Community publication still waits for matching server support.
 
 ## Initial object palette
 

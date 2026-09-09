@@ -262,7 +262,7 @@ export default function GameSession({
           disabled={
             run.phase === "finished" ||
             (!run.bees.some((bee) => bee.perchId === selected.id) &&
-              (!eligibleBee(run, selected) ||
+              (!eligibleBee(run, selected, level.rulesVersion >= 8) ||
                 counts.assigned >= level.guideLimit))
           }
           onClick={() =>
@@ -283,14 +283,14 @@ export default function GameSession({
               : "Assign guide"}
         </Button>
         {!run.bees.some((bee) => bee.perchId === selected.id) &&
-          (!eligibleBee(run, selected) ||
+          (!eligibleBee(run, selected, level.rulesVersion >= 8) ||
             counts.assigned >= level.guideLimit) && (
             <p className="ww-caption">
               {counts.assigned >= level.guideLimit
                 ? "All helper jobs are occupied. Release a helper to free a job."
-                : eligibleBee(run, selected)
+                : eligibleBee(run, selected, level.rulesVersion >= 8)
                   ? "A bee is available for this helper job."
-                  : "Wait for a flying bee to come within one cell of this piece."}
+                  : "A flying or waiting bee must be within one cell of this piece."}
             </p>
           )}
       </div>
@@ -640,11 +640,13 @@ export default function GameSession({
                   const danceName =
                     stock.dance === "point"
                       ? "Point"
-                      : stock.dance === "reverse"
-                        ? "Reverse"
-                        : stock.dance === "left"
-                          ? "Left 90°"
-                          : "Right 90°";
+                      : stock.dance === "lift"
+                        ? "Lift · 6 cells"
+                        : stock.dance === "reverse"
+                          ? "Reverse"
+                          : stock.dance === "left"
+                            ? "Left 90°"
+                            : "Right 90°";
                   return (
                     <ToolTrayButton
                       key={stock.id}
@@ -678,9 +680,11 @@ export default function GameSession({
                         <span>
                           {stock.dance === "point"
                             ? "Point"
-                            : stock.dance === "reverse"
-                              ? "Reverse"
-                              : `${stock.dance} 90°`}
+                            : stock.dance === "lift"
+                              ? "Lift · 6 cells"
+                              : stock.dance === "reverse"
+                                ? "Reverse"
+                                : `${stock.dance} 90°`}
                         </span>
                       )}
                     </ToolTrayButton>
@@ -776,6 +780,12 @@ export default function GameSession({
                 {selected ? OBJECT_LABELS[selected.kind] : "Tap a piece"}
               </span>
               {helperAction}
+              {selected?.kind === "switch" && (
+                <p className="ww-caption">
+                  Assign an operator here to hold its gate open, even across a
+                  closed gate. Keep it working until the swarm has passed.
+                </p>
+              )}
             </div>
           )}
           <GamePanel compact={gridPlay} title="Tool options" inlineLegacy>
@@ -871,6 +881,8 @@ export default function GameSession({
                       <p className="ww-caption">
                         {selected.dance === "point"
                           ? "Points passing bees along the arrow once per entry. The arrow also sets this helper's release direction."
+                          : selected.dance === "lift"
+                            ? "Lifts passing bees for six traveled cells without changing their heading. They cross low barriers, but tall barriers still block and spray remains dangerous. Leave clear landing space: descending inside a low barrier loses the bee. On release, this helper gets its own six-cell lift along the last bee's heading."
                           : `Turns passing bees ${selected.dance === "reverse" ? "around" : `${selected.dance} 90°`} once per entry. ${level.rulesVersion >= 7 ? "On release, the helper follows the last bee it guided. Before guiding anyone, it turns its arrival heading by its dance." : "The arrow sets this helper's release direction."}`}{" "}
                         Release after launch does not refill the dance supply.
                       </p>
@@ -1113,6 +1125,12 @@ export default function GameSession({
                   {bee.signalId ? `; following ${bee.signalId}` : ""}
                   {bee.perchId ? `; at ${bee.perchId}` : ""}
                   {bee.lossReason === "rain" ? "; caught in rain" : ""}.
+                  {(bee.liftRemaining ?? 0) > 0
+                    ? ` High flight; ${(bee.liftRemaining! / 1000).toFixed(1)} cells until descent.`
+                    : ""}
+                  {bee.lossReason === "landing"
+                    ? " Descended into a low obstacle."
+                    : ""}
                 </p>
               ))}
             </div>

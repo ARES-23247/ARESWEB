@@ -1,6 +1,6 @@
 # Waggle Way planning index
 
-Status: 2026-09-08 development batch. One 30-level version-7 campaign replaces
+Status: 2026-09-08 development batch. One 30-level version-8 campaign replaces
 the old two-campaign menu. Five teaching gardens lead into 25 all-bee challenges.
 The workshop creates current-rule maps; no archived edition is offered. See
 [the current campaign](CURRENT_CAMPAIGN.md) for the actual levels and bounded
@@ -30,11 +30,11 @@ control. Pointing dancers retain their arrows. See
 [guide rules](GAME_DESIGN.md#temporary-guides) and the
 [slice review tasks](PLAYTEST.md#new-dancer-and-bounce-review).
 
-Latest later-mechanic suggestion: a limited **lift dancer** signals temporary
-higher flight over marked barriers. See the
-[clearance and landing proposal](GAME_DESIGN.md#later-lift-dancer-proposal)
-and WW-21 in the requirements. Prototype in phase 3 after the current slice
-review; this is documented direction, not an implemented fifth dance.
+The accepted **lift dancer** now grants six traveled cells of higher flight over
+low barriers, with explicit landing and helper-release rules. See the
+[lift rules](GAME_DESIGN.md#lift-dancer-rules) and the
+[level-quality audit](LEVEL_QUALITY_AUDIT.md) for redesigned routes, solution
+evidence and remaining browser/human review. The current batch is not deployed.
 
 The finite-use refund policy and exact bounce response are prototype defaults
 to validate, not additional user-approved decisions. Larger boards and a panning play camera are now part of the first challenge

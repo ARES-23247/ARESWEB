@@ -59,7 +59,7 @@ treatment across the campaign. Track human review separately from automated chec
 
 Prototype the user's later lift-dancer suggestion (WW-21): a limited helper
 signals a short higher-flight crossing over marked barriers. Follow the
-[lift design](GAME_DESIGN.md#later-lift-dancer-proposal) to settle clearance,
+[lift design](GAME_DESIGN.md#lift-dancer-rules) to settle clearance,
 duration, blocked landing, other hazards and helper rescue. Keep the top-down
 camera and ordinary water flyability. This is a later experiment after slice
 review, with matching versioned builder/preview/replay support if retained.

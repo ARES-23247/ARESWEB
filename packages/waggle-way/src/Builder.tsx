@@ -63,7 +63,7 @@ import {
 import "./waggle-way.css";
 
 function newGarden(): LevelDefinition {
-  const blank = createBlankLevel(7);
+  const blank = createBlankLevel(8);
   blank.inventory = [
     {
       id: "pointing-dancer",
@@ -221,6 +221,9 @@ export default function Builder({
           : {}),
         ...(selected.kind === "dancer"
           ? { dance: String(data.get("dance")) as DanceType }
+          : {}),
+        ...(selected.kind === "terrain" && level.rulesVersion >= 8
+          ? { elevation: String(data.get("elevation")) as "low" | "tall" }
           : {}),
         ...(selected.kind === "sprinkler"
           ? {
@@ -711,15 +714,34 @@ export default function Builder({
                     <label>
                       Dance type
                       <select name="dance" defaultValue={selected.dance}>
-                        {DANCE_TYPES.map((dance) => (
+                        {DANCE_TYPES.filter(
+                          (dance) =>
+                            dance !== "lift" || level.rulesVersion >= 8,
+                        ).map((dance) => (
                           <option key={dance} value={dance}>
                             {dance === "point"
                               ? "Point a direction"
-                              : dance === "reverse"
-                                ? "Reverse 180°"
-                                : `Turn ${dance} 90°`}
+                              : dance === "lift"
+                                ? "Lift · six cells"
+                                : dance === "reverse"
+                                  ? "Reverse 180°"
+                                  : `Turn ${dance} 90°`}
                           </option>
                         ))}
+                      </select>
+                    </label>
+                  )}
+                  {selected.kind === "terrain" && level.rulesVersion >= 8 && (
+                    <label>
+                      Obstacle height
+                      <select
+                        name="elevation"
+                        defaultValue={selected.elevation ?? "tall"}
+                      >
+                        <option value="tall">
+                          Tall wall · blocks all flight
+                        </option>
+                        <option value="low">Low obstacle · lift over it</option>
                       </select>
                     </label>
                   )}

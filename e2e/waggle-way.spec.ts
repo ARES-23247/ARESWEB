@@ -413,7 +413,7 @@ test("dancer workshop authors mixed dances and preserves them through a winning 
   };
   const before = await exportDraft();
   const authored = parseLevelFile(before);
-  expect(authored.rulesVersion).toBe(7);
+  expect(authored.rulesVersion).toBe(8);
   expect(
     authored.objects.find((object) => object.kind === "dancer"),
   ).toMatchObject({ x: 6, y: 4, dance: "reverse", direction: 6, range: 1 });
@@ -1066,7 +1066,7 @@ test("current garden authored supplies survive testing and export", async ({
     .click();
   const raw = await readFile((await (await downloaded).path())!, "utf8");
   const exported = JSON.parse(raw);
-  expect(exported.schemaVersion).toBe(7);
+  expect(exported.schemaVersion).toBe(8);
   expect(
     exported.inventory.find((tool: { id: string }) => tool.id === "supply-1")
       .count,
@@ -1458,7 +1458,7 @@ test("pollen and a garden theme survive authoring, delivery and reopening", asyn
   const file = await downloadWait;
   const exported = JSON.parse(await readFile((await file.path())!, "utf8"));
   expect(exported).toMatchObject({
-    schemaVersion: 7,
+    schemaVersion: 8,
     theme: "wildflower",
     objectives: { pollen: 1 },
   });
@@ -1637,6 +1637,14 @@ test("garden library exposes challenges and readable level numbers", async ({
   await expect(
     page.getByRole("heading", { name: "Open Sesame" }),
   ).toBeFocused();
+  await expect(
+    page.getByText("Assign an operator here to hold its gate open", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Assign operator", exact: true }),
+  ).toBeEnabled();
   await chooser.click();
   await page.keyboard.press("Escape");
   await expect(chooser).toBeFocused();
@@ -1712,6 +1720,231 @@ async function placeFirstDancer(page: Page, column = 10) {
   await page
     .getByRole("button", { name: "Close place precisely", exact: true })
     .click();
+}
+
+test("lift crosses low terrain and rescues its helper through real controls", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90000);
+  await page.goto("/waggle-way");
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
+  await openMap(page);
+  await page
+    .getByRole("dialog", { name: "Adventure gardens" })
+    .getByRole("button", { name: /Across the Pond/ })
+    .click();
+  for (const [stock, x, y] of [
+    ["lift-dancer", 4, 16],
+    ["left-dancer", 10, 16],
+    ["right-dancer", 9, 4],
+  ] as const) {
+    await showDetails(page, /^Place precisely$/);
+    await page
+      .getByRole("combobox", { name: "Supplied tool", exact: true })
+      .selectOption(stock);
+    await page
+      .getByLabel("Tool placement column", { exact: true })
+      .fill(String(x));
+    await page
+      .getByLabel("Tool placement row", { exact: true })
+      .fill(String(y));
+    await page
+      .getByRole("button", { name: "Place supplied tool", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Close place precisely", exact: true })
+      .click();
+    if (stock === "lift-dancer") {
+      await showDetails(page, /^Tool options$/);
+      await showDetails(page, /^Dance rules$/);
+      await expect(page.locator(".ww-dance-rules")).toContainText(
+        "six traveled cells without changing their heading",
+      );
+      await expect(page.locator(".ww-dance-rules")).not.toContainText("90°");
+      await page
+        .getByRole("button", { name: "Close tool options", exact: true })
+        .click();
+    }
+  }
+  await expect(page.locator(".ww-stats")).toContainText("3 Helpers");
+  await page
+    .getByRole("combobox", { name: "Speed", exact: true })
+    .selectOption("3");
+  await page.getByRole("button", { name: "Open hive", exact: true }).click();
+  await expect(page.locator('[data-altitude="high"]').first()).toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(
+    page.locator('[data-altitude="high"] title').first(),
+  ).toContainText("cells until descent");
+  await page
+    .locator(".ww-game-window")
+    .screenshot({ path: testInfo.outputPath("lift-shadow-and-height.png") });
+  await page.getByRole("button", { name: "Resume", exact: true }).click();
+  for (const [id, rescued] of [
+    ["placed-1", 5],
+    ["placed-2", 6],
+    ["placed-3", 7],
+  ] as const) {
+    await expect(page.locator(".ww-stats")).toContainText(`${rescued}/8`, {
+      timeout: 25000,
+    });
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    await showDetails(page, /choose another/);
+    await page
+      .getByRole("combobox", { name: "Inspect object", exact: true })
+      .selectOption(id);
+    await page
+      .getByRole("button", { name: "Close tool options", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Release guide", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+  }
+  await expect(
+    page.getByText("8 bees reached the flowers.", { exact: true }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(page.locator(".ww-stats")).toContainText("0 Lost");
+});
+
+for (const storm of [false, true]) {
+  test(`${storm ? "After the Storm" : "Rooftop Relay"} recruits a final dancer from the regrouped hive`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(150000);
+    await page.goto("/waggle-way");
+    await page
+      .getByRole("button", { name: "Play gardens", exact: true })
+      .click();
+    await openMap(page);
+    await page
+      .getByRole("dialog", { name: "Adventure gardens" })
+      .getByRole("button", {
+        name: storm ? /After the Storm/ : /Rooftop Relay/,
+      })
+      .click();
+    const select = async (id: string) => {
+      await showDetails(page, /choose another/);
+      await page
+        .getByRole("combobox", { name: "Inspect object", exact: true })
+        .selectOption(id);
+      await page
+        .getByRole("button", { name: "Close tool options", exact: true })
+        .click();
+    };
+    const place = async (stock: string, x: number, y: number) => {
+      await showDetails(page, /^Place precisely$/);
+      await page
+        .getByRole("combobox", { name: "Supplied tool", exact: true })
+        .selectOption(stock);
+      await page
+        .getByLabel("Tool placement column", { exact: true })
+        .fill(String(x));
+      await page
+        .getByLabel("Tool placement row", { exact: true })
+        .fill(String(y));
+      await page
+        .getByRole("button", { name: "Place supplied tool", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Close place precisely", exact: true })
+        .click();
+    };
+    const releaseRally = async (id: string) => {
+      await select(id);
+      await showDetails(page, /^Tool options$/);
+      await page
+        .getByRole("button", { name: "Release rally", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Close tool options", exact: true })
+        .click();
+    };
+    for (const id of ["switch-1", "switch-2"]) {
+      await select(id);
+      await page
+        .getByRole("button", { name: "Assign operator", exact: true })
+        .click();
+    }
+    await place("left-dancer", 25, storm ? 24 : 22);
+    await place("right-dancer", 24, storm ? 9 : 7);
+    if (storm) await place("leaf-cover", 12, 11);
+    await expect(page.locator(".ww-stats")).toContainText("4 Helpers");
+    await page
+      .getByRole("combobox", { name: "Speed", exact: true })
+      .selectOption("3");
+    await page.getByRole("button", { name: "Open hive", exact: true }).click();
+    let waiting = 4;
+    for (const id of ["switch-1", "switch-2", "placed-1", "placed-2"]) {
+      await expect(page.locator(".ww-stats")).toContainText(
+        `${waiting} Waiting`,
+        { timeout: 35000 },
+      );
+      await page.getByRole("button", { name: "Pause", exact: true }).click();
+      await select(id);
+      await page
+        .getByRole("button", {
+          name: id.startsWith("switch") ? "Release operator" : "Release guide",
+          exact: true,
+        })
+        .click();
+      await page.getByRole("button", { name: "Resume", exact: true }).click();
+      waiting++;
+    }
+    await expect(page.locator(".ww-stats")).toContainText("8 Waiting", {
+      timeout: 25000,
+    });
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    if (storm) {
+      await select("placed-3");
+      await showDetails(page, /^Precise position$/);
+      await page.getByLabel("Move to column", { exact: true }).fill("29");
+      await page.getByLabel("Move to row", { exact: true }).fill("2");
+      await page
+        .getByRole("button", { name: "Move tool", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Close tool options", exact: true })
+        .click();
+      await releaseRally("rally-1");
+      await page.getByRole("button", { name: "Resume", exact: true }).click();
+      await expect(page.locator(".ww-stats")).not.toContainText("8 Waiting");
+      await expect(page.locator(".ww-stats")).toContainText("8 Waiting", {
+        timeout: 25000,
+      });
+      await page.getByRole("button", { name: "Pause", exact: true }).click();
+    }
+    await place("left-dancer", storm ? 37 : 35, storm ? 10 : 8);
+    await expect(page.locator(".ww-stats")).toContainText("7 Waiting");
+    await expect(page.locator(".ww-stats")).toContainText("1 Helpers");
+    await page
+      .getByRole("button", { name: "Find helper (8)", exact: true })
+      .click();
+    await expect(page.locator(".ww-scene .ww-selected")).toBeInViewport();
+    expect(
+      await page
+        .locator(".ww-camera-viewport")
+        .evaluate((element) => element.scrollLeft),
+    ).toBeGreaterThan(0);
+    await page
+      .locator(".ww-game-window")
+      .screenshot({ path: testInfo.outputPath("waiting-bee-recruited.png") });
+    await releaseRally(storm ? "rally-2" : "rally-1");
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+    await expect(page.locator(".ww-stats")).toContainText("7/8", {
+      timeout: 20000,
+    });
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    await select(storm ? "placed-4" : "placed-3");
+    await page
+      .getByRole("button", { name: "Release guide", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+    await expect(
+      page.getByText("8 bees reached the flowers.", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(page.locator(".ww-stats")).toContainText("0 Lost");
+  });
 }
 
 test("Rain Check reuses one shelter after rescuing its operator and brings every helper home", async ({

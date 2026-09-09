@@ -286,7 +286,7 @@ export function PixelObjectArt({
   object,
   state = "closed",
 }: {
-  object: Pick<GardenObject, "kind" | "width" | "height">;
+  object: Pick<GardenObject, "kind" | "width" | "height" | "elevation">;
   state?: string;
 }) {
   const id = `pixel-${useId().replace(/:/g, "")}`;
@@ -301,7 +301,20 @@ export function PixelObjectArt({
           <defs>
             <pattern id={id} width="1" height="1" patternUnits="userSpaceOnUse">
               <g transform="scale(.0625)">
-                <Sprite rows={sprites[kind]} />
+                {kind === "terrain" && object.elevation === "low" ? (
+                  <>
+                    <rect width="16" height="16" fill="#344b43" />
+                    <rect x="1" y="4" width="14" height="8" fill="#172a2b" />
+                    <rect x="2" y="5" width="12" height="5" fill="#d8b878" />
+                    <path
+                      d="M3 9H13M6 5V10M10 5V10"
+                      stroke="#715334"
+                      strokeWidth="1"
+                    />
+                  </>
+                ) : (
+                  <Sprite rows={sprites[kind]} />
+                )}
               </g>
             </pattern>
           </defs>

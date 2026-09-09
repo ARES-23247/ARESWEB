@@ -1,5 +1,13 @@
 # Waggle Way roadmap and decisions
 
+Current priority, 2026-09-08: complete the version-8 level-quality batch described
+in [CURRENT_CAMPAIGN.md](CURRENT_CAMPAIGN.md) and
+[LEVEL_QUALITY_AUDIT.md](LEVEL_QUALITY_AUDIT.md). Lift and low/tall obstacles are
+implemented in development; staged helper jobs and distinct route choices now
+replace repetitive advanced layouts. Finish browser and release verification
+before PR delivery. No deployment is authorized for this goal. Milestones below
+are historical planning context where they conflict with this current scope.
+
 Status: implementation active, 2026-09-06. M0–M3 foundations are implemented;
 acceptance remains in progress. The M4 five-level slice is implemented with
 playtest and accessibility acceptance still open. M5a–M5d have thirty playable puzzles, shelter/tool supplies,

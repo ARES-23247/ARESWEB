@@ -38,7 +38,7 @@ export function rainZones(
   const blockers = objects.filter(
     (object) =>
       (object.kind === "shelter" ||
-        object.kind === "terrain" ||
+        (object.kind === "terrain" && object.elevation !== "low") ||
         (object.kind === "gate" && !openGates.includes(object.id))) &&
       object.x < right &&
       object.x + object.width > left &&

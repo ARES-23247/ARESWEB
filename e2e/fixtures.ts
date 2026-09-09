@@ -15,6 +15,16 @@ export const test = base.extend<AresFixtures>({
   page: async ({ page }, use) => {
     const clientFailures: string[] = [];
 
+    // Synthetic auth identities must not depend on a third-party avatar service.
+    // Leave real avatar URLs untouched so their behavior can still be tested.
+    await page.route(/^https:\/\/api\.dicebear\.com\/9\.x\/bottts\/svg\?seed=(admin|coach|mentor|member)(@|%40)example\.test$/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><rect width="48" height="48" fill="#243b3b"/><circle cx="24" cy="18" r="8" fill="#f5c451"/><path d="M8 44a16 16 0 0 1 32 0" fill="#f5c451"/></svg>',
+      }),
+    );
+
     // Incidental shared-layout and public-page requests get explicit truthful
     // empty responses. Individual tests can register later routes to override
     // these defaults when the response itself is under test.

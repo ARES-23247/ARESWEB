@@ -30,7 +30,7 @@ function garden(
   width = 24,
   height = 16,
 ) {
-  const editor = begin(number, title, instructions, "route", 7);
+  const editor = begin(number, title, instructions, "route", 8);
   return editLevel(editor, {
     ...editor.level,
     width,
@@ -46,7 +46,7 @@ function garden(
 let sesame = garden(
   6,
   "Open Sesame",
-  "Bring all eight bees home. A switch operator opens the shutter; a left dancer provides the final turn. Plan the operator's route before releasing either helper.",
+  "Before opening the hive, select the purple switch beyond the shutter and choose Assign operator. You can assign a bee across a closed shutter; the operator holds it open. Place your left dancer beyond the switch, directly below the flowers. Open the hive. Once the swarm is home, release the switch operator first, then release the dancer after the operator reaches the flowers. Use Fit to see the whole garden.",
 );
 sesame = updateObject(sesame, "hive", { y: 12 });
 sesame = updateObject(sesame, "flowers", { x: 19, y: 2, width: 3, height: 3 });
@@ -129,7 +129,7 @@ export const TWO_WET_CROSSINGS = exported(spray);
 let escape = garden(
   11,
   "Glasshouse Escape",
-  "Bring the whole hive through two shutters and a spray crossing. Use the rally to stage the departure. Keep each operator's exit open, protect the final crossing, and release the dancer last.",
+  "Bring the whole hive through two shutters and a spray crossing. Keep each operator's exit open, protect the final crossing, and release the dancer last.",
   32,
   20,
 );
@@ -144,7 +144,6 @@ escape = piece(escape, "switch", 14, 16);
 escape = piece(escape, "switch", 24, 16);
 escape = piece(escape, "gate", 10, 0, { height: 20 });
 escape = piece(escape, "gate", 20, 0, { height: 20, switchId: "switch-2" });
-escape = piece(escape, "rally", 6, 16);
 escape = piece(escape, "sprinkler", 26, 4, {
   width: 3,
   range: 14,

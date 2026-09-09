@@ -7,7 +7,7 @@ let editor = begin(
   "First Waggle",
   "Drag a pointing dancer onto the flight path below the flowers. Its arrow points north. Open the hive, then release the dancer once the others are home. The pond is safe to fly over.",
   "pixel",
-  7,
+  8,
 );
 editor = updateObject(editor, "hive", { x: 2, y: 7 });
 editor = updateObject(editor, "flowers", { x: 9, y: 1, width: 3, height: 2 });
@@ -33,7 +33,7 @@ editor = editLevel(editor, {
 editor = piece(editor, "water", 4, 7, { width: 3 });
 editor = piece(editor, "terrain", 14, 5, { height: 4 });
 
-/** Independent current-rule slice; legacy definitions and progress are preserved. */
+/** First lesson in the current campaign ruleset. */
 export const FIRST_FLIGHT = exported(editor);
 
 function danceStock(
@@ -56,7 +56,7 @@ function danceStock(
 }
 
 function lesson(number: number, title: string, instructions: string) {
-  let draft = begin(number, title, instructions, "pixel", 7);
+  let draft = begin(number, title, instructions, "pixel", 8);
   draft = updateObject(draft, "flowers", { x: 11, y: 3, width: 3, height: 3 });
   return editLevel(draft, { ...draft.level, width: 16, height: 10 });
 }
@@ -142,7 +142,7 @@ spray = piece(spray, "fan", 1, 7, {
 });
 export const WATCH_THE_SPRAY = exported(spray);
 
-/** Review slice only: it neither replaces nor unlocks the legacy campaign. */
+/** The five introductory lessons shared with the current campaign. */
 export const PRACTICE_GARDENS = [
   FIRST_FLIGHT,
   TWO_TURNS,

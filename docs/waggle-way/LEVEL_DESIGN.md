@@ -1,17 +1,18 @@
 # Waggle Way redesigned level specification
 
 Updated 2026-09-08. The [current campaign](CURRENT_CAMPAIGN.md) is the source of
-truth for the implemented 30-level batch. All built-in levels now use version7;
+truth for the implemented 30-level batch. All built-in levels now use version 8;
 there is no parallel perch campaign. The industrial/honey proposals below remain
 future scope where they differ from that catalogue. Human difficulty acceptance
 is still open.
 
 ## Campaign structure
 
-Target 30 distinct levels. A provisional five-chapter structure keeps six levels
-per chapter: teach, practice, vary, combine, challenge, finale. Urban and machinery
-puzzles build on readable garden rules. Do not author all thirty before reviewing
-one complete pixel-art level and its workshop with the user.
+The current thirty levels follow the chapter breakdown in CURRENT_CAMPAIGN.md.
+Their intended difficulty, changed routes, exact solution placements and bounded
+failure evidence are recorded in LEVEL_QUALITY_AUDIT.md. The table below is the
+earlier environment proposal, not the implemented chapter ordering. Honey
+recovery and active pipe transport remain future scope; lift is now implemented.
 
 | Chapter | Levels | Environment and learning goal |
 | --- | --- | --- |
@@ -149,7 +150,7 @@ inside a relative dance. These variants test rules before wider campaign authori
 After the slice review, prototype one safe crossing over a clearly marked
 normal-flight barrier, with one lift allowance and a visible clear landing.
 Contrast it with nearby flyable ground scenery and a tall obstacle that still
-blocks lifted bees. Follow the [lift rules](GAME_DESIGN.md#later-lift-dancer-proposal);
+blocks lifted bees. Follow the [lift rules](GAME_DESIGN.md#lift-dancer-rules);
 do not introduce lift, a new vent type and a timed spray in the same lesson.
 
 If retained, revise an existing rooftop brief (for example level 16, Service

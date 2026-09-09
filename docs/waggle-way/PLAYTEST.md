@@ -1,10 +1,51 @@
 # Waggle Way campaign playtest record
 
-Updated: 2026-09-08. Current scope: five version-7 learning gardens, six
-Glasshouse challenges and the local workshop. The 30 original gardens remain
-separately accessible with their earlier rules. This record distinguishes human
-feedback, automated verification and historical evidence. A structured
-screen-reader session has not been completed.
+Updated: 2026-09-08. Current scope: one thirty-level version-8 campaign and the
+local workshop. No original-map campaign is exposed. The accepted height
+mechanic and quality redesign are documented in CURRENT_CAMPAIGN.md and
+LEVEL_QUALITY_AUDIT.md. This record distinguishes human feedback, automated
+verification and historical evidence. A structured screen-reader session has
+not been completed. Sections below the current review are historical feedback,
+not a description of today's campaign chooser or release status.
+
+## Current level-quality review
+
+Automated playthroughs exercise actual placement, pause, helper release,
+waiting-bee recruitment, shelter movement and camera controls. Engine solutions
+and targeted negative probes are separate evidence. Neither establishes that
+players find a puzzle enjoyable or its difficulty label accurate.
+
+Human review questions for the current batch:
+
+- Open Sesame: after the operator explanation was added beside the controls,
+  can a new player open the gate and recover both helpers without a walkthrough?
+- Across the Pond and Bring Everyone: is the six-cell lift and its landing
+  space understandable, and is the helper's own crossing predictable?
+- Crosswinds: can the player see that the gust moves the lane without changing
+  heading, and place a dancer to catch it?
+- The Long Way Home, High Road Low Road and Pollen on the Side: do the pollen
+  choices feel worthwhile without obscuring the basic rescue?
+- Rooftop Relay, Factory Entrance and After the Storm: does regrouping make
+  recruitment deliberate, and is it clear when a shelter can safely move?
+- All Together and Field of Flowers: are the stages distinct and satisfying,
+  or do the waits and repeated controls feel tedious? Can a phone player find
+  every helper and complete the plan without fighting the camera?
+
+Keep teaching levels approachable. Change geometry or resource tradeoffs when
+feedback reveals an uninteresting shortcut; do not add arbitrary timing pressure
+or declare a puzzle hard merely because it is large. Record the exact level,
+route and misunderstanding before revising it.
+
+### Gate tutorial feedback — 2026-09-09
+
+The player could not solve level 6, Open Sesame. Their screenshot showed a
+dancer before the closed gate and seven lost bees. The mission now explains
+assigning an operator to the purple switch before launch, even across the closed
+gate, placing the turn beyond the switch and releasing the operator before the
+dancer. A short explanation also appears beside the selected switch controls.
+An automated mobile Chromium playthrough rescued all eight through real controls;
+its cue and completion screenshots were inspected. This proves the explained
+route works, not that a new player will discover it unaided.
 
 ## Garden library and numeral feedback — 2026-09-08
 

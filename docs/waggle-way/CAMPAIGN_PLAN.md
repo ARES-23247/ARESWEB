@@ -1,9 +1,11 @@
 # Waggle Way campaign plan
 
 Status: updated 2026-09-08. The [current campaign](CURRENT_CAMPAIGN.md) contains
-30 version-7 levels across five chapters. It supersedes the historical level
+30 version-8 levels across five chapters. It supersedes the historical level
 lists below. The user explicitly rejected two playable rulesets and old-map
 support; the original campaign is removed from gameplay, not offered as an archive.
+The [level-quality audit](LEVEL_QUALITY_AUDIT.md) records the current redesign,
+including lift, staged recruitment, route choices and helper recovery evidence.
 
 ## Redesign priority — 2026-09-07
 
