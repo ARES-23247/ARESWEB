@@ -17,6 +17,9 @@ for (const difficulty of ["easy", "medium", "hard"]) {
     // Keyboard placement works on touch and desktop without a synthetic tap.
     await page.getByRole("button", { name: "F6, empty" }).focus();
     await page.keyboard.press("Enter");
+    // The initial status also says Player 1 to move. Observe the opening move
+    // before waiting for the computer's reply or reloading the saved board.
+    await expect(page.locator('[data-owner="black"]')).toHaveCount(1);
     const status = page.getByRole("status", {
       name: "Current turn",
       exact: true,

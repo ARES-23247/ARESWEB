@@ -1,6 +1,6 @@
 # Waggle Way implementation progress
 
-Updated: 2026-09-08. Current branch: `codex/waggle-level-quality` in the root
+Updated: 2026-09-09. Current branch: `codex/waggle-level-quality` in the root
 checkout, based on a82106c9 from PR #270. This quality batch is not deployed.
 
 ## Level quality and height — 2026-09-08, in progress
@@ -27,10 +27,38 @@ in `scratch/waggle-quality-browser.log` and the retry log. The whole game unit
 run passed 411/412 cases; its workshop focus assertion passed in isolation.
 An additional multi-row, gap-edge two-turn probe for Mind the Branch also passes.
 
+The full frontend coverage run now passes all 1,771 tests, and Functions coverage
+passes all 1,011 tests. Rules, production build, bundle limits, lint and TypeScript
+pass. The dependency audit passes the high-severity threshold with four moderate
+advisories. Full browser verification is still running; it found three workshop
+assertions expecting version 7 instead of the current version 8, now corrected.
+
+Human feedback on level 6 identified an unclear gate introduction. The mission
+now explains remote operator assignment before launch and the helper recovery
+order; a visible explanation accompanies the switch controls. Its 18 focused
+challenge tests pass. A real mobile Chromium playthrough on the development
+preview rescued all eight bees using those controls; screenshot review confirmed
+the cue is readable outside the menus. Evidence is in `scratch/gate-tutorial/`
+and `scratch/check-gate-tutorial.mjs`. This does not establish unaided human
+tutorial acceptance.
+
+Draft [PR #271](https://github.com/ARES-23247/ARESWEB/pull/271) is stacked on
+the still-open PR #270. Non-deploying CI run
+[34307729174](https://github.com/ARES-23247/ARESWEB/actions/runs/34307729174)
+checks the follow-up commit `cf5817f2`; its result is pending.
+
+Follow-up preview checks pass eight desktop/mobile cases covering the corrected
+workshop exports and visible gate cue. The full local browser run also exposed
+a BUZZHEX test race: its initial Player 1 status could satisfy the reply wait
+before the opening move appeared. The test now observes the first black stone
+before waiting for the reply and reloading. Its mobile WebKit case passes in
+isolation; no game behavior or timeout was changed. Final full CI evidence is
+tracked on PR #271 rather than inferred from these focused reruns.
+
 See [the quality audit](LEVEL_QUALITY_AUDIT.md) for exact routes and evidence,
-and [current campaign](CURRENT_CAMPAIGN.md) for intended difficulty. Human
-difficulty feedback, final evidence review, full
-repository verification and PR delivery are outstanding. Everything below
+and [current campaign](CURRENT_CAMPAIGN.md) for intended difficulty. Full
+browser results and the required CI gate are outstanding. Human difficulty
+questions remain explicitly unproven. Everything below
 records earlier batches and must not be read as verification of these changes.
 
 ## One harder campaign — 2026-09-08
