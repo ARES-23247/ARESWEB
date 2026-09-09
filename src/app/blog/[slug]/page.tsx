@@ -194,8 +194,8 @@ export default function BlogPostPage() {
                       ? post.authorAvatar.startsWith("http") ||
                         post.authorAvatar.includes("/")
                         ? post.authorAvatar
-                        : `/favicon.png`
-                      : "/favicon.png"
+                        : `/favicon.svg`
+                      : "/favicon.svg"
                   }
                   alt=""
                   className="w-5 h-5 rounded-full object-cover border border-ares-gold/40"

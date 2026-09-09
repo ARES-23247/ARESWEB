@@ -47,9 +47,9 @@ export function validateEmbedUrl(url?: string): string | undefined {
   if (!url) return undefined;
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "https:" || !EMBED_HOSTS.has(parsed.hostname)) return undefined;
-    const isYouTubeEmbed = parsed.hostname.includes("youtube") && parsed.pathname.startsWith("/embed/");
-    const isVimeoEmbed = parsed.hostname === "player.vimeo.com" && parsed.pathname.startsWith("/video/");
+    if (parsed.protocol !== "https:" || parsed.port || parsed.username || parsed.password || !EMBED_HOSTS.has(parsed.hostname)) return undefined;
+    const isYouTubeEmbed = parsed.hostname.includes("youtube") && /^\/embed\/[A-Za-z0-9_-]{11}$/.test(parsed.pathname);
+    const isVimeoEmbed = parsed.hostname === "player.vimeo.com" && /^\/video\/\d+$/.test(parsed.pathname);
     return isYouTubeEmbed || isVimeoEmbed ? parsed.toString() : undefined;
   } catch {
     return undefined;
@@ -239,17 +239,34 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
               </p>
             );
           }
+          const embed = new URL(safeEmbedUrl);
+          const isYouTube = embed.hostname !== "player.vimeo.com";
+          const watchUrl = isYouTube
+            ? `https://www.youtube.com/watch?v=${embed.pathname.split("/")[2]}`
+            : safeEmbedUrl;
           return (
-            <iframe
-              src={safeEmbedUrl}
-              title={title || "Embedded media"}
-              className="w-full aspect-video rounded-lg my-6 border-none shadow-xl"
-              sandbox="allow-scripts allow-presentation"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-            />
+            <div className="my-6">
+              <iframe
+                src={safeEmbedUrl}
+                title={title || "Embedded media"}
+                className="w-full aspect-video rounded-lg border-none shadow-xl"
+                // Approved external players need their own origin for storage APIs.
+                // Same-site URLs and authored srcDoc/sandbox attributes are rejected.
+                sandbox="allow-scripts allow-same-origin"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+              <a
+                href={watchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block text-ares-gold underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+              >
+                {isYouTube ? "Watch on YouTube" : "Open video in a new tab"}
+              </a>
+            </div>
           );
         },
       }}
