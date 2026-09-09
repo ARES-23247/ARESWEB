@@ -48,6 +48,16 @@ Firebase CLI supports a compatible upstream-fixed dependency, with the CLI and
 emulator tests passing. The current scope is a verified backport, not a claim
 that the installed package version is upstream-fixed.
 
+## Browser verification finding
+
+The initial full local browser run passed 552 of 553 tests. BUZZHEX's hard-mode
+mobile WebKit test failed before its first move: the error snapshot showed the
+New Game dialog reopened and an empty board. The test focused the board before
+the closing dialog's asynchronous focus restoration completed, so Enter could
+activate the restored New Game trigger. The test now waits for that trigger to
+regain focus before focusing the cell. Gameplay code, assertions, timeouts, and
+browser coverage remain unchanged; the final commit requires a fresh CI run.
+
 ## Branch preservation and cleanup rules
 
 - Every linked checkout was clean at inventory time. Preserve ignored local
