@@ -12,9 +12,9 @@ is `adventure.ts`. Existing advanced solutions are in
 `src/test/waggleWayAdvanced.test.ts`; Glasshouse solutions are in
 `src/test/waggleWayChallenges.test.ts`.
 
-The advanced solver places almost every tool before starting, then releases
+At the audited baseline, the advanced solver placed almost every tool before starting, then released
 operators followed by dancers as each preceding group reaches home. Only
-Rain Check and A Place to Wait have explicit staged shelter movement. This is
+Rain Check and A Place to Wait had explicit staged shelter movement. This is
 direct evidence of repetition in the known solutions, not proof that no more
 interesting alternative exists. Increasing map dimensions or helper count
 does not by itself introduce a new decision.
@@ -30,7 +30,7 @@ src/test/waggleWayAdvanced.test.ts src/test/waggleWayChallenges.test.ts
 --maxWorkers=2` passed all 106 tests in 25.13 seconds. This reproduces the known
 solutions and existing negative probes; it does not resolve the weaknesses below.
 
-## Level-by-level review
+## Baseline level-by-level review
 
 “Retain” means preserve the teaching purpose, not skip verification. “Revise”
 means the stated design weakness needs a concrete layout or resource change.
@@ -316,6 +316,26 @@ hazard bypass. Full release verification and the remaining campaign work below
 are still outstanding.
 
 ## Remaining delivery work
+
+Human feedback on Open Sesame: the player could not discover how to open the
+shutter and placed the left dancer before it. The mission now explains that
+selecting the purple switch and choosing Assign operator works across the closed
+shutter, before opening the hive. It also explains the dancer's position beyond
+the switch and the operator-before-dancer rescue order. This is a teaching clarity
+correction, not evidence that the puzzle is too difficult once understood. The
+selected switch now also shows an explanation beside Assign operator, outside
+the collapsed menus. A fresh unaided human attempt remains a playtest question.
+
+Built screenshot review on 2026-09-09 covered the mobile All Together final
+recruitment, desktop Field of Flowers final recruitment, and desktop height
+workshop (the mobile workshop was reviewed in the focused run). The camera
+centers the recruited helper and rally, the status counters and actions are
+readable, and low wooden slats remain distinct from the tall brick barrier.
+These observations are scoped visual evidence, not a full accessibility claim.
+
+The full browser run exposed three stale workshop export assertions expecting
+version 7; new gardens correctly use version 8. Expectations were updated to the
+current contract; the affected browser flows still require rerunning.
 
 - Finish the full browser gate and dependency audit; resolve any failures.
 - Inspect final built screenshots and reconcile the evidence table with results.

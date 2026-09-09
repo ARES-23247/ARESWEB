@@ -33,7 +33,7 @@ editor = editLevel(editor, {
 editor = piece(editor, "water", 4, 7, { width: 3 });
 editor = piece(editor, "terrain", 14, 5, { height: 4 });
 
-/** Independent current-rule slice; legacy definitions and progress are preserved. */
+/** First lesson in the current campaign ruleset. */
 export const FIRST_FLIGHT = exported(editor);
 
 function danceStock(
@@ -142,7 +142,7 @@ spray = piece(spray, "fan", 1, 7, {
 });
 export const WATCH_THE_SPRAY = exported(spray);
 
-/** Review slice only: it neither replaces nor unlocks the legacy campaign. */
+/** The five introductory lessons shared with the current campaign. */
 export const PRACTICE_GARDENS = [
   FIRST_FLIGHT,
   TWO_TURNS,

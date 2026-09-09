@@ -46,7 +46,7 @@ function garden(
 let sesame = garden(
   6,
   "Open Sesame",
-  "Bring all eight bees home. A switch operator opens the shutter; a left dancer provides the final turn. Plan the operator's route before releasing either helper.",
+  "Before opening the hive, select the purple switch beyond the shutter and choose Assign operator. You can assign a bee across a closed shutter; the operator holds it open. Place your left dancer beyond the switch, directly below the flowers. Open the hive. Once the swarm is home, release the switch operator first, then release the dancer after the operator reaches the flowers. Use Fit to see the whole garden.",
 );
 sesame = updateObject(sesame, "hive", { y: 12 });
 sesame = updateObject(sesame, "flowers", { x: 19, y: 2, width: 3, height: 3 });

@@ -780,6 +780,12 @@ export default function GameSession({
                 {selected ? OBJECT_LABELS[selected.kind] : "Tap a piece"}
               </span>
               {helperAction}
+              {selected?.kind === "switch" && (
+                <p className="ww-caption">
+                  Assign an operator here to hold its gate open, even across a
+                  closed gate. Keep it working until the swarm has passed.
+                </p>
+              )}
             </div>
           )}
           <GamePanel compact={gridPlay} title="Tool options" inlineLegacy>

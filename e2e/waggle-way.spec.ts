@@ -413,7 +413,7 @@ test("dancer workshop authors mixed dances and preserves them through a winning 
   };
   const before = await exportDraft();
   const authored = parseLevelFile(before);
-  expect(authored.rulesVersion).toBe(7);
+  expect(authored.rulesVersion).toBe(8);
   expect(
     authored.objects.find((object) => object.kind === "dancer"),
   ).toMatchObject({ x: 6, y: 4, dance: "reverse", direction: 6, range: 1 });
@@ -1066,7 +1066,7 @@ test("current garden authored supplies survive testing and export", async ({
     .click();
   const raw = await readFile((await (await downloaded).path())!, "utf8");
   const exported = JSON.parse(raw);
-  expect(exported.schemaVersion).toBe(7);
+  expect(exported.schemaVersion).toBe(8);
   expect(
     exported.inventory.find((tool: { id: string }) => tool.id === "supply-1")
       .count,
@@ -1458,7 +1458,7 @@ test("pollen and a garden theme survive authoring, delivery and reopening", asyn
   const file = await downloadWait;
   const exported = JSON.parse(await readFile((await file.path())!, "utf8"));
   expect(exported).toMatchObject({
-    schemaVersion: 7,
+    schemaVersion: 8,
     theme: "wildflower",
     objectives: { pollen: 1 },
   });
@@ -1637,6 +1637,14 @@ test("garden library exposes challenges and readable level numbers", async ({
   await expect(
     page.getByRole("heading", { name: "Open Sesame" }),
   ).toBeFocused();
+  await expect(
+    page.getByText("Assign an operator here to hold its gate open", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Assign operator", exact: true }),
+  ).toBeEnabled();
   await chooser.click();
   await page.keyboard.press("Escape");
   await expect(chooser).toBeFocused();
