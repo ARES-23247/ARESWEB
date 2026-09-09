@@ -382,8 +382,12 @@ export default function GardenScene({
             }}
           >
             <title>
-              {OBJECT_LABELS[object.kind]}: {object.id}, column {object.x}, row{" "}
-              {object.y}
+              {object.kind === "terrain"
+                ? object.elevation === "low"
+                  ? "Low obstacle; lift over it"
+                  : "Tall barrier; blocks all flight"
+                : OBJECT_LABELS[object.kind]}
+              : {object.id}, column {object.x}, row {object.y}
             </title>
             {/* Empty pixels still belong to the object's selectable footprint. */}
             <rect
@@ -409,6 +413,20 @@ export default function GardenScene({
                         : "closed"
               }
             />
+            {object.kind === "terrain" && object.elevation === "low" && (
+              <text
+                x=".1"
+                y=".3"
+                fontSize=".25"
+                fill="#fff4d2"
+                stroke="#172a2b"
+                strokeWidth=".04"
+                paintOrder="stroke"
+                pointerEvents="none"
+              >
+                LOW
+              </text>
+            )}
             {object.kind === "dancer" && object.dance !== "point" && (
               <g
                 transform="translate(.12 -.7)"
@@ -416,9 +434,11 @@ export default function GardenScene({
                 data-dance-badge={object.dance}
               >
                 <title>
-                  {object.dance === "reverse"
-                    ? "Reverse 180 degrees"
-                    : `Turn ${object.dance} 90 degrees`}
+                  {object.dance === "lift"
+                    ? "Lift for six traveled cells; descend on clear ground"
+                    : object.dance === "reverse"
+                      ? "Reverse 180 degrees"
+                      : `Turn ${object.dance} 90 degrees`}
                   .{" "}
                   {level.rulesVersion >= 7
                     ? "The helper follows the last bee it guided when released."
@@ -433,11 +453,13 @@ export default function GardenScene({
                 />
                 <path
                   d={
-                    object.dance === "left"
-                      ? "M.57 .48V.2H.2M.32 .08L.2 .2L.32 .32"
-                      : object.dance === "right"
-                        ? "M.19 .48V.2H.56M.44 .08L.56 .2L.44 .32"
-                        : "M.2 .48V.14H.56V.48M.44 .36L.56 .48L.68 .36"
+                    object.dance === "lift"
+                      ? "M.2 .45L.38 .27L.56 .45M.2 .25L.38 .07L.56 .25"
+                      : object.dance === "left"
+                        ? "M.57 .48V.2H.2M.32 .08L.2 .2L.32 .32"
+                        : object.dance === "right"
+                          ? "M.19 .48V.2H.56M.44 .08L.56 .2L.44 .32"
+                          : "M.2 .48V.14H.56V.48M.44 .36L.56 .48L.68 .36"
                   }
                   fill="none"
                   stroke="#efb84a"
@@ -559,22 +581,58 @@ export default function GardenScene({
           <g
             className={`ww-bee${bee.status === "assigned" ? " ww-bee-guiding" : ""}`}
             key={bee.id}
-            transform={`translate(${bee.x / UNITS} ${bee.y / UNITS}) rotate(${bee.direction * 45})`}
+            transform={`translate(${bee.x / UNITS} ${bee.y / UNITS})`}
             pointerEvents="none"
+            data-altitude={(bee.liftRemaining ?? 0) > 0 ? "high" : "normal"}
           >
-            <PixelBee />
-            {run.pollen?.some((token) => token.carrierId === bee.id) && (
-              <rect
-                className="ww-carried-pollen"
-                x="-.4"
-                y=".15"
-                width=".16"
-                height=".16"
-                fill="#ffe09a"
-                stroke="#172a2b"
-                strokeWidth=".03"
-              />
+            <title>
+              Bee {bee.id + 1}:{" "}
+              {(bee.liftRemaining ?? 0) > 0
+                ? `high flight, ${(bee.liftRemaining! / UNITS).toFixed(1)} cells until descent`
+                : "normal flight"}
+            </title>
+            {(bee.liftRemaining ?? 0) > 0 && (
+              <>
+                <ellipse rx=".3" ry=".15" fill="#172a2b" opacity=".6" />
+                <path
+                  d="M0 0V-.35"
+                  stroke="#fff4d2"
+                  strokeWidth=".04"
+                  strokeDasharray=".06 .06"
+                />
+                <rect
+                  x="-.35"
+                  y="-.95"
+                  width=".7"
+                  height=".09"
+                  fill="#172a2b"
+                />
+                <rect
+                  x="-.35"
+                  y="-.95"
+                  width={(0.7 * bee.liftRemaining!) / (6 * UNITS)}
+                  height=".09"
+                  fill="#a4dbd3"
+                />
+              </>
             )}
+            <g
+              transform={`translate(0 ${(bee.liftRemaining ?? 0) > 0 ? -0.5 : 0}) rotate(${bee.direction * 45})`}
+            >
+              <PixelBee />
+              {run.pollen?.some((token) => token.carrierId === bee.id) && (
+                <rect
+                  className="ww-carried-pollen"
+                  x="-.4"
+                  y=".15"
+                  width=".16"
+                  height=".16"
+                  fill="#ffe09a"
+                  stroke="#172a2b"
+                  strokeWidth=".03"
+                />
+              )}
+            </g>
           </g>
         ))}
       {run?.won && (

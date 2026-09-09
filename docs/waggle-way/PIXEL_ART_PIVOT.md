@@ -38,7 +38,7 @@ and chapter details remain subject to the first slice and later playtesting.
 
 Later user suggestion, 2026-09-07: a limited-supply lift dancer can signal a
 short higher-flight crossing over marked barriers. Prototype after slice review;
-see [clearance and landing rules](GAME_DESIGN.md#later-lift-dancer-proposal).
+see [clearance and landing rules](GAME_DESIGN.md#lift-dancer-rules).
 This does not make ordinary water or ground scenery require a special ability.
 
 New user direction, 2026-09-07: dancers can be placed on valid grid cells without

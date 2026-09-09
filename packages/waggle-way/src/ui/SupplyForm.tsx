@@ -106,13 +106,17 @@ export default function SupplyForm({
                 setDraft({ ...draft, dance: event.target.value as DanceType })
               }
             >
-              {DANCE_TYPES.map((dance) => (
+              {DANCE_TYPES.filter(
+                (dance) => dance !== "lift" || level.rulesVersion >= 8,
+              ).map((dance) => (
                 <option key={dance} value={dance}>
                   {dance === "point"
                     ? "Point a direction"
-                    : dance === "reverse"
-                      ? "Reverse 180°"
-                      : `Turn ${dance} 90°`}
+                    : dance === "lift"
+                      ? "Lift · six cells"
+                      : dance === "reverse"
+                        ? "Reverse 180°"
+                        : `Turn ${dance} 90°`}
                 </option>
               ))}
             </select>

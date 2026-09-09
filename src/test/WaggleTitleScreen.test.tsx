@@ -29,7 +29,7 @@ describe("Waggle Way title-to-play flow", () => {
     expect(ADVENTURE_GARDENS).toHaveLength(30);
     expect(new Set(ADVENTURE_GARDENS.map((level) => level.id)).size).toBe(30);
     for (const level of ADVENTURE_GARDENS) {
-      expect(level.rulesVersion).toBe(7);
+      expect(level.rulesVersion).toBe(8);
       expect(level.objects.some((object) => object.kind === "perch")).toBe(
         false,
       );

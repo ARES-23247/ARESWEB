@@ -1,7 +1,37 @@
 # Waggle Way implementation progress
 
-Updated: 2026-09-08. Current branch: `codex/waggle-hard-campaign` in the root
-checkout, based on deployed master e50952b0.
+Updated: 2026-09-08. Current branch: `codex/waggle-level-quality` in the root
+checkout, based on a82106c9 from PR #270. This quality batch is not deployed.
+
+## Level quality and height — 2026-09-08, in progress
+
+The user approved new mechanics where useful and explicitly selected height.
+All thirty built-ins and new workshop gardens now use version 8. Lift grants
+six traveled cells of high flight over low barriers, with visible altitude,
+landing losses and helper-release behavior. Waiting bees can take nearby dancer
+jobs, enabling fair staged recruitment. The advanced campaign now includes
+actual route choices, crosswind displacement, shelter-position and transfer
+decisions, return flights and lift-helper dependencies. The final levels reuse
+jobs instead of preassigning six or seven bees.
+
+The focused engine/campaign suite passes 132 tests. TypeScript passes. Rooftop
+Relay and After the Storm pass desktop/mobile Chromium playthroughs (4/4), as
+does Across the Pond's lift route (2/2). The first capstone run passed both
+desktop cases and mobile All Together; mobile Field of Flowers reached the
+last rescue stage with no losses but exhausted its total test timeout. Its
+allowance was extended. The remaining route batch passed 26/28 cases, including
+both mobile capstones; the first two desktop cases timed out while still flying
+with no losses. Both passed unchanged in an isolated rerun (2/2). Thus all new
+route scenarios have desktop/mobile passing evidence, with the timeouts retained
+in `scratch/waggle-quality-browser.log` and the retry log. The whole game unit
+run passed 411/412 cases; its workshop focus assertion passed in isolation.
+An additional multi-row, gap-edge two-turn probe for Mind the Branch also passes.
+
+See [the quality audit](LEVEL_QUALITY_AUDIT.md) for exact routes and evidence,
+and [current campaign](CURRENT_CAMPAIGN.md) for intended difficulty. Human
+difficulty feedback, final evidence review, full
+repository verification and PR delivery are outstanding. Everything below
+records earlier batches and must not be read as verification of these changes.
 
 ## One harder campaign — 2026-09-08
 

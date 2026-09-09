@@ -54,7 +54,6 @@ const routes: { setup: RunCommand[]; release: string[] }[] = [
       assign("switch-2"),
       place("left-dancer", "guide", 30, 16),
       place("leaf-cover", "cover", 26, 6),
-      { type: "rally", objectId: "rally-1", mode: "release" },
     ],
     release: ["switch-1", "switch-2", "guide"],
   },

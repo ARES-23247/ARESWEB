@@ -30,7 +30,7 @@ function garden(
   width = 24,
   height = 16,
 ) {
-  const editor = begin(number, title, instructions, "route", 7);
+  const editor = begin(number, title, instructions, "route", 8);
   return editLevel(editor, {
     ...editor.level,
     width,
@@ -129,7 +129,7 @@ export const TWO_WET_CROSSINGS = exported(spray);
 let escape = garden(
   11,
   "Glasshouse Escape",
-  "Bring the whole hive through two shutters and a spray crossing. Use the rally to stage the departure. Keep each operator's exit open, protect the final crossing, and release the dancer last.",
+  "Bring the whole hive through two shutters and a spray crossing. Keep each operator's exit open, protect the final crossing, and release the dancer last.",
   32,
   20,
 );
@@ -144,7 +144,6 @@ escape = piece(escape, "switch", 14, 16);
 escape = piece(escape, "switch", 24, 16);
 escape = piece(escape, "gate", 10, 0, { height: 20 });
 escape = piece(escape, "gate", 20, 0, { height: 20, switchId: "switch-2" });
-escape = piece(escape, "rally", 6, 16);
 escape = piece(escape, "sprinkler", 26, 4, {
   width: 3,
   range: 14,

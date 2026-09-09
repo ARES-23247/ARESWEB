@@ -9,6 +9,8 @@ import { rainZones, sprinklerPhase } from "./weather";
 export const UNITS = 1000;
 export const TICKS_PER_SECOND = 30;
 export const FLIGHT_SPEED = 60;
+/** Lift lasts six traveled grid cells, independent of simulation/render speed. */
+export const LIFT_DISTANCE = 6 * UNITS;
 export const MAX_SPEED = 180;
 export const DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
   [1000, 0],
@@ -31,8 +33,9 @@ export interface Bee {
   perchId: string | null;
   signalId: string | null;
   danceVisits?: string[];
+  liftRemaining?: number;
   rallyExitId?: string;
-  lossReason?: "rain";
+  lossReason?: "rain" | "landing";
 }
 export type RunCommand =
   | { type: "rally"; objectId: string; mode: "hold" | "release" }
@@ -247,13 +250,16 @@ export function gateState(
 export function eligibleBee(
   state: RunState,
   perch: GardenObject,
+  allowWaiting = false,
 ): Bee | undefined {
   if (state.phase === "setup")
     return state.bees.find((bee) => bee.status === "hive");
   const center = objectCenter(perch);
   return state.bees.find(
     (bee) =>
-      bee.status === "flying" && distanceSquared(bee, center) <= UNITS ** 2,
+      (bee.status === "flying" || (allowWaiting && bee.status === "waiting")) &&
+      (bee.liftRemaining ?? 0) === 0 &&
+      distanceSquared(bee, center) <= UNITS ** 2,
   );
 }
 
@@ -266,6 +272,7 @@ function followsLastBee(level: LevelDefinition, object: GardenObject): boolean {
 }
 
 function danceHeading(direction: Direction, signal: GardenObject): Direction {
+  if (signal.dance === "lift") return direction;
   return signal.dance === "point"
     ? signal.direction
     : (((direction +
@@ -358,12 +365,12 @@ export function applyCommand(
     if (object.kind === "dancer") {
       if (populationCounts(state).assigned >= level.guideLimit)
         return reject("All available dancer jobs are assigned.");
-      const bee = eligibleBee(state, object);
+      const bee = eligibleBee(state, object, level.rulesVersion >= 8);
       if (!bee)
         return reject(
           state.phase === "setup"
             ? "No bees remain in the hive."
-            : "A flying bee must be within one cell of this position.",
+            : "A flying or waiting bee must be within one cell of this position.",
         );
       Object.assign(bee, objectCenter(object), {
         status: "assigned",
@@ -455,12 +462,12 @@ export function applyCommand(
         return reject("This dance use has been spent.");
       if (populationCounts(state).assigned >= level.guideLimit)
         return reject("All available guide jobs are assigned.");
-      const bee = eligibleBee(state, object);
+      const bee = eligibleBee(state, object, level.rulesVersion >= 8);
       if (!bee)
         return reject(
           state.phase === "setup"
             ? "No bees remain in the hive."
-            : "A flying bee must be within one cell of this perch.",
+            : "A flying or waiting bee must be within one cell of this piece.",
         );
       Object.assign(bee, objectCenter(object), {
         status: "assigned",
@@ -488,6 +495,8 @@ export function applyCommand(
       } else {
         bee.status = "flying";
         if (!followsLastBee(level, object)) bee.direction = object.direction;
+        if (object.kind === "dancer" && object.dance === "lift")
+          bee.liftRemaining = LIFT_DISTANCE;
       }
       bee.perchId = null;
       bee.signalId = null;
@@ -619,6 +628,7 @@ function followGuide(
   if (signal?.kind === "dancer") {
     if (!bee.danceVisits?.includes(signal.id)) {
       bee.direction = danceHeading(bee.direction, signal);
+      if (signal.dance === "lift") bee.liftRemaining = LIFT_DISTANCE;
       if (followsLastBee(level, signal)) {
         const helper = state.bees.find(
           (candidate) =>
@@ -684,7 +694,8 @@ function moveBee(
   if (
     state.objects.some(
       (object) =>
-        (object.kind === "terrain" ||
+        ((object.kind === "terrain" &&
+          !(object.elevation === "low" && (bee.liftRemaining ?? 0) > 0)) ||
           (object.kind === "gate" && !openGates.includes(object.id))) &&
         segmentHits(object, bee.x, bee.y, x, y),
     )
@@ -722,18 +733,37 @@ function moveBee(
     (object) =>
       object.kind === "water" && segmentHits(object, bee.x, bee.y, x, y),
   );
+  const distance = Math.hypot(vx, vy);
+  const lift = bee.liftRemaining ?? 0;
+  const landingFraction = lift > 0 ? Math.min(1, lift / distance) : 0;
+  const landingX = bee.x + vx * landingFraction;
+  const landingY = bee.y + vy * landingFraction;
+  if (lift > 0) bee.liftRemaining = Math.max(0, lift - Math.round(distance));
+  const grounded = (bee.liftRemaining ?? 0) === 0;
+  const badLanding =
+    lift > 0 &&
+    grounded &&
+    state.objects.some(
+      (object) =>
+        object.kind === "terrain" &&
+        object.elevation === "low" &&
+        segmentHits(object, landingX, landingY, x, y),
+    );
   const atFlowers = state.objects.some(
     (object) =>
-      object.kind === "flowers" && segmentHits(object, bee.x, bee.y, x, y),
+      grounded &&
+      object.kind === "flowers" &&
+      segmentHits(object, landingX, landingY, x, y),
   );
   const rally = state.objects.find(
     (object) =>
+      grounded &&
       object.kind === "rally" &&
       object.id !== bee.rallyExitId &&
       state.rallies.some(
         (entry) => entry.objectId === object.id && entry.mode === "hold",
       ) &&
-      segmentHits(object, bee.x, bee.y, x, y),
+      segmentHits(object, landingX, landingY, x, y),
   );
   bee.x = x;
   bee.y = y;
@@ -745,7 +775,10 @@ function moveBee(
     y >= level.height * UNITS
   )
     bee.status = "lost";
-  else if (atFlowers) bee.status = "rescued";
+  else if (badLanding) {
+    bee.status = "lost";
+    bee.lossReason = "landing";
+  } else if (atFlowers) bee.status = "rescued";
   else if (rally)
     Object.assign(bee, objectCenter(rally), {
       status: "waiting",
@@ -829,6 +862,7 @@ export function stepRun(level: LevelDefinition, previous: RunState): RunState {
     )
       continue;
     const { x, y } = bee;
+    const liftBeforeMove = bee.liftRemaining ?? 0;
     const wasFlying = bee.status === "flying";
     if (bee.status === "flying") moveBee(bee, state, guides, level, openGates);
     if (rain.some((zone) => segmentHits(zone, x, y, bee.x, bee.y))) {
@@ -838,15 +872,27 @@ export function stepRun(level: LevelDefinition, previous: RunState): RunState {
       bee.signalId = null;
     }
     const finalStatus = bee.status as BeeStatus;
+    const traveled = Math.hypot(bee.x - x, bee.y - y);
+    const groundedFrom =
+      liftBeforeMove > 0 && traveled > 0
+        ? Math.min(1, liftBeforeMove / traveled)
+        : 0;
     for (const token of state.pollen ?? []) {
       if (token.delivered) continue;
       if (token.carrierId === bee.id && bee.status === "lost")
         token.carrierId = null;
       if (
         wasFlying &&
+        (bee.liftRemaining ?? 0) === 0 &&
         bee.status !== "lost" &&
         token.carrierId === null &&
-        segmentHits(pollenObjects.get(token.objectId)!, x, y, bee.x, bee.y)
+        segmentHits(
+          pollenObjects.get(token.objectId)!,
+          x + (bee.x - x) * groundedFrom,
+          y + (bee.y - y) * groundedFrom,
+          bee.x,
+          bee.y,
+        )
       )
         token.carrierId = bee.id;
       if (token.carrierId === bee.id && finalStatus === "rescued") {

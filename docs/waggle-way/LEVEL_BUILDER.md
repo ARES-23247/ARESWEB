@@ -95,16 +95,15 @@ Reject invalid placement with a reason and preserve the last valid state.
 Deleting a referenced object identifies affected connections before completing
 the edit; undo restores both object and connections.
 
-## Later lift-dancer authoring
+## Lift-dancer authoring
 
-The [lift-dancer proposal](GAME_DESIGN.md#later-lift-dancer-proposal) is later
-scope, not a version-6 palette capability. If retained after prototyping, expose
-finite lift supply and explicit obstacle clearance in a new supported format.
-Use distinct grid symbols for flyable scenery, lift-clearable barriers and
-tall/covered blockers. Show the temporary flight route and intended landing
-with the same simulation as play. Validate incompatible clearance/cover data,
-preserve legacy files, and reject unknown dance types. Include create/test/return,
-undo, save/reopen and replay checks for a crossing and its helper's rescue.
+New gardens use version 8 and support finite lift supplies. Terrain properties
+distinguish low obstacles from tall walls; missing clearance means tall. The
+[lift rules](GAME_DESIGN.md#lift-dancer-rules) define six-cell flight, safe
+descent and the helper's own release. Low terrain uses distinct slatted artwork.
+Validation rejects height on non-terrain and lift/height in older formats.
+Create/test/return, undo, save/reopen and replay remain verification requirements;
+the quality audit distinguishes completed checks from pending browser review.
 
 ## Editing and playing are distinct
 

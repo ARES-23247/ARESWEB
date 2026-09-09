@@ -1,10 +1,16 @@
 /** Data-only garden format. Distances in files are grid cells, never pixels. */
 export const LEVEL_VERSION = 5;
 export const RULES_VERSION = 5;
-// Versions 6–7 are explicit redesign formats. Default legacy authoring stays
-// on 5; the New dancer garden action opts into 7 without rewriting older files.
-export type SupportedVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7;
-export const DANCE_TYPES = ["point", "left", "right", "reverse"] as const;
+// New workshop gardens and the campaign explicitly use 8. The default 5 remains
+// the server-verified format for existing internal fixtures and API contracts.
+export type SupportedVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export const DANCE_TYPES = [
+  "point",
+  "left",
+  "right",
+  "reverse",
+  "lift",
+] as const;
 export type DanceType = (typeof DANCE_TYPES)[number];
 export const MAX_LEVEL_BYTES = 256 * 1024;
 export const OBJECT_KINDS = [
@@ -50,6 +56,7 @@ export interface ToolStock {
 }
 
 export interface GardenObject {
+  elevation?: "low" | "tall";
   dance?: DanceType;
   id: string;
   kind: ObjectKind;
@@ -202,7 +209,7 @@ export function validateLevel(value: unknown): LevelDefinition {
     "Level",
   );
   if (
-    ![1, 2, 3, 4, 5, 6, 7].includes(source.schemaVersion as number) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8].includes(source.schemaVersion as number) ||
     source.rulesVersion !== source.schemaVersion
   ) {
     throw new LevelValidationError(
@@ -250,6 +257,7 @@ export function validateLevel(value: unknown): LevelDefinition {
         "switchId",
         "cycle",
         "dance",
+        "elevation",
       ],
       "Garden object",
     );
@@ -290,6 +298,7 @@ export function validateLevel(value: unknown): LevelDefinition {
     if (result.kind === "dancer") {
       if (
         !DANCE_TYPES.includes(object.dance as DanceType) ||
+        (object.dance === "lift" && (source.schemaVersion as number) < 8) ||
         result.width !== 1 ||
         result.height !== 1
       )
@@ -299,6 +308,17 @@ export function validateLevel(value: unknown): LevelDefinition {
       result.dance = object.dance as DanceType;
     } else if (Object.hasOwn(object, "dance")) {
       throw new LevelValidationError("Only dancers may have a dance type.");
+    }
+    if (Object.hasOwn(object, "elevation")) {
+      if (
+        (source.schemaVersion as number) < 8 ||
+        result.kind !== "terrain" ||
+        !["low", "tall"].includes(object.elevation as string)
+      )
+        throw new LevelValidationError(
+          "Only version-8 terrain may have low or tall elevation.",
+        );
+      result.elevation = object.elevation as "low" | "tall";
     }
     if (result.kind === "gate") {
       result.switchId = identifier(object.switchId, "Gate switch ID");
@@ -428,6 +448,7 @@ export function validateLevel(value: unknown): LevelDefinition {
       if (stock.kind === "dancer") {
         if (
           !DANCE_TYPES.includes(stock.dance as DanceType) ||
+          (stock.dance === "lift" && (source.schemaVersion as number) < 8) ||
           stock.width !== 1 ||
           stock.height !== 1
         )

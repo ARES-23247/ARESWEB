@@ -7,7 +7,7 @@ let editor = begin(
   "First Waggle",
   "Drag a pointing dancer onto the flight path below the flowers. Its arrow points north. Open the hive, then release the dancer once the others are home. The pond is safe to fly over.",
   "pixel",
-  7,
+  8,
 );
 editor = updateObject(editor, "hive", { x: 2, y: 7 });
 editor = updateObject(editor, "flowers", { x: 9, y: 1, width: 3, height: 2 });
@@ -56,7 +56,7 @@ function danceStock(
 }
 
 function lesson(number: number, title: string, instructions: string) {
-  let draft = begin(number, title, instructions, "pixel", 7);
+  let draft = begin(number, title, instructions, "pixel", 8);
   draft = updateObject(draft, "flowers", { x: 11, y: 3, width: 3, height: 3 });
   return editLevel(draft, { ...draft.level, width: 16, height: 10 });
 }
