@@ -1,9 +1,11 @@
 import { expect, test } from "./fixtures";
-import { createBlankLevel } from "@ares/waggle-way/level";
+import { createBlankLevel, serializeLevel } from "@ares/waggle-way/level";
 import { replayRun } from "@ares/waggle-way/replay";
 import type { CommunitySubmission } from "@ares/waggle-way/community";
 
-const level = { ...createBlankLevel(), title: "Community clover crossing" };
+// The review API currently accepts format 5; keep its authorization contract
+// fixture explicit and independent of the format-7 game/editor defaults.
+const level = { ...createBlankLevel(5), title: "Community clover crossing" };
 const card = {
   id: "ab8903dc-7888-4e22-a528-493e2a150a21",
   revision: 1,
@@ -52,6 +54,16 @@ test("workshop fullscreen survives a test flight and reviewed submission flow", 
     });
   });
   await page.goto("/waggle-way/builder");
+  await page
+    .locator("summary")
+    .filter({ hasText: "Files and saved gardens" })
+    .click();
+  await page.getByLabel("Import a garden file", { exact: true }).setInputFiles({
+    name: "review-contract.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(serializeLevel(level)),
+  });
+  await page.keyboard.press("Escape");
   const workshop = page.getByRole("region", {
     name: "Waggle Way workshop window",
     exact: true,
@@ -166,7 +178,7 @@ test("community selection stays in the game window and preserves fullscreen and 
     },
   );
   await page.goto("/waggle-way");
-  await page.getByRole("button", { name: "Original gardens", exact: true }).click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   const frame = page.getByRole("region", {
     name: "Waggle Way game window",
     exact: true,
@@ -230,13 +242,13 @@ test("community selection stays in the game window and preserves fullscreen and 
     frame.getByRole("button", { name: "Resume", exact: true }),
   ).toBeVisible();
   await frame
-    .getByRole("button", { name: "Back to story", exact: true })
+    .getByRole("button", { name: "Back to gardens", exact: true })
     .click();
   await expect(
     frame.getByRole("heading", { name: "First Waggle", exact: true }),
   ).toBeFocused();
   await expect(
-    frame.getByRole("button", { name: "Choose level", exact: true }),
+    frame.getByRole("button", { name: "Choose adventure garden", exact: true }),
   ).toBeVisible();
   await expect(frame).toHaveAttribute("data-game-fullscreen", "true");
   await expect(
@@ -262,7 +274,7 @@ test("community filters clear old cursors and replace pages without expanding th
       });
   });
   await page.goto("/waggle-way");
-  await page.getByRole("button", { name: "Original gardens", exact: true }).click();
+  await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   await page
     .getByRole("button", { name: "Community gardens", exact: true })
     .click();

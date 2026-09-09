@@ -19,8 +19,8 @@ import {
   readCommunityRevision,
   type CommunityHead,
 } from "../waggleCommunityDomain";
-import { CAMPAIGN } from "../../../../packages/waggle-way/src/content/campaign";
-import { CAMPAIGN_SOLUTIONS } from "../../../../packages/waggle-way/src/content/solutions";
+import { CAMPAIGN } from "../../../../src/test/fixtures/waggle-way-legacy/campaign";
+import { CAMPAIGN_SOLUTIONS } from "../../../../src/test/fixtures/waggle-way-legacy/solutions";
 
 const id = "a5e8ad6c-f249-44cf-8d5e-f8807b471833";
 const otherId = "78bfcc6d-25e4-463d-98c1-15e6799249ea";

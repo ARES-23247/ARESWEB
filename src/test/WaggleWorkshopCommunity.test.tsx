@@ -11,6 +11,7 @@ import { createCommunityClient } from "@ares/waggle-way/community-client";
 import { applyCommand, createRun, stepRun } from "@ares/waggle-way/engine";
 import { replayRun } from "@ares/waggle-way/replay";
 import { editLevel } from "@ares/waggle-way/editor";
+import { createBlankLevel } from "@ares/waggle-way/level";
 import type { CommunitySubmission } from "@ares/waggle-way/community";
 import WorkshopCommunity from "../../packages/waggle-way/src/ui/WorkshopCommunity";
 import {
@@ -35,7 +36,8 @@ const saved = {
   status: "pending",
   reviewReason: null,
 };
-function setup(ready = true) {
+// Version 5 remains the supported server contract for previously authored files.
+function setup(ready = true, level = createBlankLevel(5)) {
   const fetcher = vi.fn<typeof fetch>();
   const client = createCommunityClient(fetcher);
   const exported = vi.fn();
@@ -48,7 +50,7 @@ function setup(ready = true) {
     allowed?: boolean;
   }) {
     const [state, setState] = useState(() => {
-      let initial = createWorkshop();
+      let initial = createWorkshop(level);
       if (ready) {
         const level = initial.editor.level;
         let run = applyCommand(level, createRun(level), { type: "start" });
@@ -117,6 +119,22 @@ function submit() {
 }
 
 describe("community workshop", () => {
+  it("keeps current-rule gardens local even with winning evidence and an authorized account", () => {
+    const { show, fetcher } = setup(true, createBlankLevel(7));
+    show();
+    open();
+    expect(
+      screen.getByText(
+        /Community publishing for these gardens is not ready yet/,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Submit for review" }),
+    ).toBeDisabled();
+    submit();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("keeps guest work local and requires winning evidence for submission", () => {
     const { show, fetcher } = setup(false);
     const view = show({ allowed: false });
@@ -242,7 +260,7 @@ describe("community workshop", () => {
     const { show, fetcher, exported, loaded } = setup();
     const revision = {
       garden: saved,
-      level: { ...createWorkshop().editor.level, title: saved.title },
+      level: { ...createBlankLevel(5), title: saved.title },
       metadata,
     };
     fetcher.mockResolvedValueOnce(Response.json([saved]));

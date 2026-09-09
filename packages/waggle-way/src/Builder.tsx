@@ -62,6 +62,24 @@ import {
 } from "./workshopState";
 import "./waggle-way.css";
 
+function newGarden(): LevelDefinition {
+  const blank = createBlankLevel(7);
+  blank.inventory = [
+    {
+      id: "pointing-dancer",
+      kind: "dancer",
+      dance: "point",
+      count: 2,
+      width: 1,
+      height: 1,
+      direction: 0,
+      range: 1,
+      strength: 1,
+    },
+  ];
+  return blank;
+}
+
 function downloadFile(filename: string, content: string) {
   const url = URL.createObjectURL(
     new Blob([content], { type: "application/json" }),
@@ -84,7 +102,7 @@ export default function Builder({
   community?: WorkshopCommunityAccess;
   remix?: { source: RemixSource; onClose: () => void };
 }) {
-  const [workshop, setWorkshop] = useState(createWorkshop);
+  const [workshop, setWorkshop] = useState(() => createWorkshop(newGarden()));
   const fullscreen = useGameFullscreen();
   const editor = workshop.editor;
   const testButton = useRef<HTMLButtonElement>(null);
@@ -952,12 +970,12 @@ export default function Builder({
               <Button
                 variant="secondary"
                 onClick={() => {
-                  const blank = createBlankLevel();
+                  const blank = newGarden();
                   blank.id = `garden-${Date.now().toString(36)}`;
                   if (
                     commit(
                       (previous) => editLevel(previous, blank),
-                      "New garden. Undo restores the previous garden.",
+                      "New garden. Bees fly across water, but dancers need dry ground. Turn and reverse helpers follow the last bee they guided. Undo restores the previous garden.",
                       null,
                     )
                   )
@@ -965,36 +983,6 @@ export default function Builder({
                 }}
               >
                 New garden
-              </Button>{" "}
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  const blank = createBlankLevel(7);
-                  blank.id = `dancer-garden-${Date.now().toString(36)}`;
-                  blank.inventory = [
-                    {
-                      id: "pointing-dancer",
-                      kind: "dancer",
-                      dance: "point",
-                      count: 2,
-                      width: 1,
-                      height: 1,
-                      direction: 0,
-                      range: 1,
-                      strength: 1,
-                    },
-                  ];
-                  if (
-                    commit(
-                      (previous) => editLevel(previous, blank),
-                      "New dancer garden. Bees fly across water, but dancers need dry ground. Turn and reverse helpers follow the last bee they guided. Undo restores the previous garden.",
-                      null,
-                    )
-                  )
-                    setSelectedId("hive");
-                }}
-              >
-                New dancer garden
               </Button>{" "}
               {level.rulesVersion === 6 && (
                 <Button

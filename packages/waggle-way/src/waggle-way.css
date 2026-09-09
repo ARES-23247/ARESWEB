@@ -1686,9 +1686,6 @@
 .ww-title-links {
   margin-top: 1rem;
 }
-.ww-title-original {
-  margin-top: 1rem;
-}
 .ww-grid-play .ww-tool-supply {
   margin: 0 0 0.4rem;
   padding: 0 0 0.4rem;
@@ -2194,6 +2191,22 @@
 .ww-garden-library-footer p {
   margin: 0;
 }
+.ww-garden-library-intro {
+  flex-direction: column;
+  align-items: stretch;
+}
+.ww-chapter-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.ww-page.ww-garden-library > div:first-child {
+  position: sticky;
+  top: -1.25rem;
+  z-index: 2;
+  padding-block: 0.75rem;
+  background: var(--ww-ink);
+}
 .ww-garden-chapters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2203,7 +2216,18 @@
 .ww-garden-chapters h3 {
   color: var(--ww-honey);
   font-size: 1.15rem;
-  scroll-margin-top: 1rem;
+  scroll-margin-top: 4rem;
+}
+.ww-garden-chapters > section:last-child {
+  grid-column: 1 / -1;
+}
+.ww-garden-chapters > section:last-child .ww-practice-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 601px) {
+  .ww-game-window.ww-grid-play .ww-tool-supply {
+    flex: 1 1 100%;
+  }
 }
 .ww-garden-chapter-detail {
   margin: 0.25rem 0 0.75rem;
@@ -2251,6 +2275,9 @@
     padding: 1rem;
   }
   .ww-garden-chapters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ww-garden-chapters > section:last-child .ww-practice-list {
     grid-template-columns: minmax(0, 1fr);
   }
   .ww-garden-library-intro,

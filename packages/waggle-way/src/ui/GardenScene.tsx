@@ -13,7 +13,7 @@ import { rainZones, sprinklerPhase } from "../core/weather";
 export const OBJECT_LABELS = {
   hive: "Hive",
   flowers: "Flower field",
-  terrain: "Solid branch",
+  terrain: "Solid barrier",
   water: "Water",
   perch: "Guide perch",
   fan: "Fan",

@@ -1,9 +1,9 @@
 # Waggle Way campaign plan
 
-Status: updated 2026-09-07. Thirty original levels are preserved separately.
-The current local main route contains five teaching gardens and six version-7
-challenge conversions; see LEVEL_DESIGN.md for their IDs and boards. Human
-difficulty acceptance of this new batch remains open.
+Status: updated 2026-09-08. The [current campaign](CURRENT_CAMPAIGN.md) contains
+30 version-7 levels across five chapters. It supersedes the historical level
+lists below. The user explicitly rejected two playable rulesets and old-map
+support; the original campaign is removed from gameplay, not offered as an archive.
 
 ## Redesign priority — 2026-09-07
 
@@ -236,12 +236,10 @@ challenges where meaningful and pollen goals after pollen is introduced. These
 provide replay value without inflating the campaign count. No mandatory speed
 medals; pausing and accessibility controls do not invalidate achievements.
 
-Level access is open: players can choose any of the 30 original puzzles or the
-11 current-rule gardens immediately, including across chapters. Selecting a later
-puzzle does not write skipped or completed records for earlier puzzles. The
-explicit Skip this puzzle action remains available for recording a skip and
-moving forward one puzzle. Keep completed, skipped and optional-goal results
-separate; none of them restrict level selection.
+Level access is open: players can choose any of the 30 current-rule gardens
+immediately, including across chapters. Selecting a later puzzle does not write
+results for earlier puzzles. There is no archived campaign or sequential skip
+control. Actual rescues and optional-goal results remain separate from access.
 
 ## Per-level acceptance
 

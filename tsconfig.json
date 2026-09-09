@@ -17,17 +17,15 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.mts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.mts"],
   "exclude": [
     "node_modules",
     "functions",
     "mcp-server",
     "archive",
     "dist",
-    "build"
+    "build",
+    "scratch",
+    ".pnpm-store"
   ]
 }

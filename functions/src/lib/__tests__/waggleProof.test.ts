@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CAMPAIGN } from "../../../../packages/waggle-way/src/content/campaign";
-import { CAMPAIGN_SOLUTIONS } from "../../../../packages/waggle-way/src/content/solutions";
+import { CAMPAIGN } from "../../../../src/test/fixtures/waggle-way-legacy/campaign";
+import { CAMPAIGN_SOLUTIONS } from "../../../../src/test/fixtures/waggle-way-legacy/solutions";
 import {
   createBlankLevel,
   makeObject,

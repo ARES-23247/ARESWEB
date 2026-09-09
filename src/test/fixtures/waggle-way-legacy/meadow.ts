@@ -1,6 +1,6 @@
-import { editLevel, updateObject, type EditorState } from "../core/editor";
-import type { ToolStock } from "../core/level";
-import { begin, exported, piece } from "./authoring";
+import { editLevel, updateObject, type EditorState } from "../../../../packages/waggle-way/src/core/editor";
+import type { ToolStock } from "../../../../packages/waggle-way/src/core/level";
+import { begin, exported, piece } from "../../../../packages/waggle-way/src/content/authoring";
 import type { CampaignPuzzle } from "./campaign";
 
 const leaf: ToolStock = {

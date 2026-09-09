@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useGameFullscreen } from "@ares/game-common/fullscreen";
-import CampaignPlayer from "./ui/CampaignPlayer";
 import TitleScreen from "./ui/TitleScreen";
 import PracticePlayer from "./ui/PracticePlayer";
 import type { CommunityClient, CommunityParent } from "./core/community";
@@ -15,7 +14,7 @@ export default function Game({
   community?: CommunityClient;
   onRemix?: (source: CommunityParent) => void;
 }) {
-  const [mode, setMode] = useState<"title" | "slice" | "campaign">("title");
+  const [mode, setMode] = useState<"title" | "play">("title");
   const fullscreen = useGameFullscreen();
   const page = useRef<HTMLElement>(null);
   const previousMode = useRef(mode);
@@ -38,24 +37,16 @@ export default function Game({
             </div>
             {workshopLink}
           </header>
-          {mode === "slice" ? (
-            <PracticePlayer
-              onOriginalCampaign={() => setMode("campaign")}
-              fullscreen={fullscreen}
-              onExit={() => setMode("title")}
-            />
-          ) : (
-            <CampaignPlayer
-              community={community}
-              onRemix={onRemix}
-              fullscreenController={fullscreen}
-            />
-          )}
+          <PracticePlayer
+            community={community}
+            onRemix={onRemix}
+            fullscreen={fullscreen}
+            onExit={() => setMode("title")}
+          />
         </>
       ) : (
         <TitleScreen
-          onPlay={() => setMode("slice")}
-          onOriginalCampaign={() => setMode("campaign")}
+          onPlay={() => setMode("play")}
           links={workshopLink}
           fullscreen={fullscreen}
         />
