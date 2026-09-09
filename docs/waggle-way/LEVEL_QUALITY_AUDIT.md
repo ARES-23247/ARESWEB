@@ -330,7 +330,14 @@ cases were 218/277 and 160/276, so this is incomplete evidence, not a passing
 browser gate. The workflow now runs two independent browser workers per shard
 to overlap real-time rescues. It retains both isolated shards, all 553 cases,
 individual test timeouts and the strict aggregate completeness check. The next
-full run must establish that this fits the existing job budget reliably.
+full run must establish that this fits the job budget reliably.
+
+Run 34310879187 completed shard 1 with 277 passed, zero skipped and zero flaky
+cases in about 15 minutes. Shard 2 again reached the 25-minute workflow limit
+near the end, without a logged assertion failure. Its heavier Firefox/WebKit
+allocation needs more time. The browser step now has a 35-minute budget inside
+a 40-minute job, retaining two workers, both shards, every case and unchanged
+individual test timeouts. The aggregate still rejects incomplete reports.
 
 Human feedback on Open Sesame: the player could not discover how to open the
 shutter and placed the left dancer before it. The mission now explains that

@@ -216,7 +216,7 @@ jobs:
       # Firefox's sandbox needs user namespaces (clone), which the default
       # container seccomp profile denies with EPERM.
       options: --security-opt seccomp=unconfined
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -242,7 +242,7 @@ jobs:
 
       - name: Run local E2E suite
         # Leave time to upload traces and inventory even if the suite stalls.
-        timeout-minutes: 25
+        timeout-minutes: 35
         # Steps run as root while the runner pins HOME to /github/home
         # (owned by pwuser); Firefox rejects that combination. /root is
         # owned by the effective user.
