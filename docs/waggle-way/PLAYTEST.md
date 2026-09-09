@@ -17,6 +17,8 @@ players find a puzzle enjoyable or its difficulty label accurate.
 
 Human review questions for the current batch:
 
+- Open Sesame: after the operator explanation was added beside the controls,
+  can a new player open the gate and recover both helpers without a walkthrough?
 - Across the Pond and Bring Everyone: is the six-cell lift and its landing
   space understandable, and is the helper's own crossing predictable?
 - Crosswinds: can the player see that the gust moves the lane without changing
@@ -33,6 +35,17 @@ Keep teaching levels approachable. Change geometry or resource tradeoffs when
 feedback reveals an uninteresting shortcut; do not add arbitrary timing pressure
 or declare a puzzle hard merely because it is large. Record the exact level,
 route and misunderstanding before revising it.
+
+### Gate tutorial feedback — 2026-09-09
+
+The player could not solve level 6, Open Sesame. Their screenshot showed a
+dancer before the closed gate and seven lost bees. The mission now explains
+assigning an operator to the purple switch before launch, even across the closed
+gate, placing the turn beyond the switch and releasing the operator before the
+dancer. A short explanation also appears beside the selected switch controls.
+An automated mobile Chromium playthrough rescued all eight through real controls;
+its cue and completion screenshots were inspected. This proves the explained
+route works, not that a new player will discover it unaided.
 
 ## Garden library and numeral feedback — 2026-09-08
 

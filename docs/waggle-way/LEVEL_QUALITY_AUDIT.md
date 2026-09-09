@@ -6,6 +6,12 @@ design audit, not a claim that the campaign has passed human difficulty review.
 
 ## Evidence and limits
 
+The baseline analysis and implementation history below preserve the reasoning
+behind the redesign. Later verification records supersede their intermediate
+pending checks. Current release-check results are tracked on
+[PR #271](https://github.com/ARES-23247/ARESWEB/pull/271); a passing focused run
+does not substitute for its full required CI gate.
+
 The current definitions are `packages/waggle-way/src/content/redesign.ts`
 (1–5), `challenges.ts` (6–11), and `advanced.ts` (12–30). The ordered catalogue
 is `adventure.ts`. Existing advanced solutions are in
@@ -335,10 +341,12 @@ These observations are scoped visual evidence, not a full accessibility claim.
 
 The full browser run exposed three stale workshop export assertions expecting
 version 7; new gardens correctly use version 8. Expectations were updated to the
-current contract; the affected browser flows still require rerunning.
+current contract. Eight focused desktop/mobile preview cases now pass, covering
+those exports and the visible gate cue. The full browser gate remains the
+release authority. The dependency audit passes its high-severity threshold with
+four moderate advisories; this is not a claim of zero known vulnerabilities.
 
-- Finish the full browser gate and dependency audit; resolve any failures.
-- Inspect final built screenshots and reconcile the evidence table with results.
+- Finish the full browser gate and resolve any failures.
 - Deliver the quality changes through a normal PR with required checks passing.
 - Retain the human playtest questions and unproven optimality limits; automated
   success does not establish enjoyment or an exact difficulty rating.
