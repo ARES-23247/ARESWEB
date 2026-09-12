@@ -6,17 +6,30 @@ for (const difficulty of ["easy", "medium", "hard"]) {
   }) => {
     await page.goto("/buzzhex");
     await expect(
+      page.getByRole("dialog", { name: "Choose a BUZZHEX game" }),
+    ).toBeVisible();
+    await expect(page.getByRole("dialog")).toContainText("Opening swap rule");
+    await expect(page.getByRole("dialog")).toContainText(
+      "the board stays in place",
+    );
+    const modes = {
+      easy: "Rookie AI",
+      medium: "Tactical AI",
+      hard: "Master AI",
+    };
+    await page
+      .getByRole("button", {
+        name: new RegExp(modes[difficulty as keyof typeof modes]),
+      })
+      .click();
+    await expect(
       page.getByRole("link", { name: /3D print BUZZHEX/ }),
     ).toHaveAttribute("href", /printables.com\/model\/1834842-/);
-    await page.getByRole("button", { name: "New game", exact: true }).click();
-    await page.getByRole("combobox", { name: "Opponent", exact: true }).selectOption("computer");
-    await page
-      .getByRole("combobox", { name: "Difficulty", exact: true })
-      .selectOption(difficulty);
-    await page.getByRole("button", { name: "Start new game" }).click();
     // Wait for the dialog's focus restoration before focusing a board cell.
     // Otherwise a delayed close effect can redirect Enter back to New game.
-    await expect(page.getByRole("button", { name: "New game", exact: true })).toBeFocused();
+    await expect(
+      page.getByRole("button", { name: "New game", exact: true }),
+    ).toBeFocused();
     // Keyboard placement works on touch and desktop without a synthetic tap.
     await page.getByRole("button", { name: "F6, empty" }).focus();
     await page.keyboard.press("Enter");
@@ -28,16 +41,45 @@ for (const difficulty of ["easy", "medium", "hard"]) {
       exact: true,
     });
     await expect(status).toHaveText(/Player 1.*to move/);
-    if (difficulty !== "easy") {
+    const swapped =
+      (await page
+        .getByRole("button", { name: "F6, Black, Computer" })
+        .count()) === 1;
+    if (difficulty !== "easy") expect(swapped).toBe(true);
+    const humanColor = swapped ? "Yellow" : "Black";
+    if (swapped) {
       await expect(
-        page.getByRole("button", { name: "F6, Black, Computer" }),
-      ).toBeAttached();
-      await expect(status).toHaveText(/Yellow to move/);
+        page.getByRole("status", { name: "Opening swap", exact: true }),
+      ).toContainText("Player 1 now plays Yellow");
     }
+    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(
+      swapped ? 0 : 1,
+    );
+    const nextCell = page.locator('[data-owner="empty"]').first();
+    const nextLabel = await nextCell.getAttribute("data-cell");
+    await nextCell.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator('[data-owner="black"]')).toHaveCount(2);
+    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(
+      swapped ? 1 : 2,
+    );
+    await expect(status).toHaveText(
+      new RegExp(`Player 1.*${humanColor} to move`),
+    );
+    await expect(
+      page.getByRole("button", {
+        name: `${nextLabel}, ${humanColor}, Player 1`,
+      }),
+    ).toBeAttached();
     await page.reload();
     await expect(
       page.getByRole("button", { name: "Undo your last turn" }),
     ).toBeEnabled();
+    await page.getByRole("button", { name: "Undo your last turn" }).click();
+    await expect(page.locator('[data-owner="black"]')).toHaveCount(1);
+    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(
+      swapped ? 0 : 1,
+    );
     await page.getByRole("button", { name: "Undo your last turn" }).click();
     await expect(page.locator('[data-owner="empty"]')).toHaveCount(121);
     await page.getByRole("button", { name: "A1, empty" }).focus();
@@ -58,6 +100,7 @@ test("BUZZHEX plays, swaps, restores, undoes, and resets", async ({
 }) => {
   await page.goto("/buzzhex");
 
+  await page.getByRole("button", { name: /Pass & Play/ }).click();
   const board = page.getByRole("group", { name: /BUZZHEX board/ });
 
   await expect(board.getByRole("button")).toHaveCount(121);
@@ -90,7 +133,7 @@ test("BUZZHEX plays, swaps, restores, undoes, and resets", async ({
 
   await page.getByRole("button", { name: "New game", exact: true }).click();
 
-  await page.getByRole("button", { name: "Start new game" }).click();
+  await page.getByRole("button", { name: /Pass & Play/ }).click();
 
   await expect(page.getByRole("button", { name: "F6, empty" })).toBeAttached();
 
@@ -103,7 +146,18 @@ test("BUZZHEX keyboard, rules focus, zoom and view stay usable", async ({
   page,
 }) => {
   await page.goto("/buzzhex");
-
+  const picker = page.getByRole("dialog", { name: "Choose a BUZZHEX game" });
+  await expect(picker).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Pass & Play/ }),
+  ).toBeInViewport();
+  await picker.screenshot({
+    path: `test-results/buzzhex-picker-${test.info().project.name}.png`,
+  });
+  await page.getByRole("button", { name: /Pass & Play/ }).click();
+  await expect(
+    page.getByRole("button", { name: "New game", exact: true }),
+  ).toBeFocused();
   await page.getByRole("button", { name: "F6, empty" }).focus();
 
   await page.keyboard.press("ArrowRight");
@@ -220,4 +274,40 @@ test("BUZZHEX highlights a win after swapping and rejects a touch drag", async (
   ).toHaveText(/Buzz.*Black to move/);
 
   await expect(page.locator(".buzzhex-winning-line")).toHaveCount(0);
+});
+
+test("BUZZHEX AI swap keeps the opening tile and continues the same game", async ({
+  page,
+}) => {
+  await page.goto("/buzzhex");
+  await page.getByRole("button", { name: /Tactical AI/ }).click();
+  await expect(
+    page.getByRole("button", { name: "New game", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "F6, empty" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("status", { name: "Opening swap", exact: true }),
+  ).toContainText("play continues");
+  await page
+    .getByRole("status", { name: "Opening swap", exact: true })
+    .screenshot({
+      path: `test-results/buzzhex-swap-${test.info().project.name}.png`,
+    });
+  await expect(
+    page.getByRole("button", { name: "F6, Black, Computer" }),
+  ).toBeAttached();
+  await page.getByRole("button", { name: "F7, empty" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-owner="black"]')).toHaveCount(2);
+  await expect(
+    page.getByRole("button", { name: "F7, Yellow, Player 1" }),
+  ).toBeAttached();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "F6, Black, Computer" }),
+  ).toBeAttached();
+  await expect(
+    page.getByRole("status", { name: "Current turn", exact: true }),
+  ).toContainText("Player 1 · Yellow to move");
 });

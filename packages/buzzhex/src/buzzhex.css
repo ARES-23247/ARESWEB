@@ -431,21 +431,51 @@
   display: grid;
   gap: 1rem;
 }
-.buzzhex-settings label {
-  display: grid;
-  gap: 0.5rem;
-  font-weight: 700;
+.buzzhex-swap-notice {
+  margin: 1rem;
+  padding: 1rem;
+  border-left: 3px solid var(--ares-gold);
+  background: color-mix(in srgb, var(--ares-gold) 8%, transparent);
 }
-.buzzhex-settings select {
-  width: 100%;
-  min-height: 44px;
-  padding: 0.65rem;
-  border: 1px solid var(--ares-gold);
-  border-radius: 0.5rem;
+.buzzhex-swap-notice strong,
+.buzzhex-opening-help strong {
+  color: var(--ares-gold);
+}
+.buzzhex-swap-notice p,
+.buzzhex-opening-help p {
+  margin-top: 0.5rem;
+}
+.buzzhex-mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  min-height: 5.5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--marble) 25%, transparent);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--marble) 4%, transparent);
+  color: var(--ares-gold);
+  text-align: left;
+  cursor: pointer;
+}
+.buzzhex-mode-card svg {
+  flex-shrink: 0;
+}
+.buzzhex-mode-card strong,
+.buzzhex-mode-card small {
+  display: block;
+}
+.buzzhex-mode-card strong {
   color: var(--marble);
-  background: var(--obsidian);
 }
-.buzzhex-settings select:focus-visible {
-  outline: 2px solid var(--ares-cyan);
+.buzzhex-mode-card small {
+  margin-top: 0.25rem;
+  color: color-mix(in srgb, var(--marble) 80%, transparent);
+}
+.buzzhex-mode-card:hover {
+  border-color: var(--ares-gold);
+}
+.buzzhex-mode-card:focus-visible {
+  outline: 3px solid var(--ares-gold);
   outline-offset: 3px;
 }
