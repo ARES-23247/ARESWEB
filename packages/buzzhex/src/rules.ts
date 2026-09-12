@@ -10,7 +10,6 @@ export interface HexEntry {
   color: HexColor;
 }
 export interface HexState {
-  allowSwap: boolean;
   board: (HexColor | null)[];
   colors: [HexColor, HexColor];
   current: HexPlayer;
@@ -54,9 +53,8 @@ export function hexNeighbors(index: number): number[] {
     .map(([nq, nr]) => nq * 11 + nr);
 }
 
-export function createHexGame(allowSwap = true): HexState {
+export function createHexGame(): HexState {
   return {
-    allowSwap,
     board: Array<HexColor | null>(121).fill(null),
     colors: ["black", "yellow"],
     current: 0,
@@ -106,10 +104,7 @@ export function hexWinningPath(
 
 export function canSwapHex(state: HexState): boolean {
   return (
-    state.allowSwap &&
-    state.winner === null &&
-    state.history.length === 1 &&
-    state.current === 1
+    state.winner === null && state.history.length === 1 && state.current === 1
   );
 }
 
@@ -154,14 +149,13 @@ export function undoHexAction(state: HexState): HexState {
     .slice(0, -1)
     .reduce(
       (game, entry) => applyHexAction(game, entry.action)!,
-      createHexGame(state.allowSwap),
+      createHexGame(),
     );
 }
 
 export function encodeHexSave(session: HexSession): string {
   return JSON.stringify({
     version: 1,
-    allowSwap: session.game.allowSwap,
     mode: session.mode,
     difficulty: session.difficulty,
     names: session.names,
@@ -202,12 +196,7 @@ export function decodeHexSave(raw: string): HexSession | null {
       value.difficulty !== "hard"
     )
       return null;
-    if ("allowSwap" in value && typeof value.allowSwap !== "boolean")
-      return null;
-    // Saves made before the option existed always used the opening swap rule.
-    let game = createHexGame(
-      "allowSwap" in value ? (value.allowSwap as boolean) : true,
-    );
+    let game = createHexGame();
     for (const action of value.actions) {
       if (
         !action ||

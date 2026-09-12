@@ -24,9 +24,6 @@ function page(startLocal = true) {
     startLocal &&
     screen.queryByRole("dialog", { name: "Choose a BUZZHEX game" })
   ) {
-    fireEvent.click(
-      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/ }));
   }
   return view;
@@ -39,12 +36,8 @@ describe("BUZZHEX page", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  function computerGame(level = "medium", allowSwap = false) {
+  function computerGame(level = "medium") {
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
-    const swap = screen.getByRole("checkbox", {
-      name: "Allow opening color swap",
-    });
-    if ((swap as HTMLInputElement).checked !== allowSwap) fireEvent.click(swap);
     const name = {
       easy: "Rookie AI",
       medium: "Tactical AI",
@@ -53,23 +46,23 @@ describe("BUZZHEX page", () => {
     fireEvent.click(screen.getByRole("button", { name: new RegExp(name!) }));
   }
 
-  it("opens the standard mode cards before a fresh game with swapping off", () => {
+  it("opens the standard mode cards and explains the opening swap before play", () => {
     page(false);
     expect(
       screen.getByRole("dialog", { name: "Choose a BUZZHEX game" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
-    ).not.toBeChecked();
+    expect(screen.getByRole("dialog")).toHaveTextContent("Opening swap rule");
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "the board stays in place",
+    );
     fireEvent.click(screen.getByRole("button", { name: /Tactical AI/ }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem(BUZZHEX_SAVE_KEY)!)).toMatchObject({
       mode: "computer",
-      allowSwap: false,
     });
   });
 
-  it("keeps the player's opening color through replies, reload and undo", async () => {
+  it("explains swapped ownership and continues the same game through reload and undo", async () => {
     const workers: {
       onmessage: ((event: { data: unknown }) => void) | null;
     }[] = [];
@@ -88,35 +81,41 @@ describe("BUZZHEX page", () => {
     fireEvent.click(screen.getByRole("button", { name: /Tactical AI/ }));
     fireEvent.click(cell("F6"));
     await waitFor(() => expect(workers).toHaveLength(1));
-    act(() => workers[0].onmessage!({ data: { type: "place", index: 61 } }));
+    act(() => workers[0].onmessage!({ data: { type: "swap" } }));
     expect(
-      screen.getByRole("button", { name: "F6, Black, Player 1" }),
+      screen.getByRole("button", { name: "F6, Black, Computer" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "F7, Yellow, Computer" }),
-    ).toBeInTheDocument();
+      screen.getByRole("status", { name: "Opening swap" }),
+    ).toHaveTextContent("Player 1 now plays Yellow, connecting 1 to 11");
+    expect(
+      screen.getByRole("status", { name: "Opening swap" }),
+    ).toHaveTextContent("play continues on this board");
+    expect(
+      screen.getByRole("status", { name: "Game announcements" }),
+    ).toHaveTextContent("the same game continues");
     fireEvent.click(cell("G6"));
     await waitFor(() => expect(workers).toHaveLength(2));
     act(() => workers[1].onmessage!({ data: { type: "place", index: 72 } }));
     expect(
-      screen.getByRole("button", { name: "G6, Black, Player 1" }),
+      screen.getByRole("button", { name: "G6, Yellow, Player 1" }),
     ).toBeInTheDocument();
     view.unmount();
     page(false);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "G7, Yellow, Computer" }),
+      screen.getByRole("button", { name: "G7, Black, Computer" }),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Undo your last turn" }),
     );
     expect(cell("G6")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "F6, Black, Player 1" }),
+      screen.getByRole("button", { name: "F6, Black, Computer" }),
     ).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem(BUZZHEX_SAVE_KEY)!)).toMatchObject({
-      allowSwap: false,
-    });
+    expect(
+      screen.getByRole("status", { name: "Opening swap" }),
+    ).toHaveTextContent("Computer now plays Black");
   });
 
   it("links the published physical board and offers three computer levels", () => {
@@ -162,7 +161,7 @@ describe("BUZZHEX page", () => {
       },
     );
     const view = page();
-    computerGame("medium", true);
+    computerGame("medium");
     fireEvent.click(cell("F6"));
     expect(cell("F7")).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(cell("F7"));
@@ -213,9 +212,6 @@ describe("BUZZHEX page", () => {
     );
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
-    fireEvent.click(
-      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/ }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     fireEvent.click(cell("A1"));
@@ -271,9 +267,10 @@ describe("BUZZHEX page", () => {
       screen.getByRole("status", { name: "Current turn" }),
     ).toHaveTextContent("Bee · Yellow to move");
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
-    expect(
-      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
-    ).not.toBeChecked();
+    expect(screen.getByRole("dialog")).toHaveTextContent("Opening swap rule");
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "the board stays in place",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Keep playing" }));
     expect(
       screen.queryByRole("button", { name: "Swap colors" }),

@@ -77,46 +77,6 @@ describe("BUZZHEX engine", () => {
     expect(undoHexAction(first)).toEqual(createHexGame());
     expect(undoHexAction(createHexGame())).toEqual(createHexGame());
   });
-  it("enforces and preserves the no-swap rule through undo and saved history", () => {
-    const game = applyHexAction(createHexGame(false), {
-      type: "place",
-      index: 60,
-    })!;
-    expect(canSwapHex(game)).toBe(false);
-    expect(applyHexAction(game, { type: "swap" })).toBeNull();
-    expect(undoHexAction(game)).toEqual(createHexGame(false));
-    const session = { game, names: ["Bee", "Buzz"] as [string, string] };
-    expect(decodeHexSave(encodeHexSave(session))).toEqual(session);
-    expect(
-      decodeHexSave(
-        JSON.stringify({
-          version: 1,
-          names: session.names,
-          allowSwap: false,
-          actions: [{ type: "place", index: 60 }, { type: "swap" }],
-        }),
-      ),
-    ).toBeNull();
-    expect(
-      decodeHexSave(
-        JSON.stringify({
-          version: 1,
-          names: session.names,
-          allowSwap: "false",
-          actions: [],
-        }),
-      ),
-    ).toBeNull();
-    const legacy = decodeHexSave(
-      JSON.stringify({
-        version: 1,
-        names: session.names,
-        actions: [{ type: "place", index: 60 }, { type: "swap" }],
-      }),
-    );
-    expect(legacy?.game.allowSwap).toBe(true);
-    expect(legacy?.game.colors).toEqual(["yellow", "black"]);
-  });
   it("finds straight, winding, and corner wins and rejects gaps and false diagonals", () => {
     const board = createHexGame().board;
     for (let q = 0; q < 11; q++) board[q * 11 + 5] = "black";

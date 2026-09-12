@@ -8,9 +8,10 @@ for (const difficulty of ["easy", "medium", "hard"]) {
     await expect(
       page.getByRole("dialog", { name: "Choose a BUZZHEX game" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("checkbox", { name: "Allow opening color swap" }),
-    ).not.toBeChecked();
+    await expect(page.getByRole("dialog")).toContainText("Opening swap rule");
+    await expect(page.getByRole("dialog")).toContainText(
+      "the board stays in place",
+    );
     const modes = {
       easy: "Rookie AI",
       medium: "Tactical AI",
@@ -40,19 +41,35 @@ for (const difficulty of ["easy", "medium", "hard"]) {
       exact: true,
     });
     await expect(status).toHaveText(/Player 1.*to move/);
-    await expect(
-      page.getByRole("button", { name: "F6, Black, Player 1" }),
-    ).toBeAttached();
-    await expect(status).toHaveText(/Black to move/);
-    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(1);
+    const swapped =
+      (await page
+        .getByRole("button", { name: "F6, Black, Computer" })
+        .count()) === 1;
+    if (difficulty !== "easy") expect(swapped).toBe(true);
+    const humanColor = swapped ? "Yellow" : "Black";
+    if (swapped) {
+      await expect(
+        page.getByRole("status", { name: "Opening swap", exact: true }),
+      ).toContainText("Player 1 now plays Yellow");
+    }
+    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(
+      swapped ? 0 : 1,
+    );
     const nextCell = page.locator('[data-owner="empty"]').first();
     const nextLabel = await nextCell.getAttribute("data-cell");
     await nextCell.focus();
     await page.keyboard.press("Enter");
-    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(2);
-    await expect(status).toHaveText(/Player 1.*Black to move/);
+    await expect(page.locator('[data-owner="black"]')).toHaveCount(2);
+    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(
+      swapped ? 1 : 2,
+    );
+    await expect(status).toHaveText(
+      new RegExp(`Player 1.*${humanColor} to move`),
+    );
     await expect(
-      page.getByRole("button", { name: `${nextLabel}, Black, Player 1` }),
+      page.getByRole("button", {
+        name: `${nextLabel}, ${humanColor}, Player 1`,
+      }),
     ).toBeAttached();
     await page.reload();
     await expect(
@@ -60,13 +77,16 @@ for (const difficulty of ["easy", "medium", "hard"]) {
     ).toBeEnabled();
     await page.getByRole("button", { name: "Undo your last turn" }).click();
     await expect(page.locator('[data-owner="black"]')).toHaveCount(1);
-    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(1);
+    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(
+      swapped ? 0 : 1,
+    );
     await page.getByRole("button", { name: "Undo your last turn" }).click();
     await expect(page.locator('[data-owner="empty"]')).toHaveCount(121);
     await page.getByRole("button", { name: "A1, empty" }).focus();
     await page.keyboard.press("Enter");
     await expect(status).toHaveText(/Player 1.*to move/);
-    await expect(page.locator('[data-owner="yellow"]')).toHaveCount(1);
+    if (difficulty !== "easy")
+      await expect(page.locator('[data-owner="yellow"]')).toHaveCount(1);
     await page.screenshot({
       path: `test-results/buzzhex-ai-${difficulty}-${test.info().project.name}.png`,
       fullPage: true,
@@ -80,9 +100,6 @@ test("BUZZHEX plays, swaps, restores, undoes, and resets", async ({
 }) => {
   await page.goto("/buzzhex");
 
-  await page
-    .getByRole("checkbox", { name: "Allow opening color swap" })
-    .check();
   await page.getByRole("button", { name: /Pass & Play/ }).click();
   const board = page.getByRole("group", { name: /BUZZHEX board/ });
 
@@ -259,13 +276,10 @@ test("BUZZHEX highlights a win after swapping and rejects a touch drag", async (
   await expect(page.locator(".buzzhex-winning-line")).toHaveCount(0);
 });
 
-test("BUZZHEX opt-in AI swap keeps the opening tile and continues the same game", async ({
+test("BUZZHEX AI swap keeps the opening tile and continues the same game", async ({
   page,
 }) => {
   await page.goto("/buzzhex");
-  await page
-    .getByRole("checkbox", { name: "Allow opening color swap" })
-    .check();
   await page.getByRole("button", { name: /Tactical AI/ }).click();
   await expect(
     page.getByRole("button", { name: "New game", exact: true }),
@@ -275,6 +289,11 @@ test("BUZZHEX opt-in AI swap keeps the opening tile and continues the same game"
   await expect(
     page.getByRole("status", { name: "Opening swap", exact: true }),
   ).toContainText("play continues");
+  await page
+    .getByRole("status", { name: "Opening swap", exact: true })
+    .screenshot({
+      path: `test-results/buzzhex-swap-${test.info().project.name}.png`,
+    });
   await expect(
     page.getByRole("button", { name: "F6, Black, Computer" }),
   ).toBeAttached();

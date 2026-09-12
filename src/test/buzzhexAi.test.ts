@@ -45,22 +45,6 @@ describe("BUZZHEX computer", () => {
       });
     },
   );
-  it.each(["easy", "medium", "hard"] as const)(
-    "keeps opening colors when swapping is disabled on %s",
-    (level) => {
-      const first = applyHexAction(createHexGame(false), {
-        type: "place",
-        index: 60,
-      })!;
-      const action = chooseHexAction(first, level, () => 0);
-      expect(action?.type).toBe("place");
-      const reply = applyHexAction(first, action!)!;
-      expect(reply.board[60]).toBe("black");
-      expect(reply.colors).toEqual(["black", "yellow"]);
-      expect(reply.board.filter(Boolean)).toHaveLength(2);
-      expect(reply.current).toBe(0);
-    },
-  );
   it("uses the swap for central openings and declines weak corner openings", () => {
     const center = applyHexAction(createHexGame(), {
       type: "place",

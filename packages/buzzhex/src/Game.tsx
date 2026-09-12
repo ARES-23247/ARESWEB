@@ -75,7 +75,7 @@ const MODE_OPTIONS = [
 
 function readSession(): HexSession & { notice: string } {
   const empty: HexSession = {
-    game: createHexGame(false),
+    game: createHexGame(),
     names: ["Player 1", "Player 2"],
   };
   try {
@@ -117,7 +117,6 @@ export default function BuzzhexGame({
   printables?: ReactNode;
 }) {
   const [session, setSession] = useState(readSession);
-  const [draftAllowSwap, setDraftAllowSwap] = useState(false);
   const [aiError, setAiError] = useState("");
   const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -196,7 +195,7 @@ export default function BuzzhexGame({
           setSession(persist({ ...session, game: next }));
           setAnnouncement(
             action.type === "swap"
-              ? "Computer swapped colors. You play Yellow next."
+              ? "Computer used the opening swap. Your first tile now belongs to Computer. You play Yellow next; the same game continues."
               : `Computer placed at ${HEX_CELLS[action.index].label}.`,
           );
           setSelected(null);
@@ -236,7 +235,7 @@ export default function BuzzhexGame({
     save(
       {
         ...session,
-        game: createHexGame(draftAllowSwap),
+        game: createHexGame(),
         mode: mode === "local" ? "local" : "computer",
         difficulty: mode === "local" ? difficulty : mode,
       },
@@ -364,6 +363,20 @@ export default function BuzzhexGame({
               {placements} {placements === 1 ? "tile" : "tiles"} placed
             </span>
           </div>
+          {game.history.some((entry) => entry.action.type === "swap") && (
+            <div
+              className="buzzhex-swap-notice"
+              role="status"
+              aria-label="Opening swap"
+            >
+              <strong>Colors swapped · Same game</strong>
+              <p>
+                {names[1]} now plays Black and owns the opening tile. {names[0]}{" "}
+                now plays Yellow, connecting 1 to 11. The first tile stays in
+                place; play continues on this board.
+              </p>
+            </div>
+          )}
           <p className="buzzhex-mobile-status" aria-hidden="true">
             {status}
           </p>
@@ -570,13 +583,6 @@ export default function BuzzhexGame({
                 : "The highlighted chain joins both goal edges."}
             </p>
           </div>
-          {game.history.some((entry) => entry.action.type === "swap") && (
-            <p className="buzzhex-swap" role="status" aria-label="Opening swap">
-              {names[1]} used the opening swap and now plays Black. {names[0]}{" "}
-              plays Yellow, connecting 1 to 11. The opening tile stays on the
-              board; play continues.
-            </p>
-          )}
           {aiError && (
             <div role="alert">
               <p>{aiError}</p>
@@ -673,7 +679,6 @@ export default function BuzzhexGame({
               ref={resetRef}
               variant="secondary"
               onClick={() => {
-                setDraftAllowSwap(false);
                 setDialog("reset");
               }}
             >
@@ -745,17 +750,17 @@ export default function BuzzhexGame({
           <p>
             Choose an AI card in New game. You open as Black. Easy varies its
             moves; Medium builds connections and blocks immediate threats; Hard
-            also examines the opponent’s replies. You keep Black unless you
-            enable the opening swap before starting. Your game and difficulty
-            save in this browser.
+            also examines the opponent’s replies. The computer may take Black
+            and your first tile using the opening swap. You then play Yellow;
+            the same game continues. Your game and difficulty save in this
+            browser.
           </p>
           <h3>The opening swap</h3>
           <p>
-            If enabled in New game, after the first black tile, Player 2 may
-            swap colors instead of placing Yellow. The tile stays black in its
-            original cell. Player 2 becomes Black; Player 1 becomes Yellow and
-            plays next. Playing Yellow declines the offer. You can swap only
-            once.
+            After the first black tile, Player 2 may swap colors instead of
+            placing Yellow. The tile stays black in its original cell. Player 2
+            becomes Black; Player 1 becomes Yellow and plays next. Playing
+            Yellow declines the offer. You can swap only once.
           </p>
           <p>
             Undo also reverses a swap or winning move. Against the computer, it
@@ -797,20 +802,15 @@ export default function BuzzhexGame({
       >
         <div className="buzzhex-settings">
           {session.notice && <p role="status">{session.notice}</p>}
-          <label className="buzzhex-swap-option">
-            <input
-              type="checkbox"
-              checked={draftAllowSwap}
-              onChange={(event) => setDraftAllowSwap(event.target.checked)}
-              aria-describedby="buzzhex-swap-help"
-            />
-            Allow opening color swap
-          </label>
-          <p id="buzzhex-swap-help">
-            {draftAllowSwap
-              ? "After your first tile, the second player may take Black and that tile. You then play Yellow; the game continues."
-              : "Colors stay fixed. Against the computer, you play Black and the computer plays Yellow."}
-          </p>
+          <div className="buzzhex-opening-help">
+            <strong>Opening swap rule</strong>
+            <p>
+              After Black’s first tile, the second player (including the
+              computer) may take Black and the opening tile. The first player
+              then plays Yellow, connecting 1 to 11. This uses a turn in the
+              same game; the board stays in place.
+            </p>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {MODE_OPTIONS.map(({ id, name, detail, icon: Icon }) => (
               <button
