@@ -12,14 +12,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BuzzhexPage from "@/app/buzzhex/page";
 import { BUZZHEX_SAVE_KEY } from "@ares/buzzhex/rules";
 
-function page() {
-  return render(
+function page(startLocal = true) {
+  const view = render(
     <HelmetProvider>
       <MemoryRouter>
         <BuzzhexPage />
       </MemoryRouter>
     </HelmetProvider>,
   );
+  if (
+    startLocal &&
+    screen.queryByRole("dialog", { name: "Choose a BUZZHEX game" })
+  ) {
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Pass & Play/ }));
+  }
+  return view;
 }
 const cell = (label: string) =>
   screen.getByRole("button", { name: new RegExp(`^${label}, empty`) });
@@ -29,16 +39,85 @@ describe("BUZZHEX page", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  function computerGame(level = "medium") {
+  function computerGame(level = "medium", allowSwap = false) {
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
-    fireEvent.change(screen.getByLabelText("Opponent"), {
-      target: { value: "computer" },
+    const swap = screen.getByRole("checkbox", {
+      name: "Allow opening color swap",
     });
-    fireEvent.change(screen.getByLabelText("Difficulty"), {
-      target: { value: level },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Start new game" }));
+    if ((swap as HTMLInputElement).checked !== allowSwap) fireEvent.click(swap);
+    const name = {
+      easy: "Rookie AI",
+      medium: "Tactical AI",
+      hard: "Master AI",
+    }[level];
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(name!) }));
   }
+
+  it("opens the standard mode cards before a fresh game with swapping off", () => {
+    page(false);
+    expect(
+      screen.getByRole("dialog", { name: "Choose a BUZZHEX game" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
+    ).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: /Tactical AI/ }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(BUZZHEX_SAVE_KEY)!)).toMatchObject({
+      mode: "computer",
+      allowSwap: false,
+    });
+  });
+
+  it("keeps the player's opening color through replies, reload and undo", async () => {
+    const workers: {
+      onmessage: ((event: { data: unknown }) => void) | null;
+    }[] = [];
+    vi.stubGlobal(
+      "Worker",
+      class {
+        onmessage = null;
+        postMessage = vi.fn();
+        terminate = vi.fn();
+        constructor() {
+          workers.push(this);
+        }
+      },
+    );
+    const view = page(false);
+    fireEvent.click(screen.getByRole("button", { name: /Tactical AI/ }));
+    fireEvent.click(cell("F6"));
+    await waitFor(() => expect(workers).toHaveLength(1));
+    act(() => workers[0].onmessage!({ data: { type: "place", index: 61 } }));
+    expect(
+      screen.getByRole("button", { name: "F6, Black, Player 1" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "F7, Yellow, Computer" }),
+    ).toBeInTheDocument();
+    fireEvent.click(cell("G6"));
+    await waitFor(() => expect(workers).toHaveLength(2));
+    act(() => workers[1].onmessage!({ data: { type: "place", index: 72 } }));
+    expect(
+      screen.getByRole("button", { name: "G6, Black, Player 1" }),
+    ).toBeInTheDocument();
+    view.unmount();
+    page(false);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "G7, Yellow, Computer" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Undo your last turn" }),
+    );
+    expect(cell("G6")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "F6, Black, Player 1" }),
+    ).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(BUZZHEX_SAVE_KEY)!)).toMatchObject({
+      allowSwap: false,
+    });
+  });
 
   it("links the published physical board and offers three computer levels", () => {
     page();
@@ -55,10 +134,14 @@ describe("BUZZHEX page", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
     expect(
-      within(screen.getByLabelText("Difficulty"))
-        .getAllByRole("option")
-        .map((option) => option.textContent),
-    ).toEqual(["Easy", "Medium", "Hard"]);
+      screen.getByRole("button", { name: /Rookie AI.*Easy/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Tactical AI.*Medium/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Master AI.*Hard/ }),
+    ).toBeInTheDocument();
   });
 
   it("locks computer turns, reverses the whole turn after a swap, and rejects stale replies", async () => {
@@ -79,7 +162,7 @@ describe("BUZZHEX page", () => {
       },
     );
     const view = page();
-    computerGame();
+    computerGame("medium", true);
     fireEvent.click(cell("F6"));
     expect(cell("F7")).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(cell("F7"));
@@ -130,10 +213,10 @@ describe("BUZZHEX page", () => {
     );
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
-    fireEvent.change(screen.getByLabelText("Opponent"), {
-      target: { value: "local" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Start new game" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Pass & Play/ }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     fireEvent.click(cell("A1"));
     expect(
@@ -188,12 +271,15 @@ describe("BUZZHEX page", () => {
       screen.getByRole("status", { name: "Current turn" }),
     ).toHaveTextContent("Bee · Yellow to move");
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    expect(
+      screen.getByRole("checkbox", { name: "Allow opening color swap" }),
+    ).not.toBeChecked();
     fireEvent.click(screen.getByRole("button", { name: "Keep playing" }));
     expect(
       screen.queryByRole("button", { name: "Swap colors" }),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
-    fireEvent.click(screen.getByRole("button", { name: "Start new game" }));
+    fireEvent.click(screen.getByRole("button", { name: /Pass & Play/ }));
     expect(cell("F6")).toBeInTheDocument();
     expect(
       screen.getByRole("status", { name: "Current turn" }),
@@ -238,7 +324,11 @@ describe("BUZZHEX page", () => {
   });
   it("recovers gracefully from an invalid saved game", () => {
     localStorage.setItem(BUZZHEX_SAVE_KEY, "corrupt");
-    page();
+    page(false);
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "could not be restored",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
     expect(
       screen.getByRole("status", { name: "Game storage" }),
     ).toHaveTextContent("could not be restored");

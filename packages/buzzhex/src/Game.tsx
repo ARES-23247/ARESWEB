@@ -10,9 +10,13 @@ import {
 
 import {
   ArrowLeftRight,
+  Bot,
+  BrainCircuit,
   CircleHelp,
+  Gauge,
   RotateCcw,
   Undo2,
+  Users,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -42,10 +46,36 @@ import "./buzzhex.css";
 const TILE = "/images/games/buzzhex/buzzello-tile-";
 const HEX_POINTS = "18.4,0 9.2,15.94 -9.2,15.94 -18.4,0 -9.2,-15.94 9.2,-15.94";
 const colorName = (color: HexColor) => (color === "black" ? "Black" : "Yellow");
+const MODE_OPTIONS = [
+  {
+    id: "local",
+    name: "Pass & Play",
+    detail: "Two players share this device. Black opens.",
+    icon: Users,
+  },
+  {
+    id: "easy",
+    name: "Rookie AI",
+    detail: "Easy · A relaxed computer that varies its moves.",
+    icon: Bot,
+  },
+  {
+    id: "medium",
+    name: "Tactical AI",
+    detail: "Medium · Builds connections and blocks immediate threats.",
+    icon: Gauge,
+  },
+  {
+    id: "hard",
+    name: "Master AI",
+    detail: "Hard · Also examines the opponent’s replies.",
+    icon: BrainCircuit,
+  },
+] as const;
 
 function readSession(): HexSession & { notice: string } {
   const empty: HexSession = {
-    game: createHexGame(),
+    game: createHexGame(false),
     names: ["Player 1", "Player 2"],
   };
   try {
@@ -87,10 +117,7 @@ export default function BuzzhexGame({
   printables?: ReactNode;
 }) {
   const [session, setSession] = useState(readSession);
-  const [draftMode, setDraftMode] = useState(session.mode ?? "local");
-  const [draftDifficulty, setDraftDifficulty] = useState<HexDifficulty>(
-    session.difficulty ?? "medium",
-  );
+  const [draftAllowSwap, setDraftAllowSwap] = useState(false);
   const [aiError, setAiError] = useState("");
   const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -99,7 +126,7 @@ export default function BuzzhexGame({
   const [zoom, setZoom] = useState(1);
   const [fit, setFit] = useState(true);
   const [dialog, setDialog] = useState<"rules" | "reset" | "names" | null>(
-    null,
+    () => (session.game.history.length === 0 && !session.mode ? "reset" : null),
   );
   const [draftNames, setDraftNames] = useState<[string, string]>(session.names);
   const [announcement, setAnnouncement] = useState("");
@@ -204,6 +231,20 @@ export default function BuzzhexGame({
     setAiError("");
     setSession(persist(next));
     setAnnouncement(message);
+  }
+  function startGame(mode: "local" | HexDifficulty) {
+    save(
+      {
+        ...session,
+        game: createHexGame(draftAllowSwap),
+        mode: mode === "local" ? "local" : "computer",
+        difficulty: mode === "local" ? difficulty : mode,
+      },
+      "New game. Player 1 opens as Black.",
+    );
+    setSelected(null);
+    setHovered(null);
+    setDialog(null);
   }
   function act(action: HexAction) {
     if (computerTurn) return;
@@ -529,6 +570,13 @@ export default function BuzzhexGame({
                 : "The highlighted chain joins both goal edges."}
             </p>
           </div>
+          {game.history.some((entry) => entry.action.type === "swap") && (
+            <p className="buzzhex-swap" role="status" aria-label="Opening swap">
+              {names[1]} used the opening swap and now plays Black. {names[0]}{" "}
+              plays Yellow, connecting 1 to 11. The opening tile stays on the
+              board; play continues.
+            </p>
+          )}
           {aiError && (
             <div role="alert">
               <p>{aiError}</p>
@@ -625,8 +673,7 @@ export default function BuzzhexGame({
               ref={resetRef}
               variant="secondary"
               onClick={() => {
-                setDraftMode(session.mode ?? "local");
-                setDraftDifficulty(difficulty);
+                setDraftAllowSwap(false);
                 setDialog("reset");
               }}
             >
@@ -696,17 +743,19 @@ export default function BuzzhexGame({
           </p>
           <h3>Play the computer</h3>
           <p>
-            Choose Computer in New game. You open as Black. Easy varies its
+            Choose an AI card in New game. You open as Black. Easy varies its
             moves; Medium builds connections and blocks immediate threats; Hard
-            also examines the opponent’s replies. The computer may use the
-            opening swap. Your game and difficulty save in this browser.
+            also examines the opponent’s replies. You keep Black unless you
+            enable the opening swap before starting. Your game and difficulty
+            save in this browser.
           </p>
           <h3>The opening swap</h3>
           <p>
-            After the first black tile, Player 2 may swap colors instead of
-            placing Yellow. The tile stays black in its original cell. Player 2
-            becomes Black; Player 1 becomes Yellow and plays next. Playing
-            Yellow declines the offer. You can swap only once.
+            If enabled in New game, after the first black tile, Player 2 may
+            swap colors instead of placing Yellow. The tile stays black in its
+            original cell. Player 2 becomes Black; Player 1 becomes Yellow and
+            plays next. Playing Yellow declines the offer. You can swap only
+            once.
           </p>
           <p>
             Undo also reverses a swap or winning move. Against the computer, it
@@ -730,67 +779,54 @@ export default function BuzzhexGame({
         onOpenChange={(open) => {
           if (!open) setDialog(null);
         }}
-        title="Start a new game?"
-        description="This clears the current board and history. Player 1 will open as Black."
+        title="Choose a BUZZHEX game"
+        description={
+          game.history.length
+            ? "Choose a mode to replace the current board and history. Black opens."
+            : "Play with a friend on this device or choose a computer opponent. Black opens."
+        }
+        size="lg"
         returnFocusRef={resetRef}
         footer={
-          <>
+          session.mode || game.history.length ? (
             <Button variant="secondary" onClick={() => setDialog(null)}>
               Keep playing
             </Button>
-            <Button
-              onClick={() => {
-                save(
-                  {
-                    ...session,
-                    game: createHexGame(),
-                    mode: draftMode,
-                    difficulty: draftDifficulty,
-                  },
-                  "New game. Player 1 opens as Black.",
-                );
-                setSelected(null);
-                setDialog(null);
-              }}
-            >
-              Start new game
-            </Button>
-          </>
+          ) : undefined
         }
       >
         <div className="buzzhex-settings">
-          <label>
-            Opponent
-            <select
-              value={draftMode}
-              onChange={(event) =>
-                setDraftMode(event.target.value as "local" | "computer")
-              }
-            >
-              <option value="local">Two players on this device</option>
-              <option value="computer">Computer</option>
-            </select>
+          {session.notice && <p role="status">{session.notice}</p>}
+          <label className="buzzhex-swap-option">
+            <input
+              type="checkbox"
+              checked={draftAllowSwap}
+              onChange={(event) => setDraftAllowSwap(event.target.checked)}
+              aria-describedby="buzzhex-swap-help"
+            />
+            Allow opening color swap
           </label>
-          {draftMode === "computer" && (
-            <>
-              <label>
-                Difficulty
-                <select
-                  value={draftDifficulty}
-                  onChange={(event) =>
-                    setDraftDifficulty(event.target.value as HexDifficulty)
-                  }
-                >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </label>
-              <p>
-                You open as Black. The computer can swap after your first tile.
-              </p>
-            </>
-          )}
+          <p id="buzzhex-swap-help">
+            {draftAllowSwap
+              ? "After your first tile, the second player may take Black and that tile. You then play Yellow; the game continues."
+              : "Colors stay fixed. Against the computer, you play Black and the computer plays Yellow."}
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {MODE_OPTIONS.map(({ id, name, detail, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className="buzzhex-mode-card"
+                onClick={() => startGame(id)}
+              >
+                <Icon aria-hidden="true" size={24} />
+                <span>
+                  <strong>{name}</strong>
+                  <small>{detail}</small>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </DialogShell>
       <DialogShell

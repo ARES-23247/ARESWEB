@@ -431,21 +431,51 @@
   display: grid;
   gap: 1rem;
 }
-.buzzhex-settings label {
-  display: grid;
-  gap: 0.5rem;
-  font-weight: 700;
-}
-.buzzhex-settings select {
-  width: 100%;
+.buzzhex-swap-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   min-height: 44px;
-  padding: 0.65rem;
-  border: 1px solid var(--ares-gold);
-  border-radius: 0.5rem;
-  color: var(--marble);
-  background: var(--obsidian);
+  font-weight: 700;
+  cursor: pointer;
 }
-.buzzhex-settings select:focus-visible {
-  outline: 2px solid var(--ares-cyan);
+.buzzhex-swap-option input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--ares-gold);
+}
+.buzzhex-mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  min-height: 5.5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--marble) 25%, transparent);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--marble) 4%, transparent);
+  color: var(--ares-gold);
+  text-align: left;
+  cursor: pointer;
+}
+.buzzhex-mode-card svg {
+  flex-shrink: 0;
+}
+.buzzhex-mode-card strong,
+.buzzhex-mode-card small {
+  display: block;
+}
+.buzzhex-mode-card strong {
+  color: var(--marble);
+}
+.buzzhex-mode-card small {
+  margin-top: 0.25rem;
+  color: color-mix(in srgb, var(--marble) 80%, transparent);
+}
+.buzzhex-mode-card:hover {
+  border-color: var(--ares-gold);
+}
+.buzzhex-mode-card:focus-visible,
+.buzzhex-swap-option input:focus-visible {
+  outline: 3px solid var(--ares-gold);
   outline-offset: 3px;
 }
