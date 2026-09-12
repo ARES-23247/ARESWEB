@@ -1,6 +1,6 @@
 import { expect, test } from "./fixtures";
 
-test("BIOBUZZ computes a match, shared flowers, event RP, and reversible reset", async ({ page }) => {
+test("BIOBUZZ computes a match, shared flowers, event RP, and reversible reset", async ({ page }, testInfo) => {
   await page.goto("/biobuzz/score-calculator");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("BIOBUZZ");
   const red = page.getByRole("region", { name: "Red scoring", exact: true });
@@ -38,10 +38,19 @@ test("BIOBUZZ computes a match, shared flowers, event RP, and reversible reset",
   await page.getByLabel("Match type", { exact: true }).selectOption("playoff");
   await expect(page.getByText("Total RP", { exact: true })).toHaveCount(0);
   await page.setViewportSize({ width: 320, height: 900 });
+  await red.getByLabel("AUTO HIVE tips", { exact: true }).fill("9999");
+  const largeScore = page.getByLabel("Red score: 200110", { exact: true });
+  await expect(largeScore).toBeVisible();
+  expect(await largeScore.evaluate(element => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getBoundingClientRect().width <= element.clientWidth;
+  })).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: "scratch/biobuzz/mobile.png", fullPage: true });
+  await red.getByLabel("AUTO HIVE tips", { exact: true }).fill("2");
+  await page.screenshot({ path: `scratch/biobuzz/mobile-${testInfo.project.name}.png`, fullPage: true });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.screenshot({ path: "scratch/biobuzz/desktop.png", fullPage: true });
+  await page.screenshot({ path: `scratch/biobuzz/desktop-${testInfo.project.name}.png`, fullPage: true });
 });
 
 test("BIOBUZZ is reachable from Resources using keyboard navigation", async ({ page }) => {
