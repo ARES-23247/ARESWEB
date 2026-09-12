@@ -22,6 +22,7 @@ const NON_PRODUCTION_RECORD_PATTERNS = [
 ] as const;
 
 const STATIC_URLS = [
+  { loc: `${BASE_URL}/biobuzz/score-calculator`, changefreq: "monthly", priority: "0.70" },
   { loc: `${BASE_URL}/`, changefreq: "daily", priority: "1.00" },
   { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/academy`, changefreq: "weekly", priority: "0.80" },

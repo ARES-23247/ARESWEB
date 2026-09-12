@@ -253,6 +253,7 @@ describe("sitemap route", () => {
     await getHandler()({ get: vi.fn() }, res, next);
 
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining("<loc>https://aresfirst.org/</loc>"));
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining("<loc>https://aresfirst.org/biobuzz/score-calculator</loc>"));
     expect(res.send).toHaveBeenCalledWith(expect.not.stringContaining("/blog/blog%20%26%20post"));
     expect(mocks.queries.size).toBe(0);
   });

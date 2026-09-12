@@ -58,10 +58,17 @@ flowchart LR
   F -->|"Red or robot-relative"| H["Keep translation sign"]
 ```
 
-The FTC gamepad adapter maps negative left-stick Y to field X and negative left-stick X to field Y.
-Negative right-stick X becomes counter-clockwise-positive rotation. In field-relative mode, the blue
-driver view flips both translation axes. Rotation does not flip. Robot-relative mode does not use
-alliance mirroring.
+The FTC gamepad adapter first shapes negative left-stick Y as robot-forward input and negative
+left-stick X as robot-left input. In `driveWithGamepad`, field-relative driving then maps these
+smoothed values to field X = negative robot-left and field Y = robot-forward. For the red driver,
+pushing forward requests field positive Y; pushing right requests field positive X. The blue driver
+view flips both field translation axes. Negative right-stick X becomes counter-clockwise-positive
+rotation and does not flip by alliance. Robot-relative mode keeps the robot-forward/left axes and
+does not use alliance mirroring.
+
+The diagram and one-axis lab trace shaping and the alliance sign choice before this two-axis
+mapping. They do not model the complete gamepad-to-field adapter. Keep the direct
+`driveFieldCentric(x, y, rotation)` API separate: its caller already supplies field-relative axes.
 
 ## Hands-on activity
 

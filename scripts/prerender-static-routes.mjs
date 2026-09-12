@@ -21,6 +21,10 @@ const baseUrl = "https://aresfirst.org";
  */
 export const staticPageMetadata = [
   ["/", "Home", "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia."],
+  ["/biobuzz/score-calculator", "BIOBUZZ Score Calculator", "Calculate BIOBUZZ alliance scores, FLOWER ownership, penalties, and ranking points using Competition Manual V1.", false, [
+    ["Plan a BIOBUZZ practice match", "Enter AUTO and TELEOP achievements for both alliances, build the four final FLOWER stacks, and calculate opponent foul credits and qualification ranking points. Enable JavaScript to use the calculator."],
+    ["Manual V1 scoring", "Based on sections 10.5–10.6 of the 2026–2027 BIOBUZZ Competition Manual V1. Championship RP thresholds are TBA in V1; enter event-specific thresholds when announced. Practice estimates do not model cards or disqualifications."],
+  ]],
   ["/buzzhex", "BUZZHEX · Connect the hive", "Play 11 × 11 Hex with yellow and black Buzzello tiles on one device.", false, [["Connect your edges", "Two players take turns placing tiles. Connect your opposite edges to win. Find more games in the <a href=\"/arcade\">ARES Arcade</a>."]]],
   ["/arcade", "ARES Arcade", "Play BUZZHEX, BUZZLE, BUZZELLO, Pollinator Pile-Up from ARES 23247.", false, [
     ["Choose your next game", "Connect the hive in <a href=\"/buzzhex\">BUZZHEX</a>. Build words in BUZZLE, claim the hexagonal board in BUZZELLO, or balance critters in Pollinator Pile-Up. Visit <a href=\"/buzzle\">BUZZLE</a>, <a href=\"/buzzello\">BUZZELLO</a>, or <a href=\"/pollen\">Pollinator Pile-Up</a>."],
