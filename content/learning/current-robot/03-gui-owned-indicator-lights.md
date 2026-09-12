@@ -30,6 +30,12 @@ Two direct control loops keep the channels separate. The left target feeds only 
 The right target feeds only the right indicator. Both outputs stay between zero and one. This shape
 lets a test catch code that changes both sides when only one target changed.
 
+In the checked-in **Direct Mecanum Drivetrain** controls, D-pad left and right select the left
+indicator's previous and next colors. D-pad down and up select the right indicator's previous and
+next colors. Each press changes one color; holding a direction does not keep cycling. Release and
+press again to advance. These bindings belong to `.ares/controls/driver.arescontrols`, which calls
+the generated color actions. Keep explicit Off separate from the color cycle.
+
 ## Visual model
 
 ```mermaid

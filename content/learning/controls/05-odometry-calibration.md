@@ -29,7 +29,7 @@ This lesson will help you:
 
 The endpoint lab uses simple geometry. It does not reproduce the full ARES estimator.
 
-This lesson follows ARES 17.0.2, FTC SDK 11.1.0, and Studio 7.0.3. Its source links are pinned to
+This lesson follows ARES 17.0.9, FTC SDK 11.1.0, and Studio 7.0.10. Its source links are pinned to
 the exact public monorepo commit used for review. The browser supplies ready-made health results. It
 does not read robot sensors or execute the Kotlin runtime.
 
@@ -88,6 +88,13 @@ A separate age check can mark an old or future-dated sample stale. A sample can 
 healthy, stale, nonfinite, implausible, or a communication failure. The last trusted pose is kept
 when a bad packet arrives, but the bad packet is not called healthy.
 
+Sample age is checked at consumption, after hardware sampling finishes. Comparing a newly acquired
+sample with the earlier frame-start time could incorrectly give it a negative age. The Control Hub
+IMU check also uses the current consumption time. An invalid or missing IMU sample retains the last
+raw heading and marks its timestamp invalid. It must not feed the fused field heading back through
+the field offset again. When Pinpoint is selected, its angular velocity remains the selected value
+rather than being overwritten by the cached Control Hub yaw rate.
+
 The source selector starts as `UNINITIALIZED`. Its first update chooses Pinpoint only when Pinpoint
 is present and healthy. Otherwise, it chooses drivetrain fallback. The browser trace now begins in
 that same startup state so you can test both first-sample paths.
@@ -115,11 +122,11 @@ ARES FRC uses a different platform boundary. Its CTRE estimator remains authorit
 and independent-truth ideas in this lesson still apply, but the FTC source buttons in the browser
 lab do not describe FRC source selection.
 
-### Read the exact ARES 17.0.2 boundaries
+### Read the exact ARES 17.0.9 boundaries
 
 The Pinpoint adapter tests four kinds of evidence before calling a packet healthy:
 
-| Check | Pinned ARES 17.0.2 rule |
+| Check | Pinned ARES 17.0.9 rule |
 | --- | --- |
 | Finite values | X, Y, heading, linear velocity, and angular velocity must all be finite. |
 | Speed | Linear speed must be at most `8 m/s`. Angular speed must be at most `4π rad/s`. |
