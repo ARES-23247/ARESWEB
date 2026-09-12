@@ -1,42 +1,44 @@
 ---
 name: aresweb-zero-trust-security
-description: Secure ARESWEB authentication, authorization, App Check, Firestore and Storage rules, secrets, uploads, youth data, inquiry PII, public DTOs, and external integrations. Use for any trust-boundary, identity, privacy, or security-sensitive change.
+description: Implement or review ARESWEB access controls, uploads, secrets, and private-data boundaries.
 ---
 
 # ARESWEB security and youth privacy
 
-Treat clients, Firebase tokens until verified, Firestore documents, Storage
-objects, webhook payloads, and third-party responses as untrusted.
+Treat clients, unverified Firebase tokens, Firestore documents, Storage objects,
+webhooks and third-party responses as untrusted. Apply the contracts relevant to
+the changed boundary.
 
-## Authorization
+## Identity and access
 
-- Verify Firebase ID tokens server-side and authorize from the current
-  `authorized_users/{uid}` record.
-- Use an explicit role allowlist. Reject missing, unknown, unverified, and
-  archived records. Never infer access from a UI state or email address.
-- Enforce equivalent rules in Cloud Functions, Firestore rules, and Storage
-  rules. Test allow and deny cases with emulators.
-- Enforce App Check on browser-originated sensitive or abuse-prone endpoints.
-  Document any temporary exception and fail closed in production.
+Verify Firebase ID tokens server-side and authorize from the current
+authorized_users/{uid} record with an explicit role allowlist. Reject missing,
+unknown, unverified and archived records; UI state and email are not authority.
+Enforce equivalent access controls in Functions, Firestore and Storage rules.
+Sensitive or abuse-prone browser endpoints need App Check; document temporary
+exceptions and fail closed in production.
 
-## Data protection
+## Data and integrations
 
-- Encrypt inquiry names and contact details before the first Firestore write.
-- Restrict private youth data to the minimum admin/coach workflow. Public minor
-  identity is limited to an approved nickname and avatar.
-- Return explicit public DTOs; never return raw documents, contact fields,
-  internal UIDs, receipts, encryption metadata, or operational fields.
-- Prevent active-content execution from user uploads. Validate authenticated
-  uploads before buffering, bound file sizes, and use safe response headers.
-- Keep secrets only in Google Secret Manager/Firebase Functions secret bindings.
-  Never put them in source, Firestore, logs, URLs, browser storage, or GitHub.
+Encrypt inquiry names/contact details before the first Firestore write. Limit
+private youth data to the minimum admin/coach workflow; public minor identity
+is an approved nickname and avatar. Explicit public DTOs must exclude raw
+documents, contact fields, internal UIDs, receipts, encryption and operational
+metadata.
 
-## Failure and verification
+Authenticate uploads before buffering; bound size, validate content and prevent
+active-content execution with safe response headers. Rate-limit public/costly
+operations before expensive work. Authenticate webhook authors and derive
+task/comment authors from verified identity. Upstream write failures must remain
+visible failures.
 
-Rate-limit public and costly operations before expensive work. Authenticate
-webhook authors and derive task/comment authors from the verified identity, not
-request fields. Do not return fake-success responses for failed upstream writes.
+Keep secrets in Google Secret Manager/Firebase secret bindings, never source,
+Firestore, logs, URLs, browser storage or GitHub. Use shared redacting loggers.
 
-Log only redacted operational context through shared loggers. Add abuse, replay,
-cross-role, archived-user, malformed-input, and data-minimization tests. Obtain
-explicit approval before rotating secrets or changing production data or rules.
+## Verification and authorization
+
+Test applicable allow/deny, cross-role, archived-user, abuse/replay,
+malformed-input and data-minimization cases. Permission changes need emulator
+coverage. Complete authorized local fixes and verification; rotating secrets or
+applying production data/rule changes requires explicit session approval for
+that action. Do not request approval again when it already covers the action.
