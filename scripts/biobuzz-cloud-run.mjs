@@ -6,7 +6,7 @@ export function validateBiobuzzContract(c){
   const r=c.runtime;
   if(r?.cpu!=="1"||r.memoryMiB!==1024||r.minInstances!==0||r.maxInstances!==1||r.concurrency!==128||r.timeoutSeconds!==600||r.executionEnvironment!=="gen2"||r.requestBasedBilling!==false||r.startupCpuBoost!==false)throw new Error("BIOBUZZ resources exceed the reviewed contract.");
   if(c.runtimeServiceAccount!=="aresweb-biobuzz-runtime@aresfirst-portal.iam.gserviceaccount.com"||JSON.stringify([...c.runtimeProjectRoles].sort())!==JSON.stringify(["roles/datastore.user","roles/firebaseappcheck.tokenVerifier"]))throw new Error("Invalid BIOBUZZ runtime permissions.");
-  if(JSON.stringify(c.secrets)!=='["ABUSE_HMAC_SECRET"]'||c.admission?.maxRooms!==5||c.admission.monthlyRequests!==4000||c.admission.perIpHourlyRequests!==60)throw new Error("Invalid BIOBUZZ admission limits.");
+  if(JSON.stringify(c.secrets)!=='["ABUSE_HMAC_SECRET"]'||c.admission?.maxRooms!==1||c.admission.monthlyRequests!==4000||c.admission.perIpHourlyRequests!==60)throw new Error("Invalid BIOBUZZ admission limits.");
   if(c.publicOrigin!=="https://aresweb-biobuzz-sim-205869391101.us-central1.run.app"||c.totalWebsiteMonthlyTargetUsd!==100||c.sharedCloudRunSpendingGuardrailUsd!==35)throw new Error("Invalid BIOBUZZ origin or budget.");
   if(c.productionEnabled&&(!c.launchVerification?.cloudRunGuardrail||!c.launchVerification.totalProjectAlerts||!c.launchVerification.targetCapacity))throw new Error("Verify the shared spending guardrail, project billing alerts, and target-runtime capacity before launch.");
   return c;
@@ -28,7 +28,7 @@ export function verifyRevision(c,service,image){
   if(t?.spec?.serviceAccountName!==c.runtimeServiceAccount||String(container?.resources?.limits?.cpu)!=="1"||!['1Gi','1024Mi'].includes(container?.resources?.limits?.memory)
     ||a["autoscaling.knative.dev/maxScale"]!=="1"||!['0',undefined].includes(a["autoscaling.knative.dev/minScale"])||a["run.googleapis.com/cpu-throttling"]!=="false"
     ||a["run.googleapis.com/startup-cpu-boost"]!=="false"||a["run.googleapis.com/execution-environment"]!=="gen2"||t.spec.containerConcurrency!==128||t.spec.timeoutSeconds!==600
-    ||container.image!==image||env.NODE_ENV!=="production"||env.ENFORCE_APP_CHECK!=="true"||env.BIOBUZZ_MAX_ROOMS!=="5"||env.BIOBUZZ_PUBLIC_ORIGIN!==c.publicOrigin
+    ||container.image!==image||env.NODE_ENV!=="production"||env.ENFORCE_APP_CHECK!=="true"||env.BIOBUZZ_MAX_ROOMS!==String(c.admission.maxRooms)||env.BIOBUZZ_PUBLIC_ORIGIN!==c.publicOrigin
     ||env.ABUSE_HMAC_SECRET?.secretKeyRef?.name!=="ABUSE_HMAC_SECRET"||env.ABUSE_HMAC_SECRET.secretKeyRef.key!=="latest"
     ||Object.keys(env).length!==5||service.status?.latestReadyRevisionName!==service.status?.latestCreatedRevisionName
     ||service.status?.traffic?.length!==1||service.status.traffic[0].percent!==100||service.status.traffic[0].revisionName!==service.status.latestReadyRevisionName)throw new Error("Deployed BIOBUZZ revision differs from its resource, secret, or traffic contract.");

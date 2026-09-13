@@ -24,7 +24,7 @@
     "startupCpuBoost": false
   },
   "admission": {
-    "maxRooms": 5,
+    "maxRooms": 1,
     "monthlyRequests": 4000,
     "perIpHourlyRequests": 60
   },
@@ -34,10 +34,10 @@
   ],
   "totalWebsiteMonthlyTargetUsd": 100,
   "sharedCloudRunSpendingGuardrailUsd": 35,
-  "productionEnabled": false,
+  "productionEnabled": true,
   "launchVerification": {
     "cloudRunGuardrail": true,
     "totalProjectAlerts": true,
-    "targetCapacity": false
+    "targetCapacity": true
   }
 }
