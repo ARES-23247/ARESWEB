@@ -1,0 +1,137 @@
+import { useEffect, useRef, useState } from "react";
+import Field from "./Field";
+import AutoEditor, { defaultAuto } from "./AutoEditor";
+import { validateAuto } from "./core/auto";
+import { NEUTRAL, type AutoProgram, type Config, type Input, type SeatKind, type Snapshot } from "./core/types";
+import type { ClientMessage, Lobby, OnlineClient, ServerMessage, Session } from "./core/protocol";
+import "./biobuzz.css";
+
+const initial:Config={timed:false,seats:["human","empty","empty","empty"]};
+export default function Game({online}:{online?:OnlineClient}) {
+  const [config,setConfig]=useState<Config>(initial),[state,setState]=useState<Snapshot|null>(null),[error,setError]=useState("");
+  const [program,setProgram]=useState<AutoProgram>(defaultAuto),[editing,setEditing]=useState(false),[paused,setPaused]=useState(false);
+  const [seat,setSeat]=useState(0),[speed,setSpeed]=useState(5.8),[intake,setIntake]=useState(false),[code,setCode]=useState("");
+  const [lobby,setLobby]=useState<Lobby|null>(null),[busy,setBusy]=useState(false),[connected,setConnected]=useState(false);
+  const terminal=useRef(false);
+  const worker=useRef<Worker|null>(null),socket=useRef<WebSocket|null>(null),session=useRef<Session|null>(null),keys=useRef(new Set<string>());
+  const pressTimes=useRef(new Map<string,number>()),keyTimers=useRef(new Map<string,ReturnType<typeof setTimeout>>());
+  const control=useRef({seat,speed,intake,paused}),retry=useRef<ReturnType<typeof setTimeout>|null>(null),sequence=useRef(0),closed=useRef(false);
+  useEffect(()=>{control.current={seat,speed,intake,paused};},[seat,speed,intake,paused]);
+  const send=(message:ClientMessage)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify(message));};
+  function leaveOnline(){
+    send({type:"leave"});
+    session.current=null;if(retry.current)clearTimeout(retry.current);socket.current?.close();socket.current=null;
+    setLobby(null);setConnected(false);worker.current?.postMessage({type:"pause",paused:false});
+  }
+  function connect(s:Session,until?:number){
+    if(closed.current)return;
+    terminal.current=false;session.current=s;worker.current?.postMessage({type:"pause",paused:true});
+    const ws=new WebSocket(s.socketUrl);socket.current=ws;
+    ws.onopen=()=>{sequence.current=0;ws.send(JSON.stringify({type:"hello",version:1,roomId:s.roomId,token:s.token}));};
+    ws.onmessage=event=>{
+      try{
+        const m=JSON.parse(event.data) as ServerMessage;
+        if(m.type==="snapshot"){setState(m.state);if(["finished","interrupted"].includes(m.state.phase))terminal.current=true;}
+        if(m.type==="lobby"){setLobby(m.lobby);if(["finished","interrupted","local-offer"].includes(m.lobby.status))terminal.current=true;}
+        if(m.type==="joined"){setSeat(m.seat);setConnected(true);setError("");}
+        if(m.type==="error")setError(m.message);
+      }catch{setError("Invalid simulator response.");ws.close();}
+    };
+    ws.onclose=()=>{
+      setConnected(false);
+      if(closed.current||session.current!==s||terminal.current)return;
+      const deadline=until??Date.now()+30000;
+      if(Date.now()<deadline){setError("Connection lost. Reconnecting…");retry.current=setTimeout(()=>connect(s,deadline),1000);}
+      else {setError("The online match was interrupted. Start a new room or return to local practice.");setLobby(old=>old?{...old,status:"interrupted"}:null);}
+    };
+  }
+  async function admit(action:"create"|"join"|"queue"){
+    if(!online)return;
+    setBusy(true);setError("");
+    try{leaveOnline();const result=await online.admit(action,action==="join"?{code:code.trim().toUpperCase()}:undefined);connect(result);}
+    catch(e){setError(e instanceof Error?e.message:"Online play is unavailable.");}
+    finally{setBusy(false);}
+  }
+  useEffect(()=>{
+    closed.current=false;
+    const timeouts=keyTimers.current;
+    const w=new Worker(new URL("./worker.ts",import.meta.url),{type:"module"});worker.current=w;
+    w.onmessage=event=>{if(session.current)return;if(event.data.type==="snapshot")setState(event.data.state);else setError(event.data.message);};
+    const clear=()=>keys.current.clear();
+    const down=(e:KeyboardEvent)=>{
+      if((e.target as HTMLElement)?.closest("input,select,textarea"))return;
+      if(["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","KeyJ","KeyF","KeyR"].includes(e.code)){keys.current.add(e.code);e.preventDefault();}
+    };
+    const up=(e:KeyboardEvent)=>keys.current.delete(e.code);
+    const visibility=()=>{clear();w.postMessage({type:"pause",paused:document.hidden||control.current.paused||!!session.current});};
+    window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",clear);document.addEventListener("visibilitychange",visibility);
+    const timer=setInterval(()=>{
+      const c=control.current,k=keys.current,pad=navigator.getGamepads?.().find(p=>p?.connected);
+      const dead=(v:number)=>Math.abs(v)<0.12?0:v;
+      const input:Input=c.paused||document.hidden?{...NEUTRAL}:{
+        x:(k.has("KeyW")?1:0)-(k.has("KeyS")?1:0)-(pad?dead(pad.axes[1]??0):0),
+        y:(k.has("KeyA")?1:0)-(k.has("KeyD")?1:0)-(pad?dead(pad.axes[0]??0):0),
+        turn:(k.has("KeyQ")?1:0)-(k.has("KeyE")?1:0)-(pad?dead(pad.axes[2]??0):0),
+        intake:c.intake||k.has("KeyJ")||!!pad?.buttons[0]?.pressed,shoot:k.has("KeyF")||!!pad?.buttons[7]?.pressed,
+        speed:c.speed,release:k.has("KeyR")||!!pad?.buttons[3]?.pressed};
+      if(session.current){if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({type:"input",sequence:sequence.current++,input}));}
+      else w.postMessage({type:"input",id:c.seat,input});
+    },1000/30);
+    return()=>{closed.current=true;for(const timeout of timeouts.values())clearTimeout(timeout);clearInterval(timer);w.terminate();worker.current=null;if(retry.current)clearTimeout(retry.current);socket.current?.close();window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",clear);document.removeEventListener("visibilitychange",visibility);};
+  },[]);
+  useEffect(()=>{worker.current?.postMessage({type:"start",config});},[config]);
+  useEffect(()=>{if(!session.current)worker.current?.postMessage({type:"pause",paused});},[paused]);
+  const waiting=lobby?.status==="waiting"||lobby?.status==="local-offer";
+  const interrupted=lobby?.status==="interrupted";
+  const unavailable=waiting||interrupted;
+  const selected=unavailable?undefined:state?.robots.find(r=>r.id===seat);
+  const reset=(next:Config)=>{leaveOnline();setPaused(false);setError("");setSeat(Math.max(0,next.seats.findIndex(s=>s==="human")));setConfig({...next});};
+  const hold=(key:string)=>({
+    onPointerDown:(e:React.PointerEvent<HTMLButtonElement>)=>{e.currentTarget.setPointerCapture(e.pointerId);clearTimeout(keyTimers.current.get(key));pressTimes.current.set(key,performance.now());keys.current.add(key);},
+    onPointerUp:()=>{const remaining=Math.max(0,250-(performance.now()-(pressTimes.current.get(key)??0)));keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),remaining));},
+    onPointerCancel:()=>keys.current.delete(key),
+    onClick:(e:React.MouseEvent<HTMLButtonElement>)=>{if(e.detail===0){keys.current.add(key);keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),250));}},
+  });
+  const seatOptions=(["human","easy","standard","empty"] as SeatKind[]).map(kind=><option key={kind} value={kind}>{kind==="empty"?"Empty":kind==="human"?"Human":kind==="easy"?"Easy bot":"Standard bot"}</option>);
+  return <section className="bio-page" aria-label="BIOBUZZ simulator">
+    <header><p>ARES Arcade · BIOBUZZ</p><h1>Drive. Collect. Tip the hive.</h1><p>Practice on your own, build an auto, or play a 2v2 match.</p></header>
+    {error&&<p role="alert" className="bio-error">{error}</p>}
+    <div className="bio-grid"><div>
+      <div className="bio-card"><div className="bio-score"><span className="red" data-testid="red-score">Red {unavailable?0:state?.score.red.total??0}</span><span className="blue" data-testid="blue-score">Blue {unavailable?0:state?.score.blue.total??0}</span></div>
+      <p className="bio-timer" data-testid="match-clock">{interrupted?"INTERRUPTED":waiting?"WAITING":state?.phase.toUpperCase()??"LOADING"} {!unavailable&&state&&["auto","transition","teleop"].includes(state.phase)?Math.ceil(state.remaining)+"s":""} {paused?" · PAUSED":""}</p>
+      <Field state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
+      <div className="bio-row"><button disabled={!!session.current} onClick={()=>setPaused(!paused)}>{paused?"Resume":"Pause"}</button><button onClick={()=>reset(config)}>Reset local field</button><button disabled={!!session.current} onClick={()=>setEditing(!editing)}>{editing?"Close auto editor":"Build an auto"}</button></div>
+      <p className="bio-help">WASD drive · Q/E turn · J intake · F shoot · R release nectar. Gamepad: left stick drive, right stick turn, A intake, right trigger shoot, Y release.</p>
+      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button {...hold("KeyF")}>Shoot</button><button {...hold("KeyR")}>Release nectar</button></div>
+      </div>
+      {editing&&<AutoEditor program={program} onChange={setProgram} onPreview={()=>{const id=program.alliance==="red"?0:2;setSeat(id);const seats:SeatKind[]=["empty","empty","empty","empty"];seats[id]="human";const autos:(AutoProgram|null)[]=[null,null,null,null];autos[id]=validateAuto(program);reset({timed:true,seats,autos});}}/>}
+    </div><aside>
+      <section className="bio-card"><h2>Your robot</h2>
+        <label>Controlled robot<select value={seat} disabled={!!session.current} onChange={e=>setSeat(Number(e.target.value))}>{state?.robots.map(r=><option key={r.id} value={r.id}>{r.alliance} {r.id%2+1}</option>)}</select></label>
+        <p className="bio-stat" data-testid="robot-position">{selected?"X "+selected.x.toFixed(2)+" m · Y "+selected.y.toFixed(2)+" m · "+selected.heading.toFixed(2)+" rad":waiting?"Your robot appears when the match starts.":"No robot in this seat."}</p>
+        <p data-testid="inventory">Inventory {selected?.inventory.length??0}/4: {selected?.inventory.map(id=>state!.balls[id].kind==="pollen"?"Pollen":state!.balls[id].kind+" nectar").join(", ")||"empty"}</p>
+        <label><input type="checkbox" checked={intake} onChange={e=>setIntake(e.target.checked)}/> Run intake</label>
+        <label>Launch speed: {speed.toFixed(2)} m/s<input type="range" min={2} max={5.8} step={0.01} value={speed} onChange={e=>setSpeed(Number(e.target.value))}/></label>
+        <div className="bio-row"><button onClick={()=>setSpeed(5.8)}>Hive power</button><button onClick={()=>setSpeed(3.08)}>Flower power</button></div>
+      </section>
+      <section className="bio-card"><h2>{lobby?"Online room":"Local practice"}</h2>
+        {!lobby?<><label><input type="checkbox" checked={config.timed} onChange={e=>reset({...config,timed:e.target.checked})}/> Match timer and AUTO</label>
+          <div className="bio-row">{config.seats.map((kind,i)=><label key={i}>{i<2?"Red":"Blue"} {i%2+1}<select value={kind} onChange={e=>{const seats=[...config.seats];seats[i]=e.target.value as SeatKind;reset({...config,seats});}}>{seatOptions}</select></label>)}</div>
+          <button onClick={()=>{setSeat(0);reset(initial);}}>Solo, no bots</button> <button onClick={()=>reset({timed:true,seats:["human","standard","standard","standard"]})}>Practice with bots</button>
+        </>:<><p>Room <strong>{lobby.code}</strong> · {lobby.status==="finished"?"Match complete":interrupted?"Interrupted":connected?"Connected":"Reconnecting"}</p><p>{lobby.status==="waiting"?lobby.public?"Matchmaking · "+lobby.waitSeconds+"s":"Waiting for players":lobby.status}</p>
+          <div className="bio-row">{lobby.seats.map((kind,i)=><label key={i}>{i<2?"Red":"Blue"} {i%2+1} {lobby.ready[i]?"✓":""}<select disabled={lobby.public||seat!==lobby.host||lobby.status!=="waiting"||lobby.occupied[i]} value={kind} onChange={e=>{const seats=[...lobby.seats];seats[i]=e.target.value as SeatKind;send({type:"configure",seats});}}>{seatOptions}</select></label>)}</div>
+          {lobby.status==="waiting"&&<div className="bio-row"><button disabled={lobby.ready[seat]} onClick={()=>send({type:"ready",auto:null})}>Ready without auto</button><button disabled={lobby.ready[seat]} onClick={()=>{try{send({type:"ready",auto:validateAuto(program)});}catch(e){setError((e as Error).message);}}}>Ready with this auto</button>{!lobby.public&&seat===lobby.host&&<button onClick={()=>send({type:"start"})}>Start match</button>}</div>}
+          {lobby.status==="local-offer"&&<p>No other humans are waiting. <button onClick={()=>{setSeat(0);reset({timed:true,seats:["human","standard","standard","standard"]});}}>Play locally with bots</button></p>}
+          <button onClick={()=>reset(initial)}>Leave room</button>
+        </>}
+      </section>
+      {!lobby&&<section className="bio-card"><h2>Play online</h2>{online?<><div className="bio-row"><button disabled={busy} onClick={()=>admit("queue")}>Find 2v2 match</button><button disabled={busy} onClick={()=>admit("create")}>Create private room</button></div><label>Room code<input maxLength={8} value={code} onChange={e=>setCode(e.target.value)}/></label><button disabled={busy||code.trim().length!==8} onClick={()=>admit("join")}>Join room</button></>:<p>Online hosting is not configured here. Solo practice, bots, and the auto editor are available.</p>}</section>}
+      {!unavailable&&state&&<section className="bio-card"><h2>Field contents</h2>{state.flowers.map((f,i)=><details key={i}><summary>Flower {i+1}: {f.balls.filter(id=>state.balls[id].kind==="pollen").length} pollen / {f.balls.filter(id=>state.balls[id].kind!=="pollen").length} nectar</summary><p>Bottom → top: {f.balls.map(id=><span key={id} className="bio-chip">{state.balls[id].kind==="pollen"?"Pollen":state.balls[id].kind+" nectar"}</span>)}</p><p>Scoring elements: {state.tally.flowers[i].length}. Owner: {state.score.flowers[i].owner??"none"}.</p></details>)}
+        {state.hives.map(h=><p key={h.alliance}>{h.alliance} hive: {h.tips} tips · cell {h.upward+1} open · {h.cells[h.upward].length} balls {h.tipping?"· tipping":""}</p>)}
+        <details><summary>Score breakdown</summary>{(["red","blue"] as const).map(c=><p key={c}>{c}: AUTO {state.score[c].auto}, TELEOP {state.score[c].teleop}, penalties received {state.score[c].penalties}{state.phase==="finished"?", RP "+state.score[c].totalRP:""}</p>)}</details>
+        <div className="bio-events" aria-label="Recent game events">{state.events.slice(-6).map((e,i)=><p key={e.tick+":"+i}>{(e.tick/60).toFixed(1)}s · {e.message}</p>)}</div>
+      </section>}
+      <details className="bio-card"><summary>Practice rules and physics</summary><p>Competition Manual V1. Dynamic 2D contacts with projectile height. Hive load uses the nominal 0.440 lb calibration. Referee judgments about intent, cards, and disqualification are outside automatic practice scoring.</p><p>Flowers unlock for nectar in TELEOP's final minute. Each hive tip earns a nectar release; remaining reserves unlock in the final minute. Keep the loading zone clear to release.</p></details>
+    </aside></div>
+  </section>;
+}

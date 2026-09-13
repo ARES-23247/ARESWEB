@@ -66,6 +66,19 @@ afterAll(async () => {
 });
 
 describe("Firestore zero-trust rules", () => {
+  it("keeps simulator admission control and authoritative results inaccessible to browser clients", async () => {
+    await seedAuthorizedUser("sim-admin", "admin");
+    for (const name of ["internal_biobuzz_control", "biobuzz_results"]) {
+      await seedDocument(name, "service", { admissionOpen: true, score: { red: 20 } });
+      for (const db of [testEnvironment.unauthenticatedContext().firestore(), testEnvironment.authenticatedContext("sim-admin").firestore()]) {
+        const target = doc(db, name, "service");
+        await assertFails(getDoc(target));
+        await assertFails(getDocs(collection(db, name)));
+        await assertFails(setDoc(target, { admissionOpen: true, score: { red: 9999 } }));
+        await assertFails(deleteDoc(target));
+      }
+    }
+  });
   it("keeps every raw finance operation behind the admin/coach API", async () => {
     await seedDocument("finance_transactions", "private-ledger", {
       amount: 19.99, receiptUrl: "https://example.test/receipt", isDeleted: 0,

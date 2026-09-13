@@ -41,6 +41,7 @@ export const TEAM_LINKS: NavItemConfig[] = [
 ];
 
 export const ARCADE_GAMES = [
+  { label: "BIOBUZZ Simulator", to: "/biobuzz/simulator", icon: Gamepad2, iconColor: "text-ares-gold", description: "Drive, intake, and score on the BIOBUZZ field. Practice alone, add bots, or build an auto for ARES Studio.", modes: "Robot physics · Solo, bots, or online 2v2" },
   { label: "Waggle Way", to: "/waggle-way", icon: Flower2, iconColor: "text-ares-gold", description: "Guide a hive to flowers with dances, fans and shelter leaves. Play thirty puzzles or build a garden in the workshop.", modes: "Swarm puzzle · Solo playtest" },
   { label: "BUZZHEX", to: "/buzzhex", icon: Hexagon, iconColor: "text-ares-gold", description: "Connect opposite edges of an 11 × 11 hex board. Place tiles, swap opening colors, and find your path across the hive.", modes: "Connection strategy · 2 players or computer" },
   { label: "BUZZLE", to: "/buzzle", icon: Hexagon, iconColor: "text-ares-gold", description: "Build words in three directions on a hexagonal board. Find your next move with legal word references and dictionary help.", modes: "Word game · 2–4 players" },

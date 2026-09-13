@@ -82,7 +82,8 @@
     "@ares/buzzle": "workspace:*",
     "@ares/pollinator": "workspace:*",
     "@ares/buzzhex": "workspace:*",
-    "@ares/waggle-way": "workspace:*"
+    "@ares/waggle-way": "workspace:*",
+    "@ares/biobuzz": "workspace:*"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: [
+      "scripts/biobuzz-cloud-run.test.mjs",
       "scripts/affected-areas.test.mjs",
       "scripts/wait-release-ready.test.mjs",
       "scripts/check-e2e-shards.test.mjs",
@@ -11,6 +12,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
+        "scripts/biobuzz-cloud-run.mjs",
         "scripts/affected-areas.mjs",
         "scripts/wait-release-ready.mjs",
         "scripts/check-e2e-shards.mjs",
