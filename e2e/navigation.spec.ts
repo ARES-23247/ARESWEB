@@ -372,7 +372,9 @@ test.describe("Navigation & Accessibility E2E tests", () => {
       // Desktop Safari emulates macOS even when the test runner is Windows/Linux.
       const macShortcuts = await page.evaluate(() => navigator.userAgent.includes("Macintosh"));
       await editor.press(macShortcuts ? "Meta+A" : "Control+A");
-      await editor.pressSequentially("import React from 'react';\nexport default function SimComponent() { return <div>Editor release check</div>; }", { delay: 20 });
+      // Insert one paste-like edit through browser input. Synthetic per-character
+      // typing races Monaco's asynchronous bracket insertion on busy CI runners.
+      await page.keyboard.insertText("import React from 'react';\nexport default function SimComponent() { return <div>Editor release check</div>; }");
       await expect(surface).toContainText("Editor release check");
       await page.getByRole("button", { name: "Run", exact: true }).click();
       await expect(page.frameLocator('iframe[title="Simulation Preview"]').getByText("Editor release check", { exact: true })).toBeVisible();
