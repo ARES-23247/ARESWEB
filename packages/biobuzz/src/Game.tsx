@@ -33,7 +33,7 @@ export default function Game({online}:{online?:OnlineClient}) {
         const m=JSON.parse(event.data) as ServerMessage;
         if(m.type==="snapshot"){setState(m.state);if(["finished","interrupted"].includes(m.state.phase))terminal.current=true;}
         if(m.type==="lobby"){setLobby(m.lobby);if(["finished","interrupted","local-offer"].includes(m.lobby.status))terminal.current=true;}
-        if(m.type==="joined"){setSeat(m.seat);setConnected(true);setError("");}
+        if(m.type==="joined"){setSeat(m.seat);setPaused(false);setConnected(true);setError("");}
         if(m.type==="error")setError(m.message);
       }catch{setError("Invalid simulator response.");ws.close();}
     };

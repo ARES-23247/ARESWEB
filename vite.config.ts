@@ -196,6 +196,7 @@ export default defineConfig({
         "src/lib/biobuzzScoring.ts",
         "packages/biobuzz/src/core/*.ts",
         "packages/biobuzz/src/export.ts",
+        "packages/biobuzz/src/worker.ts",
         "src/lib/biobuzzOnline.ts",
         "packages/waggle-way/src/core/*.ts",
         "packages/waggle-way/src/communityClient.ts",
@@ -294,6 +295,7 @@ export default defineConfig({
       thresholds: {
         "packages/biobuzz/src/core/*.ts": { lines: 85, functions: 100 },
         "packages/biobuzz/src/export.ts": { lines: 85, functions: 100 },
+        "packages/biobuzz/src/worker.ts": { lines: 85, functions: 100 },
         "src/lib/biobuzzOnline.ts": { lines: 85, functions: 100 },
         "packages/waggle-way/src/core/*.ts": { lines: 85, functions: 100 },
         "packages/waggle-way/src/communityClient.ts": { lines: 85, functions: 100 },

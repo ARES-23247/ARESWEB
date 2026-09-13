@@ -1,0 +1,391 @@
+{
+  "sourceCommit": "cb64163ddb5c654f9ea5198fa282a6381a46fcd3",
+  "workflowRun": "https://github.com/ARES-23247/ARESWEB/actions/runs/34784074463",
+  "executionSpec": {
+    "parallelism": 1,
+    "taskCount": 1,
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "image": "us-central1-docker.pkg.dev/aresfirst-portal/aresweb-services/biobuzz-capacity@sha256:bc1c1d2f3ab967f6bfaa1b4e41ab2d832ebb9c3e88fa40262c17cdfd05abc4fb",
+            "resources": {
+              "limits": {
+                "cpu": "1",
+                "memory": "1Gi"
+              }
+            }
+          }
+        ],
+        "maxRetries": 0,
+        "serviceAccountName": "aresweb-biobuzz-benchmark@aresfirst-portal.iam.gserviceaccount.com",
+        "timeoutSeconds": "600"
+      }
+    }
+  },
+  "completionTime": "2026-09-13T21:37:01.616676Z",
+  "selectedMaxRooms": 1,
+  "passCriteria": {
+    "maximumCpuPercent": 70,
+    "maximumP99BatchMs": 16.666666666666668,
+    "maximumConsecutiveMisses": 1
+  },
+  "measurement": {
+    "cloudRunExecution": "aresweb-biobuzz-capacity-h5slw",
+    "cloudRunJob": "aresweb-biobuzz-capacity",
+    "date": "2026-09-13T21:36:57.707Z",
+    "kind": "biobuzz-capacity",
+    "machine": "linux",
+    "node": "v24.18.0",
+    "note": "Engine and four independent compressed streams at 60 Hz; excludes actual socket/TLS overhead. Cloud Run resource limits must be verified against the recorded execution.",
+    "records": [
+      {
+        "compressedMiB": 15.077091217041016,
+        "compressedMiBPerMatch": 15.077091217041016,
+        "cpuPercentOfOneCore": 1.669639375,
+        "elapsedSeconds": 3.514246952,
+        "matches": 1,
+        "maxBatchMs": 76.26243499999998,
+        "maxConsecutiveMisses": 1,
+        "missedBatches": 36,
+        "p99BatchMs": 1.0734669999997095,
+        "rawMiB": 79.50170135498047,
+        "results": [
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          }
+        ],
+        "rssMiB": 125.6796875
+      },
+      {
+        "compressedMiB": 75.38545608520508,
+        "compressedMiBPerMatch": 15.077091217041016,
+        "cpuPercentOfOneCore": 5.36392,
+        "elapsedSeconds": 11.284814403999999,
+        "matches": 5,
+        "maxBatchMs": 59.975932000000284,
+        "maxConsecutiveMisses": 1,
+        "missedBatches": 113,
+        "p99BatchMs": 24.270503000000645,
+        "rawMiB": 397.50850677490234,
+        "results": [
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          }
+        ],
+        "rssMiB": 130.4140625
+      },
+      {
+        "compressedMiB": 150.77091217041016,
+        "compressedMiBPerMatch": 15.077091217041016,
+        "cpuPercentOfOneCore": 9.607488125,
+        "elapsedSeconds": 20.208281794,
+        "matches": 10,
+        "maxBatchMs": 59.25889300000017,
+        "maxConsecutiveMisses": 1,
+        "missedBatches": 202,
+        "p99BatchMs": 28.518384000002698,
+        "rawMiB": 795.0170135498047,
+        "results": [
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          }
+        ],
+        "rssMiB": 139.58984375
+      },
+      {
+        "compressedMiB": 376.9272804260254,
+        "compressedMiBPerMatch": 15.077091217041016,
+        "cpuPercentOfOneCore": 26.732303125,
+        "elapsedSeconds": 56.199467903999995,
+        "matches": 25,
+        "maxBatchMs": 71.533500000005,
+        "maxConsecutiveMisses": 2,
+        "missedBatches": 656,
+        "p99BatchMs": 39.17607300000964,
+        "rawMiB": 1987.5425338745117,
+        "results": [
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          },
+          {
+            "phase": "finished",
+            "tips": [
+              4,
+              4
+            ]
+          }
+        ],
+        "rssMiB": 161.21484375
+      }
+    ]
+  }
+}

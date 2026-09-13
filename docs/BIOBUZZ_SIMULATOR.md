@@ -28,13 +28,13 @@ Studio's auto editor imports the ZIP as a new draft with a fresh identity, valid
 
 ## Online service and release
 
-The dedicated service contract is `infra/gcp/biobuzz-service.json`. Production is disabled until the service, exact-origin CSP, runtime identity/secrets, billing guardrail, and load test are verified. Local modes do not need this service. Set `VITE_BIOBUZZ_ORIGIN` to the verified HTTPS service origin to enable online controls.
+The dedicated service contract is `infra/gcp/biobuzz-service.json`. Production is enabled in the reviewed contract with an initial admission limit of one room, following the verified billing and target-capacity evidence below. The protected workflow must verify the deployed service before reopening admission. Local modes do not need this service. Set `VITE_BIOBUZZ_ORIGIN` to the verified HTTPS service origin to enable online controls.
 
 The process owns rooms in memory. Clients authenticate their WebSocket with an in-memory random capability obtained through App-Checked HTTP admission. Tokens never appear in URLs or persistent browser storage. Inputs are leased, sequenced, bounded, and rate limited. Disconnect substitutes a bot after three seconds; the seat can be reclaimed for 30 seconds. Reloading the page loses the in-memory capability.
 
 Only final results are written to Firestore. Live state is never written each tick. Process loss interrupts matches. Drain before deploying: close admission, allow active matches to finish, then replace the revision. A max-one-instance setting is not a distributed room-routing guarantee; unknown room ownership fails closed.
 
-Budget target: under $100/month for the whole website, with owner-reported existing spend of $0. The $100 project budget and its 50%, 75%, 90%, 100%, and forecast-100% alerts were verified read-only through the Billing API on 2026-09-13. The shared $35 Cloud Run category spend cap was verified in the billing console on 2026-09-13 under the already signed-in billing owner: monthly, project aresfirst-portal, service Cloud Run, status Configured, with 50%, 80%, and 100% alerts. Preview spend caps do not appear in the legacy Budget API. The initial access failure used the team account rather than the billing owner. Alerts cannot guarantee an exact ceiling due to reporting delay. Start at five rooms; raise only after a target-runtime benchmark with 30% CPU headroom.
+Budget target: under $100/month for the whole website, with owner-reported existing spend of $0. The $100 project budget and its 50%, 75%, 90%, 100%, and forecast-100% alerts were verified read-only through the Billing API on 2026-09-13. The shared $35 Cloud Run category spend cap was verified in the billing console on 2026-09-13 under the already signed-in billing owner: monthly, project aresfirst-portal, service Cloud Run, status Configured, with 50%, 80%, and 100% alerts. Preview spend caps do not appear in the legacy Budget API. The initial access failure used the team account rather than the billing owner. Alerts cannot guarantee an exact ceiling due to reporting delay. Start at one room, the largest tested target-runtime batch that passed the timing criteria; raise only after another target-runtime benchmark and live multi-client verification.
 
 ## Verification
 
@@ -63,7 +63,7 @@ gcloud secrets add-iam-policy-binding ABUSE_HMAC_SECRET --project aresfirst-port
 gcloud iam service-accounts add-iam-policy-binding aresweb-biobuzz-runtime@aresfirst-portal.iam.gserviceaccount.com --project aresfirst-portal --member serviceAccount:aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com --role roles/iam.serviceAccountUser
 ```
 
-Use the existing Artifact Registry repository and WIF deployer. No service-account key is created. After verifying the shared spend cap and target capacity, enable the reviewed service contract and merge through the protected release workflow. The release drains existing rooms, builds an immutable image, verifies resource/secret/traffic/invoker state, and resumes admission only after health verification. Failed deployment leaves admission closed.
+Use the existing Artifact Registry repository and WIF deployer. No service-account key is created. After verifying the shared spend cap and target capacity, enable the reviewed service contract and merge through the protected release workflow. The release drains existing rooms, builds an immutable image, verifies resource/secret/traffic/invoker state, and leaves admission closed. A separate resume step obtains a fresh audience-bound ID token through the existing Google WIF action and verifies the exact revision again before reopening admission. The drain token is also minted by that action; the gcloud identity-token command does not accept the federated credential file as a service-account ID-token credential. Fresh resume authentication avoids relying on a ten-minute token surviving the build and rollout. No additional identity grants or long-lived keys are needed. Failed deployment leaves admission closed.
 
 ## Local four-browser integration test
 
@@ -81,7 +81,7 @@ Build Vite with mode `e2e`, output `scratch/biobuzz/online-dist`, and `VITE_BIOB
 - Studio imported the actual downloaded ZIP through its auto editor, preserved existing routines, generated code, and ran the selected 32-step routine to `Complete`. Native codecs and editor tests passed. The desktop controller showed positional/heading drift and missed the browser's scoring positions. Native physical parity remains unverified; editable format and action execution compatibility are established. The final season frame was disabled. Retained motor telemetry is not a fresh measurement of shutdown outputs.
 - Production build, per-entry/aggregate bundle budgets, frozen dependency install, dependency audit, lint, and type checks passed. Generated artifacts and detailed logs remain under the owned worktrees' build/scratch directories.
 
-The online deployment remains gated on a capacity benchmark of the declared Cloud Run CPU. The owner authorized deployment on 2026-09-13. The $35 guardrail and $100 project alerts are verified. The protected capacity workflow below measures the cloud runtime; the local Docker daemon did not respond, so no local container result is claimed.
+The owner authorized deployment and the exact online IAM setup on 2026-09-13. Both dedicated identities and their declared grants were provisioned and read back. The $35 guardrail and $100 project alerts are verified. The protected target-capacity workflow completed successfully. The local Docker daemon did not respond, so no local container result is claimed.
 
 ## Cost estimate
 
@@ -100,7 +100,7 @@ The final [benchmark record](biobuzz-benchmark-2026-09-13.json) runs complete 16
 | 10 | 11.17% | 8.28 ms | 13.21 ms | 254 MiB |
 | 25 | 29.88% | 18.98 ms | 39.25 ms | 278 MiB |
 
-Ten is the largest local sample with every measured batch below the 16.67 ms simulation period and more than 30% CPU headroom. Twenty-five misses that deadline despite acceptable average CPU. Production remains provisionally bounded to five rooms until the target instance passes. This benchmark includes compression CPU but does not measure real socket/TLS overhead or deployment scheduling jitter.
+Ten is the largest local sample with every measured batch below the 16.67 ms simulation period and more than 30% CPU headroom. Twenty-five misses that deadline despite acceptable average CPU. This historical local result does not set production capacity; the target-runtime measurement below selects one room. This benchmark includes compression CPU but does not measure real socket/TLS overhead or deployment scheduling jitter.
 
 ## Protected target-capacity measurement
 
@@ -109,3 +109,23 @@ Ten is the largest local sample with every measured batch below the 16.67 ms sim
 The existing deployer needs a narrowly scoped `areswebBiobuzzCapacity` custom role containing `run.jobs.create`, `run.jobs.get`, `run.jobs.update`, `run.jobs.run`, `run.executions.get`, and `run.operations.get`, plus Service Account User on that benchmark identity. These operator-provisioned grants support this reviewed workflow; no long-lived key is used. Job creation is a project-level permission. Keep this role separate from existing deployment roles so it can be removed independently.
 
 The workflow retains the exact job/execution description as an artifact. A billing-authorized operator reads the matching execution's JSON `biobuzz-capacity` log record, verifies the resource limits, and records the result before enabling online admission. Passing means at least 30% one-core CPU headroom, p99 batches within 16.67 ms, and no consecutive missed batch deadlines. An isolated scheduling pause is reported separately. This CPU/compression benchmark does not substitute for the four-client protocol tests or a live service smoke test.
+
+
+### Cloud Run result and initial admission — 2026-09-13
+
+[Protected workflow 34784074463](https://github.com/ARES-23247/ARESWEB/actions/runs/34784074463) completed execution `aresweb-biobuzz-capacity-h5slw` successfully. The [recorded evidence](biobuzz-cloud-capacity-2026-09-13.json) pins source commit `cb64163ddb5c654f9ea5198fa282a6381a46fcd3`, the resolved image digest, exact execution resources, completion time, and original structured measurement. Read-back confirmed one CPU, 1 GiB, one task, one-way parallelism, 600-second timeout, zero retries, and no environment variables or secrets. The benchmark identity has no application-data permissions.
+
+| Matches | One-core CPU demand | p99 batch | Worst batch | Missed batches / longest run | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 1.67% | 1.07 ms | 76.26 ms | 36 / 1 | Pass |
+| 5 | 5.36% | 24.27 ms | 59.98 ms | 113 / 1 | Fail p99 |
+| 10 | 9.61% | 28.52 ms | 59.26 ms | 202 / 1 | Fail p99 |
+| 25 | 26.73% | 39.18 ms | 71.53 ms | 656 / 2 | Fail p99 and consecutive deadlines |
+
+All simulated matches finished, with four tips per alliance. One room is the largest passing sampled capacity and becomes the initial production admission limit. It retains more than 30% CPU headroom. The isolated pauses remain visible in this report; no claim of zero missed deadlines is made. The compressed output remains 15.077 MiB per four-client match, consistent with the cost scenarios above. This accelerated engine/compression measurement excludes actual WebSocket/TLS overhead; live service testing remains necessary after protected deployment. Local practice, bot matches, and auto editing remain available when the single online room is occupied.
+
+The first website release, [PR 277](https://github.com/ARES-23247/ARESWEB/pull/277), passed the complete protected test gate before merge. Its [production rollout and browser security smoke](https://github.com/ARES-23247/ARESWEB/actions/runs/34784051396) both passed. The online activation follows through a separate protected release with fresh WIF admission tokens.
+
+Live-site testing of the first release exposed a local worker terminal-snapshot defect: a match finishing on tick 9509 (between regular snapshot slots) left the UI at SETTLING. The worker now publishes terminal snapshots explicitly and avoids repeating an unchanged terminal tick. A regression test runs the actual three-bot simulation through completion; it fails on the released worker and passes after the fix at Red 83 / Blue 100. Pause/reset/input handling also passes. The worker is now included in the coverage ratchet and measures 100% lines/functions with 96.15% branches.
+
+The online handoff also clears the local pause state when a player seat is accepted. Previously a player joining from paused practice retained neutral controls while the online pause button was disabled. The four-browser test now pauses every client before create/join, checks the resumed online control state, and drives/shoots after AUTO. The regression reproduced against the previous build; the corrected full match is verified separately from production admission.
