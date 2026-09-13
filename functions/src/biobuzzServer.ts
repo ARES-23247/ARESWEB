@@ -35,7 +35,7 @@ export function attachBiobuzzSockets(server:Server,rooms:BiobuzzRooms,origins:re
           },close:()=>ws.close()});
           clearTimeout(timeout);
         }else binding.receive(m);
-      }catch(e){ws.send(JSON.stringify({type:"error",message:e instanceof ApiError?e.message:"Invalid simulator message."}));if(!binding||e instanceof ApiError&&e.status===429)ws.close(1008);}
+      }catch(e){ws.send(JSON.stringify({type:"error",message:e instanceof ApiError?e.message:"Invalid simulator message."}));if (!binding || (e instanceof ApiError && e.status === 429)) ws.close(1008);}
     });
     ws.on("close",()=>{clearInterval(heartbeat);clearTimeout(timeout);binding?.detach();});
   });
