@@ -497,8 +497,46 @@ jobs:
           gcloud run services get-iam-policy aresweb-game-api --project aresfirst-portal --region us-central1 --format=json \
             | node scripts/verify-game-cloud-run.mjs --iam-json -
 
+      - name: Read the verified BIOBUZZ launch configuration
+        id: biobuzz-launch
+        run: echo "origin=$(node scripts/biobuzz-cloud-run.mjs --origin)" >> "$GITHUB_OUTPUT"
+
+      - name: Obtain a short-lived BIOBUZZ drain token
+        if: steps.biobuzz-launch.outputs.origin != ''
+        id: biobuzz-drain-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: aresfirst-portal
+          workload_identity_provider: projects/205869391101/locations/global/workloadIdentityPools/aresweb-github/providers/github-production
+          service_account: aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: ${{ steps.biobuzz-launch.outputs.origin }}
+          create_credentials_file: false
+          export_environment_variables: false
+
       - name: Deploy BIOBUZZ after its launch gates are approved
+        env:
+          BIOBUZZ_DEPLOYMENT_ID_TOKEN: ${{ steps.biobuzz-drain-auth.outputs.id_token }}
         run: node scripts/biobuzz-cloud-run.mjs --deploy "${{ github.sha }}"
+
+      - name: Obtain a fresh BIOBUZZ resume token after deployment
+        if: steps.biobuzz-launch.outputs.origin != ''
+        id: biobuzz-resume-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: aresfirst-portal
+          workload_identity_provider: projects/205869391101/locations/global/workloadIdentityPools/aresweb-github/providers/github-production
+          service_account: aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: ${{ steps.biobuzz-launch.outputs.origin }}
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Verify BIOBUZZ again before reopening admission
+        if: steps.biobuzz-launch.outputs.origin != ''
+        env:
+          BIOBUZZ_DEPLOYMENT_ID_TOKEN: ${{ steps.biobuzz-resume-auth.outputs.id_token }}
+        run: node scripts/biobuzz-cloud-run.mjs --resume "${{ github.sha }}"
 
       - name: Deploy isolated Functions before switching routes
         shell: bash

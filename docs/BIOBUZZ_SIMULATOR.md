@@ -63,7 +63,7 @@ gcloud secrets add-iam-policy-binding ABUSE_HMAC_SECRET --project aresfirst-port
 gcloud iam service-accounts add-iam-policy-binding aresweb-biobuzz-runtime@aresfirst-portal.iam.gserviceaccount.com --project aresfirst-portal --member serviceAccount:aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com --role roles/iam.serviceAccountUser
 ```
 
-Use the existing Artifact Registry repository and WIF deployer. No service-account key is created. After verifying the shared spend cap and target capacity, enable the reviewed service contract and merge through the protected release workflow. The release drains existing rooms, builds an immutable image, verifies resource/secret/traffic/invoker state, and resumes admission only after health verification. Failed deployment leaves admission closed.
+Use the existing Artifact Registry repository and WIF deployer. No service-account key is created. After verifying the shared spend cap and target capacity, enable the reviewed service contract and merge through the protected release workflow. The release drains existing rooms, builds an immutable image, verifies resource/secret/traffic/invoker state, and leaves admission closed. A separate resume step obtains a fresh audience-bound ID token through the existing Google WIF action and verifies the exact revision again before reopening admission. The drain token is also minted by that action; the gcloud identity-token command does not accept the federated credential file as a service-account ID-token credential. Fresh resume authentication avoids relying on a ten-minute token surviving the build and rollout. No additional identity grants or long-lived keys are needed. Failed deployment leaves admission closed.
 
 ## Local four-browser integration test
 
