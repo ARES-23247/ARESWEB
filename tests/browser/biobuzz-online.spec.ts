@@ -29,11 +29,14 @@ test("four independent browsers finish the same authoritative match and persist 
   await editor.getByLabel("X (m)",{exact:true}).nth(1).fill("-1.48");await editor.getByLabel("Y (m)",{exact:true}).nth(1).fill("1.48");await editor.getByLabel("Heading (rad)",{exact:true}).nth(1).fill("-0.7918");
   await editor.getByRole("button",{name:"Add wait",exact:true}).click();await editor.getByRole("button",{name:"Add shot",exact:true}).click();await editor.getByLabel("Balls",{exact:true}).fill("4");await editor.getByLabel("Launch speed (m/s)",{exact:true}).fill("5.46");
   await host.getByRole("button",{name:"Close auto editor",exact:true}).click();
+  await host.getByRole("button",{name:"Pause",exact:true}).click();
   let response=host.waitForResponse(r=>r.url().endsWith("/api/biobuzz/create"));await host.getByRole("button",{name:"Create private room",exact:true}).click();sessions.push(await (await response).json());
   const code=sessions[0].code;await expect(host.getByText(code,{exact:true})).toBeVisible();
+  await expect(host.getByRole("button",{name:"Pause",exact:true})).toBeDisabled();
   for(let i=1;i<4;i++){
-   const p=pages[i];await p.getByLabel("Room code",{exact:true}).fill(code);
+   const p=pages[i];await p.getByRole("button",{name:"Pause",exact:true}).click();await p.getByLabel("Room code",{exact:true}).fill(code);
    response=p.waitForResponse(r=>r.url().endsWith("/api/biobuzz/join"));await p.getByRole("button",{name:"Join room",exact:true}).click();sessions.push(await (await response).json());await expect(p.getByText(code,{exact:true})).toBeVisible();
+   await expect(p.getByRole("button",{name:"Pause",exact:true})).toBeDisabled();
   }
   await host.getByRole("button",{name:"Ready with this auto",exact:true}).click();
   for(const p of pages.slice(1))await p.getByRole("button",{name:"Ready without auto",exact:true}).click();
