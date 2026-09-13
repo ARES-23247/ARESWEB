@@ -27,6 +27,7 @@ functions/src/generated/
 !packages/pollinator/public/**
 !scripts/
 !scripts/prepare-game-packages.mjs
+!scripts/benchmark-biobuzz.mjs
 
 !packages/biobuzz/
 !packages/biobuzz/src/

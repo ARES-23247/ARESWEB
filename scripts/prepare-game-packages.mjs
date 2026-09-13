@@ -7,6 +7,14 @@ const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /** Stage canonical workspace sources into the existing Hosting and npm deployment roots. */
 export function prepareGamePackages(root = repository) {
   const rules = [
+    ["biobuzz/src/core/types.ts", "biobuzz/types.ts"],
+    ["biobuzz/src/core/field.ts", "biobuzz/field.ts"],
+    ["biobuzz/src/core/scoring.ts", "biobuzz/scoring.ts"],
+    ["biobuzz/src/core/auto.ts", "biobuzz/auto.ts"],
+    ["biobuzz/src/core/bots.ts", "biobuzz/bots.ts"],
+    ["biobuzz/src/core/engine.ts", "biobuzz/engine.ts"],
+    ["biobuzz/src/core/protocol.ts", "biobuzz/protocol.ts"],
+
     ["game-common/src/hexGrid.ts", "hexGrid.ts"],
     ["buzzello/src/rules.ts", "buzzello.ts"],
     ["buzzle/src/rules.ts", "buzzle.ts"],

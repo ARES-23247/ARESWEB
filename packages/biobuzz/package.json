@@ -1,0 +1,20 @@
+{
+  "name": "@ares/biobuzz",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./game": "./src/Game.tsx",
+    "./engine": "./src/core/engine.ts",
+    "./scoring": "./src/core/scoring.ts",
+    "./auto": "./src/core/auto.ts",
+    "./protocol": "./src/core/protocol.ts"
+  },
+  "dependencies": {
+    "planck": "^1.4.2",
+    "jszip": "^3.10.1"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}

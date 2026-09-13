@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "project": "aresfirst-portal",
+  "region": "us-central1",
+  "serviceId": "aresweb-biobuzz-sim",
+  "runtimeServiceAccount": "aresweb-biobuzz-runtime@aresfirst-portal.iam.gserviceaccount.com",
+  "runtimeProjectRoles": [
+    "roles/datastore.user",
+    "roles/firebaseappcheck.tokenVerifier"
+  ],
+  "artifactRegistry": {
+    "repository": "aresweb-services",
+    "image": "biobuzz-sim"
+  },
+  "runtime": {
+    "cpu": "1",
+    "memoryMiB": 1024,
+    "concurrency": 128,
+    "minInstances": 0,
+    "maxInstances": 1,
+    "timeoutSeconds": 600,
+    "executionEnvironment": "gen2",
+    "requestBasedBilling": false,
+    "startupCpuBoost": false
+  },
+  "admission": {
+    "maxRooms": 5,
+    "monthlyRequests": 4000,
+    "perIpHourlyRequests": 60
+  },
+  "publicOrigin": "https://aresweb-biobuzz-sim-205869391101.us-central1.run.app",
+  "secrets": [
+    "ABUSE_HMAC_SECRET"
+  ],
+  "totalWebsiteMonthlyTargetUsd": 100,
+  "sharedCloudRunSpendingGuardrailUsd": 35,
+  "productionEnabled": false,
+  "launchVerification": {
+    "cloudRunGuardrail": true,
+    "totalProjectAlerts": true,
+    "targetCapacity": false
+  }
+}

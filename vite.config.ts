@@ -112,6 +112,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: process.env.BIOBUZZ_DEV_PROXY_TARGET ? {
+      "/api/biobuzz": { target: process.env.BIOBUZZ_DEV_PROXY_TARGET },
+      "/play": { target: process.env.BIOBUZZ_DEV_PROXY_TARGET, ws: true },
+    } : undefined,
   },
   build: {
     manifest: true,
@@ -179,6 +183,7 @@ export default defineConfig({
       "**/dist/**",
       "functions/**",
       "e2e/**",
+      "tests/browser/**",
       "tests/rules/**",
       "scratch/**",
       ".pnpm-store/**",
@@ -189,6 +194,9 @@ export default defineConfig({
       // 0% instead of disappearing when its importing test is removed.
       include: [
         "src/lib/biobuzzScoring.ts",
+        "packages/biobuzz/src/core/*.ts",
+        "packages/biobuzz/src/export.ts",
+        "src/lib/biobuzzOnline.ts",
         "packages/waggle-way/src/core/*.ts",
         "packages/waggle-way/src/communityClient.ts",
         "packages/waggle-way/src/workshopState.ts",
@@ -284,7 +292,9 @@ export default defineConfig({
         "src/app/robots/RobotEditorModal.tsx",
       ],
       thresholds: {
-        "src/lib/biobuzzScoring.ts": { lines: 85, functions: 100 },
+        "packages/biobuzz/src/core/*.ts": { lines: 85, functions: 100 },
+        "packages/biobuzz/src/export.ts": { lines: 85, functions: 100 },
+        "src/lib/biobuzzOnline.ts": { lines: 85, functions: 100 },
         "packages/waggle-way/src/core/*.ts": { lines: 85, functions: 100 },
         "packages/waggle-way/src/communityClient.ts": { lines: 85, functions: 100 },
         "packages/waggle-way/src/workshopState.ts": { lines: 85, functions: 100 },

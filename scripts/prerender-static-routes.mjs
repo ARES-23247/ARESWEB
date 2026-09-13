@@ -21,6 +21,7 @@ const baseUrl = "https://aresfirst.org";
  */
 export const staticPageMetadata = [
   ["/", "Home", "ARES 23247 is a FIRST® Tech Challenge robotics team in Morgantown, West Virginia."],
+  ["/biobuzz/simulator", "BIOBUZZ Simulator", "Practice BIOBUZZ driving, scoring, and autonomous routines in your browser.", false, [["BIOBUZZ practice", "Drive solo, add AI teammates and opponents, or build an autonomous routine to export into ARES Studio. Enable JavaScript to use the simulator."]]],
   ["/biobuzz/score-calculator", "BIOBUZZ Score Calculator", "Calculate BIOBUZZ alliance scores, FLOWER ownership, penalties, and ranking points using Competition Manual V1.", false, [
     ["Plan a BIOBUZZ practice match", "Enter AUTO and TELEOP achievements for both alliances, build the four final FLOWER stacks, and calculate opponent foul credits and qualification ranking points. Enable JavaScript to use the calculator."],
     ["Manual V1 scoring", "Based on sections 10.5–10.6 of the 2026–2027 BIOBUZZ Competition Manual V1. Championship RP thresholds are TBA in V1; enter event-specific thresholds when announced. Practice estimates do not model cards or disqualifications."],

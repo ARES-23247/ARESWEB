@@ -1,0 +1,10 @@
+title: ARESWEB BIOBUZZ capacity measurement
+description: Create and execute the protected BIOBUZZ capacity job; no application data or secret access.
+stage: GA
+includedPermissions:
+  - run.jobs.create
+  - run.jobs.get
+  - run.jobs.update
+  - run.jobs.run
+  - run.executions.get
+  - run.operations.get

@@ -1,0 +1,347 @@
+{
+  "machine": "win32",
+  "node": "v24.19.0",
+  "date": "2026-09-13T19:59:54.290Z",
+  "note": "Local CPU benchmark; repeat on the intended Cloud Run CPU before raising production admission.",
+  "records": [
+    {
+      "matches": 1,
+      "elapsedSeconds": 1.4825438000000002,
+      "cpuPercentOfOneCore": 1.338125,
+      "p99BatchMs": 1.0093999999999994,
+      "maxBatchMs": 10.346500000000006,
+      "rawMiB": 79.50170135498047,
+      "compressedMiB": 15.077091217041016,
+      "compressedMiBPerMatch": 15.077091217041016,
+      "rssMiB": 119.30859375,
+      "results": [
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "matches": 5,
+      "elapsedSeconds": 7.7321229,
+      "cpuPercentOfOneCore": 5.263125,
+      "p99BatchMs": 4.188000000000102,
+      "maxBatchMs": 10.979400000000169,
+      "rawMiB": 397.50850677490234,
+      "compressedMiB": 75.38545608520508,
+      "compressedMiBPerMatch": 15.077091217041016,
+      "rssMiB": 162.51953125,
+      "results": [
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "matches": 10,
+      "elapsedSeconds": 18.1176489,
+      "cpuPercentOfOneCore": 11.171875,
+      "p99BatchMs": 8.282400000000052,
+      "maxBatchMs": 13.212899999998626,
+      "rawMiB": 795.0170135498047,
+      "compressedMiB": 150.77091217041016,
+      "compressedMiBPerMatch": 15.077091217041016,
+      "rssMiB": 254.15234375,
+      "results": [
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "matches": 25,
+      "elapsedSeconds": 48.157047600000006,
+      "cpuPercentOfOneCore": 29.883125,
+      "p99BatchMs": 18.97950000000128,
+      "maxBatchMs": 39.252699999997276,
+      "rawMiB": 1987.5425338745117,
+      "compressedMiB": 376.9272804260254,
+      "compressedMiBPerMatch": 15.077091217041016,
+      "rssMiB": 277.9609375,
+      "results": [
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        },
+        {
+          "phase": "finished",
+          "tips": [
+            4,
+            4
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -15,6 +15,10 @@ export class WaggleStore {
       path,
       id: path.split("/").at(-1)!,
       get: async () => this.snapshot(path),
+      set: async (value: Data) => {
+        if (this.failWrite === path) throw new Error("Storage unavailable");
+        this.data.set(path, structuredClone(value));
+      },
       collection: (name: string) => this.collection(`${path}/${name}`),
     };
   }

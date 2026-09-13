@@ -367,7 +367,7 @@ jobs:
         env:
           NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
           NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
-        run: pnpm run build
+        run: VITE_BIOBUZZ_ORIGIN="$(node scripts/biobuzz-cloud-run.mjs --origin)" pnpm run build
 
       - name: Enforce release bundle budgets
         run: node scripts/check-bundle-size.mjs
@@ -496,6 +496,9 @@ jobs:
             | node scripts/verify-game-cloud-run.mjs --revision-json -
           gcloud run services get-iam-policy aresweb-game-api --project aresfirst-portal --region us-central1 --format=json \
             | node scripts/verify-game-cloud-run.mjs --iam-json -
+
+      - name: Deploy BIOBUZZ after its launch gates are approved
+        run: node scripts/biobuzz-cloud-run.mjs --deploy "${{ github.sha }}"
 
       - name: Deploy isolated Functions before switching routes
         shell: bash
