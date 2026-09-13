@@ -29,6 +29,7 @@ const ArcadePage = lazy(() => import("@/app/arcade/page"));
 const AcademyPlaygroundPage = lazy(() => import("@/app/academy/playground/page"));
 const AccessibilityPage = lazy(() => import("@/app/accessibility/page"));
 const BrandPage = lazy(() => import("@/app/brand/page"));
+const BiobuzzScoreCalculatorPage = lazy(() => import("@/app/biobuzz/score-calculator/page"));
 const BuzzelloPage = lazy(() => import("@/app/buzzello/page"));
 const BuzzlePage = lazy(() => import("@/app/buzzle/page"));
 const BuzzleWordToolsPage = lazy(() => import("@/app/buzzle/word-tools/page"));
@@ -130,6 +131,7 @@ export default function App() {
                   <Route path="/docs" element={<AcademyPage />} />
                   <Route path="/docs/:slug" element={<AcademyPage />} />
                   <Route path="/accessibility" element={<AccessibilityPage />} />
+                  <Route path="/biobuzz/score-calculator" element={<BiobuzzScoreCalculatorPage />} />
           <Route path="/brand" element={<BrandPage />} />
                   <Route path="/buzzello" element={<BuzzelloPage />} />
                   <Route path="/buzzle" element={<BuzzlePage />} />

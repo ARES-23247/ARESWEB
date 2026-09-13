@@ -8,6 +8,7 @@ import {
   Check,
   Calendar as CalendarIcon,
   Cpu,
+  Calculator,
   Layers,
   GraduationCap,
   ShoppingBag,
@@ -54,6 +55,7 @@ export const ARCADE_LINKS: NavItemConfig[] = [
 ];
 
 export const RESOURCE_LINKS: NavItemConfig[] = [
+  { label: "BIOBUZZ Score Calculator", to: "/biobuzz/score-calculator", icon: Calculator, iconColor: "text-ares-gold" },
   { label: "Tech Stack", to: "/tech-stack", icon: Cpu, iconColor: "text-ares-cyan" },
   { label: "Robots Fleet", to: "/robots", icon: Cpu, iconColor: "text-ares-bronze" },
   { label: "3D Models Archive", href: "https://www.printables.com/@ARESFTC_3784306", icon: Layers, iconColor: "text-ares-red" },

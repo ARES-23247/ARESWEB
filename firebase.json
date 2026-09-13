@@ -167,6 +167,10 @@
     "trailingSlash": false,
     "rewrites": [
       {
+        "source": "/biobuzz/score-calculator",
+        "destination": "/prerender/biobuzz-score-calculator.html"
+      },
+      {
         "source": "/api/app-check{,/**}",
         "function": "publicApi"
       },

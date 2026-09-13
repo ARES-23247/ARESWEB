@@ -33,7 +33,7 @@ If the file changes again, the old token no longer fits.
 
 ## Worked example
 
-Start with the ownership question, not a file-count goal. Current ARES 17.0.2 uses subsystem
+Start with the ownership question, not a file-count goal. Current ARES 17.0.9 uses subsystem
 document schema 11. It names three implementation kinds:
 
 You do not need to memorize the long names at first. Ask three short questions. Can the document own
@@ -170,6 +170,12 @@ Keep each result at its real strength:
 4. **Simulator tests:** an FTC project runs against desktop mocks and its OpMode lifecycle.
 5. **Build:** the project package compiles without deployment.
 6. **Physical check:** a student observes wiring, direction, neutral, limits, and sensors on the robot.
+
+The current FTC TeamCode build enables core-library desugaring for `java.nio.file` and
+`File.toPath`, which ARES logging and tuning use on API 25 Control Hubs. Keep the pinned
+`desugar_jdk_libs_nio` dependency and Android compatibility instrumentation configuration when
+maintaining that build. A successful desktop simulator run does not prove Android startup
+compatibility; record the platform test separately.
 
 Passing the first five layers can make a project ready for a physical checklist. It cannot mark the
 physical check complete. Students can verify robot functionality using the team's normal safety

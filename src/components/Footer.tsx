@@ -201,6 +201,9 @@ export default function Footer() {
           </h4>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
             <li>
+              <Link to="/biobuzz/score-calculator" className="flex min-h-11 items-center gap-2 transition-colors hover:text-ares-gold">BIOBUZZ Score Calculator</Link>
+            </li>
+            <li>
               <Link
                 to="/tech-stack"
                 className="hover:text-ares-gold transition-colors flex items-center gap-2"

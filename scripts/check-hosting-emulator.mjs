@@ -22,6 +22,7 @@ const arcade = await fetch(`${origin}/arcade`);
 if (arcade.status !== 200 || !(await arcade.text()).includes("ARES Arcade")) process.exitCode = 1;
 console.log(`Arcade route status: ${arcade.status}`);
 for (const [path, title] of [
+  ["/biobuzz/score-calculator", "BIOBUZZ Score Calculator"],
   ["/waggle-way", "Waggle Way"],
   ["/waggle-way/builder", "Waggle Way"],
   ["/buzzhex", "BUZZHEX"],
