@@ -34,7 +34,7 @@ The process owns rooms in memory. Clients authenticate their WebSocket with an i
 
 Only final results are written to Firestore. Live state is never written each tick. Process loss interrupts matches. Drain before deploying: close admission, allow active matches to finish, then replace the revision. A max-one-instance setting is not a distributed room-routing guarantee; unknown room ownership fails closed.
 
-Budget target: under $100/month for the whole website, with owner-reported existing spend of $0. The $100 project budget and its 50%, 75%, 90%, 100%, and forecast-100% alerts were verified read-only through the Billing API on 2026-09-13. The recorded $35 Cloud Run category guardrail is shared with the existing game service and requires billing-console verification; Preview spend caps do not appear in the legacy Budget API. The available browser identity was denied access to the billing budget page on 2026-09-13. Alerts cannot guarantee an exact ceiling due to reporting delay. Start at five rooms; raise only after a target-runtime benchmark with 30% CPU headroom.
+Budget target: under $100/month for the whole website, with owner-reported existing spend of $0. The $100 project budget and its 50%, 75%, 90%, 100%, and forecast-100% alerts were verified read-only through the Billing API on 2026-09-13. The shared $35 Cloud Run category spend cap was verified in the billing console on 2026-09-13 under the already signed-in billing owner: monthly, project aresfirst-portal, service Cloud Run, status Configured, with 50%, 80%, and 100% alerts. Preview spend caps do not appear in the legacy Budget API. The initial access failure used the team account rather than the billing owner. Alerts cannot guarantee an exact ceiling due to reporting delay. Start at five rooms; raise only after a target-runtime benchmark with 30% CPU headroom.
 
 ## Verification
 
@@ -81,7 +81,7 @@ Build Vite with mode `e2e`, output `scratch/biobuzz/online-dist`, and `VITE_BIOB
 - Studio imported the actual downloaded ZIP through its auto editor, preserved existing routines, generated code, and ran the selected 32-step routine to `Complete`. Native codecs and editor tests passed. The desktop controller showed positional/heading drift and missed the browser's scoring positions. Native physical parity remains unverified; editable format and action execution compatibility are established. The final season frame was disabled. Retained motor telemetry is not a fresh measurement of shutdown outputs.
 - Production build, per-entry/aggregate bundle budgets, frozen dependency install, dependency audit, lint, and type checks passed. Generated artifacts and detailed logs remain under the owned worktrees' build/scratch directories.
 
-The deployment is intentionally gated: the shared $35 guardrail cannot be inspected with the available billing identity; the declared Cloud Run CPU still needs a capacity benchmark. Local Docker daemon commands did not respond, so no container-runtime result is claimed. Provisioning and production rollout require separate operator approval. No production service, permissions, or data were changed.
+The online deployment remains gated on a capacity benchmark of the declared Cloud Run CPU. The owner authorized deployment on 2026-09-13. The $35 guardrail and $100 project alerts are verified. The protected capacity workflow below measures the cloud runtime; the local Docker daemon did not respond, so no local container result is claimed.
 
 ## Cost estimate
 
@@ -101,3 +101,11 @@ The final [benchmark record](biobuzz-benchmark-2026-09-13.json) runs complete 16
 | 25 | 29.88% | 18.98 ms | 39.25 ms | 278 MiB |
 
 Ten is the largest local sample with every measured batch below the 16.67 ms simulation period and more than 30% CPU headroom. Twenty-five misses that deadline despite acceptable average CPU. Production remains provisionally bounded to five rooms until the target instance passes. This benchmark includes compression CPU but does not measure real socket/TLS overhead or deployment scheduling jitter.
+
+## Protected target-capacity measurement
+
+`Measure BIOBUZZ Cloud Run Capacity` is a manually dispatched, protected-master workflow using the existing production environment and WIF provider. It builds the same engine and compression workload as a dedicated Docker target, then runs one Cloud Run task in us-central1 with 1 CPU, 1 GiB, a 600-second deadline, and zero retries. No server, public endpoint, schedule, secrets, or application data access is added by this measurement. The job's service account is `aresweb-biobuzz-benchmark@aresfirst-portal.iam.gserviceaccount.com` and has no project roles.
+
+The existing deployer needs a narrowly scoped `areswebBiobuzzCapacity` custom role containing `run.jobs.create`, `run.jobs.get`, `run.jobs.update`, `run.jobs.run`, `run.executions.get`, and `run.operations.get`, plus Service Account User on that benchmark identity. These operator-provisioned grants support this reviewed workflow; no long-lived key is used. Job creation is a project-level permission. Keep this role separate from existing deployment roles so it can be removed independently.
+
+The workflow retains the exact job/execution description as an artifact. A billing-authorized operator reads the matching execution's JSON `biobuzz-capacity` log record, verifies the resource limits, and records the result before enabling online admission. Passing means at least 30% one-core CPU headroom, p99 batches within 16.67 ms, and no consecutive missed batch deadlines. An isolated scheduling pause is reported separately. This CPU/compression benchmark does not substitute for the four-client protocol tests or a live service smoke test.

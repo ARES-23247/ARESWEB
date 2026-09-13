@@ -9,6 +9,13 @@ COPY packages /workspace/packages
 COPY scripts/prepare-game-packages.mjs /workspace/scripts/prepare-game-packages.mjs
 RUN npm run build && npm prune --omit=dev
 
+FROM build AS capacity
+WORKDIR /workspace
+COPY scripts/benchmark-biobuzz.mjs ./scripts/benchmark-biobuzz.mjs
+RUN mkdir -p build/biobuzz && chown -R node:node build
+USER node
+CMD ["node", "scripts/benchmark-biobuzz.mjs"]
+
 FROM node:24.18.0-bookworm-slim
 
 ENV NODE_ENV=production \

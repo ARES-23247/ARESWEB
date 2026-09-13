@@ -36,7 +36,7 @@
   "sharedCloudRunSpendingGuardrailUsd": 35,
   "productionEnabled": false,
   "launchVerification": {
-    "cloudRunGuardrail": false,
+    "cloudRunGuardrail": true,
     "totalProjectAlerts": true,
     "targetCapacity": false
   }

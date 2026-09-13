@@ -1,0 +1,78 @@
+name: Measure BIOBUZZ Cloud Run Capacity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: biobuzz-capacity
+  cancel-in-progress: false
+
+jobs:
+  capacity:
+    name: Bounded one-CPU simulation benchmark
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout protected source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require verified billing controls
+        run: |
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; import { validateBiobuzzContract } from "./scripts/biobuzz-cloud-run.mjs"; const c = validateBiobuzzContract(JSON.parse(readFileSync("infra/gcp/biobuzz-service.json", "utf8"))); if (!c.launchVerification.cloudRunGuardrail || !c.launchVerification.totalProjectAlerts) throw new Error("Verify billing controls before consuming cloud capacity.");'
+
+      - name: Authenticate through protected production WIF
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: aresfirst-portal
+          workload_identity_provider: projects/205869391101/locations/global/workloadIdentityPools/aresweb-github/providers/github-production
+          service_account: aresweb-github-deployer@aresfirst-portal.iam.gserviceaccount.com
+          create_credentials_file: true
+          export_environment_variables: true
+          cleanup_credentials: true
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          version: "568.0.0"
+          project_id: aresfirst-portal
+
+      - name: Build immutable benchmark image
+        shell: bash
+        run: |
+          image="us-central1-docker.pkg.dev/aresfirst-portal/aresweb-services/biobuzz-capacity:${{ github.sha }}"
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          docker build --file functions/Dockerfile.biobuzz --target capacity --tag "$image" .
+          docker push "$image"
+          echo "BIOBUZZ_CAPACITY_IMAGE=$image" >> "$GITHUB_ENV"
+
+      - name: Run one bounded task with no retries or data access
+        shell: bash
+        run: |
+          gcloud run jobs deploy aresweb-biobuzz-capacity \
+            --project aresfirst-portal --region us-central1 \
+            --image "$BIOBUZZ_CAPACITY_IMAGE" \
+            --service-account aresweb-biobuzz-benchmark@aresfirst-portal.iam.gserviceaccount.com \
+            --cpu 1 --memory 1Gi --tasks 1 --parallelism 1 \
+            --task-timeout 600s --max-retries 0 \
+            --clear-env-vars --clear-secrets \
+            --execute-now --wait --quiet
+          gcloud run jobs describe aresweb-biobuzz-capacity \
+            --project aresfirst-portal --region us-central1 --format=json > biobuzz-capacity-job.json
+
+      - name: Retain benchmark execution identity
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: biobuzz-capacity-${{ github.sha }}
+          path: biobuzz-capacity-job.json
+          retention-days: 7
