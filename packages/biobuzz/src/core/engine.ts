@@ -37,7 +37,7 @@ export class Simulation {
   phase: Phase;
   private robotBodies = new Map<number, Body>();
   private ballBodies = new Map<number, Body>();
-  private commands = new Map<number, { input: Input; tick: number }>();
+  private commands = new Map<number, { input: Input; tick: number; shootEdge:boolean; depositEdge:boolean }>();
   private previousShot = new Map<number, boolean>();
   private previousDeposit = new Map<number, boolean>();
   private nextIntake = new Map<number, number>();
@@ -119,8 +119,13 @@ export class Simulation {
     if(![input.x,input.y,input.turn,input.speed].every(Number.isFinite)) {this.commands.delete(id);this.cancelShot(robot);return;}
     const aimingFlower=this.aimedShots.get(id)?.target==="flower";
     if((aimingFlower?!input.aimFlower:!input.aimHive)||input.x||input.y||input.turn)this.cancelShot(robot);
+    const previous=this.commands.get(id),enabled=input.aimHive===true||input.aimFlower===true;
+    // Preserve one pending edge if a network packet contains a press and its
+    // release arrives before the next fixed step. Neutral/disabled input clears it.
+    const shootEdge=enabled&&((input.shoot===true&&!previous?.input.shoot)||previous?.shootEdge===true);
+    const depositEdge=input.aimFlower===true&&((input.deposit===true&&!previous?.input.deposit)||previous?.depositEdge===true);
     this.commands.set(id,{input:{x:clamp(input.x,-1,1),y:clamp(input.y,-1,1),turn:clamp(input.turn,-1,1),
-      speed:clamp(input.speed,2,5.8),intake:input.intake===true,shoot:input.shoot===true,release:input.release===true,aimHive:input.aimHive===true,aimFlower:input.aimFlower===true,deposit:input.deposit===true},tick:this.tick});
+      speed:clamp(input.speed,2,5.8),intake:input.intake===true,shoot:input.shoot===true,release:input.release===true,aimHive:input.aimHive===true,aimFlower:input.aimFlower===true,deposit:input.deposit===true},tick:this.tick,shootEdge,depositEdge});
   }
   private cancelShot(robot:Robot,status?:Robot["shotStatus"]) {
     this.aimedShots.delete(robot.id);robot.shotStatus=status;if(!status)robot.shotTarget=undefined;
@@ -178,9 +183,13 @@ export class Simulation {
         else if(r.controller==="easy"||r.controller==="standard")input=botInput(this,r);
         else if(this.phase!=="auto"&&command&&this.tick-command.tick<15)input=command.input;
       }
-      if(input.shoot&&!this.previousShot.get(r.id))shotEdges.add(r.id);
+      const humanInput=active&&r.controller==="human"&&this.phase!=="auto"&&command&&this.tick-command.tick<15;
+      const pendingShot=!!humanInput&&command.shootEdge,pendingDeposit=!!humanInput&&command.depositEdge;
+      if(command){command.shootEdge=false;command.depositEdge=false;}
+      if(pendingShot||pendingDeposit)input={...input,shoot:input.shoot||pendingShot,deposit:input.deposit||pendingDeposit};
+      if(pendingShot||input.shoot&&!this.previousShot.get(r.id))shotEdges.add(r.id);
       this.previousShot.set(r.id,input.shoot);
-      const depositEdge=input.deposit&&!this.previousDeposit.get(r.id);
+      const depositEdge=pendingDeposit||input.deposit&&!this.previousDeposit.get(r.id);
       this.previousDeposit.set(r.id,input.deposit===true);
       if((input.aimHive&&shotEdges.has(r.id))||depositEdge) {
         if(this.aimedShots.has(r.id))this.cancelShot(r);

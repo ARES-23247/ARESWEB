@@ -45,7 +45,7 @@ export default function Game({online}:{online?:OnlineClient}) {
       try{
         const m=JSON.parse(event.data) as ServerMessage;
         if(m.type==="snapshot"){setState(m.state);if(["finished","interrupted"].includes(m.state.phase))terminal.current=true;}
-        if(m.type==="lobby"){setLobby(m.lobby);if(["finished","interrupted","local-offer"].includes(m.lobby.status))terminal.current=true;}
+        if(m.type==="lobby"){setLobby(m.lobby);if(m.lobby.status!=="waiting"||m.lobby.ready[control.current.seat])setConfiguring(false);if(["finished","interrupted","local-offer"].includes(m.lobby.status))terminal.current=true;}
         if(m.type==="joined"){setSeat(m.seat);setDriverView(m.seat<2?"red":"blue");setPaused(false);setConnected(true);setError("");}
         if(m.type==="error")setError(m.message);
       }catch{setError("Invalid simulator response.");ws.close();}

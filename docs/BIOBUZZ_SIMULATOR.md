@@ -26,6 +26,8 @@ Place in flower (G or gamepad X/Square) queues one short projectile arc through 
 
 The page reports standard gamepad connection status. Left stick translates in the selected driver view, right stick turns, A/Cross toggles intake, right trigger shoots, X/Square places, Y/Triangle releases nectar, and View/Share switches the driver view. Buttons are edge-triggered so a hold does not repeatedly toggle or fire. A 0.12 stick dead zone suppresses drift; controller disconnection neutralizes controls and turns intake off. Nonstandard mappings are reported instead of guessing their axes. Browser tests substitute only the Gamepad hardware API and exercise the real controls/worker; this does not constitute a physical-controller test.
 
+Fresh controls retain at most one pending shoot/placement edge between fixed physics updates, so coalesced press/release packets do not lose a click. Neutral controls, stale input, and disconnects discard pending actions. This does not queue an unbounded series of shots.
+
 ## Practice interpretation
 
 The match clock runs 30 seconds AUTO, eight seconds disabled transition, 120 seconds TELEOP, then settles for up to ten seconds. An unresolved settling or server scheduling fault marks the match incomplete. Local tab suspension pauses local time.

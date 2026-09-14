@@ -77,4 +77,22 @@ describe("configurable BIOBUZZ mechanisms",()=>{
     run(s,240,i=>({...NEUTRAL,aimFlower:true,deposit:i===0}));
     expect(nectar.location).toBe("flower");expect(s.tally.red.majorFouls).toBe(1);expect(s.snapshot().tally.flowers[0]).toContain("red");
   });
+  it("retains short input edges that arrive together between physics steps",()=>{
+    const s=new Simulation(),r=s.robots[0];
+    s.command(0,{...NEUTRAL,aimFlower:true,deposit:true});
+    s.command(0,{...NEUTRAL,aimFlower:true,deposit:false});
+    s.step();expect(r.shotStatus).toBe("aiming");expect(r.shotTarget).toBe("flower");
+    s.command(0,{...NEUTRAL});s.step();expect(r.shotStatus).toBeUndefined();
+    s.command(0,{...NEUTRAL,aimHive:true,shoot:true});
+    s.command(0,{...NEUTRAL,aimHive:true,shoot:false});
+    s.step();expect(r.shotTarget).toBe("hive");
+  });
+  it.each(["neutral","stale","disconnect"])("drops an unprocessed mechanism press on %s",reason=>{
+    const s=new Simulation(),r=s.robots[0];
+    s.command(0,{...NEUTRAL,aimHive:true,aimFlower:true,shoot:true,deposit:true});
+    if(reason==="neutral")s.command(0,{...NEUTRAL});
+    if(reason==="stale")s.tick+=15;
+    if(reason==="disconnect")s.setController(0,"standard");
+    s.step();expect(r.shotStatus).toBeUndefined();expect(r.inventory).toHaveLength(4);
+  });
 });
