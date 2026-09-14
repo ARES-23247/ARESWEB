@@ -1,41 +1,41 @@
 ---
 name: aresweb-web-accessibility
-description: Build or review ARESWEB React UI for WCAG 2.2 AA accessibility, responsive interaction, truthful user-facing copy, design-token use, and brand consistency. Use for components, pages, dialogs, forms, simulations, visual styling, or accessibility claims.
+description: Build or review ARESWEB interfaces for accessibility, responsive behavior, and brand consistency.
 ---
 
 # ARESWEB frontend quality
 
-The frontend is Vite, React 19, React Router, and Tailwind CSS. Inspect the live
-design tokens and components before changing styling; do not assume Next.js.
+Use the live design tokens and components for this Vite/React Router/Tailwind
+frontend. Apply the requirements relevant to the changed interaction.
 
-## Interaction
+## Interaction contracts
 
-- Use semantic HTML and native controls before ARIA.
-- Preserve visible focus, logical tab order, skip navigation, route announcements,
-  and keyboard access for every pointer action.
-- Give dialogs correct labels, initial focus, focus containment, Escape behavior,
-  and focus restoration. Coordinate nested dialogs instead of stacking traps.
-- Keep hidden mobile or collapsed content out of the accessibility tree and tab
-  order with appropriate unmounting or `inert` behavior.
-- Keep file inputs keyboard accessible. Associate every input with a label and
-  expose validation and async status programmatically.
-- Provide non-canvas alternatives for essential simulation state and controls.
-- Respect reduced motion and meet WCAG AA contrast at actual rendered sizes.
+Use semantic HTML and native controls. Preserve visible focus, logical tab
+order, skip navigation, route announcements and keyboard access to pointer
+actions. Dialogs need labels, initial focus, containment, Escape and restoration;
+coordinate nested focus traps. Hidden mobile/collapsed content must leave the
+accessibility tree and tab order through unmounting or appropriate inert behavior.
 
-## Content and visual system
+Keep file inputs keyboard accessible, label inputs, and expose validation and
+async status programmatically. Essential simulation state and controls need
+non-canvas alternatives. Respect reduced motion and WCAG AA contrast at rendered
+sizes.
 
-- Use established semantic brand tokens; do not add arbitrary color values or
-  generic cyan decoration.
-- Write concise user-facing instructions understandable by students and families.
-- Describe actual product behavior and authentic team assets only. Never invent
-  mock hardware designs, 3D parts, models, sponsors, alumni, awards, or claims.
-  Do not create hardcoded mock datasets. When no records exist, use truthful empty
-  states or direct official external links.
-- Do not promise unavailable AI, offline, privacy, API, or storage features.
-- Do not hide text in pseudo-elements, alter semantics, or disable checks to make
-  an automated scanner pass.
+## Content and styling
 
-Automated Axe/Pa11y-style checks are supporting evidence only. Test keyboard,
-screen-reader semantics, zoom/reflow, contrast, touch targets, and error recovery
-manually for changed flows. Never publish a perfect score or compliance claim
-without a dated scope and reproducible evidence.
+Use semantic brand tokens; avoid arbitrary colors and generic cyan decoration.
+Write for students and families using actual product behavior and authentic
+team records. Empty catalogs need truthful empty states or official profile links.
+Do not invent hardware, models, datasets, sponsors, alumni, awards or unavailable
+AI/offline/privacy/API/storage features.
+
+In src/app/globals.css, keep CSS imports consecutive and before Tailwind source
+directives; interleaving drops design tokens. Verify rendered colors for styling
+changes. Do not hide text, alter semantics or disable checks to pass a scanner.
+
+## Evidence
+
+For changed flows, combine applicable automated checks with keyboard,
+screen-reader semantics, zoom/reflow, rendered contrast, touch-target and
+error-recovery inspection. Record manual checks that remain unverified. Public
+compliance or perfect-score claims require a dated scope and reproducible evidence.
