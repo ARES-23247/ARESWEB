@@ -1,10 +1,20 @@
 import { afterEach,expect,it } from "vitest";
-import { cleanup,render,screen } from "@testing-library/react";
+import { cleanup,fireEvent,render,screen } from "@testing-library/react";
 import MatchClock from "./MatchClock";
 import { Simulation } from "./core/engine";
 import { BALL,FLOWER_TOP,type Phase } from "./core/types";
 
 afterEach(cleanup);
+it("keeps the compact clock and eligibility visible while rules can be expanded",()=>{
+  render(<MatchClock compact phase="practice"/>);
+  expect(screen.getByRole("timer")).toHaveTextContent("PRACTICE0:00");
+  expect(screen.getByRole("status")).toHaveTextContent("nectar flowers open");
+  const summary=screen.getByText("Timing and scoring rules");
+  expect(summary.closest("details")).not.toHaveAttribute("open");
+  fireEvent.click(summary);
+  expect(summary.closest("details")).toHaveAttribute("open");
+  expect(screen.getByText(/Pollen can score/)).toBeVisible();
+});
 it("shows the authoritative countdown and unlocks nectar at the exact final-minute boundary",()=>{
   const s=new Simulation({timed:true,seats:["empty","empty","empty","empty"]});
   const {rerender}=render(<MatchClock {...s.snapshot()}/>);

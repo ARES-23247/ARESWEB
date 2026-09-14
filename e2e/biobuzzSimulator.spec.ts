@@ -37,7 +37,7 @@ test("BIOBUZZ configures rear mechanisms and places through the flower top",asyn
     const bounds=(await fieldWrap.boundingBox())!,labels=page.locator(".bio-element-label");
     await expect(labels).toHaveCount(8);
     const boxes=await Promise.all(Array.from({length:8},(_,i)=>labels.nth(i).boundingBox()));
-    for(const box of boxes){expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(bounds.x);expect(box!.y).toBeGreaterThanOrEqual(bounds.y);expect(box!.x+box!.width).toBeLessThanOrEqual(bounds.x+bounds.width);expect(box!.y+box!.height).toBeLessThanOrEqual(bounds.y+bounds.height);}
+    for(const box of boxes){expect(box).not.toBeNull();const b=box!;expect(b.x>=bounds.x+bounds.width||b.y>=bounds.y+bounds.height||b.x+b.width<=bounds.x||b.y+b.height<=bounds.y).toBe(true);}
     for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
       const a=boxes[i]!,b=boxes[j]!;
       expect(a.x+a.width<=b.x||b.x+b.width<=a.x||a.y+a.height<=b.y||b.y+b.height<=a.y).toBe(true);
@@ -50,6 +50,54 @@ test("BIOBUZZ configures rear mechanisms and places through the flower top",asyn
   await expect(editor.getByLabel("Hive shooter side",{exact:true})).toHaveValue("back");
   await editor.getByRole("button",{name:"Export for ARES Studio",exact:true}).click();
   await expect(editor.getByRole("status")).toContainText("front-facing mechanisms");
+});
+
+test("BIOBUZZ keeps counts outside the full field in short, narrow and banner layouts",async({page},testInfo)=>{
+  test.setTimeout(60000);
+  await page.route("**/api/announcements",route=>route.fulfill({json:{announcement:{
+    message:"No Practice tonight. Building field for tomorrow and students can't sign the NDA. Launch tomorrow at SPARK. Arrive at 9:30 AM",
+    severity:"important",link:null,linkLabel:null,revision:"biobuzz-layout-test",startsAt:null,endsAt:null,
+  }}}));
+  for(const size of [{width:820,height:912},{width:1366,height:768},{width:390,height:844},{width:667,height:375}]){
+    await page.setViewportSize(size);await page.goto("/biobuzz/simulator");
+    await expect(page.getByLabel("Team announcement",{exact:true})).toBeVisible();
+    await expect(page.getByTestId("inventory")).toContainText("4/4");
+    const field=page.locator("canvas.bio-field");
+    for(const view of ["Red driver view","Blue driver view"]){
+      await page.getByRole("button",{name:view,exact:true}).click();
+      // Very short landscape windows scroll; the whole square must still fit
+      // below the fixed navigation, with no labels laid over playable space.
+      if(size.height<500)await field.evaluate(e=>e.scrollIntoView({block:"start"}));
+      else await page.evaluate(()=>window.scrollTo(0,0));
+      const box=(await field.boundingBox())!,nav=(await page.getByRole("navigation",{name:"Main Navigation"}).boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(nav.y+nav.height);
+      expect(box.y+box.height).toBeLessThanOrEqual(size.height);
+      expect(Math.abs(box.height-box.width)).toBeLessThan(1);
+      expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(size.width);
+      const totals=page.locator(".bio-field-total");await expect(totals).toHaveCount(8);
+      await expect(page.getByLabel("Flower 1: 4 balls total",{exact:true})).toBeVisible();
+      for(const total of await totals.all()){
+        const b=(await total.boundingBox())!;
+        expect(b.width).toBeLessThanOrEqual(24);expect(b.height).toBeLessThanOrEqual(24);
+        expect(b.x).toBeGreaterThanOrEqual(box.x);expect(b.y).toBeGreaterThanOrEqual(box.y);
+        expect(b.x+b.width).toBeLessThanOrEqual(box.x+box.width);expect(b.y+b.height).toBeLessThanOrEqual(box.y+box.height);
+      }
+      for(const label of await page.locator(".bio-element-label").all()){
+        const b=(await label.boundingBox())!;
+        expect(b.x>=box.x+box.width||b.y>=box.y+box.height||b.x+b.width<=box.x||b.y+b.height<=box.y).toBe(true);
+      }
+    }
+    await mkdir("scratch/biobuzz",{recursive:true});
+    await page.screenshot({path:`scratch/biobuzz/layout-${size.width}-${size.height}-${testInfo.project.name}.png`});
+    await page.getByRole("button",{name:"Start timed match",exact:true}).click();
+    await expect(page.getByTestId("nectar-countdown")).toBeVisible();
+    if(size.height<500)await field.evaluate(e=>e.scrollIntoView({block:"start"}));
+    else await page.evaluate(()=>window.scrollTo(0,0));
+    const timedBox=(await field.boundingBox())!,nav=(await page.getByRole("navigation",{name:"Main Navigation"}).boundingBox())!;
+    expect(timedBox.y).toBeGreaterThanOrEqual(nav.y+nav.height);
+    expect(timedBox.y+timedBox.height).toBeLessThanOrEqual(size.height);
+    await page.screenshot({path:`scratch/biobuzz/layout-timed-${size.width}-${size.height}-${testInfo.project.name}.png`});
+  }
 });
 
 test("BIOBUZZ standard gamepad drives, toggles, shoots, places, switches view and disconnects",async({page})=>{
