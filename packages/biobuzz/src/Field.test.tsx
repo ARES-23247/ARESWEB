@@ -11,6 +11,8 @@ it("shows mixed flower and separate cell contents and updates them after retriev
   const red=s.balls.find(b=>b.kind==="red"&&b.location==="reserve")!,blue=s.balls.find(b=>b.kind==="blue"&&b.location==="reserve")!;
   s["store"](red,"flower",0);s["store"](blue,"flower",0);
   const {rerender}=render(<Field state={s.snapshot()}/>);
+  expect(screen.getByLabelText("Flower 1: 6 balls total")).toHaveTextContent("6");
+  expect(screen.getByLabelText("red hive cell 1: 3 balls total")).toHaveTextContent("3");
   const flower=()=>within(screen.getByRole("group",{name:"Flower 1 contents"}));
   expect(flower().getByLabelText("4 pollen")).toBeVisible();
   expect(flower().getByLabelText("1 red nectar")).toBeVisible();
@@ -20,6 +22,8 @@ it("shows mixed flower and separate cell contents and updates them after retriev
   for(const b of s.balls.filter(b=>b.kind==="pollen").slice(0,8))s["store"](b,"hive",0);
   for(let i=0;i<60;i++)s.step();
   rerender(<Field state={s.snapshot()} view="blue"/>);
+  expect(screen.getByLabelText("Flower 1: 2 balls total")).toHaveTextContent("2");
+  expect(screen.getByLabelText("red hive cell 1: 0 balls total")).toHaveTextContent("0");
   expect(flower().getByLabelText("0 pollen")).toBeVisible();
   expect(flower().getByLabelText("1 red nectar")).toBeVisible();
   expect(flower().getByLabelText("1 blue nectar")).toBeVisible();
