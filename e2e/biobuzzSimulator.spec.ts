@@ -20,16 +20,17 @@ test("BIOBUZZ saves intake ball types for the robot and browser autos",async({pa
   await page.getByRole("button",{name:"Build an auto",exact:true}).click();
   const editor=page.getByRole("region",{name:"Auto editor",exact:true});
   await expect(editor.getByLabel("Intake ball types",{exact:true})).toHaveValue("pollen");
+  await editor.getByRole("button",{name:"Add wait",exact:true}).click();
   await editor.getByRole("button",{name:"Save locally",exact:true}).click();
   await editor.getByLabel("Intake ball types",{exact:true}).selectOption("both");
   await editor.getByRole("button",{name:"Load saved",exact:true}).click();
   await expect(editor.getByLabel("Intake ball types",{exact:true})).toHaveValue("pollen");
-  await editor.getByRole("button",{name:"Preview auto",exact:true}).click();
+  await editor.getByRole("button",{name:"Run AUTO only",exact:true}).click();
   await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen only");
   await editor.getByRole("button",{name:"Export for ARES Studio",exact:true}).click();
   await expect(editor.getByRole("status")).toContainText("reference intake collects pollen and nectar");
   await editor.getByLabel("Intake ball types",{exact:true}).selectOption("both");
-  await editor.getByRole("button",{name:"Preview auto",exact:true}).click();
+  await editor.getByRole("button",{name:"Run AUTO only",exact:true}).click();
   await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen and nectar");
 });
 
@@ -338,7 +339,7 @@ test("BIOBUZZ solo driving, native auto export, and an actual hive tip",async({p
   const zip=await JSZip.loadAsync(await readFile(destination));
   const catalog=JSON.parse(await zip.file(".ares/autonomous-catalog.json")!.async("string"));
   expect(catalog.entries[0]).toMatchObject({authoredAlliance:"RED",mirrorForOppositeAlliance:false,startingPose:{xMeters:-1.1,yMeters:1.8288-Math.hypot(0.225,0.225)}});
-  await editor.getByRole("button",{name:"Preview auto",exact:true}).click();
+  await editor.getByRole("button",{name:"Run AUTO only",exact:true}).click();
   await expect(page.getByTestId("match-clock")).toContainText("AUTO");
   await expect(page.getByText(/^red hive: 1 tips/)).toBeVisible({timeout:15000});
   await expect(page.getByTestId("inventory")).toContainText("4/4",{timeout:20000});

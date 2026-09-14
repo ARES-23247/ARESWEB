@@ -3,6 +3,7 @@ export type { Alliance, Element };
 export interface Pose { x: number; y: number; heading: number }
 export type SeatKind = "human" | "easy" | "standard" | "empty";
 export type Phase = "practice" | "auto" | "transition" | "teleop" | "settling" | "finished" | "interrupted";
+export type MatchMode = "auto" | "teleop" | "combined";
 export type MechanismSide = "front" | "back";
 export interface RobotSetup { shooter:MechanismSide; deposit:MechanismSide; intake:MechanismSide|"both"; intakeContents?:"pollen"|"both"; turret?:boolean; driveSpeed?:number; turnSpeed?:number }
 export interface Input { x: number; y: number; turn: number; intake: boolean; shoot: boolean; speed: number; release: boolean; aimHive?:boolean; aimFlower?:boolean; deposit?:boolean; aim?:boolean; turretTurn?:number }
@@ -11,7 +12,7 @@ export interface AutoProgram { version: 1; name: string; alliance: Alliance; sta
 export type AutoStep = { kind: "drive"; target: Pose; preset: "safe" | "balanced" }
   | { kind: "wait"; seconds: number } | { kind: "intake"; enabled: boolean }
   | { kind: "shoot"; count: number; speed: number };
-export interface Config { timed: boolean; seats: SeatKind[]; autos?: (AutoProgram | null)[]; robotSetups?: (RobotSetup|null)[] }
+export interface Config { timed: boolean; matchMode?: MatchMode; seats: SeatKind[]; autos?: (AutoProgram | null)[]; robotSetups?: (RobotSetup|null)[] }
 export type Location = "floor" | "air" | "robot" | "flower" | "hive" | "reserve" | "out";
 export interface Ball { id: number; kind: Element; x: number; y: number; z: number; vx: number; vy: number; vz: number; location: Location; container: number; returnAt: number }
 export interface Robot extends Pose { id: number; alliance: Alliance; controller: SeatKind; inventory: number[]; setup:RobotSetup; turretAngle?:number; shotStatus?:"aiming"|"ready"|"blocked"; shotTarget?:"hive"|"flower"; shotSpeed?:number }

@@ -5,6 +5,19 @@ import { Simulation } from "./core/engine";
 import { BALL,FLOWER_TOP,type Phase } from "./core/types";
 
 afterEach(cleanup);
+it("describes AUTO-only without promising a TELEOP nectar unlock",()=>{
+  render(<MatchClock mode="auto" phase="auto" remaining={30}/>);
+  expect(screen.getByRole("timer")).toHaveTextContent("AUTO0:30");
+  expect(screen.getByTestId("nectar-countdown")).toHaveTextContent("stays locked throughout AUTO");
+  expect(screen.getByText(/AUTO only: 0:30/)).toBeVisible();
+});
+it("shows TELEOP-only's two minutes and one-minute nectar countdown",()=>{
+  const s=new Simulation({timed:true,matchMode:"teleop",seats:["empty","empty","empty","empty"]});
+  render(<MatchClock mode="teleop" {...s.snapshot()}/>);
+  expect(screen.getByRole("timer")).toHaveTextContent("TELEOP2:00");
+  expect(screen.getByTestId("nectar-countdown")).toHaveTextContent("unlocks in 1:00");
+  expect(screen.getByText(/TELEOP only: 2:00/)).toBeVisible();
+});
 it("keeps the compact clock and eligibility visible while rules can be expanded",()=>{
   render(<MatchClock compact phase="practice"/>);
   expect(screen.getByRole("timer")).toHaveTextContent("PRACTICE0:00");

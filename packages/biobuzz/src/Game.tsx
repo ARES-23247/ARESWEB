@@ -5,7 +5,7 @@ import AutoEditor, { defaultAuto } from "./AutoEditor";
 import RobotSetupFields from "./RobotSetupFields";
 import { DEFAULT_ROBOT,validateRobotSetup,ROBOT_LIMITS } from "./core/robot";
 import { validateAuto } from "./core/auto";
-import { NEUTRAL, type Alliance, type AutoProgram, type Config, type Input, type SeatKind, type Snapshot } from "./core/types";
+import { NEUTRAL, type Alliance, type AutoProgram, type Config, type Input, type MatchMode, type SeatKind, type Snapshot } from "./core/types";
 import { driverInput } from "./core/view";
 import type { ClientMessage, Lobby, OnlineClient, ServerMessage, Session } from "./core/protocol";
 import "./biobuzz.css";
@@ -18,6 +18,10 @@ function localConfig():Config {
 export default function Game({online}:{online?:OnlineClient}) {
   const [config,setConfig]=useState<Config>(localConfig),[state,setState]=useState<Snapshot|null>(null),[error,setError]=useState("");
   const [program,setProgram]=useState<AutoProgram>(defaultAuto),[editing,setEditing]=useState(false),[paused,setPaused]=useState(false);
+  const [timerMode,setTimerMode]=useState<MatchMode>("combined");
+  const autoEditor=useRef<HTMLDivElement>(null);
+  const fieldPanel=useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(editing){autoEditor.current?.focus();autoEditor.current?.scrollIntoView({block:"start"});}},[editing]);
   const [seat,setSeat]=useState(0),[speed,setSpeed]=useState(5.8),[intake,setIntake]=useState(false),[code,setCode]=useState("");
   const [aimHive,setAimHive]=useState(true),padIntake=useRef(false);
   const [driverView,setDriverView]=useState<Alliance>("red");
@@ -133,6 +137,15 @@ export default function Game({online}:{online?:OnlineClient}) {
   const aimingAtHive=selected?.shotTarget==="hive"&&selected.shotStatus!==undefined;
   let robotDraftError="";try{validateRobotSetup(robotDraft);}catch(e){robotDraftError=(e as Error).message;}
   const reset=(next:Config,controlled?:number)=>{leaveOnline();keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;previousAim.current=false;previousTrigger.current=false;previousDeposit.current=false;setIntake(false);setAimHive(true);setPaused(false);setError("");setConfiguring(false);const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});};
+  const runAuto=(mode:MatchMode)=>{
+    const auto=validateAuto(program);
+    if(!auto.steps.length)throw new Error("Add at least one auto step before running.");
+    const id=auto.alliance===(seat<2?"red":"blue")?seat:auto.alliance==="red"?0:2;
+    const seats=[...config.seats];seats[id]="human";
+    const autos=[null,null,null,null] as (AutoProgram|null)[];autos[id]=auto;
+    setTimerMode(mode);reset({...config,timed:true,matchMode:mode,seats,autos},id);
+    fieldPanel.current?.focus();fieldPanel.current?.scrollIntoView({block:"start"});
+  };
   const hold=(key:string)=>({
     onPointerDown:(e:React.PointerEvent<HTMLButtonElement>)=>{e.currentTarget.setPointerCapture(e.pointerId);clearTimeout(keyTimers.current.get(key));pressTimes.current.set(key,performance.now());keys.current.add(key);},
     onPointerUp:()=>{const remaining=Math.max(0,250-(performance.now()-(pressTimes.current.get(key)??0)));keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),remaining));},
@@ -144,20 +157,27 @@ export default function Game({online}:{online?:OnlineClient}) {
     <header><h1>BIOBUZZ simulator</h1><p>Practice, build an auto, or play a 2v2 match.</p></header>
     {error&&<p role="alert" className="bio-error">{error}</p>}
     <div className="bio-grid"><div>
-      <div className="bio-card"><div className="bio-score"><span className="red" data-testid="red-score">Red {unavailable?0:state?.score.red.total??0}</span><span className="blue" data-testid="blue-score">Blue {unavailable?0:state?.score.blue.total??0}</span></div>
-      <MatchClock compact phase={interrupted?"interrupted":waiting?"waiting":state?.phase??"loading"} tick={unavailable?0:state?.tick} remaining={unavailable?0:state?.remaining} paused={paused}/>
+      <div className="bio-card bio-auto-panel" ref={fieldPanel} tabIndex={-1}><div className="bio-score"><span className="red" data-testid="red-score">Red {unavailable?0:state?.score.red.total??0}</span><span className="blue" data-testid="blue-score">Blue {unavailable?0:state?.score.blue.total??0}</span></div>
+      <MatchClock compact mode={lobby?"combined":config.matchMode} phase={interrupted?"interrupted":waiting?"waiting":state?.phase??"loading"} tick={unavailable?0:state?.tick} remaining={unavailable?0:state?.remaining} paused={paused}/>
       <div className="bio-row" role="group" aria-label="Driver station view">{(["red","blue"] as const).map(alliance=><button key={alliance} aria-pressed={driverView===alliance} onClick={()=>setDriverView(alliance)}>{alliance==="red"?"Red":"Blue"} driver view</button>)}</div>
       <Field view={driverView} state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
       <p className="bio-help">{driverView==="red"?"Red":"Blue"} station at the bottom. Forward drives up the field from this view, regardless of robot heading.</p>
-      {!lobby&&<div className="bio-row"><button onClick={()=>reset({...config,timed:true})}>{config.timed?"Restart timed match":"Start timed match"}</button>{config.timed&&<button onClick={()=>reset({...config,timed:false})}>Return to untimed practice</button>}</div>}
+      {!lobby&&<section aria-label="Timer and autonomous controls">
+        <div className="bio-row"><label>Timer mode<select value={timerMode} onChange={e=>setTimerMode(e.target.value as MatchMode)}><option value="auto">AUTO only · 0:30</option><option value="teleop">TELEOP only · 2:00</option><option value="combined">Combined · AUTO + TELEOP</option></select></label>
+          <button onClick={()=>reset({...config,timed:true,matchMode:timerMode,autos:undefined},seat)}>{config.timed?"Restart timed match":"Start timed match"}</button>
+          <button disabled={!program.steps.length||timerMode==="teleop"} onClick={()=>{try{runAuto(timerMode);}catch(e){setError((e as Error).message);}}}>Run this auto</button>
+          {config.timed&&<button onClick={()=>reset({...config,timed:false,autos:undefined})}>Return to untimed practice</button>}
+        </div>
+        <p className="bio-help">{timerMode==="teleop"?"Start directly in driver control. Autos do not run in TELEOP-only mode.":<>Start timed match uses no auto for your robot. Run this auto launches “{program.name}”{timerMode==="auto"?" for 30 seconds.":", then hands control to you for TELEOP."} {!program.steps.length&&"Use Build an auto to add intake, shoot, drive, or wait steps."}</>}</p>
+      </section>}
       <div className="bio-row"><button disabled={!!session.current} onClick={()=>setPaused(!paused)}>{paused?"Resume":"Pause"}</button><button onClick={()=>reset(config)}>Reset local field</button><button disabled={!!session.current} onClick={()=>{if(!editing&&!program.steps.length)setProgram({...program,robotSetup:validateRobotSetup(robotSetup)});setEditing(!editing);}}>{editing?"Close auto editor":"Build an auto"}</button></div>
       <p className="bio-help">WASD drive · Q/E turn · J toggle intake · H aim/cancel aim · F shoot · G place in flower/cancel · R release nectar · [ / ] turn turret.</p>
       <p role="status" data-testid="gamepad-status">{gamepadName?gamepadName==="Unsupported controller mapping"?"This controller has no standard browser mapping. Keyboard and touch controls remain available.":"Gamepad connected: "+gamepadName:"Gamepad: connect a controller and press a button to activate it."}</p>
       <p className="bio-help">Standard gamepad: left stick drive · right stick turn · A / Cross toggle intake · left trigger aim/cancel aim · right trigger shoot · bumpers turn turret · X / Square place in flower · Y / Triangle release nectar · View / Share switch driver view. Disconnecting stops gamepad inputs and switches intake off.</p>
       <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button aria-pressed={intake} onClick={()=>setIntake(on=>!on)}>{intake?"Intake on":"Intake off"}</button><button aria-pressed={!!aimingAtHive} onClick={()=>{setAimHive(true);aimClicks.current=Math.min(2,aimClicks.current+1);}}>{aimingAtHive?"Cancel aim":"Aim"}</button><button onClick={()=>{shotClicks.current=Math.min(2,shotClicks.current+1);}}>Shoot</button><button onClick={()=>{depositClicks.current=Math.min(2,depositClicks.current+1);}}>{selected?.shotStatus==="aiming"&&selected.shotTarget==="flower"?"Cancel placement":"Place in flower"}</button><button {...hold("KeyR")}>Release nectar</button>{robotSetup.turret&&<><button {...hold("BracketLeft")}>Turret left</button><button {...hold("BracketRight")}>Turret right</button></>}</div>
       </div>
-      {editing&&<AutoEditor program={program} onChange={setProgram} onPreview={()=>{const id=program.alliance==="red"?0:2;setSeat(id);const seats:SeatKind[]=["empty","empty","empty","empty"];seats[id]="human";const autos:(AutoProgram|null)[]=[null,null,null,null];autos[id]=validateAuto(program);reset({timed:true,seats,autos});}}/>}
     </div><aside>
+      {editing&&<div ref={autoEditor} tabIndex={-1} className="bio-auto-panel"><AutoEditor program={program} onChange={setProgram} onPreview={()=>runAuto("auto")} canRun={!lobby}/></div>}
       <section className="bio-card"><h2>Your robot</h2>
         <label>Controlled robot<select value={seat} disabled={!!session.current} onChange={e=>{const id=Number(e.target.value);setSeat(id);setDriverView(id<2?"red":"blue");}}>{state?.robots.map(r=><option key={r.id} value={r.id}>{r.alliance} {r.id%2+1}</option>)}</select></label>
         <p className="bio-stat" data-testid="robot-position">{selected?"X "+selected.x.toFixed(2)+" m · Y "+selected.y.toFixed(2)+" m · "+selected.heading.toFixed(2)+" rad":waiting?"Your robot appears when the match starts.":"No robot in this seat."}</p>
@@ -182,9 +202,9 @@ export default function Game({online}:{online?:OnlineClient}) {
         <p className="bio-help">Shots can hit the rim, sides, or underside. Airborne balls have a white height ring.</p>
       </section>
       <section className="bio-card"><h2>{lobby?"Online room":"Local practice"}</h2>
-        {!lobby?<><label><input type="checkbox" checked={config.timed} onChange={e=>reset({...config,timed:e.target.checked})}/> Match timer and AUTO</label>
+        {!lobby?<>
           <div className="bio-row">{config.seats.map((kind,i)=><label key={i}>{i<2?"Red":"Blue"} {i%2+1}<select value={kind} onChange={e=>{const seats=[...config.seats];seats[i]=e.target.value as SeatKind;reset({...config,seats});}}>{seatOptions}</select></label>)}</div>
-          <button onClick={()=>{setSeat(0);reset(initial);}}>Solo, no bots</button> <button onClick={()=>reset({timed:true,seats:["human","standard","standard","standard"]})}>Practice with bots</button>
+          <button onClick={()=>{setSeat(0);reset(initial);}}>Solo, no bots</button> <button onClick={()=>reset({timed:true,matchMode:timerMode,seats:["human","standard","standard","standard"]})}>Practice with bots</button>
         </>:<><p>Room <strong>{lobby.code}</strong> · {lobby.status==="finished"?"Match complete":interrupted?"Interrupted":connected?"Connected":"Reconnecting"}</p><p>{lobby.status==="waiting"?lobby.public?"Matchmaking · "+lobby.waitSeconds+"s":"Waiting for players":lobby.status}</p>
           <div className="bio-row">{lobby.seats.map((kind,i)=><label key={i}>{i<2?"Red":"Blue"} {i%2+1} {lobby.ready[i]?"✓":""}<select disabled={lobby.public||seat!==lobby.host||lobby.status!=="waiting"||lobby.occupied[i]} value={kind} onChange={e=>{const seats=[...lobby.seats];seats[i]=e.target.value as SeatKind;send({type:"configure",seats});}}>{seatOptions}</select></label>)}</div>
           {lobby.status==="waiting"&&<div className="bio-row"><button disabled={lobby.ready[seat]} onClick={()=>send({type:"ready",auto:null})}>Ready without auto</button><button disabled={lobby.ready[seat]} onClick={()=>{try{send({type:"ready",auto:validateAuto(program)});}catch(e){setError((e as Error).message);}}}>Ready with this auto</button>{!lobby.public&&seat===lobby.host&&<button onClick={()=>send({type:"start"})}>Start match</button>}</div>}
