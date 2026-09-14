@@ -10,7 +10,7 @@ import { driverInput } from "./core/view";
 import type { ClientMessage, Lobby, OnlineClient, ServerMessage, Session } from "./core/protocol";
 import "./biobuzz.css";
 
-const initial:Config={timed:false,seats:["human","empty","empty","empty"]};
+const initial:Config={timed:true,matchMode:"teleop",seats:["human","empty","empty","empty"]};
 function localConfig():Config {
   try{const setups=JSON.parse(localStorage.getItem("ares-biobuzz-robot-v1")??"null");if(Array.isArray(setups)&&setups.length===4)return {...initial,robotSetups:setups.map(validateRobotSetup)};}catch{/* Use the reference robot when saved settings are unavailable. */}
   return initial;
@@ -18,7 +18,7 @@ function localConfig():Config {
 export default function Game({online}:{online?:OnlineClient}) {
   const [config,setConfig]=useState<Config>(localConfig),[state,setState]=useState<Snapshot|null>(null),[error,setError]=useState("");
   const [program,setProgram]=useState<AutoProgram>(defaultAuto),[editing,setEditing]=useState(false),[paused,setPaused]=useState(false);
-  const [timerMode,setTimerMode]=useState<MatchMode>("combined");
+  const [timerMode,setTimerMode]=useState<MatchMode>("teleop");
   const autoEditor=useRef<HTMLDivElement>(null);
   const fieldPanel=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(editing){autoEditor.current?.focus();autoEditor.current?.scrollIntoView({block:"start"});}},[editing]);
@@ -136,7 +136,7 @@ export default function Game({online}:{online?:OnlineClient}) {
   const robotSetup=selected?.setup??lobby?.robotSetups?.[seat]??config.robotSetups?.[seat]??DEFAULT_ROBOT;
   const aimingAtHive=selected?.shotTarget==="hive"&&selected.shotStatus!==undefined;
   let robotDraftError="";try{validateRobotSetup(robotDraft);}catch(e){robotDraftError=(e as Error).message;}
-  const reset=(next:Config,controlled?:number)=>{leaveOnline();keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;previousAim.current=false;previousTrigger.current=false;previousDeposit.current=false;setIntake(false);setAimHive(true);setPaused(false);setError("");setConfiguring(false);const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});};
+  const reset=(next:Config,controlled?:number)=>{leaveOnline();keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;previousAim.current=false;previousTrigger.current=false;previousDeposit.current=false;setIntake(false);setAimHive(true);setPaused(false);setError("");setConfiguring(false);const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");if(next.timed)setTimerMode(next.matchMode??"combined");setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});};
   const runAuto=(mode:MatchMode)=>{
     const auto=validateAuto(program);
     if(!auto.steps.length)throw new Error("Add at least one auto step before running.");
@@ -163,7 +163,7 @@ export default function Game({online}:{online?:OnlineClient}) {
       <Field view={driverView} state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
       <p className="bio-help">{driverView==="red"?"Red":"Blue"} station at the bottom. Forward drives up the field from this view, regardless of robot heading.</p>
       {!lobby&&<section aria-label="Timer and autonomous controls">
-        <div className="bio-row"><label>Timer mode<select value={timerMode} onChange={e=>setTimerMode(e.target.value as MatchMode)}><option value="auto">AUTO only · 0:30</option><option value="teleop">TELEOP only · 2:00</option><option value="combined">Combined · AUTO + TELEOP</option></select></label>
+        <div className="bio-row"><label>Timer mode<select value={timerMode} onChange={e=>setTimerMode(e.target.value as MatchMode)}><option value="auto">AUTO only · 0:30</option><option value="teleop">TELEOP only · 2:00</option><option value="combined">Combined · 2:30</option></select></label>
           <button onClick={()=>reset({...config,timed:true,matchMode:timerMode,autos:undefined},seat)}>{config.timed?"Restart timed match":"Start timed match"}</button>
           <button disabled={!program.steps.length||timerMode==="teleop"} onClick={()=>{try{runAuto(timerMode);}catch(e){setError((e as Error).message);}}}>Run this auto</button>
           {config.timed&&<button onClick={()=>reset({...config,timed:false,autos:undefined})}>Return to untimed practice</button>}

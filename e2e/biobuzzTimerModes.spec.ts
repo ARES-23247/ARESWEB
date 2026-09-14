@@ -6,10 +6,10 @@ test("BIOBUZZ launches browser autos and offers independent timer modes",async({
   await expect(page.getByTestId("inventory")).toContainText("4/4");
   const timer=page.getByRole("timer",{name:"Match timer"});
   const mode=page.getByRole("combobox",{name:"Timer mode",exact:true});
-  await expect(mode.locator("option")).toHaveText(["AUTO only · 0:30","TELEOP only · 2:00","Combined · AUTO + TELEOP"]);
+  await expect(mode.locator("option")).toHaveText(["AUTO only · 0:30","TELEOP only · 2:00","Combined · 2:30"]);
   await expect(page.getByRole("button",{name:"Run this auto",exact:true})).toBeDisabled();
   await mode.selectOption("teleop");
-  await page.getByRole("button",{name:"Start timed match",exact:true}).click();
+  await page.getByRole("button",{name:"Restart timed match",exact:true}).click();
   await expect(timer).toContainText("TELEOP");
   const before=await page.getByTestId("robot-position").innerText();
   await page.getByRole("button",{name:"Drive forward",exact:true}).click();
