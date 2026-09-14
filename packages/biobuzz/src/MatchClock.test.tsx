@@ -20,7 +20,7 @@ it("shows TELEOP-only's two minutes and one-minute nectar countdown",()=>{
 });
 it("keeps the compact clock and eligibility visible while rules can be expanded",()=>{
   render(<MatchClock compact phase="practice"/>);
-  expect(screen.getByRole("timer")).toHaveTextContent("PRACTICE0:00");
+  expect(screen.getByRole("timer")).toHaveTextContent("PRACTICEUNTIMEDno time limit");
   expect(screen.getByRole("status")).toHaveTextContent("nectar flowers open");
   const summary=screen.getByText("Timing and scoring rules");
   expect(summary.closest("details")).not.toHaveAttribute("open");
@@ -31,12 +31,22 @@ it("keeps the compact clock and eligibility visible while rules can be expanded"
 it("shows the authoritative countdown and unlocks nectar at the exact final-minute boundary",()=>{
   const s=new Simulation({timed:true,seats:["empty","empty","empty","empty"]});
   const {rerender}=render(<MatchClock {...s.snapshot()}/>);
-  expect(screen.getByRole("timer")).toHaveTextContent("AUTO0:30remaining");
+  expect(screen.getByRole("timer")).toHaveTextContent("AUTO2:30match remaining");
+  expect(screen.getByTestId("period-clock")).toHaveTextContent("AUTO 0:30");
   expect(screen.getByTestId("nectar-countdown")).toHaveTextContent("1:38");
+  s.tick=59;s.step();rerender(<MatchClock {...s.snapshot()}/>);
+  expect(screen.getByTestId("match-time")).toHaveTextContent("2:29");
+  expect(screen.getByTestId("period-clock")).toHaveTextContent("AUTO 0:29");
   s.tick=1799;s.step();rerender(<MatchClock {...s.snapshot()}/>);
-  expect(screen.getByRole("timer")).toHaveTextContent("TRANSITION0:08");
+  expect(screen.getByRole("timer")).toHaveTextContent("TRANSITION2:00");
+  expect(screen.getByRole("timer")).toHaveTextContent("match paused");
+  expect(screen.getByTestId("period-clock")).toHaveTextContent("Transition 0:08");
+  s.tick=2219;s.step();rerender(<MatchClock {...s.snapshot()}/>);
+  expect(screen.getByTestId("match-time")).toHaveTextContent("2:00");
+  expect(screen.getByTestId("period-clock")).toHaveTextContent("Transition 0:01");
   s.tick=2279;s.step();rerender(<MatchClock {...s.snapshot()}/>);
   expect(screen.getByRole("timer")).toHaveTextContent("TELEOP2:00");
+  expect(screen.queryByTestId("period-clock")).not.toBeInTheDocument();
   s.tick=5879;rerender(<MatchClock {...s.snapshot()} paused/>);
   expect(screen.getByRole("timer")).toHaveTextContent("TELEOP · PAUSED1:01");
   expect(screen.getByRole("status")).toHaveTextContent("Nectar flowers locked");
@@ -48,13 +58,27 @@ it("shows the authoritative countdown and unlocks nectar at the exact final-minu
   expect(screen.getByText(/Remaining reserve nectar releases/)).toBeVisible();
   expect(s.events.filter(e=>e.message.startsWith("Final minute:"))).toHaveLength(1);
   s.step();expect(s.events.filter(e=>e.message.startsWith("Final minute:"))).toHaveLength(1);
+  s.tick=9479;s.step();rerender(<MatchClock {...s.snapshot()}/>);
+  expect(screen.getByRole("timer")).toHaveTextContent("SETTLING0:00");
+  expect(screen.queryByTestId("period-clock")).not.toBeInTheDocument();
 });
 it.each(["practice","settling","finished","interrupted","waiting","loading"] as const)("describes %s without claiming an active match countdown",phase=>{
   render(<MatchClock phase={phase} tick={125*60}/>);
   expect(screen.getByRole("timer")).toHaveTextContent(phase.toUpperCase());
-  expect(screen.getByRole("timer")).toHaveTextContent(phase==="practice"?"2:05":"0:00");
+  expect(screen.getByRole("timer")).toHaveTextContent(phase==="practice"?"UNTIMED":"0:00");
   expect(screen.queryByTestId("nectar-countdown")).not.toBeInTheDocument();
   expect(screen.getByRole("status")).not.toHaveTextContent("Nectar flowers locked");
+});
+it.each(["auto","teleop"] as const)("counts %s down to zero using the authoritative period clock",mode=>{
+  const s=new Simulation({timed:true,matchMode:mode,seats:["empty","empty","empty","empty"]});
+  const {rerender}=render(<MatchClock mode={mode} {...s.snapshot()}/>);
+  expect(screen.getByTestId("match-time")).toHaveTextContent(mode==="auto"?"0:30":"2:00");
+  for(let i=0;i<60;i++)s.step();
+  rerender(<MatchClock mode={mode} {...s.snapshot()}/>);
+  expect(screen.getByTestId("match-time")).toHaveTextContent(mode==="auto"?"0:29":"1:59");
+  s.tick=(mode==="auto"?30:158)*60-1;s.step();
+  rerender(<MatchClock mode={mode} {...s.snapshot()}/>);
+  expect(screen.getByRole("timer")).toHaveTextContent("SETTLING0:00");
 });
 it.each(["red","blue"] as const)("counts %s flower nectar but penalizes entry only before TELEOP 1:00",alliance=>{
   for(const tick of [5879,5880]){

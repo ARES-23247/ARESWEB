@@ -120,7 +120,8 @@ test("BIOBUZZ keeps counts outside the full field in short, narrow and banner la
     }
     await mkdir("scratch/biobuzz",{recursive:true});
     await page.screenshot({path:`scratch/biobuzz/layout-${size.width}-${size.height}-${testInfo.project.name}.png`});
-    await page.getByRole("button",{name:"Start timed match",exact:true}).click();
+    await page.getByRole("combobox",{name:"Timer mode",exact:true}).selectOption("combined");
+    await page.getByRole("button",{name:"Restart timed match",exact:true}).click();
     await expect(page.getByTestId("nectar-countdown")).toBeVisible();
     if(size.height<500)await field.evaluate(e=>e.scrollIntoView({block:"start"}));
     else await page.evaluate(()=>window.scrollTo(0,0));
@@ -283,9 +284,10 @@ test("BIOBUZZ saves turret and speed settings and aims without turning the chass
 
 test("BIOBUZZ exposes the timer, nectar rule window, and gamepad controls beside the field",async({page},testInfo)=>{
   await page.goto("/biobuzz/simulator");
-  await expect(page.getByTestId("nectar-window")).toHaveText("Practice · nectar flowers open");
+  await expect(page.getByRole("timer",{name:"Match timer"})).toContainText("TELEOP");
   await expect(page.getByText(/Standard gamepad: left stick drive/)).toContainText("left trigger aim/cancel aim · right trigger shoot");
-  await page.getByRole("button",{name:"Start timed match",exact:true}).click();
+  await page.getByRole("combobox",{name:"Timer mode",exact:true}).selectOption("combined");
+  await page.getByRole("button",{name:"Restart timed match",exact:true}).click();
   await expect(page.getByRole("timer",{name:"Match timer"})).toContainText("AUTO");
   await expect(page.getByTestId("nectar-window")).toHaveText("Nectar flowers locked");
   await expect(page.getByTestId("nectar-countdown")).toContainText("at TELEOP 1:00");
@@ -347,6 +349,7 @@ test("BIOBUZZ solo driving, native auto export, and an actual hive tip",async({p
   await page.getByRole("button",{name:"Close auto editor",exact:true}).click();
   await page.screenshot({path:`scratch/biobuzz/browser-hive-tip-${testInfo.project.name}.png`,fullPage:true});
   await page.getByRole("button",{name:"Solo, no bots",exact:true}).click();
-  await expect(page.getByTestId("match-clock")).toContainText("PRACTICE");
+  await expect(page.getByTestId("match-clock")).toContainText("TELEOP");
+  await expect(page.getByRole("combobox",{name:"Timer mode",exact:true})).toHaveValue("teleop");
   await expect(page.getByTestId("inventory")).toContainText("4/4");
 });
