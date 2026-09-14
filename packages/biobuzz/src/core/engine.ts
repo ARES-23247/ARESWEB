@@ -126,7 +126,7 @@ export class Simulation {
     if(robot.setup.turret&&input.aim===false&&input.aimHive===false)this.turretLockOff.add(id);
     // Preserve one pending edge if a network packet contains a press and its
     // release arrives before the next fixed step. Neutral/disabled input clears it.
-    const shootEdge=enabled&&((input.shoot===true&&!previous?.input.shoot)||previous?.shootEdge===true);
+    const shootEdge=(input.shoot===true&&!previous?.input.shoot)||(enabled&&previous?.shootEdge===true);
     const depositEdge=input.aimFlower===true&&((input.deposit===true&&!previous?.input.deposit)||previous?.depositEdge===true);
     const aimEdge=input.aimHive===true&&((input.aim===true&&!previous?.input.aim)||previous?.aimEdge===true);
     this.commands.set(id,{input:{x:clamp(input.x,-1,1),y:clamp(input.y,-1,1),turn:clamp(input.turn,-1,1),
@@ -195,11 +195,14 @@ export class Simulation {
       const pendingShot=!!humanInput&&command.shootEdge,pendingDeposit=!!humanInput&&command.depositEdge,pendingAim=!!humanInput&&command.aimEdge;
       if(command){command.shootEdge=false;command.depositEdge=false;command.aimEdge=false;}
       if(pendingShot||pendingDeposit||pendingAim)input={...input,shoot:input.shoot||pendingShot,deposit:input.deposit||pendingDeposit,...(pendingAim?{aim:true}:{})};
-      if(pendingShot||input.shoot&&!this.previousShot.get(r.id))shotEdges.add(r.id);
+      // Human edges come from received controls, not applied outputs: a stale
+      // interval neutralizes motion but must not turn a still-held button into
+      // another press when fresh packets resume. Bots/autos generate local edges.
+      if(pendingShot||(!humanInput&&input.shoot&&!this.previousShot.get(r.id)))shotEdges.add(r.id);
       this.previousShot.set(r.id,input.shoot);
-      const depositEdge=pendingDeposit||input.deposit&&!this.previousDeposit.get(r.id);
+      const depositEdge=pendingDeposit||(!humanInput&&input.deposit&&!this.previousDeposit.get(r.id));
       this.previousDeposit.set(r.id,input.deposit===true);
-      const aimEdge=pendingAim||input.aim&&!this.previousAim.get(r.id);
+      const aimEdge=pendingAim||(!humanInput&&input.aim&&!this.previousAim.get(r.id));
       this.previousAim.set(r.id,input.aim===true);
       // An explicit aim field opts into separate controls. Older clients retain
       // their one-press shot behavior during a rolling website/service update.

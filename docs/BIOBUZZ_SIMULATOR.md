@@ -32,7 +32,7 @@ Place in flower (G or gamepad X/Square) queues one short projectile arc through 
 
 The page reports standard gamepad connection status. Left stick translates in the selected driver view, right stick turns the chassis, A/Cross toggles intake, left trigger aims/cancels aim, right trigger shoots, bumpers turn the turret, X/Square places, Y/Triangle releases nectar, and View/Share switches the driver view. Action buttons are edge-triggered so a hold does not repeatedly toggle or fire; turret bumpers apply motion while held. A 0.12 stick dead zone suppresses drift; controller disconnection neutralizes controls and turns intake off. Nonstandard mappings are reported instead of guessing their axes. Browser tests substitute only the Gamepad hardware API and exercise the real controls/worker; this does not constitute a physical-controller test.
 
-Fresh controls retain at most one pending aim/shoot/placement edge between fixed physics updates, so coalesced press/release packets do not lose a click. Neutral controls, stale input, and disconnects discard pending actions. This does not queue an unbounded series of shots.
+Fresh controls retain at most one pending aim/shoot/placement edge between fixed physics updates, so coalesced press/release packets do not lose a click. Neutral controls, stale input, and disconnects discard pending actions. A stale interval neutralizes outputs while retaining received button state, so resuming with Aim or Shoot still held does not create another press. This does not queue an unbounded series of shots.
 
 ## Practice interpretation
 

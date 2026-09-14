@@ -110,6 +110,16 @@ describe("turret and drivetrain configuration",()=>{
     run(s,30,()=>({...controls,aimHive:false}));expect(r.shotStatus).toBeUndefined();
     run(s,240,i=>({...controls,aim:i===0}));expect(r.shotStatus).toBe("ready");
   });
+  it("does not reinterpret a held Aim or Shoot as a new press after a stale-input gap",()=>{
+    const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0];run(s,240);
+    run(s,1,()=>({...controls,aim:true}));run(s,1); // Cancel, then release.
+    run(s,240,()=>({...controls,aim:true}));expect(r.shotStatus).toBe("ready");
+    for(let i=0;i<16;i++)s.step();expect(r.shotStatus).toBeUndefined();
+    run(s,240,()=>({...controls,aim:true}));expect(r.shotStatus).toBe("ready");
+    run(s,120,()=>({...controls,shoot:true}));expect(r.inventory).toHaveLength(3);
+    for(let i=0;i<16;i++)s.step();expect(r.shotStatus).toBeUndefined();
+    run(s,120,()=>({...controls,shoot:true}));expect(r.inventory).toHaveLength(3);
+  });
   it("places a flower while locked, then automatically reacquires the hive without firing",()=>{
     const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0],ball=s.balls[r.inventory[0]];
     run(s,240);expect(r.shotStatus).toBe("ready");
