@@ -38,16 +38,33 @@ test("four independent browsers finish the same authoritative match and persist 
    response=p.waitForResponse(r=>r.url().endsWith("/api/biobuzz/join"));await p.getByRole("button",{name:"Join room",exact:true}).click();sessions.push(await (await response).json());await expect(p.getByText(code,{exact:true})).toBeVisible();
    await expect(p.getByRole("button",{name:"Pause",exact:true})).toBeDisabled();
   }
+  await pages[1].getByRole("button",{name:"Configure robot",exact:true}).click();
+  const robotConfig=pages[1].getByRole("region",{name:"Robot configuration",exact:true});
+  await robotConfig.getByLabel("Hive shooter side",{exact:true}).selectOption("back");
+  await robotConfig.getByLabel("Flower placement side",{exact:true}).selectOption("back");
+  await robotConfig.getByLabel("Intake side",{exact:true}).selectOption("both");
+  await robotConfig.getByRole("button",{name:"Apply robot configuration",exact:true}).click();
+  await expect(pages[1].getByTestId("robot-setup")).toHaveText("Shooter: back · Flower placement: back · Intake: both");
   await host.getByRole("button",{name:"Ready with this auto",exact:true}).click();
   for(const p of pages.slice(1))await p.getByRole("button",{name:"Ready without auto",exact:true}).click();
   await host.getByRole("button",{name:"Start match",exact:true}).click();
   for(const p of pages)await expect(p.getByTestId("match-clock")).toContainText("AUTO");
+  await expect(pages[1].getByRole("button",{name:"Configure robot",exact:true})).toBeDisabled();
+  await expect(pages[1].getByRole("button",{name:"Blue driver view",exact:true})).toHaveAttribute("aria-pressed","true");
   await expect(host.getByText(/^red hive: 1 tips/)).toBeVisible({timeout:20000});
   await expect(host.getByTestId("match-clock")).toContainText("TELEOP",{timeout:45000});
   for(const p of pages.slice(1)){
    const before=await p.getByTestId("robot-position").innerText();await p.getByRole("button",{name:"Drive forward",exact:true}).click();await expect(p.getByTestId("robot-position")).not.toHaveText(before);
-   await p.getByRole("button",{name:"Flower power",exact:true}).click();
-   await p.getByRole("button",{name:"Shoot",exact:true}).click();await expect(p.getByTestId("inventory")).toContainText("3/4");
+   // The touch drive tap lasts 250 ms. Release and settle before requesting an
+   // assisted placement: active manual driving deliberately cancels assistance.
+   await expect.poll(async()=>{const pose=await p.getByTestId("robot-position").innerText();await p.waitForTimeout(150);return pose===await p.getByTestId("robot-position").innerText();}).toBe(true);
+   if(p===pages[1]){
+    await p.getByRole("button",{name:"Place in flower",exact:true}).click();
+    await expect(p.getByText("Flower 4: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:10000});
+   }else{
+    await p.getByRole("button",{name:"Flower power",exact:true}).click();await p.getByRole("button",{name:"Shoot",exact:true}).click();
+   }
+   await expect(p.getByTestId("inventory")).toContainText("3/4");
   }
   const ticks=snapshots.map(s=>Number(s.tick));expect(Math.max(...ticks)-Math.min(...ticks)).toBeLessThanOrEqual(12);
   // Actual transport loss, bot takeover, and seat reclamation use the existing browser session.

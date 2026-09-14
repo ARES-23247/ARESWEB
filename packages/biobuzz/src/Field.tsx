@@ -3,6 +3,7 @@ import type { Alliance, AutoProgram, Pose, Snapshot } from "./core/types";
 import { BALL, SIZE } from "./core/types";
 import { hiveOutline, hiveTarget } from "./core/hive";
 import { fieldToView, viewToField, viewRotation } from "./core/view";
+import { DEFAULT_ROBOT,sideAngle } from "./core/robot";
 import backgroundUrl from "../assets/field.png";
 const colors={pollen:"#f4cf38",red:"#ef5350",blue:"#4285f4"};
 export default function Field({state,program,onWaypoint,view="red"}:{state:Snapshot|null;program?:AutoProgram;onWaypoint?:(pose:Pose)=>void;view?:Alliance}) {
@@ -68,6 +69,14 @@ export default function Field({state,program,onWaypoint,view="red"}:{state:Snaps
           ctx.fillStyle=colors[r.alliance];ctx.strokeStyle="#ffffff";ctx.lineWidth=3;ctx.fillRect(-0.225*scale,-0.225*scale,0.45*scale,0.45*scale);ctx.strokeRect(-0.225*scale,-0.225*scale,0.45*scale,0.45*scale);
           ctx.fillStyle="#111";ctx.beginPath();ctx.moveTo(0,-0.2*scale);ctx.lineTo(-10,-0.1*scale);ctx.lineTo(10,-0.1*scale);ctx.fill();ctx.restore();
           ctx.fillStyle="#111";ctx.font="bold 24px sans-serif";ctx.textAlign="center";ctx.fillText(String(r.id+1),p[0],p[1]+8);
+          const setup=r.setup??DEFAULT_ROBOT;
+          for(const side of ["front","back"] as const){
+            const marks=(setup.shooter===side?"S":"")+(setup.deposit===side?"F":"")+(setup.intake===side||setup.intake==="both"?"I":"");
+            if(!marks)continue;
+            const a=r.heading+sideAngle(side),port=point(old.x+(r.x-old.x)*blend+Math.cos(a)*.16,old.y+(r.y-old.y)*blend+Math.sin(a)*.16);
+            ctx.fillStyle="#111";ctx.fillRect(port[0]-marks.length*5-3,port[1]-9,marks.length*10+6,18);
+            ctx.fillStyle="#fff";ctx.font="bold 14px sans-serif";ctx.fillText(marks,port[0],port[1]+5);
+          }
           }});
         }
         layers.sort((a,b)=>a.z-b.z).forEach(layer=>layer.draw());
@@ -78,6 +87,6 @@ export default function Field({state,program,onWaypoint,view="red"}:{state:Snaps
     }
     id=requestAnimationFrame(draw);return()=>cancelAnimationFrame(id);
   },[program,view]);
-  return <canvas ref={canvas} className="bio-field" width={900} height={900} tabIndex={0} aria-label="BIOBUZZ field. W A S D to drive, Q E to turn, J to toggle intake, F to shoot or cancel. State and waypoint coordinates are available beside the field."
+  return <canvas ref={canvas} className="bio-field" width={900} height={900} tabIndex={0} aria-label="BIOBUZZ field. W A S D to drive, Q E to turn, J to toggle intake, F to shoot or cancel, G to place in a flower. State and waypoint coordinates are available beside the field."
     onClick={event=>{event.currentTarget.focus();if(onWaypoint){const rect=event.currentTarget.getBoundingClientRect();onWaypoint({...viewToField({x:(event.clientX-rect.left)/rect.width,y:(event.clientY-rect.top)/rect.height},view),heading:0});}}}/>;
 }

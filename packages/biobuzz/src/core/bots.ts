@@ -1,6 +1,7 @@
 import type { Simulation } from "./engine";
 import { FIELD, ZONES } from "./field";
 import { hiveTarget } from "./hive";
+import { sideAngle } from "./robot";
 import { NEUTRAL, HALF, BALL, angle, clamp, distance, type Input, type Robot } from "./types";
 
 function blocked(x:number,y:number) {
@@ -86,7 +87,8 @@ export function botInput(sim:Simulation,r:Robot):Input {
     const d=Math.max(0.1,distance(r,other));input.x+=(r.x-other.x)/d*0.25;input.y+=(r.y-other.y)/d*0.25;
   }
   if(aim){
-    const error=angle(Math.atan2(aim.y-r.y,aim.x-r.x)-r.heading);
+    const side=input.intake?(r.setup.intake==="back"?"back":"front"):r.setup.shooter;
+    const error=angle(Math.atan2(aim.y-r.y,aim.x-r.x)-sideAngle(side)-r.heading);
     input.turn=clamp(error*1.5,-0.8,0.8);
     if(r.inventory.length&&distance(r,goal)<0.06&&Math.abs(error)<(r.controller==="easy"?0.045:0.012)){
       const ticks=(aiming.get(sim)!.get(r.id)??0)+1;aiming.get(sim)!.set(r.id,ticks);
