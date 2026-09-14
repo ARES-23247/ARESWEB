@@ -195,8 +195,10 @@ export default function EventsCalendarView({
                           <button
                             onClick={() => onDelete(evt)}
                             className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                            title="Archive Event"
-                            aria-label={`Archive event ${evt.title}`}
+                            title={evt.recurrenceOf && evt.occurrenceDate ? "Delete session or archive series" : "Archive Event"}
+                            aria-label={evt.recurrenceOf && evt.occurrenceDate
+                              ? `Delete session ${evt.title} on ${evt.occurrenceDate}`
+                              : `Archive event ${evt.title}`}
                           >
                             <Trash2 aria-hidden="true" size={13} />
                           </button>

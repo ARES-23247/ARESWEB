@@ -8,6 +8,7 @@ import { Plus, Shield, Activity, MapPin, X, Loader2 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/api";
 import {
   archiveEvent,
+  cancelEventOccurrence,
   fetchLocations,
   fetchManagedEvent,
   fetchManagedEvents,
@@ -50,7 +51,7 @@ export default function EventsManagementPage({
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pendingLifecycle, setPendingLifecycle] = useState<{
-    action: "archive" | "restore";
+    action: "archive" | "restore" | "occurrence";
     event: TeamEvent;
   } | null>(null);
   const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
@@ -168,6 +169,7 @@ export default function EventsManagementPage({
     setIsEditorOpen(false);
     setSelectedEvent(null);
     onEditorClose?.();
+    void loadManagementData();
   };
 
   const handleOpenCreate = () => {
@@ -184,7 +186,11 @@ export default function EventsManagementPage({
 
   const handleDeleteEvent = (evt: TeamEvent) => {
     if (!canPublishDirectly) return;
-    setPendingLifecycle({ action: "archive", event: evt });
+    setOperationStatus(null);
+    setPendingLifecycle({
+      action: evt.recurrenceOf && evt.occurrenceDate ? "occurrence" : "archive",
+      event: evt,
+    });
   };
 
   const handleRestoreEvent = (evt: TeamEvent) => {
@@ -198,12 +204,19 @@ export default function EventsManagementPage({
     setOperationStatus(null);
     try {
       const targetId = pendingLifecycle.event.recurrenceOf || pendingLifecycle.event.id;
-      if (pendingLifecycle.action === "archive") await archiveEvent(targetId);
+      if (pendingLifecycle.action === "occurrence") {
+        if (!pendingLifecycle.event.recurrenceOf || !pendingLifecycle.event.occurrenceDate) {
+          throw new Error("Choose a session to delete.");
+        }
+        await cancelEventOccurrence(targetId, pendingLifecycle.event.occurrenceDate);
+      } else if (pendingLifecycle.action === "archive") await archiveEvent(targetId);
       else await restoreEvent(targetId);
       setOperationStatus({
         kind: "success",
         message:
-          pendingLifecycle.action === "archive"
+          pendingLifecycle.action === "occurrence"
+            ? `The ${pendingLifecycle.event.occurrenceDate} session of “${pendingLifecycle.event.title}” was deleted. Other sessions are still scheduled.`
+            : pendingLifecycle.action === "archive"
             ? `“${pendingLifecycle.event.title}” was archived.`
             : `“${pendingLifecycle.event.title}” was restored as a draft.`,
       });
@@ -503,11 +516,19 @@ export default function EventsManagementPage({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <Dialog.Title className="text-lg font-black uppercase text-white">
-                  {pendingLifecycle?.action === "archive" ? "Archive event?" : "Restore event?"}
+                  {pendingLifecycle?.action === "occurrence"
+                    ? "Delete this session?"
+                    : pendingLifecycle?.action === "archive"
+                      ? pendingLifecycle.event.recurrence ? "Archive entire series?" : "Archive event?"
+                      : "Restore event?"}
                 </Dialog.Title>
                 <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/75">
-                  {pendingLifecycle?.action === "archive"
-                    ? `“${pendingLifecycle.event.title}” will leave the public calendar. Managers can restore it later.`
+                  {pendingLifecycle?.action === "occurrence"
+                    ? `Only the ${pendingLifecycle.event.occurrenceDate} session of “${pendingLifecycle.event.title}” will be removed. All other sessions will stay scheduled. Restore this date under Entire series → Skipped dates.`
+                    : pendingLifecycle?.action === "archive"
+                    ? pendingLifecycle.event.recurrence
+                      ? `Every session of “${pendingLifecycle.event.title}” will leave the public calendar. Managers can restore the series later.`
+                      : `“${pendingLifecycle.event.title}” will leave the public calendar. Managers can restore it later.`
                     : `“${pendingLifecycle?.event.title}” will return as a draft. Review it before publishing.`}
                 </Dialog.Description>
               </div>
@@ -522,6 +543,26 @@ export default function EventsManagementPage({
                 </button>
               </Dialog.Close>
             </div>
+            {pendingLifecycle?.action !== "restore" && pendingLifecycle?.event.recurrenceOf && pendingLifecycle.event.occurrenceDate && (
+              <fieldset className="mt-4 space-y-3 text-sm text-white" disabled={isApplyingLifecycle}>
+                <legend className="mb-2 font-bold">Remove from calendar</legend>
+                <label className="flex items-center gap-2">
+                  <input type="radio" name="event-delete-scope" checked={pendingLifecycle.action === "occurrence"}
+                    onChange={() => setPendingLifecycle({ ...pendingLifecycle, action: "occurrence" })}
+                    className="accent-ares-gold" />
+                  This session ({pendingLifecycle.event.occurrenceDate})
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" name="event-delete-scope" checked={pendingLifecycle.action === "archive"}
+                    onChange={() => setPendingLifecycle({ ...pendingLifecycle, action: "archive" })}
+                    className="accent-ares-gold" />
+                  Entire series
+                </label>
+              </fieldset>
+            )}
+            {operationStatus?.kind === "error" && (
+              <p role="alert" className="mt-4 text-sm text-white">The calendar change was not completed. {operationStatus.message}</p>
+            )}
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Dialog.Close asChild>
                 <button
@@ -539,7 +580,10 @@ export default function EventsManagementPage({
                 className="inline-flex items-center justify-center gap-2 rounded bg-ares-red px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
               >
                 {isApplyingLifecycle && <Loader2 aria-hidden="true" size={14} className="motion-safe:animate-spin" />}
-                {pendingLifecycle?.action === "archive" ? "Archive event" : "Restore as draft"}
+                {pendingLifecycle?.action === "occurrence" ? "Delete this session"
+                  : pendingLifecycle?.action === "archive"
+                    ? pendingLifecycle.event.recurrence ? "Archive entire series" : "Archive event"
+                    : "Restore as draft"}
               </button>
             </div>
           </Dialog.Content>
