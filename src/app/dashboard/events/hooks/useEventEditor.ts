@@ -385,15 +385,23 @@ export function useEventEditor({
   };
 
   const handleDeleteEvent = async () => {
-    if (!canPublishDirectly || !editId) return;
+    if (!canPublishDirectly || !editId || isSaving) return;
 
     setOperationError(null);
+    setIsSaving(true);
     try {
-      await archiveEvent(editId);
+      if (editScope === "occurrence") {
+        if (!occurrenceContextDate) throw new Error("Choose a session to delete.");
+        await cancelEventOccurrence(editId, occurrenceContextDate);
+      } else {
+        await archiveEvent(editId);
+      }
       onClose();
     } catch (err: unknown) {
       logger.error("Error soft deleting event:", err);
       setOperationError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSaving(false);
     }
   };
 

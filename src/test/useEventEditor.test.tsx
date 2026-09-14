@@ -10,6 +10,7 @@ import {
   archiveEventPhoto,
   approveEventPhoto,
   associateEventPhoto,
+  cancelEventOccurrence,
   createEvent,
   fetchEventOccurrences,
   restoreEvent,
@@ -368,6 +369,54 @@ describe("useEventEditor custom hook", () => {
     expect(updateEvent).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
+
+  it.each(["occurrence", "series", "failure", "member"] as const)(
+    "keeps recurring deletion scoped and recoverable: %s",
+    async (scenario) => {
+      if (scenario === "member") {
+        vi.mocked(useAuth).mockReturnValue({
+          ...vi.mocked(useAuth)(),
+          authorizedUser: { email: "test@example.com", role: "member" },
+        });
+      }
+      const onClose = vi.fn();
+      const eventToEdit = {
+        id: "weekly-1_2026-07-07",
+        recurrenceOf: "weekly-1",
+        occurrenceDate: "2026-07-07",
+        title: "Practice",
+        dateStart: "2026-07-08T18:00:00.000Z",
+        category: "internal" as const,
+        recurrence: { frequency: "weekly" as const, interval: 1, byDay: ["TU"] },
+      };
+      const { result } = renderHook(() => useEventEditor({
+        isOpen: true,
+        onClose,
+        eventToEdit,
+        locations: mockLocations,
+        setLocations: mockSetLocations,
+        teamMembers: mockTeamMembers,
+      }));
+      // Deleting a moved session must use its original recurrence date, even
+      // when the form contains another unsaved date.
+      act(() => result.current.setFormDateStart("2026-07-09T18:00"));
+      if (scenario === "series") act(() => result.current.handleEditScopeChange("series"));
+      if (scenario === "failure") vi.mocked(cancelEventOccurrence).mockRejectedValueOnce(new Error("Session deletion failed"));
+      await act(async () => result.current.handleDeleteEvent());
+      expect(result.current.isSaving).toBe(false);
+      if (scenario === "series") {
+        expect(archiveEvent).toHaveBeenCalledWith("weekly-1");
+        expect(cancelEventOccurrence).not.toHaveBeenCalled();
+      } else {
+        expect(archiveEvent).not.toHaveBeenCalled();
+        if (scenario === "member") expect(cancelEventOccurrence).not.toHaveBeenCalled();
+        else expect(cancelEventOccurrence).toHaveBeenCalledWith("weekly-1", "2026-07-07");
+      }
+      if (scenario === "failure" || scenario === "member") expect(onClose).not.toHaveBeenCalled();
+      else expect(onClose).toHaveBeenCalledOnce();
+      if (scenario === "failure") expect(result.current.operationError).toBe("Session deletion failed");
+    },
+  );
 
   it("fetches revisions list when activeTab shifts to revisions", async () => {
     const mockEvent = {

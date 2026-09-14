@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Trash2, X, Maximize2, Minimize2, Sparkles, AlertCircle, RotateCcw, } from "lucide-react";
@@ -120,6 +120,11 @@ export default function EventEditorDrawer({
   });
 
   const [pendingLifecycle, setPendingLifecycle] = useState<"archive" | "restore" | null>(null);
+  const lifecycleTriggerRef = useRef<HTMLButtonElement>(null);
+  const deletingSession = editScope === "occurrence" && !!occurrenceContextDate;
+  const archiveLabel = deletingSession
+    ? "Delete this session"
+    : eventToEdit?.recurrence ? "Archive entire series" : "Archive event";
   const hasNestedDialog =
     selectedPhoto !== null || isPhotoPickerOpen || isLocationModalOpen || pendingLifecycle !== null;
   const editorRef = useFocusTrap(isOpen && !hasNestedDialog, onClose);
@@ -366,15 +371,18 @@ export default function EventEditorDrawer({
                   />
                 )}
 
-                <div className="pt-4 border-t border-white/5 flex justify-between gap-2 shrink-0">
+                <div className="pt-4 border-t border-white/5 flex flex-wrap justify-between gap-2 shrink-0">
                   <div className="flex flex-wrap gap-2">
                     {editId &&
                       canPublishDirectly &&
-                      editScope === "series" &&
+                      (eventToEdit?.isDeleted !== 1 || editScope === "series") &&
                       (eventToEdit?.isDeleted === 1 ? (
                         <button
                           type="button"
-                          onClick={() => setPendingLifecycle("restore")}
+                          onClick={(event) => {
+                            lifecycleTriggerRef.current = event.currentTarget;
+                            setPendingLifecycle("restore");
+                          }}
                           className="px-5 py-3 border border-ares-gold/35 hover:bg-ares-gold/10 text-ares-gold rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                         >
                           <RotateCcw size={14} />
@@ -383,11 +391,15 @@ export default function EventEditorDrawer({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setPendingLifecycle("archive")}
+                          onClick={(event) => {
+                            lifecycleTriggerRef.current = event.currentTarget;
+                            setPendingLifecycle("archive");
+                          }}
+                          disabled={isSaving}
                           className="px-5 py-3 border border-ares-red/35 hover:bg-ares-red/10 text-white rounded text-xs uppercase font-black tracking-widest cursor-pointer transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                         >
                           <Trash2 size={14} />
-                          Archive Event
+                          {archiveLabel}
                         </button>
                       ))}
                   </div>
@@ -569,15 +581,24 @@ export default function EventEditorDrawer({
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[150] bg-black/85" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-[151] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
+          <Dialog.Content
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              lifecycleTriggerRef.current?.focus();
+            }}
+            className="fixed left-1/2 top-1/2 z-[151] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-white/15 bg-obsidian p-6 shadow-2xl focus:outline-none">
             <Dialog.Title className="text-lg font-black uppercase text-white">
               {pendingLifecycle === "archive"
-                ? "Archive this event?"
+                ? `${archiveLabel}?`
                 : "Restore this event?"}
             </Dialog.Title>
             <Dialog.Description className="mt-2 text-sm leading-relaxed text-marble/75">
               {pendingLifecycle === "archive"
-                ? "The event will leave the public calendar. Managers can restore it later."
+                ? deletingSession
+                  ? `Only the session on ${occurrenceContextDate} will be removed from the calendar. All other sessions will stay scheduled. You can restore this date under Entire series → Skipped dates.`
+                  : eventToEdit?.recurrence
+                    ? "Every session in this series will leave the public calendar. Managers can restore the series later."
+                    : "The event will leave the public calendar. Managers can restore it later."
                 : "The event will return as a draft. Review it before publishing."}
             </Dialog.Description>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -602,7 +623,7 @@ export default function EventEditorDrawer({
                 className="rounded bg-ares-red px-4 py-2 text-xs font-black uppercase text-white hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 {pendingLifecycle === "archive"
-                  ? "Archive event"
+                  ? archiveLabel
                   : "Restore as draft"}
               </button>
             </div>

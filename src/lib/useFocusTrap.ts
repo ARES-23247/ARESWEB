@@ -109,7 +109,10 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     };
 
     const timeoutId = window.setTimeout(() => {
-      if (isTopLayer() && ref.current) focusBoundary(ref.current);
+      // A nested dialog may already have restored focus inside this trap.
+      if (isTopLayer() && ref.current && !ref.current.contains(document.activeElement)) {
+        focusBoundary(ref.current);
+      }
     }, 50);
 
     document.addEventListener("keydown", handleKeyDown, true);

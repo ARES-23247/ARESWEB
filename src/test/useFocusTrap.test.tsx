@@ -78,6 +78,15 @@ describe("useFocusTrap", () => {
     expect(last).toHaveFocus();
   });
 
+  it("preserves focus restored inside the drawer before its initial-focus timer", () => {
+    vi.useFakeTimers();
+    render(<TestTrapComponent isOpen onClose={vi.fn()} />);
+    screen.getByTestId("last-btn").focus();
+    act(() => vi.advanceTimersByTime(50));
+    expect(screen.getByTestId("last-btn")).toHaveFocus();
+    vi.useRealTimers();
+  });
+
   it("redirects programmatic focus that escapes the top-layer trap", () => {
     render(<TestTrapComponent isOpen onClose={vi.fn()} />);
 
