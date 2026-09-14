@@ -39,7 +39,8 @@ it("shows the authoritative countdown and unlocks nectar at the exact final-minu
   expect(screen.getByTestId("period-clock")).toHaveTextContent("AUTO 0:29");
   s.tick=1799;s.step();rerender(<MatchClock {...s.snapshot()}/>);
   expect(screen.getByRole("timer")).toHaveTextContent("TRANSITION2:00");
-  expect(screen.getByTestId("period-clock")).toHaveTextContent("Transition 0:08 · match countdown paused");
+  expect(screen.getByRole("timer")).toHaveTextContent("match paused");
+  expect(screen.getByTestId("period-clock")).toHaveTextContent("Transition 0:08");
   s.tick=2219;s.step();rerender(<MatchClock {...s.snapshot()}/>);
   expect(screen.getByTestId("match-time")).toHaveTextContent("2:00");
   expect(screen.getByTestId("period-clock")).toHaveTextContent("Transition 0:01");

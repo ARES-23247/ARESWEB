@@ -1,7 +1,12 @@
 import { expect,test } from "./fixtures";
+import { mkdir } from "node:fs/promises";
 
 test("BIOBUZZ counts down every timer mode and pauses combined play for transition",async({page},testInfo)=>{
   test.setTimeout(85000);
+  await page.route("**/api/announcements",route=>route.fulfill({json:{announcement:{
+    message:"No Practice tonight. Building field for tomorrow and students can't sign the NDA. Launch tomorrow at SPARK. Arrive at 9:30 AM",
+    severity:"important",link:null,linkLabel:null,revision:"biobuzz-countdown-test",startsAt:null,endsAt:null,
+  }}}));
   await page.goto("/biobuzz/simulator");
   const mode=page.getByRole("combobox",{name:"Timer mode",exact:true});
   const timer=page.getByRole("timer",{name:"Match timer"});
@@ -34,7 +39,17 @@ test("BIOBUZZ counts down every timer mode and pauses combined play for transiti
   await page.getByRole("button",{name:"Resume",exact:true}).click();
   await expect(timer).toContainText("TRANSITION",{timeout:35000});
   await expect(value).toHaveText("2:00");
-  await expect(page.getByTestId("period-clock")).toContainText("match countdown paused");
+  await expect(timer).toContainText("match paused");
+  const canvas=page.locator("canvas.bio-field"),viewport=page.viewportSize()!;
+  // A large announcement plus the clock cannot share a short phone viewport
+  // with the field. Scrolling must reveal the whole square below fixed navigation.
+  if(viewport.height<800)await canvas.evaluate(e=>e.scrollIntoView({block:"start"}));
+  else await page.evaluate(()=>window.scrollTo(0,0));
+  const field=(await canvas.boundingBox())!,nav=(await page.getByRole("navigation",{name:"Main Navigation"}).boundingBox())!;
+  expect(field.y).toBeGreaterThanOrEqual(nav.y+nav.height);
+  expect(field.y+field.height).toBeLessThanOrEqual(viewport.height);
+  await mkdir("scratch/biobuzz",{recursive:true});
+  await page.screenshot({path:`scratch/biobuzz/countdown-transition-${testInfo.project.name}.png`});
   await page.waitForTimeout(1200);await expect(value).toHaveText("2:00");
   await expect(timer).toContainText("TELEOP",{timeout:12000});
   await expect(value).toHaveText("1:59");
