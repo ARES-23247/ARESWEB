@@ -3,6 +3,36 @@ import { mkdir } from "node:fs/promises";
 import JSZip from "jszip";
 import { readFile } from "node:fs/promises";
 
+test("BIOBUZZ saves intake ball types for the robot and browser autos",async({page},testInfo)=>{
+  await page.goto("/biobuzz/simulator");
+  await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen and nectar");
+  await page.getByRole("button",{name:"Configure robot",exact:true}).click();
+  const form=page.getByRole("region",{name:"Robot configuration",exact:true});
+  await expect(form.getByLabel("Intake ball types",{exact:true})).toHaveValue("both");
+  await form.getByLabel("Intake ball types",{exact:true}).selectOption("pollen");
+  await mkdir("scratch/biobuzz",{recursive:true});
+  await form.screenshot({path:`scratch/biobuzz/intake-filter-${testInfo.project.name}.png`});
+  await form.getByRole("button",{name:"Apply configuration and reset",exact:true}).click();
+  await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen only");
+  await expect(page.getByTestId("inventory")).toContainText("4/4");
+  await page.reload();
+  await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen only");
+  await page.getByRole("button",{name:"Build an auto",exact:true}).click();
+  const editor=page.getByRole("region",{name:"Auto editor",exact:true});
+  await expect(editor.getByLabel("Intake ball types",{exact:true})).toHaveValue("pollen");
+  await editor.getByRole("button",{name:"Save locally",exact:true}).click();
+  await editor.getByLabel("Intake ball types",{exact:true}).selectOption("both");
+  await editor.getByRole("button",{name:"Load saved",exact:true}).click();
+  await expect(editor.getByLabel("Intake ball types",{exact:true})).toHaveValue("pollen");
+  await editor.getByRole("button",{name:"Preview auto",exact:true}).click();
+  await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen only");
+  await editor.getByRole("button",{name:"Export for ARES Studio",exact:true}).click();
+  await expect(editor.getByRole("status")).toContainText("reference intake collects pollen and nectar");
+  await editor.getByLabel("Intake ball types",{exact:true}).selectOption("both");
+  await editor.getByRole("button",{name:"Preview auto",exact:true}).click();
+  await expect(page.getByTestId("robot-intake")).toHaveText("Intake collects: Pollen and nectar");
+});
+
 test("BIOBUZZ configures rear mechanisms and places through the flower top",async({page},testInfo)=>{
   test.setTimeout(60000);
   await page.goto("/biobuzz/simulator");

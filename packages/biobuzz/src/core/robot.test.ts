@@ -4,6 +4,7 @@ import { DEFAULT_ROBOT,validateRobotSetup,sideAngle } from "./robot";
 import { planFlowerShot,clearFlowerShot } from "./shooting";
 import { nativeAuto,validateAuto } from "./auto";
 import { defaultAuto } from "../AutoEditor";
+import { botInput } from "./bots";
 import { NEUTRAL,angle,type Input,type RobotSetup } from "./types";
 const run=(s:Simulation,n:number,input:(tick:number)=>Input)=>{for(let i=0;i<n;i++){s.command(0,input(i));s.step();}};
 describe("configurable BIOBUZZ mechanisms",()=>{
@@ -23,6 +24,47 @@ describe("configurable BIOBUZZ mechanisms",()=>{
     const ball=s.balls[r.inventory[0]];
     run(s,300,i=>({...NEUTRAL,aimHive:true,shoot:i===1}));
     expect(ball.location).toBe("hive");expect(r.inventory).toHaveLength(2);
+  });
+  it("validates intake contents without changing legacy robot configurations",()=>{
+    expect(validateRobotSetup(DEFAULT_ROBOT)).toEqual(DEFAULT_ROBOT);
+    for(const intakeContents of ["pollen","both"] as const)expect(validateRobotSetup({...DEFAULT_ROBOT,intakeContents})).toEqual({...DEFAULT_ROBOT,intakeContents});
+    for(const intakeContents of [null,true,0,"nectar",[],{}])expect(()=>validateRobotSetup({...DEFAULT_ROBOT,intakeContents})).toThrow("intake ball types");
+  });
+  it.each([undefined,"both","pollen"] as const)("applies %s intake contents on either alliance and every intake side",intakeContents=>{
+    for(const seat of [0,2])for(const intake of ["front","back","both"] as const){
+      const setup={...DEFAULT_ROBOT,intake,intakeContents},s=new Simulation({timed:false,seats:seat===0?["human","empty","empty","empty"]:["empty","empty","human","empty"],robotSetups:[setup,null,setup]}),r=s.robots[0];
+      for(const id of [...r.inventory]){s["detach"](s.balls[id]);s.balls[id].location="reserve";}
+      s["robotBodies"].get(seat)!.setTransform({x:1.1,y:0},0);
+      for(const side of intake==="both"?["front","back"]:[intake])for(const kind of ["red","blue","pollen"] as const){
+        const ball=s.balls.find(b=>b.kind===kind&&b.location==="reserve")!;
+        s["floor"](ball,1.1+(side==="back"?-.35:.35),0);
+        for(let i=0;i<15;i++){s.command(seat,{...NEUTRAL,intake:true});s.step();}
+        const allowed=kind==="pollen"||(intakeContents!=="pollen"&&kind===r.alliance);
+        expect(ball.location).toBe(allowed?"robot":"floor");
+        expect(r.inventory.includes(ball.id)).toBe(allowed);
+        s["detach"](ball);ball.location="reserve";
+      }
+      expect(s.balls).toHaveLength(56);
+    }
+  });
+  it("leaves rejected nectar beside the mouth while collecting pollen up to capacity",()=>{
+    const s=new Simulation({timed:false,seats:["human","empty","empty","empty"],robotSetups:[{...DEFAULT_ROBOT,intakeContents:"pollen"}]}),r=s.robots[0];
+    const pollen=s.balls[r.inventory[0]],nectar=s.balls.find(b=>b.kind==="red"&&b.location==="reserve")!;
+    s["robotBodies"].get(0)!.setTransform({x:1.1,y:0},0);
+    s["floor"](nectar,1.4,-.05);s["floor"](pollen,1.4,.05);
+    run(s,30,()=>({...NEUTRAL,intake:true}));
+    expect(r.inventory).toHaveLength(4);expect(pollen.location).toBe("robot");expect(nectar.location).toBe("floor");
+    const extra=s.balls.find(b=>b.kind==="pollen"&&b.location==="reserve")!;s["floor"](extra,1.4,.05);
+    run(s,30,()=>({...NEUTRAL,intake:true}));expect(extra.location).toBe("floor");expect(r.inventory).toHaveLength(4);
+    expect(new Set(s.balls.map(b=>b.id)).size).toBe(56);
+  });
+  it("does not send a pollen-only bot after nectar it cannot collect",()=>{
+    const s=new Simulation({timed:false,seats:["standard","empty","empty","empty"],robotSetups:[{...DEFAULT_ROBOT,intakeContents:"pollen"}]}),r=s.robots[0];
+    for(const ball of s.balls){s["detach"](ball);ball.location="reserve";}
+    const nectar=s.balls.find(b=>b.kind==="red")!;s["floor"](nectar,r.x+.5,r.y-.4);
+    expect(botInput(s,r)).toMatchObject({x:0,y:0,intake:false});
+    const pollen=s.balls.find(b=>b.kind==="pollen")!;s["floor"](pollen,r.x+.5,r.y-.7);
+    expect(botInput(s,r).intake).toBe(true);
   });
   it.each(["front","back","both"] as const)("collects from %s with one shared four-ball capacity",intake=>{
     const s=new Simulation({timed:false,seats:["human","empty","empty","empty"],robotSetups:[{...DEFAULT_ROBOT,intake}]}),r=s.robots[0];
@@ -54,8 +96,8 @@ describe("configurable BIOBUZZ mechanisms",()=>{
     for(const f of s.flowers)while(f.balls.length<8)s["store"](s.balls.find(b=>b.location==="reserve")!,"flower",s.flowers.indexOf(f));
     expect(planFlowerShot(r,ball.kind,s.hives,s.flowers,s.balls)).toBeNull();
   });
-  it("preserves the nectar bottom obstruction with a rear intake",()=>{
-    const s=new Simulation({timed:false,seats:["human","empty","empty","empty"],robotSetups:[{...DEFAULT_ROBOT,intake:"back"}]}),r=s.robots[0],f=s.flowers[0];
+  it.each(["both","pollen"] as const)("preserves the nectar bottom obstruction with a rear %s intake",intakeContents=>{
+    const s=new Simulation({timed:false,seats:["human","empty","empty","empty"],robotSetups:[{...DEFAULT_ROBOT,intake:"back",intakeContents}]}),r=s.robots[0],f=s.flowers[0];
     for(const id of [...r.inventory,...f.balls]){s["detach"](s.balls[id]);s.balls[id].location="reserve";}
     const n=s.balls.find(b=>b.kind==="red"&&b.location==="reserve")!,p=s.balls.find(b=>b.kind==="pollen"&&b.location==="reserve")!;
     s["store"](n,"flower",0);s["store"](p,"flower",0);s["robotBodies"].get(0)!.setTransform({x:f.x-.4,y:f.y},Math.PI);
@@ -68,6 +110,13 @@ describe("configurable BIOBUZZ mechanisms",()=>{
     const s=new Simulation({timed:true,seats:["human","empty","empty","empty"],autos:[program]});expect(s.robots[0].setup).toEqual(setup);
     expect(()=>nativeAuto(program,"custom")).toThrow("front-facing");
     expect(nativeAuto({...program,robotSetup:{...DEFAULT_ROBOT}},"reference").routine.schemaVersion).toBe(2);
+  });
+  it("preserves pollen-only browser autos without silently discarding their filter in Studio exports",()=>{
+    const program={...defaultAuto(),robotSetup:{...DEFAULT_ROBOT,intakeContents:"pollen" as const}};
+    expect(validateAuto(JSON.parse(JSON.stringify(program))).robotSetup?.intakeContents).toBe("pollen");
+    const s=new Simulation({timed:true,seats:["human","empty","empty","empty"],autos:[program]});expect(s.robots[0].setup.intakeContents).toBe("pollen");
+    expect(()=>nativeAuto(program,"filtered")).toThrow("reference intake collects pollen and nectar");
+    expect(nativeAuto({...program,robotSetup:{...DEFAULT_ROBOT,intakeContents:"both"}},"reference").routine.schemaVersion).toBe(2);
   });
   it("scores placed nectar while applying the early TELEOP penalty",()=>{
     const s=new Simulation({timed:true,seats:["human","empty","empty","empty"],robotSetups:[{...DEFAULT_ROBOT,deposit:"back"}]}),r=s.robots[0],f=s.flowers[0];
