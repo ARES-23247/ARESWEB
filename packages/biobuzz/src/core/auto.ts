@@ -1,7 +1,7 @@
 import type { AutoProgram, AutoStep, Pose } from "./types";
 import { FIELD, ZONES, inZone } from "./field";
 import { HALF, ROBOT_HALF } from "./types";
-import { validateRobotSetup } from "./robot";
+import { validateRobotSetup,ROBOT_LIMITS } from "./robot";
 
 function pose(value: unknown): value is Pose {
   if (!value || typeof value !== "object") return false;
@@ -41,7 +41,8 @@ export const ACTIONS = {
 export function nativeAuto(program: AutoProgram, documentId: string) {
   const auto = validateAuto(program);
   const setup=validateRobotSetup(auto.robotSetup);
-  if(setup.shooter!=="front"||setup.deposit!=="front"||setup.intake!=="front")throw new Error("Studio export requires the reference robot's front-facing mechanisms. Custom layouts can be saved and replayed in the browser.");
+  if(setup.shooter!=="front"||setup.deposit!=="front"||setup.intake!=="front"||setup.turret
+    ||(setup.driveSpeed??ROBOT_LIMITS.driveSpeed.default)!==ROBOT_LIMITS.driveSpeed.default||(setup.turnSpeed??ROBOT_LIMITS.turnSpeed.default)!==ROBOT_LIMITS.turnSpeed.default)throw new Error("Studio export requires the reference robot's front-facing mechanisms, fixed shooter, and default drive speeds. Custom configurations can be saved and replayed in the browser.");
   if (!/^[a-z][a-z0-9-]{0,63}$/.test(documentId)) throw new Error("Invalid routine identifier.");
   const steps: Record<string, unknown>[] = [];
   // Native Gson decoding does not apply Kotlin constructor defaults to absent collections.

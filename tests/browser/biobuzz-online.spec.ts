@@ -43,6 +43,9 @@ test("four independent browsers finish the same authoritative match and persist 
   await robotConfig.getByLabel("Hive shooter side",{exact:true}).selectOption("back");
   await robotConfig.getByLabel("Flower placement side",{exact:true}).selectOption("back");
   await robotConfig.getByLabel("Intake side",{exact:true}).selectOption("both");
+  await robotConfig.getByRole("checkbox",{name:"Shooter turret",exact:true}).check();
+  await robotConfig.getByLabel("Chassis speed (m/s)",{exact:true}).fill("0.8");
+  await robotConfig.getByLabel("Turn speed (degrees/s)",{exact:true}).fill("90");
   await robotConfig.getByRole("button",{name:"Apply robot configuration",exact:true}).click();
   await expect(pages[1].getByTestId("robot-setup")).toHaveText("Shooter: back · Flower placement: back · Intake: both");
   await host.getByRole("button",{name:"Ready with this auto",exact:true}).click();
@@ -61,10 +64,17 @@ test("four independent browsers finish the same authoritative match and persist 
    if(p===pages[1]){
     await p.getByRole("button",{name:"Place in flower",exact:true}).click();
     await expect(p.getByText("Flower 4: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:10000});
+    const heading=(await p.getByTestId("robot-position").innerText()).split(" · ").at(-1);
+    await p.getByRole("button",{name:"Aim",exact:true}).click();
+    await expect(p.getByTestId("aim-status")).toContainText("Ready to shoot",{timeout:10000});
+    await expect(p.getByTestId("inventory")).toContainText("3/4");
+    expect((await p.getByTestId("robot-position").innerText()).split(" · ").at(-1)).toBe(heading);
+    await p.getByRole("button",{name:"Shoot",exact:true}).click();
+    await expect(p.getByText("blue hive: 0 tips · cell 2 open · 4 balls",{exact:true})).toBeVisible({timeout:10000});
    }else{
     await p.getByRole("button",{name:"Flower power",exact:true}).click();await p.getByRole("button",{name:"Shoot",exact:true}).click();
    }
-   await expect(p.getByTestId("inventory")).toContainText("3/4");
+   await expect(p.getByTestId("inventory")).toContainText(p===pages[1]?"2/4":"3/4");
   }
   const ticks=snapshots.map(s=>Number(s.tick));expect(Math.max(...ticks)-Math.min(...ticks)).toBeLessThanOrEqual(12);
   // Actual transport loss, bot takeover, and seat reclamation use the existing browser session.

@@ -5,9 +5,9 @@ import { mkdirSync,writeFileSync } from "node:fs";
 const require=createRequire(import.meta.url);
 const {Simulation}=require("../functions/lib/generated/games/biobuzz/engine.js");
 const records=[];
-for(const {count,workload} of [...[1,5,10,25].map(count=>({count,workload:"bots"})),{count:1,workload:"assisted-input"}]){
+for(const {count,workload} of [...[1,5,10,25].map(count=>({count,workload:"bots"})),{count:1,workload:"assisted-input"},{count:1,workload:"turret-input"}]){
   const controller=workload==="bots"?"standard":"human";
-  const worlds=Array.from({length:count},()=>new Simulation({timed:true,seats:[controller,controller,controller,controller]}));
+  const worlds=Array.from({length:count},()=>new Simulation({timed:true,seats:[controller,controller,controller,controller],...(workload==="turret-input"?{robotSetups:Array.from({length:4},()=>({shooter:"front",deposit:"front",intake:"front",turret:true,driveSpeed:3,turnSpeed:2*Math.PI}))}:{})}));
   const start=performance.now(),cpu=process.cpuUsage(),batches=[];
   let rawBytes=0,compressedBytes=0,missedBatches=0,consecutiveMisses=0,maxConsecutiveMisses=0;
   for(let tick=0;tick<9600;tick++){
@@ -16,6 +16,7 @@ for(const {count,workload} of [...[1,5,10,25].map(count=>({count,workload:"bots"
       // Also measure repeated human assist requests at the current one-room ceiling.
       // Inputs remain at the real 30 Hz rate; no geometry or inventory is injected.
       if(workload==="assisted-input"&&tick%2===0)for(let id=0;id<4;id++)world.command(id,{x:0,y:0,turn:0,intake:true,shoot:tick%12===0,aimHive:true,speed:5.8,release:false});
+      if(workload==="turret-input"&&tick%2===0)for(let id=0;id<4;id++)world.command(id,{x:tick%240<60?.15:0,y:0,turn:tick%240<60?.1:0,intake:true,aim:tick%240===0,shoot:tick%240===180,aimHive:true,speed:5.8,release:false});
       world.step();
       if(tick%6===0){
         const payload=JSON.stringify({type:"snapshot",state:world.snapshot()});

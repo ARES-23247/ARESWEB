@@ -4,8 +4,8 @@ export interface Pose { x: number; y: number; heading: number }
 export type SeatKind = "human" | "easy" | "standard" | "empty";
 export type Phase = "practice" | "auto" | "transition" | "teleop" | "settling" | "finished" | "interrupted";
 export type MechanismSide = "front" | "back";
-export interface RobotSetup { shooter:MechanismSide; deposit:MechanismSide; intake:MechanismSide|"both" }
-export interface Input { x: number; y: number; turn: number; intake: boolean; shoot: boolean; speed: number; release: boolean; aimHive?:boolean; aimFlower?:boolean; deposit?:boolean }
+export interface RobotSetup { shooter:MechanismSide; deposit:MechanismSide; intake:MechanismSide|"both"; turret?:boolean; driveSpeed?:number; turnSpeed?:number }
+export interface Input { x: number; y: number; turn: number; intake: boolean; shoot: boolean; speed: number; release: boolean; aimHive?:boolean; aimFlower?:boolean; deposit?:boolean; aim?:boolean; turretTurn?:number }
 export const NEUTRAL: Input = { x: 0, y: 0, turn: 0, intake: false, shoot: false, speed: 5.8, release: false };
 export interface AutoProgram { version: 1; name: string; alliance: Alliance; start: Pose; steps: AutoStep[]; robotSetup?:RobotSetup }
 export type AutoStep = { kind: "drive"; target: Pose; preset: "safe" | "balanced" }
@@ -14,7 +14,7 @@ export type AutoStep = { kind: "drive"; target: Pose; preset: "safe" | "balanced
 export interface Config { timed: boolean; seats: SeatKind[]; autos?: (AutoProgram | null)[]; robotSetups?: (RobotSetup|null)[] }
 export type Location = "floor" | "air" | "robot" | "flower" | "hive" | "reserve" | "out";
 export interface Ball { id: number; kind: Element; x: number; y: number; z: number; vx: number; vy: number; vz: number; location: Location; container: number; returnAt: number }
-export interface Robot extends Pose { id: number; alliance: Alliance; controller: SeatKind; inventory: number[]; setup:RobotSetup; shotStatus?:"aiming"|"blocked"; shotTarget?:"hive"|"flower" }
+export interface Robot extends Pose { id: number; alliance: Alliance; controller: SeatKind; inventory: number[]; setup:RobotSetup; turretAngle?:number; shotStatus?:"aiming"|"ready"|"blocked"; shotTarget?:"hive"|"flower"; shotSpeed?:number }
 export interface Flower { x: number; y: number; balls: number[] }
 export interface Hive { alliance: Alliance; x: number; y: number; angle: number; upward: number; progress: number; tipping: boolean; dumped: boolean; cells: number[][]; tips: number }
 export interface GameEvent { tick: number; type: "tip" | "shot" | "intake" | "foul" | "phase" | "release" | "warning"; message: string }
