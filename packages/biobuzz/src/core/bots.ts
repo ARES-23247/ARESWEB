@@ -1,7 +1,7 @@
 import type { Simulation } from "./engine";
 import { FIELD, ZONES } from "./field";
 import { hiveTarget } from "./hive";
-import { sideAngle } from "./robot";
+import { sideAngle,shooterHeading } from "./robot";
 import { NEUTRAL, HALF, BALL, angle, clamp, distance, type Input, type Robot } from "./types";
 
 function blocked(x:number,y:number) {
@@ -69,7 +69,7 @@ export function botInput(sim:Simulation,r:Robot):Input {
       const d=Math.hypot(dx,dy)||1;
       return {target,goal:{x:target.x-dx/d*0.40,y:target.y-dy/d*0.40}};
     }).filter(candidate=>!sim.robots.some(other=>other.id!==r.id&&distance(other,candidate.goal)<0.62))
-      .sort((a,b)=>distance(r,a.goal)-distance(r,b.goal));
+      .sort((a,b)=>(late?Number("kind" in b.target&&b.target.kind===r.alliance)-Number("kind" in a.target&&a.target.kind===r.alliance):0)||distance(r,a.goal)-distance(r,b.goal));
     const candidate=approaches[0];if(!candidate)return input;
     goal=candidate.goal;aim=candidate.target;input.intake=true;
   }
@@ -88,8 +88,9 @@ export function botInput(sim:Simulation,r:Robot):Input {
   }
   if(aim){
     const side=input.intake?(r.setup.intake==="back"?"back":"front"):r.setup.shooter;
-    const error=angle(Math.atan2(aim.y-r.y,aim.x-r.x)-sideAngle(side)-r.heading);
-    input.turn=clamp(error*1.5,-0.8,0.8);
+    const error=angle(Math.atan2(aim.y-r.y,aim.x-r.x)-(input.intake?r.heading+sideAngle(side):shooterHeading(r)));
+    if(r.setup.turret&&!input.intake)input.turretTurn=clamp(error*1.5,-0.8,0.8);
+    else input.turn=clamp(error*1.5,-0.8,0.8);
     if(r.inventory.length&&distance(r,goal)<0.06&&Math.abs(error)<(r.controller==="easy"?0.045:0.012)){
       const ticks=(aiming.get(sim)!.get(r.id)??0)+1;aiming.get(sim)!.set(r.id,ticks);
       input.x=0;input.y=0;input.shoot=canShoot&&ticks>30&&sim.tick%(r.controller==="easy"?90:36)===0;

@@ -90,7 +90,7 @@ describe("tilted BIOBUZZ cells",()=>{
       expect(h.tips).toBe(cell+1);expect(h.upward).toBe(1-cell);
       expect(h.cells[cell]).toHaveLength(0);expect(r.inventory).toHaveLength(0);
     }
-    expect(s.credits.red).toBe(2);expect(s.balls).toHaveLength(56);
+    expect(s.credits.red).toBe(0);expect(s.balls.filter(b=>b.kind==="red"&&b.location==="reserve")).toHaveLength(3);expect(s.balls).toHaveLength(56);
     const held=[...s.robots.flatMap(robot=>robot.inventory),...s.flowers.flatMap(f=>f.balls),...s.hives.flatMap(hive=>hive.cells.flat())];
     expect(new Set(held).size).toBe(held.length);
   });

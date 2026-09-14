@@ -121,7 +121,7 @@ describe("BIOBUZZ physics and rules",()=>{
  });
  it("runs bots through the same driving and shooting interfaces",()=>{
   const s=new Simulation({timed:false,seats:["standard","easy","standard","easy"]});advance(s,1200);
-  expect(s.robots.some(r=>Math.abs(r.y-startingPose(r.id).y)>0.3)).toBe(true);
+  expect(s.robots.some(r=>Math.hypot(r.x-startingPose(r.id).x,r.y-startingPose(r.id).y)>0.3)).toBe(true);
   expect(s.balls).toHaveLength(56);expect(s.robots.every(r=>r.inventory.length<=4)).toBe(true);
  });
  it("completes a four-bot match with both hive and flower scoring",()=>{

@@ -17,7 +17,7 @@ export default function AutoEditor({program,onChange,onPreview}:{program:AutoPro
     <label>Auto name<input maxLength={80} value={program.name} onChange={e=>onChange({...program,name:e.target.value})}/></label>
     <label>Authored alliance<select value={program.alliance} onChange={e=>{const alliance=e.target.value as "red"|"blue";onChange({...program,alliance,start:defaultAutoStart(alliance)});}}><option value="red">Red</option><option value="blue">Blue</option></select></label>
     <RobotSetupFields value={program.robotSetup??DEFAULT_ROBOT} onChange={robotSetup=>onChange({...program,robotSetup})}/>
-    <p className="bio-help">Robot layout is saved with the browser auto. Studio export supports the reference robot's front-facing mechanisms.</p>
+    <p className="bio-help">Robot settings are saved with the browser auto. Turret autos start at the shooter's home direction. Studio export supports the front-facing reference robot with a fixed shooter and default drive speeds.</p>
     <h3>Starting pose</h3>{poseInputs(program.start,start=>onChange({...program,start}))}
     <ol className="bio-steps">{program.steps.map((step,i)=><li key={i}><div className="bio-row"><strong>{i+1}. {step.kind}</strong><button type="button" aria-label={"Remove step "+(i+1)} onClick={()=>onChange({...program,steps:program.steps.filter((_,j)=>j!==i)})}>Remove</button></div>
       {step.kind==="drive"&&<>{poseInputs(step.target,target=>update(i,{...step,target}))}<label>Motion<select value={step.preset} onChange={e=>update(i,{...step,preset:e.target.value as "safe"|"balanced"})}><option value="safe">Safe</option><option value="balanced">Balanced</option></select></label></>}
