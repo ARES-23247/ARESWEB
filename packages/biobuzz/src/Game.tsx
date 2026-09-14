@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import Field from "./Field";
 import AutoEditor, { defaultAuto } from "./AutoEditor";
 import { validateAuto } from "./core/auto";
-import { NEUTRAL, type AutoProgram, type Config, type Input, type SeatKind, type Snapshot } from "./core/types";
+import { NEUTRAL, type Alliance, type AutoProgram, type Config, type Input, type SeatKind, type Snapshot } from "./core/types";
+import { driverInput } from "./core/view";
 import type { ClientMessage, Lobby, OnlineClient, ServerMessage, Session } from "./core/protocol";
 import "./biobuzz.css";
 
@@ -11,12 +12,15 @@ export default function Game({online}:{online?:OnlineClient}) {
   const [config,setConfig]=useState<Config>(initial),[state,setState]=useState<Snapshot|null>(null),[error,setError]=useState("");
   const [program,setProgram]=useState<AutoProgram>(defaultAuto),[editing,setEditing]=useState(false),[paused,setPaused]=useState(false);
   const [seat,setSeat]=useState(0),[speed,setSpeed]=useState(5.8),[intake,setIntake]=useState(false),[code,setCode]=useState("");
+  const [aimHive,setAimHive]=useState(true),padIntake=useRef(false);
+  const [driverView,setDriverView]=useState<Alliance>("red");
+  const shotClicks=useRef(0),previousTrigger=useRef(false);
   const [lobby,setLobby]=useState<Lobby|null>(null),[busy,setBusy]=useState(false),[connected,setConnected]=useState(false);
   const terminal=useRef(false);
   const worker=useRef<Worker|null>(null),socket=useRef<WebSocket|null>(null),session=useRef<Session|null>(null),keys=useRef(new Set<string>());
   const pressTimes=useRef(new Map<string,number>()),keyTimers=useRef(new Map<string,ReturnType<typeof setTimeout>>());
-  const control=useRef({seat,speed,intake,paused}),retry=useRef<ReturnType<typeof setTimeout>|null>(null),sequence=useRef(0),closed=useRef(false);
-  useEffect(()=>{control.current={seat,speed,intake,paused};},[seat,speed,intake,paused]);
+  const control=useRef({seat,speed,intake,paused,aimHive,driverView}),retry=useRef<ReturnType<typeof setTimeout>|null>(null),sequence=useRef(0),closed=useRef(false);
+  useEffect(()=>{control.current={seat,speed,intake,paused,aimHive,driverView};},[seat,speed,intake,paused,aimHive,driverView]);
   const send=(message:ClientMessage)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify(message));};
   function leaveOnline(){
     send({type:"leave"});
@@ -33,7 +37,7 @@ export default function Game({online}:{online?:OnlineClient}) {
         const m=JSON.parse(event.data) as ServerMessage;
         if(m.type==="snapshot"){setState(m.state);if(["finished","interrupted"].includes(m.state.phase))terminal.current=true;}
         if(m.type==="lobby"){setLobby(m.lobby);if(["finished","interrupted","local-offer"].includes(m.lobby.status))terminal.current=true;}
-        if(m.type==="joined"){setSeat(m.seat);setPaused(false);setConnected(true);setError("");}
+        if(m.type==="joined"){setSeat(m.seat);setDriverView(m.seat<2?"red":"blue");setPaused(false);setConnected(true);setError("");}
         if(m.type==="error")setError(m.message);
       }catch{setError("Invalid simulator response.");ws.close();}
     };
@@ -57,9 +61,10 @@ export default function Game({online}:{online?:OnlineClient}) {
     const timeouts=keyTimers.current;
     const w=new Worker(new URL("./worker.ts",import.meta.url),{type:"module"});worker.current=w;
     w.onmessage=event=>{if(session.current)return;if(event.data.type==="snapshot")setState(event.data.state);else setError(event.data.message);};
-    const clear=()=>keys.current.clear();
+    const clear=()=>{keys.current.clear();shotClicks.current=0;};
     const down=(e:KeyboardEvent)=>{
       if((e.target as HTMLElement)?.closest("input,select,textarea"))return;
+      if(e.code==="KeyJ"){if(!e.repeat)setIntake(on=>!on);e.preventDefault();return;}
       if(["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","KeyJ","KeyF","KeyR"].includes(e.code)){keys.current.add(e.code);e.preventDefault();}
     };
     const up=(e:KeyboardEvent)=>keys.current.delete(e.code);
@@ -67,12 +72,22 @@ export default function Game({online}:{online?:OnlineClient}) {
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",clear);document.addEventListener("visibilitychange",visibility);
     const timer=setInterval(()=>{
       const c=control.current,k=keys.current,pad=navigator.getGamepads?.().find(p=>p?.connected);
+      if(c.paused||document.hidden)shotClicks.current=0;
+      const click=shotClicks.current>0&&!previousTrigger.current;
+      if(click)shotClicks.current--;
+      const trigger=click||k.has("KeyF")||!!pad?.buttons[7]?.pressed;
+      previousTrigger.current=trigger;
+      const pressed=!!pad?.buttons[0]?.pressed;
+      if(pressed&&!padIntake.current&&!c.paused&&!document.hidden)setIntake(on=>!on);
+      padIntake.current=pressed;
       const dead=(v:number)=>Math.abs(v)<0.12?0:v;
+      const drive=driverInput(
+        (k.has("KeyW")?1:0)-(k.has("KeyS")?1:0)-(pad?dead(pad.axes[1]??0):0),
+        (k.has("KeyA")?1:0)-(k.has("KeyD")?1:0)-(pad?dead(pad.axes[0]??0):0),c.driverView);
       const input:Input=c.paused||document.hidden?{...NEUTRAL}:{
-        x:(k.has("KeyW")?1:0)-(k.has("KeyS")?1:0)-(pad?dead(pad.axes[1]??0):0),
-        y:(k.has("KeyA")?1:0)-(k.has("KeyD")?1:0)-(pad?dead(pad.axes[0]??0):0),
+        ...drive,
         turn:(k.has("KeyQ")?1:0)-(k.has("KeyE")?1:0)-(pad?dead(pad.axes[2]??0):0),
-        intake:c.intake||k.has("KeyJ")||!!pad?.buttons[0]?.pressed,shoot:k.has("KeyF")||!!pad?.buttons[7]?.pressed,
+        intake:c.intake,shoot:trigger,aimHive:c.aimHive,
         speed:c.speed,release:k.has("KeyR")||!!pad?.buttons[3]?.pressed};
       if(session.current){if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({type:"input",sequence:sequence.current++,input}));}
       else w.postMessage({type:"input",id:c.seat,input});
@@ -85,7 +100,7 @@ export default function Game({online}:{online?:OnlineClient}) {
   const interrupted=lobby?.status==="interrupted";
   const unavailable=waiting||interrupted;
   const selected=unavailable?undefined:state?.robots.find(r=>r.id===seat);
-  const reset=(next:Config)=>{leaveOnline();setPaused(false);setError("");setSeat(Math.max(0,next.seats.findIndex(s=>s==="human")));setConfig({...next});};
+  const reset=(next:Config)=>{leaveOnline();keys.current.clear();shotClicks.current=0;previousTrigger.current=false;setIntake(false);setPaused(false);setError("");const id=Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");setConfig({...next});};
   const hold=(key:string)=>({
     onPointerDown:(e:React.PointerEvent<HTMLButtonElement>)=>{e.currentTarget.setPointerCapture(e.pointerId);clearTimeout(keyTimers.current.get(key));pressTimes.current.set(key,performance.now());keys.current.add(key);},
     onPointerUp:()=>{const remaining=Math.max(0,250-(performance.now()-(pressTimes.current.get(key)??0)));keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),remaining));},
@@ -99,20 +114,26 @@ export default function Game({online}:{online?:OnlineClient}) {
     <div className="bio-grid"><div>
       <div className="bio-card"><div className="bio-score"><span className="red" data-testid="red-score">Red {unavailable?0:state?.score.red.total??0}</span><span className="blue" data-testid="blue-score">Blue {unavailable?0:state?.score.blue.total??0}</span></div>
       <p className="bio-timer" data-testid="match-clock">{interrupted?"INTERRUPTED":waiting?"WAITING":state?.phase.toUpperCase()??"LOADING"} {!unavailable&&state&&["auto","transition","teleop"].includes(state.phase)?Math.ceil(state.remaining)+"s":""} {paused?" · PAUSED":""}</p>
-      <Field state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
+      <div className="bio-row" role="group" aria-label="Driver station view">{(["red","blue"] as const).map(alliance=><button key={alliance} aria-pressed={driverView===alliance} onClick={()=>setDriverView(alliance)}>{alliance==="red"?"Red":"Blue"} driver view</button>)}</div>
+      <p className="bio-help">{driverView==="red"?"Red":"Blue"} station at the bottom. Forward drives up the field from this view, regardless of robot heading.</p>
+      <Field view={driverView} state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
       <div className="bio-row"><button disabled={!!session.current} onClick={()=>setPaused(!paused)}>{paused?"Resume":"Pause"}</button><button onClick={()=>reset(config)}>Reset local field</button><button disabled={!!session.current} onClick={()=>setEditing(!editing)}>{editing?"Close auto editor":"Build an auto"}</button></div>
-      <p className="bio-help">WASD drive · Q/E turn · J intake · F shoot · R release nectar. Gamepad: left stick drive, right stick turn, A intake, right trigger shoot, Y release.</p>
-      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button {...hold("KeyF")}>Shoot</button><button {...hold("KeyR")}>Release nectar</button></div>
+      <p className="bio-help">WASD drive · Q/E turn · J toggle intake · F shoot/cancel · R release nectar. Gamepad: left stick drive, right stick turn, A toggle intake, right trigger shoot/cancel, Y release.</p>
+      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button aria-pressed={intake} onClick={()=>setIntake(on=>!on)}>{intake?"Intake on":"Intake off"}</button><button onClick={()=>{shotClicks.current=Math.min(2,shotClicks.current+1);}}>{selected?.shotStatus==="aiming"?"Cancel shot":"Shoot"}</button><button {...hold("KeyR")}>Release nectar</button></div>
       </div>
       {editing&&<AutoEditor program={program} onChange={setProgram} onPreview={()=>{const id=program.alliance==="red"?0:2;setSeat(id);const seats:SeatKind[]=["empty","empty","empty","empty"];seats[id]="human";const autos:(AutoProgram|null)[]=[null,null,null,null];autos[id]=validateAuto(program);reset({timed:true,seats,autos});}}/>}
     </div><aside>
       <section className="bio-card"><h2>Your robot</h2>
-        <label>Controlled robot<select value={seat} disabled={!!session.current} onChange={e=>setSeat(Number(e.target.value))}>{state?.robots.map(r=><option key={r.id} value={r.id}>{r.alliance} {r.id%2+1}</option>)}</select></label>
+        <label>Controlled robot<select value={seat} disabled={!!session.current} onChange={e=>{const id=Number(e.target.value);setSeat(id);setDriverView(id<2?"red":"blue");}}>{state?.robots.map(r=><option key={r.id} value={r.id}>{r.alliance} {r.id%2+1}</option>)}</select></label>
         <p className="bio-stat" data-testid="robot-position">{selected?"X "+selected.x.toFixed(2)+" m · Y "+selected.y.toFixed(2)+" m · "+selected.heading.toFixed(2)+" rad":waiting?"Your robot appears when the match starts.":"No robot in this seat."}</p>
         <p data-testid="inventory">Inventory {selected?.inventory.length??0}/4: {selected?.inventory.map(id=>state!.balls[id].kind==="pollen"?"Pollen":state!.balls[id].kind+" nectar").join(", ")||"empty"}</p>
         <label><input type="checkbox" checked={intake} onChange={e=>setIntake(e.target.checked)}/> Run intake</label>
-        <label>Launch speed: {speed.toFixed(2)} m/s<input type="range" min={2} max={5.8} step={0.01} value={speed} onChange={e=>setSpeed(Number(e.target.value))}/></label>
-        <div className="bio-row"><button onClick={()=>setSpeed(5.8)}>Hive power</button><button onClick={()=>setSpeed(3.08)}>Flower power</button></div>
+        <p className="bio-help">Intake stays on until toggled off, collecting whenever there is space. Capacity: four balls.</p>
+        <label><input type="checkbox" checked={aimHive} onChange={e=>setAimHive(e.target.checked)}/> Aim hive shots automatically</label>
+        <p role="status">{selected?.shotStatus==="aiming"?"Lining up the hive shot. Shoot again or drive to cancel.":selected?.shotStatus==="blocked"?"No clear hive shot from here. Move toward the outward-facing OPEN cell and try again.":aimHive?"Shoot turns toward the open cell and chooses the launch angle and speed.":"Manual shooting: aim and select launch power."}</p>
+        <label>Launch speed: {speed.toFixed(2)} m/s<input type="range" disabled={aimHive} min={2} max={5.8} step={0.01} value={speed} onChange={e=>setSpeed(Number(e.target.value))}/></label>
+        <div className="bio-row"><button onClick={()=>setAimHive(true)}>Hive assist</button><button onClick={()=>{setAimHive(false);setSpeed(3.08);}}>Flower power</button></div>
+        <p className="bio-help">Shots can hit the rim, sides, or underside. Airborne balls have a white height ring.</p>
       </section>
       <section className="bio-card"><h2>{lobby?"Online room":"Local practice"}</h2>
         {!lobby?<><label><input type="checkbox" checked={config.timed} onChange={e=>reset({...config,timed:e.target.checked})}/> Match timer and AUTO</label>

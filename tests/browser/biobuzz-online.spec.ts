@@ -26,8 +26,8 @@ test("four independent browsers finish the same authoritative match and persist 
   await host.getByRole("button",{name:"Build an auto",exact:true}).click();
   const editor=host.getByRole("region",{name:"Auto editor",exact:true});
   await editor.getByRole("button",{name:"Add waypoint",exact:true}).click();
-  await editor.getByLabel("X (m)",{exact:true}).nth(1).fill("-1.48");await editor.getByLabel("Y (m)",{exact:true}).nth(1).fill("1.48");await editor.getByLabel("Heading (rad)",{exact:true}).nth(1).fill("-0.7918");
-  await editor.getByRole("button",{name:"Add wait",exact:true}).click();await editor.getByRole("button",{name:"Add shot",exact:true}).click();await editor.getByLabel("Balls",{exact:true}).fill("4");await editor.getByLabel("Launch speed (m/s)",{exact:true}).fill("5.46");
+  await editor.getByLabel("X (m)",{exact:true}).nth(1).fill("-1.42");await editor.getByLabel("Y (m)",{exact:true}).nth(1).fill("1.42");await editor.getByLabel("Heading (rad)",{exact:true}).nth(1).fill("-0.8188");
+  await editor.getByRole("button",{name:"Add wait",exact:true}).click();await editor.getByRole("button",{name:"Add shot",exact:true}).click();await editor.getByLabel("Balls",{exact:true}).fill("4");await editor.getByLabel("Launch speed (m/s)",{exact:true}).fill("5.54");
   await host.getByRole("button",{name:"Close auto editor",exact:true}).click();
   await host.getByRole("button",{name:"Pause",exact:true}).click();
   let response=host.waitForResponse(r=>r.url().endsWith("/api/biobuzz/create"));await host.getByRole("button",{name:"Create private room",exact:true}).click();sessions.push(await (await response).json());
@@ -46,6 +46,7 @@ test("four independent browsers finish the same authoritative match and persist 
   await expect(host.getByTestId("match-clock")).toContainText("TELEOP",{timeout:45000});
   for(const p of pages.slice(1)){
    const before=await p.getByTestId("robot-position").innerText();await p.getByRole("button",{name:"Drive forward",exact:true}).click();await expect(p.getByTestId("robot-position")).not.toHaveText(before);
+   await p.getByRole("button",{name:"Flower power",exact:true}).click();
    await p.getByRole("button",{name:"Shoot",exact:true}).click();await expect(p.getByTestId("inventory")).toContainText("3/4");
   }
   const ticks=snapshots.map(s=>Number(s.tick));expect(Math.max(...ticks)-Math.min(...ticks)).toBeLessThanOrEqual(12);

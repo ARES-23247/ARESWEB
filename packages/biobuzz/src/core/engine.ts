@@ -3,6 +3,8 @@ import { FIELD, ZONES, inZone } from "./field";
 import { emptyMatch, scoreMatch } from "./scoring";
 import { validateAuto } from "./auto";
 import { botInput } from "./bots";
+import { HIVE, hitHive, hivePoint } from "./hive";
+import { SHOOTER, clearHiveShot, planHiveShot, type ShotPlan } from "./shooting";
 import { BALL, DT, HALF, ROBOT_HALF, FLOWER_TOP, FLOWER_MIDDLE, FLOWER_BASE, NEUTRAL, clamp, angle, distance, startingPose,
   type Alliance, type Ball, type Config, type Flower, type GameEvent, type Hive, type Input, type Phase, type Robot, type Snapshot } from "./types";
 
@@ -38,6 +40,8 @@ export class Simulation {
   private previousShot = new Map<number, boolean>();
   private nextIntake = new Map<number, number>();
   private nextShot = new Map<number, number>();
+  private aimedShots = new Map<number, {started:number;planned:number;plan:ShotPlan|null}>();
+  private shotPlans = new Map<number, {tick:number;x:number;y:number;kind:Ball["kind"];angles:string;plan:ShotPlan|null}>();
   private autoState = new Map<number, { index: number; started: number; intake: boolean }>();
   private pins = new Map<string, { ticks: number; clear: number; start: {x:number;y:number}; otherStart: {x:number;y:number} }>();
   private interfered = new Set<number>();
@@ -109,15 +113,19 @@ export class Simulation {
     this.detach(b);Object.assign(b,{location:"air",container:-1,x,y,z,vx,vy,vz});
   }
   command(id:number,input:Input) {
-    if(!this.robots.some(r=>r.id===id)) return;
-    if(![input.x,input.y,input.turn,input.speed].every(Number.isFinite)) {this.commands.delete(id);return;}
+    const robot=this.robots.find(r=>r.id===id);if(!robot)return;
+    if(![input.x,input.y,input.turn,input.speed].every(Number.isFinite)) {this.commands.delete(id);this.cancelShot(robot);return;}
+    if(!input.aimHive||input.x||input.y||input.turn)this.cancelShot(robot);
     this.commands.set(id,{input:{x:clamp(input.x,-1,1),y:clamp(input.y,-1,1),turn:clamp(input.turn,-1,1),
-      speed:clamp(input.speed,2,5.8),intake:input.intake===true,shoot:input.shoot===true,release:input.release===true},tick:this.tick});
+      speed:clamp(input.speed,2,5.8),intake:input.intake===true,shoot:input.shoot===true,release:input.release===true,aimHive:input.aimHive===true},tick:this.tick});
+  }
+  private cancelShot(robot:Robot,status?:Robot["shotStatus"]) {
+    this.aimedShots.delete(robot.id);robot.shotStatus=status;
   }
   setController(id:number,controller:Robot["controller"]) {
-    const r=this.robots.find(r=>r.id===id);if(r){r.controller=controller;this.commands.delete(id);this.previousShot.delete(id);}
+    const r=this.robots.find(r=>r.id===id);if(r){this.cancelShot(r);r.controller=controller;this.commands.delete(id);this.previousShot.delete(id);}
   }
-  interrupt() {this.phase="interrupted";this.commands.clear();for(const b of this.robotBodies.values()){b.setLinearVelocity(Vec2());b.setAngularVelocity(0);}}
+  interrupt() {this.phase="interrupted";this.commands.clear();for(const r of this.robots)this.cancelShot(r);for(const b of this.robotBodies.values()){b.setLinearVelocity(Vec2());b.setAngularVelocity(0);}}
   release(alliance:Alliance) {
     if(!["teleop","practice"].includes(this.phase)) return false;
     const free=this.phase==="practice" || this.tick>= (30+8+60)*60;
@@ -158,7 +166,7 @@ export class Simulation {
   step() {
     if(this.phase==="finished"||this.phase==="interrupted")return;
     const active=this.phase==="practice"||this.phase==="teleop"||this.phase==="auto";
-    const applied=new Map<number,Input>();
+    const applied=new Map<number,Input>(),shotEdges=new Set<number>();
     for(const r of this.robots) {
       const command=this.commands.get(r.id);
       let input={...NEUTRAL};
@@ -166,6 +174,31 @@ export class Simulation {
         if(this.phase==="auto"&&this.config.autos?.[r.id])input=this.autoInput(r);
         else if(r.controller==="easy"||r.controller==="standard")input=botInput(this,r);
         else if(this.phase!=="auto"&&command&&this.tick-command.tick<15)input=command.input;
+      }
+      if(input.shoot&&!this.previousShot.get(r.id))shotEdges.add(r.id);
+      this.previousShot.set(r.id,input.shoot);
+      if(input.aimHive&&shotEdges.has(r.id)) {
+        if(this.aimedShots.has(r.id))this.cancelShot(r);
+        else if(r.inventory.length&&!input.x&&!input.y&&!input.turn){
+          this.aimedShots.set(r.id,{started:this.tick,planned:-Infinity,plan:null});r.shotStatus="aiming";
+        }
+      }
+      const aim=this.aimedShots.get(r.id);
+      if(aim) {
+        if(!input.aimHive||!r.inventory.length||this.tick-aim.started>300){this.cancelShot(r);}
+        else {
+          const target=r.alliance==="red"?0:1,h=this.hives[target];
+          if(h.tipping){aim.plan=null;aim.planned=-Infinity;}
+          else if(this.tick-aim.planned>=12){
+            const kind=this.balls[r.inventory[0]].kind,angles=this.hives.map(hive=>hive.angle).join(":"),cached=this.shotPlans.get(r.id);
+            // Reuse recent blocked-shot searches while the pose and hive geometry are unchanged.
+            if(cached&&this.tick-cached.tick<12&&cached.kind===kind&&cached.angles===angles&&distance(cached,r)<0.03)aim.plan=cached.plan;
+            else {aim.plan=planHiveShot(r,kind,this.hives,target);this.shotPlans.set(r.id,{tick:this.tick,x:r.x,y:r.y,kind,angles,plan:aim.plan});}
+            aim.planned=this.tick;
+          }
+          if(!h.tipping&&!aim.plan)this.cancelShot(r,"blocked");
+          else input={...input,x:0,y:0,turn:aim.plan?clamp(angle(aim.plan.heading-r.heading)*1.5,-0.8,0.8):0,shoot:false};
+        }
       }
       applied.set(r.id,input);
       const body=this.robotBodies.get(r.id)!;
@@ -191,8 +224,12 @@ export class Simulation {
     for(const r of this.robots) {
       const input=applied.get(r.id)!;
       if(active&&input.intake&&r.inventory.length<4&&this.tick>=(this.nextIntake.get(r.id)??0))this.collect(r);
-      if(active&&input.shoot&&!this.previousShot.get(r.id)&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0))this.shoot(r,input.speed);
-      this.previousShot.set(r.id,input.shoot);
+      const aim=this.aimedShots.get(r.id),body=this.robotBodies.get(r.id)!;
+      if(active&&aim?.plan&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0)
+        &&Math.abs(angle(aim.plan.heading-r.heading))<0.02&&body.getLinearVelocity().length()<0.025
+        &&clearHiveShot(r,this.balls[r.inventory[0]].kind,{...aim.plan,heading:r.heading},this.hives,r.alliance==="red"?0:1,body.getLinearVelocity())){
+        this.shoot(r,aim.plan.speed,aim.plan.elevation);this.cancelShot(r);
+      } else if(active&&!input.aimHive&&input.shoot&&shotEdges.has(r.id)&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0))this.shoot(r,input.speed);
     }
     for(let i=0;i<2;i++)this.updateHive(i);
     if(active)this.contactRules(applied);
@@ -206,14 +243,33 @@ export class Simulation {
     ball??=this.balls.find(b=>b.location==="floor"&&distance(b,mouth)<0.14&&(b.kind==="pollen"||b.kind===r.alliance));
     if(ball){this.store(ball,"robot",r.id);this.nextIntake.set(r.id,this.tick+11);this.event("intake","Robot "+(r.id+1)+" collected "+ball.kind+".");}
   }
-  private shoot(r:Robot,speed:number) {
+  private shoot(r:Robot,speed:number,elevation:number=SHOOTER.elevation) {
     const b=this.balls[r.inventory[0]],a=r.heading,v=this.robotBodies.get(r.id)!.getLinearVelocity();
-    this.airborne(b,r.x+Math.cos(a)*0.28,r.y+Math.sin(a)*0.28,0.36,Math.cos(a)*speed*0.5+v.x,Math.sin(a)*speed*0.5+v.y,speed*Math.sqrt(3)/2);
+    this.airborne(b,r.x+Math.cos(a)*SHOOTER.offset,r.y+Math.sin(a)*SHOOTER.offset,SHOOTER.height,
+      Math.cos(a)*speed*Math.cos(elevation)+v.x,Math.sin(a)*speed*Math.cos(elevation)+v.y,speed*Math.sin(elevation));
     this.nextShot.set(r.id,this.tick+20);this.event("shot","Robot "+(r.id+1)+" launched "+b.kind+".");
   }
   private fly(b:Ball) {
     const old={x:b.x,y:b.y,z:b.z},radius=BALL[b.kind].diameter/2;
     b.x+=b.vx*DT;b.y+=b.vy*DT;b.z+=b.vz*DT-4.905*DT*DT;b.vz-=9.81*DT;
+    let hit:ReturnType<typeof hitHive>=null,index=-1;
+    for(let i=0;i<this.hives.length;i++){
+      const candidate=hitHive(this.hives[i],old,b,radius);
+      if(candidate&&(!hit||candidate.time<hit.time)){hit=candidate;index=i;}
+    }
+    if(hit) {
+      const h=this.hives[index];
+      if(hit.capture){
+        this.store(b,"hive",index*2+hit.cell);
+        this.event("shot",b.kind+" entered "+h.alliance+" hive cell "+(hit.cell+1)+".");return;
+      }
+      const n=hit.normal,vn=b.vx*n.x+b.vy*n.y+b.vz*n.z;
+      b.x=old.x+(b.x-old.x)*hit.time+n.x*0.0001;
+      b.y=old.y+(b.y-old.y)*hit.time+n.y*0.0001;
+      b.z=old.z+(b.z-old.z)*hit.time+n.z*0.0001;
+      if(vn<0){b.vx-=(1+HIVE.restitution)*vn*n.x;b.vy-=(1+HIVE.restitution)*vn*n.y;b.vz-=(1+HIVE.restitution)*vn*n.z;}
+      return;
+    }
     const crossing=(height:number)=>old.z>=height&&b.z<=height&&old.z>b.z;
     const at=(height:number)=>{const t=(old.z-height)/(old.z-b.z);return{x:old.x+(b.x-old.x)*t,y:old.y+(b.y-old.y)*t};};
     if(crossing(FLOWER_TOP+radius)) {
@@ -228,15 +284,6 @@ export class Simulation {
           return;
         }
         if(distance(p,f)<0.075+radius){b.vz=Math.abs(b.vz)*0.25;b.vx=-b.vx*0.4;b.vy=-b.vy*0.4;return;}
-      }
-    }
-    if(crossing(1.46+radius)) {
-      const p=at(1.46+radius);
-      for(let i=0;i<2;i++) {
-        const h=this.hives[i],cx=h.x+(h.upward===0?-1:1)*0.39116*Math.cos(h.angle);
-        if(!h.tipping&&Math.abs(p.x-cx)<(0.3058-BALL[b.kind].diameter)/2&&Math.abs(p.y-h.y)<(0.508-BALL[b.kind].diameter)/2){
-          this.store(b,"hive",i*2+h.upward);return;
-        }
       }
     }
     if(Math.abs(b.x)>HALF-radius||Math.abs(b.y)>HALF-radius) {
@@ -303,11 +350,13 @@ export class Simulation {
     if(this.tick===30*60) {
       for(const r of this.robots){if(Math.abs(r.x)+hull(r)<HALF-0.025&&Math.abs(r.y)+hull(r)<HALF-0.025)this.tally[r.alliance].leave++;if(parked(r))this.tally[r.alliance].autoPark++;}
       this.phase="transition";this.commands.clear();this.previousShot.clear();this.event("phase","AUTO ended. Controls disabled for transition.");
+      for(const r of this.robots)this.cancelShot(r);
     }
     if(this.tick===38*60){this.phase="teleop";this.event("phase","TELEOP started.");}
     if(this.tick===158*60){
       for(const r of this.robots)if(parked(r))this.tally[r.alliance].teleopPark++;
       this.phase="settling";this.event("phase","Time expired. Waiting for scoring elements to settle.");
+      for(const r of this.robots)this.cancelShot(r);
     }
     if(this.phase==="settling"){
       const moving=this.balls.some(b=>b.location==="air"||(b.location==="floor"&&Math.hypot(b.vx,b.vy)>0.025))||this.hives.some(h=>h.tipping);
@@ -320,7 +369,7 @@ export class Simulation {
     const balls=this.balls.map(b=>({...b}));
     for(const r of this.robots)for(const id of r.inventory)Object.assign(balls[id],{x:r.x,y:r.y,z:0.2});
     for(const f of this.flowers)for(const s of flowerStack(this.balls,f.balls))Object.assign(balls[s.id],{x:f.x,y:f.y,z:(s.top+s.bottom)/2});
-    for(const h of this.hives)for(let c=0;c<2;c++)for(const id of h.cells[c])Object.assign(balls[id],{x:h.x+(c===0?-1:1)*0.39116*Math.cos(h.angle),y:h.y,z:1.11633+(c===0?-1:1)*0.39116*Math.sin(h.angle)});
+    for(const h of this.hives)for(let c=0;c<2;c++)for(const id of h.cells[c])Object.assign(balls[id],hivePoint(h,c,{x:HIVE.front-HIVE.depth/2,y:0,z:HIVE.bottom+BALL[balls[id].kind].diameter/2}));
     const tally=structuredClone(this.tally);
     for(const alliance of ["red","blue"] as const){
       const h=this.hives.find(h=>h.alliance===alliance)!;tally[alliance].cell=h.cells[h.upward].length;

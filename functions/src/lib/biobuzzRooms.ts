@@ -62,7 +62,7 @@ export class BiobuzzRooms {
       if(!Number.isSafeInteger(m.sequence)||m.sequence<=p.sequence)throw new ApiError(400,"Out-of-order input.");
       const i=m.input;
       if(!i||![i.x,i.y,i.turn,i.speed].every(Number.isFinite)||Math.abs(i.x)>2||Math.abs(i.y)>2||Math.abs(i.turn)>2||i.speed<2||i.speed>5.8
-        ||[i.intake,i.shoot,i.release].some(v=>typeof v!=="boolean"))throw new ApiError(400,"Invalid robot input.");
+        ||[i.intake,i.shoot,i.release].some(v=>typeof v!=="boolean")||(i.aimHive!==undefined&&typeof i.aimHive!=="boolean"))throw new ApiError(400,"Invalid robot input.");
       p.sequence=m.sequence;p.lastInput=i;room.sim?.command(seat,i);return;
     }
     if(m.type==="leave"){

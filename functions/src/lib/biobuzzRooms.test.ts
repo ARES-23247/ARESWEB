@@ -32,6 +32,9 @@ describe("BIOBUZZ room authority",()=>{
   a.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,y:-1}});h.advance(12);
   expect(()=>a.connection.receive({type:"input",sequence:0,input:NEUTRAL})).toThrow("order");
   expect(()=>a.connection.receive({type:"input",sequence:1,input:{...NEUTRAL,x:Infinity}})).toThrow("Invalid");
+  expect(()=>a.connection.receive({type:"input",sequence:1,input:{...NEUTRAL,aimHive:"yes"}})).toThrow("Invalid");
+  a.connection.receive({type:"input",sequence:1,input:{...NEUTRAL,aimHive:true,shoot:true}});h.advance(6);
+  expect(a.last).toMatchObject({type:"snapshot",state:{robots:expect.arrayContaining([expect.objectContaining({id:0,shotStatus:"aiming"})])}});
   expect(()=>a.connection.receive({type:"configure",seats:["human","empty","human","empty"]})).toThrow("locked");
   h.rooms.close();
  });

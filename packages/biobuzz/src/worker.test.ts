@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Snapshot } from "./core/types";
+import { Simulation } from "./core/engine";
 
 let latest: Snapshot | undefined;
 let messageCount = 0;
@@ -28,8 +29,11 @@ describe("BIOBUZZ worker snapshots", () => {
     vi.advanceTimersByTime(170000);
     expect(latest?.phase).toBe("finished");
     expect(latest!.tick % 3).not.toBe(0);
-    expect(latest?.score.red.total).toBe(83);
-    expect(latest?.score.blue.total).toBe(100);
+    const reference=new Simulation({timed:true,seats:["human","standard","standard","standard"]});
+    for(let i=0;i<10200;i++)reference.step();
+    expect(latest?.score).toEqual(reference.snapshot().score);
+    expect(latest?.tick).toBe(reference.tick);
+    expect(latest?.hives.every(h=>h.tips>0)).toBe(true);
     const delivered = messageCount;
     vi.advanceTimersByTime(1000);
     expect(messageCount).toBe(delivered);

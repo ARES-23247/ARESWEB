@@ -3,6 +3,67 @@ import { mkdir } from "node:fs/promises";
 import JSZip from "jszip";
 import { readFile } from "node:fs/promises";
 
+test("BIOBUZZ driver views rotate controls and preserve auto coordinates",async({page},testInfo)=>{
+  await page.goto("/biobuzz/simulator");
+  await expect(page.getByTestId("inventory")).toContainText("4/4");
+  const pose=async()=>{const text=await page.getByTestId("robot-position").innerText();return [...text.matchAll(/-?\d+\.\d+/g)].map(m=>Number(m[0]));};
+  const red=page.getByRole("button",{name:"Red driver view",exact:true}),blue=page.getByRole("button",{name:"Blue driver view",exact:true});
+  await expect(red).toHaveAttribute("aria-pressed","true");
+  const start=await pose();
+  await page.locator("canvas.bio-field").click();await page.keyboard.down("w");
+  try{await expect.poll(async()=>(await pose())[1]).toBeLessThan(start[1]-.15);}finally{await page.keyboard.up("w");}
+  await page.getByRole("button",{name:"Pause",exact:true}).click();
+  const afterRed=await pose();
+  expect(Math.abs(afterRed[0]-start[0])).toBeLessThan(.03);
+  await blue.click();await expect(blue).toHaveAttribute("aria-pressed","true");
+  expect(await pose()).toEqual(afterRed);
+  await page.getByRole("button",{name:"Resume",exact:true}).click();
+  await page.locator("canvas.bio-field").click();await page.keyboard.down("w");
+  try{await expect.poll(async()=>(await pose())[1]).toBeGreaterThan(afterRed[1]+.1);}finally{await page.keyboard.up("w");}
+  await page.getByRole("button",{name:"Pause",exact:true}).click();
+  await page.getByRole("button",{name:"Build an auto",exact:true}).click();
+  const field=page.locator("canvas.bio-field"),editor=page.getByRole("region",{name:"Auto editor",exact:true});
+  await field.scrollIntoViewIfNeeded();
+  const box=(await field.boundingBox())!;
+  await field.click({position:{x:box.width*.75,y:box.height*.25}});
+  expect(Number(await editor.getByLabel("X (m)",{exact:true}).nth(1).inputValue())).toBeCloseTo(.9144,1);
+  expect(Number(await editor.getByLabel("Y (m)",{exact:true}).nth(1).inputValue())).toBeCloseTo(.9144,1);
+  await red.click();
+  await field.click({position:{x:box.width*.75,y:box.height*.25}});
+  expect(Number(await editor.getByLabel("X (m)",{exact:true}).nth(2).inputValue())).toBeCloseTo(-.9144,1);
+  expect(Number(await editor.getByLabel("Y (m)",{exact:true}).nth(2).inputValue())).toBeCloseTo(-.9144,1);
+  await mkdir("scratch/biobuzz",{recursive:true});
+  await field.screenshot({path:`scratch/biobuzz/red-driver-view-${testInfo.project.name}.png`});
+  await blue.click();await field.screenshot({path:`scratch/biobuzz/blue-driver-view-${testInfo.project.name}.png`});
+});
+
+test("BIOBUZZ one-press assisted shots and persistent intake toggle",async({page})=>{
+  await page.goto("/biobuzz/simulator");
+  await expect(page.getByTestId("inventory")).toContainText("4/4");
+  await expect(page.getByRole("checkbox",{name:"Aim hive shots automatically",exact:true})).toBeChecked();
+  const intake=page.getByRole("checkbox",{name:"Run intake",exact:true});
+  const field=page.locator("canvas.bio-field");
+  await field.click();
+  await page.keyboard.down("j");await page.keyboard.down("j");await page.keyboard.up("j");
+  await expect(intake).toBeChecked();
+  const before=await page.getByTestId("robot-position").innerText();
+  // A click must keep aiming after the trigger is released, then fire once.
+  await page.getByRole("button",{name:"Shoot",exact:true}).click();
+  await expect(page.getByTestId("inventory")).toContainText("3/4");
+  await expect(page.getByTestId("robot-position")).not.toHaveText(before);
+  await expect(page.getByText("red hive: 0 tips · cell 1 open · 4 balls",{exact:true})).toBeVisible();
+  await expect(intake).toBeChecked();
+  for(const count of [2,1,0]){
+    await page.getByRole("button",{name:"Shoot",exact:true}).click();
+    await expect(page.getByTestId("inventory")).toContainText(`${count}/4`);
+  }
+  await expect(page.getByText(/^red hive: 1 tips/)).toBeVisible();
+  await expect(intake).toBeChecked();
+  await field.click();await page.keyboard.press("j");await expect(intake).not.toBeChecked();
+  await page.getByRole("button",{name:"Intake off",exact:true}).click();await expect(intake).toBeChecked();
+  await page.getByRole("button",{name:"Reset local field",exact:true}).click();await expect(intake).not.toBeChecked();
+});
+
 test("BIOBUZZ solo driving, native auto export, and an actual hive tip",async({page},testInfo)=>{
   test.setTimeout(60000);
   await page.goto("/biobuzz/simulator");
@@ -16,15 +77,15 @@ test("BIOBUZZ solo driving, native auto export, and an actual hive tip",async({p
   const editor=page.getByRole("region",{name:"Auto editor",exact:true});
   await editor.getByLabel("Auto name",{exact:true}).fill("Browser hive auto");
   await editor.getByRole("button",{name:"Add waypoint",exact:true}).click();
-  await editor.getByLabel("X (m)",{exact:true}).nth(1).fill("-1.48");
-  await editor.getByLabel("Y (m)",{exact:true}).nth(1).fill("1.48");
-  await editor.getByLabel("Heading (rad)",{exact:true}).nth(1).fill("-0.7918");
+  await editor.getByLabel("X (m)",{exact:true}).nth(1).fill("-1.42");
+  await editor.getByLabel("Y (m)",{exact:true}).nth(1).fill("1.42");
+  await editor.getByLabel("Heading (rad)",{exact:true}).nth(1).fill("-0.8188");
   await editor.getByRole("button",{name:"Add wait",exact:true}).click();
   await editor.getByRole("button",{name:"Add intake",exact:true}).click();
   await editor.getByRole("checkbox",{name:"Intake enabled",exact:true}).uncheck();
   await editor.getByRole("button",{name:"Add shot",exact:true}).click();
   await editor.getByLabel("Balls",{exact:true}).fill("4");
-  await editor.getByLabel("Launch speed (m/s)",{exact:true}).fill("5.46");
+  await editor.getByLabel("Launch speed (m/s)",{exact:true}).fill("5.54");
   await editor.getByRole("button",{name:"Add waypoint",exact:true}).click();
   await editor.getByLabel("X (m)",{exact:true}).nth(2).fill("-0.59417");
   await editor.getByLabel("Y (m)",{exact:true}).nth(2).fill("1.33");
