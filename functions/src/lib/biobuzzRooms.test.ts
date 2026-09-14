@@ -14,6 +14,21 @@ function harness(maxRooms=5,persist?:ConstructorParameters<typeof BiobuzzRooms>[
  return {rooms,client,advance,elapse:(ms:number)=>{now+=ms;rooms.step();}};
 }
 describe("BIOBUZZ room authority",()=>{
+ it("validates and locks each player's own mechanism configuration",()=>{
+  const h=harness(),a=h.client(),b=h.client("join",a.session.code),setup={shooter:"back",deposit:"front",intake:"both"} as const;
+  a.connection.receive({type:"configure",seats:["human","empty","human","empty"]});
+  expect(()=>b.connection.receive({type:"robot",setup:{...setup,intake:"left"}})).toThrow("Invalid robot");
+  b.connection.receive({type:"robot",setup});
+  expect(a.last).toMatchObject({type:"lobby",lobby:{robotSetups:[{shooter:"front",deposit:"front",intake:"front"},{shooter:"front",deposit:"front",intake:"front"},setup,{shooter:"front",deposit:"front",intake:"front"}]}});
+  for(const p of [a,b])p.connection.receive({type:"ready",auto:null});
+  expect(()=>b.connection.receive({type:"robot",setup})).toThrow("locked");a.connection.receive({type:"start"});h.advance(6);
+  expect(a.last).toMatchObject({type:"snapshot",state:{robots:expect.arrayContaining([expect.objectContaining({id:2,setup})])}});
+  expect(()=>b.connection.receive({type:"robot",setup})).toThrow("locked");
+  expect(()=>b.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,deposit:"yes"}})).toThrow("Invalid");
+  expect(()=>b.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,aimFlower:"yes"}})).toThrow("Invalid");
+  b.connection.detach();h.elapse(3001);h.rooms.attach(b.session.roomId,b.session.token,b.peer);h.advance(6);
+  expect(a.last).toMatchObject({type:"snapshot",state:{robots:expect.arrayContaining([expect.objectContaining({id:2,controller:"human",setup})])}});h.rooms.close();
+ });
  it("allocates four unique seats and rejects forged player tokens",()=>{
   const h=harness(),a=h.client(),b=h.client("join",a.session.code),c=h.client("join",a.session.code),d=h.client("join",a.session.code);
   expect(new Set([a,b,c,d].map(p=>p.session.seat)).size).toBe(4);
@@ -32,6 +47,9 @@ describe("BIOBUZZ room authority",()=>{
   a.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,y:-1}});h.advance(12);
   expect(()=>a.connection.receive({type:"input",sequence:0,input:NEUTRAL})).toThrow("order");
   expect(()=>a.connection.receive({type:"input",sequence:1,input:{...NEUTRAL,x:Infinity}})).toThrow("Invalid");
+  expect(()=>a.connection.receive({type:"input",sequence:1,input:{...NEUTRAL,aimHive:"yes"}})).toThrow("Invalid");
+  a.connection.receive({type:"input",sequence:1,input:{...NEUTRAL,aimHive:true,shoot:true}});h.advance(6);
+  expect(a.last).toMatchObject({type:"snapshot",state:{robots:expect.arrayContaining([expect.objectContaining({id:0,shotStatus:"aiming"})])}});
   expect(()=>a.connection.receive({type:"configure",seats:["human","empty","human","empty"]})).toThrow("locked");
   h.rooms.close();
  });

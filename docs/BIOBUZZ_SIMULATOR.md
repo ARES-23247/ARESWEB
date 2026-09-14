@@ -10,6 +10,24 @@ Coordinates use meters, origin at field center, +X up, +Y left, heading zero alo
 
 Pollen: 0.07112 m, 0.055 lb. Nectar: 0.09144 m, 0.091 lb. Nominal hive detent load: 0.440 lb; a 0.9-second transition spills the old cell and scores only after the tipping motion completes. This calibrates the supplied eight-pollen/five-nectar observations, not measured pivot torque. Flower stacks include the base ring and score only elements overlapping the middle-to-top-ring volume.
 
+Hive collision geometry follows V1 figures 9-9 through 9-11 and the supplied STEP's `am-5888`, `am-5871`, and `am-5869` skins. Each cell is a pentagonal prism, 0.508 m wide, 0.3556 m tall with 0.193294 m shoulders, and 0.3058 m deep. Its outward opening tilts with the hive around the 1.11633 m pivot. In a stable upward position the lip and apex are approximately 1.356 m and 1.664 m above the tiles, within the manual's rounded dimensions. The shared geometry drives the renderer, bot target, and swept sphere collision checks. Inward entry through the complete opening scores regardless of whether the ball is rising or descending. The back, floor, side walls, roof slopes, and rim deflect impacts; over/under misses remain misses. Moving/downward cells cannot receive valid scoring captures. Wall envelopes use a conservative 12.7 mm frame allowance and 0.25 restitution as simulation approximations, not measured impact calibration.
+
+Airborne sprites stay at their actual planar coordinates; height rings and elevation ordering distinguish flight and overhead cells. Older autos aimed at the former horizontal capture plane may need their headings and launch speeds retuned. Their native export schemas and coordinates are unchanged.
+
+Human driving defaults to assisted hive shots. One press queues one shot, rotates the robot toward its alliance's open cell, and selects a clear ballistic trajectory with 2–5.8 m/s speed and 30–80 degree elevation. It releases only after alignment, low chassis speed, and a final swept collision check. A blocked shot keeps its ball and asks the player to reposition. Shoot again, driving, switching to manual power, stale input, disconnect, and period deadlines cancel the queue; an unaligned request expires after five seconds. The server computes online solutions; clients send only a validated optional `aimHive` boolean. Searches are bounded and cached across repeated requests. Manual flower shots and authored auto actions retain the RobotBuilder-compatible 60-degree launch and explicit speed.
+
+J, gamepad A, the Intake button, and the Run intake checkbox toggle continuous intake. Releasing the key/button leaves intake enabled until toggled off; a full four-ball magazine resumes collecting after a shot creates space. Reset switches intake off. Paused/stale/disabled controls remain neutral.
+
+Red/Blue driver view buttons rotate the complete field so the selected station is at the bottom. Keyboard, touch, and gamepad translation follow that view regardless of robot heading. Selecting a robot or joining a seat defaults to its alliance's view. The toggle changes presentation and human inputs only: simulation poses, online messages, authored waypoints, and native auto exports retain field-centered meters and CCW radians. Field clicks invert the selected view before creating a waypoint.
+
+Configure robot selects front/back hive shooting, front/back flower placement, and front/back/both intake. Each port uses the robot's heading and real mouth offset; both intakes share the same four-ball magazine and intake interval. The canvas labels ports S/F/I beside the front arrow. Local settings are saved on the device and applying them resets the field. Online players can configure only their own seat before ready; the server validates and locks the layout for the entire match and retains it during bot takeover/reconnection. Browser autos save their layout and preview it. Native Studio export currently rejects custom layouts because the existing reference robot and voltage bindings describe front-facing mechanisms; it never silently exports a mismatched layout.
+
+Place in flower (G or gamepad X/Square) queues one short projectile arc through a nearby flower's top, using the configured placement side. It requires a clear arc and a flower with space within 0.95 m. It retains the ball when blocked, and follows the same cancellation, capacity, ownership and early-nectar penalty rules as ordinary shots. Intake stays separately controlled; leaving it on near a flower can retrieve pollen again.
+
+The page reports standard gamepad connection status. Left stick translates in the selected driver view, right stick turns, A/Cross toggles intake, right trigger shoots, X/Square places, Y/Triangle releases nectar, and View/Share switches the driver view. Buttons are edge-triggered so a hold does not repeatedly toggle or fire. A 0.12 stick dead zone suppresses drift; controller disconnection neutralizes controls and turns intake off. Nonstandard mappings are reported instead of guessing their axes. Browser tests substitute only the Gamepad hardware API and exercise the real controls/worker; this does not constitute a physical-controller test.
+
+Fresh controls retain at most one pending shoot/placement edge between fixed physics updates, so coalesced press/release packets do not lose a click. Neutral controls, stale input, and disconnects discard pending actions. This does not queue an unbounded series of shots.
+
 ## Practice interpretation
 
 The match clock runs 30 seconds AUTO, eight seconds disabled transition, 120 seconds TELEOP, then settles for up to ten seconds. An unresolved settling or server scheduling fault marks the match incomplete. Local tab suspension pauses local time.
@@ -47,7 +65,7 @@ pnpm --filter functions build
 node scripts/benchmark-biobuzz.mjs
 ```
 
-The benchmark runs 1, 5, 10, and 25 simultaneous four-bot matches and records CPU, frame latency, memory, and compressed traffic under `build/biobuzz/`. Local CPU measurements are not Cloud Run capacity evidence. Browser tests must use actual controls and verify intake, scoring, clock synchronization, final results, and export; native verification must import, generate, and run the exported routine.
+The benchmark runs 1, 5, 10, and 25 simultaneous four-bot matches, plus a one-room workload with four humans repeatedly requesting assisted shots at the normal input rate. It records CPU, frame latency, memory, and compressed traffic under `build/biobuzz/`. Local CPU measurements are not Cloud Run capacity evidence. Browser tests must use actual controls and verify intake, scoring, clock synchronization, final results, and export; native verification must import, generate, and run the exported routine.
 
 ## Deployment identity setup (operator approval required)
 
@@ -111,7 +129,7 @@ The existing deployer needs a narrowly scoped `areswebBiobuzzCapacity` custom ro
 The workflow retains the exact job/execution description as an artifact. A billing-authorized operator reads the matching execution's JSON `biobuzz-capacity` log record, verifies the resource limits, and records the result before enabling online admission. Passing means at least 30% one-core CPU headroom, p99 batches within 16.67 ms, and no consecutive missed batch deadlines. An isolated scheduling pause is reported separately. This CPU/compression benchmark does not substitute for the four-client protocol tests or a live service smoke test.
 
 
-### Cloud Run result and initial admission � 2026-09-13
+### Cloud Run result and initial admission — 2026-09-13
 
 [Protected workflow 34784074463](https://github.com/ARES-23247/ARESWEB/actions/runs/34784074463) completed execution `aresweb-biobuzz-capacity-h5slw` successfully. The [recorded evidence](biobuzz-cloud-capacity-2026-09-13.json) pins source commit `cb64163ddb5c654f9ea5198fa282a6381a46fcd3`, the resolved image digest, exact execution resources, completion time, and original structured measurement. Read-back confirmed one CPU, 1 GiB, one task, one-way parallelism, 600-second timeout, zero retries, and no environment variables or secrets. The benchmark identity has no application-data permissions.
 

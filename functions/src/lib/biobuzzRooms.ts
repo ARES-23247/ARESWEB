@@ -1,11 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { Simulation } from "../generated/games/biobuzz/engine";
 import { validateAuto } from "../generated/games/biobuzz/auto";
-import type { AutoProgram, Input, SeatKind, Snapshot } from "../generated/games/biobuzz/types";
+import { validateRobotSetup } from "../generated/games/biobuzz/robot";
+import type { AutoProgram, Input, SeatKind, Snapshot, RobotSetup } from "../generated/games/biobuzz/types";
 import type { ClientMessage, Lobby, ServerMessage, Session } from "../generated/games/biobuzz/protocol";
 import { ApiError } from "../middleware/errorHandler";
 interface Peer { send(message:ServerMessage):void; close():void }
-interface Player { hash:Buffer; ready:boolean; auto:AutoProgram|null; peer:Peer|null; disconnected:number; sequence:number; inputAt:number; tokens:number; lastInput:Input|null }
+interface Player { hash:Buffer; ready:boolean; auto:AutoProgram|null; setup:RobotSetup; peer:Peer|null; disconnected:number; sequence:number; inputAt:number; tokens:number; lastInput:Input|null }
 interface Room { id:string;code:string;public:boolean;seats:SeatKind[];players:(Player|null)[];host:number;created:number;lastHuman:number;status:Lobby["status"];sim:Simulation|null;ended:number;saved:boolean;saveAttempts:number;lastLobbySecond?:number }
 interface Options { maxRooms:number; socketUrl:string; now?:()=>number; persist?:(roomId:string,state:Snapshot)=>Promise<void> }
 const hash=(token:string)=>createHash("sha256").update(token).digest();
@@ -36,7 +37,7 @@ export class BiobuzzRooms {
     const seat=[0,2,1,3].find(i=>room!.seats[i]==="human"&&!room!.players[i]);
     if(seat===undefined)throw new ApiError(409,"Room has no open human seats.");
     const token=randomBytes(32).toString("base64url");
-    room.players[seat]={hash:hash(token),ready:false,auto:null,peer:null,disconnected:this.now(),sequence:-1,inputAt:this.now(),tokens:60,lastInput:null};
+    room.players[seat]={hash:hash(token),ready:false,auto:null,setup:validateRobotSetup(undefined),peer:null,disconnected:this.now(),sequence:-1,inputAt:this.now(),tokens:60,lastInput:null};
     this.broadcastLobby(room);
     return {roomId:room.id,token,seat,code:room.code,socketUrl:this.options.socketUrl};
   }
@@ -62,7 +63,7 @@ export class BiobuzzRooms {
       if(!Number.isSafeInteger(m.sequence)||m.sequence<=p.sequence)throw new ApiError(400,"Out-of-order input.");
       const i=m.input;
       if(!i||![i.x,i.y,i.turn,i.speed].every(Number.isFinite)||Math.abs(i.x)>2||Math.abs(i.y)>2||Math.abs(i.turn)>2||i.speed<2||i.speed>5.8
-        ||[i.intake,i.shoot,i.release].some(v=>typeof v!=="boolean"))throw new ApiError(400,"Invalid robot input.");
+        ||[i.intake,i.shoot,i.release].some(v=>typeof v!=="boolean")||[i.aimHive,i.aimFlower,i.deposit].some(v=>v!==undefined&&typeof v!=="boolean"))throw new ApiError(400,"Invalid robot input.");
       p.sequence=m.sequence;p.lastInput=i;room.sim?.command(seat,i);return;
     }
     if(m.type==="leave"){
@@ -72,11 +73,16 @@ export class BiobuzzRooms {
       p.peer?.close();this.broadcastLobby(room);return;
     }
     if(room.status!=="waiting")throw new ApiError(409,"The match setup is locked.");
+    if(m.type==="robot"){
+      if(p.ready)throw new ApiError(409,"Robot configuration is already locked.");
+      try{p.setup=validateRobotSetup(m.setup);}catch{throw new ApiError(400,"Invalid robot configuration.");}
+      this.broadcastLobby(room);return;
+    }
     if(m.type==="ready"){
       if(p.ready)throw new ApiError(409,"Auto is already locked.");
       const auto=m.auto?validateAuto(m.auto):null;
       if(auto&&auto.alliance!==(seat<2?"red":"blue"))throw new ApiError(400,"Auto alliance does not match your seat.");
-      p.auto=auto;p.ready=true;this.broadcastLobby(room);return;
+      p.setup=validateRobotSetup(auto?.robotSetup??p.setup);p.auto=auto;p.ready=true;this.broadcastLobby(room);return;
     }
     if(m.type==="configure"){
       if(seat!==room.host||room.public)throw new ApiError(403,"Only the private-room creator can configure seats.");
@@ -91,11 +97,11 @@ export class BiobuzzRooms {
     throw new ApiError(400,"Unknown simulator message.");
   }
   private start(room:Room) {
-    try{room.sim=new Simulation({timed:true,seats:room.seats,autos:room.players.map(p=>p?.auto??null)});}
+    try{room.sim=new Simulation({timed:true,seats:room.seats,autos:room.players.map(p=>p?.auto??null),robotSetups:room.players.map(p=>p?.setup??null)});}
     catch{throw new ApiError(400,"Starting poses are invalid or overlap. Create a new room with corrected autos.");}
     room.status="running";this.broadcastLobby(room);
   }
-  private lobby(room:Room):Lobby {return {roomId:room.id,code:room.code,public:room.public,seats:[...room.seats],occupied:room.players.map(Boolean),ready:room.players.map(p=>p?.ready??false),host:room.host,status:room.status,waitSeconds:Math.max(0,Math.ceil((30000-(this.now()-room.created))/1000))};}
+  private lobby(room:Room):Lobby {return {roomId:room.id,code:room.code,public:room.public,seats:[...room.seats],occupied:room.players.map(Boolean),ready:room.players.map(p=>p?.ready??false),host:room.host,status:room.status,waitSeconds:Math.max(0,Math.ceil((30000-(this.now()-room.created))/1000)),robotSetups:room.players.map(p=>validateRobotSetup(p?.setup))};}
   private broadcast(room:Room,message:ServerMessage){for(const p of room.players)p?.peer?.send(message);}
   private broadcastLobby(room:Room){this.broadcast(room,{type:"lobby",lobby:this.lobby(room)});}
   /** One call per fixed simulation step; wall-clock time only controls leases and lobby lifetimes. */

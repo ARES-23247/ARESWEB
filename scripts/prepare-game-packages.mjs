@@ -9,6 +9,9 @@ export function prepareGamePackages(root = repository) {
   const rules = [
     ["biobuzz/src/core/types.ts", "biobuzz/types.ts"],
     ["biobuzz/src/core/field.ts", "biobuzz/field.ts"],
+    ["biobuzz/src/core/hive.ts", "biobuzz/hive.ts"],
+    ["biobuzz/src/core/shooting.ts", "biobuzz/shooting.ts"],
+    ["biobuzz/src/core/robot.ts", "biobuzz/robot.ts"],
     ["biobuzz/src/core/scoring.ts", "biobuzz/scoring.ts"],
     ["biobuzz/src/core/auto.ts", "biobuzz/auto.ts"],
     ["biobuzz/src/core/bots.ts", "biobuzz/bots.ts"],

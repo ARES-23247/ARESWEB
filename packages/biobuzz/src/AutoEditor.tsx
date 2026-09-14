@@ -3,6 +3,8 @@ import type { AutoProgram, AutoStep, Pose } from "./core/types";
 import { HALF, ROBOT_HALF } from "./core/types";
 import { autoDuration, validateAuto } from "./core/auto";
 import { exportAuto } from "./export";
+import RobotSetupFields from "./RobotSetupFields";
+import { DEFAULT_ROBOT } from "./core/robot";
 export function defaultAutoStart(alliance:"red"|"blue"):Pose {const sign=alliance==="red"?1:-1;return {x:-1.1*sign,y:(HALF-Math.hypot(ROBOT_HALF,ROBOT_HALF))*sign,heading:alliance==="red"?-Math.PI/4:Math.PI*3/4};}
 export function defaultAuto():AutoProgram {return {version:1,name:"BIOBUZZ auto",alliance:"red",start:defaultAutoStart("red"),steps:[]};}
 export default function AutoEditor({program,onChange,onPreview}:{program:AutoProgram;onChange:(program:AutoProgram)=>void;onPreview:()=>void}) {
@@ -14,6 +16,8 @@ export default function AutoEditor({program,onChange,onPreview}:{program:AutoPro
     <h2>Build an auto</h2><p>Click the field to add a waypoint, or enter coordinates. Heading is in CCW radians.</p>
     <label>Auto name<input maxLength={80} value={program.name} onChange={e=>onChange({...program,name:e.target.value})}/></label>
     <label>Authored alliance<select value={program.alliance} onChange={e=>{const alliance=e.target.value as "red"|"blue";onChange({...program,alliance,start:defaultAutoStart(alliance)});}}><option value="red">Red</option><option value="blue">Blue</option></select></label>
+    <RobotSetupFields value={program.robotSetup??DEFAULT_ROBOT} onChange={robotSetup=>onChange({...program,robotSetup})}/>
+    <p className="bio-help">Robot layout is saved with the browser auto. Studio export supports the reference robot's front-facing mechanisms.</p>
     <h3>Starting pose</h3>{poseInputs(program.start,start=>onChange({...program,start}))}
     <ol className="bio-steps">{program.steps.map((step,i)=><li key={i}><div className="bio-row"><strong>{i+1}. {step.kind}</strong><button type="button" aria-label={"Remove step "+(i+1)} onClick={()=>onChange({...program,steps:program.steps.filter((_,j)=>j!==i)})}>Remove</button></div>
       {step.kind==="drive"&&<>{poseInputs(step.target,target=>update(i,{...step,target}))}<label>Motion<select value={step.preset} onChange={e=>update(i,{...step,preset:e.target.value as "safe"|"balanced"})}><option value="safe">Safe</option><option value="balanced">Balanced</option></select></label></>}
