@@ -7,7 +7,10 @@ export default function RobotSetupFields({value,onChange,disabled=false}:{value:
     {(["shooter","deposit","intake"] as const).map(key=><div key={key}><label htmlFor={id+key}>{key==="shooter"?"Hive shooter side":key==="deposit"?"Flower placement side":"Intake side"}</label>
       <select id={id+key} value={value[key]} onChange={e=>onChange({...value,[key]:e.target.value})}><option value="front">Front</option><option value="back">Back</option>{key==="intake"&&<option value="both">Both</option>}</select>
     </div>)}
-  </div><label><input type="checkbox" checked={value.turret??false} onChange={e=>onChange({...value,turret:e.target.checked})}/> Shooter turret</label>
+    <div><label htmlFor={id+"intakeContents"}>Intake ball types</label>
+      <select id={id+"intakeContents"} value={value.intakeContents??"both"} onChange={e=>onChange({...value,intakeContents:e.target.value as "pollen"|"both"})}><option value="both">Pollen and nectar</option><option value="pollen">Pollen only</option></select>
+    </div>
+  </div><p className="bio-help">Nectar collection is limited to your alliance color. Nectar still blocks pollen retrieval through a flower's bottom.</p><label><input type="checkbox" checked={value.turret??false} onChange={e=>onChange({...value,turret:e.target.checked})}/> Shooter turret</label>
   <p className="bio-help">The turret rotates the shooter independently. Shooter side sets its home direction; flower placement and intake stay on the chassis.</p>
   <div className="bio-row"><label>Chassis speed (m/s)<input type="number" min={ROBOT_LIMITS.driveSpeed.min} max={ROBOT_LIMITS.driveSpeed.max} step={0.05} value={value.driveSpeed??ROBOT_LIMITS.driveSpeed.default} onChange={e=>onChange({...value,driveSpeed:Number(e.target.value)})}/></label>
   <label>Turn speed (degrees/s)<input type="number" min={30} max={360} step={1} value={Number(((value.turnSpeed??ROBOT_LIMITS.turnSpeed.default)*180/Math.PI).toFixed(2))} onChange={e=>onChange({...value,turnSpeed:Number(e.target.value)*Math.PI/180})}/></label></div>

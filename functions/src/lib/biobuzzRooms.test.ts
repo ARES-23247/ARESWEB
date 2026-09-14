@@ -15,10 +15,10 @@ function harness(maxRooms=5,persist?:ConstructorParameters<typeof BiobuzzRooms>[
 }
 describe("BIOBUZZ room authority",()=>{
  it("validates and locks each player's own mechanism configuration",()=>{
-  const h=harness(),a=h.client(),b=h.client("join",a.session.code),setup={shooter:"back",deposit:"front",intake:"both",turret:true,driveSpeed:.8,turnSpeed:Math.PI/2} as const;
+  const h=harness(),a=h.client(),b=h.client("join",a.session.code),setup={shooter:"back",deposit:"front",intake:"both",intakeContents:"pollen",turret:true,driveSpeed:.8,turnSpeed:Math.PI/2} as const;
   a.connection.receive({type:"configure",seats:["human","empty","human","empty"]});
   expect(()=>b.connection.receive({type:"robot",setup:{...setup,intake:"left"}})).toThrow("Invalid robot");
-  for(const bad of [{turret:"yes"},{driveSpeed:30},{turnSpeed:0}])expect(()=>b.connection.receive({type:"robot",setup:{...setup,...bad}})).toThrow("Invalid robot");
+  for(const bad of [{turret:"yes"},{driveSpeed:30},{turnSpeed:0},{intakeContents:"nectar"},{intakeContents:null}])expect(()=>b.connection.receive({type:"robot",setup:{...setup,...bad}})).toThrow("Invalid robot");
   b.connection.receive({type:"robot",setup});
   expect(a.last).toMatchObject({type:"lobby",lobby:{robotSetups:[{shooter:"front",deposit:"front",intake:"front"},{shooter:"front",deposit:"front",intake:"front"},setup,{shooter:"front",deposit:"front",intake:"front"}]}});
   for(const p of [a,b])p.connection.receive({type:"ready",auto:null});

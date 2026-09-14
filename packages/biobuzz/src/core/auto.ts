@@ -41,6 +41,7 @@ export const ACTIONS = {
 export function nativeAuto(program: AutoProgram, documentId: string) {
   const auto = validateAuto(program);
   const setup=validateRobotSetup(auto.robotSetup);
+  if(setup.intakeContents==="pollen")throw new Error("Studio's reference intake collects pollen and nectar. Pollen-only configurations can be saved and replayed in the browser.");
   if(setup.shooter!=="front"||setup.deposit!=="front"||setup.intake!=="front"||setup.turret
     ||(setup.driveSpeed??ROBOT_LIMITS.driveSpeed.default)!==ROBOT_LIMITS.driveSpeed.default||(setup.turnSpeed??ROBOT_LIMITS.turnSpeed.default)!==ROBOT_LIMITS.turnSpeed.default)throw new Error("Studio export requires the reference robot's front-facing mechanisms, fixed shooter, and default drive speeds. Custom configurations can be saved and replayed in the browser.");
   if (!/^[a-z][a-z0-9-]{0,63}$/.test(documentId)) throw new Error("Invalid routine identifier.");

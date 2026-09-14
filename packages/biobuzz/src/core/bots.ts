@@ -1,7 +1,7 @@
 import type { Simulation } from "./engine";
 import { FIELD, ZONES } from "./field";
 import { hiveTarget } from "./hive";
-import { sideAngle,shooterHeading } from "./robot";
+import { sideAngle,shooterHeading,canIntakeBall } from "./robot";
 import { NEUTRAL, HALF, BALL, angle, clamp, distance, type Input, type Robot } from "./types";
 
 function blocked(x:number,y:number) {
@@ -61,7 +61,7 @@ export function botInput(sim:Simulation,r:Robot):Input {
       if(h.tipping)aim=undefined;
     }
   } else {
-    const targets=[...sim.balls.filter(b=>b.location==="floor"&&(b.kind==="pollen"||b.kind===r.alliance)),...sim.flowers.filter(f=>f.balls.length&&sim.balls[f.balls[0]].kind==="pollen")];
+    const targets=[...sim.balls.filter(b=>b.location==="floor"&&canIntakeBall(r,b.kind)),...sim.flowers.filter(f=>f.balls.length&&sim.balls[f.balls[0]].kind==="pollen")];
     const approaches=targets.map(target=>{
       let dx=target.x-r.x,dy=target.y-r.y;
       const edgeX=Math.abs(target.x)>HALF-0.42,edgeY=Math.abs(target.y)>HALF-0.42;

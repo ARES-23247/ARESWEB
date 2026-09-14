@@ -5,7 +5,7 @@ import { validateAuto } from "./auto";
 import { botInput } from "./bots";
 import { HIVE, hitHive, hivePoint } from "./hive";
 import { SHOOTER, clearHiveShot, planHiveShot, clearFlowerShot, planFlowerShot, type ShotPlan, type FlowerShotPlan } from "./shooting";
-import { validateRobotSetup,sideAngle,shooterHeading,ROBOT_LIMITS } from "./robot";
+import { validateRobotSetup,sideAngle,shooterHeading,ROBOT_LIMITS,canIntakeBall } from "./robot";
 import { MATCH_TIME,nectarPlacementOpen } from "./timing";
 import { BALL, DT, HALF, ROBOT_HALF, FLOWER_TOP, FLOWER_MIDDLE, FLOWER_BASE, NEUTRAL, clamp, angle, distance, startingPose,
   type Alliance, type Ball, type Config, type Flower, type GameEvent, type Hive, type Input, type Phase, type Robot, type Snapshot, type MechanismSide } from "./types";
@@ -308,7 +308,7 @@ export class Simulation {
     for(const side of sides){
       const a=r.heading+sideAngle(side),mouth={x:r.x+Math.cos(a)*0.27,y:r.y+Math.sin(a)*0.27};
       for(const f of this.flowers)if(distance(mouth,f)<0.16&&f.balls.length&&this.balls[f.balls[0]].kind==="pollen"){ball=this.balls[f.balls[0]];break;}
-      ball??=this.balls.find(b=>b.location==="floor"&&distance(b,mouth)<0.14&&(b.kind==="pollen"||b.kind===r.alliance));
+      ball??=this.balls.find(b=>b.location==="floor"&&distance(b,mouth)<0.14&&canIntakeBall(r,b.kind));
       if(ball)break;
     }
     if(ball){this.store(ball,"robot",r.id);this.nextIntake.set(r.id,this.tick+11);this.event("intake","Robot "+(r.id+1)+" collected "+ball.kind+".");}

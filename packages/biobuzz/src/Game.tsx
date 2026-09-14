@@ -163,6 +163,7 @@ export default function Game({online}:{online?:OnlineClient}) {
         <p className="bio-stat" data-testid="robot-position">{selected?"X "+selected.x.toFixed(2)+" m · Y "+selected.y.toFixed(2)+" m · "+selected.heading.toFixed(2)+" rad":waiting?"Your robot appears when the match starts.":"No robot in this seat."}</p>
         <p data-testid="inventory">Inventory {selected?.inventory.length??0}/4: {selected?.inventory.map(id=>state!.balls[id].kind==="pollen"?"Pollen":state!.balls[id].kind+" nectar").join(", ")||"empty"}</p>
         <p data-testid="robot-setup">Shooter: {robotSetup.shooter} · Flower placement: {robotSetup.deposit} · Intake: {robotSetup.intake}</p>
+        <p data-testid="robot-intake">Intake collects: {robotSetup.intakeContents==="pollen"?"Pollen only":"Pollen and nectar"}</p>
         <p data-testid="robot-motion">Turret: {robotSetup.turret?"on":"off"} · Chassis {(robotSetup.driveSpeed??ROBOT_LIMITS.driveSpeed.default).toFixed(2)} m/s · Turn {((robotSetup.turnSpeed??ROBOT_LIMITS.turnSpeed.default)*180/Math.PI).toFixed(0)}°/s</p>
         {robotSetup.turret&&<p data-testid="turret-angle">Turret angle: {((selected?.turretAngle??0)*180/Math.PI).toFixed(1)}° from shooter home</p>}
         {robotSetup.turret&&<p className="bio-help">The turret automatically locks onto your hive and tracks as you drive. Shoot fires separately when Ready. H / left trigger toggles the lock; brackets / bumpers temporarily override it. Flower placement takes priority, then tracking resumes.</p>}

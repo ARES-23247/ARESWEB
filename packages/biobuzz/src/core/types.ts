@@ -4,7 +4,7 @@ export interface Pose { x: number; y: number; heading: number }
 export type SeatKind = "human" | "easy" | "standard" | "empty";
 export type Phase = "practice" | "auto" | "transition" | "teleop" | "settling" | "finished" | "interrupted";
 export type MechanismSide = "front" | "back";
-export interface RobotSetup { shooter:MechanismSide; deposit:MechanismSide; intake:MechanismSide|"both"; turret?:boolean; driveSpeed?:number; turnSpeed?:number }
+export interface RobotSetup { shooter:MechanismSide; deposit:MechanismSide; intake:MechanismSide|"both"; intakeContents?:"pollen"|"both"; turret?:boolean; driveSpeed?:number; turnSpeed?:number }
 export interface Input { x: number; y: number; turn: number; intake: boolean; shoot: boolean; speed: number; release: boolean; aimHive?:boolean; aimFlower?:boolean; deposit?:boolean; aim?:boolean; turretTurn?:number }
 export const NEUTRAL: Input = { x: 0, y: 0, turn: 0, intake: false, shoot: false, speed: 5.8, release: false };
 export interface AutoProgram { version: 1; name: string; alliance: Alliance; start: Pose; steps: AutoStep[]; robotSetup?:RobotSetup }
