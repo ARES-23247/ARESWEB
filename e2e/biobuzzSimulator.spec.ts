@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { readFile } from "node:fs/promises";
 
 test("BIOBUZZ configures rear mechanisms and places through the flower top",async({page},testInfo)=>{
+  test.setTimeout(60000);
   await page.goto("/biobuzz/simulator");
   await expect(page.getByTestId("inventory")).toContainText("4/4");
   await expect(page.getByTestId("flower-contents-2").getByLabel("4 pollen",{exact:true})).toBeVisible();
@@ -12,14 +13,15 @@ test("BIOBUZZ configures rear mechanisms and places through the flower top",asyn
   await form.getByLabel("Hive shooter side",{exact:true}).selectOption("back");
   await form.getByLabel("Flower placement side",{exact:true}).selectOption("back");
   await form.getByLabel("Intake side",{exact:true}).selectOption("both");
+  await form.getByLabel("Turn speed (degrees/s)",{exact:true}).fill("30");
   await form.getByRole("button",{name:"Apply configuration and reset",exact:true}).click();
   await expect(page.getByTestId("robot-setup")).toHaveText("Shooter: back · Flower placement: back · Intake: both");
   await page.getByRole("button",{name:"Place in flower",exact:true}).click();
-  await expect(page.getByText("Flower 2: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:10000});
+  await expect(page.getByText("Flower 2: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:20000});
   await expect(page.getByTestId("flower-contents-2").getByLabel("5 pollen",{exact:true})).toBeVisible();
   await expect(page.getByTestId("inventory")).toContainText("3/4");
   await page.getByRole("button",{name:"Aim",exact:true}).click();
-  await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
+  await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot",{timeout:20000});
   await expect(page.getByTestId("inventory")).toContainText("3/4");
   await page.getByRole("button",{name:"Shoot",exact:true}).click();
   await expect(page.getByText("red hive: 0 tips · cell 1 open · 4 balls",{exact:true})).toBeVisible({timeout:10000});

@@ -209,11 +209,14 @@ export class Simulation {
       }
       const aim=this.aimedShots.get(r.id);
       if(aim) {
+        // Allow a half-turn and the proportional alignment tail at the selected
+        // chassis speed. Slow configurations must still be able to place balls.
+        const timeoutTicks=60*Math.max(5,8/(r.setup.turnSpeed??ROBOT_LIMITS.turnSpeed.default));
         // A snapshot can still show Ready while the next trajectory check is
         // settling. Accept that explicit click briefly, with final geometry
         // validation, instead of losing it across worker/WebSocket latency.
         if(!aim.autoFire&&shotEdges.has(r.id)&&this.tick-aim.readyAt<=15)aim.fireUntil=this.tick+15;
-        if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||!r.inventory.length||(aim.autoFire&&this.tick-aim.started>300)){this.cancelShot(r);}
+        if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||!r.inventory.length||(aim.autoFire&&this.tick-aim.started>timeoutTicks)){this.cancelShot(r);}
         else {
           const target=r.alliance==="red"?0:1,h=this.hives[target];
           const waiting=aim.target==="hive"&&h.tipping;

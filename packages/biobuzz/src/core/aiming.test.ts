@@ -114,6 +114,17 @@ describe("turret and drivetrain configuration",()=>{
     body.setTransform({x:1.15,y:0},0);s.step();run(s,120,()=>({...controls,turn:1}));
     expect(body.getAngularVelocity()).toBeCloseTo(turnSpeed,3);
   });
+  it.each(["front","back"] as const)("finishes %s flower placement at the slowest supported turn speed",deposit=>{
+    const s=sim({...DEFAULT_ROBOT,deposit,turnSpeed:ROBOT_LIMITS.turnSpeed.min}),r=s.robots[0],ball=s.balls[r.inventory[0]];
+    run(s,1000,i=>({...controls,deposit:i===0}));
+    expect(ball.location).toBe("flower");expect(s.flowers[1].balls).toContain(ball.id);expect(r.inventory).toHaveLength(3);
+    expect(r.shotStatus).toBeUndefined();expect(s.balls).toHaveLength(56);
+  });
+  it.each(["front","back"] as const)("finishes a legacy %s assisted hive shot at the slowest turn speed",shooter=>{
+    const s=sim({...DEFAULT_ROBOT,shooter,turnSpeed:ROBOT_LIMITS.turnSpeed.min}),r=s.robots[0],ball=s.balls[r.inventory[0]];
+    run(s,1000,i=>({...NEUTRAL,aimHive:true,shoot:i===0}));
+    expect(ball.location).toBe("hive");expect(r.inventory).toHaveLength(3);expect(r.shotStatus).toBeUndefined();
+  });
   it("saves custom configuration in browser autos and refuses incompatible native exports",()=>{
     const auto=defaultAuto();auto.robotSetup={...DEFAULT_ROBOT,turret:true,driveSpeed:2.2,turnSpeed:Math.PI};
     expect(validateAuto(auto).robotSetup).toEqual(auto.robotSetup);expect(()=>nativeAuto(auto,"turret")).toThrow(/reference robot/);
