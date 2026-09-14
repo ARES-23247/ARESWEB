@@ -72,11 +72,16 @@ export default function Field({state,program,onWaypoint,view="red"}:{state:Snaps
           ctx.fillStyle="#111";ctx.font="bold 24px sans-serif";ctx.textAlign="center";ctx.fillText(String(r.id+1),p[0],p[1]+8);
           const setup=r.setup??DEFAULT_ROBOT;
           for(const side of ["front","back"] as const){
-            const marks=(!setup.turret&&setup.shooter===side?"S":"")+(setup.deposit===side?"F":"")+(setup.intake===side||setup.intake==="both"?"I":"");
+            const marks=(setup.intake===side||setup.intake==="both"?"I":"")+(setup.deposit===side?"F":"")+(!setup.turret&&setup.shooter===side?"S":"");
             if(!marks)continue;
             const a=r.heading+sideAngle(side),port=point(old.x+(r.x-old.x)*blend+Math.cos(a)*.16,old.y+(r.y-old.y)*blend+Math.sin(a)*.16);
-            ctx.fillStyle="#111";ctx.fillRect(port[0]-marks.length*5-3,port[1]-9,marks.length*10+6,18);
-            ctx.fillStyle="#fff";ctx.font="bold 14px sans-serif";ctx.fillText(marks,port[0],port[1]+5);
+            const tangent=point(Math.cos(a+Math.PI/2),Math.sin(a+Math.PI/2)),origin=point(0,0);
+            for(const [i,mark] of [...marks].entries()){
+              const offset=(i-(marks.length-1)/2)*.10,x=port[0]+(tangent[0]-origin[0])*offset,y=port[1]+(tangent[1]-origin[1])*offset;
+              ctx.fillStyle=mark==="I"?"#a7f3d0":mark==="F"?"#e9d5ff":"#fde68a";
+              ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.fillRect(x-11,y-12,22,24);ctx.strokeRect(x-11,y-12,22,24);
+              ctx.fillStyle="#111";ctx.font="bold 18px sans-serif";ctx.fillText(mark,x,y+6);
+            }
           }
           if(setup.turret){
             const a=shooterHeading(r),tip=point(old.x+(r.x-old.x)*blend+Math.cos(a)*.28,old.y+(r.y-old.y)*blend+Math.sin(a)*.28);
@@ -100,7 +105,7 @@ export default function Field({state,program,onWaypoint,view="red"}:{state:Snaps
     }
     id=requestAnimationFrame(draw);return()=>cancelAnimationFrame(id);
   },[program,view]);
-  return <><div className="bio-field-display"><div className="bio-field-wrap"><canvas ref={canvas} className="bio-field" width={900} height={900} tabIndex={0} aria-label="BIOBUZZ field. W A S D to drive, Q E to turn, J to toggle intake, H to aim, F to shoot, G to place in a flower, brackets to turn the turret. State and waypoint coordinates are available beside the field."
+  return <><div className="bio-field-display"><div className="bio-field-wrap"><canvas ref={canvas} className="bio-field" width={900} height={900} tabIndex={0} aria-label="BIOBUZZ field. W A S D to drive, Q E to turn, J to toggle intake, H to toggle aim lock, hold F to shoot, hold G to place in a flower, brackets to turn the turret. State and waypoint coordinates are available beside the field."
     onClick={event=>{event.currentTarget.focus();if(onWaypoint){const rect=event.currentTarget.getBoundingClientRect();onWaypoint({...viewToField({x:(event.clientX-rect.left)/rect.width,y:(event.clientY-rect.top)/rect.height},view),heading:0});}}}/>
     {state&&<div className="bio-field-totals" role="group" aria-label="Field ball totals">
       {state.flowers.map((f,i)=><Total key={`flower-${i}`} count={f.balls.length} name={`Flower ${i+1}`} position={f} view={view}/>)}

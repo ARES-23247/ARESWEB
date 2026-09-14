@@ -3,6 +3,7 @@ import Field from "./Field";
 import MatchClock from "./MatchClock";
 import AutoEditor, { defaultAuto } from "./AutoEditor";
 import RobotSetupFields from "./RobotSetupFields";
+import RobotMechanismDiagram from "./RobotMechanismDiagram";
 import { DEFAULT_ROBOT,validateRobotSetup,ROBOT_LIMITS } from "./core/robot";
 import { validateAuto } from "./core/auto";
 import { NEUTRAL, type Alliance, type AutoProgram, type Config, type Input, type MatchMode, type SeatKind, type Snapshot } from "./core/types";
@@ -23,12 +24,10 @@ export default function Game({online}:{online?:OnlineClient}) {
   const fieldPanel=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(editing){autoEditor.current?.focus();autoEditor.current?.scrollIntoView({block:"start"});}},[editing]);
   const [seat,setSeat]=useState(0),[speed,setSpeed]=useState(5.8),[intake,setIntake]=useState(false),[code,setCode]=useState("");
-  const [aimHive,setAimHive]=useState(true),padIntake=useRef(false);
+  const [aimHive,setAimHive]=useState(()=>!!config.robotSetups?.[0]?.turret),padIntake=useRef(false);
   const [driverView,setDriverView]=useState<Alliance>("red");
   const [configuring,setConfiguring]=useState(false),[robotDraft,setRobotDraft]=useState({...DEFAULT_ROBOT});
   const [gamepadName,setGamepadName]=useState(""),padView=useRef(false),wasGamepad=useRef(false);
-  const shotClicks=useRef(0),previousTrigger=useRef(false);
-  const depositClicks=useRef(0),previousDeposit=useRef(false);
   const aimClicks=useRef(0),previousAim=useRef(false);
   const [lobby,setLobby]=useState<Lobby|null>(null),[busy,setBusy]=useState(false),[connected,setConnected]=useState(false);
   const terminal=useRef(false);
@@ -52,7 +51,7 @@ export default function Game({online}:{online?:OnlineClient}) {
         const m=JSON.parse(event.data) as ServerMessage;
         if(m.type==="snapshot"){setState(m.state);if(["finished","interrupted"].includes(m.state.phase))terminal.current=true;}
         if(m.type==="lobby"){setLobby(m.lobby);if(m.lobby.status!=="waiting"||m.lobby.ready[control.current.seat])setConfiguring(false);if(["finished","interrupted","local-offer"].includes(m.lobby.status))terminal.current=true;}
-        if(m.type==="joined"){setSeat(m.seat);setDriverView(m.seat<2?"red":"blue");setPaused(false);setConnected(true);setError("");}
+        if(m.type==="joined"){setSeat(m.seat);setDriverView(m.seat<2?"red":"blue");setAimHive(false);setIntake(false);setPaused(false);setConnected(true);setError("");}
         if(m.type==="error")setError(m.message);
       }catch{setError("Invalid simulator response.");ws.close();}
     };
@@ -76,11 +75,12 @@ export default function Game({online}:{online?:OnlineClient}) {
     const timeouts=keyTimers.current;
     const w=new Worker(new URL("./worker.ts",import.meta.url),{type:"module"});worker.current=w;
     w.onmessage=event=>{if(session.current)return;if(event.data.type==="snapshot")setState(event.data.state);else setError(event.data.message);};
-    const clear=()=>{keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;};
+    const clear=()=>{keys.current.clear();aimClicks.current=0;};
     const down=(e:KeyboardEvent)=>{
       if((e.target as HTMLElement)?.closest("input,select,textarea"))return;
       if(e.code==="KeyJ"){if(!e.repeat)setIntake(on=>!on);e.preventDefault();return;}
-      if(["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","KeyJ","KeyF","KeyG","KeyH","KeyR","BracketLeft","BracketRight"].includes(e.code)){keys.current.add(e.code);e.preventDefault();}
+      if(e.code==="KeyH"){if(!e.repeat)aimClicks.current=Math.min(2,aimClicks.current+1);e.preventDefault();return;}
+      if(["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","KeyF","KeyG","KeyR","BracketLeft","BracketRight"].includes(e.code)){keys.current.add(e.code);e.preventDefault();}
     };
     const up=(e:KeyboardEvent)=>keys.current.delete(e.code);
     const visibility=()=>{clear();w.postMessage({type:"pause",paused:document.hidden||control.current.paused||!!session.current});};
@@ -89,22 +89,17 @@ export default function Game({online}:{online?:OnlineClient}) {
       const c=control.current,k=keys.current,pads=navigator.getGamepads?.()??[],pad=pads.find(p=>p?.connected&&p.mapping==="standard");
       setGamepadName(pad?.id??(pads.some(p=>p?.connected)?"Unsupported controller mapping":""));
       const disconnected=wasGamepad.current&&!pad;
-      if(disconnected){setIntake(false);shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;}
+      if(disconnected){setIntake(false);setAimHive(false);aimClicks.current=0;}
       wasGamepad.current=!!pad;
       const disabled=c.paused||c.configuring||document.hidden||disconnected;
-      if(disabled){shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;}
-      const click=shotClicks.current>0&&!previousTrigger.current;
-      if(click)shotClicks.current--;
-      const trigger=click||k.has("KeyF")||!!pad?.buttons[7]?.pressed;
-      previousTrigger.current=trigger;
-      const depositClick=depositClicks.current>0&&!previousDeposit.current;
-      if(depositClick)depositClicks.current--;
-      const deposit=depositClick||k.has("KeyG")||!!pad?.buttons[2]?.pressed;
-      previousDeposit.current=deposit;
+      if(disabled){aimClicks.current=0;}
+      const trigger=k.has("KeyF")||!!pad?.buttons[7]?.pressed;
+      const deposit=k.has("KeyG")||!!pad?.buttons[2]?.pressed;
       const aimClick=aimClicks.current>0&&!previousAim.current;
       if(aimClick)aimClicks.current--;
-      const aim=aimClick||k.has("KeyH")||!!pad?.buttons[6]?.pressed;
-      if(aim&&!previousAim.current&&!disabled)setAimHive(true);
+      const aim=aimClick||!!pad?.buttons[6]?.pressed;
+      const lockOn=aim&&!previousAim.current&&!disabled?!c.aimHive:c.aimHive;
+      if(lockOn!==c.aimHive)setAimHive(lockOn);
       previousAim.current=aim;
       const pressed=!!pad?.buttons[0]?.pressed;
       if(pressed&&!padIntake.current&&!disabled)setIntake(on=>!on);
@@ -119,7 +114,7 @@ export default function Game({online}:{online?:OnlineClient}) {
       const input:Input=disabled?{...NEUTRAL}:{
         ...drive,
         turn:(k.has("KeyQ")?1:0)-(k.has("KeyE")?1:0)-(pad?dead(pad.axes[2]??0):0),
-        intake:c.intake,shoot:trigger,aimHive:c.aimHive||aim,aim,deposit,aimFlower:true,
+        intake:c.intake,shoot:trigger,shootHeld:trigger,lockOn,aimHive:lockOn||aim,aim,deposit,depositHeld:deposit,aimFlower:true,
         turretTurn:(k.has("BracketLeft")||pad?.buttons[4]?.pressed?1:0)-(k.has("BracketRight")||pad?.buttons[5]?.pressed?1:0),
         speed:c.speed,release:k.has("KeyR")||!!pad?.buttons[3]?.pressed};
       if(session.current){if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({type:"input",sequence:sequence.current++,input}));}
@@ -136,7 +131,15 @@ export default function Game({online}:{online?:OnlineClient}) {
   const robotSetup=selected?.setup??lobby?.robotSetups?.[seat]??config.robotSetups?.[seat]??DEFAULT_ROBOT;
   const aimingAtHive=selected?.shotTarget==="hive"&&selected.shotStatus!==undefined;
   let robotDraftError="";try{validateRobotSetup(robotDraft);}catch(e){robotDraftError=(e as Error).message;}
-  const reset=(next:Config,controlled?:number)=>{leaveOnline();keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;previousAim.current=false;previousTrigger.current=false;previousDeposit.current=false;setIntake(false);setAimHive(true);setPaused(false);setError("");setConfiguring(false);const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");if(next.timed)setTimerMode(next.matchMode??"combined");setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});};
+  const reset=(next:Config,controlled?:number)=>{
+    leaveOnline();keys.current.clear();aimClicks.current=0;
+    previousAim.current=false;
+    setIntake(false);setPaused(false);setError("");setConfiguring(false);
+    const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));
+    setAimHive(!!(next.autos?.[id]?.robotSetup??next.robotSetups?.[id]??config.robotSetups?.[id])?.turret);
+    setSeat(id);setDriverView(id<2?"red":"blue");if(next.timed)setTimerMode(next.matchMode??"combined");
+    setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});
+  };
   const runAuto=(mode:MatchMode)=>{
     const auto=validateAuto(program);
     if(!auto.steps.length)throw new Error("Add at least one auto step before running.");
@@ -171,22 +174,23 @@ export default function Game({online}:{online?:OnlineClient}) {
         <p className="bio-help">{timerMode==="teleop"?"Start directly in driver control. Autos do not run in TELEOP-only mode.":<>Start timed match uses no auto for your robot. Run this auto launches “{program.name}”{timerMode==="auto"?" for 30 seconds.":", then hands control to you for TELEOP."} {!program.steps.length&&"Use Build an auto to add intake, shoot, drive, or wait steps."}</>}</p>
       </section>}
       <div className="bio-row"><button disabled={!!session.current} onClick={()=>setPaused(!paused)}>{paused?"Resume":"Pause"}</button><button onClick={()=>reset(config)}>Reset local field</button><button disabled={!!session.current} onClick={()=>{if(!editing&&!program.steps.length)setProgram({...program,robotSetup:validateRobotSetup(robotSetup)});setEditing(!editing);}}>{editing?"Close auto editor":"Build an auto"}</button></div>
-      <p className="bio-help">WASD drive · Q/E turn · J toggle intake · H aim/cancel aim · F shoot · G place in flower/cancel · R release nectar · [ / ] turn turret.</p>
+      <p className="bio-help">WASD drive · Q/E turn (temporarily overrides fixed-shooter aim) · J toggle intake · H toggle aim lock · F hold to shoot · G hold to place in flower · R release nectar · [ / ] turn turret.</p>
       <p role="status" data-testid="gamepad-status">{gamepadName?gamepadName==="Unsupported controller mapping"?"This controller has no standard browser mapping. Keyboard and touch controls remain available.":"Gamepad connected: "+gamepadName:"Gamepad: connect a controller and press a button to activate it."}</p>
-      <p className="bio-help">Standard gamepad: left stick drive · right stick turn · A / Cross toggle intake · left trigger aim/cancel aim · right trigger shoot · bumpers turn turret · X / Square place in flower · Y / Triangle release nectar · View / Share switch driver view. Disconnecting stops gamepad inputs and switches intake off.</p>
-      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button aria-pressed={intake} onClick={()=>setIntake(on=>!on)}>{intake?"Intake on":"Intake off"}</button><button aria-pressed={!!aimingAtHive} onClick={()=>{setAimHive(true);aimClicks.current=Math.min(2,aimClicks.current+1);}}>{aimingAtHive?"Cancel aim":"Aim"}</button><button onClick={()=>{shotClicks.current=Math.min(2,shotClicks.current+1);}}>Shoot</button><button onClick={()=>{depositClicks.current=Math.min(2,depositClicks.current+1);}}>{selected?.shotStatus==="aiming"&&selected.shotTarget==="flower"?"Cancel placement":"Place in flower"}</button><button {...hold("KeyR")}>Release nectar</button>{robotSetup.turret&&<><button {...hold("BracketLeft")}>Turret left</button><button {...hold("BracketRight")}>Turret right</button></>}</div>
+      <p className="bio-help">Standard gamepad: left stick drive · right stick turn · A / Cross toggle intake · left trigger toggle aim lock · right trigger hold to shoot · bumpers turn turret · X / Square hold to place in flower · Y / Triangle release nectar · View / Share switch driver view. Disconnecting stops gamepad inputs and switches intake and aim lock off.</p>
+      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button aria-pressed={intake} onClick={()=>setIntake(on=>!on)}>{intake?"Intake on":"Intake off"}</button><button aria-pressed={aimHive} onClick={()=>{aimClicks.current=Math.min(2,aimClicks.current+1);}}>{aimHive?"Aim on":"Aim off"}</button><button {...hold("KeyF")}>Shoot</button><button {...hold("KeyG")}>Place in flower</button><button {...hold("KeyR")}>Release nectar</button>{robotSetup.turret&&<><button {...hold("BracketLeft")}>Turret left</button><button {...hold("BracketRight")}>Turret right</button></>}</div>
       </div>
     </div><aside>
       {editing&&<div ref={autoEditor} tabIndex={-1} className="bio-auto-panel"><AutoEditor program={program} onChange={setProgram} onPreview={()=>runAuto("auto")} canRun={!lobby}/></div>}
       <section className="bio-card"><h2>Your robot</h2>
-        <label>Controlled robot<select value={seat} disabled={!!session.current} onChange={e=>{const id=Number(e.target.value);setSeat(id);setDriverView(id<2?"red":"blue");}}>{state?.robots.map(r=><option key={r.id} value={r.id}>{r.alliance} {r.id%2+1}</option>)}</select></label>
+        <label>Controlled robot<select value={seat} disabled={!!session.current} onChange={e=>{const id=Number(e.target.value);setSeat(id);setAimHive(!!state?.robots.find(r=>r.id===id)?.setup.turret);setDriverView(id<2?"red":"blue");}}>{state?.robots.map(r=><option key={r.id} value={r.id}>{r.alliance} {r.id%2+1}</option>)}</select></label>
         <p className="bio-stat" data-testid="robot-position">{selected?"X "+selected.x.toFixed(2)+" m · Y "+selected.y.toFixed(2)+" m · "+selected.heading.toFixed(2)+" rad":waiting?"Your robot appears when the match starts.":"No robot in this seat."}</p>
         <p data-testid="inventory">Inventory {selected?.inventory.length??0}/4: {selected?.inventory.map(id=>state!.balls[id].kind==="pollen"?"Pollen":state!.balls[id].kind+" nectar").join(", ")||"empty"}</p>
         <p data-testid="robot-setup">Shooter: {robotSetup.shooter} · Flower placement: {robotSetup.deposit} · Intake: {robotSetup.intake}</p>
         <p data-testid="robot-intake">Intake collects: {robotSetup.intakeContents==="pollen"?"Pollen only":"Pollen and nectar"}</p>
+        <RobotMechanismDiagram setup={robotSetup}/>
         <p data-testid="robot-motion">Turret: {robotSetup.turret?"on":"off"} · Chassis {(robotSetup.driveSpeed??ROBOT_LIMITS.driveSpeed.default).toFixed(2)} m/s · Turn {((robotSetup.turnSpeed??ROBOT_LIMITS.turnSpeed.default)*180/Math.PI).toFixed(0)}°/s</p>
         {robotSetup.turret&&<p data-testid="turret-angle">Turret angle: {((selected?.turretAngle??0)*180/Math.PI).toFixed(1)}° from shooter home</p>}
-        {robotSetup.turret&&<p className="bio-help">The turret automatically locks onto your hive and tracks as you drive. Shoot fires separately when Ready. H / left trigger toggles the lock; brackets / bumpers temporarily override it. Flower placement takes priority, then tracking resumes.</p>}
+        <p className="bio-help">Aim stays on until toggled off. {robotSetup.turret?"The turret tracks the hive independently as you drive; brackets / bumpers temporarily override it. Local turret practice starts with aim on.":"The chassis turns to keep the shooter pointed at the hive while you drive. Q/E or the right stick temporarily overrides tracking; release to resume."} Stop moving for a clear shot, then press Shoot. Flower placement takes priority, then tracking resumes.</p>
         <button disabled={!!session.current&&(!waiting||lobby?.ready[seat])} onClick={()=>{setRobotDraft(validateRobotSetup(robotSetup));setConfiguring(!configuring);}}>Configure robot</button>
         {configuring&&<section aria-label="Robot configuration"><RobotSetupFields value={robotDraft} onChange={setRobotDraft}/>{robotDraftError&&<p role="alert">{robotDraftError}</p>}<p className="bio-help">The arrow marks the robot's front. S = shooter, F = flower placement, I = intake. Local changes reset the field. Online configuration locks when you ready.</p><div className="bio-row"><button disabled={!!robotDraftError} onClick={()=>{
           if(session.current){send({type:"robot",setup:robotDraft});setConfiguring(false);}
@@ -194,10 +198,11 @@ export default function Game({online}:{online?:OnlineClient}) {
         }}>{session.current?"Apply robot configuration":"Apply configuration and reset"}</button><button onClick={()=>setConfiguring(false)}>Cancel configuration</button></div></section>}
         <label><input type="checkbox" checked={intake} onChange={e=>setIntake(e.target.checked)}/> Run intake</label>
         <p className="bio-help">Intake stays on until toggled off, collecting whenever there is space. Capacity: four balls.</p>
-        <p role="status" data-testid="aim-status">{selected?.shotStatus==="ready"?"Ready to shoot. Press Shoot to release one ball.":selected?.shotStatus==="aiming"?selected.shotTarget==="flower"?"Lining up flower placement. Place again or drive to cancel.":robotSetup.turret?"Turret tracking the hive. Stop moving and wait for Ready, then press Shoot.":"Lining up the hive. Aim again or drive to cancel. Wait for Ready, then press Shoot.":selected?.shotStatus==="blocked"?selected.shotTarget==="flower"?"No clear flower placement. Move within 0.95 m of a flower with space and try again.":robotSetup.turret?"No clear hive shot. Move toward the outward-facing OPEN cell; the turret will retry automatically.":"No clear hive shot from here. Move toward the outward-facing OPEN cell and aim again.":"Aim lines up the hive without firing. Shoot releases one ball; without Aim, it uses manual power and the current shooter direction."}</p>
+        <p className="bio-help">Hold Shoot, F, or the right trigger to keep firing, at most one ball every third of a second. Release to stop. With aim lock on, shooting waits for a clear, steady aim before each ball.</p>
+        <p role="status" data-testid="aim-status">{selected?.shotStatus==="ready"?"Ready to shoot. Tap for one ball, or hold Shoot to keep firing.":selected?.shotStatus==="aiming"?selected.shotTarget==="flower"?"Lining up flower placement. Hold to keep placing balls; drive to cancel.":robotSetup.turret?"Aim lock on. The turret tracks the hive as you drive. Stop and wait for Ready, then Shoot.":"Aim lock on. Drive to reposition while the chassis tracks the hive. Stop and wait for Ready, then Shoot.":selected?.shotStatus==="blocked"?selected.shotTarget==="flower"?"No clear flower placement. Move within 0.95 m of a flower with space and try again.":"Aim lock on, but no clear hive shot. Move toward the outward-facing OPEN cell; tracking retries automatically.":aimHive?"Aim lock on. Release manual turning to resume tracking. Load a ball and stop moving for a clear shot.":"Aim lock off. Toggle Aim to track the hive without firing. Hold Shoot to fire using manual power and the current shooter direction."}</p>
         {aimingAtHive&&selected?.shotSpeed!==undefined&&<p>Calculated launch speed: {selected.shotSpeed.toFixed(2)} m/s</p>}
-        <p className="bio-help">Place in flower aims a short arc through the nearest flower's top using the configured placement side. Turn intake off to avoid retrieving pollen again. Early nectar placement still incurs the match penalty.</p>
-        <label>Manual launch speed: {speed.toFixed(2)} m/s<input type="range" disabled={!!aimingAtHive} min={2} max={5.8} step={0.01} value={speed} onChange={e=>setSpeed(Number(e.target.value))}/></label>
+        <p className="bio-help">Tap Place in flower for one placement, or hold it, G, or X / Square to repeat. Release stops starting new placements; the current placement finishes. Drive to cancel it. Each placement aims a short arc through the nearest flower's top using the configured placement side. Turn intake off to avoid retrieving pollen again. Early nectar placement still incurs the match penalty.</p>
+        <label>Manual launch speed: {speed.toFixed(2)} m/s<input type="range" disabled={aimHive||!!aimingAtHive} min={2} max={5.8} step={0.01} value={speed} onChange={e=>setSpeed(Number(e.target.value))}/></label>
         <div className="bio-row"><button onClick={()=>{setAimHive(false);setSpeed(3.08);}}>Flower power</button></div>
         <p className="bio-help">Shots can hit the rim, sides, or underside. Airborne balls have a white height ring.</p>
       </section>

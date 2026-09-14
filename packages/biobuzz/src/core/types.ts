@@ -6,11 +6,11 @@ export type Phase = "practice" | "auto" | "transition" | "teleop" | "settling" |
 export type MatchMode = "auto" | "teleop" | "combined";
 export type MechanismSide = "front" | "back";
 export interface RobotSetup { shooter:MechanismSide; deposit:MechanismSide; intake:MechanismSide|"both"; intakeContents?:"pollen"|"both"; turret?:boolean; driveSpeed?:number; turnSpeed?:number }
-export interface Input { x: number; y: number; turn: number; intake: boolean; shoot: boolean; speed: number; release: boolean; aimHive?:boolean; aimFlower?:boolean; deposit?:boolean; aim?:boolean; turretTurn?:number }
+export interface Input { x: number; y: number; turn: number; intake: boolean; shoot: boolean; speed: number; release: boolean; aimHive?:boolean; aimFlower?:boolean; deposit?:boolean; aim?:boolean; turretTurn?:number; lockOn?:boolean; shootHeld?:boolean; depositHeld?:boolean }
 export const NEUTRAL: Input = { x: 0, y: 0, turn: 0, intake: false, shoot: false, speed: 5.8, release: false };
 export interface AutoProgram { version: 1; name: string; alliance: Alliance; start: Pose; steps: AutoStep[]; robotSetup?:RobotSetup }
 export type AutoStep = { kind: "drive"; target: Pose; preset: "safe" | "balanced" }
-  | { kind: "wait"; seconds: number } | { kind: "intake"; enabled: boolean }
+  | { kind: "wait"; seconds: number } | { kind: "intake"; enabled: boolean } | { kind: "lockOn"; enabled: boolean }
   | { kind: "shoot"; count: number; speed: number };
 export interface Config { timed: boolean; matchMode?: MatchMode; seats: SeatKind[]; autos?: (AutoProgram | null)[]; robotSetups?: (RobotSetup|null)[] }
 export type Location = "floor" | "air" | "robot" | "flower" | "hive" | "reserve" | "out";
