@@ -65,7 +65,7 @@ test("four independent browsers finish the same authoritative match and persist 
     await p.getByRole("button",{name:"Place in flower",exact:true}).click();
     await expect(p.getByText("Flower 4: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:10000});
     const heading=(await p.getByTestId("robot-position").innerText()).split(" · ").at(-1);
-    await p.getByRole("button",{name:"Aim",exact:true}).click();
+    // The turret reacquires automatically after flower placement.
     await expect(p.getByTestId("aim-status")).toContainText("Ready to shoot",{timeout:10000});
     await expect(p.getByTestId("inventory")).toContainText("3/4");
     expect((await p.getByTestId("robot-position").innerText()).split(" · ").at(-1)).toBe(heading);
@@ -83,6 +83,15 @@ test("four independent browsers finish the same authoritative match and persist 
   offline=false;
   await expect(pages[3].getByText(/Room .*Connected/)).toBeVisible({timeout:15000});
   await expect.poll(()=>JSON.stringify(snapshots[0]),{timeout:10000}).not.toContain('"controller":"standard"');
+  for(const p of pages)await expect(p.getByTestId("nectar-window")).toHaveText("Nectar flowers locked");
+  await expect(host.getByTestId("nectar-window")).toHaveText("Final minute · nectar flowers open",{timeout:65000});
+  for(const p of pages){
+    await expect(p.getByTestId("nectar-window")).toHaveText("Final minute · nectar flowers open");
+    await expect(p.getByTestId("match-clock")).toContainText("TELEOP");
+    await expect(p.getByTestId("nectar-reserve-red")).toContainText("0 in reserve",{timeout:10000});
+  }
+  await host.getByRole("timer").scrollIntoViewIfNeeded();
+  await host.screenshot({path:"scratch/biobuzz/final-minute-online.png"});
   await expect(host.getByTestId("match-clock")).toContainText("FINISHED",{timeout:140000});
   for(const p of pages){await expect(p.getByTestId("match-clock")).toContainText("FINISHED");await expect(p.getByRole("alert")).toHaveCount(0);}
   const scores=await Promise.all(pages.map(async p=>({red:await p.getByTestId("red-score").innerText(),blue:await p.getByTestId("blue-score").innerText()})));

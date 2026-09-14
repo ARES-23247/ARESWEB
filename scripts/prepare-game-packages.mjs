@@ -8,6 +8,7 @@ const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export function prepareGamePackages(root = repository) {
   const rules = [
     ["biobuzz/src/core/types.ts", "biobuzz/types.ts"],
+    ["biobuzz/src/core/timing.ts", "biobuzz/timing.ts"],
     ["biobuzz/src/core/field.ts", "biobuzz/field.ts"],
     ["biobuzz/src/core/hive.ts", "biobuzz/hive.ts"],
     ["biobuzz/src/core/shooting.ts", "biobuzz/shooting.ts"],

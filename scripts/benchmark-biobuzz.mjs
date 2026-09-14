@@ -16,7 +16,7 @@ for(const {count,workload} of [...[1,5,10,25].map(count=>({count,workload:"bots"
       // Also measure repeated human assist requests at the current one-room ceiling.
       // Inputs remain at the real 30 Hz rate; no geometry or inventory is injected.
       if(workload==="assisted-input"&&tick%2===0)for(let id=0;id<4;id++)world.command(id,{x:0,y:0,turn:0,intake:true,shoot:tick%12===0,aimHive:true,speed:5.8,release:false});
-      if(workload==="turret-input"&&tick%2===0)for(let id=0;id<4;id++)world.command(id,{x:tick%240<60?.15:0,y:0,turn:tick%240<60?.1:0,intake:true,aim:tick%240===0,shoot:tick%240===180,aimHive:true,speed:5.8,release:false});
+      if(workload==="turret-input"&&tick%2===0)for(let id=0;id<4;id++)world.command(id,{x:tick%240<60?.15:0,y:0,turn:tick%240<60?.1:0,intake:true,aim:false,shoot:tick%240===180,aimHive:true,speed:5.8,release:false});
       world.step();
       if(tick%6===0){
         const payload=JSON.stringify({type:"snapshot",state:world.snapshot()});

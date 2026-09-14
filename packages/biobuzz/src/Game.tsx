@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Field from "./Field";
+import MatchClock from "./MatchClock";
 import AutoEditor, { defaultAuto } from "./AutoEditor";
 import RobotSetupFields from "./RobotSetupFields";
 import { DEFAULT_ROBOT,validateRobotSetup,ROBOT_LIMITS } from "./core/robot";
@@ -129,9 +130,9 @@ export default function Game({online}:{online?:OnlineClient}) {
   const unavailable=waiting||interrupted;
   const selected=unavailable?undefined:state?.robots.find(r=>r.id===seat);
   const robotSetup=selected?.setup??lobby?.robotSetups?.[seat]??config.robotSetups?.[seat]??DEFAULT_ROBOT;
-  const aimingAtHive=selected?.shotTarget==="hive"&&(selected.shotStatus==="aiming"||selected.shotStatus==="ready");
+  const aimingAtHive=selected?.shotTarget==="hive"&&selected.shotStatus!==undefined;
   let robotDraftError="";try{validateRobotSetup(robotDraft);}catch(e){robotDraftError=(e as Error).message;}
-  const reset=(next:Config,controlled?:number)=>{leaveOnline();keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;previousAim.current=false;previousTrigger.current=false;previousDeposit.current=false;setIntake(false);setPaused(false);setError("");setConfiguring(false);const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});};
+  const reset=(next:Config,controlled?:number)=>{leaveOnline();keys.current.clear();shotClicks.current=0;depositClicks.current=0;aimClicks.current=0;previousAim.current=false;previousTrigger.current=false;previousDeposit.current=false;setIntake(false);setAimHive(true);setPaused(false);setError("");setConfiguring(false);const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));setSeat(id);setDriverView(id<2?"red":"blue");setConfig({...next,robotSetups:next.robotSetups??config.robotSetups});};
   const hold=(key:string)=>({
     onPointerDown:(e:React.PointerEvent<HTMLButtonElement>)=>{e.currentTarget.setPointerCapture(e.pointerId);clearTimeout(keyTimers.current.get(key));pressTimes.current.set(key,performance.now());keys.current.add(key);},
     onPointerUp:()=>{const remaining=Math.max(0,250-(performance.now()-(pressTimes.current.get(key)??0)));keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),remaining));},
@@ -144,7 +145,8 @@ export default function Game({online}:{online?:OnlineClient}) {
     {error&&<p role="alert" className="bio-error">{error}</p>}
     <div className="bio-grid"><div>
       <div className="bio-card"><div className="bio-score"><span className="red" data-testid="red-score">Red {unavailable?0:state?.score.red.total??0}</span><span className="blue" data-testid="blue-score">Blue {unavailable?0:state?.score.blue.total??0}</span></div>
-      <p className="bio-timer" data-testid="match-clock">{interrupted?"INTERRUPTED":waiting?"WAITING":state?.phase.toUpperCase()??"LOADING"} {!unavailable&&state&&["auto","transition","teleop"].includes(state.phase)?Math.ceil(state.remaining)+"s":""} {paused?" · PAUSED":""}</p>
+      <MatchClock phase={interrupted?"interrupted":waiting?"waiting":state?.phase??"loading"} tick={unavailable?0:state?.tick} remaining={unavailable?0:state?.remaining} paused={paused}/>
+      {!lobby&&<div className="bio-row"><button onClick={()=>reset({...config,timed:true})}>{config.timed?"Restart timed match":"Start timed match"}</button>{config.timed&&<button onClick={()=>reset({...config,timed:false})}>Return to untimed practice</button>}</div>}
       <div className="bio-row" role="group" aria-label="Driver station view">{(["red","blue"] as const).map(alliance=><button key={alliance} aria-pressed={driverView===alliance} onClick={()=>setDriverView(alliance)}>{alliance==="red"?"Red":"Blue"} driver view</button>)}</div>
       <p className="bio-help">{driverView==="red"?"Red":"Blue"} station at the bottom. Forward drives up the field from this view, regardless of robot heading.</p>
       <Field view={driverView} state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
@@ -163,6 +165,7 @@ export default function Game({online}:{online?:OnlineClient}) {
         <p data-testid="robot-setup">Shooter: {robotSetup.shooter} · Flower placement: {robotSetup.deposit} · Intake: {robotSetup.intake}</p>
         <p data-testid="robot-motion">Turret: {robotSetup.turret?"on":"off"} · Chassis {(robotSetup.driveSpeed??ROBOT_LIMITS.driveSpeed.default).toFixed(2)} m/s · Turn {((robotSetup.turnSpeed??ROBOT_LIMITS.turnSpeed.default)*180/Math.PI).toFixed(0)}°/s</p>
         {robotSetup.turret&&<p data-testid="turret-angle">Turret angle: {((selected?.turretAngle??0)*180/Math.PI).toFixed(1)}° from shooter home</p>}
+        {robotSetup.turret&&<p className="bio-help">The turret automatically locks onto your hive and tracks as you drive. Shoot fires separately when Ready. H / left trigger toggles the lock; brackets / bumpers temporarily override it. Flower placement takes priority, then tracking resumes.</p>}
         <button disabled={!!session.current&&(!waiting||lobby?.ready[seat])} onClick={()=>{setRobotDraft(validateRobotSetup(robotSetup));setConfiguring(!configuring);}}>Configure robot</button>
         {configuring&&<section aria-label="Robot configuration"><RobotSetupFields value={robotDraft} onChange={setRobotDraft}/>{robotDraftError&&<p role="alert">{robotDraftError}</p>}<p className="bio-help">The arrow marks the robot's front. S = shooter, F = flower placement, I = intake. Local changes reset the field. Online configuration locks when you ready.</p><div className="bio-row"><button disabled={!!robotDraftError} onClick={()=>{
           if(session.current){send({type:"robot",setup:robotDraft});setConfiguring(false);}
@@ -170,7 +173,7 @@ export default function Game({online}:{online?:OnlineClient}) {
         }}>{session.current?"Apply robot configuration":"Apply configuration and reset"}</button><button onClick={()=>setConfiguring(false)}>Cancel configuration</button></div></section>}
         <label><input type="checkbox" checked={intake} onChange={e=>setIntake(e.target.checked)}/> Run intake</label>
         <p className="bio-help">Intake stays on until toggled off, collecting whenever there is space. Capacity: four balls.</p>
-        <p role="status" data-testid="aim-status">{selected?.shotStatus==="ready"?"Ready to shoot. Press Shoot to release one ball.":selected?.shotStatus==="aiming"?selected.shotTarget==="flower"?"Lining up flower placement. Place again or drive to cancel.":robotSetup.turret?"Turret tracking the hive. Stop moving and wait for Ready, then press Shoot.":"Lining up the hive. Aim again or drive to cancel. Wait for Ready, then press Shoot.":selected?.shotStatus==="blocked"?selected.shotTarget==="flower"?"No clear flower placement. Move within 0.95 m of a flower with space and try again.":"No clear hive shot from here. Move toward the outward-facing OPEN cell and aim again.":"Aim lines up the hive without firing. Shoot releases one ball; without Aim, it uses manual power and the current shooter direction."}</p>
+        <p role="status" data-testid="aim-status">{selected?.shotStatus==="ready"?"Ready to shoot. Press Shoot to release one ball.":selected?.shotStatus==="aiming"?selected.shotTarget==="flower"?"Lining up flower placement. Place again or drive to cancel.":robotSetup.turret?"Turret tracking the hive. Stop moving and wait for Ready, then press Shoot.":"Lining up the hive. Aim again or drive to cancel. Wait for Ready, then press Shoot.":selected?.shotStatus==="blocked"?selected.shotTarget==="flower"?"No clear flower placement. Move within 0.95 m of a flower with space and try again.":robotSetup.turret?"No clear hive shot. Move toward the outward-facing OPEN cell; the turret will retry automatically.":"No clear hive shot from here. Move toward the outward-facing OPEN cell and aim again.":"Aim lines up the hive without firing. Shoot releases one ball; without Aim, it uses manual power and the current shooter direction."}</p>
         {aimingAtHive&&selected?.shotSpeed!==undefined&&<p>Calculated launch speed: {selected.shotSpeed.toFixed(2)} m/s</p>}
         <p className="bio-help">Place in flower aims a short arc through the nearest flower's top using the configured placement side. Turn intake off to avoid retrieving pollen again. Early nectar placement still incurs the match penalty.</p>
         <label>Manual launch speed: {speed.toFixed(2)} m/s<input type="range" disabled={!!aimingAtHive} min={2} max={5.8} step={0.01} value={speed} onChange={e=>setSpeed(Number(e.target.value))}/></label>

@@ -6,6 +6,7 @@ import { botInput } from "./bots";
 import { HIVE, hitHive, hivePoint } from "./hive";
 import { SHOOTER, clearHiveShot, planHiveShot, clearFlowerShot, planFlowerShot, type ShotPlan, type FlowerShotPlan } from "./shooting";
 import { validateRobotSetup,sideAngle,shooterHeading,ROBOT_LIMITS } from "./robot";
+import { MATCH_TIME,nectarPlacementOpen } from "./timing";
 import { BALL, DT, HALF, ROBOT_HALF, FLOWER_TOP, FLOWER_MIDDLE, FLOWER_BASE, NEUTRAL, clamp, angle, distance, startingPose,
   type Alliance, type Ball, type Config, type Flower, type GameEvent, type Hive, type Input, type Phase, type Robot, type Snapshot, type MechanismSide } from "./types";
 
@@ -41,6 +42,7 @@ export class Simulation {
   private previousShot = new Map<number, boolean>();
   private previousDeposit = new Map<number, boolean>();
   private previousAim = new Map<number, boolean>();
+  private turretLockOff = new Set<number>();
   private nextIntake = new Map<number, number>();
   private nextShot = new Map<number, number>();
   private aimedShots = new Map<number, {target:"hive"|"flower";autoFire:boolean;started:number;planned:number;readyAt:number;fireUntil:number;plan:ShotPlan|FlowerShotPlan|null}>();
@@ -121,6 +123,7 @@ export class Simulation {
     const aimingFlower=this.aimedShots.get(id)?.target==="flower";
     if((aimingFlower?!input.aimFlower:!input.aimHive)||input.turretTurn||((!robot.setup.turret||aimingFlower)&&(input.x||input.y||input.turn)))this.cancelShot(robot);
     const previous=this.commands.get(id),enabled=input.aimHive===true||input.aimFlower===true;
+    if(robot.setup.turret&&input.aim===false&&input.aimHive===false)this.turretLockOff.add(id);
     // Preserve one pending edge if a network packet contains a press and its
     // release arrives before the next fixed step. Neutral/disabled input clears it.
     const shootEdge=enabled&&((input.shoot===true&&!previous?.input.shoot)||previous?.shootEdge===true);
@@ -141,7 +144,7 @@ export class Simulation {
     // G426/G427 model the drive team's floor release independently of robot
     // control. A completed AUTO tip also unlocks nectar; deadlines stop releases.
     if(!["auto","transition","teleop","practice"].includes(this.phase)) return false;
-    const free=this.phase==="practice" || this.tick>= (30+8+60)*60;
+    const free=nectarPlacementOpen(this.config.timed,this.tick);
     if(!free && this.credits[alliance]<=0)return false;
     const b=this.balls.find(b=>b.kind===alliance&&b.location==="reserve");
     if(!b)return false;
@@ -200,10 +203,18 @@ export class Simulation {
       this.previousAim.set(r.id,input.aim===true);
       // An explicit aim field opts into separate controls. Older clients retain
       // their one-press shot behavior during a rolling website/service update.
-      if((input.aimHive&&(aimEdge||(input.aim===undefined&&shotEdges.has(r.id))))||depositEdge) {
-        if(this.aimedShots.has(r.id))this.cancelShot(r);
-        else if(r.inventory.length&&((r.setup.turret&&!depositEdge)||(!input.x&&!input.y&&!input.turn))){
-          const target=depositEdge?"flower":"hive";
+      const automaticTurret=!!humanInput&&r.setup.turret&&input.aim!==undefined;
+      if(automaticTurret&&aimEdge){
+        if(this.turretLockOff.has(r.id))this.turretLockOff.delete(r.id);else this.turretLockOff.add(r.id);
+        this.cancelShot(r);
+      }
+      // Fresh driver controls arm automatic tracking, never automatic firing.
+      // Manual turret motion temporarily overrides it; flower placement takes priority.
+      const acquireTurret=automaticTurret&&input.aimHive&&!this.turretLockOff.has(r.id)&&!input.turretTurn&&!depositEdge&&!this.aimedShots.has(r.id);
+      if((input.aimHive&&((!automaticTurret&&aimEdge)||(input.aim===undefined&&shotEdges.has(r.id))))||depositEdge||acquireTurret) {
+        const target=depositEdge?"flower":"hive";
+        if(this.aimedShots.get(r.id)?.target===target)this.cancelShot(r);
+        else if((r.inventory.length||acquireTurret)&&((r.setup.turret&&!depositEdge)||(!input.x&&!input.y&&!input.turn))){
           this.aimedShots.set(r.id,{target,autoFire:!!depositEdge||input.aim===undefined,started:this.tick,planned:-Infinity,readyAt:-Infinity,fireUntil:-Infinity,plan:null});r.shotStatus="aiming";r.shotTarget=target;
         }
       }
@@ -216,13 +227,13 @@ export class Simulation {
         // settling. Accept that explicit click briefly, with final geometry
         // validation, instead of losing it across worker/WebSocket latency.
         if(!aim.autoFire&&shotEdges.has(r.id)&&this.tick-aim.readyAt<=15)aim.fireUntil=this.tick+15;
-        if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||!r.inventory.length||(aim.autoFire&&this.tick-aim.started>timeoutTicks)){this.cancelShot(r);}
+        if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||(!r.inventory.length&&!(automaticTurret&&aim.target==="hive"))||(aim.autoFire&&this.tick-aim.started>timeoutTicks)){this.cancelShot(r);}
         else {
           const target=r.alliance==="red"?0:1,h=this.hives[target];
           const waiting=aim.target==="hive"&&h.tipping;
           if(waiting){aim.plan=null;aim.planned=-Infinity;}
           else if(this.tick-aim.planned>=12){
-            const kind=this.balls[r.inventory[0]].kind,geometry=aim.target+this.hives.map(hive=>hive.angle).join(":")+(aim.target==="flower"?this.flowers.map(f=>f.balls.join(",")).join(":"):""),cached=this.shotPlans.get(r.id);
+            const kind=this.balls[r.inventory[0]]?.kind??"pollen",geometry=aim.target+this.hives.map(hive=>hive.angle).join(":")+(aim.target==="flower"?this.flowers.map(f=>f.balls.join(",")).join(":"):""),cached=this.shotPlans.get(r.id);
             // Reuse recent blocked-shot searches while the pose and hive geometry are unchanged.
             if(cached&&this.tick-cached.tick<12&&cached.kind===kind&&cached.geometry===geometry&&distance(cached,r)<0.03)aim.plan=cached.plan;
             else {aim.plan=aim.target==="flower"?planFlowerShot(r,kind,this.hives,this.flowers,this.balls):planHiveShot(r,kind,this.hives,target);this.shotPlans.set(r.id,{tick:this.tick,x:r.x,y:r.y,kind,geometry,plan:aim.plan});}
@@ -275,13 +286,15 @@ export class Simulation {
           if(aim.autoFire||!r.inventory.length)this.cancelShot(r);
           else {aim.plan=null;aim.planned=-Infinity;aim.fireUntil=-Infinity;r.shotStatus="aiming";}
         }
-      } else if(active&&!aim&&(!input.aimHive||input.aim!==undefined)&&input.shoot&&shotEdges.has(r.id)&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0))this.shoot(r,input.speed);
+      } else if(active&&!aim&&(!input.aimHive||input.aim!==undefined)
+        &&!(r.setup.turret&&input.aimHive&&input.aim!==undefined&&!this.turretLockOff.has(r.id)&&!input.turretTurn)
+        &&input.shoot&&shotEdges.has(r.id)&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0))this.shoot(r,input.speed);
     }
     for(let i=0;i<2;i++)this.updateHive(i);
     // A simulated drive-team member retries blocked releases and introduces the
     // remaining reserve in the final minute. Practice only auto-releases credits.
     if(this.tick%15===0)for(const alliance of ["red","blue"] as const)
-      if(this.credits[alliance]>0||(this.config.timed&&this.tick>=98*60))this.release(alliance);
+      if(this.credits[alliance]>0||(this.config.timed&&nectarPlacementOpen(true,this.tick)))this.release(alliance);
     if(active)this.contactRules(applied);
     this.tick++;
     if(this.config.timed)this.advanceClock();
@@ -332,7 +345,7 @@ export class Simulation {
         const f=this.flowers[i],stack=flowerStack(this.balls,f.balls),top=stack.at(-1)?.top??FLOWER_BASE;
         if(distance(p,f)<=0.0508-radius&&top<FLOWER_TOP) {
           this.store(b,"flower",i);
-          if(b.kind!=="pollen"&&this.config.timed&&this.tick<(30+8+60)*60){
+          if(b.kind!=="pollen"&&!nectarPlacementOpen(this.config.timed,this.tick)){
             this.tally[b.kind].majorFouls++;this.event("foul","G410: early "+b.kind+" flower nectar; 20 points to opponent.");
           }
           return;
@@ -402,13 +415,14 @@ export class Simulation {
     }
   }
   private advanceClock() {
-    if(this.tick===30*60) {
+    if(this.tick===MATCH_TIME.autoEnd*60) {
       for(const r of this.robots){if(Math.abs(r.x)+hull(r)<HALF-0.025&&Math.abs(r.y)+hull(r)<HALF-0.025)this.tally[r.alliance].leave++;if(parked(r))this.tally[r.alliance].autoPark++;}
       this.phase="transition";this.commands.clear();this.previousShot.clear();this.event("phase","AUTO ended. Controls disabled for transition.");
       for(const r of this.robots)this.cancelShot(r);
     }
-    if(this.tick===38*60){this.phase="teleop";this.event("phase","TELEOP started.");}
-    if(this.tick===158*60){
+    if(this.tick===MATCH_TIME.teleopStart*60){this.phase="teleop";this.event("phase","TELEOP started.");}
+    if(this.tick===MATCH_TIME.nectarStart*60)this.event("phase","Final minute: nectar flowers are open and remaining reserve nectar may enter play.");
+    if(this.tick===MATCH_TIME.end*60){
       for(const r of this.robots)if(parked(r))this.tally[r.alliance].teleopPark++;
       this.phase="settling";this.event("phase","Time expired. Waiting for scoring elements to settle.");
       for(const r of this.robots)this.cancelShot(r);
@@ -417,7 +431,7 @@ export class Simulation {
       const moving=this.balls.some(b=>b.location==="air"||(b.location==="floor"&&Math.hypot(b.vx,b.vy)>0.025))||this.hives.some(h=>h.tipping);
       this.settledTicks=moving?0:this.settledTicks+1;
       if(this.settledTicks>=30){this.phase="finished";this.event("phase","Final score.");}
-      else if(this.tick>=168*60){this.interrupt();this.event("warning","Scoring elements did not settle; match result is incomplete.");}
+      else if(this.tick>=MATCH_TIME.settleEnd*60){this.interrupt();this.event("warning","Scoring elements did not settle; match result is incomplete.");}
     }
   }
   snapshot():Snapshot {
@@ -431,7 +445,7 @@ export class Simulation {
       tally[alliance].garden=balls.filter(b=>b.location==="floor"&&inZone(b,ZONES[alliance].garden,BALL[b.kind].diameter/2)).length;
     }
     tally.flowers=this.flowers.map(f=>flowerStack(this.balls,f.balls).filter(s=>s.scoring).map(s=>this.balls[s.id].kind));
-    const end=this.phase==="auto"?30:this.phase==="transition"?38:this.phase==="teleop"?158:this.tick*DT;
+    const end=this.phase==="auto"?MATCH_TIME.autoEnd:this.phase==="transition"?MATCH_TIME.teleopStart:this.phase==="teleop"?MATCH_TIME.end:this.tick*DT;
     return {version:1,tick:this.tick,phase:this.phase,remaining:Math.max(0,end-this.tick*DT),robots:structuredClone(this.robots),balls,flowers:structuredClone(this.flowers),hives:structuredClone(this.hives),tally,score:scoreMatch(tally),events:[...this.events],credits:{...this.credits}};
   }
 }

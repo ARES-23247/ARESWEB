@@ -72,6 +72,9 @@ test("BIOBUZZ standard gamepad drives, toggles, shoots, places, switches view an
   await page.evaluate(()=>{(window as unknown as {BIOBUZZ_TEST_PAD:Pad}).BIOBUZZ_TEST_PAD.axes[1]=0;});
   await page.getByRole("button",{name:"Reset local field",exact:true}).click();
   await button(4,true);await expect(page.getByTestId("turret-angle")).not.toContainText("0.0°");await button(4,false);
+  await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
+  await button(6,true);await expect(page.getByRole("button",{name:"Aim",exact:true})).toBeVisible();
+  await button(6,false);await page.waitForTimeout(100);
   await button(6,true);await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
   await page.waitForTimeout(150);await expect(page.getByTestId("inventory")).toContainText("4/4");await button(6,false);
   const intake=page.getByRole("checkbox",{name:"Run intake",exact:true});
@@ -173,7 +176,7 @@ test("BIOBUZZ saves turret and speed settings and aims without turning the chass
   await form.getByRole("button",{name:"Apply configuration and reset",exact:true}).click();
   await expect(page.getByTestId("robot-motion")).toHaveText("Turret: on · Chassis 0.80 m/s · Turn 90°/s");
   const heading=(await page.getByTestId("robot-position").innerText()).split(" · ").at(-1);
-  await page.getByRole("button",{name:"Aim",exact:true}).click();
+  // A configured turret acquires the hive by itself; Aim is only needed to toggle it.
   await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
   await expect(page.getByTestId("inventory")).toContainText("4/4");
   expect((await page.getByTestId("robot-position").innerText()).split(" · ").at(-1)).toBe(heading);
@@ -197,6 +200,26 @@ test("BIOBUZZ saves turret and speed settings and aims without turning the chass
   await expect(editor.getByRole("checkbox",{name:"Shooter turret",exact:true})).toBeChecked();
   await editor.getByRole("button",{name:"Export for ARES Studio",exact:true}).click();
   await expect(editor.getByRole("status")).toContainText("default drive speeds");
+});
+
+test("BIOBUZZ exposes the timer, nectar rule window, and gamepad controls beside the field",async({page},testInfo)=>{
+  await page.goto("/biobuzz/simulator");
+  await expect(page.getByTestId("nectar-window")).toHaveText("Practice · nectar flowers open");
+  await expect(page.getByText(/Standard gamepad: left stick drive/)).toContainText("left trigger aim/cancel aim · right trigger shoot");
+  await page.getByRole("button",{name:"Start timed match",exact:true}).click();
+  await expect(page.getByRole("timer",{name:"Match timer"})).toContainText("AUTO");
+  await expect(page.getByTestId("nectar-window")).toHaveText("Nectar flowers locked");
+  await expect(page.getByTestId("nectar-countdown")).toContainText("at TELEOP 1:00");
+  await expect(page.getByTestId("nectar-countdown")).toContainText("20-point penalty");
+  await page.getByRole("button",{name:"Pause",exact:true}).click();
+  await expect(page.getByRole("timer")).toContainText("PAUSED");
+  // Pause travels through the worker; wait for its final in-flight snapshot.
+  await expect.poll(async()=>{const before=await page.getByRole("timer").innerText();await page.waitForTimeout(150);return before===await page.getByRole("timer").innerText();}).toBe(true);
+  await page.getByRole("timer").scrollIntoViewIfNeeded();
+  await mkdir("scratch/biobuzz",{recursive:true});await page.screenshot({path:`scratch/biobuzz/match-timer-${testInfo.project.name}.png`});
+  await page.getByRole("button",{name:"Return to untimed practice",exact:true}).click();
+  await expect(page.getByTestId("nectar-window")).toHaveText("Practice · nectar flowers open");
+  await expect(page.getByTestId("inventory")).toContainText("4/4");
 });
 
 test("BIOBUZZ solo driving, native auto export, and an actual hive tip",async({page},testInfo)=>{

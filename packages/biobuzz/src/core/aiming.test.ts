@@ -74,10 +74,10 @@ describe("turret and drivetrain configuration",()=>{
     for(const turret of [1,"yes",null])expect(()=>validateRobotSetup({...DEFAULT_ROBOT,turret})).toThrow();
     expect(validateRobotSetup({...DEFAULT_ROBOT,turret:false,driveSpeed:.25,turnSpeed:Math.PI/6})).toMatchObject({turret:false,driveSpeed:.25});
   });
-  it.each(["front","back"] as const)("aims the %s-home turret without rotating the chassis and scores only on Shoot",shooter=>{
+  it.each(["front","back"] as const)("automatically locks the %s-home turret without an Aim press and scores only on Shoot",shooter=>{
     const s=sim({...DEFAULT_ROBOT,shooter,turret:true}),r=s.robots[0];run(s,30);
     const start={x:r.x,y:r.y,heading:r.heading},ball=s.balls[r.inventory[0]];
-    run(s,240,i=>({...controls,aim:i===0}));
+    run(s,240);
     expect(r.shotStatus).toBe("ready");expect(r.inventory).toHaveLength(4);expect(r.turretAngle).not.toBeCloseTo(0,1);
     expect(r.heading).toBeCloseTo(start.heading,5);expect(r.x).toBeCloseTo(start.x,5);expect(r.y).toBeCloseTo(start.y,5);
     run(s,120,i=>({...controls,shoot:i===0}));expect(ball.location).toBe("hive");expect(r.inventory).toHaveLength(3);
@@ -86,21 +86,60 @@ describe("turret and drivetrain configuration",()=>{
     const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0],start=r.heading;
     // Clear the starting wall so chassis rotation can be checked without contact.
     s["robotBodies"].get(0)!.setTransform({x:-1.1,y:1.35},start);s.step();
-    run(s,60,i=>({...controls,aim:i===0,turn:.15}));
+    run(s,60,()=>({...controls,turn:.15}));
     expect(Math.abs(angle(r.heading-start))).toBeGreaterThan(.2);expect(r.inventory).toHaveLength(4);
     run(s,180);expect(r.shotStatus).toBe("ready");
     const previous=r.turretAngle!;run(s,10,()=>({...controls,turretTurn:.5}));
     expect(r.shotStatus).toBeUndefined();expect(angle(r.turretAngle!-previous)).toBeCloseTo(.5*Math.PI*10/60,5);
     const before=r.turretAngle;run(s,30,()=>({...NEUTRAL}));expect(r.turretAngle).toBe(before);
+    run(s,240);expect(r.shotStatus).toBe("ready");expect(r.inventory).toHaveLength(4);
   });
   it("launches manual shots along the bounded turret angle and leaves flower placement on the chassis",()=>{
     const s=sim({...DEFAULT_ROBOT,turret:true,deposit:"back"}),r=s.robots[0];
     run(s,40,()=>({...controls,turretTurn:1}));const heading=shooterHeading(r),ball=s.balls[r.inventory[0]];
-    run(s,1,()=>({...controls,shoot:true}));
+    run(s,1,()=>({...controls,aimHive:false,shoot:true}));
     expect(ball.x-r.x).toBeCloseTo(Math.cos(heading)*.28,5);expect(ball.y-r.y).toBeCloseTo(Math.sin(heading)*.28,5);
     const flowerBall=s.balls[r.inventory[0]],turretAngle=r.turretAngle;
     run(s,300,i=>({...controls,deposit:i===0}));
     expect(flowerBall.location).toBe("flower");expect(r.turretAngle).toBe(turretAngle);
+  });
+  it("keeps automatic lock cancelled until Aim is pressed again, including after manual power",()=>{
+    const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0];run(s,240);expect(r.shotStatus).toBe("ready");
+    run(s,240,i=>({...controls,aim:i===0}));expect(r.shotStatus).toBeUndefined();expect(r.inventory).toHaveLength(4);
+    run(s,240,i=>({...controls,aim:i===0}));expect(r.shotStatus).toBe("ready");
+    run(s,30,()=>({...controls,aimHive:false}));expect(r.shotStatus).toBeUndefined();
+    run(s,240,i=>({...controls,aim:i===0}));expect(r.shotStatus).toBe("ready");
+  });
+  it("places a flower while locked, then automatically reacquires the hive without firing",()=>{
+    const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0],ball=s.balls[r.inventory[0]];
+    run(s,240);expect(r.shotStatus).toBe("ready");
+    run(s,600,i=>({...controls,deposit:i===0}));
+    expect(ball.location).toBe("flower");expect(r.shotTarget).toBe("hive");expect(r.shotStatus).toBe("ready");
+    expect(r.inventory).toHaveLength(3);
+  });
+  it.each(["neutral","stale","transition","settling","interrupted"])("neutralizes automatic turret tracking on %s",reason=>{
+    const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0];run(s,240);expect(r.shotStatus).toBe("ready");
+    if(reason==="neutral")run(s,30,()=>({...NEUTRAL}));
+    else if(reason==="stale")for(let i=0;i<16;i++)s.step();
+    else if(reason==="interrupted")s.interrupt();
+    else{s.phase=reason as "transition"|"settling";s.step();}
+    expect(r.shotStatus).toBeUndefined();const before=r.turretAngle;
+    for(let i=0;i<10;i++)s.step();expect(r.turretAngle).toBe(before);expect(r.inventory).toHaveLength(4);
+  });
+  it("does not fire a manual fallback when automatic lock has no clear trajectory",()=>{
+    const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0];
+    s["robotBodies"].get(0)!.setTransform({x:0,y:.32385},0);s.step();
+    run(s,1,()=>({...controls,shoot:true}));
+    expect(r.shotStatus).toBe("blocked");expect(r.inventory).toHaveLength(4);
+    s["robotBodies"].get(0)!.setTransform({x:-1.1,y:1.35},0);s.step();
+    run(s,240);expect(r.shotStatus).toBe("ready");expect(r.inventory).toHaveLength(4);
+  });
+  it("keeps an empty turret pointed at the hive and becomes ready after collecting a ball",()=>{
+    const s=sim({...DEFAULT_ROBOT,turret:true}),r=s.robots[0],ball=s.balls[r.inventory[0]];
+    for(const id of [...r.inventory]){s["detach"](s.balls[id]);s.balls[id].location="reserve";}
+    run(s,240);expect(r.turretAngle).not.toBe(0);expect(r.shotStatus).toBe("aiming");
+    s["store"](ball,"robot",r.id);run(s,240);
+    expect(r.shotStatus).toBe("ready");expect(r.inventory).toHaveLength(1);
   });
   it.each([.25,1.8,3])("honors a %.2f m/s chassis limit with gradual acceleration",driveSpeed=>{
     const s=sim({...DEFAULT_ROBOT,driveSpeed}),body=s["robotBodies"].get(0)!;
