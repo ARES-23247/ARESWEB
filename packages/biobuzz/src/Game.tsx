@@ -141,15 +141,15 @@ export default function Game({online}:{online?:OnlineClient}) {
   });
   const seatOptions=(["human","easy","standard","empty"] as SeatKind[]).map(kind=><option key={kind} value={kind}>{kind==="empty"?"Empty":kind==="human"?"Human":kind==="easy"?"Easy bot":"Standard bot"}</option>);
   return <section className="bio-page" aria-label="BIOBUZZ simulator">
-    <header><p>ARES Arcade · BIOBUZZ</p><h1>Drive. Collect. Tip the hive.</h1><p>Practice on your own, build an auto, or play a 2v2 match.</p></header>
+    <header><h1>BIOBUZZ simulator</h1><p>Practice, build an auto, or play a 2v2 match.</p></header>
     {error&&<p role="alert" className="bio-error">{error}</p>}
     <div className="bio-grid"><div>
       <div className="bio-card"><div className="bio-score"><span className="red" data-testid="red-score">Red {unavailable?0:state?.score.red.total??0}</span><span className="blue" data-testid="blue-score">Blue {unavailable?0:state?.score.blue.total??0}</span></div>
-      <MatchClock phase={interrupted?"interrupted":waiting?"waiting":state?.phase??"loading"} tick={unavailable?0:state?.tick} remaining={unavailable?0:state?.remaining} paused={paused}/>
-      {!lobby&&<div className="bio-row"><button onClick={()=>reset({...config,timed:true})}>{config.timed?"Restart timed match":"Start timed match"}</button>{config.timed&&<button onClick={()=>reset({...config,timed:false})}>Return to untimed practice</button>}</div>}
+      <MatchClock compact phase={interrupted?"interrupted":waiting?"waiting":state?.phase??"loading"} tick={unavailable?0:state?.tick} remaining={unavailable?0:state?.remaining} paused={paused}/>
       <div className="bio-row" role="group" aria-label="Driver station view">{(["red","blue"] as const).map(alliance=><button key={alliance} aria-pressed={driverView===alliance} onClick={()=>setDriverView(alliance)}>{alliance==="red"?"Red":"Blue"} driver view</button>)}</div>
-      <p className="bio-help">{driverView==="red"?"Red":"Blue"} station at the bottom. Forward drives up the field from this view, regardless of robot heading.</p>
       <Field view={driverView} state={unavailable?null:state} program={editing?program:undefined} onWaypoint={editing&&!session.current&&program.steps.length<128?p=>setProgram({...program,steps:[...program.steps,{kind:"drive",target:p,preset:"safe"}]}):undefined}/>
+      <p className="bio-help">{driverView==="red"?"Red":"Blue"} station at the bottom. Forward drives up the field from this view, regardless of robot heading.</p>
+      {!lobby&&<div className="bio-row"><button onClick={()=>reset({...config,timed:true})}>{config.timed?"Restart timed match":"Start timed match"}</button>{config.timed&&<button onClick={()=>reset({...config,timed:false})}>Return to untimed practice</button>}</div>}
       <div className="bio-row"><button disabled={!!session.current} onClick={()=>setPaused(!paused)}>{paused?"Resume":"Pause"}</button><button onClick={()=>reset(config)}>Reset local field</button><button disabled={!!session.current} onClick={()=>{if(!editing&&!program.steps.length)setProgram({...program,robotSetup:validateRobotSetup(robotSetup)});setEditing(!editing);}}>{editing?"Close auto editor":"Build an auto"}</button></div>
       <p className="bio-help">WASD drive · Q/E turn · J toggle intake · H aim/cancel aim · F shoot · G place in flower/cancel · R release nectar · [ / ] turn turret.</p>
       <p role="status" data-testid="gamepad-status">{gamepadName?gamepadName==="Unsupported controller mapping"?"This controller has no standard browser mapping. Keyboard and touch controls remain available.":"Gamepad connected: "+gamepadName:"Gamepad: connect a controller and press a button to activate it."}</p>

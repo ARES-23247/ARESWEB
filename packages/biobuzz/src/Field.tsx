@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Alliance, AutoProgram, Pose, Snapshot } from "./core/types";
 import { BALL, SIZE } from "./core/types";
-import { hiveOutline } from "./core/hive";
+import { HIVE, hiveOutline, hivePoint } from "./core/hive";
 import { fieldToView, viewToField, viewRotation } from "./core/view";
 import { DEFAULT_ROBOT,sideAngle,shooterHeading } from "./core/robot";
 import backgroundUrl from "../assets/field.png";
@@ -11,6 +11,10 @@ function Contents({state,ids}:{state:Snapshot;ids:number[]}) {
     const count=ids.filter(id=>state.balls[id].kind===kind).length,label=kind==="pollen"?"pollen":kind+" nectar";
     return <span key={kind} role="img" aria-label={`${count} ${label}`}><span className={`bio-ball-symbol bio-ball-${kind}`} aria-hidden="true">{kind==="pollen"?"P":kind==="red"?"R":"B"}</span><span aria-hidden="true">{count}</span></span>;
   })}</span>;
+}
+function Total({count,name,position,view}:{count:number;name:string;position:{x:number;y:number};view:Alliance}) {
+  const p=fieldToView(position,view);
+  return <span className="bio-field-total" role="img" aria-label={`${name}: ${count} balls total`} style={{left:`clamp(12px, ${p.x*100}%, calc(100% - 12px))`,top:`clamp(12px, ${p.y*100}%, calc(100% - 12px))`}}>{count}</span>;
 }
 export default function Field({state,program,onWaypoint,view="red"}:{state:Snapshot|null;program?:AutoProgram;onWaypoint?:(pose:Pose)=>void;view?:Alliance}) {
   const canvas=useRef<HTMLCanvasElement>(null),frame=useRef({previous:state,current:state,at:performance.now()});
@@ -83,6 +87,12 @@ export default function Field({state,program,onWaypoint,view="red"}:{state:Snaps
           }});
         }
         layers.sort((a,b)=>a.z-b.z).forEach(layer=>layer.draw());
+        // Small element identifiers connect the unobstructed field to its counts.
+        ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.lineWidth=3;
+        for(const [i,f] of s.flowers.entries()){
+          const p=point(f.x*.91,f.y*.91),label=`F${i+1}`;
+          ctx.strokeStyle="#111";ctx.strokeText(label,p[0],p[1]+6);ctx.fillStyle="#fff";ctx.fillText(label,p[0],p[1]+6);
+        }
       }
       ctx.fillStyle="#111111dd";ctx.fillRect(c.width/2-135,c.height-27,270,27);
       ctx.fillStyle=colors[view];ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.fillText(view.toUpperCase()+" DRIVER STATION",c.width/2,c.height-7);
@@ -90,22 +100,24 @@ export default function Field({state,program,onWaypoint,view="red"}:{state:Snaps
     }
     id=requestAnimationFrame(draw);return()=>cancelAnimationFrame(id);
   },[program,view]);
-  return <><div className="bio-field-wrap"><canvas ref={canvas} className="bio-field" width={900} height={900} tabIndex={0} aria-label="BIOBUZZ field. W A S D to drive, Q E to turn, J to toggle intake, H to aim, F to shoot, G to place in a flower, brackets to turn the turret. State and waypoint coordinates are available beside the field."
+  return <><div className="bio-field-display"><div className="bio-field-wrap"><canvas ref={canvas} className="bio-field" width={900} height={900} tabIndex={0} aria-label="BIOBUZZ field. W A S D to drive, Q E to turn, J to toggle intake, H to aim, F to shoot, G to place in a flower, brackets to turn the turret. State and waypoint coordinates are available beside the field."
     onClick={event=>{event.currentTarget.focus();if(onWaypoint){const rect=event.currentTarget.getBoundingClientRect();onWaypoint({...viewToField({x:(event.clientX-rect.left)/rect.width,y:(event.clientY-rect.top)/rect.height},view),heading:0});}}}/>
-    {state&&<div className="bio-field-labels" role="group" aria-label="Live field element contents">
+    {state&&<div className="bio-field-totals" role="group" aria-label="Field ball totals">
+      {state.flowers.map((f,i)=><Total key={`flower-${i}`} count={f.balls.length} name={`Flower ${i+1}`} position={f} view={view}/>)}
+      {state.hives.flatMap(h=>h.cells.map((ids,cell)=><Total key={`${h.alliance}-${cell}`} count={ids.length} name={`${h.alliance} hive cell ${cell+1}`} position={hivePoint(h,cell,{x:HIVE.front-HIVE.depth/2,y:0,z:HIVE.bottom+HIVE.height/2})} view={view}/>))}
+    </div>}
+    </div>{state&&<div className="bio-field-counts" role="group" aria-label="Live field element contents">
       {state.flowers.map((f,i)=>{
-        const p=fieldToView(f,view),edge=p.x<.1?"left":p.x>.9?"right":p.y<.1?"top":"bottom";
-        const x=edge==="left"?.025:edge==="right"?.975:p.x,y=edge==="top"?.025:edge==="bottom"?.975:p.y+(edge==="left"?.14:-.14);
-        return <div key={i} role="group" aria-label={`Flower ${i+1} contents`} data-testid={`flower-contents-${i+1}`} className={`bio-element-label bio-element-${edge}`} style={{left:`${x*100}%`,top:`${y*100}%`}}>
+        return <div key={i} role="group" aria-label={`Flower ${i+1} contents`} data-testid={`flower-contents-${i+1}`} className="bio-element-label">
           <strong>Flower {i+1}</strong><Contents state={state} ids={f.balls}/>
         </div>;
       })}
       {state.hives.flatMap(h=>h.cells.map((ids,cell)=>{
-        const p=fieldToView({x:cell===0?-.99:.99,y:h.y},view),name=`${h.alliance==="red"?"Red":"Blue"} C${cell+1}`;
-        return <div key={`${h.alliance}-${cell}`} role="group" aria-label={`${h.alliance} hive cell ${cell+1} contents`} data-testid={`hive-contents-${h.alliance}-${cell+1}`} className={`bio-element-label bio-element-hive bio-element-${h.alliance}`} style={{left:`${p.x*100}%`,top:`${p.y*100}%`}}>
+        const name=`${h.alliance==="red"?"Red":"Blue"} C${cell+1}`;
+        return <div key={`${h.alliance}-${cell}`} role="group" aria-label={`${h.alliance} hive cell ${cell+1} contents`} data-testid={`hive-contents-${h.alliance}-${cell+1}`} className={`bio-element-label bio-element-${h.alliance}`}>
           <strong>{name} · {h.tipping?"Tipping":cell===h.upward?"Open":"Down"}</strong><Contents state={state} ids={ids}/>
         </div>;
       }))}
     </div>}
-  </div><p className="bio-help bio-field-legend">Ball key: P = pollen · R = red nectar · B = blue nectar. C1/C2 = hive cells. Counts show held balls; flower scoring and bottom-to-top stacks are in Field contents.</p></>;
+  </div><p className="bio-help bio-field-legend">Numbers on the field show total balls. F1–F4 = flowers · C1/C2 = hive cells. P = pollen · R = red nectar · B = blue nectar. Scoring and bottom-to-top stacks are in Field contents.</p></>;
 }
