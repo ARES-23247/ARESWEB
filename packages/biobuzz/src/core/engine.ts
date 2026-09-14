@@ -54,8 +54,12 @@ export class Simulation {
 
   constructor(config: Config = { timed: false, seats: ["human", "empty", "empty", "empty"] }) {
     if (config.seats.length !== 4 || config.seats.some(s => !["human","easy","standard","empty"].includes(s))) throw new Error("Select four valid seats.");
+    if (config.matchMode!==undefined&&!['auto','teleop','combined'].includes(config.matchMode)) throw new Error("Select a valid timer mode.");
     this.config = structuredClone(config);
-    this.phase = config.timed ? "auto" : "practice";
+    this.phase = config.timed ? config.matchMode==="teleop"?"teleop":"auto" : "practice";
+    // Keep the competition timeline so TELEOP-only retains the final-minute
+    // nectar window, bot endgame behavior, and scoring boundaries.
+    if(this.phase==="teleop")this.tick=MATCH_TIME.teleopStart*60;
     const solid = this.world.createBody();
     for (const [x,y,w,h] of [[HALF+0.025,0,0.05,HALF*2],[ -HALF-0.025,0,0.05,HALF*2],[0,HALF+0.025,HALF*2,0.05],[0,-HALF-0.025,HALF*2,0.05]]) solid.createFixture(Box(w/2,h/2,Vec2(x,y)), { friction: 0.45 });
     for (const o of FIELD.obstacles) solid.createFixture(Box(o.width/2,o.height/2,Vec2(o.x,o.y)), { friction: 0.45 });
@@ -382,7 +386,7 @@ export class Simulation {
     }
     if(t>=1){
       h.upward=1-h.upward;h.tipping=false;h.tips++;this.credits[h.alliance]++;
-      this.tally[h.alliance][this.config.timed&&this.tick<38*60?"autoTips":"teleopTips"]++;
+      this.tally[h.alliance][this.config.timed&&(this.config.matchMode==="auto"||this.tick<MATCH_TIME.teleopStart*60)?"autoTips":"teleopTips"]++;
       this.event("tip",h.alliance+" hive tipped; opposite cell is open.");
       this.release(h.alliance);
     }
@@ -418,14 +422,15 @@ export class Simulation {
     }
   }
   private advanceClock() {
+    const autoOnly=this.config.matchMode==="auto";
     if(this.tick===MATCH_TIME.autoEnd*60) {
       for(const r of this.robots){if(Math.abs(r.x)+hull(r)<HALF-0.025&&Math.abs(r.y)+hull(r)<HALF-0.025)this.tally[r.alliance].leave++;if(parked(r))this.tally[r.alliance].autoPark++;}
-      this.phase="transition";this.commands.clear();this.previousShot.clear();this.event("phase","AUTO ended. Controls disabled for transition.");
+      this.phase=autoOnly?"settling":"transition";this.commands.clear();this.previousShot.clear();this.event("phase",autoOnly?"AUTO ended. Waiting for scoring elements to settle.":"AUTO ended. Controls disabled for transition.");
       for(const r of this.robots)this.cancelShot(r);
     }
-    if(this.tick===MATCH_TIME.teleopStart*60){this.phase="teleop";this.event("phase","TELEOP started.");}
-    if(this.tick===MATCH_TIME.nectarStart*60)this.event("phase","Final minute: nectar flowers are open and remaining reserve nectar may enter play.");
-    if(this.tick===MATCH_TIME.end*60){
+    if(!autoOnly&&this.tick===MATCH_TIME.teleopStart*60){this.phase="teleop";this.event("phase","TELEOP started.");}
+    if(!autoOnly&&this.tick===MATCH_TIME.nectarStart*60)this.event("phase","Final minute: nectar flowers are open and remaining reserve nectar may enter play.");
+    if(!autoOnly&&this.tick===MATCH_TIME.end*60){
       for(const r of this.robots)if(parked(r))this.tally[r.alliance].teleopPark++;
       this.phase="settling";this.event("phase","Time expired. Waiting for scoring elements to settle.");
       for(const r of this.robots)this.cancelShot(r);
@@ -434,7 +439,7 @@ export class Simulation {
       const moving=this.balls.some(b=>b.location==="air"||(b.location==="floor"&&Math.hypot(b.vx,b.vy)>0.025))||this.hives.some(h=>h.tipping);
       this.settledTicks=moving?0:this.settledTicks+1;
       if(this.settledTicks>=30){this.phase="finished";this.event("phase","Final score.");}
-      else if(this.tick>=MATCH_TIME.settleEnd*60){this.interrupt();this.event("warning","Scoring elements did not settle; match result is incomplete.");}
+      else if(this.tick>=(autoOnly?MATCH_TIME.autoEnd+10:MATCH_TIME.settleEnd)*60){this.interrupt();this.event("warning","Scoring elements did not settle; match result is incomplete.");}
     }
   }
   snapshot():Snapshot {
