@@ -24,7 +24,7 @@ export function validateAuto(value: unknown): AutoProgram {
     if (!step || typeof step !== "object") throw new Error("Invalid auto step.");
     const valid = step.kind === "drive" ? pose(step.target) && ["safe", "balanced"].includes(step.preset)
       : step.kind === "wait" ? Number.isFinite(step.seconds) && step.seconds >= 0 && step.seconds <= 30
-      : step.kind === "intake" ? typeof step.enabled === "boolean"
+      : step.kind === "intake" || step.kind === "lockOn" ? typeof step.enabled === "boolean"
       : step.kind === "shoot" && Number.isInteger(step.count) && step.count >= 1 && step.count <= 4
         && Number.isFinite(step.speed) && step.speed >= 2 && step.speed <= 5.8;
     if (!valid) throw new Error("Invalid auto step.");
@@ -40,6 +40,7 @@ export const ACTIONS = {
 } as const;
 export function nativeAuto(program: AutoProgram, documentId: string) {
   const auto = validateAuto(program);
+  if(auto.steps.some(step=>step.kind==="lockOn"))throw new Error("Lock-on steps can be saved and run in the web simulator. ARES Studio export does not support lock-on steps.");
   const setup=validateRobotSetup(auto.robotSetup);
   if(setup.intakeContents==="pollen")throw new Error("Studio's reference intake collects pollen and nectar. Pollen-only configurations can be saved and replayed in the browser.");
   if(setup.shooter!=="front"||setup.deposit!=="front"||setup.intake!=="front"||setup.turret
@@ -67,7 +68,7 @@ export function nativeAuto(program: AutoProgram, documentId: string) {
     }
     else if (step.kind === "wait") wait(step.seconds);
     else if (step.kind === "intake") action(ACTIONS.intake, step.enabled ? 12 : 0);
-    else {
+    else if (step.kind === "shoot") {
       action(ACTIONS.flywheel, step.speed / 5.8 * 12); wait(0.5);
       for (let i = 0; i < step.count; i++) { action(ACTIONS.transfer, 12); wait(0.12); action(ACTIONS.transfer, 0); wait(0.28); }
       action(ACTIONS.flywheel, 0);

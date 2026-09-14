@@ -14,6 +14,20 @@ function harness(maxRooms=5,persist?:ConstructorParameters<typeof BiobuzzRooms>[
  return {rooms,client,advance,elapse:(ms:number)=>{now+=ms;rooms.step();}};
 }
 describe("BIOBUZZ room authority",()=>{
+ it("accepts auto lock toggles and validates and applies sustained driver controls",()=>{
+  const h=harness(),a=h.client();
+  a.connection.receive({type:"configure",seats:["human","empty","empty","empty"]});
+  const auto={version:1,name:"Lock",alliance:"red",start:{x:-1.1,y:1.6038,heading:-Math.PI/2},steps:[{kind:"lockOn",enabled:true},{kind:"shoot",count:1,speed:2},{kind:"lockOn",enabled:false}]};
+  expect(()=>a.connection.receive({type:"ready",auto:{...auto,steps:[{kind:"lockOn",enabled:"yes"}]}})).toThrow("Invalid auto step");
+  a.connection.receive({type:"ready",auto});a.connection.receive({type:"start"});h.advance(600);
+  const afterAuto=a.last;if(afterAuto?.type!=="snapshot")throw new Error("Expected authoritative snapshot");
+  expect(afterAuto.state.robots[0].inventory).toHaveLength(3);expect(afterAuto.state.hives[0].cells[0]).toHaveLength(4);
+  h.advance(1680);
+  for(let sequence=0;sequence<120;sequence++){
+   a.connection.receive({type:"input",sequence,input:{...NEUTRAL,lockOn:true,aimFlower:true,shoot:true,shootHeld:true,depositHeld:false}});h.advance(2);
+  }
+  expect(a.last).toMatchObject({type:"snapshot",state:{robots:[expect.objectContaining({inventory:[]})]}});h.rooms.close();
+ });
  it("validates and locks each player's own mechanism configuration",()=>{
   const h=harness(),a=h.client(),b=h.client("join",a.session.code),setup={shooter:"back",deposit:"front",intake:"both",intakeContents:"pollen",turret:true,driveSpeed:.8,turnSpeed:Math.PI/2} as const;
   a.connection.receive({type:"configure",seats:["human","empty","human","empty"]});
@@ -27,7 +41,7 @@ describe("BIOBUZZ room authority",()=>{
   expect(()=>b.connection.receive({type:"robot",setup})).toThrow("locked");
   expect(()=>b.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,deposit:"yes"}})).toThrow("Invalid");
   expect(()=>b.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,aimFlower:"yes"}})).toThrow("Invalid");
-  for(const bad of [{aim:"yes"},{turretTurn:Infinity},{turretTurn:2}])expect(()=>b.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,...bad}})).toThrow("Invalid");
+  for(const bad of [{aim:"yes"},{lockOn:"yes"},{lockOn:null},{shootHeld:"yes"},{shootHeld:null},{depositHeld:"yes"},{depositHeld:null},{turretTurn:Infinity},{turretTurn:2}])expect(()=>b.connection.receive({type:"input",sequence:0,input:{...NEUTRAL,...bad}})).toThrow("Invalid");
   b.connection.detach();h.elapse(3001);h.rooms.attach(b.session.roomId,b.session.token,b.peer);h.advance(6);
   expect(a.last).toMatchObject({type:"snapshot",state:{robots:expect.arrayContaining([expect.objectContaining({id:2,controller:"human",setup})])}});h.rooms.close();
  });

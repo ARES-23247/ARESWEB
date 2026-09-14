@@ -51,7 +51,7 @@ test("BIOBUZZ configures rear mechanisms and places through the flower top",asyn
   await expect(page.getByText("Flower 2: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:20000});
   await expect(page.getByTestId("flower-contents-2").getByLabel("5 pollen",{exact:true})).toBeVisible();
   await expect(page.getByTestId("inventory")).toContainText("3/4");
-  await page.getByRole("button",{name:"Aim",exact:true}).click();
+  await page.getByRole("button",{name:"Aim off",exact:true}).click();
   await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot",{timeout:20000});
   await expect(page.getByTestId("inventory")).toContainText("3/4");
   await page.getByRole("button",{name:"Shoot",exact:true}).click();
@@ -153,7 +153,7 @@ test("BIOBUZZ standard gamepad drives, toggles, shoots, places, switches view an
   await page.getByRole("button",{name:"Reset local field",exact:true}).click();
   await button(4,true);await expect(page.getByTestId("turret-angle")).not.toContainText("0.0°");await button(4,false);
   await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
-  await button(6,true);await expect(page.getByRole("button",{name:"Aim",exact:true})).toBeVisible();
+  await button(6,true);await expect(page.getByRole("button",{name:"Aim off",exact:true})).toBeVisible();
   await button(6,false);await page.waitForTimeout(100);
   await button(6,true);await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
   await page.waitForTimeout(150);await expect(page.getByTestId("inventory")).toContainText("4/4");await button(6,false);
@@ -161,9 +161,9 @@ test("BIOBUZZ standard gamepad drives, toggles, shoots, places, switches view an
   await button(0,true);await expect(intake).toBeChecked();
   await page.waitForTimeout(150);await expect(intake).toBeChecked();await button(0,false);
   await button(7,true);await expect(page.getByTestId("inventory")).toContainText("3/4",{timeout:10000});
-  await page.waitForTimeout(150);await expect(page.getByTestId("inventory")).toContainText("3/4");await button(7,false);
+  await expect(page.getByTestId("inventory")).toContainText("0/4");await button(7,false);
   await page.getByRole("button",{name:"Reset local field",exact:true}).click();
-  await button(2,true);await expect(page.getByText("Flower 2: 5 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:10000});await button(2,false);
+  await button(2,true);await expect(page.getByText("Flower 2: 8 pollen / 0 nectar",{exact:true})).toBeVisible({timeout:10000});await button(2,false);
   await button(8,true);await expect(page.getByRole("button",{name:"Blue driver view",exact:true})).toHaveAttribute("aria-pressed","true");await button(8,false);
   await button(0,true);await expect(intake).toBeChecked();await button(0,false);
   await page.evaluate(()=>{(window as unknown as {BIOBUZZ_TEST_PAD:Pad}).BIOBUZZ_TEST_PAD.connected=false;});
@@ -210,7 +210,7 @@ test("BIOBUZZ driver views rotate controls and preserve auto coordinates",async(
 test("BIOBUZZ separates Aim from Shoot and keeps intake toggled",async({page})=>{
   await page.goto("/biobuzz/simulator");
   await expect(page.getByTestId("inventory")).toContainText("4/4");
-  await expect(page.getByRole("button",{name:"Aim",exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Aim off",exact:true})).toBeVisible();
   const intake=page.getByRole("checkbox",{name:"Run intake",exact:true});
   const field=page.locator("canvas.bio-field");
   await field.click();
@@ -218,7 +218,7 @@ test("BIOBUZZ separates Aim from Shoot and keeps intake toggled",async({page})=>
   await expect(intake).toBeChecked();
   const before=await page.getByTestId("robot-position").innerText();
   // Aim remains active after release without firing; Shoot is an independent edge.
-  await page.getByRole("button",{name:"Aim",exact:true}).click();
+  await page.getByRole("button",{name:"Aim off",exact:true}).click();
   await expect(page.getByTestId("aim-status")).toContainText("Ready to shoot");
   await page.waitForTimeout(200);await expect(page.getByTestId("inventory")).toContainText("4/4");
   await page.getByRole("button",{name:"Shoot",exact:true}).click();
@@ -264,7 +264,7 @@ test("BIOBUZZ saves turret and speed settings and aims without turning the chass
   await page.getByRole("button",{name:"Shoot",exact:true}).click();
   await expect(page.getByText("red hive: 0 tips · cell 1 open · 4 balls",{exact:true})).toBeVisible({timeout:10000});
   await expect(page.getByTestId("inventory")).toContainText("3/4");
-  await page.getByRole("button",{name:"Cancel aim",exact:true}).click();
+  await page.getByRole("button",{name:"Aim on",exact:true}).click();
   await page.getByRole("button",{name:"Turret left",exact:true}).click();
   const pose=await page.getByTestId("robot-position").innerText();
   await page.getByRole("button",{name:"Drive forward",exact:true}).click();
@@ -285,7 +285,7 @@ test("BIOBUZZ saves turret and speed settings and aims without turning the chass
 test("BIOBUZZ exposes the timer, nectar rule window, and gamepad controls beside the field",async({page},testInfo)=>{
   await page.goto("/biobuzz/simulator");
   await expect(page.getByRole("timer",{name:"Match timer"})).toContainText("TELEOP");
-  await expect(page.getByText(/Standard gamepad: left stick drive/)).toContainText("left trigger aim/cancel aim · right trigger shoot");
+  await expect(page.getByText(/Standard gamepad: left stick drive/)).toContainText("left trigger toggle aim lock · right trigger hold to shoot");
   await page.getByRole("combobox",{name:"Timer mode",exact:true}).selectOption("combined");
   await page.getByRole("button",{name:"Restart timed match",exact:true}).click();
   await expect(page.getByRole("timer",{name:"Match timer"})).toContainText("AUTO");

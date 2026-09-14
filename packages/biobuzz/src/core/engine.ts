@@ -47,7 +47,7 @@ export class Simulation {
   private nextShot = new Map<number, number>();
   private aimedShots = new Map<number, {target:"hive"|"flower";autoFire:boolean;started:number;planned:number;readyAt:number;fireUntil:number;plan:ShotPlan|FlowerShotPlan|null}>();
   private shotPlans = new Map<number, {tick:number;x:number;y:number;kind:Ball["kind"];geometry:string;plan:ShotPlan|FlowerShotPlan|null}>();
-  private autoState = new Map<number, { index: number; started: number; intake: boolean }>();
+  private autoState = new Map<number, { index: number; started: number; intake: boolean; lockOn:boolean; shots:number }>();
   private pins = new Map<string, { ticks: number; clear: number; start: {x:number;y:number}; otherStart: {x:number;y:number} }>();
   private interfered = new Set<number>();
   private settledTicks = 0;
@@ -77,7 +77,7 @@ export class Simulation {
       body.setUserData(id);
       body.createFixture(Box(ROBOT_HALF,ROBOT_HALF),{density:15/0.45**2,friction:0.45,restitution:0.08});
       this.robotBodies.set(id,body);
-      this.autoState.set(id,{index:0,started:0,intake:false});
+      this.autoState.set(id,{index:0,started:0,intake:false,lockOn:false,shots:0});
     }
     for (let f=0;f<4;f++) for(let j=0;j<4;j++) this.store(this.add("pollen"),"flower",f);
     for(let seat=0;seat<4;seat++) for(let j=0;j<4;j++) {
@@ -123,9 +123,11 @@ export class Simulation {
   }
   command(id:number,input:Input) {
     const robot=this.robots.find(r=>r.id===id);if(!robot)return;
-    if(![input.x,input.y,input.turn,input.speed,input.turretTurn??0].every(Number.isFinite)) {this.commands.delete(id);this.cancelShot(robot);return;}
+    if(![input.x,input.y,input.turn,input.speed,input.turretTurn??0].every(Number.isFinite)) {this.commands.delete(id);if(this.phase!=="auto")this.cancelShot(robot);return;}
     const aimingFlower=this.aimedShots.get(id)?.target==="flower";
-    if((aimingFlower?!input.aimFlower:!input.aimHive)||input.turretTurn||((!robot.setup.turret||aimingFlower)&&(input.x||input.y||input.turn)))this.cancelShot(robot);
+    // Driver packets must not cancel an autonomous routine's actuator state.
+    if(this.phase!=="auto"&&robot.controller==="human"&&((aimingFlower?!input.aimFlower:!(input.lockOn??input.aimHive))||input.turretTurn
+      ||((aimingFlower||(!robot.setup.turret&&!input.lockOn))&&(input.x||input.y||input.turn))||(!robot.setup.turret&&input.lockOn&&input.turn)))this.cancelShot(robot);
     const previous=this.commands.get(id),enabled=input.aimHive===true||input.aimFlower===true;
     if(robot.setup.turret&&input.aim===false&&input.aimHive===false)this.turretLockOff.add(id);
     // Preserve one pending edge if a network packet contains a press and its
@@ -135,7 +137,7 @@ export class Simulation {
     const aimEdge=input.aimHive===true&&((input.aim===true&&!previous?.input.aim)||previous?.aimEdge===true);
     this.commands.set(id,{input:{x:clamp(input.x,-1,1),y:clamp(input.y,-1,1),turn:clamp(input.turn,-1,1),
       speed:clamp(input.speed,2,5.8),intake:input.intake===true,shoot:input.shoot===true,release:input.release===true,aimHive:input.aimHive===true,aimFlower:input.aimFlower===true,deposit:input.deposit===true,
-      ...(input.aim!==undefined?{aim:input.aim===true}:{}),turretTurn:clamp(input.turretTurn??0,-1,1)},tick:this.tick,shootEdge,depositEdge,aimEdge});
+      ...(input.aim!==undefined?{aim:input.aim===true}:{}),...(input.lockOn!==undefined?{lockOn:input.lockOn===true}:{}),...(input.shootHeld!==undefined?{shootHeld:input.shootHeld===true}:{}),...(input.depositHeld!==undefined?{depositHeld:input.depositHeld===true}:{}),turretTurn:clamp(input.turretTurn??0,-1,1)},tick:this.tick,shootEdge,depositEdge,aimEdge});
   }
   private cancelShot(robot:Robot,status?:Robot["shotStatus"]) {
     this.aimedShots.delete(robot.id);robot.shotStatus=status;robot.shotSpeed=undefined;if(!status)robot.shotTarget=undefined;
@@ -164,23 +166,30 @@ export class Simulation {
     const p=this.config.autos?.[r.id],a=this.autoState.get(r.id)!;
     if(!p || a.index>=p.steps.length)return {...NEUTRAL};
     const step=p.steps[a.index],elapsed=(this.tick-a.started)*DT;
-    const result={...NEUTRAL,intake:a.intake};
+    const result:Input={...NEUTRAL,intake:a.intake,lockOn:a.lockOn,aimHive:a.lockOn,aim:false};
     let done=false;
     if(step.kind==="intake"){a.intake=step.enabled;result.intake=a.intake;done=true;}
+    if(step.kind==="lockOn"){a.lockOn=step.enabled;result.lockOn=a.lockOn;result.aimHive=a.lockOn;done=true;}
     if(step.kind==="wait")done=elapsed>=step.seconds;
     if(step.kind==="drive") {
       const d=distance(r,step.target),limit=step.preset==="safe"?0.45:0.8;
       result.x=clamp((step.target.x-r.x)*2,-limit,limit);result.y=clamp((step.target.y-r.y)*2,-limit,limit);
-      result.turn=clamp(angle(step.target.heading-r.heading)*1.5,-0.7,0.7);
-      done=d<0.035&&Math.abs(angle(step.target.heading-r.heading))<0.04;
+      result.turn=a.lockOn&&!r.setup.turret?0:clamp(angle(step.target.heading-r.heading)*1.5,-0.7,0.7);
+      done=d<0.035&&((a.lockOn&&!r.setup.turret)||Math.abs(angle(step.target.heading-r.heading))<0.04);
     }
     if(step.kind==="shoot") {
       result.speed=step.speed;
-      const pulse=elapsed-0.5;
-      result.shoot=pulse>=0&&pulse<step.count*0.4&&pulse%0.4<0.12;
-      done=elapsed>=0.5+step.count*0.4;
+      if(a.lockOn){
+        // Count actual launches; time-based pulses can expire before lock is ready.
+        result.shoot=r.shotStatus==="ready"&&this.tick%2===0;
+        done=a.shots>=step.count||!r.inventory.length;
+      }else{
+        const pulse=elapsed-0.5;
+        result.shoot=pulse>=0&&pulse<step.count*0.4&&pulse%0.4<0.12;
+        done=elapsed>=0.5+step.count*0.4;
+      }
     }
-    if(done){a.index++;a.started=this.tick;if(a.index>=p.steps.length)return {...NEUTRAL};}
+    if(done){a.index++;a.started=this.tick;a.shots=0;if(a.index>=p.steps.length)return {...NEUTRAL};}
     return result;
   }
   step() {
@@ -208,21 +217,25 @@ export class Simulation {
       this.previousDeposit.set(r.id,input.deposit===true);
       const aimEdge=pendingAim||(!humanInput&&input.aim&&!this.previousAim.get(r.id));
       this.previousAim.set(r.id,input.aim===true);
+      const persistent=input.lockOn!==undefined,locked=input.lockOn===true;
+      if(persistent)input={...input,aimHive:locked,aim:false};
       // An explicit aim field opts into separate controls. Older clients retain
       // their one-press shot behavior during a rolling website/service update.
-      const automaticTurret=!!humanInput&&r.setup.turret&&input.aim!==undefined;
+      const automaticTurret=!persistent&&!!humanInput&&r.setup.turret&&input.aim!==undefined;
       if(automaticTurret&&aimEdge){
         if(this.turretLockOff.has(r.id))this.turretLockOff.delete(r.id);else this.turretLockOff.add(r.id);
         this.cancelShot(r);
       }
       // Fresh driver controls arm automatic tracking, never automatic firing.
       // Manual turret motion temporarily overrides it; flower placement takes priority.
-      const acquireTurret=automaticTurret&&input.aimHive&&!this.turretLockOff.has(r.id)&&!input.turretTurn&&!depositEdge&&!this.aimedShots.has(r.id);
-      if((input.aimHive&&((!automaticTurret&&aimEdge)||(input.aim===undefined&&shotEdges.has(r.id))))||depositEdge||acquireTurret) {
-        const target=depositEdge?"flower":"hive";
-        if(this.aimedShots.get(r.id)?.target===target)this.cancelShot(r);
-        else if((r.inventory.length||acquireTurret)&&((r.setup.turret&&!depositEdge)||(!input.x&&!input.y&&!input.turn))){
-          this.aimedShots.set(r.id,{target,autoFire:!!depositEdge||input.aim===undefined,started:this.tick,planned:-Infinity,readyAt:-Infinity,fireUntil:-Infinity,plan:null});r.shotStatus="aiming";r.shotTarget=target;
+      const repeatDeposit=input.depositHeld&&input.aimFlower&&!this.aimedShots.has(r.id);
+      const acquireTurret=automaticTurret&&input.aimHive&&!this.turretLockOff.has(r.id)&&!input.turretTurn&&!depositEdge&&!input.depositHeld&&!this.aimedShots.has(r.id);
+      const acquireLock=locked&&!input.turretTurn&&(r.setup.turret||!input.turn)&&!depositEdge&&!input.depositHeld&&!this.aimedShots.has(r.id);
+      if((!persistent&&input.aimHive&&((!automaticTurret&&aimEdge)||(input.aim===undefined&&shotEdges.has(r.id))))||depositEdge||repeatDeposit||acquireTurret||acquireLock) {
+        const target=depositEdge||repeatDeposit?"flower":"hive";
+        if(this.aimedShots.get(r.id)?.target===target){if(input.depositHeld===undefined||target!=="flower")this.cancelShot(r);}
+        else if((r.inventory.length||acquireTurret||acquireLock)&&(acquireLock||(r.setup.turret&&target!=="flower")||(!input.x&&!input.y&&!input.turn))){
+          this.aimedShots.set(r.id,{target,autoFire:target==="flower"||input.aim===undefined,started:this.tick,planned:-Infinity,readyAt:-Infinity,fireUntil:-Infinity,plan:null});r.shotStatus="aiming";r.shotTarget=target;
         }
       }
       const aim=this.aimedShots.get(r.id);
@@ -233,8 +246,8 @@ export class Simulation {
         // A snapshot can still show Ready while the next trajectory check is
         // settling. Accept that explicit click briefly, with final geometry
         // validation, instead of losing it across worker/WebSocket latency.
-        if(!aim.autoFire&&shotEdges.has(r.id)&&this.tick-aim.readyAt<=15)aim.fireUntil=this.tick+15;
-        if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||(!r.inventory.length&&!(automaticTurret&&aim.target==="hive"))||(aim.autoFire&&this.tick-aim.started>timeoutTicks)){this.cancelShot(r);}
+        if(!aim.autoFire&&input.shootHeld===undefined&&shotEdges.has(r.id)&&this.tick-aim.readyAt<=15)aim.fireUntil=this.tick+15;
+        if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||(!r.inventory.length&&!((automaticTurret||locked)&&aim.target==="hive"))||(aim.autoFire&&this.tick-aim.started>timeoutTicks)){this.cancelShot(r);}
         else {
           const target=r.alliance==="red"?0:1,h=this.hives[target];
           const waiting=aim.target==="hive"&&h.tipping;
@@ -246,12 +259,14 @@ export class Simulation {
             else {aim.plan=aim.target==="flower"?planFlowerShot(r,kind,this.hives,this.flowers,this.balls):planHiveShot(r,kind,this.hives,target);this.shotPlans.set(r.id,{tick:this.tick,x:r.x,y:r.y,kind,geometry,plan:aim.plan});}
             aim.planned=this.tick;
           }
-          if(!waiting&&!aim.plan)this.cancelShot(r,"blocked");
+          if(!waiting&&!aim.plan&&!(locked&&aim.target==="hive"))this.cancelShot(r,"blocked");
           else {
-            r.shotStatus="aiming";r.shotSpeed=aim.plan?.speed;
+            r.shotStatus=!waiting&&!aim.plan?"blocked":"aiming";r.shotSpeed=aim.plan?.speed;
+            const opening=hivePoint(h,h.upward,{x:HIVE.front,y:0,z:HIVE.bottom});
+            const targetHeading=aim.plan?.heading??Math.atan2(opening.y-r.y,opening.x-r.x);
             if(r.setup.turret&&aim.target==="hive") {
-              if(aim.plan)r.turretAngle=angle((r.turretAngle??0)+clamp(angle(aim.plan.heading-shooterHeading(r)),-ROBOT_LIMITS.turretSpeed*DT,ROBOT_LIMITS.turretSpeed*DT));
-            }else input={...input,x:0,y:0,turn:aim.plan?clamp(angle(aim.plan.heading-sideAngle(aim.target==="flower"?r.setup.deposit:r.setup.shooter)-r.heading)*1.5,-0.8,0.8):0};
+              if(aim.plan||locked)r.turretAngle=angle((r.turretAngle??0)+clamp(angle(targetHeading-shooterHeading(r)),-ROBOT_LIMITS.turretSpeed*DT,ROBOT_LIMITS.turretSpeed*DT));
+            }else input={...input,x:locked&&aim.target==="hive"?input.x:0,y:locked&&aim.target==="hive"?input.y:0,turn:aim.plan||locked?clamp(angle(targetHeading-sideAngle(aim.target==="flower"?r.setup.deposit:r.setup.shooter)-r.heading)*1.5,-0.8,0.8):0};
           }
         }
       }
@@ -288,14 +303,14 @@ export class Simulation {
         &&("flower" in aim.plan?clearFlowerShot(r,this.balls[r.inventory[0]].kind,{...aim.plan,heading},this.hives,this.flowers[aim.plan.flower],body.getLinearVelocity()):clearHiveShot(r,this.balls[r.inventory[0]].kind,{...aim.plan,heading},this.hives,r.alliance==="red"?0:1,body.getLinearVelocity()))){
         r.shotStatus="ready";
         aim.readyAt=this.tick;
-        if(aim.autoFire||aim.fireUntil>=this.tick){
+        if(aim.autoFire||aim.fireUntil>=this.tick||input.shootHeld){
           this.shoot(r,aim.plan.speed,aim.plan.elevation,side,aim.target!=="flower");
           if(aim.autoFire||!r.inventory.length)this.cancelShot(r);
           else {aim.plan=null;aim.planned=-Infinity;aim.fireUntil=-Infinity;r.shotStatus="aiming";}
         }
-      } else if(active&&!aim&&(!input.aimHive||input.aim!==undefined)
+      } else if(active&&!aim&&!input.lockOn&&!input.depositHeld&&(!input.aimHive||input.aim!==undefined)
         &&!(r.setup.turret&&input.aimHive&&input.aim!==undefined&&!this.turretLockOff.has(r.id)&&!input.turretTurn)
-        &&input.shoot&&shotEdges.has(r.id)&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0))this.shoot(r,input.speed);
+        &&(input.shootHeld||(input.shootHeld===undefined&&input.shoot&&shotEdges.has(r.id)))&&r.inventory.length&&this.tick>=(this.nextShot.get(r.id)??0))this.shoot(r,input.speed);
     }
     for(let i=0;i<2;i++)this.updateHive(i);
     // A simulated drive-team member retries blocked releases and introduces the
@@ -322,6 +337,8 @@ export class Simulation {
     this.airborne(b,r.x+Math.cos(a)*SHOOTER.offset,r.y+Math.sin(a)*SHOOTER.offset,SHOOTER.height,
       Math.cos(a)*speed*Math.cos(elevation)+v.x,Math.sin(a)*speed*Math.cos(elevation)+v.y,speed*Math.sin(elevation));
     this.nextShot.set(r.id,this.tick+20);this.event("shot","Robot "+(r.id+1)+" launched "+b.kind+".");
+    const auto=this.autoState.get(r.id);
+    if(this.phase==="auto"&&auto&&this.config.autos?.[r.id]?.steps[auto.index]?.kind==="shoot")auto.shots++;
   }
   private fly(b:Ball) {
     const old={x:b.x,y:b.y,z:b.z},radius=BALL[b.kind].diameter/2;
