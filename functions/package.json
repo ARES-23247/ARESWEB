@@ -24,7 +24,7 @@
     "express-rate-limit": "^8.7.0",
     "firebase-admin": "^14.3.0",
     "firebase-functions": "^7.3.2",
-    "google-auth-library": "^10.9.1",
+    "google-auth-library": "^11.0.2",
     "planck": "^1.4.2",
     "sharp": "0.35.4",
     "ws": "^8.18.3",
