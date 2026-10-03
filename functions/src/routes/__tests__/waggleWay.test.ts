@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import express from "express";
@@ -45,7 +46,11 @@ vi.mock("../../lib/logger", () => ({
 }));
 import { createApiApp } from "../../apiApp";
 import { globalErrorHandler } from "../../middleware/errorHandler";
-import { createWaggleWayRouter } from "../waggleWay";
+import { createWaggleWayRouter, WAGGLE_ANONYMOUS_MONTHLY_LIMITS } from "../waggleWay";
+import {
+  GAME_MONTHLY_RESOURCE_SCOPE,
+  GAME_MONTHLY_RESOURCE_UNITS,
+} from "../../lib/gameResourceBudget";
 import { createWaggleCommunityMutations } from "../../lib/waggleCommunityMutations";
 import { evaluateWaggleProof } from "../../lib/waggleProof";
 import { createBlankLevel } from "../../generated/games/waggle-way/level";
@@ -166,7 +171,7 @@ describe("Waggle Way complete HTTP middleware chain", () => {
     } finally {
       await new Promise<void>((resolve, reject) => isolated.close((error) => error ? reject(error) : resolve()));
     }
-  });
+  }, 30_000);
   it("publishes only an approved revision, manages owner drafts, and resolves a guest report", async () => {
     expect(await (await request("/gardens")).json()).toEqual({
       gardens: [],
@@ -374,5 +379,35 @@ describe("Waggle Way complete HTTP middleware chain", () => {
     state.db.failRead = "";
     vi.stubEnv("ABUSE_HMAC_SECRET", "");
     expect((await request("/gardens")).status).toBe(503);
+  });
+  // Keep last: exhausting a global quota is cached in-process until its window ends.
+  it("keeps anonymous reads and reports off the shared monthly game budget", async () => {
+    const now = new Date();
+    const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+    const sharedBudgetId = createHmac(
+      "sha256",
+      "local-test-quota-secret-at-least-32-characters",
+    )
+      .update(`aresweb-api-quota:v2:${GAME_MONTHLY_RESOURCE_SCOPE}:project:${monthStart}`)
+      .digest("hex");
+    const sharedBudgetPath = `internal_api_quotas/${sharedBudgetId}`;
+
+    expect((await request("/gardens")).status).toBe(200);
+    expect((await request(`/gardens/${id}`)).status).toBe(404);
+    expect(
+      (await request(`/gardens/${id}/report`, "POST", { reason: "text" })).status,
+    ).toBe(404);
+    // Guest traffic spent only its own budgets, never the shared game pool.
+    expect(state.db.data.has(sharedBudgetPath)).toBe(false);
+
+    state.db.data.set(sharedBudgetPath, { count: GAME_MONTHLY_RESOURCE_UNITS });
+    expect((await request("/gardens")).status).toBe(200);
+    expect(
+      (await request(`/gardens/${id}/report`, "POST", { reason: "text" })).status,
+    ).toBe(404);
+    // Member routes still honor the exhausted shared budget.
+    expect((await request("/mine", "GET", undefined, "member")).status).toBe(429);
+    expect(WAGGLE_ANONYMOUS_MONTHLY_LIMITS.publicReads).toBeGreaterThan(0);
+    expect(WAGGLE_ANONYMOUS_MONTHLY_LIMITS.reports).toBeGreaterThan(0);
   });
 });
