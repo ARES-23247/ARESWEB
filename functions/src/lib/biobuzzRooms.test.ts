@@ -1,5 +1,5 @@
 import { describe,it,expect,vi } from "vitest";
-import { BiobuzzRooms } from "./biobuzzRooms";
+import { BIOBUZZ_LONE_PRIVATE_LOBBY_MS,BIOBUZZ_WAITING_LOBBY_MS,BiobuzzRooms } from "./biobuzzRooms";
 import { NEUTRAL } from "../generated/games/biobuzz/types";
 import type { ServerMessage } from "../generated/games/biobuzz/protocol";
 function harness(maxRooms=5,persist?:ConstructorParameters<typeof BiobuzzRooms>[0]["persist"]){
@@ -106,5 +106,16 @@ describe("BIOBUZZ room authority",()=>{
   for(let i=0;i<59;i++)a.connection.receive({type:"input",sequence:i,input:NEUTRAL});
   expect(()=>a.connection.receive({type:"input",sequence:60,input:NEUTRAL})).toThrow("Too many");
   h.rooms.close();
+ });
+ it("releases a private lobby held by one player sooner than a lobby with guests",()=>{
+  const h=harness(1),a=h.client();
+  h.elapse(BIOBUZZ_LONE_PRIVATE_LOBBY_MS-1000);expect(h.rooms.size).toBe(1);
+  h.elapse(1001);expect(h.rooms.size).toBe(0);expect(a.close).toHaveBeenCalled();
+  expect(()=>h.rooms.attach(a.session.roomId,a.session.token,a.peer)).toThrow("expired");
+  expect(h.client("queue").session.seat).toBe(0);h.rooms.close();
+  const g=harness(1),host=g.client();g.client("join",host.session.code);
+  g.elapse(BIOBUZZ_LONE_PRIVATE_LOBBY_MS+1000);expect(g.rooms.size).toBe(1);
+  g.elapse(BIOBUZZ_WAITING_LOBBY_MS-BIOBUZZ_LONE_PRIVATE_LOBBY_MS);expect(g.rooms.size).toBe(0);
+  expect(BIOBUZZ_LONE_PRIVATE_LOBBY_MS).toBeLessThan(BIOBUZZ_WAITING_LOBBY_MS);
  });
 });

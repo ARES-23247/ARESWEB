@@ -33,7 +33,7 @@ describe("BIOBUZZ deployment bounds",()=>{
   await main(["--validate"]);await main(["--origin"]);await main(["--deploy"]);expect(spawnSync).not.toHaveBeenCalled();
  });
  it("requires launch evidence and rejects identity, quota, budget, and resource drift",()=>{
-  for(const change of [{schemaVersion:2},{admission:{...contract.admission,maxRooms:5}},{runtime:{...contract.runtime,maxInstances:2}},{runtimeServiceAccount:"default"},{secrets:[]},{publicOrigin:"https://evil.example"},{productionEnabled:true,launchVerification:{...contract.launchVerification,targetCapacity:false}}])expect(()=>validateBiobuzzContract({...contract,...change})).toThrow();
+  for(const change of [{schemaVersion:2},{admission:{...contract.admission,maxRooms:5}},{admission:{...contract.admission,perIpHourlyCreates:60}},{admission:{...contract.admission,perIpDailyRequests:4000}},{admission:{maxRooms:1,monthlyRequests:4000,perIpHourlyRequests:60}},{runtime:{...contract.runtime,maxInstances:2}},{runtimeServiceAccount:"default"},{secrets:[]},{publicOrigin:"https://evil.example"},{productionEnabled:true,launchVerification:{...contract.launchVerification,targetCapacity:false}}])expect(()=>validateBiobuzzContract({...contract,...change})).toThrow();
   expect(()=>deploymentArguments(contract,"latest")).toThrow("immutable");
   verifyRevision(contract,state.revision,image);state.revision.spec.template.spec.timeoutSeconds=900;expect(()=>verifyRevision(contract,state.revision,image)).toThrow("contract");
  });

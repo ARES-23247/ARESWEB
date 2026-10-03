@@ -6,7 +6,8 @@ export function validateBiobuzzContract(c){
   const r=c.runtime;
   if(r?.cpu!=="1"||r.memoryMiB!==1024||r.minInstances!==0||r.maxInstances!==1||r.concurrency!==128||r.timeoutSeconds!==600||r.executionEnvironment!=="gen2"||r.requestBasedBilling!==false||r.startupCpuBoost!==false)throw new Error("BIOBUZZ resources exceed the reviewed contract.");
   if(c.runtimeServiceAccount!=="aresweb-biobuzz-runtime@aresfirst-portal.iam.gserviceaccount.com"||JSON.stringify([...c.runtimeProjectRoles].sort())!==JSON.stringify(["roles/datastore.user","roles/firebaseappcheck.tokenVerifier"]))throw new Error("Invalid BIOBUZZ runtime permissions.");
-  if(JSON.stringify(c.secrets)!=='["ABUSE_HMAC_SECRET"]'||c.admission?.maxRooms!==1||c.admission.monthlyRequests!==4000||c.admission.perIpHourlyRequests!==60)throw new Error("Invalid BIOBUZZ admission limits.");
+  const a=c.admission;
+  if(JSON.stringify(c.secrets)!=='["ABUSE_HMAC_SECRET"]'||JSON.stringify(a)!==JSON.stringify({maxRooms:1,monthlyRequests:4000,projectDailyRequests:400,perIpHourlyRequests:60,perIpDailyRequests:120,perIpHourlyCreates:6,perIpDailyCreates:20}))throw new Error("Invalid BIOBUZZ admission limits.");
   if(c.publicOrigin!=="https://aresweb-biobuzz-sim-205869391101.us-central1.run.app"||c.totalWebsiteMonthlyTargetUsd!==100||c.sharedCloudRunSpendingGuardrailUsd!==35)throw new Error("Invalid BIOBUZZ origin or budget.");
   if(c.productionEnabled&&(!c.launchVerification?.cloudRunGuardrail||!c.launchVerification.totalProjectAlerts||!c.launchVerification.targetCapacity))throw new Error("Verify the shared spending guardrail, project billing alerts, and target-runtime capacity before launch.");
   return c;

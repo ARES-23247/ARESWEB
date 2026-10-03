@@ -10,6 +10,10 @@ interface Player { hash:Buffer; ready:boolean; auto:AutoProgram|null; setup:Robo
 interface Room { id:string;code:string;public:boolean;seats:SeatKind[];players:(Player|null)[];host:number;created:number;lastHuman:number;status:Lobby["status"];sim:Simulation|null;ended:number;saved:boolean;saveAttempts:number;lastLobbySecond?:number }
 interface Options { maxRooms:number; socketUrl:string; now?:()=>number; persist?:(roomId:string,state:Snapshot)=>Promise<void> }
 const hash=(token:string)=>createHash("sha256").update(token).digest();
+/** Longest time any room may wait for players before it starts. */
+export const BIOBUZZ_WAITING_LOBBY_MS=180000;
+/** A private room still held by one player releases scarce capacity sooner. */
+export const BIOBUZZ_LONE_PRIVATE_LOBBY_MS=90000;
 export class BiobuzzRooms {
   private rooms=new Map<string,Room>();
   private draining=false;
@@ -110,7 +114,8 @@ export class BiobuzzRooms {
     const now=this.now();
     for(const room of this.rooms.values()){
       if(room.players.some(p=>p?.peer))room.lastHuman=now;
-      if(now-room.lastHuman>30000||room.status==="waiting"&&now-room.created>180000||room.ended&&now-room.ended>30000){this.remove(room);continue;}
+      const waited=now-room.created,lonePrivate=room.status==="waiting"&&!room.public&&room.players.filter(Boolean).length<=1;
+      if(now-room.lastHuman>30000||room.status==="waiting"&&waited>BIOBUZZ_WAITING_LOBBY_MS||lonePrivate&&waited>BIOBUZZ_LONE_PRIVATE_LOBBY_MS||room.ended&&now-room.ended>30000){this.remove(room);continue;}
       for(let seat=0;seat<4;seat++){
         const p=room.players[seat];if(!p)continue;
         if(!p.peer&&now-p.disconnected>=3000)room.sim?.setController(seat,"standard");
