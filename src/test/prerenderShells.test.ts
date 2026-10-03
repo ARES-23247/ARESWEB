@@ -53,4 +53,15 @@ describe("prerendered route shells", () => {
       expect(html.includes('name="robots"')).toBe(metadata.length > 3 && metadata[3] === true);
     }
   });
+
+  it("lists exactly the indexable prerendered routes in the server sitemap", () => {
+    const sitemapSource = readFileSync(resolve(process.cwd(), "functions/src/routes/sitemap.ts"), "utf8");
+    const start = sitemapSource.indexOf("const STATIC_URLS");
+    const staticBlock = sitemapSource.slice(start, sitemapSource.indexOf("] as const;", start));
+    expect(start).toBeGreaterThan(-1);
+    const listed = [...staticBlock.matchAll(/loc: `\$\{BASE_URL\}([^`]*)`/g)].map((match) => match[1]);
+    const indexable = routes.filter((metadata) => metadata[3] !== true).map((metadata) => metadata[0]);
+    expect(new Set(listed).size).toBe(listed.length);
+    expect([...listed].sort()).toEqual([...indexable].sort());
+  });
 });

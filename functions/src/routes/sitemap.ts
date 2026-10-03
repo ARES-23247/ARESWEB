@@ -22,13 +22,19 @@ const NON_PRODUCTION_RECORD_PATTERNS = [
 ] as const;
 
 const STATIC_URLS = [
-  { loc: `${BASE_URL}/biobuzz/score-calculator`, changefreq: "monthly", priority: "0.70" },
   { loc: `${BASE_URL}/`, changefreq: "daily", priority: "1.00" },
   { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.80" },
   { loc: `${BASE_URL}/academy`, changefreq: "weekly", priority: "0.80" },
   { loc: `${BASE_URL}/accessibility`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/arcade`, changefreq: "monthly", priority: "0.60" },
+  { loc: `${BASE_URL}/biobuzz/score-calculator`, changefreq: "monthly", priority: "0.70" },
+  { loc: `${BASE_URL}/biobuzz/simulator`, changefreq: "monthly", priority: "0.70" },
   { loc: `${BASE_URL}/brand`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/blog`, changefreq: "daily", priority: "0.80" },
+  { loc: `${BASE_URL}/buzzello`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/buzzhex`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/buzzle`, changefreq: "monthly", priority: "0.50" },
+  { loc: `${BASE_URL}/buzzle/word-tools`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/calendar`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/docs`, changefreq: "weekly", priority: "0.70" },
   { loc: `${BASE_URL}/finance`, changefreq: "monthly", priority: "0.60" },
@@ -38,6 +44,7 @@ const STATIC_URLS = [
   { loc: `${BASE_URL}/leaderboard`, changefreq: "weekly", priority: "0.50" },
   { loc: `${BASE_URL}/location-morgantown`, changefreq: "monthly", priority: "0.60" },
   { loc: `${BASE_URL}/outreach`, changefreq: "weekly", priority: "0.80" },
+  { loc: `${BASE_URL}/pollen`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.50" },
   { loc: `${BASE_URL}/robotics-west-virginia`, changefreq: "monthly", priority: "0.70" },
   { loc: `${BASE_URL}/robots`, changefreq: "weekly", priority: "0.80" },
