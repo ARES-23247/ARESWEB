@@ -1,5 +1,7 @@
 # Fresh ARESWEB website audit — October 3, 2026
 
+> Follow-up: all seven findings are remediated in source. See [the October 3 remediation record](2026-10-03-audit-remediation.md).
+
 ## Result
 
 Seven confirmed findings: **three medium severity and four low severity**. No high-severity application defect was reproduced. All six findings from the [September 4 audit](2026-09-04-fresh-website-audit.md) are remediated in current source; A01 and A03 were also re-verified against the Firestore emulator.
