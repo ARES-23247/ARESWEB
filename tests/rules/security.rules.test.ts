@@ -11,6 +11,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
+  query,
   runTransaction,
   setDoc,
   updateDoc,
@@ -623,7 +626,8 @@ describe("Firestore zero-trust rules", () => {
       ),
     );
 
-    await assertSucceeds(
+    // chat_sessions is retired: even an authorized owner is denied (B05).
+    await assertFails(
       setDoc(doc(memberDb, "chat_sessions", "member-session"), {
         userId: "member-user",
         messages: [],
@@ -635,6 +639,79 @@ describe("Firestore zero-trust rules", () => {
         { columns: [] },
       ),
     );
+  });
+
+  it("keeps event revisions server-written audit history that members can only read", async () => {
+    await seedAuthorizedUser("revision-member", "member");
+    await seedAuthorizedUser("revision-admin", "admin");
+    await seedDocument("events", "audited-event", {
+      status: "published",
+      isDeleted: 0,
+      title: "Practice",
+    });
+    await seedDocument("events/audited-event/revisions", "server-rev", {
+      title: "Practice",
+      editedBy: "revision-admin",
+      editedByName: "ARES Member",
+      editedByAvatar: "",
+      timestamp: "2026-10-01T12:00:00.000Z",
+    });
+
+    const publicDb = testEnvironment.unauthenticatedContext().firestore();
+    const memberDb = testEnvironment.authenticatedContext("revision-member").firestore();
+    const adminDb = testEnvironment.authenticatedContext("revision-admin").firestore();
+    const revisionsPath = ["events", "audited-event", "revisions"] as const;
+
+    await assertSucceeds(getDoc(doc(memberDb, ...revisionsPath, "server-rev")));
+    await assertSucceeds(
+      getDocs(
+        query(collection(memberDb, ...revisionsPath), orderBy("timestamp", "desc"), limit(50)),
+      ),
+    );
+    await assertFails(getDoc(doc(publicDb, ...revisionsPath, "server-rev")));
+    await assertFails(getDocs(collection(publicDb, ...revisionsPath)));
+
+    for (const db of [memberDb, adminDb]) {
+      await assertFails(
+        setDoc(doc(db, ...revisionsPath, "forged-rev"), {
+          title: "Forged history",
+          editedBy: "revision-admin",
+          editedByName: "ARES Member",
+          editedByAvatar: "",
+          timestamp: "2026-10-02T12:00:00.000Z",
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(db, ...revisionsPath, "server-rev"), { title: "Rewritten history" }),
+      );
+      await assertFails(deleteDoc(doc(db, ...revisionsPath, "server-rev")));
+    }
+  });
+
+  it("denies all browser access to retired collections without a live consumer", async () => {
+    await seedAuthorizedUser("retired-member", "member");
+    await seedAuthorizedUser("retired-admin", "admin");
+    const retiredCollections = ["team_layouts", "judge_access_codes", "orders", "chat_sessions"];
+    for (const name of retiredCollections) {
+      await seedDocument(name, "legacy", {
+        userId: "retired-member",
+        value: "legacy record",
+      });
+    }
+
+    for (const uid of ["retired-member", "retired-admin"]) {
+      const db = testEnvironment.authenticatedContext(uid).firestore();
+      for (const name of retiredCollections) {
+        const existing = doc(db, name, "legacy");
+        await assertFails(getDoc(existing));
+        await assertFails(getDocs(collection(db, name)));
+        await assertFails(
+          setDoc(doc(db, name, `new-${uid}`), { userId: uid, value: "new record" }),
+        );
+        await assertFails(updateDoc(existing, { value: "tampered" }));
+        await assertFails(deleteDoc(existing));
+      }
+    }
   });
 
   it("routes public calendar reads and all event or venue writes through server DTO APIs", async () => {

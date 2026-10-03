@@ -269,7 +269,9 @@ service cloud.firestore {
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
-        allow write: if isAuthorized();
+        // Server-written audit history: only the audited Calendar API (Admin
+        // SDK) records revisions. Browser clients may never forge or erase it.
+        allow create, update, delete: if false;
       }
     }
 
@@ -361,11 +363,10 @@ service cloud.firestore {
       allow write: if hasRole('admin') || hasRole('coach');
     }
 
+    // Retired/unused: no live client or server consumer. Reintroduce with a
+    // validated schema when a feature ships. Admin SDK access is unaffected.
     match /chat_sessions/{sessionId} {
-      // Restrict read/write to the session owner only
-      allow read: if isAuthorized() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthorized() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthorized() && resource.data.userId == request.auth.uid;
+      allow read, write: if false;
     }
 
     // Public partners / sponsors
@@ -520,16 +521,16 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // orders (team store checkout mock orders)
+    // orders: retired/unused. Reintroduce with a validated schema when a
+    // feature ships. Admin SDK access is unaffected.
     match /orders/{orderId} {
-      allow read: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
-      allow write: if false;
+      allow read, write: if false;
     }
 
-    // judge_access_codes
+    // judge_access_codes: retired/unused. Reintroduce with a validated schema
+    // when a feature ships. Admin SDK access is unaffected.
     match /judge_access_codes/{codeId} {
-      allow read: if hasRole('admin') || hasRole('coach') || hasRole('mentor');
-      allow write: if hasRole('admin') || hasRole('coach');
+      allow read, write: if false;
     }
 
     // docs_feedback
@@ -548,9 +549,10 @@ service cloud.firestore {
       allow read: if isAuthorized();
     }
 
-    // team_layouts
+    // team_layouts: retired/unused. Reintroduce with a validated schema when a
+    // feature ships. Admin SDK access is unaffected.
     match /team_layouts/{layoutId} {
-      allow read, write: if isAuthorized();
+      allow read, write: if false;
     }
   }
 }
