@@ -19,7 +19,7 @@
     "@ares/ui": "workspace:*",
     "@ares/game-common": "workspace:*",
     "lucide-react": "^1.41.0",
-    "dompurify": "^3.4.14"
+    "dompurify": "^3.4.16"
   },
   "peerDependencies": {
     "react": "^19.2.0"
