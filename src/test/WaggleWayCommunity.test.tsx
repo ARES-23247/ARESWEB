@@ -149,16 +149,18 @@ describe("community garden selection", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Clover crossing/ }),
     );
-    expect(
-      await screen.findByRole("heading", { name: "Clover crossing" }),
-    ).toHaveFocus();
+    const selectedHeading = await screen.findByRole("heading", {
+      name: "Clover crossing",
+    });
+    await waitFor(() => expect(selectedHeading).toHaveFocus());
     fetcher.mockResolvedValueOnce(
       Response.json({ ...garden, id: "parent", title: "Original" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Original by Oak" }));
-    expect(
-      await screen.findByRole("heading", { name: "Original" }),
-    ).toHaveFocus();
+    const parentHeading = await screen.findByRole("heading", {
+      name: "Original",
+    });
+    await waitFor(() => expect(parentHeading).toHaveFocus());
     fireEvent.click(screen.getByRole("button", { name: "Play this garden" }));
     expect(play).toHaveBeenCalledWith({
       ...garden,

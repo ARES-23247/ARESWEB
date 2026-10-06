@@ -9,7 +9,7 @@ small, declared value change improve one recorded result?
 This lesson keeps those jobs separate. You will trace a SysId safety envelope, then judge one
 invented tuning comparison. You will not move a robot or change a real tuning profile.
 
-The source examples match ARES 17.0.9 and Studio 7.0.10. The links below are pinned to the exact
+The source examples match ARES 19.1.4 and Studio 7.0.65. The links below are pinned to the exact
 monorepo commit used for this lesson.
 
 Complete [Build a Fault Tree and Isolate a Cause](/academy/testing-fault-tree?path=testing-debugging-commissioning),
@@ -46,7 +46,7 @@ mechanical limits, and a student who watches the whole run. This page does not a
 The current shared ARES manager has two routine shapes. A quasistatic test ramps voltage at 1.2
 volts per second. A dynamic test uses a step. The exact direction depends on the mechanism. Every
 shared routine stops after five seconds. Linear, angular, elevator, and arm tests also have travel
-checks. Invalid position, heading, velocity, or time data stops the shared routine.
+checks. Invalid position, heading, velocity, current, or time data stops the shared routine.
 
 FTC calibration logs must match the selected test. The track-width payload includes wheelbase in
 meters after heading. The linear payload carries measured encoder ticks in its third field, not a
@@ -58,10 +58,11 @@ must be new, and the lease sequence must move forward while STOP is selected. Th
 expects a newer valid lease within 500 milliseconds. A changed token, bad lease, expired lease, or
 unknown command disarms calibration and neutralizes its output.
 
-One current limit must stay visible: the FTC and FRC callers do not pass measured current into the
-shared `checkSafety` call. The manager contains a current watchdog, but those callers do not provide
-the current sample needed to use it. Do not count that watchdog as physical protection. The team
-must use verified platform limits and its real safety process.
+One current limit must stay visible. The FTC and FRC callers now pass a cached current reading into
+the shared `checkSafety` call. A missing or invalid reading stops the routine. By default, the
+manager also stops when current stays at or above 40 A for 200 ms. That watchdog only sees the
+reading the caller sends. Do not count it as full physical protection. The team must use verified
+platform limits and its real safety process.
 
 | Check | What the current source does | What this proves |
 | --- | --- | --- |
@@ -72,7 +73,8 @@ must use verified platform limits and its real safety process.
 | Invalid motion sample | Stops the shared routine | The manager failed closed for that sample |
 | More than five seconds | Stops the shared routine | The shared time limit fired |
 | Travel beyond the mechanism limit | Stops the shared routine | The shared travel limit fired |
-| High current | Not supplied by current FTC/FRC callers | Nothing about over-current protection |
+| Missing or invalid current | Stops the shared routine | The caller had no usable current reading |
+| At least 40 A for 200 ms | Stops the shared routine by default | The reported reading crossed a software limit |
 
 ### Part B: judge one tuning result
 
@@ -153,7 +155,7 @@ model, or a tuning recommendation.
 - Is the FTC lease still within its 500 millisecond window?
 - Are position, heading, velocity, and time samples valid?
 - Did you stop at the first failed safety boundary?
-- Did you avoid claiming that the current callers use the manager's current watchdog?
+- Did you avoid treating the manager's current watchdog as full physical protection?
 - Does the parameter have a stable ID, type, unit, bounds, and apply policy?
 - Was exactly one value staged?
 - Were profile and canonical document hashes saved first?
@@ -172,7 +174,7 @@ model, or a tuning recommendation.
 | The lease stops advancing | Stop. The controller disarms after 500 milliseconds and must be armed again. |
 | The enable token changes | Stop. Treat it as a new session boundary and complete a fresh handshake. |
 | A sample is invalid or time moves backward | Stop and fix the data path before another test. |
-| You expected current protection from this manager | Stop. Verify a real platform current limit instead of assuming one. |
+| You expected full current protection from this manager | Stop. Its watchdog sees only the reported reading. Verify a real platform current limit too. |
 | The system has an unresolved fault | Return to fault isolation before tuning. |
 | Two values changed | Roll back and stage one value. |
 | The metric has no unit | Choose a unit-bearing topic and preserve its source. |
@@ -206,7 +208,7 @@ the separate Lead Coach review flow.
 1. Why are SysId and a one-change tuning experiment different jobs?
 2. Why must the runtime advertise a mechanism before Studio starts live SysId?
 3. Why do FTC arming and the continuing 500 millisecond lease solve different problems?
-4. Why can this lesson not claim current protection from the shared watchdog?
+4. Why is the shared current watchdog not full physical protection?
 5. Why is the tuning threshold a percentage rather than a number of seconds?
 6. What makes a candidate run eligible for the current guided workflow?
 7. Why does improved evidence not silently change canonical tuning?

@@ -16,6 +16,7 @@ describe("DriverInputCurveLab", () => {
     expect(shapeDriverAxis(2, 1, 0, "RED", "FIELD_RELATIVE").bounded).toBe(1);
     expect(shapeDriverAxis(0.03, 3, 0, "RED", "FIELD_RELATIVE").final).toBe(0);
     expect(shapeDriverAxis(Number.NaN, -1, Number.NaN, "RED", "FIELD_RELATIVE").final).toBe(0);
+    expect(shapeDriverAxis(Number.NaN, 3, 0.8, "RED", "FIELD_RELATIVE").smoothed).toBe(0);
   });
 
   it("mirrors blue field translation but not robot-relative translation", () => {

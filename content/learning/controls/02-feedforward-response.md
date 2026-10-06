@@ -11,7 +11,7 @@ and [Read a Telemetry Graph Like a Scientist](/academy/read-a-telemetry-graph?pa
 first. You should be able to label units, read a graph, and change one test value at a time.
 
 This lesson has two web activities. The first is an invented control model. The second traces one
-feedforward-only step from ARES 17.0.9. Studio examples match Studio 7.0.10. The source links are
+feedforward-only step from ARES 19.1.4. Studio examples match Studio 7.0.65. The source links are
 pinned to the exact monorepo commit used for this lesson. Neither activity runs a motor or approves
 a robot setting.
 
@@ -104,10 +104,11 @@ These are authentic source values, not invented lesson values. The profile calls
 baseline. That statement does not prove how the values were measured, that they fit another robot,
 or that a web calculation is safe to send to hardware.
 
-The current source also has an unresolved unit question. `SimpleFeedforwardCoeffs` and the `.ares`
-drivebase declaration describe voltage units. `MecanumDriveFeedforward` calls `kS` a normalized
-offset. Its code adds the three terms as a request, multiplies the combined request by `12 ÷ battery
-volts`, and clamps the final duty request from `-1` through `1`.
+The current source also has an unresolved unit question. `SimpleFeedforwardCoeffs` describes
+voltage units. The `.ares` drivebase declaration calls each term a fraction of 12 V.
+`MecanumDriveFeedforward` calls `kS` a normalized offset. Its code adds the three terms as a
+request, multiplies the combined request by `12 ÷ battery volts`, and clamps the final duty request
+from `-1` through `1`.
 
 Those statements do not define one clear voltage contract. Until the ARES source is aligned, this
 lesson calls the runtime results **request units**, not volts. Do not use the web tracer to convert
@@ -162,7 +163,7 @@ include PID feedback or slew limiting.
 8. Reset the tracer before creating your evidence table.
 
 For this checked-in profile, the runtime clamps target wheel speed to about `-1.567` through
-`1.567 m/s`. It also returns zero when the battery input is invalid. The browser coefficient
+`1.567 m/s`. It also returns zero when the battery input is invalid. The browser `kV` and `kA`
 controls use smaller learning bounds than the full source declarations. When you change positive
 `kV`, the tracer also updates the cap with `1 ÷ kV`, matching the controller rule.
 
@@ -174,10 +175,10 @@ From the ARES monorepo root, find the coefficient types, runtime math, and team 
 rg -n "SimpleFeedforwardCoeffs|kS|kV|kA" `
   ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/tuning/FeedforwardCoeffs.kt
 
-rg -n "applyFeedforward|voltageCompensationFactor|finiteClampedPower" `
+rg -n "fun feedforward|nominalLimit|compensation" `
   ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumDriveFeedforward.kt
 
-rg -n "driveFeedforward.kV|maxWheelSpeedMetersPerSecond" `
+rg -n "feedforward.kV|maxWheelSpeedMetersPerSecond" `
   ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumKinematicsController.kt
 
 rg -n "ftc.drive.feedforward" `

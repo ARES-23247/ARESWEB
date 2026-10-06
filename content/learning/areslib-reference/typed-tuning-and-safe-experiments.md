@@ -5,7 +5,7 @@
 ARES typed tuning gives each adjustable value a name, type, unit, range, default, and apply rule.
 It lets a team test a small change without turning every robot constant into a live control. This
 reference explains what may change, when it may change, and how an accepted experiment becomes a
-checked-in profile. It applies to ARES 17.0.9, ARES FTC 17.0.9, and Studio 7.0.10.
+checked-in profile. It applies to ARES 19.1.4, ARES FTC 19.1.5, and Studio 7.0.65.
 
 Read [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Use
 [Run SysId and a Bounded Tuning Experiment](/academy/testing-sysid-tuning?path=testing-debugging-commissioning)
@@ -39,10 +39,10 @@ request nonce. The robot checks the UID, type, bounds, and apply rule. It also c
 consumer code supports the UID. The consumer must return success after placing the value in its
 runtime storage.
 
-The robot then reports the processed nonce and result. If the consumer rejects the value or its
-callback fails, ARES restores the last confirmed value. A timeout means the result is unknown; it
-does not mean the value was accepted. Even an `APPLIED` result changes only the experiment. It does
-not edit the canonical profile.
+The robot then reports the nonce and result together in one acknowledgement. If the consumer
+rejects the value or its callback fails, ARES restores the last confirmed value. A timeout means the
+result is unknown; it does not mean the value was accepted. Even an `APPLIED` result changes only
+the experiment. It does not edit the canonical profile.
 
 After the team compares a baseline and candidate run, a student can build a promotion review. The
 review shows the exact before and after values, evidence, profile hash, reviewer field, and summary.

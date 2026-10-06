@@ -7,7 +7,7 @@ small, readable, and separate from control. This lesson traces the current ARES 
 into the shared FTC telemetry manager. You will model its two rate limits and design one useful
 status line without hiding invalid data.
 
-This lesson applies to the ARES 17.0.9 shared library and ARES FTC 17.0.9 season source. Complete
+This lesson applies to the ARES 19.1.4 shared library and ARES FTC 19.1.5 season source. Complete
 [Telemetry, Control State, and Offline Logs](/academy/telemetry-and-control?path=testing-debugging-commissioning)
 and [Coordinate Subsystems and Fail Safe](/academy/ftc-season-composition-and-safe-lifecycle?path=ftc-robot-with-ares)
 first. No robot is required for the activity.
@@ -33,9 +33,9 @@ is at most `10 Hz`. It uses `RobotClock`, so tests and simulation can use the sa
 robot runtime.
 
 The shared `FtcTelemetryManager` builds Driver Station snapshots no more than once every `250 ms`.
-That is at most `4 Hz`. It offers each accepted snapshot to a queue with room for three. A
-background thread drains accepted snapshots to the newest one before calling the FTC telemetry
-display.
+That is at most `4 Hz`. It puts each new snapshot in one latest-snapshot slot. A newer snapshot
+replaces one that is still waiting. A background thread takes the newest snapshot before calling the
+FTC telemetry display.
 
 These rates are not the robot-control rate. The control loop may run much faster. A skipped display
 update must not skip a sensor read, state update, safety action, or output write.
@@ -81,9 +81,9 @@ observation path. Control still uses current owned state.
 %% aria: Each robot frame updates shared control and safety first. The shared FTC telemetry manager may queue a Driver Station snapshot at its 250 millisecond gate. The season helper then may refresh custom summary fields at its 100 millisecond gate. A background thread sends the newest accepted snapshot while control continues independently.
 flowchart LR
   A["Shared robot update, safety, and outputs"] --> B{"250 ms snapshot gate due?"}
-  B -->|"Yes"| C["Offer built-in and custom snapshot to bounded queue"]
+  B -->|"Yes"| C["Hand built-in and custom snapshot to latest-snapshot slot"]
   B -->|"No"| D["Skip Driver Station snapshot"]
-  C --> E["Background thread drains to newest accepted snapshot"]
+  C --> E["Background thread takes newest snapshot"]
   D --> F{"100 ms season helper gate due?"}
   E --> F
   F -->|"Yes"| G["Copy Redux pose, battery, and power scale"]
@@ -103,8 +103,8 @@ delay, or when a phone screen paints the text.
 4. Find the finite, zero, and low-voltage branches.
 5. Find the `150`-character custom-text limit.
 6. Open the pinned `FtcTelemetryManager.kt` source.
-7. Find the `250 ms` snapshot gate and the queue capacity of three.
-8. Find the non-blocking queue offer and the background drain to the newest accepted snapshot.
+7. Find the `250 ms` snapshot gate and the one latest-snapshot slot.
+8. Find the non-blocking slot handoff and the background thread that takes the newest snapshot.
 9. Open `AresRobot.update` and confirm that the shared update runs before the season helper.
 10. Use the lab below. Advance every loop and read each row.
 
@@ -141,7 +141,7 @@ inconsistent and add hidden bus work.
 - Does invalid data remain visibly invalid?
 - Is a low label kept separate from a cause or repair claim?
 - Is custom text capped at 150 display characters?
-- Can a full queue or delayed thread leave older display evidence without affecting control?
+- Can a replaced snapshot or delayed thread leave older display evidence without affecting control?
 - Are student identity, credentials, and private device details absent?
 - Does the evidence claim stop at what the display actually showed?
 
@@ -150,7 +150,7 @@ inconsistent and add hidden bus work.
 | Symptom | First check |
 | --- | --- |
 | A status line updates slower than 10 Hz | Remember the shared Driver Station snapshot gate is at most 4 Hz. |
-| The newest helper value is not displayed yet | Check call order, the 250 ms gate, queue acceptance, and background thread timing. |
+| The newest helper value is not displayed yet | Check call order, the 250 ms gate, the snapshot slot, and background thread timing. |
 | A long message ends early | The current season helper stores only the first 150 characters. |
 | Battery shows `INVALID` | Check whether the source is finite and above zero before blaming the battery. |
 | Battery shows `LOW` | Record the measured value and time; the label alone does not identify a cause. |
@@ -191,8 +191,8 @@ Design three status fields for an invented mechanism. Include a requested state,
 state, and a fault or freshness state. Choose a display cadence and explain why it is slower than
 the control loop. Add a bounded message rule and an invalid-data rule.
 
-Next, design a queue-pressure test for the real FTC telemetry manager. State which thread produces
-snapshots, which thread consumes them, how a full queue is observed, and how the test proves that
+Next, design a handoff-pressure test for the real FTC telemetry manager. State which thread produces
+snapshots, which thread consumes them, how a replaced snapshot is observed, and how the test proves that
 control never waits for Driver Station output. Do not claim that this plan is already implemented.
 
 ## Related and next

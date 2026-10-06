@@ -17,7 +17,7 @@ In this lesson, you will:
 - test the result against an independent truth value; and
 - connect a simple one-dimensional model to the real ARES estimator.
 
-This lesson matches ARES 17.0.9 and Studio 7.0.10. Its source links point to one reviewed commit in
+This lesson matches ARES 19.1.4 and Studio 7.0.65. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The interactive lab uses a weighted average on one straight line. It is the one-dimensional form of
@@ -74,8 +74,8 @@ Never tune uncertainty just to force one trial to look good. Repeat the test and
 
 ARES predicts field X, field Y, heading, and their covariance. Motion adds process uncertainty,
 called `Q`. A vision measurement arrives with standard deviations in meters and radians. ARES
-squares and scales those values to build measurement covariance `R`. It then calculates a residual
-and a gain that controls the update.
+squares those values to build measurement covariance `R`. The Store scales only values the camera
+did not report. It then calculates a residual and a gain that controls the update.
 
 ARES checks whether the residual is reasonable for `P + R`. It uses normalized innovation squared,
 or NIS. A measurement that fails leaves the pose unchanged and records a reason. The direct

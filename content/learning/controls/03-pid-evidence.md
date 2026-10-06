@@ -10,7 +10,7 @@ Complete [Predict Motion with Feedforward](/academy/controls-motor-model-feedfor
 first. You should be able to read a time graph, name the units in a calculation, and explain why a
 prediction and a feedback correction are different jobs.
 
-This lesson follows ARES 17.0.9 and Studio 7.0.10. Its source links are pinned to the exact public
+This lesson follows ARES 19.1.4 and Studio 7.0.65. Its source links are pinned to the exact public
 monorepo commit used for review. The browser activities do not run the Kotlin controller.
 
 In this lesson, you will:
@@ -93,10 +93,10 @@ flowchart LR
   S --> M
 ```
 
-The current source file's opening formula still describes derivative of error. The running
-`calculate` code and its focused tests use the filtered derivative-on-measurement path shown above.
-When comments and executable evidence disagree, record the disagreement and follow the tested
-behavior until the source documentation is corrected.
+The current source file's opening formula now describes filtered derivative on measurement. The
+running `calculate` code and its focused tests use the same path shown above. When comments and
+executable evidence disagree, record the disagreement and follow the tested behavior until the
+source documentation is corrected.
 
 ## Hands-on activity
 
@@ -119,7 +119,7 @@ classroom cases and does not run Kotlin or a motor.
 
 <arespidtracelab />
 
-Now use the **ARES 17.0.9 source trace** in the same activity:
+Now use the **ARES 19.1.4 source trace** in the same activity:
 
 1. Choose **Worked step**. Confirm the final output is `0.155`.
 2. Choose **First after reset**. Explain why the D term is zero.
@@ -137,13 +137,13 @@ include continuous angle wrapping, a live controller history, mechanism physics,
 - Did you record all gains, including values that stayed at zero?
 - Did you mark trials that reached the output limit?
 - Can you point to the source evidence for ARES reset, deadzone, filter, and anti-windup behavior?
-- Can you explain why invalid inputs return zero without changing controller state?
+- Can you explain why invalid inputs return zero and reset controller state?
 - Did you keep browser-model evidence separate from robot evidence?
 
 Current ARES output and integral limits are optional settings. If code does not call
 `setOutputLimits` or `setIntegratorRange`, those bounds are not automatically present. The
-directional anti-windup rule freezes stored error only when an output limit exists and the error
-would push farther into that limit.
+directional anti-windup rule freezes stored error only when an output limit exists and the new
+stored-error step would push farther into that limit.
 
 ## Troubleshooting
 
@@ -170,7 +170,7 @@ a loop time at or below zero. Also check whether the error is inside a configure
 From the root of the ARES Robotics monorepo, run:
 
 ```powershell
-rg -n "fun calculate|measurementDerivative|filteredDerivative|proposedError|isSaturated|deadzone" `
+rg -n "fun calculate|measurementDerivative|filteredDerivative|candidateIntegral|rejectIntegral|deadzone" `
   ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt
 
 rg -n "Derivative|deadzone|Integrator|Continuous|NaN|OutputLimits" `
@@ -179,9 +179,9 @@ rg -n "Derivative|deadzone|Integrator|Continuous|NaN|OutputLimits" `
   ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/control/PidClampingTier1Test.kt
 ```
 
-The source file's opening formula describes derivative of error. The executable method and tests
-use filtered derivative on measurement. Keep that mismatch in your evidence instead of silently
-rewriting one behavior as the other.
+The source file's opening formula and the executable method now both use filtered derivative on
+measurement. If you find a comment that disagrees with the tests, keep that mismatch in your
+evidence instead of silently rewriting one behavior as the other.
 
 ## Evidence artifact
 

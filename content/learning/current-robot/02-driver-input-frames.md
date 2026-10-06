@@ -25,8 +25,9 @@ first. You can complete the calculation and interaction without a robot.
 
 ## Worked example
 
-For each axis, the pinned controller changes a non-finite value to zero and clamps other input from
-`-1` to `1`. A magnitude below `0.05` becomes zero. Values outside that center region are rescaled:
+For each axis, the pinned controller clamps input from `-1` to `1`. If any axis in a frame is not a
+finite number, all three smoothed outputs reset to zero at once. A magnitude below `0.05` becomes
+zero. Values outside that center region are rescaled:
 
 ```text
 rescaled magnitude = (input magnitude - 0.05) ÷ 0.95
@@ -90,7 +91,7 @@ alliance rule cannot accidentally flip it.
 
 ## Checkpoints
 
-- Are non-finite values replaced with zero before later math?
+- Does a non-finite axis clear all smoothed output to zero instead of feeding later math?
 - Is every finite input clamped to the normalized range?
 - Does the deadband rescale preserve full output?
 - Is the exponent positive, with the pinned fallback when it is invalid?

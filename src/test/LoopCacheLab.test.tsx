@@ -57,6 +57,18 @@ describe("LoopCacheLab", () => {
     expect(state.observedPower).toBe(0);
   });
 
+  it("clamps requests and skips identical commands even with zero epsilon", () => {
+    let state = writeCachedPower(createMotorCache(0.25), 1.5, 0);
+    expect(state).toMatchObject({ acceptedPower: 1, delegateWrites: 1 });
+
+    state = writeCachedPower(state, 1, 0);
+    expect(state.delegateWrites).toBe(1);
+    expect(state.event).toContain("matched the cached command");
+
+    state = writeCachedPower(state, Number.NaN, 0.05);
+    expect(state).toMatchObject({ acceptedPower: 0, delegatePower: 0, delegateWrites: 2 });
+  });
+
   it("supports the source-test controls and deterministic reset", () => {
     render(<LoopCacheLab />);
 
@@ -64,7 +76,7 @@ describe("LoopCacheLab", () => {
     expect(screen.getByText("1")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Write request" }));
-    expect(screen.getByRole("status")).toHaveTextContent("met epsilon");
+    expect(screen.getByRole("status")).toHaveTextContent("first command");
 
     fireEvent.click(screen.getByRole("button", { name: "Use 0.44" }));
     fireEvent.click(screen.getByRole("button", { name: "Write request" }));

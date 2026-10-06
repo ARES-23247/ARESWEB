@@ -14,7 +14,7 @@ export function shapeDriverAxis(input: number, exponent: number, previous: numbe
   const magnitude = Math.abs(bounded);
   const afterDeadband = magnitude < 0.05 ? 0 : Math.sign(bounded) * ((magnitude - 0.05) / 0.95);
   const shaped = Math.sign(afterDeadband) * Math.abs(afterDeadband) ** safeExponent;
-  const smoothed = safePrevious * 0.6 + shaped * 0.4;
+  const smoothed = Number.isFinite(input) ? safePrevious * 0.6 + shaped * 0.4 : 0;
   const final = alliance === "BLUE" && frame === "FIELD_RELATIVE" ? -smoothed : smoothed;
   return { bounded, afterDeadband, shaped, smoothed, final };
 }
