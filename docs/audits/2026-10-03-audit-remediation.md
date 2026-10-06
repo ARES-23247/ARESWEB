@@ -50,3 +50,12 @@ Validation date: October 3, 2026, on commit `e51f051d` (code fixes; the docs-onl
 **E2E note.** One test failed in the full run: `biobuzzSimulator.spec.ts:210` (Firefox), "BIOBUZZ separates Aim from Shoot and keeps intake toggled". After one shot, the local-practice inventory stayed at 1/4 instead of the expected 2/4 for the full 10-second wait. The test exercises the local simulator only. None of these changes touch the simulator's engine or input paths; the online admission client is not used in local practice. In isolated reruns, all nine BIOBUZZ simulator specs passed in Firefox, and that test passed four more times with `--repeat-each=4 --workers=2`. No timeout, assertion or retry setting was changed.
 
 Logs are in the Git-ignored directory `scratch/remediation-2026-10-03/`: `gate-summary.txt` and `gate/*.log`.
+
+## Release follow-ups (October 6, 2026)
+
+The first PR run failed two required gates for reasons outside these fixes. Both are resolved on the PR branch:
+
+- **Academy provenance.** The official ARES-Robotics line moved to ARES 19.1.4 / Studio 7.0.65, and the remote provenance check failed on master as well. The refresh under the standing approval is recorded in [ARES_SOURCE_REFRESH_2026-10-03.md](../ARES_SOURCE_REFRESH_2026-10-03.md).
+- **Production dependency audit.** After B03, new advisories were published for `proxy-addr` (critical), `sharp`, and `@modelcontextprotocol/sdk`. Patched versions are pinned through workspace overrides and the standalone Functions npm overrides and lock. Both audits report no vulnerabilities.
+
+A full local unit-coverage run also showed a load-dependent race in `WaggleWayCommunity.test.tsx`: the heading takes focus in a passive effect after it renders. The test now waits for that focus. The assertion is unchanged, and the test passed five isolated reruns plus a full coverage run.
