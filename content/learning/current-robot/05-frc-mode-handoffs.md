@@ -155,7 +155,7 @@ Run the focused tests without a roboRIO or powered mechanism:
 
 ```powershell
 cd ARES-FRC
-.\gradlew.bat test --tests "com.areslib.frc.ARESRobotTimedBehaviorRegressionTest"
+.\gradlew.bat test --tests "org.aresfirst.marvin.ARESRobotTimedBehaviorRegressionTest"
 ```
 
 Record the source revision, command, result, and one physical claim this test cannot prove.

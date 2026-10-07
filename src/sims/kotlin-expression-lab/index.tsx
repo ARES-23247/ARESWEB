@@ -1,7 +1,7 @@
 /** @sim {"name":"ARES Kotlin Deadband Function Lab","requiresContext":false,"academyApproved":true,"fidelity":"code-derived"} */
 import { useState } from "react";
 
-type DeadbandBranch = "inside-deadband" | "denominator-guard" | "rescale";
+type DeadbandBranch = "invalid-input" | "inside-deadband" | "rescale";
 
 export type DeadbandTrace = {
   denominator: number;
@@ -11,23 +11,28 @@ export type DeadbandTrace = {
   result: number;
 };
 
+const validAxis = (value: number) =>
+  Number.isFinite(value) && value >= -1 && value <= 1;
+const validDeadband = (value: number) =>
+  Number.isFinite(value) && value >= 0 && value < 1;
+
 export function traceDeadband(value: number, deadband: number): DeadbandTrace {
   const denominator = 1 - deadband;
   const inputSign = Math.sign(value);
-  const numerator = value - inputSign * deadband;
+  const numerator = Math.abs(value) - deadband;
 
-  const branch =
-    Math.abs(value) < deadband
-      ? "inside-deadband"
-      : Math.abs(denominator) < 1e-6
-        ? "denominator-guard"
+  const branch: DeadbandBranch =
+    !validAxis(value) || !validDeadband(deadband)
+      ? "invalid-input"
+      : Math.abs(value) <= deadband
+        ? "inside-deadband"
         : "rescale";
   return {
     denominator,
     branch,
     inputSign,
     numerator,
-    result: branch === "rescale" ? numerator / denominator : 0,
+    result: branch === "rescale" ? inputSign * (numerator / denominator) : 0,
   };
 }
 
@@ -41,8 +46,8 @@ const PRESETS = [
 ] as const;
 
 const branchLabels: Record<DeadbandBranch, string> = {
-  "inside-deadband": "Inside the quiet area: return 0",
-  "denominator-guard": "Denominator is nearly zero: return 0",
+  "invalid-input": "Value or deadband is outside the valid range: return 0",
+  "inside-deadband": "At or inside the quiet area: return 0",
   rescale: "Outside the quiet area: rescale the active range",
 };
 
@@ -73,7 +78,7 @@ export default function KotlinExpressionLab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Current ARES 11.1 function model
+            Current ARES function model
           </p>
           <h3
             id="kotlin-expression-title"
@@ -82,8 +87,8 @@ export default function KotlinExpressionLab() {
             ARES Kotlin Deadband Function Lab
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Trace the parameters, first matching branch, and return value from
-            InputMath.applyDeadband.
+            Trace the parameters, validity checks, deadband branch, and return
+            value from InputMath.applyDeadband.
           </p>
         </div>
         <button

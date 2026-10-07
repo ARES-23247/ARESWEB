@@ -103,13 +103,17 @@ adversarial layouts and concurrent existing games before deployment approval.
 Store compact witness summaries/hashes after verification rather than retaining
 all replay payloads in published revisions; byte-check every persisted document.
 
-The mounted API applies those ceilings and the existing shared 500,000 monthly
-game resource-unit budget, without increasing runtime resources or permissions.
-Proof requests cost 100 units; management and read requests cost 30; reports cost
-10. These are admission weights, not dollar estimates or measured CPU costs.
-Guest reports allow 10/IP/hour and 500 globally/day. Management allows 100/member/
-hour and 2,000 globally/day; public reads allow 120/IP/hour and 10,000 globally/day;
-private reads allow 180/member/hour and 5,000 globally/day. All durable budgets
+The mounted API applies those ceilings without increasing runtime resources or
+permissions. Authenticated routes also draw on the existing shared 500,000
+monthly game resource-unit budget: proof requests cost 100 units and management
+and private read requests cost 30. These are admission weights, not dollar
+estimates or measured CPU costs. Anonymous public reads and guest reports never
+draw on that shared budget, because unauthenticated GETs need no App Check token
+and a scripted client could otherwise exhaust online games for the month. They
+have separate monthly calendar ceilings instead: 150,000 public reads and 5,000
+reports. Guest reports allow 10/IP/hour and 500 globally/day. Management allows
+100/member/hour and 2,000 globally/day; public reads allow 120/IP/hour and
+10,000 globally/day; private reads allow 180/member/hour and 5,000 globally/day. All durable budgets
 precede their route's body parser. Proofs use a 768 KiB text parser; other writes
 use an 8 KiB JSON parser. Only UTF-8 JSON with no compression is accepted. Unknown
 community paths terminate before the shared JSON parser.

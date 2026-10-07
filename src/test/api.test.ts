@@ -68,4 +68,31 @@ describe("authenticatedFetch", () => {
     const headers = new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers);
     expect(headers.has("X-Firebase-AppCheck")).toBe(false);
   });
+
+  it("attaches credentials to absolute same-origin URLs", async () => {
+    await authenticatedFetch(new URL("/api/profiles/session", window.location.origin));
+    const headers = new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer verified-id-token");
+    expect(headers.get("X-Firebase-AppCheck")).toBe("app-check-token");
+  });
+
+  it.each([
+    "https://sim.example/api/biobuzz/create",
+    "//sim.example/api/biobuzz/create",
+    "https://storage.googleapis.com/bucket/photo.jpg",
+  ])("never sends Firebase credentials to another origin: %s", async (url) => {
+    await authenticatedFetch(url, { headers: { "Content-Type": "application/json" } });
+    const headers = new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers);
+    expect(headers.has("Authorization")).toBe(false);
+    expect(headers.has("X-Firebase-AppCheck")).toBe(false);
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(firebaseMocks.getIdToken).not.toHaveBeenCalled();
+    expect(firebaseMocks.getAppCheckHeader).not.toHaveBeenCalled();
+  });
+
+  it("checks the origin of Request objects", async () => {
+    await authenticatedFetch(new Request("https://sim.example/api/biobuzz/queue"));
+    const headers = new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers);
+    expect(headers.has("Authorization")).toBe(false);
+  });
 });

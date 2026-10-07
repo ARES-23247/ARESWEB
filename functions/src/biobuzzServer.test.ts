@@ -1,6 +1,9 @@
 import {afterEach,describe,expect,it,vi} from "vitest";
 import {once} from "node:events";
+import {createHmac} from "node:crypto";
+import {readFileSync} from "node:fs";
 import type {AddressInfo} from "node:net";
+import {resolve} from "node:path";
 import {WebSocket} from "ws";
 import type {WaggleStore} from "./lib/__tests__/helpers/waggleStore";
 const state=vi.hoisted(()=>({db:null as unknown as WaggleStore}));
@@ -11,6 +14,7 @@ vi.mock("./lib/firebase-admin",async()=>{
 });
 vi.mock("./lib/logger",()=>({logger:{info:vi.fn(),warn:vi.fn(),error:vi.fn()}}));
 import {startBiobuzzServer} from "./biobuzzServer";
+import {BIOBUZZ_ADMISSION_LIMITS} from "./apps/biobuzz";
 import {NEUTRAL} from "./generated/games/biobuzz/types";
 let running:ReturnType<typeof startBiobuzzServer>|undefined;
 const clients:WebSocket[]=[];
@@ -55,11 +59,36 @@ describe("BIOBUZZ HTTP and WebSocket service",()=>{
     expect((await post(origin,"join",{code:session.code})).status).toBe(200);
     expect((await post(origin,"queue")).status).toBe(200);
     const records=[...state.db.data.entries()].filter(([k])=>k.startsWith("internal_api_quotas"));
-    expect(records).toHaveLength(2);expect(records.every(([,v])=>v.count===6)).toBe(true);
+    // Four admission budgets count every admitted request; two create-only budgets count the three create attempts.
+    expect(records).toHaveLength(6);expect(records.map(([,v])=>v.count).sort()).toEqual([3,3,6,6,6,6]);
     for(const [key,value] of records)state.db.data.set(key,{...value,count:4000});
     expect((await post(origin,"create")).status).toBe(429);
     expect((await fetch(origin+"/unknown")).status).toBe(404);
     expect(await (await fetch(origin+"/health")).json()).toMatchObject({version:1,active:0,accepting:true});
+  });
+  it("caps private-room creation and each address's daily share without blocking other players",async()=>{
+    vi.stubEnv("BIOBUZZ_MAX_ROOMS","25");
+    const origin=await start();
+    const from=(ip:string,path:string)=>fetch(origin+"/api/biobuzz/"+path,{method:"POST",headers:{"Content-Type":"application/json","X-Firebase-AppCheck":"valid","X-Forwarded-For":ip},body:"{}"});
+    for(let i=0;i<BIOBUZZ_ADMISSION_LIMITS.perIpHourlyCreates;i++)expect((await from("203.0.113.7","create")).status).toBe(200);
+    const blocked=await from("203.0.113.7","create");
+    expect(blocked.status).toBe(429);expect(blocked.headers.get("retry-after")).toBeTruthy();
+    for(const variant of ["create/","CREATE"])expect((await from("203.0.113.7",variant)).status).toBe(429);
+    expect((await from("203.0.113.7","queue")).status).toBe(200);
+    expect((await from("198.51.100.4","queue")).status).toBe(200);
+    expect((await from("198.51.100.4","create")).status).toBe(200);
+    const day=Math.floor(Date.now()/86400000)*86400000;
+    const dailyShare=createHmac("sha256",process.env.ABUSE_HMAC_SECRET as string).update(`aresweb-api-quota:v2:biobuzz-admission-ip-day:ip:192.0.2.9:${day}`).digest("hex");
+    state.db.data.set("internal_api_quotas/"+dailyShare,{count:BIOBUZZ_ADMISSION_LIMITS.perIpDailyRequests});
+    expect((await from("192.0.2.9","queue")).status).toBe(429);
+    expect((await from("198.51.100.4","queue")).status).toBe(200);
+  });
+  it("keeps admission limits identical to the reviewed Cloud Run contract",()=>{
+    const contract=JSON.parse(readFileSync(resolve(process.cwd(),"../infra/gcp/biobuzz-service.json"),"utf8"));
+    const {maxRooms,...limits}=contract.admission;
+    expect(maxRooms).toBe(1);expect(limits).toEqual(BIOBUZZ_ADMISSION_LIMITS);
+    expect(BIOBUZZ_ADMISSION_LIMITS.perIpDailyRequests).toBeLessThan(BIOBUZZ_ADMISSION_LIMITS.projectDailyRequests);
+    expect(BIOBUZZ_ADMISSION_LIMITS.projectDailyRequests*10).toBeLessThanOrEqual(BIOBUZZ_ADMISSION_LIMITS.monthlyRequests);
   });
   it("rejects foreign origins, wrong paths, malformed handshakes and forged capabilities",async()=>{
     const origin=await start();

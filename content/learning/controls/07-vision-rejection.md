@@ -18,7 +18,7 @@ By the end, you will be able to:
 - use a rejection reason without pretending it names every failed check; and
 - plan a private, repeatable camera test at surveyed field points.
 
-This lesson matches ARES 17.0.9 and Studio 7.0.10. Its source links point to one reviewed commit in
+This lesson matches ARES 19.1.4 and Studio 7.0.65. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The lab uses a short checklist and straight-line math. Its detailed gate explanations are teaching
@@ -93,9 +93,10 @@ The current default NIS limit is about `9.21` for this two-part update. A full t
 physical camera.
 
 The EKF then checks history, tag count, uncertainty, covariance, capture time, and normalized
-innovation squared, or NIS. It scales uncertainty using distance, tag count, viewing angle, and
-ambiguity. These checks answer different questions. Low ambiguity does not prove the tag ID, field
-map, timestamp, or pose is correct. Passing every gate means “usable by this policy,” not “truth.”
+innovation squared, or NIS. It scales configured or default uncertainty using distance, tag count,
+viewing angle, and ambiguity. Camera-reported values are used unchanged. These checks answer
+different questions. Low ambiguity does not prove the tag ID, field map, timestamp, or pose is
+correct. Passing every gate means “usable by this policy,” not “truth.”
 
 The prefilter compares pose with saved pose at capture time. Its turn-rate and shock guards use the
 current drive state instead of replayed motion at capture time. Keep that boundary visible when

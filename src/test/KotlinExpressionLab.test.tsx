@@ -22,9 +22,25 @@ describe("KotlinExpressionLab", () => {
     expect(traceDeadband(-1, 0.1).result).toBe(-1);
   });
 
-  it("guards a nearly zero denominator inside the documented range", () => {
-    expect(traceDeadband(1, 0.9999999)).toMatchObject({
-      branch: "denominator-guard",
+  it("returns zero for invalid inputs and at the deadband boundary", () => {
+    expect(traceDeadband(0.05, 0.05)).toMatchObject({
+      branch: "inside-deadband",
+      result: 0,
+    });
+    expect(traceDeadband(1.5, 0.1)).toMatchObject({
+      branch: "invalid-input",
+      result: 0,
+    });
+    expect(traceDeadband(Number.NaN, 0.1)).toMatchObject({
+      branch: "invalid-input",
+      result: 0,
+    });
+    expect(traceDeadband(0.5, 1)).toMatchObject({
+      branch: "invalid-input",
+      result: 0,
+    });
+    expect(traceDeadband(0.5, -0.1)).toMatchObject({
+      branch: "invalid-input",
       result: 0,
     });
   });
@@ -36,7 +52,7 @@ describe("KotlinExpressionLab", () => {
       screen.getByRole("button", { name: "Inside deadband test" }),
     );
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Inside the quiet area",
+      "At or inside the quiet area",
     );
     expect(
       screen.getByRole("spinbutton", { name: "Joystick value" }),

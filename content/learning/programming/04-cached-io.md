@@ -22,7 +22,7 @@ You can complete this software lab without a powered robot.
 
 - **Delegate:** the FTC SDK motor object wrapped by `CachedDcMotorEx`.
 - **Cache:** stored data that can be reused instead of asking the device again.
-- **Sentinel:** a private marker that means no command has been accepted yet.
+- **Command flag:** a private `hasPowerCommand` value that stays false until a command is accepted.
 - **Requested output:** the power value assigned by the caller.
 - **Accepted command:** a request saved by the wrapper and sent to the delegate.
 - **Redundant write:** a request close enough to the last accepted command that the wrapper skips it.
@@ -60,47 +60,55 @@ Do not use it as proof that every sensor getter in a robot is cached correctly.
 
 ## Read the current motor wrapper
 
-The current source starts with a private sentinel:
+The current source starts with private state:
 
 ```kotlin
-private var lastPower = -10.0
+private var hasPowerCommand = false
+private var powerWriteUncertain = false
+private var lastPower = 0.0
 ```
 
-Motor power normally uses the range -1.0 through 1.0. The value -10.0 means **no accepted command
-yet**. The wrapper never sends -10.0 to the motor.
+`hasPowerCommand` starts false. That means **no accepted command yet**. The starting `lastPower` of
+0.0 is not sent to the motor.
 
 The getter has two states:
 
 ```kotlin
-get() = if (lastPower != -10.0) lastPower else delegate.power
+get() = if (hasPowerCommand) lastPower else delegate.power
 ```
 
 - Before the first accepted command, a read asks the delegate for its power.
 - After the first accepted command, a read returns `lastPower` without reading the delegate.
+- Setting `mode` or `direction`, or calling `resetDeviceConfigurationForOpMode()`, sets the flag back
+  to false.
 
 This means two reads before the first write can cause two delegate reads. The focused source test
 performs one early read and confirms its count. Do not claim that this wrapper makes every read
 hardware-free from construction time.
 
-The setter checks a hard stop before a normal change:
+The setter makes a safe command first. Then it decides whether to write.
 
 ```kotlin
 set(value) {
-    if (value == 0.0 && lastPower != 0.0) {
-        delegate.power = 0.0
-        lastPower = 0.0
-    } else if (abs(value - lastPower) >= epsilon) {
-        delegate.power = value
-        lastPower = value
+    val command = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
+    if (!hasPowerCommand || powerWriteUncertain || (command != lastPower &&
+        (command == 0.0 || abs(command - lastPower) >= epsilon))) {
+        powerWriteUncertain = true
+        delegate.power = command
+        powerWriteUncertain = false
+        lastPower = command
+        hasPowerCommand = true
     }
 }
 ```
 
-The order matters. A changed zero request writes once even when its change is smaller than epsilon.
-A repeated zero is skipped because `lastPower` is already zero.
+A write happens when no command has been accepted yet, or when the last write may have failed. It
+also happens when the command changed and is either zero or at least epsilon away. So a changed
+zero request writes once even when its change is smaller than epsilon. A repeated zero is skipped
+because it equals `lastPower`.
 
-The wrapper does not clamp power or validate epsilon. Its documentation leaves range and validation
-work to callers and the FTC SDK. An output cache is not a safety controller.
+The wrapper clamps power to -1.0 through 1.0. A non-finite request becomes zero. The constructor
+rejects an epsilon outside 0.0 through 1.0. An output cache is still not a safety controller.
 
 ## Worked example
 
@@ -110,7 +118,7 @@ The current `CachedHardwareContractTest` uses a counting delegate. It starts wit
 | Step | Operation | Delegate reads | Delegate writes | Cached power | Why |
 | ---: | --- | ---: | ---: | ---: | --- |
 | 1 | read power | 1 | 0 | not set | no command has been accepted |
-| 2 | write 0.40 | 1 | 1 | 0.40 | first valid command is far from the sentinel |
+| 2 | write 0.40 | 1 | 1 | 0.40 | first command always writes because none was accepted |
 | 3 | write 0.44 | 1 | 1 | 0.40 | change 0.04 is below epsilon 0.05 |
 | 4 | read power | 1 | 1 | 0.40 | getter returns the accepted command |
 | 5 | write 0.00 | 1 | 2 | 0.00 | changed zero is a hard stop |
@@ -128,7 +136,7 @@ code-derived tracer below.
 <loopcachelab />
 
 1. Reset the tracer. Confirm that the cache says **No accepted command**.
-2. Select **Read power** twice. Each read reaches the delegate because the sentinel is still active.
+2. Select **Read power** twice. Each read reaches the delegate because no command has been accepted.
 3. Reset and select **Read power** once to match the source test.
 4. Enter 0.40 and select **Write request**. Confirm one delegate write.
 5. Enter 0.44 and write again. Predict the result before reading the event message.
@@ -137,8 +145,9 @@ code-derived tracer below.
 8. Enter -0.10 and write. Confirm the final write count is three.
 9. Compare your trace with the table and focused Kotlin test.
 
-The tracer copies the current wrapper's sentinel, getter, and setter decisions for documented motor
-power and epsilon values. It does not execute Kotlin or connect to an FTC device.
+The tracer copies the current wrapper's command flag, getter, and setter rules for power and
+epsilon. It does not model failed writes or configuration resets. It does not execute Kotlin or
+connect to an FTC device.
 
 ## Walk the source and run the test.
 
@@ -174,7 +183,7 @@ override fun safe() {
 ```
 
 That contract expresses the safe request. The platform adapter and wrapper must carry it to the
-device boundary. The cached wrapper's hard-stop branch prevents a changed zero request from being
+device boundary. The cached wrapper's hard-stop rule prevents a changed zero request from being
 lost as a small redundant write. A repeated zero can then be skipped.
 
 This still does not prove a physical motor stopped. Wiring, device health, controller state, load,
@@ -182,10 +191,10 @@ and mechanism motion remain physical facts.
 
 ## Checkpoints
 
-- Can you explain what -10.0 means without calling it a motor command?
+- Can you explain what `hasPowerCommand` tracks without calling it a motor command?
 - Which reads reach the delegate before the first accepted command?
 - Why does 0.44 get skipped after an accepted 0.40 when epsilon is 0.05?
-- Why does the setter check changed zero before the normal epsilon rule?
+- Why does a changed zero skip the normal epsilon rule?
 - What safety and validation work does this wrapper not own?
 - What does the focused test prove, and what physical facts remain unknown?
 
@@ -193,12 +202,12 @@ and mechanism motion remain physical facts.
 
 | Symptom | Check |
 | --- | --- |
-| Early getter still reads the device | The sentinel remains active until the first accepted command. |
+| Early getter still reads the device | `hasPowerCommand` stays false until the first accepted command. |
 | Small request does not reach the delegate | Compare its absolute change with epsilon and the last accepted command. |
 | Displayed power differs from a skipped request | The getter returns the last accepted command, not the skipped request. |
-| First zero does not look special | Compare zero with the sentinel; it enters the hard-stop branch first. |
+| First zero does not look special | Before any accepted command, every request is written, including zero. |
 | Repeated zero is skipped | The delegate already received zero and `lastPower` is zero. |
-| Invalid power seems accepted by the model | Use the documented range. The source wrapper does not perform full validation. |
+| Power above 1 or below -1 was requested | The source and tracer clamp power. A non-finite request becomes zero. |
 | Mock test passes but robot differs | Check wiring, polarity, SDK setup, load, device health, and actual mechanism motion. |
 | Telemetry changes control timing | Keep reporting work outside the control and output-write path. |
 
@@ -208,7 +217,7 @@ Create an operation table with these columns:
 
 - operation number;
 - read or write request;
-- sentinel active or accepted command;
+- no accepted command yet or accepted command;
 - absolute change when a normal write is checked;
 - delegate read count;
 - delegate write count; and
@@ -226,10 +235,10 @@ keep stop control ready. Website posts use the separate Lead Coach review flow.
 
 ## Short assessment
 
-1. What state does the -10.0 sentinel represent?
+1. What state does `hasPowerCommand = false` represent?
 2. When does the getter read the FTC delegate?
 3. What is the difference between a requested command and an accepted command?
-4. Why is a changed zero checked before the epsilon rule?
+4. Why does a changed zero skip the epsilon rule?
 5. Does `CachedDcMotorEx` clamp power or validate epsilon?
 6. What does `MotorIO.safe()` request?
 7. Why is a passing unit test not proof of physical motion?
@@ -237,7 +246,7 @@ keep stop control ready. Website posts use the separate Lead Coach review flow.
 ## Extension challenge
 
 Read the `CachedServo` source and its focused test in the same files. Compare it with the motor
-wrapper. The servo also uses a sentinel and epsilon, but it has no special hard-stop branch.
+wrapper. The servo also uses a command flag and epsilon, but it has no special hard-stop rule.
 
 Build a two-column trace for the first command, a small repeated command, a larger command, and a
 getter after initialization. State which behavior is shared and which is motor-only. Do not invent a

@@ -15,7 +15,7 @@ read a gamepad, change robot state, or command a motor.
 
 ## Vocabulary
 
-- **Value:** data with a name, such as `denominator`.
+- **Value:** data with a name, such as `result`.
 - **`val`:** a name that cannot be assigned a different value later.
 - **Type:** the kind of data a value holds. Kotlin's `Double` type stores decimal numbers.
 - **Function:** named code that accepts inputs and returns a result.
@@ -28,29 +28,26 @@ read a gamepad, change robot state, or command a motor.
 
 ## Read the current function
 
-Here is the decision shape of the current ARES function. The comments describe each branch.
+Here is the current ARES function. The comments describe each branch.
 
 ```kotlin
 fun applyDeadband(value: Double, deadband: Double): Double {
-    val denominator = 1.0 - deadband
-    return when {
-        abs(value) < deadband -> 0.0              // inside the quiet area
-        abs(denominator) < 1e-6 -> 0.0            // avoid division by nearly zero
-        else -> (value - sign(value) * deadband) / denominator
-    }
+    // invalid input, or inside the quiet area
+    if (!validAxis(value) || !validDeadband(deadband) || abs(value) <= deadband) return 0.0
+    // rescale the remaining travel and keep the sign
+    return sign(value) * ((abs(value) - deadband) / (1.0 - deadband))
 }
 ```
 
 The function has two parameters. Both use `Double`. The `: Double` after the closing parenthesis is
 the return type.
 
-`val denominator = 1.0 - deadband` creates a local value. The name `denominator` cannot be assigned
-again inside this call. A later function call creates its own local value.
+The `if` line checks its three tests from left to right. If any test is true, the function returns
+`0.0` right away. Only when all three are false does the last line run.
 
-The `when` block checks branches from top to bottom. It returns the result of the first matching
-branch. The valid input contract uses a joystick value from -1.0 through 1.0 and a deadband from 0.0
-up to, but not including, 1.0. The function documentation gives that contract; this function does
-not clamp or reject every invalid argument for its caller.
+`validAxis` accepts a finite joystick value from -1.0 through 1.0. `validDeadband` accepts a finite
+deadband from 0.0 up to, but not including, 1.0. The function returns zero for input outside that
+contract. It does not clamp a bad value into range.
 
 ## Worked example
 
@@ -61,15 +58,16 @@ val result = InputMath.applyDeadband(value = 0.55, deadband = 0.10)
 ```
 
 `value` and `deadband` are parameter names. `0.55` and `0.10` are arguments in this call.
+`val result` stores the returned value. The name `result` cannot be assigned again later.
 
 Trace the function one expression at a time:
 
-1. `denominator` is `1.0 - 0.10`, which is `0.90`.
-2. `abs(0.55) < 0.10` is false, so the first branch does not run.
-3. `abs(0.90) < 0.000001` is false, so the guard branch does not run.
+1. `0.55` is finite and between -1.0 and 1.0, so `!validAxis(0.55)` is false.
+2. `0.10` is finite and at least 0.0 but below 1.0, so `!validDeadband(0.10)` is false.
+3. `abs(0.55) <= 0.10` is false, so the early `return 0.0` does not run.
 4. `sign(0.55)` is positive 1.
-5. The last branch becomes `(0.55 - 1 × 0.10) / 0.90`.
-6. The result is `0.50`.
+5. The last line becomes `1 × ((0.55 - 0.10) / (1.0 - 0.10))`.
+6. That is `0.45 / 0.90`, so the result is `0.50`.
 
 The function does more than cut away the quiet area. It rescales the remaining stick travel. That
 is why an input of 1.0 can still produce 1.0 after a 0.10 deadband.
@@ -80,16 +78,15 @@ checks both cases.
 ## Visual model
 
 ```mermaid
-%% aria: The applyDeadband function receives a joystick value and deadband. Values inside the quiet area return zero. A nearly zero denominator also returns zero. Other valid values are shifted away from the deadband and divided by the remaining range.
+%% aria: The applyDeadband function receives a joystick value and deadband. An invalid value or deadband returns zero. Values inside the quiet area also return zero. Other values have the deadband removed from their size, are divided by the remaining range, and get their sign back.
 flowchart TD
-    A["value and deadband arguments"] --> B["denominator = 1 - deadband"]
-    B --> C{"absolute value below deadband?"}
-    C -->|yes| Z["return 0"]
-    C -->|no| D{"denominator nearly zero?"}
-    D -->|yes| Z
-    D -->|no| E["shift by signed deadband"]
+    A["value and deadband arguments"] --> B{"invalid value or deadband?"}
+    B -->|yes| Z["return 0"]
+    B -->|no| C{"absolute value at or below deadband?"}
+    C -->|yes| Z
+    C -->|no| E["subtract deadband from absolute value"]
     E --> F["divide by remaining range"]
-    F --> R["return scaled value"]
+    F --> R["return scaled value with original sign"]
 ```
 
 This diagram shows software decisions. It does not show a gamepad read, Redux action, controller,
@@ -148,24 +145,24 @@ a gamepad is centered, a control mapping is correct, or a robot is safe to drive
 
 - Can you name the two parameters and their types?
 - Can you separate a parameter from an argument?
-- Can you identify the first true `when` branch for a given call?
+- Can you identify the first true test in the `if` line for a given call?
 - Can you substitute arguments into the rescale expression?
 - Can you explain why the unit test uses a tolerance?
 - Can you state what the function and test do not verify?
 
 ## Troubleshooting
 
-| Symptom                     | Check                                                                            |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| Name is unresolved          | Check spelling, imports, and the value's scope.                                  |
-| Type mismatch appears       | Confirm that both arguments are `Double`, such as `0.1` instead of a text value. |
-| Result is zero              | Check whether the absolute input is smaller than the deadband.                   |
-| Negative result looks wrong | Trace `sign(value)` and keep the parentheses around the numerator.               |
-| Decimal assertion fails     | Check the expected value and tolerance before changing production math.          |
-| Build uses the wrong module | Run the task from `ARESLib-Kotlin` with the `:core:test` task.                   |
-| Many files changed          | Stop and inspect generated or formatting changes before committing.              |
+| Symptom                     | Check                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| Name is unresolved          | Check spelling, imports, and the value's scope.                                       |
+| Type mismatch appears       | Confirm that both arguments are `Double`, such as `0.1` instead of a text value.      |
+| Result is zero              | Check whether the input is out of range or at or below the deadband in absolute size. |
+| Negative result looks wrong | Trace `sign(value)` and keep the parentheses around the rescale part.                 |
+| Decimal assertion fails     | Check the expected value and tolerance before changing production math.               |
+| Build uses the wrong module | Run the task from `ARESLib-Kotlin` with the `:core:test` task.                        |
+| Many files changed          | Stop and inspect generated or formatting changes before committing.                   |
 
-Do not remove the denominator guard merely because valid deadbands stay below 1.0. Boundary guards
+Do not remove the input checks merely because callers usually pass valid values. Boundary guards
 should be changed only with a source-backed reason and new tests.
 
 ## Evidence artifact
@@ -189,8 +186,8 @@ this software test or verify robot functionality.
 ## Short assessment
 
 1. What is the difference between a parameter and an argument?
-2. What does `val denominator` prevent inside one function call?
-3. Which branch handles an input whose absolute value is smaller than the deadband?
+2. What does `val` prevent for the name `result` in the worked example?
+3. Which branch handles an input whose absolute value is at or below the deadband?
 4. Why does the active range divide by `1.0 - deadband`?
 5. What does the `0.001` assertion argument mean?
 6. Does a passing `InputMathTest` prove that a physical robot moved correctly?
@@ -200,8 +197,9 @@ keeps software evidence separate from physical evidence.
 
 ## Extension challenge
 
-Read `InputMath.applyCurve` in the same source file. It returns
-`sign(value) * abs(value).pow(exponent)`.
+Read `InputMath.applyCurve` in the same source file. For valid input, it returns
+`sign(value) * curveMagnitude(abs(value), exponent)`. With an exponent of 2.0, `curveMagnitude`
+multiplies the size by itself.
 
 Predict the results for `0.5` and `-0.5` with an exponent of 2.0. Then find the two matching
 assertions in `InputMathTest`. Explain how the function preserves sign while changing magnitude.

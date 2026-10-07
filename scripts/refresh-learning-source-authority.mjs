@@ -33,6 +33,20 @@ const SOURCE_PATH_MIGRATIONS = new Map([
     "ARES-FRC/src/test/kotlin/com/areslib/frc/ARESRobotTimedBehaviorRegressionTest.kt",
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotTimedBehaviorRegressionTest.kt",
   ],
+  // ARES 19 consolidated small interfaces into the files that now declare them.
+  // The root RELEASE_TRANSITION.md move is handled idempotently below.
+  [
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt",
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt",
+  ],
+  [
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/sensor/DistanceSensorIO.kt",
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/sensor/MultizoneDistanceSensorIO.kt",
+  ],
+  [
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningConsumer.kt",
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningRuntime.kt",
+  ],
 ]);
 
 function assert(condition, message) {
@@ -90,6 +104,8 @@ export function migrateCurrentSourcePaths(source) {
     updated = updated.replaceAll(previousPath, currentPath);
   }
   return updated
+    .replace(/(?<![A-Za-z0-9_./-])RELEASE_TRANSITION\.md|(\/[a-f0-9]{40}\/)RELEASE_TRANSITION\.md/gu,
+      (_match, commitPrefix = "") => `${commitPrefix}docs/milestones/RELEASE_TRANSITION.md`)
     .replaceAll("Canonical hardware topology models", "Canonical hardware topology wire schema")
     .replaceAll("Hardware topology models", "Hardware topology wire schema")
     .replaceAll("ARES path safety evaluator", "ARES autonomous path task builder");

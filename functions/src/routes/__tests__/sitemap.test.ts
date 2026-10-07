@@ -254,6 +254,12 @@ describe("sitemap route", () => {
 
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining("<loc>https://aresfirst.org/</loc>"));
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining("<loc>https://aresfirst.org/biobuzz/score-calculator</loc>"));
+    for (const route of ["/arcade", "/biobuzz/simulator", "/buzzhex", "/buzzle", "/buzzle/word-tools", "/buzzello", "/pollen"]) {
+      expect(res.send).toHaveBeenCalledWith(expect.stringContaining(`<loc>https://aresfirst.org${route}</loc>`));
+    }
+    for (const noindexRoute of ["/waggle-way", "/developer-api"]) {
+      expect(res.send).toHaveBeenCalledWith(expect.not.stringContaining(`<loc>https://aresfirst.org${noindexRoute}</loc>`));
+    }
     expect(res.send).toHaveBeenCalledWith(expect.not.stringContaining("/blog/blog%20%26%20post"));
     expect(mocks.queries.size).toBe(0);
   });

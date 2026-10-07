@@ -44,9 +44,11 @@ and generated action catalog. Inspect the deployed swerve-offset file, confirm e
 topology, and enable mechanisms one at a time. These are operational readiness checks. They do not
 claim that an official FRC inspection row passed.
 
-If a swerve offset changes after a known calibration, the team records the old and new file identity,
-reviews all four values, rebuilds, and retests steering orientation. The inspection packet marks any
-related official rows for review after the current checklist is available.
+If a swerve offset changes after a known calibration, the team records the old and new file identity
+and reviews all four values. It updates the matching tuning profile and calibration record, then runs
+project verification and offset tests. Then it rebuilds and retests steering orientation. The
+inspection packet marks any related official rows for review after the current checklist is
+available.
 
 ## Visual model
 

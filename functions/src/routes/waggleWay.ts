@@ -40,6 +40,26 @@ const global = (scope: string, limit: number, windowMs: number) => ({
   windowMs,
   identity: "global" as const,
 });
+const anonymousMonthly = (scope: string, limit: number) =>
+  ({
+    scope,
+    limit,
+    calendarWindow: "month" as const,
+    identity: "global" as const,
+    retentionMs: 32 * DAY_MS,
+  });
+
+/**
+ * Anonymous traffic never draws on the shared online-game budget. Public reads
+ * do not require App Check (GET) and reports require no account, so a scripted
+ * client could otherwise disable BUZZLE, BUZZELLO, and member submissions for
+ * the rest of the month. These separate ceilings bound their own cost instead.
+ */
+export const WAGGLE_ANONYMOUS_MONTHLY_LIMITS = {
+  publicReads: 150_000,
+  reports: 5_000,
+} as const;
+
 const proofQuota = distributedQuotas([
   { scope: "waggle-proof-hour", limit: 6, windowMs: HOUR_MS },
   { scope: "waggle-proof-day", limit: 20, windowMs: DAY_MS },
@@ -49,7 +69,7 @@ const proofQuota = distributedQuotas([
 const reportQuota = distributedQuotas([
   anonymous("waggle-report-ip", 10, HOUR_MS),
   global("waggle-report-global", 500, DAY_MS),
-  monthly(10),
+  anonymousMonthly("waggle-report-month", WAGGLE_ANONYMOUS_MONTHLY_LIMITS.reports),
 ]);
 const mutationQuota = distributedQuotas([
   { scope: "waggle-manage", limit: 100, windowMs: HOUR_MS },
@@ -59,7 +79,7 @@ const mutationQuota = distributedQuotas([
 const publicReadQuota = distributedQuotas([
   anonymous("waggle-browse-ip", 120, HOUR_MS),
   global("waggle-browse-global", 10000, DAY_MS),
-  monthly(30),
+  anonymousMonthly("waggle-browse-month", WAGGLE_ANONYMOUS_MONTHLY_LIMITS.publicReads),
 ]);
 const privateReadQuota = distributedQuotas([
   { scope: "waggle-review-read", limit: 180, windowMs: HOUR_MS },

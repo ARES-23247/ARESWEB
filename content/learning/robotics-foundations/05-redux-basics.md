@@ -34,7 +34,7 @@ The current source separates five jobs:
 | ----------------- | --------------------------------------------------------------------------------------------------- |
 | `RobotState.kt`   | The default drive mode is `TELEOP`. The heading target starts as `null`.                            |
 | `RobotAction.kt`  | `SetHeadingLockTarget` accepts radians or `null`. `SetDriveMode` carries a drive mode.              |
-| `DriveReducer.kt` | Each of those actions copies one drive field. Clearing the target does not change the mode.         |
+| `DriveReducer.kt` | Each of those actions copies one drive field, except `X_BRAKE` mode also clears targets. Clearing the target does not change the mode. |
 | `RootReducer.kt`  | The root reducer combines slice results and copies the action time into root state.                 |
 | `Store.kt`        | Dispatches are serialized, state is published as a new snapshot, and listeners run after reduction. |
 
@@ -215,9 +215,10 @@ normal driver-controlled mode.
 If you look for `ClearHeadingLockTarget`, search for `SetHeadingLockTarget` instead. A `null` target
 is the current clear request.
 
-If clearing the target also changes the mode in your code, check whether you added a policy outside
-the current drive reducer. Name that policy and test it. Do not describe it as built-in reducer
-behavior.
+If clearing the target also changes the mode in your code, check which action changed it.
+`SetHeadingLockTarget(null)` changes only the target. A later `JoystickDriveIntent` in the current
+drive reducer turns `HEADING_HOLD` with no target into `TELEOP`. Name any other policy and test it.
+Do not describe it as built-in reducer behavior.
 
 If the same action gives two results, compare both starting states and action data. Pure behavior
 requires the same state and the same action. An action timestamp is part of the action data.

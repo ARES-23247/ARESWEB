@@ -5,9 +5,9 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "7157ba16e415137a154c7d76facdabd2bfa3aa3d",
-    "aresVersion": "17.0.9",
-    "studioVersion": "7.0.10"
+    "commit": "8294bd6de9663e4f9cecc86dbd6a64acc3ae36ee",
+    "aresVersion": "19.1.4",
+    "studioVersion": "7.0.65"
   },
   "instructionalContract": {
     "targetReadingGrades": [6, 8],
@@ -83,7 +83,7 @@
         "ARES-Analytics/docs/GUIDED_COMMISSIONING.md",
         "ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
         "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt",
-        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/ServoIO.kt"
+        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt"
       ],
       "lessons": [
         { "id": "electrical-voltage-current-power", "title": "Voltage, Current, Power, and Energy", "level": "beginner", "interaction": "current-budget-lab", "sourceGap": null },

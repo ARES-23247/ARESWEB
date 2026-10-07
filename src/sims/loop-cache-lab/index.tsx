@@ -19,7 +19,7 @@ export function createMotorCache(delegatePower = 0.25): MotorCacheState {
     delegateWrites: 0,
     observedPower: null,
     delta: null,
-    event: "No operation yet. The sentinel is active.",
+    event: "No operation yet. No power command is cached.",
   };
 }
 
@@ -44,15 +44,26 @@ export function writeCachedPower(
   requested: number,
   epsilon: number,
 ): MotorCacheState {
-  const lastPower = state.acceptedPower ?? -10;
-  const delta = Math.abs(requested - lastPower);
-  const hardStop = requested === 0 && lastPower !== 0;
-  const changed = delta >= epsilon;
-  if (hardStop || changed) {
+  const command = Number.isFinite(requested) ? Math.min(1, Math.max(-1, requested)) : 0;
+  const lastPower = state.acceptedPower;
+  if (lastPower === null) {
     return {
       ...state,
-      acceptedPower: requested,
-      delegatePower: requested,
+      acceptedPower: command,
+      delegatePower: command,
+      delegateWrites: state.delegateWrites + 1,
+      delta: null,
+      event: "Wrote the first command because none was cached.",
+    };
+  }
+  const delta = Math.abs(command - lastPower);
+  const differs = command !== lastPower;
+  const hardStop = differs && command === 0;
+  if (hardStop || (differs && delta >= epsilon)) {
+    return {
+      ...state,
+      acceptedPower: command,
+      delegatePower: command,
       delegateWrites: state.delegateWrites + 1,
       delta,
       event: hardStop
@@ -63,7 +74,9 @@ export function writeCachedPower(
   return {
     ...state,
     delta,
-    event: "Skipped the request because its change was below epsilon.",
+    event: differs
+      ? "Skipped the request because its change was below epsilon."
+      : "Skipped the request because it matched the cached command.",
   };
 }
 
@@ -87,13 +100,13 @@ export default function LoopCacheLab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-ares-cyan">
-            Current ARES 11.1 source trace
+            Current ARES source trace
           </p>
           <h3 id="cache-lab-title" className="mt-1 text-xl font-black text-white">
             ARES FTC Cached Motor Trace
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-marble/80">
-            Follow the sentinel, getter, and setter used by CachedDcMotorEx.
+            Follow the command flag, getter, and setter used by CachedDcMotorEx.
           </p>
         </div>
         <button type="button" onClick={reset} className={buttonClass}>
@@ -197,8 +210,10 @@ export default function LoopCacheLab() {
         className="mt-5 border-l-4 border-ares-gold/60 bg-ares-gold/10 p-3 text-sm leading-relaxed text-white"
       >
         <strong>Model limit:</strong> This TypeScript trace copies the current scalar getter and
-        setter rules for documented power and epsilon values. It does not execute Kotlin, validate
-        every caller, contact an FTC device, measure bus traffic, or prove a motor stops.
+        setter rules for documented power and epsilon values. It does not model mode, direction,
+        or OpMode reset calls that clear the cache, or retries after a failed device write. It
+        does not execute Kotlin, validate every caller, contact an FTC device, measure bus
+        traffic, or prove a motor stops.
       </p>
     </section>
   );
