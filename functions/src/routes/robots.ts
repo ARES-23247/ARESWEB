@@ -2,7 +2,7 @@ import express, { NextFunction, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
-import { AuthenticatedRequest, ensureAuth } from "../middleware/auth";
+import { AuthenticatedRequest, currentAuthorizationRole, ensureAuth } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { requireRouteParam, validate } from "../middleware/validation";
 import { asyncHandler } from "../lib/utils";
@@ -161,10 +161,8 @@ export async function ensureRobotEditor(req: AuthenticatedRequest, _res: Respons
     if (!req.user) throw new ApiError(401, "Unauthorized: User not authenticated");
     const userDoc = await adminDb.collection("authorized_users").doc(req.user.uid).get();
     if (!userDoc.exists) throw new ApiError(403, "Forbidden: User not authorized");
-    const userData = userDoc.data();
-    const role = userData?.role;
-    if (userData?.isDeleted === true || userData?.isDeleted === 1 ||
-        (role !== "admin" && role !== "coach" && role !== "mentor")) {
+    const role = currentAuthorizationRole(userDoc.data());
+    if (role !== "admin" && role !== "coach" && role !== "mentor") {
       throw new ApiError(403, "Forbidden: Requires admin, coach, or mentor role");
     }
     req.authorizationRole = role;
@@ -187,6 +185,9 @@ router.get("/", asyncHandler(async (req, res) => {
 
   const startAfterId = typeof req.query.startAfter === "string" ? req.query.startAfter : "";
   if (startAfterId) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(startAfterId)) {
+      throw new ApiError(400, "Invalid robot cursor");
+    }
     const cursor = await adminDb.collection("robots").doc(startAfterId).get();
     if (!cursor.exists || cursor.data()?.isDeleted === 1) throw new ApiError(400, "Invalid robot cursor");
     robotsQuery = robotsQuery.startAfter(cursor);

@@ -1,5 +1,6 @@
 import { X, Clock, Loader2, Globe } from "lucide-react";
 import { SavedSim, GithubSim } from "../../hooks/useSimulationFiles";
+import { useFocusTrap } from "../../lib/useFocusTrap";
 
 interface SimulationLibraryOverlayProps {
   showLibrary: boolean;
@@ -34,14 +35,28 @@ export function SimulationLibraryOverlay({
   setFiles,
   setActiveFile,
 }: SimulationLibraryOverlayProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(showLibrary, () =>
+    setShowLibrary(false),
+  );
+
   if (!showLibrary) return null;
 
   return (
-    <div className="absolute inset-0 z-50 bg-obsidian/95 backdrop-blur-sm overflow-y-auto p-4 md:p-6">
+    <div
+      ref={trapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sim-library-title"
+      tabIndex={-1}
+      className="absolute inset-0 z-50 bg-obsidian/95 backdrop-blur-sm overflow-y-auto p-4 md:p-6 focus:outline-none"
+    >
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white">Simulation Library</h2>
+          <h2 id="sim-library-title" className="text-lg font-bold text-white">
+            Simulation Library
+          </h2>
           <button
+            type="button"
             onClick={() => setShowLibrary(false)}
             className="p-2 text-marble/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
             aria-label="Close library"
@@ -66,6 +81,7 @@ export function SimulationLibraryOverlay({
               {savedSims.map((sim) => (
                 <button
                   key={sim.id}
+                  type="button"
                   onClick={() => {
                     handleLoadSim(sim.id, setFiles, setActiveFile);
                     setShowLibrary(false);
@@ -75,8 +91,8 @@ export function SimulationLibraryOverlay({
                   <div className="font-semibold text-white text-sm group-hover:text-ares-gold transition-colors truncate">
                     {sim.name}
                   </div>
-                  <div className="text-[11px] text-marble/40 mt-1">
-                    {sim.type && <span className="text-ares-cyan/60 mr-2">{sim.type}</span>}
+                  <div className="text-[11px] text-marble/60 mt-1">
+                    {sim.type && <span className="text-ares-cyan mr-2">{sim.type}</span>}
                     {new Date(sim.updatedAt).toLocaleDateString()}
                   </div>
                 </button>
@@ -95,12 +111,13 @@ export function SimulationLibraryOverlay({
               <Loader2 className="w-4 h-4 animate-spin" /> Loading from GitHub...
             </div>
           ) : githubSims.length === 0 ? (
-            <p className="text-marble/40 text-sm py-4">No official simulations found in the repository.</p>
+            <p className="text-marble/60 text-sm py-4">No official simulations found in the repository.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {githubSims.map((sim) => (
                 <button
                   key={sim.id}
+                  type="button"
                   onClick={() => {
                     handleLoadGithubSim(sim, setFiles, setActiveFile);
                     setShowLibrary(false);
@@ -110,7 +127,7 @@ export function SimulationLibraryOverlay({
                   <div className="font-semibold text-white text-sm group-hover:text-ares-gold transition-colors truncate">
                     {sim.name}
                   </div>
-                  <div className="text-[11px] text-marble/40 mt-1">Official • {sim.path}</div>
+                  <div className="text-[11px] text-marble/60 mt-1">Official • {sim.path}</div>
                 </button>
               ))}
             </div>

@@ -502,6 +502,11 @@ export default function EventDetailPage() {
     if (eventLoadError) {
       return (
         <div className="min-h-screen w-full bg-obsidian px-6 py-24 text-marble">
+          <SEO
+            title="Event Unavailable"
+            description="The ARES 23247 calendar event record could not be reached."
+            noindex
+          />
           <div className="mx-auto max-w-3xl">
             <PublicDataState
               title="Unable to load this event"

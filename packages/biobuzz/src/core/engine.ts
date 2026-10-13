@@ -246,7 +246,7 @@ export class Simulation {
         // A snapshot can still show Ready while the next trajectory check is
         // settling. Accept that explicit click briefly, with final geometry
         // validation, instead of losing it across worker/WebSocket latency.
-        if(!aim.autoFire&&input.shootHeld===undefined&&shotEdges.has(r.id)&&this.tick-aim.readyAt<=15)aim.fireUntil=this.tick+15;
+        if(!aim.autoFire&&shotEdges.has(r.id)&&this.tick-aim.readyAt<=15)aim.fireUntil=this.tick+15;
         if((aim.target==="hive"?!input.aimHive:!input.aimFlower)||(!r.inventory.length&&!((automaticTurret||locked)&&aim.target==="hive"))||(aim.autoFire&&this.tick-aim.started>timeoutTicks)){this.cancelShot(r);}
         else {
           const target=r.alliance==="red"?0:1,h=this.hives[target];

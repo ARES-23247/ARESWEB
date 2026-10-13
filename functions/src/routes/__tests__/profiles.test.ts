@@ -606,7 +606,7 @@ describe("Profiles Router Backend Endpoints", () => {
         ["mentor", "mentor"],
         ["admin", "mentor"],
         ["unverified", "sponsor"],
-        ["member", ""],
+        ["unverified", ""],
       ]);
       expect(payload.users[0].createdAt).toBe("2026-02-01T00:00:00.000Z");
       expect(payload.users[1].subteams).toEqual(["Build", "Programming"]);

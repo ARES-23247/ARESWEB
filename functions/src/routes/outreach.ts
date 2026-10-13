@@ -77,6 +77,9 @@ async function getOutreachLogsHelper(req: express.Request, includeArchived: bool
   let query = adminDb.collection("outreach_logs").orderBy("date", "desc").limit(limitVal + 1);
 
   if (cursor) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(cursor)) {
+      throw new ApiError(400, "Invalid pagination cursor.");
+    }
     const cursorDoc = await adminDb.collection("outreach_logs").doc(cursor).get();
     if (cursorDoc.exists) {
       query = query.startAfter(cursorDoc);

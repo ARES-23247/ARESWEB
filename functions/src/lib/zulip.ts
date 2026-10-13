@@ -47,6 +47,7 @@ export async function sendZulipMessage(
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params.toString(),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
@@ -99,6 +100,7 @@ export async function getZulipUsers(): Promise<ZulipUser[] | null> {
       headers: {
         Authorization: `Basic ${auth}`,
       },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {

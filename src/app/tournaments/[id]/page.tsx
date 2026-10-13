@@ -256,6 +256,11 @@ export default function TournamentDetailPage() {
       tournamentError.status === 404;
     return (
       <div className="min-h-screen w-full bg-obsidian px-6 py-24 text-marble">
+        <SEO
+          title={isNotFound ? "Tournament Not Found" : "Tournament Unavailable"}
+          description="The ARES 23247 tournament scouting record could not be loaded."
+          noindex
+        />
         <div className="mx-auto max-w-3xl">
           {isNotFound ? (
             <div className="text-center p-8 hero-card bg-white/5 border border-white/10">

@@ -37,6 +37,17 @@ function focusBoundary(container: HTMLElement, fromEnd = false) {
   (target ?? container).focus();
 }
 
+function isInsideExternalModalDialog(
+  node: EventTarget | Node | null,
+  container: HTMLElement,
+) {
+  if (!(node instanceof Element)) return false;
+  const dialogOrPortal = node.closest(
+    '[role="dialog"][aria-modal="true"], [data-radix-portal]',
+  );
+  return Boolean(dialogOrPortal && !container.contains(dialogOrPortal));
+}
+
 /**
  * Keeps keyboard focus inside the current top-layer surface and restores the
  * exact trigger when it closes. Prefer Radix Dialog for new modal UI; this hook
@@ -67,6 +78,12 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       if (!isTopLayer()) return;
       const container = ref.current;
       if (!container) return;
+      if (
+        isInsideExternalModalDialog(event.target, container) ||
+        isInsideExternalModalDialog(document.activeElement, container)
+      ) {
+        return;
+      }
 
       if (event.key === "Escape" && onCloseRef.current) {
         event.preventDefault();
@@ -101,7 +118,14 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       if (!isTopLayer() || redirectingFocus) return;
       const container = ref.current;
       const target = event.target;
-      if (!container || !(target instanceof Node) || container.contains(target)) return;
+      if (
+        !container ||
+        !(target instanceof Node) ||
+        container.contains(target) ||
+        isInsideExternalModalDialog(target, container)
+      ) {
+        return;
+      }
 
       redirectingFocus = true;
       focusBoundary(container);

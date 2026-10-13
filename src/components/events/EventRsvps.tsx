@@ -80,14 +80,14 @@ export default function EventRsvps({
             </h4>
 
             {signupError && (
-              <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-xs rounded-lg flex items-center gap-1.5">
+              <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red-light text-xs rounded-lg flex items-center gap-1.5">
                 <AlertCircle size={14} /> {signupError}
               </div>
             )}
 
             {event.isPotluck === 1 && (
               <div>
-                <label htmlFor="rsvp-bringing" className="block text-[9px] font-black uppercase tracking-wider mb-2 text-marble/55">Bringing Food/Drinks</label>
+                <label htmlFor="rsvp-bringing" className="block text-[9px] font-black uppercase tracking-wider mb-2 text-marble/60">Bringing Food/Drinks</label>
                 <input
                   id="rsvp-bringing"
                   type="text"
@@ -101,7 +101,7 @@ export default function EventRsvps({
 
             {event.isVolunteer === 1 && (
               <div>
-                <label htmlFor="rsvp-prep-hours" className="block text-[9px] font-black uppercase tracking-wider mb-2 text-marble/55">Volunteer Prep Hours</label>
+                <label htmlFor="rsvp-prep-hours" className="block text-[9px] font-black uppercase tracking-wider mb-2 text-marble/60">Volunteer Prep Hours</label>
                 <input
                   id="rsvp-prep-hours"
                   type="number"
@@ -117,7 +117,7 @@ export default function EventRsvps({
             )}
 
             <div>
-              <label htmlFor="rsvp-notes" className="block text-[9px] font-black uppercase tracking-wider mb-2 text-marble/55">Notes / Arrival Time</label>
+              <label htmlFor="rsvp-notes" className="block text-[9px] font-black uppercase tracking-wider mb-2 text-marble/60">Notes / Arrival Time</label>
               <input
                 id="rsvp-notes"
                 type="text"
@@ -166,11 +166,11 @@ export default function EventRsvps({
 
           {/* RSVP List Table */}
           <div className="space-y-3 pt-4 border-t border-white/5">
-            <h4 className="text-[10px] font-black uppercase text-marble/55 tracking-wider">RSVP List</h4>
+            <h4 className="text-[10px] font-black uppercase text-marble/60 tracking-wider">RSVP List</h4>
             {signupsError ? (
               <p role="alert" className="text-[10px] text-ares-gold font-mono">{signupsError}</p>
             ) : signups.length === 0 ? (
-              <p className="text-[10px] text-marble/40 font-mono">No sign-ups registered yet.</p>
+              <p className="text-[10px] text-marble/60 font-mono">No sign-ups registered yet.</p>
             ) : (
               <div className="divide-y divide-white/5">
                 {signups.map((entry) => (

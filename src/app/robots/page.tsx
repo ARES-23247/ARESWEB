@@ -98,7 +98,7 @@ export default function RobotsFeedPage() {
   };
 
   return (
-    <main className="w-full min-h-screen bg-obsidian text-marble py-8">
+    <div className="w-full min-h-screen bg-obsidian text-marble py-8">
       <SEO title="Our Robots" description="Explore the competition robots engineered by ARES 23247 for the FIRST® Tech Challenge." />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         <header className="text-center mb-16">
@@ -223,7 +223,7 @@ export default function RobotsFeedPage() {
       </div>
 
       <RobotEditorModal isOpen={isOpen} onClose={() => setIsOpen(false)} editingRobot={editingRobot} onSubmit={submitEditor} isPending={createMutation.isPending || updateMutation.isPending} submissionError={submissionError} />
-    </main>
+    </div>
   );
 }
 

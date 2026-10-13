@@ -291,18 +291,21 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
   });
 
-  it("blocks tournaments routes from indexing at the hosting layer", () => {
+  it("blocks tournament detail subroutes from indexing at the hosting layer while keeping /tournaments indexable", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
     ) as { hosting: { headers: HostingHeaderRule[] } };
     const tournamentsRule = config.hosting.headers.find(
-      (rule) => rule.source === "/tournaments{,/**}",
+      (rule) => rule.source === "/tournaments/**",
     );
 
     expect(tournamentsRule?.headers).toContainEqual({
       key: "X-Robots-Tag",
       value: "noindex, nofollow",
     });
+    expect(
+      config.hosting.headers.find((rule) => rule.source === "/tournaments{,/**}"),
+    ).toBeUndefined();
   });
 
   it("replaces rather than duplicates the source canonical in prerendered shells", () => {

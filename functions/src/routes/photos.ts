@@ -316,22 +316,31 @@ router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req: Authenticat
   const current = snapshot.data() as PhotoRecord;
   if (current.isDeleted === 1) throw new ApiError(409, "Restore the photo before editing it.");
 
+  const oldAlbumId = typeof current.albumId === "string" ? current.albumId : null;
   const albumId = input.albumId === null || input.albumId === ""
     ? null
     : input.albumId === undefined
-      ? (typeof current.albumId === "string" ? current.albumId : null)
+      ? oldAlbumId
       : safeId(input.albumId, "album ID");
+  const publisherRoles = new Set(["admin", "coach", "mentor"]);
+  const isPublisher = publisherRoles.has(req.authorizationRole || "");
+  let isCurrentAlbumPublic = false;
+  if (oldAlbumId && oldAlbumId !== albumId && !isPublisher) {
+    const oldAlbumSnap = await adminDb.collection("albums").doc(oldAlbumId).get();
+    const oldAlbumData = oldAlbumSnap?.data?.();
+    isCurrentAlbumPublic = oldAlbumData?.isPublic === 1 || oldAlbumData?.isPublic === true;
+  }
+  let isTargetAlbumPublic = false;
   if (albumId) {
     const album = await adminDb.collection("albums").doc(albumId).get();
-    if (!album.exists || album.data()?.isDeleted === 1) throw new ApiError(400, "Choose an active album.");
-    // Placing media into a public album publishes it on the website, so it
-    // requires a publisher role rather than general membership.
-    const publisherRoles = new Set(["admin", "coach", "mentor"]);
-    const isAlbumPublic = album.data()?.isPublic === 1 || album.data()?.isPublic === true;
-    const changedAlbum = albumId !== (typeof current.albumId === "string" ? current.albumId : null);
-    if (isAlbumPublic && changedAlbum && !publisherRoles.has(req.authorizationRole || "")) {
-      throw new ApiError(403, "Only an admin, coach, or mentor can add photos to a public album.");
+    const albumData = album?.data?.();
+    if (!album || !album.exists || albumData?.isDeleted === 1) {
+      throw new ApiError(400, "Choose an active album.");
     }
+    isTargetAlbumPublic = albumData?.isPublic === 1 || albumData?.isPublic === true;
+  }
+  if ((isCurrentAlbumPublic || isTargetAlbumPublic) && !isPublisher) {
+    throw new ApiError(403, "Only an admin, coach, or mentor can add photos to a public album.");
   }
   const labels = input.labels === undefined
     ? (Array.isArray(current.labels) ? current.labels : [])
@@ -348,7 +357,6 @@ router.patch("/:photoId", ensureTeamMember, asyncHandler(async (req: Authenticat
     updatedAt: now,
   };
 
-  const oldAlbumId = typeof current.albumId === "string" ? current.albumId : null;
   const batch = adminDb.batch();
   batch.set(photoRef, update, { merge: true });
   if (oldAlbumId && oldAlbumId !== albumId) {

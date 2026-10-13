@@ -56,6 +56,22 @@ export function validateEmbedUrl(url?: string): string | undefined {
   }
 }
 
+function extractReactNodeText(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractReactNodeText).join("");
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return extractReactNodeText(node.props.children);
+  }
+  return "";
+}
+
+function headingSlugFromChildren(children: React.ReactNode): string {
+  return extractReactNodeText(children)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRendererProps) {
   return (
     <ReactMarkdown
@@ -122,27 +138,36 @@ export default memo(function DocsMarkdownRenderer({ content }: DocsMarkdownRende
         // The route already owns the document's single page-level heading. Treat
         // author-supplied Markdown H1s as sections so legacy content cannot create
         // an invalid heading outline or duplicate the visible page title.
-        h1: ({ children }) => <h2 className="text-3xl font-bold font-heading mt-10 mb-4 text-white border-b border-white/10 pb-2">{children}</h2>,
-        h2: ({ children }) => {
-          const text = String(children);
-          const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        h1: ({ children }) => {
+          const id = headingSlugFromChildren(children);
           return (
-            <h2 id={id} className="text-2xl font-bold font-heading mt-8 mb-3 text-ares-gold scroll-m-24 group relative">
-              <a href={`#${id}`} className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 transition-opacity text-marble/60 hover:text-ares-cyan" aria-label="Link to section">
-                <LinkIcon size={18} />
-              </a>
+            <h2 id={id || undefined} className="text-3xl font-bold font-heading mt-10 mb-4 text-white border-b border-white/10 pb-2 scroll-m-24">
+              {children}
+            </h2>
+          );
+        },
+        h2: ({ children }) => {
+          const id = headingSlugFromChildren(children);
+          return (
+            <h2 id={id || undefined} className="text-2xl font-bold font-heading mt-8 mb-3 text-ares-gold scroll-m-24 group relative">
+              {id && (
+                <a href={`#${id}`} className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-marble/60 hover:text-ares-cyan focus-visible:text-ares-cyan" aria-label="Link to section">
+                  <LinkIcon size={18} />
+                </a>
+              )}
               {children}
             </h2>
           );
         },
         h3: ({ children }) => {
-          const text = String(children);
-          const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const id = headingSlugFromChildren(children);
           return (
-            <h3 id={id} className="inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-6 mb-2 scroll-m-24 group relative">
-              <a href={`#${id}`} className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 transition-opacity text-marble/60 hover:text-ares-cyan" aria-label="Link to section">
-                <LinkIcon size={16} />
-              </a>
+            <h3 id={id || undefined} className="inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-6 mb-2 scroll-m-24 group relative">
+              {id && (
+                <a href={`#${id}`} className="absolute -left-6 top-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-marble/60 hover:text-ares-cyan focus-visible:text-ares-cyan" aria-label="Link to section">
+                  <LinkIcon size={16} />
+                </a>
+              )}
               {children}
             </h3>
           );

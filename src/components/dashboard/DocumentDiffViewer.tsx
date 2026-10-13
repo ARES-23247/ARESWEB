@@ -110,8 +110,8 @@ export default function DocumentDiffViewer({
         <div className="px-6 py-2 bg-black/30 border-b border-white/10 flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-3">
             <span className="text-ares-success font-bold">+{diff.addedCount} lines added</span>
-            <span className="text-ares-red font-bold">-{diff.removedCount} lines removed</span>
-            <span className="text-marble/50">{diff.unchangedCount} unchanged lines</span>
+            <span className="text-ares-red-light font-bold">-{diff.removedCount} lines removed</span>
+            <span className="text-marble/60">{diff.unchangedCount} unchanged lines</span>
           </div>
           {revisionTitle && revisionTitle !== currentTitle && (
             <span className="text-ares-gold">Title changed: &quot;{revisionTitle}&quot; &rarr; &quot;{currentTitle}&quot;</span>
@@ -139,7 +139,7 @@ export default function DocumentDiffViewer({
                       isAdded
                         ? "bg-ares-success/15 text-ares-success border-l-2 border-ares-success"
                         : isRemoved
-                        ? "bg-ares-red/15 text-ares-red border-l-2 border-ares-red"
+                        ? "bg-ares-red/15 text-ares-red-light border-l-2 border-ares-red"
                         : "text-marble/80 hover:bg-white/5"
                     }`}
                   >

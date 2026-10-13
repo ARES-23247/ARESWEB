@@ -132,7 +132,7 @@ export default function ArmKgSim() {
         <div className="flex-1 font-mono text-sm leading-relaxed">
           <p className="my-1">Current Angle: <strong className="text-ares-cyan">{currentAngle.toFixed(2)}&deg;</strong></p>
           <p className="my-1">cos({currentAngle.toFixed(1)}&deg;) = <strong className="text-white">{cosThetaDisplay.toFixed(3)}</strong></p>
-          <p className="my-1">FF Voltage = kG * cos(&theta;) = <strong className="text-ares-red">{ffVoltageDisplay.toFixed(2)}v</strong></p>
+          <p className="my-1">FF Voltage = kG * cos(&theta;) = <strong className="text-ares-red-light">{ffVoltageDisplay.toFixed(2)}v</strong></p>
           <div className="w-full h-2 bg-white/10 rounded-full my-[15px] overflow-hidden">
             <div style={{ width: `${Math.abs(cosThetaDisplay) * 100}%` }} className="h-full bg-ares-red transition-[width] duration-100 ease-linear" />
           </div>

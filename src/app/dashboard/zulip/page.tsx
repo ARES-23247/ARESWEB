@@ -128,7 +128,7 @@ export default function DashboardZulipPage() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 pb-12" aria-busy={loading}>
+    <div className="mx-auto max-w-6xl space-y-8 pb-12" aria-busy={loading}>
       <header className="hero-card border border-ares-gold/25 bg-obsidian p-6 md:p-8">
         <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-2">
@@ -317,6 +317,6 @@ export default function DashboardZulipPage() {
           </section>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

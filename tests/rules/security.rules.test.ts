@@ -991,6 +991,218 @@ describe("Firestore zero-trust rules", () => {
       }),
     );
   });
+
+  it("limits seasons and awards writes and archived deletes to admin and coach roles", async () => {
+    await seedAuthorizedUser("admin-user", "admin");
+    await seedAuthorizedUser("coach-user", "coach");
+    await seedAuthorizedUser("mentor-user", "mentor");
+    await seedAuthorizedUser("member-user", "member");
+    await seedDocument("seasons", "active-season", {
+      name: "2025-2026",
+      isDeleted: 0,
+    });
+    await seedDocument("seasons", "admin-archived-season", {
+      name: "2023-2024",
+      isDeleted: 1,
+    });
+    await seedDocument("seasons", "coach-archived-season", {
+      name: "2022-2023",
+      isDeleted: 1,
+    });
+    await seedDocument("seasons", "mentor-archived-season", {
+      name: "2021-2022",
+      isDeleted: 1,
+    });
+    await seedDocument("awards", "existing-award", {
+      name: "Inspire Award",
+      isDeleted: 0,
+    });
+
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
+    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+
+    await assertSucceeds(
+      setDoc(doc(adminDb, "seasons", "admin-season"), {
+        name: "Admin Season",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(coachDb, "seasons", "coach-season"), {
+        name: "Coach Season",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(adminDb, "seasons", "active-season"), {
+        name: "Updated by Admin",
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(coachDb, "seasons", "active-season"), {
+        name: "Updated by Coach",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(mentorDb, "seasons", "mentor-season"), {
+        name: "Mentor Season",
+        isDeleted: 0,
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(mentorDb, "seasons", "active-season"), {
+        name: "Updated by Mentor",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "seasons", "member-season"), {
+        name: "Member Season",
+        isDeleted: 0,
+      }),
+    );
+    await assertFails(deleteDoc(doc(adminDb, "seasons", "active-season")));
+    await assertFails(deleteDoc(doc(coachDb, "seasons", "active-season")));
+    await assertSucceeds(deleteDoc(doc(adminDb, "seasons", "admin-archived-season")));
+    await assertSucceeds(deleteDoc(doc(coachDb, "seasons", "coach-archived-season")));
+    await assertFails(deleteDoc(doc(mentorDb, "seasons", "mentor-archived-season")));
+
+    await assertSucceeds(
+      setDoc(doc(adminDb, "awards", "admin-award"), {
+        name: "Think Award",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(coachDb, "awards", "coach-award"), {
+        name: "Connect Award",
+        isDeleted: 0,
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(adminDb, "awards", "existing-award"), {
+        name: "Updated Inspire",
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(coachDb, "awards", "existing-award"), {
+        name: "Coach Updated Inspire",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(mentorDb, "awards", "mentor-award"), {
+        name: "Mentor Award",
+        isDeleted: 0,
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(mentorDb, "awards", "existing-award"), {
+        name: "Mentor Updated",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "awards", "member-award"), {
+        name: "Member Award",
+        isDeleted: 0,
+      }),
+    );
+  });
+
+  it("validates event signup payloads while allowing self-RSVP, partial check-ins, and admin/coach attendance updates", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("other-member", "member");
+    await seedAuthorizedUser("admin-user", "admin");
+    await seedAuthorizedUser("coach-user", "coach");
+    await seedDocument("events", "practice-1", {
+      title: "Practice",
+      status: "published",
+      isDeleted: 0,
+    });
+
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const otherDb = testEnvironment.authenticatedContext("other-member").firestore();
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
+    const ownSignup = doc(memberDb, "events", "practice-1", "signups", "member-user");
+
+    await assertSucceeds(
+      setDoc(ownSignup, {
+        userId: "member-user",
+        nickname: "RobotBuilder",
+        bringing: "Battery charger",
+        prepHours: 2.5,
+        notes: "Arriving 10 minutes early",
+        attended: false,
+      }),
+    );
+    await assertSucceeds(setDoc(ownSignup, { attended: true }, { merge: true }));
+    await assertSucceeds(
+      setDoc(
+        doc(adminDb, "events", "practice-1", "signups", "other-member"),
+        { attended: true },
+        { merge: true },
+      ),
+    );
+    await assertSucceeds(
+      updateDoc(
+        doc(coachDb, "events", "practice-1", "signups", "member-user"),
+        { attended: false },
+      ),
+    );
+
+    await assertFails(
+      setDoc(doc(otherDb, "events", "practice-1", "signups", "member-user"), {
+        attended: true,
+      }),
+    );
+    await assertFails(
+      setDoc(ownSignup, {
+        userId: "member-user",
+        nickname: "RobotBuilder",
+        unexpectedKey: "rejected",
+      }),
+    );
+    await assertFails(
+      setDoc(ownSignup, {
+        userId: "spoofed-uid",
+        nickname: "RobotBuilder",
+      }),
+    );
+    await assertFails(
+      setDoc(ownSignup, {
+        userId: "member-user",
+        notes: "n".repeat(1001),
+      }),
+    );
+    await assertFails(
+      setDoc(ownSignup, {
+        userId: "member-user",
+        prepHours: -1,
+      }),
+    );
+    await assertSucceeds(deleteDoc(ownSignup));
+  });
+
+  it("bounds user layout documents to valid owner column lists", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const layoutRef = doc(memberDb, "user_profiles", "member-user", "layouts", "kanban");
+
+    await assertSucceeds(setDoc(layoutRef, { columns: ["todo", "in_progress", "done"] }));
+    await assertSucceeds(updateDoc(layoutRef, { columns: [] }));
+    await assertFails(
+      setDoc(layoutRef, {
+        columns: Array.from({ length: 51 }, (_, index) => `col-${index}`),
+      }),
+    );
+    await assertFails(
+      setDoc(layoutRef, {
+        columns: "not-a-list",
+      }),
+    );
+    await assertSucceeds(deleteDoc(layoutRef));
+  });
 });
 
 describe("Robot fleet rules", () => {

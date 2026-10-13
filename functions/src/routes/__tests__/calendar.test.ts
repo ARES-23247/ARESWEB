@@ -1745,7 +1745,7 @@ describe("calendar recurrence", () => {
     );
   });
 
-  it("refuses occurrence operations on non-recurring events", async () => {
+  it("refuses occurrence operations on non-recurring or archived events and validates dates", async () => {
     documentRef.get.mockResolvedValue({
       exists: true,
       id: "plain-1",
@@ -1757,6 +1757,72 @@ describe("calendar recurrence", () => {
     expect(next).toHaveBeenCalledWith(
       expect.objectContaining({ status: 409, code: "NOT_RECURRING" }),
     );
+
+    next.mockClear();
+    await handler("/manage/:id/occurrences/:date", "put")(req, res, next);
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 409, code: "NOT_RECURRING" }),
+    );
+
+    next.mockClear();
+    await handler("/manage/:id/occurrences/:date/restore", "patch")(req, res, next);
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 409, code: "NOT_RECURRING" }),
+    );
+
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      id: "archived-weekly",
+      data: () =>
+        eventDocument("archived-weekly", {
+          isDeleted: 1,
+          recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+        }).data(),
+    });
+    req.params = { id: "archived-weekly", date: "2026-09-03" };
+    for (const [routePath, method] of [
+      ["/manage/:id/occurrences/:date", "put"],
+      ["/manage/:id/occurrences/:date", "patch"],
+      ["/manage/:id/occurrences/:date/restore", "patch"],
+    ] as const) {
+      next.mockClear();
+      await handler(routePath, method)(req, res, next);
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 409, code: "EVENT_ARCHIVED" }),
+      );
+    }
+
+    documentRef.get.mockResolvedValue({
+      exists: true,
+      id: "weekly-1",
+      data: () =>
+        eventDocument("weekly-1", {
+          recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+        }).data(),
+    });
+    req.params = { id: "weekly-1", date: "not-a-date" };
+    for (const [routePath, method] of [
+      ["/manage/:id/occurrences/:date", "put"],
+      ["/manage/:id/occurrences/:date", "patch"],
+      ["/manage/:id/occurrences/:date/restore", "patch"],
+    ] as const) {
+      next.mockClear();
+      await handler(routePath, method)(req, res, next);
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400, code: "INVALID_DATE" }),
+      );
+    }
+
+    req.params = { id: "weekly-1", date: "2026-09-03" };
+    (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
+      exists: false,
+    });
+    await handler("/manage/:id/occurrences/:date/restore", "patch")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      restored: true,
+      message: "Occurrence is already scheduled.",
+    });
   });
 
   it("lists stored occurrence exceptions", async () => {

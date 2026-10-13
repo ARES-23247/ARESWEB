@@ -4,6 +4,7 @@ import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import {
   AuthenticatedRequest,
+  currentAuthorizationRole,
   ensureAuth,
   ensureTeamMember,
 } from "../middleware/auth";
@@ -164,13 +165,8 @@ export async function ensureAdminOrCoach(
       return next(new ApiError(403, "Forbidden: User not authorized"));
     }
 
-    const userData = userDoc.data();
-    const role = userData?.role;
-    if (
-      userData?.isDeleted === true ||
-      userData?.isDeleted === 1 ||
-      (role !== "admin" && role !== "coach")
-    ) {
+    const role = currentAuthorizationRole(userDoc.data());
+    if (role !== "admin" && role !== "coach") {
       return next(
         new ApiError(
           403,

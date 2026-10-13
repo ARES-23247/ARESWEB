@@ -381,6 +381,7 @@ export default function TaskDetailsModal({
             onClick={() => setIsFullScreen(!isFullScreen)}
             className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
             title={isFullScreen ? "Minimize Editor" : "Maximize Editor"}
+            aria-label={isFullScreen ? "Minimize editor" : "Maximize editor"}
           >
             {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>

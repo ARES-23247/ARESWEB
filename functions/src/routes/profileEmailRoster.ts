@@ -51,7 +51,7 @@ function normalizeRole(value: unknown): string {
   const role = cleanString(value, 40).toLowerCase();
   if (role === "student" || role === "parent") return "member";
   if (role === "lead") return "mentor";
-  return ["admin", "coach", "mentor", "member", "unverified"].includes(role) ? role : "member";
+  return ["admin", "coach", "mentor", "member", "unverified"].includes(role) ? role : "unverified";
 }
 
 function inferMemberType(profileValue: unknown, authorizationValue: unknown, rawRole: unknown): string {
@@ -100,7 +100,7 @@ router.post("/admin/users/email-roster", emailRosterLimiter, ensureAdmin, asyncH
 
     const activeDocuments = authorizationSnapshot.docs.filter(doc => {
       const authorization = doc.data();
-      return authorization.isDeleted !== 1 && normalizeRole(authorization.role) !== "unverified" && validEmail(authorization.email);
+      return authorization.isDeleted !== 1 && authorization.isDeleted !== true && normalizeRole(authorization.role) !== "unverified" && validEmail(authorization.email);
     });
     const profileSnapshots: DocumentSnapshot[] = [];
     for (let start = 0; start < activeDocuments.length; start += PROFILE_READ_CONCURRENCY) {

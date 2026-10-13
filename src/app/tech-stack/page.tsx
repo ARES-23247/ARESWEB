@@ -115,7 +115,7 @@ export default function TechStackPage() {
                     {tech.desc}
                   </p>
                 </div>
-                <div className="text-[9px] font-mono text-marble/40 border-t border-white/5 pt-4 mt-6 uppercase tracking-wider font-bold">
+                <div className="text-[9px] font-mono text-marble/60 border-t border-white/5 pt-4 mt-6 uppercase tracking-wider font-bold">
                   Platform: {tech.model}
                 </div>
               </div>

@@ -236,7 +236,7 @@ export default function JoinPage() {
             </div>
 
             {submitStatus === "success" && (
-              <div role="status" aria-live="polite" className="bg-ares-gold/15 border border-ares-gold/30 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-xs font-bold items-center">
+              <div role="status" aria-live="polite" className="bg-obsidian border border-ares-gold/40 text-ares-gold p-4 ares-cut-sm mb-6 flex gap-3 text-xs font-bold items-center">
                 <CheckCircle aria-hidden="true" size={16} className="text-ares-gold shrink-0" />
                 <span>{role === "general" ? "Message sent! We will get back to you soon." : "Application submitted successfully! We will be in touch soon."}</span>
               </div>
@@ -385,7 +385,7 @@ export default function JoinPage() {
                 >
                   {submitStatus === "sending" ? "Submitting..." : role === "general" ? "Send Message" : `Submit ${role === "student" ? "Student" : "Mentor"} Application`}
                 </button>
-                <p className="text-center text-[9px] text-obsidian/50 font-bold uppercase tracking-widest mt-4 leading-relaxed max-w-md mx-auto">
+                <p className="text-center text-[9px] text-obsidian/75 font-bold uppercase tracking-widest mt-4 leading-relaxed max-w-md mx-auto">
                   Your personal information is protected under the <i>FIRST</i>® Youth Protection Program (YPP) guidelines.
                 </p>
               </div>

@@ -84,47 +84,84 @@ function sanitizeAvatarUrl(value: unknown, sensitiveValues: unknown[]): string {
   }
 }
 
+function safeRosterString(value: unknown, maxLength: number): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function safeRosterArray(
+  value: unknown,
+  maxItems: number,
+  maxItemLength: number,
+): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim().slice(0, maxItemLength))
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
 export function registerProfileRosterRoutes(router: Router): void {
   router.get(
     "/about-roster",
     asyncHandler(async (_req, res) => {
-      const snapshot = await adminDb
-        .collection("user_profiles")
-        .where("showOnAbout", "in", [true, 1])
-        .orderBy("__name__")
-        .limit(100)
-        .get();
+      const [snapshot, authorizationSnapshot] = await Promise.all([
+        adminDb
+          .collection("user_profiles")
+          .where("showOnAbout", "in", [true, 1])
+          .orderBy("__name__")
+          .limit(100)
+          .get(),
+        adminDb.collection("authorized_users").limit(500).get(),
+      ]);
+      const activeUids = authorizationSnapshot?.docs
+        ? new Set(
+            authorizationSnapshot.docs
+              .filter((document) => hasActiveAuthorization(document.data()))
+              .map((document) => document.id),
+          )
+        : null;
       const membersRaw = snapshot.docs
         .filter((doc) => {
           // The query cannot express a != filter alongside the IN clause, so
-          // archived profiles are excluded here as defense in depth before any
-          // public field is mapped.
+          // archived profiles and deauthorized users are excluded here as
+          // defense in depth before any public field is mapped.
           const data = doc.data();
-          return data.isDeleted !== 1 && data.archived !== true;
+          return (
+            (!activeUids || activeUids.has(doc.id)) &&
+            data.isDeleted !== 1 &&
+            data.isDeleted !== true &&
+            data.archived !== true
+          );
         })
         .map((doc) => {
           const data = doc.data();
           if (data.memberType === "parent") return null;
 
-          const memberType = data.memberType || "student";
+          const memberType =
+            typeof data.memberType === "string" &&
+            ["student", "mentor", "alumni", "sponsor"].includes(data.memberType)
+              ? data.memberType
+              : "student";
           const isStudent = memberType === "student";
           return {
             identifier: doc.id,
             nickname:
               typeof data.nickname === "string" && data.nickname.trim()
-                ? data.nickname.trim()
+                ? data.nickname.trim().slice(0, 80)
                 : "ARES Member",
-            pronouns: data.pronouns || "",
-            subteams: data.subteams || [],
+            pronouns: safeRosterString(data.pronouns, 40),
+            subteams: safeRosterArray(data.subteams, 12, 60),
             memberType,
             avatar: sanitizeAvatarUrl(data.avatar, [
               doc.id,
               data.contactEmail,
               data.email,
             ]),
-            bio: data.bio || "",
-            colleges: isStudent ? [] : data.colleges || [],
-            contactEmail: data.contactEmail || "",
+            bio: safeRosterString(data.bio, 1_500),
+            colleges: isStudent ? [] : safeRosterArray(data.colleges, 10, 120),
+            contactEmail:
+              typeof data.contactEmail === "string" ? data.contactEmail : "",
           };
         })
         .filter(
@@ -167,6 +204,7 @@ export function registerProfileRosterRoutes(router: Router): void {
           return (
             activeUids.has(document.id) &&
             data.isDeleted !== 1 &&
+            data.isDeleted !== true &&
             data.archived !== true
           );
         })

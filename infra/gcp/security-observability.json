@@ -74,13 +74,13 @@
   "platformAlerts": [
     {
       "signal": "Cloud Run request count and 5xx ratio",
-      "scope": ["publicapi", "coreapi", "mediaapi", "driveapi", "communicationsapi", "web"],
+      "scope": ["publicapi", "coreapi", "mediaapi", "driveapi", "communicationsapi", "web", "aresweb-game-api", "aresweb-biobuzz-sim"],
       "windowSeconds": 300,
       "action": "Alert when the 5xx ratio exceeds 5% with at least 20 requests."
     },
     {
       "signal": "Cloud Run instance and billable-instance time",
-      "scope": ["publicapi", "coreapi", "mediaapi", "driveapi", "communicationsapi", "web"],
+      "scope": ["publicapi", "coreapi", "mediaapi", "driveapi", "communicationsapi", "web", "aresweb-game-api", "aresweb-biobuzz-sim"],
       "windowSeconds": 900,
       "action": "Alert when a service sustains 80% of its configured maximum-instance ceiling."
     },

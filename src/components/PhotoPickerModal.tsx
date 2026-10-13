@@ -218,7 +218,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
           </header>
 
         {displayError && (
-          <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red text-[11px] rounded mb-4 flex items-start gap-2 leading-relaxed">
+          <div className="p-3 bg-ares-red/10 border border-ares-red/20 text-ares-red-light text-[11px] rounded mb-4 flex items-start gap-2 leading-relaxed">
             <AlertCircle size={14} className="shrink-0 mt-0.5" />
             <span>{displayError}</span>
           </div>
@@ -236,7 +236,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
               onError={(msg) => setError(msg)}
             />
             <div>
-              <label htmlFor="crop-image-alt" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/55">
+              <label htmlFor="crop-image-alt" className="block text-[9px] font-black uppercase tracking-wider mb-1.5 text-marble/60">
                 Alt Text / Caption
               </label>
               <input
@@ -253,9 +253,11 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
           /* ─── TAB SELECTION VIEW ─── */
           <div className="flex flex-col flex-grow overflow-hidden min-h-[350px]">
             {/* Tabs */}
-            <div className="flex bg-black/35 p-0.5 rounded border border-white/5 text-[9px] font-black uppercase tracking-widest w-fit mb-4 shrink-0">
+            <div role="tablist" aria-label="Image source options" className="flex bg-black/35 p-0.5 rounded border border-white/5 text-[9px] font-black uppercase tracking-widest w-fit mb-4 shrink-0">
               <button
                 type="button"
+                role="tab"
+                aria-selected={tab === "upload"}
                 onClick={() => setTab("upload")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   tab === "upload" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
@@ -265,6 +267,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={tab === "gallery"}
                 onClick={() => setTab("gallery")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   tab === "gallery" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
@@ -274,6 +278,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={tab === "albums"}
                 onClick={() => setTab("albums")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   tab === "albums" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
@@ -283,6 +289,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={tab === "google"}
                 onClick={() => setTab("google")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   tab === "google" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"
@@ -292,6 +300,8 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={tab === "url"}
                 onClick={() => setTab("url")}
                 className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
                   tab === "url" ? "bg-ares-red text-white shadow" : "text-marble/60 hover:text-white"

@@ -35,7 +35,7 @@ const joinSchema = z.object({
   code: z.string().trim().toUpperCase().length(8).regex(/^[2-9A-HJ-NP-Z]+$/u),
 }).strict();
 const placementSchema = z.object({
-  index: z.number().int().min(0).max(126),
+  index: z.number().int().min(0).max(216),
   tileId: z.string().regex(/^[A-Z?]-\d{1,2}$/u),
   assignedLetter: z.string().trim().toUpperCase().length(1).regex(/^[A-Z]$/u).optional(),
 }).strict();

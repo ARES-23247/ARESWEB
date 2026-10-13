@@ -278,6 +278,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Underline"
+            aria-label="Insert underline"
           >
             <Underline size={13} />
           </button>
@@ -287,6 +288,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Strikethrough"
+            aria-label="Insert strikethrough"
           >
             <Strikethrough size={13} />
           </button>
@@ -296,6 +298,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Subscript"
+            aria-label="Insert subscript"
           >
             <Subscript size={13} />
           </button>
@@ -305,6 +308,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Superscript"
+            aria-label="Insert superscript"
           >
             <Superscript size={13} />
           </button>
@@ -317,6 +321,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Left"
+            aria-label="Align left"
           >
             <AlignLeft size={13} />
           </button>
@@ -326,6 +331,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Center"
+            aria-label="Align center"
           >
             <AlignCenter size={13} />
           </button>
@@ -335,6 +341,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Right"
+            aria-label="Align right"
           >
             <AlignRight size={13} />
           </button>
@@ -344,6 +351,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Align Justify"
+            aria-label="Align justify"
           >
             <AlignJustify size={13} />
           </button>
@@ -356,6 +364,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20"
             title="Insert Table"
+            aria-label="Insert table"
           >
             <Table size={13} />
           </button>
@@ -385,6 +394,7 @@ export default function MarkdownEditor({
             disabled={mode === "preview" || disabled}
             className="w-7 h-7 flex items-center justify-center rounded text-marble/60 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ares-cyan disabled:opacity-20 text-ares-cyan/90"
             title="Insert Video"
+            aria-label="Insert video"
           >
             <Video size={13} />
           </button>

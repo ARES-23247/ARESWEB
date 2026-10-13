@@ -29,9 +29,35 @@ const profileSyncSchema = z.object({
     .optional()
     .or(z.literal(""))
     .or(z.null()),
-  role: z.string().optional(),
+  role: z
+    .enum([
+      "admin",
+      "coach",
+      "mentor",
+      "member",
+      "student",
+      "parent",
+      "lead",
+      "unverified",
+    ])
+    .optional(),
   name: z.string().optional(),
 });
+
+function sanitizeAuthorizedUserDto(
+  data: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!data) return {};
+  const {
+    archivedBy: _archivedBy,
+    restoredBy: _restoredBy,
+    invitedBy: _invitedBy,
+    updatedBy: _updatedBy,
+    roleUpdatedBy: _roleUpdatedBy,
+    ...safeData
+  } = data;
+  return safeData;
+}
 
 const allowedProfileKeys = [
   "nickname",
@@ -251,43 +277,56 @@ export function registerProfileSyncRoutes(router: Router): void {
       const userRef = adminDb.collection("authorized_users").doc(uid);
       const userSnap = await userRef.get();
       if (userSnap.exists) {
-        const data = userSnap.data() || {};
-        const rawRole = (data.role || "").toLowerCase().trim();
-        let normRole = rawRole || "member";
-        let memberType = data.memberType || "";
+        const data = { ...(userSnap.data() || {}) };
+        const isArchived = data.isDeleted === 1 || data.isDeleted === true;
+        const rawRole =
+          typeof data.role === "string" ? data.role.toLowerCase().trim() : "";
+        let normRole = "unverified";
+        let memberType = typeof data.memberType === "string" ? data.memberType : "";
 
-        if (rawRole === "coach") {
-          normRole = "admin";
-          if (!memberType) memberType = "mentor";
-        } else if (rawRole === "student") {
-          normRole = "member";
-          if (!memberType) memberType = "student";
-        } else if (rawRole === "parent") {
-          normRole = "member";
-          if (!memberType) memberType = "parent";
-        } else if (rawRole === "lead") {
-          normRole = "mentor";
+        if (!isArchived) {
+          if (rawRole === "coach") {
+            normRole = "admin";
+            if (!memberType) memberType = "mentor";
+          } else if (rawRole === "student") {
+            normRole = "member";
+            if (!memberType) memberType = "student";
+          } else if (rawRole === "parent") {
+            normRole = "member";
+            if (!memberType) memberType = "parent";
+          } else if (rawRole === "lead") {
+            normRole = "mentor";
+          } else if (
+            ["admin", "mentor", "member", "unverified"].includes(rawRole)
+          ) {
+            normRole = rawRole;
+          }
         }
 
-        if (normRole !== rawRole || memberType !== data.memberType) {
+        if (normRole !== rawRole || memberType !== (data.memberType || "")) {
           const updates: { role: string; memberType?: string } = {
             role: normRole,
           };
           if (memberType) updates.memberType = memberType;
           await userRef.set(updates, { merge: true });
           data.role = normRole;
-          data.memberType = memberType;
+          if (memberType) data.memberType = memberType;
         }
-        res.json({ authorizedUser: data });
+        res.json({ authorizedUser: sanitizeAuthorizedUserDto(data) });
         return;
       }
 
       const legacySnap = await adminDb
         .collection("authorized_users")
         .where("email", "==", cleanEmail)
+        .limit(5)
         .get();
       if (!legacySnap.empty) {
-        const legacyDoc = legacySnap.docs.find((doc) => doc.id !== uid);
+        const legacyDoc = legacySnap.docs.find((doc) => {
+          if (doc.id === uid) return false;
+          const docData = doc.data();
+          return docData?.isDeleted !== 1 && docData?.isDeleted !== true;
+        });
         if (legacyDoc) {
           const legacyData = legacyDoc.data();
           logger.info(
@@ -312,7 +351,7 @@ export function registerProfileSyncRoutes(router: Router): void {
           }
           batch.delete(legacyDoc.ref);
           await batch.commit();
-          res.json({ authorizedUser: legacyData });
+          res.json({ authorizedUser: sanitizeAuthorizedUserDto(legacyData) });
           return;
         }
       }

@@ -223,9 +223,51 @@ describe("Inquiries Router Backend Endpoints", () => {
         nextCursor: null,
       }));
     });
+
+    it("rejects malformed or missing pagination cursors with 400 INVALID_CURSOR", async () => {
+      req.query = { cursor: "bad/cursor" };
+      await getHandler("/", "get")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "INVALID_CURSOR" }));
+
+      next.mockClear();
+      req.query = { cursor: "missing-id" };
+      const collection = adminDb.collection("inquiries") as any;
+      collection.get.mockResolvedValueOnce({ exists: false });
+      await getHandler("/", "get")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400, code: "INVALID_CURSOR" }));
+    });
   });
 
   describe("POST /api/inquiries/:id/approve-account", () => {
+    it("rejects account approval with 409 when an active authorized account already exists", async () => {
+      const handler = getHandler("/:id/approve-account", "post");
+      req.params.id = "inq_existing";
+      const mockDoc = adminDb.collection("inquiries").doc as any;
+      mockDoc().get
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({
+            name: "encrypted:Existing Admin",
+            email: "encrypted:admin@aresfirst.org",
+            type: "student",
+            status: "pending",
+          }),
+        })
+        .mockResolvedValueOnce({
+          exists: true,
+          data: () => ({ role: "admin", isDeleted: false }),
+        });
+      vi.mocked(adminAuth.getUserByEmail).mockResolvedValueOnce({
+        uid: "existing-admin-uid",
+        email: "admin@aresfirst.org",
+      } as never);
+
+      await handler(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({
+        status: 409,
+        code: "USER_ALREADY_EXISTS",
+      }));
+    });
     it("should refuse to pre-authorize an account built from undecryptable values", async () => {
       const handler = getHandler("/:id/approve-account", "post");
       req.params.id = "inq_bad";

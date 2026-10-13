@@ -241,7 +241,7 @@ export default function SeasonsPage() {
                     <div className="w-16 h-16 ares-cut bg-ares-red flex items-center justify-center shadow-lg shadow-ares-red/20">
                       <Trophy className="text-white" size={32} />
                     </div>
-                    <span className="text-2xl font-black text-white/20 italic">{award.year}</span>
+                    <span className="text-2xl font-black text-marble/60 italic">{award.year}</span>
                   </div>
                   <h3 className="text-2xl font-black text-white mb-2 tracking-tighter group-hover:text-ares-gold transition-colors">
                     {award.title}

@@ -251,7 +251,8 @@ export default function ShiftScheduleEditor({
               <button
                 type="button"
                 onClick={() => setFormCoverImage("")}
-                className="absolute top-1.5 right-1.5 p-1 bg-black/80 hover:bg-black border border-white/10 text-white rounded-full transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                aria-label="Remove cover image"
+                className="absolute top-1.5 right-1.5 p-1 bg-black/80 hover:bg-black border border-white/10 text-white rounded-full transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer"
               >
                 <X size={10} />
               </button>
@@ -273,7 +274,7 @@ export default function ShiftScheduleEditor({
               className={`flex-1 min-w-[90px] py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
                 formCategory === "internal"
                   ? "bg-ares-red/15 border-ares-red text-white font-black"
-                  : "bg-transparent border-white/10 text-marble/55 hover:text-white"
+                  : "bg-transparent border-white/10 text-marble/60 hover:text-white"
               }`}
             >
               Practice
@@ -285,7 +286,7 @@ export default function ShiftScheduleEditor({
               className={`flex-1 min-w-[90px] py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
                 formCategory === "outreach"
                   ? "bg-ares-gold/15 border-ares-gold text-ares-gold font-black"
-                  : "bg-transparent border-white/10 text-marble/55 hover:text-white"
+                  : "bg-transparent border-white/10 text-marble/60 hover:text-white"
               }`}
             >
               Outreach
@@ -297,7 +298,7 @@ export default function ShiftScheduleEditor({
               className={`flex-1 min-w-[120px] py-2 rounded text-xs uppercase font-bold tracking-wider transition-all border cursor-pointer disabled:opacity-50 ${
                 formCategory === "competition"
                   ? "bg-ares-cyan/15 border-ares-cyan text-ares-cyan font-black"
-                  : "bg-transparent border-white/10 text-marble/55 hover:text-white"
+                  : "bg-transparent border-white/10 text-marble/60 hover:text-white"
               }`}
             >
               Competition
@@ -316,7 +317,7 @@ export default function ShiftScheduleEditor({
                 onClick={() => setFormIsPotluck(0)}
                 disabled={!canEdit}
                 className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer disabled:opacity-50 ${
-                  formIsPotluck === 0 ? "bg-white/10 text-white" : "text-marble/45"
+                  formIsPotluck === 0 ? "bg-white/10 text-white" : "text-marble/60"
                 }`}
               >
                 No
@@ -326,7 +327,7 @@ export default function ShiftScheduleEditor({
                 onClick={() => setFormIsPotluck(1)}
                 disabled={!canEdit}
                 className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer disabled:opacity-50 ${
-                  formIsPotluck === 1 ? "bg-ares-gold/20 text-ares-gold font-black" : "text-marble/45"
+                  formIsPotluck === 1 ? "bg-ares-gold/20 text-ares-gold font-black" : "text-marble/60"
                 }`}
               >
                 Yes
@@ -344,7 +345,7 @@ export default function ShiftScheduleEditor({
                 onClick={() => setFormIsVolunteer(0)}
                 disabled={!canEdit}
                 className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer disabled:opacity-50 ${
-                  formIsVolunteer === 0 ? "bg-white/10 text-white" : "text-marble/45"
+                  formIsVolunteer === 0 ? "bg-white/10 text-white" : "text-marble/60"
                 }`}
               >
                 No
@@ -354,7 +355,7 @@ export default function ShiftScheduleEditor({
                 onClick={() => setFormIsVolunteer(1)}
                 disabled={!canEdit}
                 className={`flex-1 py-1 rounded text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer disabled:opacity-50 ${
-                  formIsVolunteer === 1 ? "bg-ares-gold/20 text-ares-gold font-black" : "text-marble/45"
+                  formIsVolunteer === 1 ? "bg-ares-gold/20 text-ares-gold font-black" : "text-marble/60"
                 }`}
               >
                 Yes
@@ -381,6 +382,7 @@ export default function ShiftScheduleEditor({
         <div className="min-w-[160px] shrink-0">
           {canPublishDirectly ? (
             <select
+              aria-label="Event publishing status"
               value={formStatus}
               onChange={(e) =>
                 setFormStatus(

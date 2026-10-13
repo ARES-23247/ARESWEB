@@ -133,7 +133,7 @@ jobs:
         env:
           NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY }}
           NEXT_PUBLIC_GOOGLE_PICKER_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY }}
-        run: pnpm run build
+        run: VITE_BIOBUZZ_ORIGIN="$(node scripts/biobuzz-cloud-run.mjs --origin)" pnpm run build
 
       - name: Enforce bundle budgets
         run: node scripts/check-bundle-size.mjs

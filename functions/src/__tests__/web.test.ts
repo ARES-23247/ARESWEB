@@ -41,7 +41,7 @@ describe("dynamic web function", () => {
     });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
-      text: async () => '<html><head><title>Old</title><meta name="description" content="old"><meta property="og:title" content="old"><meta property="og:description" content="old"><meta property="og:type" content="website"></head><body><div id="root"><main>Crawl fallback</main></div><script type="module" src="/assets/index-release.js"></script></body></html>',
+      text: async () => '<html><head><title>Old</title><link rel="canonical" href="https://aresfirst.org/"><meta name="description" content="old"><meta property="og:title" content="old"><meta property="og:description" content="old"><meta property="og:type" content="website"></head><body><div id="root"><main>Crawl fallback</main></div><script type="module" src="/assets/index-release.js"></script></body></html>',
     }));
     const response = responseDouble();
 
@@ -51,11 +51,30 @@ describe("dynamic web function", () => {
     );
 
     expect(response.status).toHaveBeenCalledWith(200);
-    expect(response.send).toHaveBeenCalledWith(expect.stringContaining("Build Update | ARES 23247"));
+    const html = response.send.mock.calls[0][0] as string;
+    expect(html).toContain("Build Update | ARES 23247");
+    expect(html.match(/rel="canonical"/g)).toHaveLength(1);
+    expect(html).toContain('href="https://aresfirst.org/blog/build-update"');
+    expect(html).toContain("<h1>Build Update | ARES 23247</h1>");
     expect(fetch).toHaveBeenCalledWith(
       "https://aresfirst-portal.web.app/dashboard",
       expect.objectContaining({ cache: "no-store" }),
     );
+
+    getDocument.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        status: "published",
+        isDeleted: 0,
+        title: "Open House",
+        description: "Public summary --- Meeting Notes --- Internal debrief notes",
+      }),
+    });
+    const eventResponse = responseDouble();
+    await runWeb({ method: "GET", path: "/events/open-house" }, eventResponse);
+    const eventHtml = eventResponse.send.mock.calls[0][0] as string;
+    expect(eventHtml).toContain("Public summary");
+    expect(eventHtml).not.toContain("Internal debrief notes");
   });
 
   it("exercises the active app shell through a data-independent health route", async () => {

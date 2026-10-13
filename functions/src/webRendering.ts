@@ -1,4 +1,5 @@
 import { isPublishedContent } from "./lib/contentVisibility";
+import { publicEventDescription } from "./routes/calendarHelpers";
 
 export interface PageMetadata {
   title: string;
@@ -21,6 +22,34 @@ const SAFE_ID = /^[A-Za-z0-9_-]{1,160}$/;
 
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function extractTiptapText(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const record = node as Record<string, unknown>;
+  if (typeof record.text === "string") return record.text;
+  if (Array.isArray(record.content)) {
+    return record.content.map(extractTiptapText).filter(Boolean).join(" ");
+  }
+  return "";
+}
+
+function plainEventDescription(value: unknown): string {
+  const publicDesc = publicEventDescription(value);
+  if (!publicDesc) return "";
+  if (publicDesc.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(publicDesc) as Record<string, unknown>;
+      if (parsed?.type === "doc") {
+        const extracted = extractTiptapText(parsed).replace(/\s+/g, " ").trim();
+        const markerIndex = extracted.search(/\s*-{3,}\s*meeting notes\s*-{3,}\s*/i);
+        return (markerIndex >= 0 ? extracted.slice(0, markerIndex) : extracted).trim();
+      }
+    } catch {
+      // Fall back to plain string below
+    }
+  }
+  return publicDesc.replace(/\s+/g, " ").trim();
 }
 
 function escapeHtml(value: string): string {
@@ -108,7 +137,7 @@ export function metadataForDocument(
     const title = stringValue(data.title) || stringValue(data.name) || "ARES Event";
     return {
       title: `${title} | ARES 23247`,
-      description: stringValue(data.description) || `Event details for ${title} from ARES 23247.`,
+      description: plainEventDescription(data.description) || `Event details for ${title} from ARES 23247.`,
       canonicalUrl,
       image: safeImage(data.thumbnail ?? data.image),
     };
@@ -141,13 +170,16 @@ export function injectMetadata(shell: string, metadata: PageMetadata): string {
   const canonicalUrl = escapeHtml(metadata.canonicalUrl);
   const image = escapeHtml(metadata.image ?? DEFAULT_IMAGE);
   const type = metadata.type === "article" ? "article" : "website";
+  const rootBody = `<div id="root"><main><h1>${title}</h1><p>${description}</p><p><a href="/">ARES 23247 — West Virginia robotics team</a></p></main></div>`;
 
   let rendered = shell
+    .replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi, "")
     .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
     .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${description}">`)
     .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${title}">`)
     .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${description}">`)
-    .replace(/<meta\s+property=["']og:type["'][^>]*>/i, `<meta property="og:type" content="${type}">`);
+    .replace(/<meta\s+property=["']og:type["'][^>]*>/i, `<meta property="og:type" content="${type}">`)
+    .replace(/<div id="root">[\s\S]*?<\/main>\s*<\/div>|<div id="root"><\/div>/i, rootBody);
 
   const tags = [
     `<link rel="canonical" href="${canonicalUrl}">`,

@@ -93,7 +93,10 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
   await adminDb.collection("inquiries").doc(inquiryId).set(newInquiry);
 
   try {
-    const maskedName = maskName(name);
+    const maskedName = maskName(name)
+      .replace(/@/g, "@\u200B")
+      .replace(/[\r\n]+/g, " ")
+      .replace(/[\\`*_{}[\]()<>]/g, "\\$&");
     const maskedEmail = maskEmail(email);
 
     // The applicant's free-text message can contain PII they typed themselves;
@@ -137,10 +140,14 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
   let query = adminDb.collection("inquiries").orderBy("createdAt", "desc").limit(limitVal + 1);
 
   if (cursor) {
-    const cursorDoc = await adminDb.collection("inquiries").doc(cursor).get();
-    if (cursorDoc.exists) {
-      query = query.startAfter(cursorDoc);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(cursor)) {
+      throw new ApiError(400, "Invalid pagination cursor.", "INVALID_CURSOR");
     }
+    const cursorDoc = await adminDb.collection("inquiries").doc(cursor).get();
+    if (!cursorDoc.exists) {
+      throw new ApiError(400, "Invalid pagination cursor.", "INVALID_CURSOR");
+    }
+    query = query.startAfter(cursorDoc);
   }
 
   const snapshot = await query.get();
@@ -307,9 +314,11 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
 
   // Check if Firebase Auth user already exists for this email
   let targetId = "";
+  let foundExistingAuthUser = false;
   try {
     const authUser = await adminAuth.getUserByEmail(cleanEmail);
     targetId = authUser.uid;
+    foundExistingAuthUser = true;
   } catch (err: unknown) {
     const errorCode = typeof err === "object" && err !== null && "code" in err
       ? String(err.code)
@@ -324,10 +333,40 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
     targetId = crypto.randomUUID();
   }
 
+  const authRef = adminDb.collection("authorized_users").doc(targetId);
+  const profileRef = adminDb.collection("user_profiles").doc(targetId);
+
+  const existingAuthData = foundExistingAuthUser
+    ? (await authRef.get())?.data?.()
+    : (
+        await adminDb
+          .collection("authorized_users")
+          .where("email", "==", cleanEmail)
+          .limit(1)
+          .get()
+      )?.docs?.[0]?.data?.();
+  const existingRole =
+    typeof existingAuthData?.role === "string"
+      ? existingAuthData.role.trim().toLowerCase()
+      : "";
+  if (
+    existingAuthData &&
+    existingAuthData.isDeleted !== 1 &&
+    existingAuthData.isDeleted !== true &&
+    ["admin", "coach", "mentor", "member", "student", "parent", "lead"].includes(
+      existingRole,
+    )
+  ) {
+    throw new ApiError(
+      409,
+      "An active authorized account already exists for this email.",
+      "USER_ALREADY_EXISTS",
+    );
+  }
+
   const batch = adminDb.batch();
 
   // 1. Create or merge authorized_users doc
-  const authRef = adminDb.collection("authorized_users").doc(targetId);
   batch.set(authRef, {
     email: cleanEmail,
     role,
@@ -339,7 +378,6 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
 
-  const profileRef = adminDb.collection("user_profiles").doc(targetId);
   const avatarSeed = crypto.randomBytes(24).toString("hex");
   const protectedProfile = await encryptedPrivateUpdates({
     firstName,

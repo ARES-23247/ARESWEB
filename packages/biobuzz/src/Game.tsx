@@ -33,6 +33,7 @@ export default function Game({online}:{online?:OnlineClient}) {
   const terminal=useRef(false);
   const worker=useRef<Worker|null>(null),socket=useRef<WebSocket|null>(null),session=useRef<Session|null>(null),keys=useRef(new Set<string>());
   const pressTimes=useRef(new Map<string,number>()),keyTimers=useRef(new Map<string,ReturnType<typeof setTimeout>>());
+  const sampledKeys=useRef(new Set<string>()),releaseAfterSample=useRef(new Set<string>());
   const control=useRef({seat,speed,intake,paused,aimHive,driverView,configuring}),retry=useRef<ReturnType<typeof setTimeout>|null>(null),sequence=useRef(0),closed=useRef(false);
   useEffect(()=>{control.current={seat,speed,intake,paused,aimHive,driverView,configuring};},[seat,speed,intake,paused,aimHive,driverView,configuring]);
   const send=(message:ClientMessage)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify(message));};
@@ -75,14 +76,14 @@ export default function Game({online}:{online?:OnlineClient}) {
     const timeouts=keyTimers.current;
     const w=new Worker(new URL("./worker.ts",import.meta.url),{type:"module"});worker.current=w;
     w.onmessage=event=>{if(session.current)return;if(event.data.type==="snapshot")setState(event.data.state);else setError(event.data.message);};
-    const clear=()=>{keys.current.clear();aimClicks.current=0;};
+    const clear=()=>{keys.current.clear();sampledKeys.current.clear();releaseAfterSample.current.clear();aimClicks.current=0;};
     const down=(e:KeyboardEvent)=>{
       if((e.target as HTMLElement)?.closest("input,select,textarea"))return;
       if(e.code==="KeyJ"){if(!e.repeat)setIntake(on=>!on);e.preventDefault();return;}
       if(e.code==="KeyH"){if(!e.repeat)aimClicks.current=Math.min(2,aimClicks.current+1);e.preventDefault();return;}
       if(["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","KeyF","KeyG","KeyR","BracketLeft","BracketRight"].includes(e.code)){keys.current.add(e.code);e.preventDefault();}
     };
-    const up=(e:KeyboardEvent)=>keys.current.delete(e.code);
+    const up=(e:KeyboardEvent)=>{keys.current.delete(e.code);sampledKeys.current.delete(e.code);releaseAfterSample.current.delete(e.code);};
     const visibility=()=>{clear();w.postMessage({type:"pause",paused:document.hidden||control.current.paused||!!session.current});};
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",clear);document.addEventListener("visibilitychange",visibility);
     const timer=setInterval(()=>{
@@ -117,6 +118,9 @@ export default function Game({online}:{online?:OnlineClient}) {
         intake:c.intake,shoot:trigger,shootHeld:trigger,lockOn,aimHive:lockOn||aim,aim,deposit,depositHeld:deposit,aimFlower:true,
         turretTurn:(k.has("BracketLeft")||pad?.buttons[4]?.pressed?1:0)-(k.has("BracketRight")||pad?.buttons[5]?.pressed?1:0),
         speed:c.speed,release:k.has("KeyR")||!!pad?.buttons[3]?.pressed};
+      for(const heldKey of k)sampledKeys.current.add(heldKey);
+      for(const tappedKey of releaseAfterSample.current){k.delete(tappedKey);sampledKeys.current.delete(tappedKey);}
+      releaseAfterSample.current.clear();
       if(session.current){if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({type:"input",sequence:sequence.current++,input}));}
       else w.postMessage({type:"input",id:c.seat,input});
     },1000/30);
@@ -132,7 +136,7 @@ export default function Game({online}:{online?:OnlineClient}) {
   const aimingAtHive=selected?.shotTarget==="hive"&&selected.shotStatus!==undefined;
   let robotDraftError="";try{validateRobotSetup(robotDraft);}catch(e){robotDraftError=(e as Error).message;}
   const reset=(next:Config,controlled?:number)=>{
-    leaveOnline();keys.current.clear();aimClicks.current=0;
+    leaveOnline();keys.current.clear();sampledKeys.current.clear();releaseAfterSample.current.clear();aimClicks.current=0;
     previousAim.current=false;
     setIntake(false);setPaused(false);setError("");setConfiguring(false);
     const id=controlled??Math.max(0,next.seats.findIndex(s=>s==="human"));
@@ -149,11 +153,11 @@ export default function Game({online}:{online?:OnlineClient}) {
     setTimerMode(mode);reset({...config,timed:true,matchMode:mode,seats,autos},id);
     fieldPanel.current?.focus();fieldPanel.current?.scrollIntoView({block:"start"});
   };
-  const hold=(key:string)=>({
-    onPointerDown:(e:React.PointerEvent<HTMLButtonElement>)=>{e.currentTarget.setPointerCapture(e.pointerId);clearTimeout(keyTimers.current.get(key));pressTimes.current.set(key,performance.now());keys.current.add(key);},
-    onPointerUp:()=>{const remaining=Math.max(0,250-(performance.now()-(pressTimes.current.get(key)??0)));keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),remaining));},
-    onPointerCancel:()=>keys.current.delete(key),
-    onClick:(e:React.MouseEvent<HTMLButtonElement>)=>{if(e.detail===0){keys.current.add(key);keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),250));}},
+  const hold=(key:string,singleFrameTap=false)=>({
+    onPointerDown:(e:React.PointerEvent<HTMLButtonElement>)=>{e.currentTarget.setPointerCapture(e.pointerId);clearTimeout(keyTimers.current.get(key));pressTimes.current.set(key,performance.now());sampledKeys.current.delete(key);releaseAfterSample.current.delete(key);keys.current.add(key);},
+    onPointerUp:()=>{if(singleFrameTap){if(sampledKeys.current.has(key)){keys.current.delete(key);sampledKeys.current.delete(key);}else releaseAfterSample.current.add(key);return;}const remaining=Math.max(0,250-(performance.now()-(pressTimes.current.get(key)??0)));keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),remaining));},
+    onPointerCancel:()=>{keys.current.delete(key);sampledKeys.current.delete(key);releaseAfterSample.current.delete(key);},
+    onClick:(e:React.MouseEvent<HTMLButtonElement>)=>{if(e.detail===0){sampledKeys.current.delete(key);keys.current.add(key);if(singleFrameTap)releaseAfterSample.current.add(key);else keyTimers.current.set(key,setTimeout(()=>keys.current.delete(key),250));}},
   });
   const seatOptions=(["human","easy","standard","empty"] as SeatKind[]).map(kind=><option key={kind} value={kind}>{kind==="empty"?"Empty":kind==="human"?"Human":kind==="easy"?"Easy bot":"Standard bot"}</option>);
   return <section className="bio-page" aria-label="BIOBUZZ simulator">
@@ -177,7 +181,7 @@ export default function Game({online}:{online?:OnlineClient}) {
       <p className="bio-help">WASD drive · Q/E turn (temporarily overrides fixed-shooter aim) · J toggle intake · H toggle aim lock · F hold to shoot · G hold to place in flower · R release nectar · [ / ] turn turret.</p>
       <p role="status" data-testid="gamepad-status">{gamepadName?gamepadName==="Unsupported controller mapping"?"This controller has no standard browser mapping. Keyboard and touch controls remain available.":"Gamepad connected: "+gamepadName:"Gamepad: connect a controller and press a button to activate it."}</p>
       <p className="bio-help">Standard gamepad: left stick drive · right stick turn · A / Cross toggle intake · left trigger toggle aim lock · right trigger hold to shoot · bumpers turn turret · X / Square hold to place in flower · Y / Triangle release nectar · View / Share switch driver view. Disconnecting stops gamepad inputs and switches intake and aim lock off.</p>
-      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button aria-pressed={intake} onClick={()=>setIntake(on=>!on)}>{intake?"Intake on":"Intake off"}</button><button aria-pressed={aimHive} onClick={()=>{aimClicks.current=Math.min(2,aimClicks.current+1);}}>{aimHive?"Aim on":"Aim off"}</button><button {...hold("KeyF")}>Shoot</button><button {...hold("KeyG")}>Place in flower</button><button {...hold("KeyR")}>Release nectar</button>{robotSetup.turret&&<><button {...hold("BracketLeft")}>Turret left</button><button {...hold("BracketRight")}>Turret right</button></>}</div>
+      <div className="bio-row bio-touch" aria-label="Driving controls"><button {...hold("KeyW")} aria-label="Drive forward">↑</button><button {...hold("KeyS")} aria-label="Drive backward">↓</button><button {...hold("KeyA")} aria-label="Drive left">←</button><button {...hold("KeyD")} aria-label="Drive right">→</button><button {...hold("KeyQ")}>Turn left</button><button {...hold("KeyE")}>Turn right</button><button aria-pressed={intake} onClick={()=>setIntake(on=>!on)}>{intake?"Intake on":"Intake off"}</button><button aria-pressed={aimHive} onClick={()=>{aimClicks.current=Math.min(2,aimClicks.current+1);}}>{aimHive?"Aim on":"Aim off"}</button><button {...hold("KeyF",true)}>Shoot</button><button {...hold("KeyG",true)}>Place in flower</button><button {...hold("KeyR",true)}>Release nectar</button>{robotSetup.turret&&<><button {...hold("BracketLeft")}>Turret left</button><button {...hold("BracketRight")}>Turret right</button></>}</div>
       </div>
     </div><aside>
       {editing&&<div ref={autoEditor} tabIndex={-1} className="bio-auto-panel"><AutoEditor program={program} onChange={setProgram} onPreview={()=>runAuto("auto")} canRun={!lobby}/></div>}
