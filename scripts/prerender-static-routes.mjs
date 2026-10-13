@@ -38,7 +38,7 @@ export const staticPageMetadata = [
     ["Guide the hive", "Try thirty puzzles across Sunny Garden, Breezy Meadow, Glasshouse, Rainy Garden and Wildflower Valley in Waggle Way, or <a href=\"/waggle-way/builder\">open the garden workshop</a> to build and test a local puzzle."],
   ]],
   ["/waggle-way/builder", "Waggle Way · Garden workshop", "Build and test a local bee puzzle with dancing guides and fans.", true, [
-    ["Build a garden", "Place a hive, flowers, guides, fans, branches, water, and shelter leaves. Supply extra tools for players to place. Save gardens in this browser or export a level file. <a href=\"/waggle-way\">Play the campaign puzzles</a>. Online publishing is not yet available."],
+    ["Build a garden", "Place a hive, flowers, guides, fans, branches, water, and shelter leaves. Supply extra tools for players to place. Save gardens in this browser, export a level file, or publish verified puzzles to the community shelf. <a href=\"/waggle-way\">Play the campaign puzzles</a>."],
   ]],
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission.", false, [
     ["Who we are", "ARES 23247 is the Appalachian Robotics & Engineering Society, a student-led FIRST® Tech Challenge team from Morgantown, West Virginia. Students design, build, and program competition robots while coaches and mentors guide engineering, business, and outreach work. <a href=\"/seasons\">See our seasons and legacy</a> or <a href=\"/join\">apply to join</a>."],

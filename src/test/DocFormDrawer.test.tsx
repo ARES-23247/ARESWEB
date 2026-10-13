@@ -283,9 +283,14 @@ describe("DocFormDrawer", () => {
       target: { value: "Mobile inspection guide" },
     });
     await waitFor(() => expect(screen.getByLabelText("Slug")).toHaveValue("mobile-inspection-guide"));
-    fireEvent.click(screen.getByRole("button", { name: /Preview Draft/i }));
+    const previewTab = screen.getByRole("tab", { name: /Preview Draft/i });
+    expect(previewTab).toHaveAttribute("aria-selected", "false");
+    fireEvent.click(previewTab);
+    expect(previewTab).toHaveAttribute("aria-selected", "true");
 
-    expect(screen.getByRole("heading", { name: "Mobile inspection guide" })).toBeInTheDocument();
+    const previewHeading = screen.getByRole("heading", { name: "Mobile inspection guide" });
+    expect(previewHeading).toBeInTheDocument();
+    expect(screen.getByRole("tablist").contains(previewHeading)).toBe(false);
     expect(screen.getByText("Preview only · return to Compose Content to make changes")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });

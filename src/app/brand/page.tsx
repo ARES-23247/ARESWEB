@@ -34,7 +34,7 @@ export default function BrandPage() {
         description="Official ARES 23247 brand assets, palette, typography, and boilerplate for media, sponsors, and partners."
       />
 
-      <main className="mx-auto w-full max-w-5xl px-6 py-16">
+      <div className="mx-auto w-full max-w-5xl px-6 py-16">
         <p className="text-xs font-black uppercase tracking-[0.3em] text-ares-gold">
           ARES 23247
         </p>
@@ -167,14 +167,14 @@ export default function BrandPage() {
           </ul>
         </section>
 
-        <footer className="mt-16 border-t border-white/10 pt-6 text-xs text-marble/50">
+        <footer className="mt-16 border-t border-white/10 pt-6 text-xs text-marble/65">
           <p className="inline-flex items-center gap-2">
             <ExternalLink size={13} aria-hidden="true" />
             Design tokens live in the repository at
             src/styles/ares-design-tokens.css; this page always mirrors them.
           </p>
         </footer>
-      </main>
+      </div>
     </div>
   );
 }

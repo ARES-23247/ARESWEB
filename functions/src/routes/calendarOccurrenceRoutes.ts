@@ -52,6 +52,9 @@ router.put(
   ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const { id, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "Restore the event before editing occurrences.", "EVENT_ARCHIVED");
+    }
     if (!readRecurrence(data.recurrence)) {
       throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
     }
@@ -105,6 +108,9 @@ router.patch(
   ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const { id, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "Restore the event before editing occurrences.", "EVENT_ARCHIVED");
+    }
     if (!readRecurrence(data.recurrence)) {
       throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
     }
@@ -142,6 +148,9 @@ router.patch(
   ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const { id, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "Restore the event before editing occurrences.", "EVENT_ARCHIVED");
+    }
     if (!readRecurrence(data.recurrence)) {
       throw new ApiError(409, "This event does not repeat.", "NOT_RECURRING");
     }

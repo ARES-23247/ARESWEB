@@ -92,7 +92,25 @@ export default function LayoutWrapper({
   );
 
   // Waggle Way owns an immersive game shell with an explicit Arcade exit.
-  if (isDashboard || pathname === "/waggle-way" || pathname === "/waggle-way/builder") {
+  // DashboardLayout renders its own main#main-content landmark after the sidebar.
+  if (isDashboard) {
+    return (
+      <div className="min-h-screen bg-obsidian text-marble flex flex-col">
+        <SkipLink />
+        <SiteAnnouncementBanner />
+        {announcer}
+        <div
+          className="flex-grow flex flex-col"
+          style={{ paddingTop: "var(--site-announcement-height, 0px)" }}
+        >
+          <AuthErrorNotice />
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  if (pathname === "/waggle-way" || pathname === "/waggle-way/builder") {
     return (
       <div className="min-h-screen bg-obsidian text-marble flex flex-col">
         <SkipLink />

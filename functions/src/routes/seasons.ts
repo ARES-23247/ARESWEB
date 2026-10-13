@@ -52,6 +52,12 @@ function isoDate(value: unknown, label: string): string {
   return value.trim();
 }
 
+function safeHttpsUrlOrNull(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const url = value.trim();
+  return url.length <= 2048 && url.startsWith("https://") ? url : null;
+}
+
 function seasonDto(id: string, data: Record<string, unknown>) {
   return {
     id,
@@ -59,12 +65,12 @@ function seasonDto(id: string, data: Record<string, unknown>) {
     endYear: typeof data.endYear === "number" ? data.endYear : null,
     challengeName: text(data.challengeName, 160),
     robotName: text(data.robotName, 120) || null,
-    robotImage: typeof data.robotImage === "string" ? data.robotImage : null,
+    robotImage: safeHttpsUrlOrNull(data.robotImage),
     robotDescription: text(data.robotDescription, 2_000) || null,
-    robotCadUrl: typeof data.robotCadUrl === "string" ? data.robotCadUrl : null,
+    robotCadUrl: safeHttpsUrlOrNull(data.robotCadUrl),
     summary: text(data.summary, 2_000) || null,
-    albumUrl: typeof data.albumUrl === "string" ? data.albumUrl : null,
-    albumCover: typeof data.albumCover === "string" ? data.albumCover : null,
+    albumUrl: safeHttpsUrlOrNull(data.albumUrl),
+    albumCover: safeHttpsUrlOrNull(data.albumCover),
     status: statusValue(data.status),
   };
 }

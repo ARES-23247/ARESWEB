@@ -87,7 +87,7 @@ function normalizeAdminRole(value: unknown): {
   if (["member", "unverified"].includes(rawRole)) {
     return { role: rawRole as AdminUserRole, impliedMemberType: "" };
   }
-  return { role: "member", impliedMemberType: "" };
+  return { role: "unverified", impliedMemberType: "" };
 }
 
 function normalizeAdminMemberType(value: unknown): AdminMemberType {
@@ -351,7 +351,8 @@ export function registerProfileAdminRoutes(router: Router): void {
             createdAt: safeCreatedAt(
               authorization.createdAt || profile.createdAt,
             ),
-            isDeleted: authorization.isDeleted === 1,
+            isDeleted:
+              authorization.isDeleted === 1 || authorization.isDeleted === true,
           };
         });
 
@@ -590,7 +591,7 @@ export function registerProfileAdminRoutes(router: Router): void {
       }
 
       const authData = authSnapshot.data() || {};
-      if (authData.isDeleted !== 1)
+      if (authData.isDeleted !== 1 && authData.isDeleted !== true)
         throw new ApiError(409, "User access is already active.");
       const restoredRole =
         typeof authData.archivedRole === "string" &&

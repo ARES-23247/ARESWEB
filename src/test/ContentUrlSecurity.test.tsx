@@ -57,8 +57,14 @@ describe("untrusted content URL boundaries", () => {
 
     expect(screen.getByText("Blocked link").closest("a")).toBeNull();
     expect(screen.getByRole("link", { name: "Safe link" })).toHaveAttribute("href", "https://example.org");
-    expect(screen.getByRole("heading", { name: "Bounded heading", level: 6 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Fallback heading", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Bounded heading", level: 6 })).toHaveAttribute(
+      "id",
+      "bounded-heading",
+    );
+    expect(screen.getByRole("heading", { name: "Fallback heading", level: 2 })).toHaveAttribute(
+      "id",
+      "fallback-heading",
+    );
     expect(screen.queryByRole("img", { name: "Robot render" })).not.toBeInTheDocument();
     expect(screen.getByText("Image unavailable: Robot render")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Safe robot" })).toHaveAttribute(

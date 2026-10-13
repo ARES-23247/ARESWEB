@@ -180,6 +180,12 @@ describe("BUZZLE online routes", () => {
       expectedVersion: 1, action: { type: "play", placements: [{ index: 999, tileId: "A-1" }] },
     }, { "X-Game-Player": guest.playerToken });
     expect(invalid.status).toBe(400);
+
+    const outerRing = await post(`/games/${guest.game.gameId}/actions`, {
+      expectedVersion: 1, action: { type: "play", placements: [{ index: 216, tileId: "A-1" }] },
+    }, { "X-Game-Player": guest.playerToken });
+    const outerBody = await outerRing.json() as { error?: string };
+    expect(outerBody.error ?? "").not.toContain("Validation failed");
     expect((await post(`/games/${guest.game.gameId}/sync`)).status).toBe(401);
   });
 });

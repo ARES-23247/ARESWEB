@@ -24,9 +24,10 @@ try {
             $localPath = "index.html"
         }
 
-        $filePath = Join-Path $path $localPath
+        $rootFull = [System.IO.Path]::GetFullPath($path).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
+        $filePath = [System.IO.Path]::GetFullPath((Join-Path $path $localPath))
 
-        if (Test-Path $filePath -PathType Leaf) {
+        if ($filePath.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $filePath -PathType Leaf)) {
             $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
             $contentType = switch ($ext) {
                 ".html" { "text/html; charset=utf-8" }

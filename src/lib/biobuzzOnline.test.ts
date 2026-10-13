@@ -21,6 +21,7 @@ describe("BIOBUZZ App-Checked admission",()=>{
     await expect(client!.admit("join",{code:"AABBCCDD"})).rejects.toThrow("Unexpected");
     mocks.fetch.mockResolvedValue({ok:false,json:async()=>({error:"At capacity"})});await expect(client!.admit("queue")).rejects.toThrow("At capacity");
     mocks.fetch.mockResolvedValue({ok:false,json:async()=>({})});await expect(client!.admit("queue")).rejects.toThrow("unavailable");
+    mocks.fetch.mockResolvedValue({ok:false,json:async()=>{throw new SyntaxError("Unexpected token <");}});await expect(client!.admit("queue")).rejects.toThrow("Online simulator unavailable.");
   });
   it("supports the explicitly configured local service without App Check",async()=>{
     vi.stubEnv("VITE_BIOBUZZ_ORIGIN","http://127.0.0.1:3027");mocks.appCheck.mockResolvedValue({});

@@ -30,7 +30,7 @@ export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxP
         <header className="w-full flex items-center justify-between border-b border-white/5 pb-3.5">
           <div aria-live="polite">
             {(uploadedByText || uploadedDateText) && (
-            <span className="text-[10px] text-marble/40 font-mono">
+            <span className="text-[10px] text-marble/60 font-mono">
               {uploadedByText ? `Uploaded by ${uploadedByText}` : ""}
               {uploadedByText && uploadedDateText ? " · " : ""}
               {uploadedDateText ?? ""}

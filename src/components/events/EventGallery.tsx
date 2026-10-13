@@ -122,7 +122,7 @@ export default function EventGallery({
           Loading event photos…
         </div>
       ) : photos.length === 0 && !photoLoadError ? (
-        <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl bg-black/10 text-marble/30 text-xs font-mono">
+        <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl bg-black/10 text-marble/60 text-xs font-mono">
           <ImageIcon aria-hidden="true" size={32} className="mx-auto mb-3 opacity-25" />
           {occurrenceDate
             ? "No photos have been uploaded for this session or series."

@@ -133,10 +133,7 @@ export default function VideosPage() {
         </div>
       </section>
 
-      <main
-        className="border-y border-white/10 bg-black/10 py-12"
-        id="main-content"
-      >
+      <div className="border-y border-white/10 bg-black/10 py-12">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-10 flex flex-col gap-5 border-b border-white/10 pb-6 sm:flex-row sm:items-center sm:justify-between">
             <div
@@ -287,7 +284,7 @@ export default function VideosPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       <Dialog.Root
         open={Boolean(selected)}

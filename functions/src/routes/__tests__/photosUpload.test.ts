@@ -278,4 +278,20 @@ describe("Photos upload route", () => {
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
+  it("rejects uploading into a public album for a non-publisher member while allowing mentors", async () => {
+    mockGet.mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 0, isPublic: true }) });
+    await expect(
+      handler()({ authorizationRole: "member", body: imageBody({ albumId: "public-album" }) }, response()),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: "FORBIDDEN",
+    });
+
+    mockGet
+      .mockResolvedValueOnce({ exists: true, data: () => ({ isDeleted: 0, isPublic: true }) })
+      .mockResolvedValueOnce({ empty: true });
+    const res = response();
+    await handler()({ authorizationRole: "mentor", body: imageBody({ albumId: "public-album" }) }, res);
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
 });

@@ -94,7 +94,7 @@
         ]
       },
       {
-        "source": "/tournaments{,/**}",
+        "source": "/tournaments/**",
         "headers": [
           {
             "key": "X-Robots-Tag",

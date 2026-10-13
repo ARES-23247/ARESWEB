@@ -61,12 +61,22 @@ router.post(
         "Upload a JPEG, PNG, or WebP image with a filename under 180 characters.",
       );
     }
+    const publisherRoles = new Set(["admin", "coach", "mentor"]);
     if (albumId && !/^[A-Za-z0-9_-]{1,200}$/.test(albumId))
       throw new ApiError(400, "Invalid album ID.");
     if (albumId) {
       const album = await adminDb.collection("albums").doc(albumId).get();
       if (!album.exists || album.data()?.isDeleted === 1)
         throw new ApiError(400, "Choose an active album.");
+      const isAlbumPublic =
+        album.data()?.isPublic === 1 || album.data()?.isPublic === true;
+      if (isAlbumPublic && !publisherRoles.has(req.authorizationRole || "")) {
+        throw new ApiError(
+          403,
+          "Only an admin, coach, or mentor can add photos to a public album.",
+          "FORBIDDEN",
+        );
+      }
     }
 
     const buffer = Buffer.from(fileBase64, "base64");
@@ -128,6 +138,22 @@ router.post(
           typeof existingPhotoData.albumId === "string"
             ? existingPhotoData.albumId
             : null;
+        if (previousAlbumId && !publisherRoles.has(req.authorizationRole || "")) {
+          const prevAlbum = await adminDb
+            .collection("albums")
+            .doc(previousAlbumId)
+            .get();
+          const prevAlbumData = prevAlbum?.data?.();
+          if (
+            prevAlbumData?.isPublic === 1 ||
+            prevAlbumData?.isPublic === true
+          ) {
+            throw new ApiError(
+              403,
+              "Only an admin, coach, or mentor can move photos out of a public album.",
+            );
+          }
+        }
         const batch = adminDb.batch();
 
         // Update photo doc in imported_photos

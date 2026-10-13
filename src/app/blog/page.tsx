@@ -135,70 +135,69 @@ export default function BlogFeedPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post) => {
               return (
-                <Link
-                  key={post.slug}
-                  to={`/blog/${post.slug}`}
-                  className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                >
-                  <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
-                    <div className="relative h-56 w-full overflow-hidden bg-black/30 flex items-center justify-center border-b border-white/5">
-                      <BlogThumbnailImage
-                        title={post.title}
-                        thumbnail={post.thumbnail}
-                        author={post.author}
-                        date={post.date}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent animate-fadeIn"></div>
-
-                      {canEdit && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleOpenInlineEdit(post.slug);
-                          }}
-                          className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-ares-gold/80 border border-white/10 rounded-lg transition-all text-white cursor-pointer z-10 hover:scale-105 active:scale-95 shadow-lg"
-                          title="Edit Article"
-                        >
-                          <Pencil size={12} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="p-6 flex-grow flex flex-col justify-between">
-                      <div>
-                        <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red-light transition-colors">
-                          {post.title}
-                        </h4>
-                        <p className="text-sm text-white/60 line-clamp-3 mb-4">
-                          {post.snippet}
-                        </p>
+                <div key={post.slug} className="relative h-full">
+                  <Link
+                    to={`/blog/${post.slug}`}
+                    className="block h-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    <div className="glass-card hero-card overflow-hidden cursor-pointer flex flex-col h-full border border-white/10">
+                      <div className="relative h-56 w-full overflow-hidden bg-black/30 flex items-center justify-center border-b border-white/5">
+                        <BlogThumbnailImage
+                          title={post.title}
+                          thumbnail={post.thumbnail}
+                          author={post.author}
+                          date={post.date}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent animate-fadeIn"></div>
                       </div>
+                      <div className="p-6 flex-grow flex flex-col justify-between">
+                        <div>
+                          <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red-light transition-colors">
+                            {post.title}
+                          </h4>
+                          <p className="text-sm text-white/60 line-clamp-3 mb-4">
+                            {post.snippet}
+                          </p>
+                        </div>
 
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
-                        <p className="text-xs text-white/50">{post.date}</p>
-                        <div className="flex items-center gap-1.5">
-                          <img
-                            src={
-                              post.authorAvatar
-                                ? post.authorAvatar.startsWith("http") ||
-                                  post.authorAvatar.includes("/")
-                                  ? post.authorAvatar
-                                  : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorAvatar}`
-                                : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`
-                            }
-                            alt=""
-                            className="w-5 h-5 rounded-full object-cover border border-white/10"
-                          />
-                          <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[120px]">
-                            {post.author}
-                          </span>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
+                          <p className="text-xs text-white/65">{post.date}</p>
+                          <div className="flex items-center gap-1.5">
+                            <img
+                              src={
+                                post.authorAvatar
+                                  ? post.authorAvatar.startsWith("http") ||
+                                    post.authorAvatar.includes("/")
+                                    ? post.authorAvatar
+                                    : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.authorAvatar}`
+                                  : `https://api.dicebear.com/7.x/bottts/svg?seed=${post.author || post.slug}`
+                              }
+                              alt=""
+                              className="w-5 h-5 rounded-full object-cover border border-white/10"
+                            />
+                            <span className="text-xs uppercase tracking-wider font-bold text-ares-gold/80 truncate max-w-[120px]">
+                              {post.author}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      aria-label={`Edit ${post.title}`}
+                      onClick={() => handleOpenInlineEdit(post.slug)}
+                      className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-ares-gold/80 border border-white/10 rounded-lg transition-all text-white cursor-pointer z-10 hover:scale-105 active:scale-95 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      title="Edit Article"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

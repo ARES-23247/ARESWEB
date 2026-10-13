@@ -176,10 +176,12 @@ export default function EventEditorDrawer({
               onClick={() => setIsFullScreen(!isFullScreen)}
               className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               title={isFullScreen ? "Minimize Editor" : "Maximize Editor"}
+              aria-label={isFullScreen ? "Minimize editor" : "Maximize editor"}
             >
               {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-marble/60 hover:text-white flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               aria-label="Close editor"
@@ -199,7 +201,7 @@ export default function EventEditorDrawer({
             onChange={setActiveTab}
             className="flex gap-4 overflow-x-auto"
             tabClassName={(_value, active) =>
-              `py-3 border-b-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-gold text-white" : "border-transparent text-marble/40 hover:text-white"}`
+              `py-3 border-b-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${active ? "border-ares-gold text-white" : "border-transparent text-marble/60 hover:text-white"}`
             }
           />
 

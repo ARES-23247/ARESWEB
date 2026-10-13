@@ -34,6 +34,7 @@ export default function RobotDetailPage() {
     if (loadError && (!(loadError instanceof RobotApiError) || loadError.status !== 404)) {
       return (
         <div className="min-h-screen bg-obsidian px-6 py-24 text-marble">
+          <SEO title="Robot Unavailable" description="The published ARES 23247 robot record could not be reached." noindex />
           <div className="mx-auto max-w-3xl">
             <PublicDataState
               title="Unable to load this robot"
@@ -214,7 +215,7 @@ export default function RobotDetailPage() {
               <div className="p-8 space-y-8 bg-black/10">
                 {activeWeight !== undefined && activeWeight !== null && (
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Weight Class</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/60 block mb-2 font-heading">Weight Class</span>
                     <div className="flex items-center gap-4 text-lg font-bold text-white">
                       <div className="p-2.5 bg-ares-cyan/15 ares-cut-sm border border-ares-cyan/20">
                         <Scale aria-hidden="true" size={18} className="text-ares-cyan" />
@@ -226,7 +227,7 @@ export default function RobotDetailPage() {
 
                 {activeDrivetrain && (
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Drivetrain Architecture</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/60 block mb-2 font-heading">Drivetrain Architecture</span>
                     <div className="flex items-center gap-4 text-base font-bold text-white">
                       <div className="p-2.5 bg-ares-red/15 ares-cut-sm border border-ares-red/20 shrink-0">
                         <Cpu aria-hidden="true" size={18} className="text-ares-gold" />
@@ -238,7 +239,7 @@ export default function RobotDetailPage() {
 
                 {activeMechanism && (
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Primary Mechanism</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/60 block mb-2 font-heading">Primary Mechanism</span>
                     <div className="flex items-center gap-4 text-base font-bold text-white">
                       <div className="p-2.5 bg-ares-gold/15 ares-cut-sm border border-ares-gold/20 shrink-0">
                         <Wrench aria-hidden="true" size={18} className="text-ares-gold" />
@@ -250,7 +251,7 @@ export default function RobotDetailPage() {
 
                 {robot.programmingLanguage && (
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/30 block mb-2 font-heading">Control Language</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-marble/60 block mb-2 font-heading">Control Language</span>
                     <div className="flex items-center gap-4 text-base font-bold text-white">
                       <div className="p-2.5 bg-ares-gold/15 ares-cut-sm border border-ares-gold/20 shrink-0">
                         <Code aria-hidden="true" size={18} className="text-ares-gold" />
@@ -276,7 +277,7 @@ export default function RobotDetailPage() {
                 )}
               </div>
 
-              <div className="bg-black/40 p-5 text-center text-[10px] font-black uppercase tracking-[0.3em] text-marble/25 border-t border-white/5 font-heading">
+              <div className="bg-black/40 p-5 text-center text-[10px] font-black uppercase tracking-[0.3em] text-marble/60 border-t border-white/5 font-heading">
                 Engineering Archive // SEC-23247
               </div>
             </div>

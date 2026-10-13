@@ -3,7 +3,7 @@
   "scripts": {
     "gcp-build": "",
     "lint": "eslint src --max-warnings=0",
-    "build": "node ../scripts/prepare-game-packages.mjs && tsc",
+    "build": "node ../scripts/prepare-game-packages.mjs && node -e \"require('node:fs').rmSync('lib',{recursive:true,force:true})\" && tsc",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run serve",

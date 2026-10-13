@@ -17,7 +17,7 @@ export default defineConfig({
         name: "ARES 23247 Team Portal",
         short_name: "ARES Portal",
         description:
-          "Team portal for ARES 23247, a FIRSTÂ® Tech Challenge robotics team in Morgantown, West Virginia.",
+          "Team portal for ARES 23247, a FIRST® Tech Challenge robotics team in Morgantown, West Virginia.",
         theme_color: "#1A1A1A",
         background_color: "#1A1A1A",
         display: "standalone",

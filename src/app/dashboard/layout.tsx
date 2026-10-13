@@ -225,6 +225,7 @@ export default function DashboardLayout({
   // 3. Authenticated Dashboard Layout
   return (
     <DashboardNotificationsProvider>
+      <SEO title="Command Center" description="ARES 23247 team operations dashboard." noindex />
       <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
       {/* ─── DESKTOP SIDEBAR ─── */}
@@ -291,8 +292,9 @@ export default function DashboardLayout({
         {/* Core page canvas */}
         <main
           id="main-content"
+          tabIndex={-1}
           role="main"
-          className="relative z-10 mx-auto w-full max-w-7xl flex-grow p-4 sm:p-6 md:p-10"
+          className="relative z-10 mx-auto w-full max-w-7xl flex-grow p-4 sm:p-6 md:p-10 focus:outline-none"
         >
           {children}
         </main>

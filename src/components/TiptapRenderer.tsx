@@ -74,20 +74,37 @@ const renderText = (node: ASTNode) => {
   return text;
 };
 
+const extractNodeText = (node: ASTNode): string => {
+  if (typeof node.text === "string") return node.text;
+  if (!Array.isArray(node.content)) return "";
+  return node.content.map(extractNodeText).join("");
+};
+
 const renderHeading = (node: ASTNode, children: ReactNode) => {
   const requestedLevel = Number(node.attrs?.level ?? node.level ?? 1);
   const level = Number.isFinite(requestedLevel)
     ? Math.min(6, Math.max(1, Math.trunc(requestedLevel)))
     : 1;
-  const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  // Route templates already own the page's single <h1>; demote author-supplied
+  // level-1 headings to <h2> while preserving visual hierarchy.
+  const semanticLevel = Math.max(2, level);
+  const Tag = `h${semanticLevel}` as "h2" | "h3" | "h4" | "h5" | "h6";
+  const slug = extractNodeText(node)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
-  let className = "font-heading font-bold mb-4 text-white border-b border-white/10 pb-2";
+  let className = "font-heading font-bold mb-4 text-white border-b border-white/10 pb-2 scroll-m-24";
   if (level === 1) className = "text-3xl " + className + " mt-8";
-  if (level === 2) className = "text-2xl font-bold font-heading mt-6 mb-3 text-ares-gold border-none pb-0";
-  if (level === 3) className = "inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-5 mb-2 border-none pb-0";
-  if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0";
+  if (level === 2) className = "text-2xl font-bold font-heading mt-6 mb-3 text-ares-gold border-none pb-0 scroll-m-24";
+  if (level === 3) className = "inline-block text-xs font-heading font-black bg-ares-red text-white px-3 py-1 ares-cut-sm uppercase tracking-widest mt-5 mb-2 border-none pb-0 scroll-m-24";
+  if (level === 4) className = "text-lg font-bold font-heading mt-4 mb-2 text-white border-none pb-0 scroll-m-24";
 
-  return <Tag className={className}>{children}</Tag>;
+  return (
+    <Tag id={slug || undefined} className={className}>
+      {children}
+    </Tag>
+  );
 };
 
 const renderCallout = (node: ASTNode, children: ReactNode) => {

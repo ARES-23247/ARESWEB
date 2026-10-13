@@ -36,6 +36,7 @@ async function getGoogleAccessToken(configuration: GoogleTokenConfiguration): Pr
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     }),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {

@@ -32,8 +32,16 @@ export function bucketByDueDate(dueDate: string, today: string): DueBucket | nul
   return null;
 }
 
+function sanitizeZulipInlineText(value: string): string {
+  return value
+    .replace(/[\r\n]+/g, " ")
+    .replace(/@/g, "@\u200B")
+    .replace(/[\\`*_{}[\]()<>]/g, "\\$&")
+    .trim();
+}
+
 function titleFor(entry: TaskDueDigestEntry): string {
-  return entry.title || "Untitled task";
+  return sanitizeZulipInlineText(entry.title) || "Untitled task";
 }
 
 /**
@@ -44,7 +52,7 @@ function titleFor(entry: TaskDueDigestEntry): string {
 function ownersFor(entry: TaskDueDigestEntry, nicknames?: Map<string, string>): string {
   if (entry.assignees.length === 0) return "";
   const labels = entry.assignees.map((assignee) =>
-    nicknames ? (nicknames.get(assignee) ?? "member") : assignee,
+    sanitizeZulipInlineText(nicknames ? (nicknames.get(assignee) ?? "member") : assignee) || "member",
   );
   return ` — ${labels.join(", ")}`;
 }

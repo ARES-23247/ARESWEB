@@ -33,6 +33,7 @@ export function attachBiobuzzSockets(server:Server,rooms:BiobuzzRooms,origins:re
           binding=rooms.attach(m.roomId,m.token,{send:message=>{
             if(ws.readyState===WebSocket.OPEN){if(ws.bufferedAmount>256*1024){ws.close(1013,"Connection too slow");return;}ws.send(JSON.stringify(message));}
           },close:()=>ws.close()});
+          lastPong=Date.now();
           clearTimeout(timeout);
         }else binding.receive(m);
       }catch(e){ws.send(JSON.stringify({type:"error",message:e instanceof ApiError?e.message:"Invalid simulator message."}));if (!binding || (e instanceof ApiError && e.status === 429)) ws.close(1008);}

@@ -44,7 +44,7 @@ export const WaggleVerificationSchema = z
   .object({
     version: z.literal(1),
     verifierVersion: z.literal(WAGGLE_VERIFIER_VERSION),
-    rulesVersion: z.number().int().min(1).max(5),
+    rulesVersion: z.number().int().min(1).max(8),
     contentHash: sha256,
     bindingHash: sha256,
     bestRescued: count.max(100),
@@ -92,6 +92,8 @@ export function evaluateWaggleProof(payload: string): WaggleVerification {
   } catch {
     throw new WaggleProofError("level");
   }
+  if (level.rulesVersion < 1 || level.rulesVersion > 8)
+    throw new WaggleProofError("level");
   const seen = new Set<string>();
   const witnesses = input.data.replays.map((value) => {
     let run;

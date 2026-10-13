@@ -222,6 +222,11 @@ function applyOccurrenceOverrides<T extends ReturnType<typeof eventDto>>(
   for (const key of publicKeys) {
     if (key in overrides) result[key] = overrides[key];
   }
+  if ("description" in overrides) {
+    result.description = "status" in dto
+      ? readString(overrides.description)
+      : publicEventDescription(overrides.description);
+  }
   if ("locationId" in dto) {
     if ("locationId" in overrides) result.locationId = overrides.locationId;
     if ("location" in overrides) result.location = overrides.location;

@@ -205,6 +205,18 @@ service cloud.firestore {
         data.createdAt is string && data.createdAt.size() <= 40;
     }
 
+    function isValidEventSignup(userId) {
+      let data = request.resource.data;
+      return userId.size() > 0 && userId.size() <= 128 &&
+        data.keys().hasOnly(['userId', 'nickname', 'bringing', 'prepHours', 'notes', 'attended']) &&
+        (!('userId' in data) || data.userId == userId) &&
+        (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 100)) &&
+        (!('bringing' in data) || (data.bringing is string && data.bringing.size() <= 300)) &&
+        (!('prepHours' in data) || (data.prepHours is number && data.prepHours >= 0 && data.prepHours <= 500)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000)) &&
+        (!('attended' in data) || data.attended is bool);
+    }
+
     // Rules for the authorized_users collection
     match /authorized_users/{userId} {
       // Users can read their own registration doc; admins/coaches can read everything
@@ -257,7 +269,10 @@ service cloud.firestore {
 
       match /signups/{userId} {
         allow read: if isAuthorized();
-        allow write: if isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
+        allow create, update: if isAuthorized() &&
+          (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
+          isValidEventSignup(userId);
+        allow delete: if isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
       }
 
       match /photos/{photoId} {
@@ -396,7 +411,14 @@ service cloud.firestore {
       allow read, create, update, delete: if false;
 
       match /layouts/{layoutId} {
-        allow read, write: if isAuthorized() && request.auth.uid == userId;
+        allow read, delete: if isAuthorized() && request.auth.uid == userId;
+        allow create, update: if isAuthorized() &&
+          request.auth.uid == userId &&
+          layoutId.size() > 0 &&
+          layoutId.size() <= 80 &&
+          request.resource.data.keys().size() <= 20 &&
+          (!('columns' in request.resource.data) ||
+            (request.resource.data.columns is list && request.resource.data.columns.size() <= 50));
       }
     }
 
@@ -500,14 +522,16 @@ service cloud.firestore {
     match /seasons/{seasonId} {
       // Public readers use the explicit /api/seasons DTO boundary.
       allow read: if isAuthorized();
-      allow create, update, delete: if isContentPublisher();
+      allow create, update: if hasRole('admin') || hasRole('coach');
+      allow delete: if (hasRole('admin') || hasRole('coach')) &&
+        resource.data.get('isDeleted', 0) == 1;
     }
 
     // awards
     match /awards/{awardId} {
       // Public readers use the explicit /api/awards DTO boundary.
       allow read: if isAuthorized();
-      allow create, update: if isContentPublisher();
+      allow create, update: if hasRole('admin') || hasRole('coach');
       // Permanent deletion is reserved for already-archived records and mirrors
       // the audited admin API. Active awards must be archived first.
       allow delete: if (hasRole('admin') || hasRole('coach')) &&

@@ -45,7 +45,7 @@ try {
   // some modes (for example `editor.api2-*` in the E2E build). Keep every
   // disambiguated editor API chunk in the optional-editor budget. Monaco 0.56's
   // supported entry point emits `editor-*` instead of `editor.api-*`.
-  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^editor(?:\.api)?\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|prettier|sucrase)-/;
+  const editorRuntimePattern = /^(?:ts|css|html|json|editor)\.worker-|^(?:ts|css|html|json)Mode-|^editor(?:\.api)?\d*-|^initialize-|^toggleHighContrast-|^monaco-vim\.|^vendor-(?:monaco|prettier|sucrase)-/;
   const learningDocuments = [];
   for (const file of readdirSync("content/learning", { recursive: true })) {
     if (!String(file).endsWith(".md")) continue;

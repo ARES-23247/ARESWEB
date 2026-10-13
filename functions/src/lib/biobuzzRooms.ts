@@ -75,7 +75,9 @@ export class BiobuzzRooms {
       room.players[seat]=null;room.seats[seat]=room.status==="waiting"?"human":"standard";
       room.sim?.setController(seat,"standard");
       if(room.host===seat)room.host=Math.max(0,room.players.findIndex(Boolean));
-      p.peer?.close();this.broadcastLobby(room);return;
+      p.peer?.close();
+      if(!room.players.some(Boolean)&&(room.status!=="finished"||room.saved||room.saveAttempts>=3)){this.remove(room);return;}
+      this.broadcastLobby(room);return;
     }
     if(room.status!=="waiting")throw new ApiError(409,"The match setup is locked.");
     if(m.type==="robot"){
@@ -85,9 +87,11 @@ export class BiobuzzRooms {
     }
     if(m.type==="ready"){
       if(p.ready)throw new ApiError(409,"Auto is already locked.");
-      const auto=m.auto?validateAuto(m.auto):null;
+      let auto:AutoProgram|null=null;
+      try{auto=m.auto?validateAuto(m.auto):null;}catch(err){throw new ApiError(400,err instanceof Error?err.message:"Invalid auto setup.");}
       if(auto&&auto.alliance!==(seat<2?"red":"blue"))throw new ApiError(400,"Auto alliance does not match your seat.");
-      p.setup=validateRobotSetup(auto?.robotSetup??p.setup);p.auto=auto;p.ready=true;this.broadcastLobby(room);return;
+      try{p.setup=validateRobotSetup(auto?.robotSetup??p.setup);}catch{throw new ApiError(400,"Invalid robot configuration.");}
+      p.auto=auto;p.ready=true;this.broadcastLobby(room);return;
     }
     if(m.type==="configure"){
       if(seat!==room.host||room.public)throw new ApiError(403,"Only the private-room creator can configure seats.");
@@ -121,6 +125,7 @@ export class BiobuzzRooms {
         if(!p.peer&&now-p.disconnected>=3000)room.sim?.setController(seat,"standard");
         if(!p.peer&&now-p.disconnected>30000){room.players[seat]=null;room.seats[seat]=room.status==="waiting"?"human":"standard";if(room.host===seat)room.host=Math.max(0,room.players.findIndex(Boolean));this.broadcastLobby(room);}
       }
+      if(!room.players.some(Boolean)&&(room.status!=="finished"||room.saved||room.saveAttempts>=3)){this.remove(room);continue;}
       if(room.public&&room.status==="waiting"&&(room.players.every(p=>p?.peer&&p.ready)||now-room.created>=30000)){
         const count=room.players.filter(p=>p?.peer).length;
         if(count<=1){room.status="local-offer";room.ended=now;this.broadcastLobby(room);}

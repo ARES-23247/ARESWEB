@@ -15,7 +15,7 @@ const publicEndpoints = [
 
 export default function DeveloperApiPage() {
   return (
-    <main className="min-h-screen bg-obsidian px-4 pb-16 pt-24 text-white">
+    <div className="min-h-screen bg-obsidian px-4 pb-16 pt-24 text-white">
       <SEO title="API Reference" description="A limited reference for supported ARESWEB public endpoints." noindex />
       <div className="mx-auto max-w-5xl">
         <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan">
@@ -41,6 +41,6 @@ export default function DeveloperApiPage() {
           <p className="mt-3 text-sm leading-relaxed text-marble/85">Responses are bounded and may use cursor pagination. Clients must handle non-2xx responses and rate limits. Contact the team before building a production dependency because this is not a versioned public platform.</p>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

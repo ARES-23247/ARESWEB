@@ -244,7 +244,7 @@ export default function CalendarPage() {
                       onClick={() => setSelectedDate(dayCell.date)}
                       aria-label={`${formatFullDate(dayCell.date)}: ${dayEvents.length === 0 ? "No scheduled events" : `${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"} scheduled`}`}
                       className={`relative min-h-[70px] sm:min-h-[85px] p-2 flex flex-col items-start justify-between text-left group transition-all duration-300 cursor-pointer ${
-                        dayCell.isCurrentMonth ? "bg-black/10 text-marble" : "bg-black/40 text-marble/25"
+                        dayCell.isCurrentMonth ? "bg-black/10 text-marble" : "bg-black/40 text-marble/60"
                       } ${
                         isSelected
                           ? "bg-ares-red/10 border-2 border-ares-red ring-1 ring-ares-red/20 z-10"
@@ -279,7 +279,7 @@ export default function CalendarPage() {
                           >
                             {event.title}
                             {event.recurrence && (
-                              <span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">
+                              <span className="inline-block bg-ares-red/15 text-ares-red-light text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">
                                 Repeats weekly
                               </span>
                             )}
@@ -353,7 +353,7 @@ export default function CalendarPage() {
             </h2>
 
             {upcomingEvents.length === 0 ? (
-              <div className="bg-black/20 border border-white/10 ares-cut-lg p-12 text-center text-marble/50 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+              <div className="bg-black/20 border border-white/10 ares-cut-lg p-12 text-center text-marble/60 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
                 <Info size={16} className="text-ares-bronze" />
                 {loadError && events.length === 0
                   ? "Upcoming schedule unavailable until the calendar reconnects."
@@ -406,7 +406,7 @@ export default function CalendarPage() {
                       {event.title}
                     </h3>
                     {event.recurrence && (
-                      <span className="inline-block bg-ares-red/15 text-ares-red text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">
+                      <span className="inline-block bg-ares-red/15 text-ares-red-light text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-ares-red/30">
                         Repeats weekly
                       </span>
                     )}
@@ -437,7 +437,7 @@ export default function CalendarPage() {
 
             <div className="bg-black/20 border border-white/10 ares-cut p-6 shadow-2xl space-y-6">
               {pastEvents.length === 0 ? (
-                <div className="p-8 text-center text-marble/30 text-xs font-bold uppercase tracking-wider border border-dashed border-white/5 rounded">
+                <div className="p-8 text-center text-marble/60 text-xs font-bold uppercase tracking-wider border border-dashed border-white/5 rounded">
                   {loadError && events.length === 0
                     ? "Past event history unavailable until the calendar reconnects."
                     : "No past events recorded."}
@@ -461,7 +461,7 @@ export default function CalendarPage() {
 
                         <Link to={eventDetailHref(event)} className="block space-y-1 cursor-pointer">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono text-marble/40">
+                            <span className="text-[9px] font-mono text-marble/60">
                               {new Date(event.dateStart).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",

@@ -414,25 +414,29 @@ export default function DocFormDrawer({
 
         {/* Sub-Header: Tabs Switcher */}
         <div className="px-6 border-b border-white/5 bg-black/10 flex justify-between items-center text-xs font-bold uppercase tracking-wider shrink-0 select-none">
-          <div className="flex gap-4">
+          <div className="flex gap-4" role="tablist" aria-label="Document editor views">
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "edit"}
               onClick={() => setActiveTab("edit")}
               className={`py-3 border-b-2 transition-all cursor-pointer ${
                 activeTab === "edit"
                   ? "border-ares-gold text-white"
-                  : "border-transparent text-marble/40 hover:text-white"
+                  : "border-transparent text-marble/60 hover:text-white"
               }`}
             >
               ✏️ Compose Content
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "preview"}
               onClick={() => setActiveTab("preview")}
               className={`py-3 border-b-2 transition-all cursor-pointer ${
                 activeTab === "preview"
                   ? "border-ares-gold text-white"
-                  : "border-transparent text-marble/40 hover:text-white"
+                  : "border-transparent text-marble/60 hover:text-white"
               }`}
             >
               👁️ Preview Draft
@@ -440,11 +444,13 @@ export default function DocFormDrawer({
             {editDoc && (
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === "revisions"}
                 onClick={() => setActiveTab("revisions")}
                 className={`py-3 border-b-2 transition-all cursor-pointer ${
                   activeTab === "revisions"
                     ? "border-ares-gold text-white"
-                    : "border-transparent text-marble/40 hover:text-white"
+                    : "border-transparent text-marble/60 hover:text-white"
                 }`}
               >
                 📜 Revision Logs
@@ -465,16 +471,6 @@ export default function DocFormDrawer({
               <Sparkles size={11} />
               {showAiSidebar ? "Hide AI Copilot" : "Show AI Copilot"}
             </button>
-          )}
-
-          {activeTab === "preview" && (
-            <div className="flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5">
-              <DocumentDraftPreview
-                draft={draft}
-                variant={variant}
-                defaultCategory={defaultCategory}
-              />
-            </div>
           )}
         </div>
 
@@ -537,7 +533,18 @@ export default function DocFormDrawer({
             </div>
           )}
 
-          {/* Tab 2: REVISION LOGS */}
+          {/* Tab 2: PREVIEW DRAFT */}
+          {activeTab === "preview" && (
+            <div className="flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5">
+              <DocumentDraftPreview
+                draft={draft}
+                variant={variant}
+                defaultCategory={defaultCategory}
+              />
+            </div>
+          )}
+
+          {/* Tab 3: REVISION LOGS */}
           {activeTab === "revisions" && editDoc && (
             <div className="flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5">
               {revisionError && (
