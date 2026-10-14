@@ -169,12 +169,23 @@ export default function GameSession({
         setPlaying(false);
         return;
       }
-      if (previousTime)
-        accumulator += Math.min(100, time - previousTime) * speed;
+      if (previousTime) {
+        const elapsed = time - previousTime;
+        if (speed >= 10 && elapsed < 36) {
+          frame = requestAnimationFrame(animate);
+          return;
+        }
+        accumulator += Math.min(120, elapsed) * (speed >= 10 ? 20 : speed);
+      }
       previousTime = time;
       let next = current.current;
       let ticks = 0;
-      while (accumulator >= 1000 / TICKS_PER_SECOND && ticks < 12) {
+      const maxTicks = Math.max(12, speed * 8);
+      while (
+        accumulator >= 1000 / TICKS_PER_SECOND &&
+        ticks < maxTicks &&
+        next.phase !== "finished"
+      ) {
         next = stepRun(level, next);
         accumulator -= 1000 / TICKS_PER_SECOND;
         ticks++;
@@ -436,6 +447,7 @@ export default function GameSession({
           >
             <option value={1}>{gridPlay ? "1×" : "Normal"}</option>
             <option value={3}>{gridPlay ? "3×" : "Fast ×3"}</option>
+            <option value={10}>{gridPlay ? "10×" : "Fast ×10"}</option>
           </select>
         </label>
         {!embedded && (

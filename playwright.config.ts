@@ -36,9 +36,19 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "webkit",
+      testIgnore: "**/pwa.spec.ts",
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
       name: "chromium",
       testIgnore: "**/pwa.spec.ts",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      testIgnore: "**/pwa.spec.ts",
+      use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "mobile-chromium",
@@ -49,16 +59,6 @@ export default defineConfig({
       name: "mobile-webkit",
       testIgnore: "**/pwa.spec.ts",
       use: { ...devices["iPhone 15"] },
-    },
-    {
-      name: "firefox",
-      testIgnore: "**/pwa.spec.ts",
-      use: { ...devices["Desktop Firefox"] },
-    },
-    {
-      name: "webkit",
-      testIgnore: "**/pwa.spec.ts",
-      use: { ...devices["Desktop Safari"] },
     },
     {
       name: "pwa-chromium",

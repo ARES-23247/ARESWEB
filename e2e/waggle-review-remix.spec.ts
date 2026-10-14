@@ -109,7 +109,7 @@ test("a member creates an independent remix with fresh proof and its approved so
   });
   await flight
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await flight.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(flight.getByRole("status")).toHaveText(
     "8 bees reached the flowers.",
@@ -272,7 +272,7 @@ for (const role of ["admin", "coach"] as const) {
     ).toHaveCount(0);
     await flight
       .getByRole("combobox", { name: "Speed", exact: true })
-      .selectOption("3");
+      .selectOption("10");
     await flight
       .getByRole("button", { name: "Open hive", exact: true })
       .click();

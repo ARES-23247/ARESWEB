@@ -300,7 +300,7 @@ async function gardenControls(page: Page, title: string) {
     async start(waiting: number) {
       await page
         .getByRole("combobox", { name: "Speed", exact: true })
-        .selectOption("3");
+        .selectOption("10");
       await button("Open hive").click();
       await expect(page.locator(".ww-stats")).toContainText(
         `${waiting} Waiting`,
@@ -365,7 +365,7 @@ for (const route of routes) {
       .screenshot({ path: info.outputPath("destination-route.png") });
     await page
       .getByRole("combobox", { name: "Speed", exact: true })
-      .selectOption("3");
+      .selectOption("10");
     await game.button("Open hive").click();
     let rescued = 8 - helpers.length;
     for (const id of helpers) {
