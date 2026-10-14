@@ -87,7 +87,7 @@ test("workshop fullscreen survives a test flight and reviewed submission flow", 
   await expect(flight).toHaveAttribute("data-game-fullscreen", "true");
   await flight
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await flight.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(flight.getByRole("status")).toHaveText(
     "8 bees reached the flowers.",

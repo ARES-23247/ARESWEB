@@ -219,7 +219,7 @@ for (const practice of [
       .screenshot({ path: testInfo.outputPath("practice-setup.png") });
     await page
       .getByRole("combobox", { name: "Speed", exact: true })
-      .selectOption("3");
+      .selectOption("10");
     await page.getByRole("button", { name: "Open hive", exact: true }).click();
     for (const [index, helper] of practice.helpers.entries()) {
       const target = 6 - practice.helpers.length + index;
@@ -448,7 +448,7 @@ test("dancer workshop authors mixed dances and preserves them through a winning 
   ).toBeDisabled();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await page.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(page.locator(".ww-stats")).toContainText("7/8", {
     timeout: 15000,
@@ -592,7 +592,7 @@ test("ghost comparison reviews a failed attempt without changing the new hive", 
   await page.getByRole("button", { name: "Play gardens", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await page.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(
     page.getByText("This attempt is over. Restart to try another route.", {
@@ -752,7 +752,7 @@ test("builder edits, tests, saves, exports, imports, and preserves a rejected dr
   await page.getByRole("button", { name: "Assign guide", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await closePanel(page);
   await page.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(page.locator(".ww-stats")).toContainText("7/8", {
@@ -848,7 +848,7 @@ test("a dance turns the swarm upward and the last guide follows it home", async 
   await page.getByRole("button", { name: "Assign guide", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await closePanel(page);
   await page.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(page.locator(".ww-stats")).toContainText("7/8", {
@@ -1132,7 +1132,7 @@ test("workshop builds linked gates and a rally, rescues the operator, and protec
   await expect(page.getByText(/Gate open\./)).toBeVisible();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await showDetails(page, /choose another/);
   await page
     .getByRole("combobox", { name: "Inspect object", exact: true })
@@ -1283,7 +1283,7 @@ test("workshop authors predictable rain and a canopy, freezes time and preserves
     .click();
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(
     page.getByText("8 bees reached the flowers.", { exact: true }),
@@ -1779,6 +1779,9 @@ test("lift crosses low terrain and rescues its helper through real controls", as
   await page
     .locator(".ww-game-window")
     .screenshot({ path: testInfo.outputPath("lift-shadow-and-height.png") });
+  await page
+    .getByRole("combobox", { name: "Speed", exact: true })
+    .selectOption("10");
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   for (const [id, rescued] of [
     ["placed-1", 5],
@@ -1872,7 +1875,7 @@ for (const storm of [false, true]) {
     await expect(page.locator(".ww-stats")).toContainText("4 Helpers");
     await page
       .getByRole("combobox", { name: "Speed", exact: true })
-      .selectOption("3");
+      .selectOption("10");
     await page.getByRole("button", { name: "Open hive", exact: true }).click();
     let waiting = 4;
     for (const id of ["switch-1", "switch-2", "placed-1", "placed-2"]) {
@@ -1999,7 +2002,7 @@ test("Rain Check reuses one shelter after rescuing its operator and brings every
   await expect(page.locator(".ww-stats")).toContainText("3 Helpers");
   await page
     .getByRole("combobox", { name: "Speed", exact: true })
-    .selectOption("3");
+    .selectOption("10");
   await page.getByRole("button", { name: "Open hive", exact: true }).click();
   await expect(page.locator(".ww-stats")).toContainText("5 Waiting", {
     timeout: 30000,

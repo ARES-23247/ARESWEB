@@ -249,9 +249,9 @@ jobs:
         env:
           HOME: /root
           ARES_E2E_SHARD: ${{ matrix.shard }}
-        # Campaign rescues exercise real elapsed simulation time. Two workers
-        # overlap independent browser contexts without dropping any coverage.
-        run: pnpm run test:e2e --shard=${{ matrix.shard }}/2 --workers=2
+        # Campaign rescues exercise real elapsed simulation time. Three workers
+        # overlap independent browser contexts on 4-vCPU runners without dropping any coverage.
+        run: pnpm run test:e2e --shard=${{ matrix.shard }}/2 --workers=3
 
       - name: Upload required shard evidence
         if: always()

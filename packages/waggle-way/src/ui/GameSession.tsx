@@ -174,7 +174,8 @@ export default function GameSession({
       previousTime = time;
       let next = current.current;
       let ticks = 0;
-      while (accumulator >= 1000 / TICKS_PER_SECOND && ticks < 12) {
+      const maxTicks = Math.max(12, speed * 8);
+      while (accumulator >= 1000 / TICKS_PER_SECOND && ticks < maxTicks) {
         next = stepRun(level, next);
         accumulator -= 1000 / TICKS_PER_SECOND;
         ticks++;
@@ -436,6 +437,7 @@ export default function GameSession({
           >
             <option value={1}>{gridPlay ? "1×" : "Normal"}</option>
             <option value={3}>{gridPlay ? "3×" : "Fast ×3"}</option>
+            <option value={10}>{gridPlay ? "10×" : "Fast ×10"}</option>
           </select>
         </label>
         {!embedded && (
