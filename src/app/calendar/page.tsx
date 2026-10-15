@@ -25,6 +25,7 @@ import { fetchPublicEvents } from "./api";
 import { CalendarHeader, type CalendarFilter } from "./components/CalendarHeader";
 import { buildCalendarDays, eventDetailHref, formatEventTime, formatFullDate, isSameDay } from "./calendarView";
 import { toPlainText } from "@/lib/contentFormatters";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 export default function CalendarPage() {
   const { user, authorizedUser } = useAuth();
@@ -39,7 +40,7 @@ export default function CalendarPage() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+  const { copyStatus, copyToClipboard } = useCopyToClipboard();
 
   const feedUrl = typeof window !== "undefined" ? `${window.location.origin}/api/calendar/feed` : "";
   const webcalUrl = feedUrl.replace(/^https?:/, "webcal:");
@@ -47,13 +48,9 @@ export default function CalendarPage() {
 
   const handleCopyFeedUrl = async () => {
     if (!feedUrl) return;
-    try {
-      await navigator.clipboard.writeText(feedUrl);
-      setCopyStatus("copied");
-      window.setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch (error) {
-      logger.error("Unable to copy the calendar feed URL:", error);
-      setCopyStatus("error");
+    const ok = await copyToClipboard(feedUrl);
+    if (!ok) {
+      logger.error("Unable to copy the calendar feed URL.");
     }
   };
 

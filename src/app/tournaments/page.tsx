@@ -21,6 +21,7 @@ import {
 import { PublicDataState } from "@/components/PublicDataState";
 import { formatDateOnly } from "@/lib/dateOnly";
 import PublicResults from "./PublicResults";
+import FtcGlossaryBanner from "./components/FtcGlossaryBanner";
 
 export default function TournamentsFeedPage() {
   const {
@@ -241,6 +242,7 @@ export default function TournamentsFeedPage() {
           <PublicResults />
         ) : (
           <>
+            <FtcGlossaryBanner />
         {/* Summary Counter Grid */}
         <section
           className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10"

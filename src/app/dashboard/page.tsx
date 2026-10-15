@@ -3,7 +3,16 @@
 import { logger } from "@/utils/logger";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { and, collection, onSnapshot, getCountFromServer, or, query, where, limit, } from "firebase/firestore";
+import {
+  and,
+  collection,
+  onSnapshot,
+  getCountFromServer,
+  or,
+  query,
+  where,
+  limit,
+} from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { maskEmail } from "@/lib/utils";
 import { canUseMemberAi } from "@/lib/authorization";
@@ -16,7 +25,6 @@ import {
   User,
   Shield,
   ClipboardList,
-  Terminal,
   Activity,
   Zap,
   PenTool,
@@ -25,11 +33,7 @@ import {
   GraduationCap,
   TerminalSquare,
   ArrowUpRight,
-  CheckCircle2,
-  XCircle,
   AlertCircle,
-  Database,
-  UploadCloud,
 } from "lucide-react";
 
 import { TaskItem } from "@/types/task";
@@ -40,10 +44,17 @@ import {
   selectPriorityTasks,
   summarizeTaskDescription,
 } from "./tasks/taskRecord";
+import {
+  getPriorityStyle,
+  getStatusLabel,
+  getSubteamStyle,
+} from "./tasks/utils/taskStyles";
+import DashboardOnboardingGuide from "./components/DashboardOnboardingGuide";
+import DashboardServiceStatusCard from "./components/DashboardServiceStatusCard";
 
 export default function DashboardHome() {
   const { user, authorizedUser } = useAuth();
-  
+
   // Real-time Database Counts
   const [taskCount, setTaskCount] = useState(0);
   const [activeTasks, setActiveTasks] = useState(0);
@@ -52,10 +63,13 @@ export default function DashboardHome() {
   const [recentTasks, setRecentTasks] = useState<TaskItem[]>([]);
   const [overdueTasks, setOverdueTasks] = useState(0);
   const [dueTodayTasks, setDueTodayTasks] = useState(0);
-  const [databaseState, setDatabaseState] = useState<"connecting" | "connected" | "error">("connecting");
+  const [databaseState, setDatabaseState] = useState<
+    "connecting" | "connected" | "error"
+  >("connecting");
 
   const userRole = authorizedUser?.role || "Pending Verification";
-  const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
+  const isUnverified =
+    userRole === "unverified" || userRole === "Pending Verification";
   const canUseAi = canUseMemberAi(userRole);
   const canReviewContent = canReviewDashboardContent(userRole);
   const canReviewInquiries = userRole === "admin" || userRole === "coach";
@@ -73,19 +87,26 @@ export default function DashboardHome() {
     const fetchCounts = async () => {
       try {
         const [blogsSnap, docsSnap] = await Promise.all([
-          getCountFromServer(query(
-            collection(db, "posts"),
-            where("status", "==", "published"),
-            where("isDeleted", "==", 0)
-          )),
-          getCountFromServer(query(
-            collection(db, "docs"),
-            and(
+          getCountFromServer(
+            query(
+              collection(db, "posts"),
               where("status", "==", "published"),
               where("isDeleted", "==", 0),
-              or(where("displayInMathCorner", "==", 1), where("displayInScienceCorner", "==", 1))
-            )
-          )),
+            ),
+          ),
+          getCountFromServer(
+            query(
+              collection(db, "docs"),
+              and(
+                where("status", "==", "published"),
+                where("isDeleted", "==", 0),
+                or(
+                  where("displayInMathCorner", "==", 1),
+                  where("displayInScienceCorner", "==", 1),
+                ),
+              ),
+            ),
+          ),
         ]);
 
         setBlogCount(blogsSnap.data().count);
@@ -101,27 +122,33 @@ export default function DashboardHome() {
 
     try {
       const qTasks = query(collection(db, "tasks"), limit(500));
-      const unsubTasks = onSnapshot(qTasks, (snapshot) => {
-        setDatabaseState("connected");
-        const visibleTasks = snapshot.docs
-          .map((d) => normalizeTaskRecord(d.id, d.data()))
-          .filter((task) => task.isDeleted !== 1);
-        const openTasks = visibleTasks.filter(
-          (task) => !task.archived && task.status !== "completed"
-        );
-        setTaskCount(visibleTasks.length);
-        setActiveTasks(openTasks.length);
-        setOverdueTasks(
-          openTasks.filter((task) => getTaskDueState(task) === "overdue").length
-        );
-        setDueTodayTasks(
-          openTasks.filter((task) => getTaskDueState(task) === "today").length
-        );
-        setRecentTasks(selectPriorityTasks(visibleTasks));
-      }, (err) => {
-        logger.error("Tasks listener error:", err);
-        setDatabaseState("error");
-      });
+      const unsubTasks = onSnapshot(
+        qTasks,
+        (snapshot) => {
+          setDatabaseState("connected");
+          const visibleTasks = snapshot.docs
+            .map((d) => normalizeTaskRecord(d.id, d.data()))
+            .filter((task) => task.isDeleted !== 1);
+          const openTasks = visibleTasks.filter(
+            (task) => !task.archived && task.status !== "completed",
+          );
+          setTaskCount(visibleTasks.length);
+          setActiveTasks(openTasks.length);
+          setOverdueTasks(
+            openTasks.filter((task) => getTaskDueState(task) === "overdue")
+              .length,
+          );
+          setDueTodayTasks(
+            openTasks.filter((task) => getTaskDueState(task) === "today")
+              .length,
+          );
+          setRecentTasks(selectPriorityTasks(visibleTasks));
+        },
+        (err) => {
+          logger.error("Tasks listener error:", err);
+          setDatabaseState("error");
+        },
+      );
 
       return () => {
         unsubTasks();
@@ -131,97 +158,73 @@ export default function DashboardHome() {
     }
   }, []);
 
-  const getPriorityStyle = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-ares-red/15 text-ares-red border-ares-red/30";
-      case "medium":
-        return "bg-ares-gold/10 text-ares-gold border-ares-gold/20";
-      default:
-        return "bg-white/5 text-marble/60 border-white/5";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "todo":
-        return "To Do";
-      case "in_progress":
-        return "In Progress";
-      case "review":
-        return "In Review";
-      default:
-        return status;
-    }
-  };
-
-  const getSubteamStyle = (subteam: string) => {
-    switch (subteam) {
-      case "software":
-        return "text-ares-cyan border-ares-cyan/20 bg-ares-cyan/5";
-      case "hardware":
-        return "text-ares-red border-ares-red/20 bg-ares-red/5";
-      case "business":
-        return "text-ares-gold border-ares-gold/20 bg-ares-gold/5";
-      default:
-        return "text-ares-bronze border-ares-bronze/20 bg-ares-bronze/5";
-    }
-  };
-
-  const appCheckActive = !!import.meta.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
+  const appCheckActive =
+    !!import.meta.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY;
 
   return (
     <div className="space-y-10 text-left">
-      
       {/* ─── PAGE HEADER ─── */}
       <header className="border-b border-white/5 pb-8">
         <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-          <Activity size={12} className="animate-pulse" /> Team Internal Operations
+          <Activity size={12} className="animate-pulse" /> Team Internal
+          Operations
         </p>
         <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading">
           Command Center
         </h1>
         <p className="text-marble/70 text-sm md:text-base mt-2 font-medium">
-          Manage system states, track active operations, publish content, and monitor portal infrastructure.
+          Manage system states, track active operations, publish content, and
+          monitor portal infrastructure.
         </p>
       </header>
 
-      {canReviewContent && pendingBlogApprovals > 0 && blogApprovalsState !== "error" && (
-        <section
-          aria-labelledby="pending-blog-approval-heading"
-          className="glass-card flex flex-col gap-5 border border-ares-gold/40 bg-ares-gold/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
-        >
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ares-gold/40 bg-ares-gold/15 text-ares-gold">
-              <AlertCircle aria-hidden="true" size={22} />
-            </div>
-            <div>
-              <h2
-                id="pending-blog-approval-heading"
-                className="font-heading text-base font-black uppercase tracking-tight text-white sm:text-lg"
-              >
-                {pendingBlogApprovals} blog {pendingBlogApprovals === 1 ? "post needs" : "posts need"} mentor approval
-              </h2>
-              <p className="mt-1 text-sm leading-relaxed text-marble/75">
-                Student-authored content is waiting for review before it can be published.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/dashboard/blog?tab=pending"
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-gold px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+      {/* ─── GETTING STARTED GUIDE (Novice Orientation) ─── */}
+      <DashboardOnboardingGuide isUnverified={isUnverified} />
+
+      {canReviewContent &&
+        pendingBlogApprovals > 0 &&
+        blogApprovalsState !== "error" && (
+          <section
+            aria-labelledby="pending-blog-approval-heading"
+            className="glass-card flex flex-col gap-5 border border-ares-gold/40 bg-ares-gold/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
           >
-            Review approval queue <ArrowUpRight aria-hidden="true" size={14} />
-          </Link>
-        </section>
-      )}
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ares-gold/40 bg-ares-gold/15 text-ares-gold">
+                <AlertCircle aria-hidden="true" size={22} />
+              </div>
+              <div>
+                <h2
+                  id="pending-blog-approval-heading"
+                  className="font-heading text-base font-black uppercase tracking-tight text-white sm:text-lg"
+                >
+                  {pendingBlogApprovals} blog{" "}
+                  {pendingBlogApprovals === 1 ? "post needs" : "posts need"}{" "}
+                  mentor approval
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-marble/75">
+                  Student-authored content is waiting for review before it can
+                  be published.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/dashboard/blog?tab=pending"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-gold px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Review approval queue <ArrowUpRight aria-hidden="true" size={14} />
+            </Link>
+          </section>
+        )}
 
       {canReviewContent && blogApprovalsState === "error" && (
         <div
           role="alert"
           className="flex flex-col gap-3 border border-ares-red/40 bg-ares-red/10 p-5 text-sm text-white sm:flex-row sm:items-center sm:justify-between"
         >
-          <span>Blog approval queue status is unavailable. Open Blog Management to check it directly.</span>
+          <span>
+            Blog approval queue status is unavailable. Open Blog Management to
+            check it directly.
+          </span>
           <Link
             to="/dashboard/blog?tab=pending"
             className="inline-flex min-h-11 shrink-0 items-center justify-center border border-white/20 px-4 py-2 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -231,42 +234,48 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {canReviewInquiries && hasPendingInquiries && inquiriesState !== "error" && (
-        <section
-          aria-labelledby="pending-inquiries-heading"
-          className="glass-card flex flex-col gap-5 border border-ares-cyan/40 bg-ares-cyan/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
-        >
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ares-cyan/40 bg-ares-cyan/15 text-ares-cyan">
-              <AlertCircle aria-hidden="true" size={22} />
-            </div>
-            <div>
-              <h2
-                id="pending-inquiries-heading"
-                className="font-heading text-base font-black uppercase tracking-tight text-white sm:text-lg"
-              >
-                Pending recruitment or sponsor inquiries require review
-              </h2>
-              <p className="mt-1 text-sm leading-relaxed text-marble/75">
-                Unread community, sponsor, or prospective student messages are waiting in the encrypted inquiry queue.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/dashboard/inquiries"
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-cyan px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-ares-gold"
+      {canReviewInquiries &&
+        hasPendingInquiries &&
+        inquiriesState !== "error" && (
+          <section
+            aria-labelledby="pending-inquiries-heading"
+            className="glass-card flex flex-col gap-5 border border-ares-cyan/40 bg-ares-cyan/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
           >
-            Review inquiries <ArrowUpRight aria-hidden="true" size={14} />
-          </Link>
-        </section>
-      )}
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ares-cyan/40 bg-ares-cyan/15 text-ares-cyan">
+                <AlertCircle aria-hidden="true" size={22} />
+              </div>
+              <div>
+                <h2
+                  id="pending-inquiries-heading"
+                  className="font-heading text-base font-black uppercase tracking-tight text-white sm:text-lg"
+                >
+                  Pending recruitment or sponsor inquiries require review
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-marble/75">
+                  Unread community, sponsor, or prospective student messages are
+                  waiting in the encrypted inquiry queue.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/dashboard/inquiries"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-cyan px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-ares-gold"
+            >
+              Review inquiries <ArrowUpRight aria-hidden="true" size={14} />
+            </Link>
+          </section>
+        )}
 
       {canReviewInquiries && inquiriesState === "error" && (
         <div
           role="alert"
           className="flex flex-col gap-3 border border-ares-red/40 bg-ares-red/10 p-5 text-sm text-white sm:flex-row sm:items-center sm:justify-between"
         >
-          <span>Inquiry queue status is unavailable. Open Inquiries to check directly.</span>
+          <span>
+            Inquiry queue status is unavailable. Open Inquiries to check
+            directly.
+          </span>
           <Link
             to="/dashboard/inquiries"
             className="inline-flex min-h-11 shrink-0 items-center justify-center border border-white/20 px-4 py-2 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -288,7 +297,25 @@ export default function DashboardHome() {
                 Pending Developer Verification
               </h3>
               <p className="text-marble/75 text-xs mt-1 max-w-xl">
-                Your account is currently registered as{" "} <strong className="text-white">Unverified Guest</strong>. You have read-only permissions across task managers and system controls. Please contact a team administrator to request access.
+                Your account is currently registered as{" "}
+                <strong className="text-white">Unverified Guest</strong>. To
+                protect student privacy, a team coach or administrator verifies
+                new accounts before enabling task creation or publishing. While
+                waiting, you can customize your{" "}
+                <Link
+                  to="/dashboard/profile"
+                  className="text-ares-gold underline hover:text-white"
+                >
+                  Member Profile
+                </Link>{" "}
+                and study in the{" "}
+                <Link
+                  to="/academy"
+                  className="text-ares-gold underline hover:text-white"
+                >
+                  ARES Academy
+                </Link>
+                .
               </p>
             </div>
           </div>
@@ -300,12 +327,15 @@ export default function DashboardHome() {
 
       {/* ─── STATS GRID ─── */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
         {/* Card 1: Role Clear */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Security Clear</p>
-            <p className="text-2xl font-black text-white mt-1.5 uppercase font-heading tracking-tight">{userRole}</p>
+            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">
+              Security Clear
+            </p>
+            <p className="text-2xl font-black text-white mt-1.5 uppercase font-heading tracking-tight">
+              {userRole}
+            </p>
           </div>
           <div className="w-12 h-12 bg-ares-gold/15 rounded-xl flex items-center justify-center border border-ares-gold/30">
             <Shield size={20} className="text-ares-gold" />
@@ -315,8 +345,11 @@ export default function DashboardHome() {
         {/* Card 2: Active Tasks */}
         <div className="glass-card p-6 border border-white/10 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">Active Tasks</p>
-            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">{databaseState === "error" ? "—" : `${activeTasks} / ${taskCount}`}
+            <p className="text-[10px] font-bold text-marble/55 uppercase tracking-wider">
+              Active Tasks
+            </p>
+            <p className="text-2xl font-black text-white mt-1.5 font-heading tracking-tight">
+              {databaseState === "error" ? "—" : `${activeTasks} / ${taskCount}`}
             </p>
           </div>
           <div className="w-12 h-12 bg-ares-cyan/15 rounded-xl flex items-center justify-center border border-ares-cyan/30">
@@ -378,24 +411,39 @@ export default function DashboardHome() {
               <h4 className="font-extrabold text-white text-lg tracking-tight leading-tight">
                 {user?.displayName || "ARES Member"}
               </h4>
-              <p className="text-marble/60 text-xs mt-1 select-all">{maskEmail(user?.email)}</p>
+              <p className="text-marble/60 text-xs mt-1 select-all">
+                {maskEmail(user?.email)}
+              </p>
             </div>
           </div>
 
           <div className="bg-black/45 border border-white/5 p-4.5 rounded-xl space-y-3">
-            <h5 className="text-[10px] uppercase font-bold text-ares-gold tracking-widest">Active Clearances</h5>
+            <h5 className="text-[10px] uppercase font-bold text-ares-gold tracking-widest">
+              Active Clearances
+            </h5>
             <ul className="text-xs text-marble/85 space-y-2 font-medium">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
-                <span>Access internal workspace:{" "} <strong className="text-white">Granted</strong></span>
+                <span>
+                  Access internal workspace:{" "}
+                  <strong className="text-white">Granted</strong>
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
-                <span>Read tasks & documents:{" "} <strong className="text-white">Granted</strong></span>
+                <span>
+                  Read tasks & documents:{" "}
+                  <strong className="text-white">Granted</strong>
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
-                <span>Write task changes:{" "} <strong className="text-white">{isUnverified ? "Restricted" : "Granted"}</strong></span>
+                <span>
+                  Write task changes:{" "}
+                  <strong className="text-white">
+                    {isUnverified ? "Restricted" : "Granted"}
+                  </strong>
+                </span>
               </li>
             </ul>
           </div>
@@ -403,7 +451,6 @@ export default function DashboardHome() {
 
         {/* Live System Diagnostics & Shortcuts */}
         <div className="lg:col-span-2 space-y-6 flex flex-col h-full">
-          
           {/* Active Tasks Feed */}
           <div className="glass-card p-6 border border-white/10 flex-grow flex flex-col">
             <div className="border-b border-white/5 pb-3 mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -425,40 +472,49 @@ export default function DashboardHome() {
                 </div>
               )}
             </div>
-            
+
             <div className="space-y-3.5 flex-1">
               {recentTasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-marble/40 font-mono text-xs border border-dashed border-white/10 rounded-xl">
                   <span>No active tasks in progress.</span>
-                  <Link to="/dashboard/tasks" className="text-ares-cyan hover:underline mt-1 font-bold">Go to Tasks board &rarr;</Link>
+                  <Link
+                    to="/dashboard/tasks"
+                    className="text-ares-cyan hover:underline mt-1 font-bold"
+                  >
+                    Go to Tasks board &rarr;
+                  </Link>
                 </div>
               ) : (
                 recentTasks.map((task) => {
                   const dueLabel = describeTaskDueDate(task);
                   const dueState = getTaskDueState(task);
-                  const descriptionSummary = summarizeTaskDescription(task.description);
-                  return ( <Link
-                    key={task.id}
-                    to="/dashboard/tasks"
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/25 border border-white/5 hover:border-white/15 rounded-xl gap-3 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3 truncate">
-                      <div className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0 mt-2"></div>
-                      <div className="truncate">
-                        <p className="font-extrabold text-white text-xs tracking-tight group-hover:text-ares-gold transition-colors truncate">
-                          {task.title}
-                        </p>
-                        <p className="text-[10px] text-marble/50 mt-0.5 truncate leading-relaxed">
-                          {descriptionSummary || "No description provided."}
-                        </p>
-                        {dueLabel && (
-                          <p className={`mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${
-                            dueState === "overdue"
-                              ? "text-ares-red-light"
-                              : dueState === "today"
-                                ? "text-ares-gold"
-                                : "text-marble/60"
-                          }`}
+                  const descriptionSummary = summarizeTaskDescription(
+                    task.description,
+                  );
+                  return (
+                    <Link
+                      key={task.id}
+                      to="/dashboard/tasks"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/25 border border-white/5 hover:border-white/15 rounded-xl gap-3 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-start gap-3 truncate">
+                        <div className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0 mt-2"></div>
+                        <div className="truncate">
+                          <p className="font-extrabold text-white text-xs tracking-tight group-hover:text-ares-gold transition-colors truncate">
+                            {task.title}
+                          </p>
+                          <p className="text-[10px] text-marble/50 mt-0.5 truncate leading-relaxed">
+                            {descriptionSummary || "No description provided."}
+                          </p>
+                          {dueLabel && (
+                            <p
+                              className={`mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${
+                                dueState === "overdue"
+                                  ? "text-ares-red-light"
+                                  : dueState === "today"
+                                    ? "text-ares-gold"
+                                    : "text-marble/60"
+                              }`}
                             >
                               <CalendarClock aria-hidden="true" size={10} />{" "}
                               {dueLabel}
@@ -561,112 +617,12 @@ export default function DashboardHome() {
           </div>
 
           {/* Connected Services Status */}
-          <div className="glass-card p-6 border border-white/10">
-            <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
-              <Terminal size={16} /> Portal Service Configuration
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2.5">
-                  <Database size={14} className="text-ares-cyan" />
-                  <span className="font-semibold text-marble">
-                    Firestore Synchronization
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {databaseState === "connected" ? (
-                    <>
-                      <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Connected</span>
-                    </>
-                  ) : databaseState === "error" ? (
-                    <>
-                      <XCircle size={12} className="text-ares-danger" />
-                      <span className="text-ares-danger">Unavailable</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle
-                        size={12}
-                        className="text-ares-gold animate-pulse"
-                      />
-                      <span className="text-ares-gold">Syncing...</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2.5">
-                  <Zap size={14} className="text-ares-gold" />
-                  <span className="font-semibold text-marble">
-                    Gemini AI Copilot
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {canUseAi ? (
-                    <>
-                      <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Role eligible</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle size={12} className="text-marble/40" />
-                      <span className="text-marble/40">Role restricted</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2.5">
-                  <Shield size={14} className="text-ares-red" />
-                  <span className="font-semibold text-marble">
-                    App Check Protection
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {appCheckActive ? (
-                    <>
-                      <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Configured</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle
-                        size={12}
-                        className="text-ares-gold animate-pulse"
-                      />
-                      <span className="text-ares-gold">Not configured</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-black/25 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2.5">
-                  <UploadCloud size={14} className="text-ares-success" />
-                  <span className="font-semibold text-marble">
-                    Authenticated Session
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
-                  {user ? (
-                    <>
-                      <CheckCircle2 size={12} className="text-ares-success" />
-                      <span className="text-ares-success">Signed in</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle size={12} className="text-ares-danger" />
-                      <span className="text-ares-danger">Signed out</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <DashboardServiceStatusCard
+            databaseState={databaseState}
+            canUseAi={canUseAi}
+            appCheckActive={appCheckActive}
+            isSignedIn={!!user}
+          />
         </div>
       </div>
     </div>

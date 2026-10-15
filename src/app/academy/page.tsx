@@ -2,14 +2,21 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, BookOpen, Edit2, ChevronRight, ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
-import { collection, addDoc } from "firebase/firestore";
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  Edit2,
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+  GraduationCap,
+} from "lucide-react";
 
 import SEO from "@/components/SEO";
-import EducationalCredentialSchema, { ARES_CREDENTIALS } from "@/components/EducationalCredentialSchema";
+import EducationalCredentialSchema, {
+  ARES_CREDENTIALS,
+} from "@/components/EducationalCredentialSchema";
 import { useAuth } from "@/context/AuthContext";
-import { useFocusTrap } from "@/lib/useFocusTrap";
 import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import DocsSidebar, { type DocRecord } from "@/components/docs/DocsSidebar";
 import DocsTableOfContents from "@/components/docs/DocsTableOfContents";
@@ -22,16 +29,20 @@ import {
   relatedLearningDocuments,
 } from "@/lib/learningExperience";
 import { LEARNING_PATHS, labelFor } from "@/lib/learningContent";
-const AutonomousLogicDiagram = React.lazy(() => import("@/components/docs/AutonomousLogicDiagram"));
+const AutonomousLogicDiagram = React.lazy(
+  () => import("@/components/docs/AutonomousLogicDiagram"),
+);
 import ZulipThread from "@/components/ZulipThread";
 import TiptapRenderer from "@/components/TiptapRenderer";
-import { db } from "@/lib/firebaseFirestore";
 import { logger } from "@/utils/logger";
 import {
   fetchPublicDocument,
   fetchPublicDocuments,
   PublicContentApiError,
 } from "@/lib/publicContentApi";
+import AcademySearchModal from "./components/AcademySearchModal";
+import AcademyFeedbackSection from "./components/AcademyFeedbackSection";
+import AcademyRookieBanner from "./components/AcademyRookieBanner";
 
 const ACADEMY_SIDEBAR_ORDER = [
   "AI 101",
@@ -42,7 +53,7 @@ const ACADEMY_SIDEBAR_ORDER = [
   "Physics",
   "Mathematics",
   "Science of Climbing",
-  "Science of Outdoor Sports"
+  "Science of Outdoor Sports",
 ];
 
 export default function AcademyPage() {
@@ -62,9 +73,12 @@ export default function AcademyPage() {
 
   const userRole = authorizedUser?.role;
   const isEditor = Boolean(
-    user
-    && userRole
-    && ["admin", "coach", "mentor", "member"].includes(userRole),
+    user &&
+      userRole &&
+      ["admin", "coach", "mentor", "member"].includes(userRole),
+  );
+  const canSubmitFeedback = Boolean(
+    user && authorizedUser && authorizedUser.role !== "unverified",
   );
 
   const [allDocs, setAllDocs] = useState<DocRecord[]>([]);
@@ -76,10 +90,7 @@ export default function AcademyPage() {
   const [reloadToken, setReloadToken] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [negativeFeedbackOpen, setNegativeFeedbackOpen] = useState(false);
-  const [feedbackComment, setFeedbackComment] = useState("");
+
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     setSearchQuery("");
@@ -92,25 +103,25 @@ export default function AcademyPage() {
           pathname: location.pathname,
           search: newSearch ? `?${newSearch}` : "",
         },
-        { replace: true }
+        { replace: true },
       );
     }
   }, [location.pathname, location.search, navigate]);
 
-  const navigateToSearchResult = useCallback((resultSlug: string) => {
-    setSearchOpen(false);
-    setSearchQuery("");
-    const params = new URLSearchParams(location.search);
-    params.delete("q");
-    const newSearch = params.toString();
-    navigate({
-      pathname: `${basePath}/${resultSlug}`,
-      search: newSearch ? `?${newSearch}` : "",
-    });
-  }, [basePath, location.search, navigate]);
-
-  const searchRef = useFocusTrap(searchOpen, closeSearch);
-  const feedbackDialogRef = useFocusTrap(negativeFeedbackOpen, () => setNegativeFeedbackOpen(false));
+  const navigateToSearchResult = useCallback(
+    (resultSlug: string) => {
+      setSearchOpen(false);
+      setSearchQuery("");
+      const params = new URLSearchParams(location.search);
+      params.delete("q");
+      const newSearch = params.toString();
+      navigate({
+        pathname: `${basePath}/${resultSlug}`,
+        search: newSearch ? `?${newSearch}` : "",
+      });
+    },
+    [basePath, location.search, navigate],
+  );
 
   // Parse search query parameter 'q' and open the search overlay on boot
   useEffect(() => {
@@ -128,10 +139,14 @@ export default function AcademyPage() {
       setListLoading(true);
       setListError(null);
       try {
-        setAllDocs(await fetchPublicDocuments(isAresLib ? "areslib" : "academy"));
+        setAllDocs(
+          await fetchPublicDocuments(isAresLib ? "areslib" : "academy"),
+        );
       } catch (err) {
         logger.error("Error loading all docs:", err);
-        setListError("The lesson library could not be reached. Check your connection and try again.");
+        setListError(
+          "The lesson library could not be reached. Check your connection and try again.",
+        );
       } finally {
         setListLoading(false);
       }
@@ -147,14 +162,18 @@ export default function AcademyPage() {
       setDocError(null);
       setCurrentDoc(null);
       try {
-        setCurrentDoc(await fetchPublicDocument(slug, isAresLib ? "areslib" : "academy"));
+        setCurrentDoc(
+          await fetchPublicDocument(slug, isAresLib ? "areslib" : "academy"),
+        );
       } catch (err) {
         if (err instanceof PublicContentApiError && err.status === 404) {
           setCurrentDoc(null);
           return;
         }
         logger.error("Error loading doc:", err);
-        setDocError("This lesson could not be loaded. Check your connection and try again.");
+        setDocError(
+          "This lesson could not be loaded. Check your connection and try again.",
+        );
       } finally {
         setDocLoading(false);
       }
@@ -172,13 +191,17 @@ export default function AcademyPage() {
           d.title.toLowerCase().includes(q) ||
           d.category.toLowerCase().includes(q) ||
           d.description.toLowerCase().includes(q) ||
-          (d.content?.toLowerCase().includes(q) ?? false)
+          (d.content?.toLowerCase().includes(q) ?? false),
       )
       .map((d) => ({
         slug: d.slug,
         title: d.title,
         category: d.category,
-        snippet: d.description || (d.content ? d.content.substring(0, 100) + "..." : "Open this item to read more.")
+        snippet:
+          d.description ||
+          (d.content
+            ? d.content.substring(0, 100) + "..."
+            : "Open this item to read more."),
       }));
   }, [searchQuery, allDocs]);
 
@@ -200,20 +223,31 @@ export default function AcademyPage() {
   }, [allDocs]);
 
   const pathNavigation = useMemo(
-    () => currentDoc
-      ? learningPathNavigation(allDocs, currentDoc.slug, requestedPath)
-      : { pathId: null, documents: [], position: -1, previous: null, next: null },
+    () =>
+      currentDoc
+        ? learningPathNavigation(allDocs, currentDoc.slug, requestedPath)
+        : {
+            pathId: null,
+            documents: [],
+            position: -1,
+            previous: null,
+            next: null,
+          },
     [allDocs, currentDoc, requestedPath],
   );
   const relatedDocuments = useMemo(
-    () => currentDoc ? relatedLearningDocuments(allDocs, currentDoc.slug) : [],
+    () => (currentDoc ? relatedLearningDocuments(allDocs, currentDoc.slug) : []),
     [allDocs, currentDoc],
   );
 
   // Handle Ctrl+K overlay search shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "k") {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "k"
+      ) {
         e.preventDefault();
         setSearchOpen((o) => {
           const next = !o;
@@ -231,160 +265,33 @@ export default function AcademyPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [closeSearch]);
 
-  const handleFeedback = async (isHelpful: boolean, comment: string = "") => {
-    if (!slug || isSubmittingFeedback) return;
-    setIsSubmittingFeedback(true);
-    setFeedbackMessage(null);
-    try {
-      await addDoc(collection(db, "docs_feedback"), {
-        slug,
-        isHelpful: isHelpful ? 1 : 0,
-        comment,
-        isResolved: 0,
-        createdAt: new Date().toISOString()
-      });
-      setFeedbackMessage({
-        type: "success",
-        text: isHelpful ? "Thanks for your feedback!" : "Thank you! We will use your feedback to improve this page."
-      });
-    } catch (err) {
-      logger.error("Error submitting feedback:", err);
-      setFeedbackMessage({ type: "error", text: "Failed to submit feedback. Please try again." });
-    } finally {
-      setIsSubmittingFeedback(false);
-    }
-  };
-
-  const handleNegativeFeedbackSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const comment = feedbackComment.trim();
-    setNegativeFeedbackOpen(false);
-    setFeedbackComment("");
-    void handleFeedback(false, comment);
-  };
-
   return (
     <div className="min-h-screen bg-obsidian text-white flex flex-col w-full">
       <SEO
-        title={currentDoc?.title ? `${currentDoc.title} — ${isAresLib ? "ARESLib" : "ARES Academy"}` : (isAresLib ? "ARESLib Documentation" : "ARES Academy")}
-        description={currentDoc?.description || (isAresLib ? "ARESLib documentation, control loops, and API references." : "ARES Academy lessons and interactive simulations.")}
+        title={
+          currentDoc?.title
+            ? `${currentDoc.title} — ${isAresLib ? "ARESLib" : "ARES Academy"}`
+            : isAresLib
+              ? "ARESLib Documentation"
+              : "ARES Academy"
+        }
+        description={
+          currentDoc?.description ||
+          (isAresLib
+            ? "ARESLib documentation, control loops, and API references."
+            : "ARES Academy lessons and interactive simulations.")
+        }
       />
       <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
-      {/* ── Search Overlay ─────────────────────────────────────────── */}
-      <AnimatePresence>
-        {searchOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
-            onClick={() => {
-              closeSearch();
-            }}
-          >
-            <motion.div
-              ref={searchRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="documentation-search-title"
-              tabIndex={-1}
-              initial={{ y: -20, scale: 0.95 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: -20, scale: 0.95 }}
-              className="w-full max-w-2xl bg-obsidian border border-white/10 ares-cut-sm shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 id="documentation-search-title" className="sr-only">Search documentation</h2>
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-                <Search size={18} className="text-white/60" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search documentation..."
-                  aria-label="Search documentation"
-                  className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/60"
-                />
-                <kbd className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">ESC</kbd>
-              </div>
-              {searchResults.length > 0 && (
-                <div className="max-h-80 overflow-y-auto">
-                  {searchResults.map((r) => (
-                    <button
-                      key={r.slug}
-                      className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 transition-colors cursor-pointer"
-                      onClick={() => navigateToSearchResult(r.slug)}
-                    >
-                      <div className="text-sm font-bold text-white">{r.title}</div>
-                      <div className="text-xs text-ares-gold/80 mb-1">{r.category}</div>
-                      <div className="text-xs text-white/60 line-clamp-2">{r.snippet}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {searchQuery.length >= 2 && searchResults.length === 0 && (
-                <div className="px-4 py-8 text-center text-white/60 text-sm">No results found.</div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {negativeFeedbackOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setNegativeFeedbackOpen(false)}
-          >
-            <motion.div
-              ref={feedbackDialogRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="documentation-feedback-title"
-              tabIndex={-1}
-              initial={{ y: 16, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 16, opacity: 0 }}
-              className="w-full max-w-lg bg-obsidian border border-white/10 ares-cut p-6 shadow-2xl focus:outline-none"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <form onSubmit={handleNegativeFeedbackSubmit}>
-                <h2 id="documentation-feedback-title" className="text-xl font-bold text-white mb-2">How can we improve this page?</h2>
-                <p className="text-sm text-marble/70 mb-5">Share the part that was unclear or missing. A short note is enough.</p>
-                <label htmlFor="documentation-feedback-comment" className="block text-xs font-bold uppercase tracking-wider text-ares-gold mb-2">
-                  Feedback
-                </label>
-                <textarea
-                  id="documentation-feedback-comment"
-                  value={feedbackComment}
-                  onChange={(event) => setFeedbackComment(event.target.value)}
-                  rows={5}
-                  className="w-full bg-black/40 border border-white/10 ares-cut-sm p-3 text-sm text-white placeholder:text-marble/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan resize-y"
-                  placeholder="Tell us what would make this lesson more useful."
-                />
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setNegativeFeedbackOpen(false)}
-                    className="px-4 py-2 border border-white/10 text-white ares-cut-sm text-xs font-bold uppercase tracking-wider hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-ares-red text-white ares-cut-sm text-xs font-bold uppercase tracking-wider hover:bg-ares-bronze focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                  >
-                    Send Feedback
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AcademySearchModal
+        searchOpen={searchOpen}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        onSearchQueryChange={setSearchQuery}
+        onClose={closeSearch}
+        onSelectResult={navigateToSearchResult}
+      />
 
       <div className="flex flex-1 w-full">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
@@ -398,7 +305,9 @@ export default function AcademyPage() {
         />
 
         <div className="flex-1 flex w-full">
-          <div className={`min-w-0 flex-1 px-6 pb-16 pt-24 lg:px-12 ${slug ? "mx-auto max-w-4xl xl:mx-0 xl:max-w-3xl" : "max-w-none"}`}>
+          <div
+            className={`min-w-0 flex-1 px-6 pb-16 pt-24 lg:px-12 ${slug ? "mx-auto max-w-4xl xl:mx-0 xl:max-w-3xl" : "max-w-none"}`}
+          >
             {docLoading && slug && (
               <div className="flex justify-center items-center py-20">
                 <div className="w-10 h-10 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin"></div>
@@ -406,55 +315,101 @@ export default function AcademyPage() {
             )}
 
             {listError && (
-              <div role="alert" className="border border-ares-red/40 bg-ares-red/15 p-6 text-white">
+              <div
+                role="alert"
+                className="border border-ares-red/40 bg-ares-red/15 p-6 text-white"
+              >
                 <h2 className="text-xl font-bold">Lesson library unavailable</h2>
                 <p className="mt-2 text-sm text-marble/80">{listError}</p>
-                <button type="button" onClick={() => setReloadToken((value) => value + 1)} className="mt-4 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button>
+                <button
+                  type="button"
+                  onClick={() => setReloadToken((value) => value + 1)}
+                  className="mt-4 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Try again
+                </button>
               </div>
             )}
 
             {docError && !listError && (
-              <div role="alert" className="border border-ares-red/40 bg-ares-red/15 p-6 text-white">
+              <div
+                role="alert"
+                className="border border-ares-red/40 bg-ares-red/15 p-6 text-white"
+              >
                 <h2 className="text-xl font-bold">Lesson unavailable</h2>
                 <p className="mt-2 text-sm text-marble/80">{docError}</p>
-                <button type="button" onClick={() => setReloadToken((value) => value + 1)} className="mt-4 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button>
+                <button
+                  type="button"
+                  onClick={() => setReloadToken((value) => value + 1)}
+                  className="mt-4 bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Try again
+                </button>
               </div>
             )}
 
             {slug && !docLoading && !docError && !currentDoc && !listError && (
               <div className="border border-white/10 bg-white/5 p-8 text-center">
-                <BookOpen aria-hidden="true" size={48} className="mx-auto mb-4 text-white/20" />
-                <h1 className="text-2xl font-bold text-white">Lesson not found</h1>
-                <p className="mt-2 text-sm text-marble/70">This lesson may have moved, been archived, or never existed.</p>
-                <Link to={basePath} className="mt-5 inline-block bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan">Browse lessons</Link>
+                <BookOpen
+                  aria-hidden="true"
+                  size={48}
+                  className="mx-auto mb-4 text-white/20"
+                />
+                <h1 className="text-2xl font-bold text-white">
+                  Lesson not found
+                </h1>
+                <p className="mt-2 text-sm text-marble/70">
+                  This lesson may have moved, been archived, or never existed.
+                </p>
+                <Link
+                  to={basePath}
+                  className="mt-5 inline-block bg-ares-red px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  Browse lessons
+                </Link>
               </div>
             )}
 
             {!slug && !listLoading && !listError && allDocs.length === 0 && (
               <div className="text-center py-20">
                 <BookOpen size={48} className="text-white/20 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">No Lessons Yet</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  No Lessons Yet
+                </h2>
                 <p className="text-white/60">
-                  Educational lessons will appear here once they are seeded into the database.
+                  Educational lessons will appear here once they are seeded into
+                  the database.
                 </p>
               </div>
             )}
 
             {!slug && listLoading && !listError && (
-              <div role="status" aria-live="polite" className="flex min-h-[50vh] items-center justify-center">
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex min-h-[50vh] items-center justify-center"
+              >
                 <div className="text-center">
-                  <div aria-hidden="true" className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-ares-red/30 border-t-ares-red" />
-                  <p className="mt-4 text-sm text-marble/70">Loading the learning library…</p>
+                  <div
+                    aria-hidden="true"
+                    className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-ares-red/30 border-t-ares-red"
+                  />
+                  <p className="mt-4 text-sm text-marble/70">
+                    Loading the learning library…
+                  </p>
                 </div>
               </div>
             )}
 
             {!slug && !listLoading && !listError && allDocs.length > 0 && (
-              <LearningLibraryLanding
-                documents={allDocs}
-                library={isAresLib ? "areslib" : "academy"}
-                progress={academyProgress}
-              />
+              <>
+                {!isAresLib && <AcademyRookieBanner documents={allDocs} />}
+                <LearningLibraryLanding
+                  documents={allDocs}
+                  library={isAresLib ? "areslib" : "academy"}
+                  progress={academyProgress}
+                />
+              </>
             )}
 
             {currentDoc && !docLoading && (
@@ -466,7 +421,14 @@ export default function AcademyPage() {
               >
                 <div className="mb-6 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-white/60">
-                    <Link to={pathNavigation.pathId ? `${basePath}?path=${pathNavigation.pathId}` : basePath} className="flex shrink-0 items-center overflow-hidden shadow-lg ares-cut-sm group">
+                    <Link
+                      to={
+                        pathNavigation.pathId
+                          ? `${basePath}?path=${pathNavigation.pathId}`
+                          : basePath
+                      }
+                      className="flex shrink-0 items-center overflow-hidden shadow-lg ares-cut-sm group"
+                    >
                       <span className="bg-ares-red px-2 py-0.5 text-xs font-heading font-bold uppercase text-white tracking-wider border-r border-white/10 flex items-center gap-1">
                         <GraduationCap size={12} /> ARES
                       </span>
@@ -475,9 +437,13 @@ export default function AcademyPage() {
                       </span>
                     </Link>
                     <ChevronRight size={12} />
-                    <span className="min-w-0 break-words text-ares-gold/60">{currentDoc.category}</span>
+                    <span className="min-w-0 break-words text-ares-gold/60">
+                      {currentDoc.category}
+                    </span>
                     <ChevronRight size={12} />
-                    <span className="min-w-0 break-words text-white/60">{currentDoc.title}</span>
+                    <span className="min-w-0 break-words text-white/60">
+                      {currentDoc.title}
+                    </span>
                   </div>
 
                   {isEditor && (
@@ -502,39 +468,65 @@ export default function AcademyPage() {
 
                 <LearningMetadataPanel document={currentDoc} />
 
-                <section className="mb-8 border border-white/10 bg-white/[0.03] p-5" aria-labelledby="lesson-progress-heading">
+                <section
+                  className="mb-8 border border-white/10 bg-white/[0.03] p-5"
+                  aria-labelledby="lesson-progress-heading"
+                >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 id="lesson-progress-heading" className="font-heading text-lg font-black uppercase text-white">
+                      <h2
+                        id="lesson-progress-heading"
+                        className="font-heading text-lg font-black uppercase text-white"
+                      >
                         Your local progress
                       </h2>
                       <p className="mt-1 text-sm leading-6 text-marble/65">
-                        This completion mark stays only in this browser. It is not connected to your name or ARES account.
-                        {!academyProgress.storageAvailable && " Browser storage is unavailable, so this mark will last only until the page closes."}
+                        This completion mark stays only in this browser. It is
+                        not connected to your name or ARES account.
+                        {!academyProgress.storageAvailable &&
+                          " Browser storage is unavailable, so this mark will last only until the page closes."}
                       </p>
                       {pathNavigation.pathId && (
                         <p className="mt-2 text-xs font-bold uppercase tracking-wider text-ares-gold">
-                          {labelFor(LEARNING_PATHS, pathNavigation.pathId)} · Lesson {pathNavigation.position + 1} of {pathNavigation.documents.length}
+                          {labelFor(LEARNING_PATHS, pathNavigation.pathId)} ·
+                          Lesson {pathNavigation.position + 1} of{" "}
+                          {pathNavigation.documents.length}
                         </p>
                       )}
                     </div>
                     <button
                       type="button"
-                      aria-pressed={academyProgress.completedSlugs.has(currentDoc.slug)}
-                      onClick={() => academyProgress.toggleCompleted(currentDoc.slug)}
+                      aria-pressed={academyProgress.completedSlugs.has(
+                        currentDoc.slug,
+                      )}
+                      onClick={() =>
+                        academyProgress.toggleCompleted(currentDoc.slug)
+                      }
                       className={`min-h-11 shrink-0 border px-5 py-3 text-xs font-black uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${academyProgress.completedSlugs.has(currentDoc.slug) ? "border-ares-cyan bg-ares-cyan text-obsidian" : "border-white/20 text-white hover:border-ares-cyan"}`}
                     >
-                      {academyProgress.completedSlugs.has(currentDoc.slug) ? "Completed — undo" : "Mark lesson complete"}
+                      {academyProgress.completedSlugs.has(currentDoc.slug)
+                        ? "Completed — undo"
+                        : "Mark lesson complete"}
                     </button>
                   </div>
                 </section>
 
                 {currentDoc.prerequisites.length > 0 && (
-                  <section className="mb-8 border-l-4 border-ares-gold bg-ares-gold/[0.06] p-5" aria-labelledby="prerequisites-heading">
-                    <h2 id="prerequisites-heading" className="font-heading text-lg font-black uppercase text-white">Before you start</h2>
+                  <section
+                    className="mb-8 border-l-4 border-ares-gold bg-ares-gold/[0.06] p-5"
+                    aria-labelledby="prerequisites-heading"
+                  >
+                    <h2
+                      id="prerequisites-heading"
+                      className="font-heading text-lg font-black uppercase text-white"
+                    >
+                      Before you start
+                    </h2>
                     <ul className="mt-3 space-y-2 text-sm text-marble/75">
                       {currentDoc.prerequisites.map((prerequisite) => {
-                        const prerequisiteDocument = allDocs.find((document) => document.slug === prerequisite);
+                        const prerequisiteDocument = allDocs.find(
+                          (document) => document.slug === prerequisite,
+                        );
                         return (
                           <li key={prerequisite}>
                             {prerequisiteDocument ? (
@@ -544,10 +536,17 @@ export default function AcademyPage() {
                               >
                                 {prerequisiteDocument.title}
                               </Link>
-                            ) : prerequisite}
-                            {prerequisiteDocument && academyProgress.completedSlugs.has(prerequisiteDocument.slug) && (
-                              <span className="ml-2 text-xs font-bold uppercase text-ares-cyan">Completed locally</span>
+                            ) : (
+                              prerequisite
                             )}
+                            {prerequisiteDocument &&
+                              academyProgress.completedSlugs.has(
+                                prerequisiteDocument.slug,
+                              ) && (
+                                <span className="ml-2 text-xs font-bold uppercase text-ares-cyan">
+                                  Completed locally
+                                </span>
+                              )}
                           </li>
                         );
                       })}
@@ -561,7 +560,11 @@ export default function AcademyPage() {
                     let parsedAst = null;
                     try {
                       const parsed = JSON.parse(content);
-                      if (parsed && typeof parsed === "object" && parsed.type === "doc") {
+                      if (
+                        parsed &&
+                        typeof parsed === "object" &&
+                        parsed.type === "doc"
+                      ) {
                         parsedAst = parsed;
                       }
                     } catch {
@@ -585,11 +588,18 @@ export default function AcademyPage() {
                         </h3>
                         <div className="h-px flex-1 bg-white/5" />
                       </div>
-                      <React.Suspense fallback={<div className="h-64 flex items-center justify-center text-xs text-marble/40">Loading logic diagram...</div>}>
+                      <React.Suspense
+                        fallback={
+                          <div className="h-64 flex items-center justify-center text-xs text-marble/40">
+                            Loading logic diagram...
+                          </div>
+                        }
+                      >
                         <AutonomousLogicDiagram />
                       </React.Suspense>
                       <p className="text-[10px] text-marble/30 text-center uppercase tracking-widest font-mono">
-                        ARES-FLOW Engine v1.0 // Node-based State Machine Visualization
+                        ARES-FLOW Engine v1.0 // Node-based State Machine
+                        Visualization
                       </p>
                     </div>
                   )}
@@ -598,7 +608,9 @@ export default function AcademyPage() {
                     {(() => {
                       const prevDoc = pathNavigation.previous;
                       const nextDoc = pathNavigation.next;
-                      const pathSearch = pathNavigation.pathId ? `?path=${pathNavigation.pathId}` : "";
+                      const pathSearch = pathNavigation.pathId
+                        ? `?path=${pathNavigation.pathId}`
+                        : "";
                       return (
                         <>
                           {prevDoc ? (
@@ -626,7 +638,11 @@ export default function AcademyPage() {
                               className="flex flex-col p-4 ares-cut-sm border border-white/10 hover:border-ares-cyan/50 bg-black/20 hover:bg-black/40 transition-colors group text-right items-end"
                             >
                               <span className="text-marble/60 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
-                                Next <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                                Next{" "}
+                                <ArrowRight
+                                  size={12}
+                                  className="group-hover:translate-x-1 transition-transform"
+                                />
                               </span>
                               <span className="text-white font-bold group-hover:text-ares-cyan transition-colors">
                                 {nextDoc.title}
@@ -641,8 +657,16 @@ export default function AcademyPage() {
                   </div>
 
                   {relatedDocuments.length > 0 && (
-                    <section className="mt-10 border-t border-white/10 pt-8" aria-labelledby="related-lessons-heading">
-                      <h2 id="related-lessons-heading" className="font-heading text-xl font-black uppercase text-white">Related lessons</h2>
+                    <section
+                      className="mt-10 border-t border-white/10 pt-8"
+                      aria-labelledby="related-lessons-heading"
+                    >
+                      <h2
+                        id="related-lessons-heading"
+                        className="font-heading text-xl font-black uppercase text-white"
+                      >
+                        Related lessons
+                      </h2>
                       <ul className="mt-4 grid gap-3 md:grid-cols-3">
                         {relatedDocuments.map((document) => (
                           <li key={document.slug}>
@@ -650,8 +674,12 @@ export default function AcademyPage() {
                               to={`${basePath}/${document.slug}`}
                               className="flex h-full min-h-24 flex-col border border-white/10 bg-black/20 p-4 hover:border-ares-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                             >
-                              <span className="text-xs font-bold uppercase tracking-wider text-ares-gold">{document.category}</span>
-                              <span className="mt-2 font-bold text-white">{document.title}</span>
+                              <span className="text-xs font-bold uppercase tracking-wider text-ares-gold">
+                                {document.category}
+                              </span>
+                              <span className="mt-2 font-bold text-white">
+                                {document.title}
+                              </span>
                             </Link>
                           </li>
                         ))}
@@ -668,10 +696,12 @@ export default function AcademyPage() {
                       </span>
                       <span className="text-white/50">
                         {currentDoc.updatedAt
-                          ? `Last updated: ${new Date(currentDoc.updatedAt).toLocaleDateString("en-US", {
+                          ? `Last updated: ${new Date(
+                              currentDoc.updatedAt,
+                            ).toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "long",
-                              day: "numeric"
+                              day: "numeric",
                             })}`
                           : "Not yet updated"}
                       </span>
@@ -684,7 +714,9 @@ export default function AcademyPage() {
                             src={
                               currentDoc.original_authorAvatar ||
                               `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(
-                                currentDoc.original_authorNickname || currentDoc.title || "Author"
+                                currentDoc.original_authorNickname ||
+                                  currentDoc.title ||
+                                  "Author",
                               )}`
                             }
                             alt={`${currentDoc.original_authorNickname || "Author"}'s avatar`}
@@ -696,70 +728,36 @@ export default function AcademyPage() {
                             Created By
                           </span>
                           <span className="text-white font-medium">
-                            {currentDoc.original_authorNickname || "ARES Member"}
+                            {currentDoc.original_authorNickname ||
+                              "ARES Member"}
                           </span>
                         </div>
                       </div>
-
                     </div>
                   </div>
                 )}
 
-                {/* ── Documentation Feedback ───────────────────────────── */}
-                {user && authorizedUser && authorizedUser.role !== "unverified" ? (
-                <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
-                    <BookOpen size={64} className="text-ares-gold rotate-12" />
-                  </div>
-                  <div className="relative z-10">
-                    <h4 className="text-xl font-bold text-white mb-2">Was this helpful?</h4>
-                    <p className="text-white/50 text-sm mb-6 max-w-md">
-                      Your feedback helps our engineering team improve the documentation for the entire community.
-                    </p>
-                    {feedbackMessage && (
-                      <div
-                        role={feedbackMessage.type === "error" ? "alert" : "status"}
-                        aria-live={feedbackMessage.type === "error" ? "assertive" : "polite"}
-                        className={`mb-6 p-3 ares-cut-sm text-sm font-bold ${
-                          feedbackMessage.type === "error"
-                            ? "bg-ares-red text-white"
-                            : "bg-ares-gold text-obsidian"
-                        }`}
-                      >
-                        {feedbackMessage.text}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-4">
-                      <button
-                        onClick={() => handleFeedback(true)}
-                        disabled={isSubmittingFeedback}
-                        className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-cyan/10 border border-ares-cyan/30 text-ares-cyan font-bold hover:bg-ares-cyan hover:text-black transition-all disabled:opacity-50 cursor-pointer"
-                      >
-                        <span className="text-lg">👍</span> Yes, it was
-                      </button>
-                      <button
-                        onClick={() => setNegativeFeedbackOpen(true)}
-                        disabled={isSubmittingFeedback}
-                        className="flex items-center gap-2 px-6 py-2.5 ares-cut-sm bg-ares-red/10 border border-ares-red/30 text-ares-red font-bold hover:bg-ares-red hover:text-white transition-all disabled:opacity-50 cursor-pointer"
-                      >
-                        <span className="text-lg">👎</span> No, it wasn&apos;t
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                ) : (
-                  <p className="mb-8 mt-12 border-t border-white/10 pt-6 text-sm text-marble/60">
-                    Authorized team members can sign in to leave documentation feedback.
-                  </p>
+                {slug && (
+                  <AcademyFeedbackSection
+                    slug={slug}
+                    canSubmitFeedback={canSubmitFeedback}
+                  />
                 )}
 
                 {/* ── Documentation Discussion ───────────────────────────── */}
-                {slug && user && currentDoc && <ZulipThread stream="announcements" topic={`Doc Slug: ${currentDoc.slug}`} />}
+                {slug && user && currentDoc && (
+                  <ZulipThread
+                    stream="announcements"
+                    topic={`Doc Slug: ${currentDoc.slug}`}
+                  />
+                )}
               </motion.article>
             )}
           </div>
 
-          {currentDoc && <DocsTableOfContents content={currentDoc.content ?? undefined} />}
+          {currentDoc && (
+            <DocsTableOfContents content={currentDoc.content ?? undefined} />
+          )}
         </div>
       </div>
     </div>

@@ -6,7 +6,6 @@ import { doc, runTransaction, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { Activity } from "lucide-react";
-import { authenticatedFetch } from "@/lib/api";
 import { canUseMemberAi } from "@/lib/authorization";
 import TaskDetailsModal from "./components/TaskDetailsModal";
 import TaskFilters from "./components/TaskFilters";
@@ -16,6 +15,7 @@ import { PublicDataState } from "@/components/PublicDataState";
 import TaskOperationErrorAlert from "./components/TaskOperationErrorAlert";
 import { useTaskBoardData } from "./hooks/useTaskBoardData";
 import { describeTaskError, TaskOperationError } from "./taskErrors";
+import { notifyTaskZulip } from "./utils/notifyTaskZulip";
 import { appendSubtask, readSubtasks, removeSubtask, toggleSubtask, } from "./taskSubtasks";
 import {
   buildDuplicateTaskCounts,
@@ -114,27 +114,6 @@ export default function KanbanPage() {
     });
   };
 
-  const runZulipSync = async (fetchPromise: Promise<Response>) => {
-    setSyncState("syncing");
-    try {
-      const res = await fetchPromise;
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      setSyncState("success");
-      setTimeout(() => setSyncState("idle"), 3000);
-    } catch (err) {
-      logger.error("Zulip sync error:", err);
-      const notificationError = describeTaskError("notify Zulip", err);
-      setOperationError({
-        ...notificationError,
-        message:
-          "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
-      });
-      setRetryOperation(null);
-      setSyncState("error");
-      setTimeout(() => setSyncState("idle"), 3000);
-    }
-  };
-
   // ?task={id} deep links (from Zulip messages or copied card links) arrive as
   // full page loads, so the parameter is read from the location once and then
   // cleared without a router dependency.
@@ -181,18 +160,22 @@ export default function KanbanPage() {
       await batch.commit();
 
       if (task) {
-        const syncPromise = authenticatedFetch("/api/tasks/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        void notifyTaskZulip(
+          {
             taskId,
             action: "move",
             title: task.title,
             status: newStatus,
             dueDate: task.dueDate || undefined,
-          }),
-        });
-        runZulipSync(syncPromise);
+          },
+          {
+            setSyncState,
+            onNotificationError: (notificationError) => {
+              setOperationError(notificationError);
+              setRetryOperation(null);
+            },
+          },
+        );
       }
     };
     const error = await executeTaskOperation("move task", performMove, () =>

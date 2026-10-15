@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { logger } from "@/utils/logger";
+import FtcGlossaryBanner from "./components/FtcGlossaryBanner";
 
 interface PublicResult {
   id: string;
@@ -65,6 +66,8 @@ export default function PublicResults() {
         Where ARES 23247 has competed. Detailed scouting data and match
         checklists remain in the members-only vault below.
       </p>
+
+      <FtcGlossaryBanner />
 
       {isLoading ? (
         <p role="status" className="mt-6 text-sm text-marble/60">Loading results…</p>

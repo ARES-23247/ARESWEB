@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { Calculator, Check, Copy, Flower2, Minus, Plus, RotateCcw } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   ALLIANCES, COUNT_FIELDS, STANDARD_THRESHOLDS, emptyMatch, scoreFlower,
   scoreMatch, validCount, validThresholds, validateMatch,
@@ -62,7 +63,7 @@ export default function BiobuzzScoreCalculatorPage() {
   const [eventType, setEventType] = useState("standard");
   const [matchType, setMatchType] = useState("qualification");
   const [custom, setCustom] = useState<Thresholds>({ swarm: NaN, pollinator1: NaN, pollinator2: NaN });
-  const [copiedSummary, setCopiedSummary] = useState(false);
+  const { copied: copiedSummary, copyToClipboard } = useCopyToClipboard();
   const errors = validateMatch(match);
   const thresholds = eventType === "standard" ? STANDARD_THRESHOLDS : eventType === "custom" && validThresholds(custom) ? custom : null;
   const score = errors.length ? null : scoreMatch(match, thresholds);
@@ -76,15 +77,13 @@ export default function BiobuzzScoreCalculatorPage() {
   }
 
   async function handleCopySummary() {
-    if (!score || !navigator.clipboard?.writeText) return;
+    if (!score) return;
     const summaryText = [
       `BIOBUZZ Match Summary (${matchType === "qualification" ? "Qualification" : "Playoff"})`,
       `Red Alliance: ${score.red.total} pts (Auto ${score.red.auto}, TeleOp ${score.red.teleop}, Flowers ${score.red.flowerElements + score.red.flowerBonus}, Penalties +${score.red.penalties})${showRP && score.red.totalRP !== null ? ` · ${score.red.totalRP}/6 RP` : ""}`,
       `Blue Alliance: ${score.blue.total} pts (Auto ${score.blue.auto}, TeleOp ${score.blue.teleop}, Flowers ${score.blue.flowerElements + score.blue.flowerBonus}, Penalties +${score.blue.penalties})${showRP && score.blue.totalRP !== null ? ` · ${score.blue.totalRP}/6 RP` : ""}`,
     ].join("\n");
-    await navigator.clipboard.writeText(summaryText);
-    setCopiedSummary(true);
-    window.setTimeout(() => setCopiedSummary(false), 2000);
+    await copyToClipboard(summaryText);
   }
 
   return <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
