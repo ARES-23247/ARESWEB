@@ -162,12 +162,39 @@ describe("CalendarPage Interactive Grid & Filter UX", () => {
 
     const prevMonthBtn = screen.getByRole("button", { name: "Previous Month" });
     const nextMonthBtn = screen.getByRole("button", { name: "Next Month" });
+    const todayBtn = screen.getByRole("button", { name: "Jump to Today" });
 
     expect(prevMonthBtn).toBeInTheDocument();
     expect(nextMonthBtn).toBeInTheDocument();
+    expect(todayBtn).toBeInTheDocument();
 
     fireEvent.click(nextMonthBtn);
     fireEvent.click(prevMonthBtn);
+    fireEvent.click(todayBtn);
+  });
+
+  it("filters timeline events by keyword search and generates valid single-event ICS data URLs", async () => {
+    const { buildSingleEventIcsDataUrl } = await import("../app/calendar/calendarView");
+    const icsUrl = buildSingleEventIcsDataUrl(mockEvents[0] as never);
+    expect(icsUrl.startsWith("data:text/calendar;charset=utf-8,")).toBe(true);
+    expect(decodeURIComponent(icsUrl)).toContain("SUMMARY:Software Autonomous Calibration");
+    expect(decodeURIComponent(icsUrl)).toContain("LOCATION:MARS Laboratory");
+
+    vi.mocked(authenticatedFetch).mockResolvedValue(jsonResponse({ events: mockEvents, nextCursor: null }));
+
+    render(
+      <MemoryRouter>
+        <CalendarPage />
+      </MemoryRouter>
+    );
+
+    await screen.findAllByRole("heading", { name: "Software Autonomous Calibration" });
+
+    const searchInput = screen.getByRole("searchbox", { name: "Search events by title or location" });
+    fireEvent.change(searchInput, { target: { value: "Fairmont" } });
+
+    expect(screen.getAllByRole("heading", { name: "WV FTC State Championship" })).not.toHaveLength(0);
+    expect(screen.queryByRole("heading", { name: "Software Autonomous Calibration" })).not.toBeInTheDocument();
   });
 
   it("copies calendar feed URL to clipboard and gives visual confirmation", async () => {

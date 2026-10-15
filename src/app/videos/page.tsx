@@ -9,6 +9,8 @@ import {
   Film,
   Loader2,
   Play,
+  RefreshCw,
+  Search,
   X,
 } from "lucide-react";
 import { GreekMeander } from "@/components/GreekMeander";
@@ -24,6 +26,7 @@ export default function VideosPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "video" | "short">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<ManagedVideo | null>(null);
 
   const loadVideos = useCallback(
@@ -71,13 +74,17 @@ export default function VideosPage() {
     void loadVideos(false);
   }, [loadVideos]);
 
-  const visibleVideos = useMemo(
-    () =>
-      filter === "all"
-        ? videos
-        : videos.filter((video) => video.type === filter),
-    [filter, videos],
-  );
+  const visibleVideos = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    return videos.filter((video) => {
+      if (filter !== "all" && video.type !== filter) return false;
+      if (!normalizedSearch) return true;
+      return (
+        video.title.toLowerCase().includes(normalizedSearch) ||
+        (video.description ?? "").toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [filter, searchQuery, videos]);
 
   const selectAdjacentVideo = useCallback(
     (direction: -1 | 1) => {
@@ -135,42 +142,73 @@ export default function VideosPage() {
 
       <div className="border-y border-white/10 bg-black/10 py-12">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="mb-10 flex flex-col gap-5 border-b border-white/10 pb-6 sm:flex-row sm:items-center sm:justify-between">
-            <div
-              role="group"
-              aria-label="Filter videos"
-              className="flex flex-wrap gap-2"
-            >
-              {(
-                [
-                  ["all", "All media"],
-                  ["video", "Videos"],
-                  ["short", "Shorts"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={filter === value}
-                  onClick={() => setFilter(value)}
-                  className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-ares-cyan ${
-                    filter === value
-                      ? "bg-ares-red text-white"
-                      : "border border-white/10 bg-white/5 text-marble/70 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+          <div className="mb-10 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                role="group"
+                aria-label="Filter videos"
+                className="flex flex-wrap gap-2"
+              >
+                {(
+                  [
+                    ["all", "All media"],
+                    ["video", "Videos"],
+                    ["short", "Shorts"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={filter === value}
+                    onClick={() => setFilter(value)}
+                    className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                      filter === value
+                        ? "bg-ares-red text-white"
+                        : "border border-white/10 bg-white/5 text-marble/70 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadVideos(false)}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 border border-white/10 bg-white/5 px-3.5 py-2 text-[10px] font-black uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <RefreshCw aria-hidden="true" size={12} />
+                Refresh videos
+              </button>
             </div>
-            <a
-              href={siteConfig.social.youtube}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-white/15 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              Team YouTube <ExternalLink size={12} aria-hidden="true" />
-            </a>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 sm:w-64">
+                <Search
+                  size={13}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ares-bronze"
+                />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  aria-label="Search videos by title or description"
+                  placeholder="Search videos..."
+                  className="w-full border border-white/10 bg-black/30 py-2 pl-8 pr-3 text-xs text-white placeholder:text-marble/45 focus:border-ares-gold/50 focus:outline-none"
+                />
+              </div>
+              <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-wider text-marble/60">
+                {visibleVideos.length} of {videos.length} videos
+              </span>
+              <a
+                href={siteConfig.social.youtube}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 border border-white/15 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                Team YouTube <ExternalLink size={12} aria-hidden="true" />
+              </a>
+            </div>
           </div>
 
           {error && (

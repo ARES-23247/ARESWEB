@@ -39,6 +39,7 @@ export default function KanbanPage() {
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+  const [assignedToMeOnly, setAssignedToMeOnly] = useState(false);
 
   const [draggedOverCol, setDraggedOverCol] = useState<TaskItem["status"] | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -380,12 +381,20 @@ export default function KanbanPage() {
     () => buildDuplicateTaskCounts(tasks.filter((task) => !task.archived)),
     [tasks],
   );
+  const currentProfile = teamProfiles.find((p) => p.uid === user?.uid);
+  const currentNickname = (currentProfile?.nickname || user?.displayName || "").trim().toLowerCase();
   const filteredTasks = tasks.filter(
     (task) =>
       (filterSubteam === "all" || task.subteam === filterSubteam) &&
       (!task.archived || showArchived) &&
       taskMatchesSearch(task, searchQuery) &&
-      (!showDuplicatesOnly || duplicateTaskCounts.has(task.id)),
+      (!showDuplicatesOnly || duplicateTaskCounts.has(task.id)) &&
+      (!assignedToMeOnly ||
+        task.assignees.some(
+          (assignee) =>
+            (Boolean(user?.uid) && assignee === user?.uid) ||
+            (Boolean(currentNickname) && assignee.trim().toLowerCase() === currentNickname),
+        )),
   );
 
   const columns: { id: TaskItem["status"]; title: string; emoji: string }[] = [
@@ -452,6 +461,8 @@ export default function KanbanPage() {
           showDuplicatesOnly={showDuplicatesOnly}
           onShowDuplicatesOnlyChange={setShowDuplicatesOnly}
           duplicateTaskCount={duplicateTaskCounts.size}
+          assignedToMeOnly={assignedToMeOnly}
+          onAssignedToMeOnlyChange={setAssignedToMeOnly}
         />
       </header>
 

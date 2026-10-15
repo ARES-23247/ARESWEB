@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { Calculator, Flower2, RotateCcw } from "lucide-react";
+import { Calculator, Check, Copy, Flower2, Minus, Plus, RotateCcw } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PageHeader } from "@/components/ui/PageHeader";
 import {
@@ -22,16 +22,37 @@ const groups: { title: string; fields: CountField[]; note: string }[] = [
 function NumberField({ label, value, max, onChange, hint }: { label: string; value: number; max: number; onChange: (value: number) => void; hint?: string }) {
   const id = useId();
   const valid = validCount(value, max);
+  const safeValue = Number.isNaN(value) ? 0 : value;
   return <div className="flex flex-wrap items-center justify-between gap-3 py-2">
     <div className="min-w-0 flex-1">
       <label htmlFor={id} className="block text-sm font-semibold text-marble">{label}</label>
       {hint && <span id={`${id}-hint`} className="mt-1 block text-xs text-marble/80">{hint}</span>}
       {!valid && <span id={`${id}-error`} className="mt-1 block text-xs text-ares-red-light">Enter a whole number from 0 to {max}.</span>}
     </div>
-    <input id={id} type="number" inputMode="numeric" min={0} max={max} step={1} required
-      value={Number.isNaN(value) ? "" : value} onChange={event => onChange(event.target.valueAsNumber)}
-      aria-invalid={!valid} aria-describedby={[hint && `${id}-hint`, !valid && `${id}-error`].filter(Boolean).join(" ") || undefined}
-      className={`${control} w-24 shrink-0 text-center font-bold tabular-nums`} />
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        aria-label={`Decrease ${label}`}
+        disabled={safeValue <= 0}
+        onClick={() => onChange(Math.max(0, safeValue - 1))}
+        className={`${button} flex w-10 items-center justify-center px-0`}
+      >
+        <Minus size={14} aria-hidden="true" />
+      </button>
+      <input id={id} type="number" inputMode="numeric" min={0} max={max} step={1} required
+        value={Number.isNaN(value) ? "" : value} onChange={event => onChange(event.target.valueAsNumber)}
+        aria-invalid={!valid} aria-describedby={[hint && `${id}-hint`, !valid && `${id}-error`].filter(Boolean).join(" ") || undefined}
+        className={`${control} w-20 shrink-0 text-center font-bold tabular-nums`} />
+      <button
+        type="button"
+        aria-label={`Increase ${label}`}
+        disabled={safeValue >= max}
+        onClick={() => onChange(Math.min(max, safeValue + 1))}
+        className={`${button} flex w-10 items-center justify-center px-0`}
+      >
+        <Plus size={14} aria-hidden="true" />
+      </button>
+    </div>
   </div>;
 }
 
@@ -41,6 +62,7 @@ export default function BiobuzzScoreCalculatorPage() {
   const [eventType, setEventType] = useState("standard");
   const [matchType, setMatchType] = useState("qualification");
   const [custom, setCustom] = useState<Thresholds>({ swarm: NaN, pollinator1: NaN, pollinator2: NaN });
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const errors = validateMatch(match);
   const thresholds = eventType === "standard" ? STANDARD_THRESHOLDS : eventType === "custom" && validThresholds(custom) ? custom : null;
   const score = errors.length ? null : scoreMatch(match, thresholds);
@@ -53,6 +75,18 @@ export default function BiobuzzScoreCalculatorPage() {
     setMatch(current => ({ ...current, flowers: current.flowers.map((stack, i) => i === index ? elements : stack) }));
   }
 
+  async function handleCopySummary() {
+    if (!score || !navigator.clipboard?.writeText) return;
+    const summaryText = [
+      `BIOBUZZ Match Summary (${matchType === "qualification" ? "Qualification" : "Playoff"})`,
+      `Red Alliance: ${score.red.total} pts (Auto ${score.red.auto}, TeleOp ${score.red.teleop}, Flowers ${score.red.flowerElements + score.red.flowerBonus}, Penalties +${score.red.penalties})${showRP && score.red.totalRP !== null ? ` · ${score.red.totalRP}/6 RP` : ""}`,
+      `Blue Alliance: ${score.blue.total} pts (Auto ${score.blue.auto}, TeleOp ${score.blue.teleop}, Flowers ${score.blue.flowerElements + score.blue.flowerBonus}, Penalties +${score.blue.penalties})${showRP && score.blue.totalRP !== null ? ` · ${score.blue.totalRP}/6 RP` : ""}`,
+    ].join("\n");
+    await navigator.clipboard.writeText(summaryText);
+    setCopiedSummary(true);
+    window.setTimeout(() => setCopiedSummary(false), 2000);
+  }
+
   return <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
     <SEO title="BIOBUZZ Score Calculator" description="Calculate BIOBUZZ alliance scores, FLOWER ownership, penalties, and ranking points using the 2026–2027 Competition Manual V1." url="/biobuzz/score-calculator" />
     <PageHeader eyebrow={<><Calculator size={18} aria-hidden="true" /> 2026–2027 · Manual V1</>}
@@ -60,6 +94,10 @@ export default function BiobuzzScoreCalculatorPage() {
       description="Build a practice match, place the final FLOWER stacks, and see both alliances’ scores update as you go."
       actions={<>
         {previousMatch && <button type="button" className={button} onClick={() => { setMatch(previousMatch); setPreviousMatch(null); }}>Undo reset</button>}
+        <button type="button" className={`${button} inline-flex items-center gap-2`} disabled={!score} onClick={() => void handleCopySummary()}>
+          {copiedSummary ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+          {copiedSummary ? "Copied summary" : "Copy summary"}
+        </button>
         <button type="button" className={`${button} inline-flex items-center gap-2`} onClick={() => { setPreviousMatch(match); setMatch(emptyMatch()); }}><RotateCcw size={16} aria-hidden="true" />Reset match</button>
       </>} />
 

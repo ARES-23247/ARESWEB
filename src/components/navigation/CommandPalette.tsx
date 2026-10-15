@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowUpRight,
   BookOpen,
@@ -84,6 +84,7 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const closePalette = () => {
     setIsOpen(false);
@@ -96,13 +97,18 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        const isAcademyOrDocs =
+          location.pathname.startsWith("/academy") || location.pathname.startsWith("/docs");
+        if (isAcademyOrDocs && !event.shiftKey) {
+          return;
+        }
         event.preventDefault();
         setIsOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (isOpen) {

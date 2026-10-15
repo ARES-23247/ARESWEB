@@ -50,4 +50,19 @@ describe("TaskFilters", () => {
     expect(screen.getByRole("searchbox", { name: "Search tasks" })).toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Potential duplicates (0)" })).toBeDisabled();
   });
+
+  it("supports My Tasks toggle and aria-pressed on subteam filter buttons", () => {
+    const onAssignedToMeOnlyChange = vi.fn();
+    renderFilters({
+      filterSubteam: "software",
+      assignedToMeOnly: false,
+      onAssignedToMeOnlyChange,
+    });
+
+    expect(screen.getByRole("button", { name: "software" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "all" })).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "My Tasks" }));
+    expect(onAssignedToMeOnlyChange).toHaveBeenCalledWith(true);
+  });
 });

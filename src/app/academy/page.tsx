@@ -213,7 +213,7 @@ export default function AcademyPage() {
   // Handle Ctrl+K overlay search shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setSearchOpen((o) => {
           const next = !o;
@@ -706,7 +706,7 @@ export default function AcademyPage() {
                 )}
 
                 {/* ── Documentation Feedback ───────────────────────────── */}
-                {user && authorizedUser ? (
+                {user && authorizedUser && authorizedUser.role !== "unverified" ? (
                 <div className="mt-16 p-8 ares-cut bg-obsidian/50 border border-white/5 relative overflow-hidden group/feedback mb-8">
                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/feedback:opacity-20 transition-opacity">
                     <BookOpen size={64} className="text-ares-gold rotate-12" />

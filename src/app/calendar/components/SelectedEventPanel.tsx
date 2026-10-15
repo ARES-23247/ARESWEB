@@ -1,9 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Calendar as CalendarIcon, Info, Pencil, Clock, MapPin, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Download, Info, Pencil, Clock, MapPin, Plus } from "lucide-react";
 import type { TeamEvent } from "@/types/event";
 import { toPlainText } from "@/lib/contentFormatters";
-import { eventDetailHref } from "../calendarView";
+import { buildSingleEventIcsDataUrl, eventDetailHref } from "../calendarView";
 
 interface SelectedEventPanelProps {
   selectedDate: Date;
@@ -71,6 +71,14 @@ export function SelectedEventPanel({
                 </span>
 
                 <div className="flex items-center gap-2">
+                  <a
+                    href={buildSingleEventIcsDataUrl(event)}
+                    download={`${event.id}.ics`}
+                    aria-label={`Export ${event.title} to calendar (.ics)`}
+                    className="px-1.5 py-0.5 bg-white/5 hover:bg-ares-gold/20 border border-white/10 rounded transition-colors text-[8px] font-black uppercase tracking-wider text-ares-gold inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    <Download aria-hidden="true" size={8} /> Add .ics
+                  </a>
                   {canEdit && (
                     <button
                       type="button"
