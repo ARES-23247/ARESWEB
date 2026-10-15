@@ -186,7 +186,13 @@ describe("responsive and landmark regressions", () => {
   });
 
   it("uses an accessible feedback dialog instead of browser alerts and prompts", () => {
-    const academyPage = readFileSync(resolve(process.cwd(), "src/app/academy/page.tsx"), "utf8");
+    const academyPage = [
+      readFileSync(resolve(process.cwd(), "src/app/academy/page.tsx"), "utf8"),
+      readFileSync(
+        resolve(process.cwd(), "src/app/academy/components/AcademyFeedbackSection.tsx"),
+        "utf8",
+      ),
+    ].join("\n");
 
     expect(academyPage).not.toMatch(/\b(?:alert|prompt)\s*\(/);
     expect(academyPage).toContain('aria-labelledby="documentation-feedback-title"');

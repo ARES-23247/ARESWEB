@@ -288,7 +288,7 @@ describe("Wave 3 maintainability utilities & novice usability components", () =>
       ).toBeInTheDocument();
       expect(
         screen.getByRole("link", {
-          name: /Start: Understanding the Robot Loop/i,
+          name: /Start Software Track/i,
         }),
       ).toHaveAttribute(
         "href",
@@ -296,7 +296,7 @@ describe("Wave 3 maintainability utilities & novice usability components", () =>
       );
       expect(
         screen.getByRole("link", {
-          name: /Start: Fasteners & Extrusion Basics/i,
+          name: /Start Hardware Track/i,
         }),
       ).toHaveAttribute(
         "href",
@@ -305,12 +305,12 @@ describe("Wave 3 maintainability utilities & novice usability components", () =>
 
       fireEvent.click(screen.getByRole("button", { name: /Hide tracks/i }));
       expect(
-        screen.queryByText("Fasteners & Extrusion Basics"),
+        screen.queryByText(/Start Hardware Track/i),
       ).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /Show tracks/i }));
       expect(
-        screen.getByText(/Start: Fasteners & Extrusion Basics/i),
+        screen.getByText(/Start Hardware Track/i),
       ).toBeInTheDocument();
     });
 
