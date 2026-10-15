@@ -2,6 +2,7 @@ import express, { NextFunction, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
+import { linkAuthorizedUserByEmail } from "../lib/linkAuthorizedUser";
 import { AuthenticatedRequest, currentAuthorizationRole, ensureAuth } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { requireRouteParam, validate } from "../middleware/validation";
@@ -159,7 +160,16 @@ export function robotDto(id: string, value: RobotDocument, includeArchiveState =
 export async function ensureRobotEditor(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized: User not authenticated");
-    const userDoc = await adminDb.collection("authorized_users").doc(req.user.uid).get();
+    const ref = adminDb.collection("authorized_users").doc(req.user.uid);
+    let userDoc = await ref.get();
+    if (!userDoc.exists && req.user.email_verified === true) {
+      const linked = await linkAuthorizedUserByEmail({
+        uid: req.user.uid,
+        email: req.user.email,
+        emailVerified: req.user.email_verified,
+      });
+      if (linked) userDoc = await ref.get();
+    }
     if (!userDoc.exists) throw new ApiError(403, "Forbidden: User not authorized");
     const role = currentAuthorizationRole(userDoc.data());
     if (role !== "admin" && role !== "coach" && role !== "mentor") {

@@ -61,6 +61,10 @@ export interface DocRecord extends Partial<LearningMetadata> {
   approvalStatus?: string;
   approvedBy?: string;
   approvedAt?: string;
+  importedFrom?: string;
+  studioEntryId?: string;
+  studioRevision?: number;
+  studioWorkspace?: string;
 }
 
 export interface DocRevision extends Partial<LearningMetadata> {
@@ -161,6 +165,14 @@ export function mapDocumentSnapshot(
       typeof data.approvedBy === "string" ? data.approvedBy : undefined,
     approvedAt:
       typeof data.approvedAt === "string" ? data.approvedAt : undefined,
+    importedFrom:
+      typeof data.importedFrom === "string" ? data.importedFrom : undefined,
+    studioEntryId:
+      typeof data.studioEntryId === "string" ? data.studioEntryId : undefined,
+    studioRevision:
+      typeof data.studioRevision === "number" ? data.studioRevision : undefined,
+    studioWorkspace:
+      typeof data.studioWorkspace === "string" ? data.studioWorkspace : undefined,
     ...normalizeLearningMetadata(data, {
       category,
       reference: data.displayInAreslib === 1

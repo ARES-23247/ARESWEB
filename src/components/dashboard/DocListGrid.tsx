@@ -205,9 +205,16 @@ export default function DocListGrid({
                           <FileText className="text-ares-gold shrink-0 mt-0.5" size={16} />
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="font-extrabold text-white text-sm tracking-tight truncate">
-                            {item.title}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-extrabold text-white text-sm tracking-tight truncate">
+                              {item.title}
+                            </p>
+                            {item.importedFrom === "ares-robotics-studio" && (
+                              <span className="px-1.5 py-0.5 bg-ares-cyan/15 border border-ares-cyan/35 text-ares-cyan rounded text-[9px] font-black uppercase tracking-wider">
+                                Studio Notebook{typeof item.studioRevision === "number" ? ` r${item.studioRevision}` : ""}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-marble/60 mt-0.5 font-medium leading-relaxed truncate">
                             {item.description || "No description provided."}
                           </p>

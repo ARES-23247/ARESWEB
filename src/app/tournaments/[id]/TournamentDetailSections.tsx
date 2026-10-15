@@ -3,9 +3,11 @@ import {
   Activity,
   Calendar,
   Camera,
+  CheckSquare,
   Download,
   FileText,
   MapPin,
+  RotateCcw,
   Search,
   TrendingUp,
   X,
@@ -13,7 +15,7 @@ import {
 import { GreekMeander } from "@/components/GreekMeander";
 import { PublicDataState } from "@/components/PublicDataState";
 import { useFocusTrap } from "@/lib/useFocusTrap";
-import type { Tournament } from "@/types/tournament";
+import type { Tournament, TournamentMatch } from "@/types/tournament";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { tournamentScoutingCsvDataUrl } from "@/lib/tournamentScoutingCsv";
 
@@ -127,6 +129,146 @@ export function TournamentScoutingSection({
               "No hardware details recorded."}
           </p>
         </div>
+      </div>
+    </section>
+  );
+}
+
+const PIT_CHECKLIST_ITEMS = [
+  {
+    id: "battery",
+    label: "Battery Voltage Verified (≥ 13.0V Loaded)",
+    detail: "Fresh 12V battery installed, secured with strap, and power lead seated.",
+  },
+  {
+    id: "autonomous",
+    label: "Autonomous Alliance & Start Position",
+    detail: "Correct OpMode selected on Driver Hub matching alliance color and starting tile.",
+  },
+  {
+    id: "hardware",
+    label: "Hardware & Fastener Inspection",
+    detail: "Set screws, belts/chains, bumper clearances, and dead-wheel pods checked.",
+  },
+  {
+    id: "sensors",
+    label: "Sensor & Vision Calibration",
+    detail: "IMU heading zeroed, camera pipeline verified, and cable strain reliefs intact.",
+  },
+  {
+    id: "gamepads",
+    label: "Driver Station & Gamepad Pairing",
+    detail: "Gamepad 1 (Start+A) and Gamepad 2 (Start+B) verified; 30-second match timer off.",
+  },
+] as const;
+
+export function TournamentPitChecklistSection({
+  matches,
+}: {
+  matches: TournamentMatch[];
+}) {
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const nextMatch = useMemo(
+    () => matches.find((m) => !m.completed) ?? matches[0] ?? null,
+    [matches],
+  );
+
+  const toggleItem = (id: string) => {
+    setCheckedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const isReady = checkedIds.length === PIT_CHECKLIST_ITEMS.length;
+
+  return (
+    <section
+      aria-labelledby="pit-readiness-heading"
+      className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden backdrop-blur-sm shadow-xl"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-4 mb-5">
+        <div>
+          <h2
+            id="pit-readiness-heading"
+            className="text-lg font-bold text-white uppercase tracking-tight font-heading flex items-center gap-2"
+          >
+            <CheckSquare className="text-ares-gold" size={18} aria-hidden="true" />
+            Pre-Match Pit &amp; Queuing Checklist
+          </h2>
+          {nextMatch && (
+            <p className="mt-1 text-xs text-marble/70">
+              Target Match:{" "}
+              <strong className="text-white font-mono">
+                {nextMatch.matchNumber}
+              </strong>{" "}
+              ·{" "}
+              <span
+                className={
+                  nextMatch.alliance === "red"
+                    ? "text-ares-red-light font-bold uppercase"
+                    : "text-ares-cyan font-bold uppercase"
+                }
+              >
+                {nextMatch.alliance} Alliance
+              </span>{" "}
+              (Partner: #{nextMatch.partner})
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+              isReady
+                ? "border-ares-success/40 bg-ares-success/15 text-ares-success"
+                : "border-ares-gold/30 bg-ares-gold/10 text-ares-gold"
+            }`}
+          >
+            {isReady
+              ? "Queue Ready"
+              : `${checkedIds.length} / ${PIT_CHECKLIST_ITEMS.length} Ready`}
+          </span>
+          {checkedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCheckedIds([])}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/15 bg-black/40 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-marble/80 hover:border-ares-gold hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              <RotateCcw size={12} aria-hidden="true" /> Reset Checklist
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2.5">
+        {PIT_CHECKLIST_ITEMS.map((item) => {
+          const checked = checkedIds.includes(item.id);
+          return (
+            <label
+              key={item.id}
+              className={`flex items-start gap-3.5 rounded-xl border p-3.5 transition-colors cursor-pointer ${
+                checked
+                  ? "border-ares-success/40 bg-ares-success/10"
+                  : "border-white/10 bg-black/35 hover:border-white/25"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggleItem(item.id)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-ares-gold"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-extrabold uppercase tracking-wide text-white">
+                  {item.label}
+                </span>
+                <span className="mt-0.5 block text-xs text-marble/70 leading-relaxed">
+                  {item.detail}
+                </span>
+              </span>
+            </label>
+          );
+        })}
       </div>
     </section>
   );

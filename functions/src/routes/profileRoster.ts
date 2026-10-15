@@ -101,6 +101,40 @@ function safeRosterArray(
     .slice(0, maxItems);
 }
 
+interface RosterCollegeDto {
+  name: string;
+  domain: string;
+  years: string;
+  degree: string;
+}
+
+function safeRosterColleges(
+  value: unknown,
+  maxItems: number,
+): Array<string | RosterCollegeDto> {
+  if (!Array.isArray(value)) return [];
+  const results: Array<string | RosterCollegeDto> = [];
+  for (const item of value) {
+    if (results.length >= maxItems) break;
+    if (typeof item === "string") {
+      const trimmed = item.trim().slice(0, 120);
+      if (trimmed) results.push(trimmed);
+    } else if (item && typeof item === "object" && !Array.isArray(item)) {
+      const record = item as Record<string, unknown>;
+      const name = safeRosterString(record.name, 120);
+      if (name) {
+        results.push({
+          name,
+          domain: safeRosterString(record.domain, 253),
+          years: safeRosterString(record.years, 40),
+          degree: safeRosterString(record.degree, 120),
+        });
+      }
+    }
+  }
+  return results;
+}
+
 export function registerProfileRosterRoutes(router: Router): void {
   router.get(
     "/about-roster",
@@ -114,11 +148,11 @@ export function registerProfileRosterRoutes(router: Router): void {
           .get(),
         adminDb.collection("authorized_users").limit(500).get(),
       ]);
-      const activeUids = authorizationSnapshot?.docs
-        ? new Set(
+      const activeAuthMap = authorizationSnapshot?.docs
+        ? new Map(
             authorizationSnapshot.docs
               .filter((document) => hasActiveAuthorization(document.data()))
-              .map((document) => document.id),
+              .map((document) => [document.id, document.data()]),
           )
         : null;
       const membersRaw = snapshot.docs
@@ -128,7 +162,7 @@ export function registerProfileRosterRoutes(router: Router): void {
           // defense in depth before any public field is mapped.
           const data = doc.data();
           return (
-            (!activeUids || activeUids.has(doc.id)) &&
+            (!activeAuthMap || activeAuthMap.has(doc.id)) &&
             data.isDeleted !== 1 &&
             data.isDeleted !== true &&
             data.archived !== true
@@ -136,13 +170,28 @@ export function registerProfileRosterRoutes(router: Router): void {
         })
         .map((doc) => {
           const data = doc.data();
-          if (data.memberType === "parent") return null;
+          const authData = activeAuthMap?.get(doc.id);
+          const candidateMemberType =
+            typeof data.memberType === "string" && data.memberType.trim()
+              ? data.memberType.trim().toLowerCase()
+              : typeof authData?.memberType === "string" &&
+                  authData.memberType.trim()
+                ? authData.memberType.trim().toLowerCase()
+                : typeof authData?.role === "string" &&
+                    authData.role.trim().toLowerCase() === "coach"
+                  ? "coach"
+                  : "";
+          if (candidateMemberType === "parent") return null;
 
-          const memberType =
-            typeof data.memberType === "string" &&
-            ["student", "mentor", "alumni", "sponsor"].includes(data.memberType)
-              ? data.memberType
-              : "student";
+          const memberType = [
+            "student",
+            "coach",
+            "mentor",
+            "alumni",
+            "sponsor",
+          ].includes(candidateMemberType)
+            ? candidateMemberType
+            : "student";
           const isStudent = memberType === "student";
           return {
             identifier: doc.id,
@@ -159,7 +208,7 @@ export function registerProfileRosterRoutes(router: Router): void {
               data.email,
             ]),
             bio: safeRosterString(data.bio, 1_500),
-            colleges: isStudent ? [] : safeRosterArray(data.colleges, 10, 120),
+            colleges: isStudent ? [] : safeRosterColleges(data.colleges, 10),
             contactEmail:
               typeof data.contactEmail === "string" ? data.contactEmail : "",
           };

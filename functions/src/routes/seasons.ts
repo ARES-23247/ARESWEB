@@ -218,6 +218,15 @@ seasonsRouter.post(
       );
     }
 
+    const now = new Date().toISOString();
+    const ref = adminDb.collection("seasons").doc(seasonId);
+    const existing = await ref.get();
+    const existingIsDeleted =
+      existing.exists &&
+      typeof existing.data === "function" &&
+      existing.data()?.isDeleted === 1
+        ? 1
+        : 0;
     const record = {
       id: seasonId,
       startYear,
@@ -231,11 +240,8 @@ seasonsRouter.post(
       albumUrl: optionalHttpsUrl(input.albumUrl),
       albumCover: optionalHttpsUrl(input.albumCover),
       status: statusValue(input.status),
-      isDeleted: 0,
+      isDeleted: existingIsDeleted,
     };
-    const now = new Date().toISOString();
-    const ref = adminDb.collection("seasons").doc(seasonId);
-    const existing = await ref.get();
     if (existing.exists) {
       await ref.update({ ...record, updatedAt: now });
     } else {
@@ -279,6 +285,15 @@ awardsRouter.post(
       );
     }
 
+    const now = new Date().toISOString();
+    const ref = adminDb.collection("awards").doc(awardId);
+    const existing = await ref.get();
+    const existingIsDeleted =
+      existing.exists &&
+      typeof existing.data === "function" &&
+      existing.data()?.isDeleted === 1
+        ? 1
+        : 0;
     const record = {
       id: awardId,
       title,
@@ -288,17 +303,18 @@ awardsRouter.post(
       iconType: text(input.iconType, 40) || "trophy",
       seasonId,
       status: statusValue(input.status),
-      isDeleted: 0,
+      isDeleted: existingIsDeleted,
     };
-    const now = new Date().toISOString();
-    const ref = adminDb.collection("awards").doc(awardId);
-    const existing = await ref.get();
     if (existing.exists) {
       await ref.update({ ...record, updatedAt: now });
     } else {
       await ref.set({ ...record, createdAt: now, updatedAt: now });
     }
-    res.json({ success: true, id: awardId, award: awardDto(awardId, record) });
+    res.json({
+      success: true,
+      id: awardId,
+      award: awardDto(awardId, record),
+    });
   }),
 );
 

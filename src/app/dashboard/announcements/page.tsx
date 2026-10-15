@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Megaphone, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, Info, Megaphone, Save, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import {
@@ -279,6 +279,53 @@ export default function AnnouncementManagerPage() {
               <input id="announcement-end" type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/20 bg-obsidian px-4 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" />
             </div>
           </fieldset>
+
+          <div className="border-t border-white/10 pt-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-ares-gold">
+                <Eye aria-hidden="true" size={14} /> Live Banner Preview
+              </span>
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${
+                  isActive
+                    ? "border-ares-success/40 bg-ares-success/15 text-ares-success"
+                    : "border-white/20 bg-white/5 text-marble/65"
+                }`}
+              >
+                {isActive ? "Active on Public Site" : "Draft / Hidden"}
+              </span>
+            </div>
+            <div
+              aria-label="Banner visual preview"
+              className={`rounded-xl border-2 px-4 py-3.5 shadow-xl transition-colors ${
+                severity === "urgent"
+                  ? "border-white/35 bg-ares-red text-white"
+                  : severity === "important"
+                    ? "border-ares-gold bg-[#3d2b00] text-white"
+                    : "border-ares-cyan bg-[#07343b] text-white"
+              }`}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3 sm:items-center">
+                  {severity === "urgent" ? (
+                    <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" />
+                  ) : severity === "important" ? (
+                    <Megaphone aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" />
+                  ) : (
+                    <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 sm:mt-0" />
+                  )}
+                  <span className="text-sm font-bold leading-snug break-words">
+                    {message.trim() || "Your announcement text will appear here across the top of the portal."}
+                  </span>
+                </div>
+                {link.trim() && linkLabel.trim() && (
+                  <span className="inline-flex min-h-9 shrink-0 items-center self-start rounded border border-current px-3 py-1.5 text-xs font-black uppercase tracking-wide sm:self-auto">
+                    {linkLabel.trim()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row">
             <button type="submit" disabled={isSaving} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-ares-red px-6 py-3 text-sm font-black uppercase tracking-wide text-white hover:bg-ares-bronze disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">

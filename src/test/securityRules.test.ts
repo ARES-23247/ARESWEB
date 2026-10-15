@@ -18,7 +18,7 @@ const productionFrontendSource = globSync("src/**/*.{ts,tsx}", {
 
 describe("security-rule invariants", () => {
   it("does not expose inquiry or finance records publicly", () => {
-    expect(firestoreRules).toMatch(/match \/inquiries\/\{inquiryId\}[\s\S]*?allow read: if hasRole\('admin'\) \|\| hasRole\('coach'\);/);
+    expect(firestoreRules).toMatch(/match \/inquiries\/\{inquiryId\}[\s\S]*?allow read, write: if false;/);
     expect(firestoreRules).toMatch(/match \/finance_transactions\/\{txId\}[\s\S]*?allow read, write: if false;/);
   });
 

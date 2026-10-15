@@ -30,9 +30,15 @@ export async function linkAuthorizedUserByEmail({ uid, email, emailVerified }: L
 
   const batch = adminDb.batch();
   const targetRef = adminDb.collection("authorized_users").doc(uid);
+  const userProfilesCollection = adminDb.collection("user_profiles");
   for (const doc of orphans) {
     const data = doc.data();
     batch.delete(doc.ref);
+    const orphanProfileRef = userProfilesCollection?.doc?.(doc.id);
+    const orphanProfileSnap =
+      orphanProfileRef && typeof orphanProfileRef.get === "function"
+        ? await orphanProfileRef.get()
+        : null;
     // An archived pre-authorization is dropped, not inherited.
     if (data.isDeleted !== 1 && data.isDeleted !== true) {
       batch.set(targetRef, {
@@ -40,6 +46,16 @@ export async function linkAuthorizedUserByEmail({ uid, email, emailVerified }: L
         email: normalizedEmail,
         linkedAt: new Date().toISOString(),
       }, { merge: true });
+      if (orphanProfileSnap?.exists) {
+        const profileData = orphanProfileSnap.data();
+        const targetProfileRef = userProfilesCollection.doc(uid);
+        if (profileData) {
+          batch.set(targetProfileRef, profileData, { merge: true });
+        }
+        batch.delete(orphanProfileRef);
+      }
+    } else if (orphanProfileSnap?.exists) {
+      batch.delete(orphanProfileRef);
     }
   }
   await batch.commit();

@@ -141,6 +141,7 @@ describe("Auth Middleware", () => {
       const mockGet = adminDb.collection("").doc("").get;
       vi.mocked(mockGet)
         .mockResolvedValueOnce({ exists: false } as any)
+        .mockResolvedValueOnce({ exists: false } as any)
         .mockResolvedValueOnce({ exists: true, data: () => ({ role: "admin" }) } as any);
       mockLinkWhereGet.mockResolvedValue({
         docs: [{ id: "generated-invite-id", data: () => ({ email: "new@team.org", role: "admin", isDeleted: 0 }), ref: {} }],

@@ -10,7 +10,7 @@ import { validate } from "../middleware/validation";
 
 const router = express.Router();
 
-const memberTypeSchema = z.enum(["student", "parent", "mentor", "alumni", "sponsor"]);
+const memberTypeSchema = z.enum(["student", "parent", "coach", "mentor", "alumni", "sponsor"]);
 const collegeSchema = z.object({
   name: z.string().trim().max(120),
   domain: z.string().trim().max(253),
@@ -112,7 +112,8 @@ export function normalizeProfileMemberType(
   const parsed = memberTypeSchema.safeParse(profile.memberType || authorization.memberType);
   if (parsed.success) return parsed.data;
   const role = safeString(authorization.role, 40).toLowerCase();
-  return role === "admin" || role === "coach" || role === "mentor" ? "mentor" : "student";
+  if (role === "coach") return "coach";
+  return role === "admin" || role === "mentor" ? "mentor" : "student";
 }
 
 function safeStructuredArray<T>(value: unknown, schema: z.ZodType<T>, maxItems = 20): T[] {

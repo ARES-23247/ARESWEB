@@ -157,6 +157,7 @@ export default function UserInviteForm({
             <option value="student">Student</option>
             <option value="parent">Parent</option>
             <option value="mentor">Mentor</option>
+            <option value="coach">Coach</option>
             <option value="alumni">Alumni</option>
             <option value="sponsor">Sponsor</option>
           </select>

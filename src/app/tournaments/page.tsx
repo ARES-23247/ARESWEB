@@ -32,6 +32,7 @@ export default function TournamentsFeedPage() {
   const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "past">(
     "all",
   );
+  const [viewMode, setViewMode] = useState<"vault" | "public">("vault");
   const [searchQuery, setSearchQuery] = useState("");
 
   const isAuthorized = useMemo(() => {
@@ -186,24 +187,60 @@ export default function TournamentsFeedPage() {
       />
       <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-20">
         {/* Breadcrumb Header */}
-        <header className="mb-12">
-          <div className="inline-flex items-center gap-2 bg-ares-red/10 text-ares-gold border border-ares-bronze/30 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
-            <Trophy size={12} className="text-ares-gold" aria-hidden="true" />
-            <span>ARES 23247 Competition Logs</span>
+        <header className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-ares-red/10 text-ares-gold border border-ares-bronze/30 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+              <Trophy size={12} className="text-ares-gold" aria-hidden="true" />
+              <span>ARES 23247 Competition Logs</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading mb-4 text-white">
+              Tournament{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
+                Scouting Vault
+              </span>
+            </h1>
+            <p className="text-sm text-marble/60 max-w-2xl leading-relaxed">
+              Access tactical match checklists, custom driver feedback loops, and
+              comparative team analytics. Synthesizing robot telemetry to optimize
+              our autonomous paths.
+            </p>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading mb-4 text-white">
-            Tournament{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
-              Scouting Vault
-            </span>
-          </h1>
-          <p className="text-sm text-marble/60 max-w-2xl leading-relaxed">
-            Access tactical match checklists, custom driver feedback loops, and
-            comparative team analytics. Synthesizing robot telemetry to optimize
-            our autonomous paths.
-          </p>
+          <div
+            className="flex gap-2 bg-black/40 p-1 ares-cut-sm border border-white/10 self-start lg:self-end"
+            role="group"
+            aria-label="Tournament view mode"
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode("vault")}
+              aria-pressed={viewMode === "vault"}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider ares-cut-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                viewMode === "vault"
+                  ? "bg-ares-red text-white shadow-lg"
+                  : "text-marble/70 hover:text-white"
+              }`}
+            >
+              Team Scouting View
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("public")}
+              aria-pressed={viewMode === "public"}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider ares-cut-sm transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                viewMode === "public"
+                  ? "bg-ares-gold text-black shadow-lg"
+                  : "text-marble/70 hover:text-white"
+              }`}
+            >
+              Public Results View
+            </button>
+          </div>
         </header>
 
+        {viewMode === "public" ? (
+          <PublicResults />
+        ) : (
+          <>
         {/* Summary Counter Grid */}
         <section
           className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10"
@@ -441,6 +478,8 @@ export default function TournamentsFeedPage() {
               </Link>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

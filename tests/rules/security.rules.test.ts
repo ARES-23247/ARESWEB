@@ -180,6 +180,7 @@ describe("Firestore zero-trust rules", () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("member-user", "member");
     await seedDocument("inquiries", "private", { status: "pending" });
+    await seedDocument("outreach_logs", "private-log", { status: "draft" });
     await seedDocument("tasks", "team-task", { title: "Build robot" });
 
     const adminDb = testEnvironment
@@ -190,8 +191,10 @@ describe("Firestore zero-trust rules", () => {
       .firestore();
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
 
-    await assertSucceeds(getDocs(collection(adminDb, "inquiries")));
+    await assertFails(getDocs(collection(adminDb, "inquiries")));
     await assertFails(getDocs(collection(memberDb, "inquiries")));
+    await assertSucceeds(getDocs(collection(adminDb, "outreach_logs")));
+    await assertFails(getDocs(collection(memberDb, "outreach_logs")));
     await assertSucceeds(getDocs(collection(memberDb, "tasks")));
     await assertFails(getDocs(collection(publicDb, "tasks")));
   });
@@ -222,6 +225,8 @@ describe("Firestore zero-trust rules", () => {
       runTransaction(memberDb, async (transaction) => {
         transaction.set(draftRef, {
           title: "Member draft",
+          authorId: "member-user",
+          isApproved: false,
           status: "pending_approval",
           approvalStatus: "pending_approval",
           isDeleted: 0,
@@ -245,6 +250,24 @@ describe("Firestore zero-trust rules", () => {
       }),
     );
     await assertSucceeds(updateDoc(draftRef, { title: "Revised by owner" }));
+    await assertFails(
+      updateDoc(draftRef, { authorId: "other-member" }),
+    );
+    await assertFails(
+      updateDoc(draftRef, { isApproved: true }),
+    );
+    await assertFails(
+      updateDoc(draftRef, { approvalStatus: "approved" }),
+    );
+    await assertFails(
+      updateDoc(draftRef, { approvedBy: "Forged Approver" }),
+    );
+    await assertFails(
+      updateDoc(draftRef, { approvedAt: "2026-08-20T12:05:00.000Z" }),
+    );
+    await assertFails(
+      updateDoc(draftRef, { isDeleted: 1 }),
+    );
     await assertFails(
       updateDoc(doc(otherDb, "posts", "member-draft"), { title: "Hijacked" }),
     );
@@ -359,8 +382,9 @@ describe("Firestore zero-trust rules", () => {
     );
   });
 
-  it("keeps inquiry PII restricted to admin and coach roles", async () => {
+  it("keeps inquiry PII server-only behind /api/inquiries for all roles", async () => {
     await seedAuthorizedUser("admin-user", "admin");
+    await seedAuthorizedUser("coach-user", "coach");
     await seedAuthorizedUser("member-user", "member");
     await seedDocument("inquiries", "private", {
       encryptedPayload: "ciphertext",
@@ -369,14 +393,25 @@ describe("Firestore zero-trust rules", () => {
     const adminDb = testEnvironment
       .authenticatedContext("admin-user")
       .firestore();
+    const coachDb = testEnvironment
+      .authenticatedContext("coach-user")
+      .firestore();
     const memberDb = testEnvironment
       .authenticatedContext("member-user")
       .firestore();
     const publicDb = testEnvironment.unauthenticatedContext().firestore();
 
-    await assertSucceeds(getDoc(doc(adminDb, "inquiries", "private")));
+    await assertFails(getDoc(doc(adminDb, "inquiries", "private")));
+    await assertFails(getDoc(doc(coachDb, "inquiries", "private")));
     await assertFails(getDoc(doc(memberDb, "inquiries", "private")));
     await assertFails(getDoc(doc(publicDb, "inquiries", "private")));
+    await assertFails(
+      setDoc(doc(adminDb, "inquiries", "forged"), { encryptedPayload: "forged" }),
+    );
+    await assertFails(
+      updateDoc(doc(adminDb, "inquiries", "private"), { status: "approved" }),
+    );
+    await assertFails(deleteDoc(doc(adminDb, "inquiries", "private")));
   });
 
   it("requires an authorized user for team task access", async () => {
@@ -796,7 +831,7 @@ describe("Firestore zero-trust rules", () => {
     );
   });
 
-  it("blocks public raw sponsor and outreach reads while allowing administrators", async () => {
+  it("blocks public raw sponsor and outreach reads and routes sponsor writes through the server API", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedDocument("sponsors", "inactive", {
       name: "Private sponsor",
@@ -816,6 +851,16 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(getDoc(doc(publicDb, "outreach_logs", "draft")));
     await assertSucceeds(getDoc(doc(adminDb, "sponsors", "inactive")));
     await assertSucceeds(getDoc(doc(adminDb, "outreach_logs", "draft")));
+    await assertFails(
+      setDoc(doc(adminDb, "sponsors", "forged-sponsor"), {
+        name: "Forged sponsor",
+        isActive: true,
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(adminDb, "sponsors", "inactive"), { isActive: true }),
+    );
+    await assertFails(deleteDoc(doc(adminDb, "sponsors", "inactive")));
   });
 
   it("does not allow a hard-coded email to bootstrap its own admin record", async () => {
@@ -936,7 +981,7 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(deleteDoc(doc(adminDb, "user_profiles", "student-user")));
   });
 
-  it("limits tournament and match writes to admin and coach roles", async () => {
+  it("routes tournament and match writes through the server API while allowing authorized reads", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("coach-user", "coach");
     await seedAuthorizedUser("mentor-user", "mentor");
@@ -966,18 +1011,30 @@ describe("Firestore zero-trust rules", () => {
 
     await assertSucceeds(getDoc(doc(memberDb, "tournaments", "states")));
     await assertSucceeds(getDoc(doc(mentorDb, "tournament_matches", "qm1")));
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(adminDb, "tournaments", "admin-event"), {
         name: "Admin event",
         isDeleted: 0,
       }),
     );
-    await assertSucceeds(
+    await assertFails(
+      updateDoc(doc(adminDb, "tournaments", "states"), {
+        name: "Tampered States",
+      }),
+    );
+    await assertFails(deleteDoc(doc(adminDb, "tournaments", "states")));
+    await assertFails(
       setDoc(doc(coachDb, "tournament_matches", "coach-match"), {
         tournamentId: "states",
         isDeleted: 0,
       }),
     );
+    await assertFails(
+      updateDoc(doc(coachDb, "tournament_matches", "qm1"), {
+        matchNumber: "QM99",
+      }),
+    );
+    await assertFails(deleteDoc(doc(coachDb, "tournament_matches", "qm1")));
     await assertFails(
       setDoc(doc(mentorDb, "tournaments", "mentor-event"), {
         name: "Mentor event",

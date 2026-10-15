@@ -50,14 +50,21 @@ export default function DashboardHome() {
   const [blogCount, setBlogCount] = useState(0);
   const [docCount, setDocCount] = useState(0);
   const [recentTasks, setRecentTasks] = useState<TaskItem[]>([]);
+  const [overdueTasks, setOverdueTasks] = useState(0);
+  const [dueTodayTasks, setDueTodayTasks] = useState(0);
   const [databaseState, setDatabaseState] = useState<"connecting" | "connected" | "error">("connecting");
 
   const userRole = authorizedUser?.role || "Pending Verification";
   const isUnverified = userRole === "unverified" || userRole === "Pending Verification";
-  const canUseAi = canUseMemberAi( userRole);
+  const canUseAi = canUseMemberAi(userRole);
   const canReviewContent = canReviewDashboardContent(userRole);
-  const { pendingBlogApprovals, blogApprovalsState } =
-    useDashboardNotifications();
+  const canReviewInquiries = userRole === "admin" || userRole === "coach";
+  const {
+    pendingBlogApprovals,
+    blogApprovalsState,
+    hasPendingInquiries,
+    inquiriesState,
+  } = useDashboardNotifications();
 
   // Fetch content counts once and keep the bounded task summary synchronized.
   useEffect(() => {
@@ -99,9 +106,17 @@ export default function DashboardHome() {
         const visibleTasks = snapshot.docs
           .map((d) => normalizeTaskRecord(d.id, d.data()))
           .filter((task) => task.isDeleted !== 1);
+        const openTasks = visibleTasks.filter(
+          (task) => !task.archived && task.status !== "completed"
+        );
         setTaskCount(visibleTasks.length);
-        setActiveTasks(visibleTasks.filter(
-              (task) => !task.archived && task.status !== "completed").length);
+        setActiveTasks(openTasks.length);
+        setOverdueTasks(
+          openTasks.filter((task) => getTaskDueState(task) === "overdue").length
+        );
+        setDueTodayTasks(
+          openTasks.filter((task) => getTaskDueState(task) === "today").length
+        );
         setRecentTasks(selectPriorityTasks(visibleTasks));
       }, (err) => {
         logger.error("Tasks listener error:", err);
@@ -212,6 +227,51 @@ export default function DashboardHome() {
             className="inline-flex min-h-11 shrink-0 items-center justify-center border border-white/20 px-4 py-2 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
             Open Blog Management
+          </Link>
+        </div>
+      )}
+
+      {canReviewInquiries && hasPendingInquiries && inquiriesState !== "error" && (
+        <section
+          aria-labelledby="pending-inquiries-heading"
+          className="glass-card flex flex-col gap-5 border border-ares-cyan/40 bg-ares-cyan/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        >
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ares-cyan/40 bg-ares-cyan/15 text-ares-cyan">
+              <AlertCircle aria-hidden="true" size={22} />
+            </div>
+            <div>
+              <h2
+                id="pending-inquiries-heading"
+                className="font-heading text-base font-black uppercase tracking-tight text-white sm:text-lg"
+              >
+                Pending recruitment or sponsor inquiries require review
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed text-marble/75">
+                Unread community, sponsor, or prospective student messages are waiting in the encrypted inquiry queue.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/dashboard/inquiries"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-ares-cyan px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-ares-gold"
+          >
+            Review inquiries <ArrowUpRight aria-hidden="true" size={14} />
+          </Link>
+        </section>
+      )}
+
+      {canReviewInquiries && inquiriesState === "error" && (
+        <div
+          role="alert"
+          className="flex flex-col gap-3 border border-ares-red/40 bg-ares-red/10 p-5 text-sm text-white sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>Inquiry queue status is unavailable. Open Inquiries to check directly.</span>
+          <Link
+            to="/dashboard/inquiries"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center border border-white/20 px-4 py-2 text-xs font-black uppercase tracking-wider text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            Open Inquiries
           </Link>
         </div>
       )}
@@ -346,9 +406,25 @@ export default function DashboardHome() {
           
           {/* Active Tasks Feed */}
           <div className="glass-card p-6 border border-white/10 flex-grow flex flex-col">
-            <h3 className="text-base font-bold border-b border-white/5 pb-3 text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight mb-4">
-              <ClipboardList size={16} /> Priority Operational Tasks
-            </h3>
+            <div className="border-b border-white/5 pb-3 mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-base font-bold text-ares-gold flex items-center gap-2 font-heading uppercase tracking-tight">
+                <ClipboardList size={16} /> Priority Operational Tasks
+              </h3>
+              {(overdueTasks > 0 || dueTodayTasks > 0) && (
+                <div className="flex items-center gap-2">
+                  {overdueTasks > 0 && (
+                    <span className="px-2 py-0.5 rounded border border-ares-red/40 bg-ares-red/15 text-[10px] font-black uppercase tracking-wider text-ares-red-light">
+                      {overdueTasks} Overdue
+                    </span>
+                  )}
+                  {dueTodayTasks > 0 && (
+                    <span className="px-2 py-0.5 rounded border border-ares-gold/40 bg-ares-gold/15 text-[10px] font-black uppercase tracking-wider text-ares-gold">
+                      {dueTodayTasks} Due Today
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             
             <div className="space-y-3.5 flex-1">
               {recentTasks.length === 0 ? (

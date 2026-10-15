@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Rss } from "lucide-react";
 import SEO from "@/components/SEO";
 import BlogThumbnailImage from "@/components/BlogThumbnailImage";
 import { PublicDataState } from "@/components/PublicDataState";
@@ -101,14 +101,24 @@ export default function BlogFeedPage() {
               reflections on our outreach events.
             </p>
           </div>
-          {canEdit && (
-            <button
-              onClick={handleOpenInlineCreate}
-              className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl shrink-0"
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <a
+              href="/feed.xml"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ares-cut-sm border border-ares-gold/35 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold font-black text-xs uppercase tracking-widest py-3 px-4 inline-flex items-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
-              <Plus size={16} /> New Blog Post
-            </button>
-          )}
+              <Rss size={15} aria-hidden="true" /> RSS Feed
+            </a>
+            {canEdit && (
+              <button
+                onClick={handleOpenInlineCreate}
+                className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl shrink-0"
+              >
+                <Plus size={16} /> New Blog Post
+              </button>
+            )}
+          </div>
         </div>
 
         {isLoading ? (

@@ -9,8 +9,14 @@ const publicEndpoints = [
   ["GET", "/api/photos/public", "Published gallery photos"],
   ["GET", "/api/videos/public", "Published videos"],
   ["GET", "/api/robots", "Published robot records"],
+  ["GET", "/api/seasons", "Published team competition seasons"],
+  ["GET", "/api/awards", "Published team awards and honors"],
+  ["GET", "/api/tournaments/public/results", "Published tournament match summaries"],
   ["GET", "/api/sponsors", "Published sponsors"],
   ["GET", "/api/outreach", "Published outreach summaries"],
+  ["GET", "/api/finance", "Public team financial ledger summary"],
+  ["GET", "/api/announcements", "Active public team announcements"],
+  ["GET", "/feed.xml", "Public RSS 2.0 engineering blog syndication feed"],
 ] as const;
 
 export default function DeveloperApiPage() {

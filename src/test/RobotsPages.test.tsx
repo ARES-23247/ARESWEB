@@ -172,6 +172,12 @@ describe("Robots Feed & Detail Pages", () => {
       expect(screen.getByText(/Telescoping Carbon Fiber Arm/i)).toBeInTheDocument();
       expect(screen.getByText(/Optimized for speed and rapid intake cycling/i)).toBeInTheDocument();
     });
+
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => undefined);
+    fireEvent.click(screen.getByRole("button", { name: /judge \/ pit sheet/i }));
+    expect(screen.getByRole("region", { name: /printable judge and pit technical sheet/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /print pit sheet/i }));
+    expect(printSpy).toHaveBeenCalledTimes(1);
   });
 
   it("renders 404 not found state gracefully when robot ID does not exist", async () => {

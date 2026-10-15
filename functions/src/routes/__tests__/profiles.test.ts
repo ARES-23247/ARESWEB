@@ -601,7 +601,7 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(
         payload.users.map((user: any) => [user.role, user.memberType]),
       ).toEqual([
-        ["admin", "mentor"],
+        ["admin", "coach"],
         ["member", "parent"],
         ["mentor", "mentor"],
         ["admin", "mentor"],
@@ -613,6 +613,41 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(payload.users[2].name).toBe("Lead Nickname");
       expect(payload.users[5].email).toBe("");
       expect(payload.users[5].name).toBe("ARES Member");
+    });
+
+    it("returns sanitized administrative audit logs via GET /admin/audit-logs", async () => {
+      req.query = { limit: "10" };
+      const sharedGet = vi.mocked((adminDb.collection("") as any).doc("").get);
+      sharedGet.mockResolvedValueOnce({
+        docs: [
+          {
+            id: "audit_1",
+            data: () => ({
+              action: "user.permissions.updated",
+              actorUid: "admin_uid",
+              targetUid: "member_uid",
+              role: "mentor",
+              memberType: "coach",
+              createdAt: "2026-10-14T12:00:00.000Z",
+            }),
+          },
+        ],
+      } as any);
+
+      await getHandler("/admin/audit-logs", "get")(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        logs: [
+          {
+            id: "audit_1",
+            action: "user.permissions.updated",
+            actorUid: "admin_uid",
+            targetId: "member_uid",
+            createdAt: "2026-10-14T12:00:00.000Z",
+            summary: "role=mentor • memberType=coach",
+          },
+        ],
+      });
     });
   });
 
@@ -761,7 +796,7 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({
         authorizedUser: expect.objectContaining({
           role: "admin",
-          memberType: "mentor",
+          memberType: "coach",
         }),
       });
     });

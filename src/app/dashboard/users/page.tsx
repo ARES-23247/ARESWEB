@@ -60,6 +60,15 @@ interface AdminUserDirectoryResponse {
   };
 }
 
+interface AdminAuditLogItem {
+  id: string;
+  action: string;
+  actorUid: string | null;
+  targetId: string | null;
+  createdAt: string;
+  summary: string;
+}
+
 interface ApiErrorBody {
   error?: string;
 }
@@ -85,7 +94,11 @@ export default function DashboardUsersPage() {
   const [sortBy, setSortBy] = useState("name_asc");
   const [pendingRevocation, setPendingRevocation] = useState<UserAuth | null>(null);
 
-
+  // Audit Log Viewer State
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([]);
+  const [auditLogsLoading, setAuditLogsLoading] = useState(false);
+  const [auditLogsError, setAuditLogsError] = useState<string | null>(null);
 
   // Edit States
   const [savingRoles, setSavingRoles] = useState<Record<string, boolean>>({});
@@ -97,6 +110,33 @@ export default function DashboardUsersPage() {
 
   const userRole = authorizedUser?.role || "Pending Verification";
   const isAdmin = userRole === "admin" || userRole === "coach";
+
+  const loadAuditLogs = useCallback(async () => {
+    if (!user || !isAdmin) return;
+    setAuditLogsLoading(true);
+    setAuditLogsError(null);
+    try {
+      const response = await authenticatedFetch("/api/profiles/admin/audit-logs?limit=40");
+      if (!response.ok) {
+        throw new Error(await readApiError(response));
+      }
+      const payload = await response.json() as { logs?: AdminAuditLogItem[] };
+      setAuditLogs(Array.isArray(payload.logs) ? payload.logs : []);
+    } catch (err: unknown) {
+      logger.error("Error fetching admin audit logs:", err);
+      setAuditLogsError(err instanceof Error ? err.message : "Could not load audit logs.");
+    } finally {
+      setAuditLogsLoading(false);
+    }
+  }, [isAdmin, user]);
+
+  const handleToggleAuditLogs = () => {
+    const nextOpen = !auditLogsOpen;
+    setAuditLogsOpen(nextOpen);
+    if (nextOpen && auditLogs.length === 0 && !auditLogsLoading) {
+      void loadAuditLogs();
+    }
+  };
 
   const loadUsersPage = useCallback(async (cursor: string | null, synchronize: boolean) => {
     if (!user || !isAdmin) return;
@@ -366,16 +406,85 @@ export default function DashboardUsersPage() {
             Manage user roles, authorize team access, and link or provision organization Zulip accounts.
           </p>
         </div>
-        <button 
-          type="button"
-          onClick={fetchUsersData}
-          disabled={isLoading}
-          aria-busy={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-        >
-          <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh List
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleToggleAuditLogs}
+            aria-expanded={auditLogsOpen}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/30 text-ares-gold text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <Shield size={14} /> {auditLogsOpen ? "Hide Audit Log" : "View Audit Log"}
+          </button>
+          <button 
+            type="button"
+            onClick={fetchUsersData}
+            disabled={isLoading}
+            aria-busy={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh List
+          </button>
+        </div>
       </header>
+
+      {auditLogsOpen && (
+        <section
+          aria-labelledby="security-audit-log-heading"
+          className="glass-card ares-cut p-6 border border-ares-gold/25 bg-black/35 space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-3">
+            <div>
+              <h2 id="security-audit-log-heading" className="text-lg font-black uppercase tracking-tight text-white font-heading">
+                Security & Operations Audit Log
+              </h2>
+              <p className="text-xs text-marble/60 font-medium">
+                Recent server-recorded administrative actions across user permissions, invitations, and inquiries.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadAuditLogs()}
+              disabled={auditLogsLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-wider text-white cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan w-fit"
+            >
+              <RefreshCw size={12} className={auditLogsLoading ? "animate-spin" : ""} /> Refresh Logs
+            </button>
+          </div>
+          {auditLogsError ? (
+            <div role="alert" className="rounded border border-ares-red/30 bg-ares-red/10 p-3 text-xs text-white font-mono">
+              {auditLogsError}
+            </div>
+          ) : auditLogsLoading ? (
+            <p className="text-xs text-marble/60 font-mono py-4">Loading audit trail...</p>
+          ) : auditLogs.length === 0 ? (
+            <p className="text-xs text-marble/60 font-medium py-4">No audit log entries recorded yet.</p>
+          ) : (
+            <div className="max-h-72 overflow-y-auto divide-y divide-white/5">
+              {auditLogs.map((entry) => (
+                <div key={entry.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 bg-ares-gold/15 border border-ares-gold/30 text-ares-gold rounded text-[10px] font-mono font-bold">
+                        {entry.action}
+                      </span>
+                      {entry.summary && (
+                        <span className="text-white/90 font-semibold">{entry.summary}</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-marble/50 font-mono">
+                      Actor: {entry.actorUid || "system"}
+                      {entry.targetId ? ` • Target: ${entry.targetId}` : ""}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-marble/50 font-mono shrink-0">
+                    {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <UserDirectoryNotices
         success={success}

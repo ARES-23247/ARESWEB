@@ -57,10 +57,21 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/content_owners/$(ownerId)).data.ownerUid == request.auth.uid;
     }
 
+    function isSafeMemberDraftWrite(data) {
+      return isPendingContent(data) &&
+        data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        data.get('isApproved', false) == false &&
+        !('approvedBy' in data) &&
+        !('approvedAt' in data) &&
+        !('approvedByUid' in data) &&
+        !('approvedByRole' in data) &&
+        (!('authorId' in data) || data.authorId == request.auth.uid);
+    }
+
     function canCreateContent(collectionName, contentId) {
       return isContentPublisher() || (
         isAuthorized() &&
-        isPendingContent(request.resource.data) &&
+        isSafeMemberDraftWrite(request.resource.data) &&
         request.resource.data.get('isDeleted', 0) == 0 &&
         isContentOwnerAfter(collectionName, contentId)
       );
@@ -70,7 +81,11 @@ service cloud.firestore {
       return isContentPublisher() || (
         isAuthorized() &&
         isPendingContent(resource.data) &&
-        isPendingContent(request.resource.data) &&
+        resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        resource.data.get('isApproved', false) == false &&
+        isSafeMemberDraftWrite(request.resource.data) &&
+        request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
+        (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
         isContentOwner(collectionName, contentId)
       );
     }
@@ -91,6 +106,11 @@ service cloud.firestore {
           isContentPublisher() || (
             isAuthorized() &&
             isPendingContent(resource.data) &&
+            resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
+            resource.data.get('isApproved', false) == false &&
+            isSafeMemberDraftWrite(request.resource.data) &&
+            request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
+            (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
             isContentOwner('docs', docSlug)
           )
         );
@@ -369,13 +389,16 @@ service cloud.firestore {
     }
 
     match /tournaments/{tournamentId} {
+      // Public competition results use /api/tournaments/public/results;
+      // team reads and admin/coach mutations use /api/tournaments.
       allow read: if isAuthorized();
-      allow write: if hasRole('admin') || hasRole('coach');
+      allow write: if false;
     }
 
     match /tournament_matches/{matchId} {
+      // Match schedules, scores, and checklists are mutated via /api/tournaments.
       allow read: if isAuthorized();
-      allow write: if hasRole('admin') || hasRole('coach');
+      allow write: if false;
     }
 
     // Retired/unused: no live client or server consumer. Reintroduce with a
@@ -386,9 +409,9 @@ service cloud.firestore {
 
     // Public partners / sponsors
     match /sponsors/{sponsorId} {
-      // Public consumers must use the filtered DTO API.
+      // Public consumers and admin mutations must use the /api/sponsors DTO API.
       allow read: if hasRole('admin') || hasRole('coach');
-      allow write: if hasRole('admin');
+      allow write: if false;
     }
 
     // Public outreach logs
@@ -398,10 +421,9 @@ service cloud.firestore {
       allow write: if false; // Only backend admin SDK can write
     }
 
-    // inquiries (securely gated to adminDb server writes only!)
+    // inquiries (encrypted PII and metadata are server-only via /api/inquiries)
     match /inquiries/{inquiryId} {
-      allow read: if hasRole('admin') || hasRole('coach');
-      allow write: if false;
+      allow read, write: if false;
     }
 
     // user_profiles

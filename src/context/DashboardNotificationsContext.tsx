@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
+import { authenticatedFetch } from "@/lib/api";
 import { db } from "@/lib/firebaseFirestore";
 import { logger } from "@/utils/logger";
 
@@ -27,6 +28,7 @@ const DashboardNotificationsContext = createContext<DashboardNotifications>(
 );
 
 const APPROVER_ROLES = new Set(["admin", "coach", "mentor"]);
+const INQUIRY_REVIEW_ROLES = new Set(["admin", "coach"]);
 
 export function canReviewDashboardContent(role?: string): boolean {
   return !!role && APPROVER_ROLES.has(role);
@@ -40,7 +42,9 @@ export function DashboardNotificationsProvider({
   const { user, authorizedUser } = useAuth();
   const role = authorizedUser?.role;
   const canReview = !!user?.uid && canReviewDashboardContent(role);
+  const canReviewInquiries = !!user?.uid && !!role && INQUIRY_REVIEW_ROLES.has(role);
   const subscriptionsEnabled = canReview && import.meta.env.MODE !== "e2e";
+  const inquiryCheckEnabled = canReviewInquiries && import.meta.env.MODE !== "e2e";
   const [pendingBlogApprovals, setPendingBlogApprovals] = useState(0);
   const [blogApprovalsState, setBlogApprovalsState] =
     useState<DashboardNotificationState>("idle");
@@ -97,28 +101,43 @@ export function DashboardNotificationsProvider({
   }, [subscriptionsEnabled]);
 
   useEffect(() => {
-    if (!subscriptionsEnabled) {
+    if (!inquiryCheckEnabled) {
       setHasPendingInquiries(false);
       setInquiriesState("idle");
       return;
     }
 
+    const controller = new AbortController();
     setInquiriesState("loading");
-    return onSnapshot(
-      query(
-        collection(db, "inquiries"),
-        where("status", "==", "pending"),
-      ),
-      (snapshot) => {
-        setHasPendingInquiries(!snapshot.empty);
+
+    async function loadPendingInquiries() {
+      try {
+        const response = await authenticatedFetch(
+          "/api/inquiries/pending-exists",
+          { signal: controller.signal },
+        );
+        if (!response.ok) {
+          throw new Error(
+            `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+          );
+        }
+        const payload = (await response.json()) as { hasPending?: unknown };
+        if (typeof payload.hasPending !== "boolean") {
+          throw new Error("Invalid pending inquiry response");
+        }
+        setHasPendingInquiries(payload.hasPending);
         setInquiriesState("connected");
-      },
-      (error) => {
-        logger.error("Pending inquiry subscription failed", error);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        logger.error("Pending inquiry status check failed", error);
+        setHasPendingInquiries(false);
         setInquiriesState("error");
-      },
-    );
-  }, [subscriptionsEnabled]);
+      }
+    }
+
+    void loadPendingInquiries();
+    return () => controller.abort();
+  }, [inquiryCheckEnabled]);
 
   const value = useMemo<DashboardNotifications>(
     () => ({

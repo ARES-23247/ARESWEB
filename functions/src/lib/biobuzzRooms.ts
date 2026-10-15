@@ -6,7 +6,7 @@ import type { AutoProgram, Input, SeatKind, Snapshot, RobotSetup } from "../gene
 import type { ClientMessage, Lobby, ServerMessage, Session } from "../generated/games/biobuzz/protocol";
 import { ApiError } from "../middleware/errorHandler";
 interface Peer { send(message:ServerMessage):void; close():void }
-interface Player { hash:Buffer; ready:boolean; auto:AutoProgram|null; setup:RobotSetup; peer:Peer|null; disconnected:number; sequence:number; inputAt:number; tokens:number; lastInput:Input|null }
+interface Player { hash:Buffer; ready:boolean; auto:AutoProgram|null; setup:RobotSetup; peer:Peer|null; connectedOnce:boolean; disconnected:number; sequence:number; inputAt:number; tokens:number; lastInput:Input|null }
 interface Room { id:string;code:string;public:boolean;seats:SeatKind[];players:(Player|null)[];host:number;created:number;lastHuman:number;status:Lobby["status"];sim:Simulation|null;ended:number;saved:boolean;saveAttempts:number;lastLobbySecond?:number }
 interface Options { maxRooms:number; socketUrl:string; now?:()=>number; persist?:(roomId:string,state:Snapshot)=>Promise<void> }
 const hash=(token:string)=>createHash("sha256").update(token).digest();
@@ -14,6 +14,8 @@ const hash=(token:string)=>createHash("sha256").update(token).digest();
 export const BIOBUZZ_WAITING_LOBBY_MS=180000;
 /** A private room still held by one player releases scarce capacity sooner. */
 export const BIOBUZZ_LONE_PRIVATE_LOBBY_MS=90000;
+/** Initial WebSocket handshake grace window after HTTP admission. */
+export const BIOBUZZ_HANDSHAKE_LEASE_MS=6000;
 export class BiobuzzRooms {
   private rooms=new Map<string,Room>();
   private draining=false;
@@ -33,6 +35,9 @@ export class BiobuzzRooms {
     }
     if(action==="queue")room=[...this.rooms.values()].find(r=>r.public&&r.status==="waiting"&&r.players.some(p=>!p)&&this.now()-r.created<30000);
     if(!room){
+      if(this.rooms.size>=this.options.maxRooms){
+        for(const existing of this.rooms.values())if(existing.status==="local-offer")this.remove(existing);
+      }
       if(this.rooms.size>=this.options.maxRooms)throw new ApiError(503,"Online simulator is at capacity. Try local practice.");
       const id=randomBytes(18).toString("hex"),invite=randomBytes(6).toString("hex").slice(0,8).toUpperCase();
       room={id,code:invite,public:action==="queue",seats:["human","human","human","human"],players:[null,null,null,null],host:0,created:this.now(),lastHuman:this.now(),status:"waiting",sim:null,ended:0,saved:false,saveAttempts:0};
@@ -41,7 +46,7 @@ export class BiobuzzRooms {
     const seat=[0,2,1,3].find(i=>room!.seats[i]==="human"&&!room!.players[i]);
     if(seat===undefined)throw new ApiError(409,"Room has no open human seats.");
     const token=randomBytes(32).toString("base64url");
-    room.players[seat]={hash:hash(token),ready:false,auto:null,setup:validateRobotSetup(undefined),peer:null,disconnected:this.now(),sequence:-1,inputAt:this.now(),tokens:60,lastInput:null};
+    room.players[seat]={hash:hash(token),ready:false,auto:null,setup:validateRobotSetup(undefined),peer:null,connectedOnce:false,disconnected:this.now(),sequence:-1,inputAt:this.now(),tokens:60,lastInput:null};
     this.broadcastLobby(room);
     return {roomId:room.id,token,seat,code:room.code,socketUrl:this.options.socketUrl};
   }
@@ -50,8 +55,9 @@ export class BiobuzzRooms {
     if(!room)throw new ApiError(410,"Room was interrupted or expired. Start a new match.");
     const tokenHash=hash(token),seat=room.players.findIndex(p=>p&&timingSafeEqual(p.hash,tokenHash));
     const player=room.players[seat];
-    if(!player||this.now()-player.disconnected>30000&&!player.peer)throw new ApiError(401,"Player session expired.");
-    player.peer?.close();player.peer=peer;player.sequence=-1;player.inputAt=this.now();player.tokens=60;
+    const leaseMs=player?.connectedOnce?30000:BIOBUZZ_HANDSHAKE_LEASE_MS;
+    if(!player||this.now()-player.disconnected>leaseMs&&!player.peer)throw new ApiError(401,"Player session expired.");
+    player.peer?.close();player.peer=peer;player.connectedOnce=true;player.sequence=-1;player.inputAt=this.now();player.tokens=60;
     room.lastHuman=this.now();room.sim?.setController(seat,"human");
     peer.send({type:"joined",seat});this.broadcastLobby(room);if(room.sim)peer.send({type:"snapshot",state:room.sim.snapshot()});
     return {
@@ -123,7 +129,8 @@ export class BiobuzzRooms {
       for(let seat=0;seat<4;seat++){
         const p=room.players[seat];if(!p)continue;
         if(!p.peer&&now-p.disconnected>=3000)room.sim?.setController(seat,"standard");
-        if(!p.peer&&now-p.disconnected>30000){room.players[seat]=null;room.seats[seat]=room.status==="waiting"?"human":"standard";if(room.host===seat)room.host=Math.max(0,room.players.findIndex(Boolean));this.broadcastLobby(room);}
+        const maxDisconnectedMs=p.connectedOnce?30000:BIOBUZZ_HANDSHAKE_LEASE_MS;
+        if(!p.peer&&now-p.disconnected>maxDisconnectedMs){room.players[seat]=null;room.seats[seat]=room.status==="waiting"?"human":"standard";if(room.host===seat)room.host=Math.max(0,room.players.findIndex(Boolean));this.broadcastLobby(room);}
       }
       if(!room.players.some(Boolean)&&(room.status!=="finished"||room.saved||room.saveAttempts>=3)){this.remove(room);continue;}
       if(room.public&&room.status==="waiting"&&(room.players.every(p=>p?.peer&&p.ready)||now-room.created>=30000)){

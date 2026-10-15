@@ -22,7 +22,7 @@ export default function BlogManagementPage({
   prefilledSlug?: string | null;
 } = {}) {
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending" | "archived">("all");
+  const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending" | "studio" | "archived">("all");
 
   React.useEffect(() => {
     const requestedTab = searchParams.get("tab");
@@ -30,6 +30,7 @@ export default function BlogManagementPage({
       requestedTab === "all"
       || requestedTab === "published"
       || requestedTab === "pending"
+      || requestedTab === "studio"
       || requestedTab === "archived"
     ) {
       setActiveTab(requestedTab);
@@ -81,8 +82,15 @@ export default function BlogManagementPage({
     prefilledSlug
   );
 
+  const studioDocs = React.useMemo(
+    () => docs.filter((d) => d.importedFrom === "ares-robotics-studio"),
+    [docs],
+  );
+
   const displayItems = activeTab === "archived"
     ? archivedDocs
+    : activeTab === "studio"
+    ? studioDocs
     : activeTab === "pending"
     ? pendingDocs 
     : activeTab === "published" 
@@ -174,6 +182,14 @@ export default function BlogManagementPage({
               {pendingDocs.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab("studio")}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded transition-colors ${
+            activeTab === "studio" ? "bg-ares-cyan/20 text-ares-cyan border border-ares-cyan/40" : "text-marble/60 hover:text-white"
+          }`}
+        >
+          Studio Drafts ({studioDocs.length})
         </button>
         <button
           onClick={() => setActiveTab("archived")}
