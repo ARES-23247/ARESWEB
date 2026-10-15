@@ -287,7 +287,7 @@ export function registerProfileSyncRoutes(router: Router): void {
         if (!isArchived) {
           if (rawRole === "coach") {
             normRole = "admin";
-            if (!memberType) memberType = "mentor";
+            if (!memberType) memberType = "coach";
           } else if (rawRole === "student") {
             normRole = "member";
             if (!memberType) memberType = "student";
@@ -301,16 +301,18 @@ export function registerProfileSyncRoutes(router: Router): void {
           ) {
             normRole = rawRole;
           }
-        }
 
-        if (normRole !== rawRole || memberType !== (data.memberType || "")) {
-          const updates: { role: string; memberType?: string } = {
-            role: normRole,
-          };
-          if (memberType) updates.memberType = memberType;
-          await userRef.set(updates, { merge: true });
-          data.role = normRole;
-          if (memberType) data.memberType = memberType;
+          if (normRole !== rawRole || memberType !== (data.memberType || "")) {
+            const updates: { role: string; memberType?: string } = {
+              role: normRole,
+            };
+            if (memberType) updates.memberType = memberType;
+            await userRef.set(updates, { merge: true });
+            data.role = normRole;
+            if (memberType) data.memberType = memberType;
+          }
+        } else {
+          data.role = "unverified";
         }
         res.json({ authorizedUser: sanitizeAuthorizedUserDto(data) });
         return;

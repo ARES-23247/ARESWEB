@@ -45,30 +45,48 @@ describe("linkAuthorizedUserByEmail", () => {
     expect(mockWhereGet).not.toHaveBeenCalled();
   });
 
-  it("re-keys a pre-authorized record to the signed-in uid", async () => {
+  it("re-keys a pre-authorized record and its paired user_profiles doc to the signed-in uid", async () => {
     mockWhereGet.mockResolvedValue({ docs: [orphanDoc("generated-id", { email: "New@Team.org", role: "member", isDeleted: 0 })] });
-    mockDoc.mockReturnValue({ id: "uid-1" });
+    mockDoc.mockImplementation((id: string) => ({
+      id,
+      get: vi.fn().mockResolvedValue({
+        exists: id === "generated-id",
+        data: () => ({ nickname: "Applicant", memberType: "student" }),
+      }),
+    }));
 
     const linked = await linkAuthorizedUserByEmail({ uid: "uid-1", email: "new@team.org", emailVerified: true });
 
     expect(linked).toBe(true);
     expect(mockBatchSet).toHaveBeenCalledWith(
-      { id: "uid-1" },
+      expect.objectContaining({ id: "uid-1" }),
       expect.objectContaining({ email: "new@team.org", role: "member" }),
       { merge: true },
     );
+    expect(mockBatchSet).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "uid-1" }),
+      { nickname: "Applicant", memberType: "student" },
+      { merge: true },
+    );
     expect(mockBatchDelete).toHaveBeenCalledWith({ path: "authorized_users/generated-id" });
+    expect(mockBatchDelete).toHaveBeenCalledWith(expect.objectContaining({ id: "generated-id" }));
     expect(mockBatchCommit).toHaveBeenCalled();
   });
 
-  it("deletes but does not inherit an archived pre-authorization", async () => {
+  it("deletes but does not inherit an archived pre-authorization or its orphan profile", async () => {
     mockWhereGet.mockResolvedValue({ docs: [orphanDoc("generated-id", { email: "gone@team.org", role: "member", isDeleted: 1 })] });
-    mockDoc.mockReturnValue({ id: "uid-1" });
+    mockDoc.mockImplementation((id: string) => ({
+      id,
+      get: vi.fn().mockResolvedValue({
+        exists: id === "generated-id",
+        data: () => ({ nickname: "ArchivedApplicant" }),
+      }),
+    }));
 
     const linked = await linkAuthorizedUserByEmail({ uid: "uid-1", email: "gone@team.org", emailVerified: true });
 
     expect(linked).toBe(true);
-    expect(mockBatchDelete).toHaveBeenCalled();
+    expect(mockBatchDelete).toHaveBeenCalledTimes(2);
     expect(mockBatchSet).not.toHaveBeenCalled();
   });
 

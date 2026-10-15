@@ -71,6 +71,7 @@ export default function FinanceLedgerPage() {
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTypeFilter, setActiveTypeFilter] = useState<"all" | "income" | "expense">("all");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -149,7 +150,7 @@ export default function FinanceLedgerPage() {
     return { income, expenses, balance: income - expenses };
   }, [transactions, selectedSeason]);
 
-  const filteredTransactions = useMemo(() => {
+  const baseFilteredTransactions = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
     return transactions.filter((transaction) => {
       const matchesSeason = !selectedSeason || transaction.seasonId === selectedSeason;
@@ -160,9 +161,17 @@ export default function FinanceLedgerPage() {
     });
   }, [transactions, selectedSeason, searchQuery, activeTypeFilter]);
 
+  const filteredTransactions = useMemo(
+    () =>
+      selectedCategory
+        ? baseFilteredTransactions.filter((transaction) => transaction.category === selectedCategory)
+        : baseFilteredTransactions,
+    [baseFilteredTransactions, selectedCategory],
+  );
+
   const sortedCategories = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
-    for (const transaction of filteredTransactions) {
+    for (const transaction of baseFilteredTransactions) {
       if (transaction.type === "expense") {
         categoryTotals[transaction.category] = (categoryTotals[transaction.category] || 0) + Number(transaction.amount);
       }
@@ -170,7 +179,7 @@ export default function FinanceLedgerPage() {
     return Object.entries(categoryTotals)
       .map(([category, amount]) => ({ category, amount }))
       .sort((a, b) => b.amount - a.amount);
-  }, [filteredTransactions]);
+  }, [baseFilteredTransactions]);
 
   const loadedExpenseTotal = useMemo(
     () => sortedCategories.reduce((total, category) => total + category.amount, 0),
@@ -293,26 +302,49 @@ export default function FinanceLedgerPage() {
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
               <section aria-labelledby="expense-allocation-title" className="h-fit border border-white/10 bg-white/[0.03] p-6 lg:col-span-1">
-                <div className="mb-6 flex items-center gap-2">
-                  <Award aria-hidden="true" className="rounded bg-ares-red p-0.5 text-white" size={20} />
-                  <h2 id="expense-allocation-title" className="text-lg font-black uppercase tracking-tighter text-white">Expense Allocation</h2>
+                <div className="mb-6 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Award aria-hidden="true" className="rounded bg-ares-red p-0.5 text-white" size={20} />
+                    <h2 id="expense-allocation-title" className="text-lg font-black uppercase tracking-tighter text-white">Expense Allocation</h2>
+                  </div>
+                  {selectedCategory && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory(null)}
+                      className="text-[10px] font-black uppercase tracking-widest text-ares-gold underline hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    >
+                      Clear filter
+                    </button>
+                  )}
                 </div>
                 {sortedCategories.length === 0 ? (
                   <p className="border border-dashed border-white/10 py-12 text-center text-xs font-bold uppercase tracking-widest text-marble/70">No expense data found</p>
                 ) : (
-                  <div className="space-y-5">
+                  <div className="space-y-3">
                     {sortedCategories.map(({ category, amount }) => {
                       const percentage = loadedExpenseTotal > 0 ? Math.round((amount / loadedExpenseTotal) * 100) : 0;
+                      const isCategorySelected = selectedCategory === category;
                       return (
-                        <div key={category}>
+                        <button
+                          key={category}
+                          type="button"
+                          aria-pressed={isCategorySelected}
+                          aria-label={`Filter by expense category ${category}`}
+                          onClick={() => setSelectedCategory((prev) => (prev === category ? null : category))}
+                          className={`block w-full rounded border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                            isCategorySelected
+                              ? "border-ares-gold/60 bg-ares-gold/10"
+                              : "border-transparent hover:border-white/10 hover:bg-white/[0.04]"
+                          }`}
+                        >
                           <div className="mb-2 flex justify-between gap-3 text-xs font-bold uppercase tracking-widest text-marble/80">
-                            <span>{category}</span>
+                            <span className={isCategorySelected ? "text-ares-gold" : ""}>{category}</span>
                             <span className="text-white">${amount.toLocaleString()} ({percentage}%)</span>
                           </div>
                           <div className="h-2 w-full overflow-hidden border border-white/10 bg-white/5" role="img" aria-label={`${category}: ${percentage}% of loaded expenses`}>
                             <motion.div initial={{ width: 0 }} animate={{ width: `${percentage}%` }} className="h-full bg-ares-gold" />
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

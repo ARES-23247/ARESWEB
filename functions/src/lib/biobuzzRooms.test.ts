@@ -1,5 +1,5 @@
 import { describe,it,expect,vi } from "vitest";
-import { BIOBUZZ_LONE_PRIVATE_LOBBY_MS,BIOBUZZ_WAITING_LOBBY_MS,BiobuzzRooms } from "./biobuzzRooms";
+import { BIOBUZZ_HANDSHAKE_LEASE_MS,BIOBUZZ_LONE_PRIVATE_LOBBY_MS,BIOBUZZ_WAITING_LOBBY_MS,BiobuzzRooms } from "./biobuzzRooms";
 import { NEUTRAL } from "../generated/games/biobuzz/types";
 import type { ServerMessage } from "../generated/games/biobuzz/protocol";
 function harness(maxRooms=5,persist?:ConstructorParameters<typeof BiobuzzRooms>[0]["persist"]){
@@ -117,5 +117,14 @@ describe("BIOBUZZ room authority",()=>{
   g.elapse(BIOBUZZ_LONE_PRIVATE_LOBBY_MS+1000);expect(g.rooms.size).toBe(1);
   g.elapse(BIOBUZZ_WAITING_LOBBY_MS-BIOBUZZ_LONE_PRIVATE_LOBBY_MS);expect(g.rooms.size).toBe(0);
   expect(BIOBUZZ_LONE_PRIVATE_LOBBY_MS).toBeLessThan(BIOBUZZ_WAITING_LOBBY_MS);
+ });
+ it("expires unattached HTTP reservations quickly and evicts local-offer rooms at capacity",()=>{
+  const h=harness(1);
+  h.rooms.admit("create");
+  h.elapse(BIOBUZZ_HANDSHAKE_LEASE_MS+1);expect(h.rooms.size).toBe(0);
+  const lone=h.client("queue");h.elapse(30001);expect(lone.last).toMatchObject({type:"lobby",lobby:{status:"local-offer"}});
+  const nextHost=h.client("create");
+  expect(lone.close).toHaveBeenCalled();expect(nextHost.session.seat).toBe(0);
+  h.rooms.close();
  });
 });

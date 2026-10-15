@@ -25,7 +25,7 @@ const userIdParamSchema = z.object({
 const adminPermissionsSchema = z.object({
   role: z.enum(["admin", "coach", "mentor", "member", "unverified"]),
   memberType: z
-    .enum(["student", "parent", "mentor", "alumni", "sponsor", ""])
+    .enum(["student", "parent", "coach", "mentor", "alumni", "sponsor", ""])
     .default(""),
 });
 
@@ -37,7 +37,15 @@ const adminInviteSchema = z.object({
     .transform((value) => value.trim().toLowerCase()),
   name: z.string().trim().min(1).max(120),
   role: z.enum(["admin", "coach", "mentor", "member", "unverified"]),
-  memberType: z.enum(["student", "parent", "mentor", "alumni", "sponsor", ""]),
+  memberType: z.enum([
+    "student",
+    "parent",
+    "coach",
+    "mentor",
+    "alumni",
+    "sponsor",
+    "",
+  ]),
 });
 
 const adminUsersQuerySchema = z.object({
@@ -51,7 +59,13 @@ const adminUsersQuerySchema = z.object({
 
 type AdminUserRole = "admin" | "coach" | "mentor" | "member" | "unverified";
 type AdminMemberType =
-  "student" | "parent" | "mentor" | "alumni" | "sponsor" | "";
+  | "student"
+  | "parent"
+  | "coach"
+  | "mentor"
+  | "alumni"
+  | "sponsor"
+  | "";
 
 interface AdminUserDirectoryDto {
   id: string;
@@ -74,7 +88,7 @@ function normalizeAdminRole(value: unknown): {
 } {
   const rawRole = typeof value === "string" ? value.trim().toLowerCase() : "";
   if (rawRole === "coach")
-    return { role: "admin", impliedMemberType: "mentor" };
+    return { role: "admin", impliedMemberType: "coach" };
   if (rawRole === "student")
     return { role: "member", impliedMemberType: "student" };
   if (rawRole === "parent")
@@ -93,7 +107,7 @@ function normalizeAdminRole(value: unknown): {
 function normalizeAdminMemberType(value: unknown): AdminMemberType {
   const memberType =
     typeof value === "string" ? value.trim().toLowerCase() : "";
-  return ["student", "parent", "mentor", "alumni", "sponsor"].includes(
+  return ["student", "parent", "coach", "mentor", "alumni", "sponsor"].includes(
     memberType,
   )
     ? (memberType as AdminMemberType)
@@ -324,6 +338,7 @@ export function registerProfileAdminRoutes(router: Router): void {
           const authorizationName = safeString(authorization.name, 120);
           const mayDisplayAuthorizationName = [
             "parent",
+            "coach",
             "mentor",
             "alumni",
             "sponsor",
@@ -387,6 +402,67 @@ export function registerProfileAdminRoutes(router: Router): void {
           "Could not load the user directory. Please try again.",
         );
       }
+    }),
+  );
+
+  router.get(
+    "/admin/audit-logs",
+    ensureAdmin,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const rawLimit = Number.parseInt(String(req.query.limit ?? "25"), 10);
+      const limitVal = Number.isFinite(rawLimit)
+        ? Math.min(100, Math.max(1, rawLimit))
+        : 25;
+      const auditCollection = adminDb.collection("audit_logs");
+      const baseQuery =
+        typeof auditCollection.orderBy === "function"
+          ? auditCollection.orderBy("createdAt", "desc").limit(limitVal)
+          : auditCollection.limit(limitVal);
+      const snapshot = await baseQuery.get();
+      const logs = snapshot.docs
+        .map((doc) => {
+          const data = doc.data() || {};
+          const action = safeString(data.action, 80) || "system.event";
+          const actorUid = safeString(data.actorUid, 128);
+          const targetId = safeString(
+            data.targetUid ||
+              data.targetId ||
+              data.inquiryId ||
+              data.announcementId ||
+              data.draftId,
+            128,
+          );
+          const createdAt = safeCreatedAt(data.createdAt || data.timestamp);
+          const afterObj =
+            data.after && typeof data.after === "object"
+              ? (data.after as Record<string, unknown>)
+              : null;
+          const details: string[] = [];
+          const resolvedRole = safeString(
+            afterObj?.role || data.role || data.assignedRole,
+            40,
+          );
+          const resolvedMemberType = safeString(
+            afterObj?.memberType || data.memberType,
+            40,
+          );
+          if (resolvedRole) {
+            details.push(`role=${resolvedRole}`);
+          }
+          if (resolvedMemberType) {
+            details.push(`memberType=${resolvedMemberType}`);
+          }
+          return {
+            id: doc.id,
+            action,
+            actorUid,
+            targetId,
+            createdAt,
+            summary: details.join(" • "),
+          };
+        })
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      res.json({ logs });
     }),
   );
 

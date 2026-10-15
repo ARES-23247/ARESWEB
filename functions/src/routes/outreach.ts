@@ -70,31 +70,77 @@ function toOutreachDto(id: string, data: OutreachLogDocument, includeLifecycle: 
   };
 }
 
+const MAX_OUTREACH_SCAN_DOCUMENTS = 300;
+
 async function getOutreachLogsHelper(req: express.Request, includeArchived: boolean) {
   const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);
   const cursor = req.query?.cursor as string | undefined;
-
-  let query = adminDb.collection("outreach_logs").orderBy("date", "desc").limit(limitVal + 1);
+  const collection = adminDb.collection("outreach_logs");
+  let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined;
 
   if (cursor) {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(cursor)) {
       throw new ApiError(400, "Invalid pagination cursor.");
     }
-    const cursorDoc = await adminDb.collection("outreach_logs").doc(cursor).get();
+    const cursorDoc = await collection.doc(cursor).get();
     if (cursorDoc.exists) {
-      query = query.startAfter(cursorDoc);
+      scanCursor = cursorDoc;
     }
   }
 
-  const snapshot = await query.get();
-  const rawDocs = snapshot.docs;
-  const hasMore = rawDocs.length > limitVal;
-  const docs = hasMore ? rawDocs.slice(0, limitVal) : rawDocs;
+  const validDocs: Array<{ id: string; data: OutreachLogDocument }> = [];
+  let scannedDocuments = 0;
+  let exhausted = false;
 
-  const logs = docs
-    .map((doc) => ({ id: doc.id, data: doc.data() as OutreachLogDocument }))
-    .filter(({ data }) => includeArchived || data.isDeleted !== 1)
-    .map(({ id, data }) => toOutreachDto(id, data, includeArchived));
+  while (
+    validDocs.length < limitVal + 1 &&
+    scannedDocuments < MAX_OUTREACH_SCAN_DOCUMENTS &&
+    !exhausted
+  ) {
+    const pageSize = Math.min(
+      Math.max(limitVal + 1, 50),
+      MAX_OUTREACH_SCAN_DOCUMENTS - scannedDocuments,
+    );
+    let query = collection.orderBy("date", "desc").limit(pageSize);
+    if (scanCursor) {
+      query = query.startAfter(scanCursor);
+    }
+
+    const snapshot = await query.get();
+    const rawDocs = snapshot?.docs ?? [];
+    if (rawDocs.length === 0) {
+      exhausted = true;
+      break;
+    }
+
+    for (const doc of rawDocs) {
+      scanCursor = doc;
+      scannedDocuments += 1;
+      const data = doc.data() as OutreachLogDocument;
+      if (includeArchived || data.isDeleted !== 1) {
+        validDocs.push({ id: doc.id, data });
+      }
+      if (
+        validDocs.length >= limitVal + 1 ||
+        scannedDocuments >= MAX_OUTREACH_SCAN_DOCUMENTS
+      ) {
+        break;
+      }
+    }
+
+    if (rawDocs.length < pageSize) {
+      exhausted = true;
+    }
+  }
+
+  const hasMore =
+    validDocs.length > limitVal ||
+    (!exhausted && scannedDocuments >= MAX_OUTREACH_SCAN_DOCUMENTS);
+  const docs = hasMore ? validDocs.slice(0, limitVal) : validDocs;
+
+  const logs = docs.map(({ id, data }) =>
+    toOutreachDto(id, data, includeArchived),
+  );
 
   // Sort by date descending
   logs.sort((a, b) => b.date.localeCompare(a.date));
@@ -103,7 +149,12 @@ async function getOutreachLogsHelper(req: express.Request, includeArchived: bool
     success: true,
     logs,
     hasMore,
-    nextCursor: hasMore && docs.length > 0 ? docs[docs.length - 1].id : null
+    nextCursor:
+      hasMore && docs.length > 0
+        ? docs[docs.length - 1].id
+        : hasMore && scanCursor
+          ? scanCursor.id
+          : null,
   };
 }
 

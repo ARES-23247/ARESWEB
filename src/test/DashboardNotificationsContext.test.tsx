@@ -13,8 +13,16 @@ const firestore = vi.hoisted(() => ({
   onSnapshot: vi.fn(),
 }));
 
+const api = vi.hoisted(() => ({
+  authenticatedFetch: vi.fn(),
+}));
+
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => auth.value,
+}));
+
+vi.mock("@/lib/api", () => ({
+  authenticatedFetch: api.authenticatedFetch,
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -62,9 +70,13 @@ describe("dashboard notifications", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     auth.value = {
-      user: { uid: "mentor-1" },
-      authorizedUser: { role: "mentor" },
+      user: { uid: "admin-1" },
+      authorizedUser: { role: "admin" },
     };
+    api.authenticatedFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, hasPending: true }),
+    });
   });
 
   it("recognizes only roles that may review content", () => {
@@ -90,8 +102,6 @@ describe("dashboard notifications", () => {
             { id: "archived", data: () => ({ isDeleted: 1 }) },
           ],
         });
-      } else {
-        onNext({ empty: false });
       }
       return vi.fn();
     });
@@ -105,15 +115,22 @@ describe("dashboard notifications", () => {
     await waitFor(() => {
       expect(screen.getByText("2|connected|true|connected")).toBeInTheDocument();
     });
-    expect(firestore.onSnapshot).toHaveBeenCalledTimes(3);
+    expect(firestore.onSnapshot).toHaveBeenCalledTimes(2);
+    expect(api.authenticatedFetch).toHaveBeenCalledWith(
+      "/api/inquiries/pending-exists",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     view.unmount();
   });
 
   it("reports subscription failures instead of presenting an empty queue", async () => {
-    firestore.onSnapshot.mockImplementation((queryValue, onNext, onError) => {
+    api.authenticatedFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, hasPending: false }),
+    });
+    firestore.onSnapshot.mockImplementation((queryValue, _onNext, onError) => {
       const details = queryDetails(queryValue);
       if (details.collection === "posts") onError(new Error("offline"));
-      else onNext({ empty: true });
       return vi.fn();
     });
 

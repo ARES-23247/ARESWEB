@@ -1,4 +1,5 @@
-import { Activity, ArrowRight, Clock, Download, Heart, MapPin, RefreshCw, Target } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Activity, ArrowRight, Clock, Download, Heart, MapPin, RefreshCw, Search, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PublicDataState } from "@/components/PublicDataState";
 import { createOutreachCsvDataUrl } from "@/lib/outreachExport";
@@ -141,19 +142,52 @@ interface OutreachImpactFeedProps {
   onRequestDemo: () => void;
 }
 
+function extractOutreachYear(dateStr?: string): string | null {
+  if (!dateStr) return null;
+  const match = dateStr.match(/\b(20\d{2})\b/);
+  return match ? match[1] : null;
+}
+
 export function OutreachImpactFeed({ logs, isLoading, isRefreshing, error, onRefresh, onRequestDemo }: OutreachImpactFeedProps) {
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    for (const log of logs) {
+      const y = extractOutreachYear(log.date);
+      if (y) years.add(y);
+    }
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [logs]);
+
+  const filteredLogs = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return logs.filter((log) => {
+      if (selectedYear !== "all" && extractOutreachYear(log.date) !== selectedYear) {
+        return false;
+      }
+      if (!normalizedQuery) return true;
+      return (
+        log.title.toLowerCase().includes(normalizedQuery) ||
+        (log.location ?? "").toLowerCase().includes(normalizedQuery) ||
+        (log.impactSummary ?? "").toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }, [logs, selectedYear, searchQuery]);
+
   return (
     <section className="py-24 bg-black/10 border-t border-white/5">
       <div className="max-w-5xl mx-auto px-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-16">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-10">
           <div>
             <h2 className="text-3xl font-black uppercase text-white font-heading tracking-tight">Championship Impact Log</h2>
             <p className="text-xs text-marble/65 uppercase tracking-widest mt-1 font-semibold">Timeline of STEM Service Demos</p>
           </div>
           <div className="flex flex-wrap gap-4">
-            {logs.length > 0 && (
+            {filteredLogs.length > 0 && (
               <a
-                href={createOutreachCsvDataUrl(logs)}
+                href={createOutreachCsvDataUrl(filteredLogs)}
                 download="ares-23247-community-outreach-impact.csv"
                 aria-label="Export outreach impact log as CSV"
                 className="flex items-center gap-1.5 rounded border border-ares-cyan/30 bg-ares-cyan/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-ares-cyan hover:bg-ares-cyan/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -170,6 +204,54 @@ export function OutreachImpactFeed({ logs, isLoading, isRefreshing, error, onRef
           </div>
         </div>
 
+        {logs.length > 0 && (
+          <div className="mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter outreach records by year">
+              <button
+                type="button"
+                onClick={() => setSelectedYear("all")}
+                aria-pressed={selectedYear === "all"}
+                className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                  selectedYear === "all"
+                    ? "bg-ares-red text-white shadow-md"
+                    : "bg-white/5 text-marble/75 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                All Years
+              </button>
+              {availableYears.map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  onClick={() => setSelectedYear(year)}
+                  aria-pressed={selectedYear === year}
+                  className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                    selectedYear === year
+                      ? "bg-ares-red text-white shadow-md"
+                      : "bg-white/5 text-marble/75 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search aria-hidden="true" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-marble/50" />
+              <label htmlFor="outreach-search-input" className="sr-only">
+                Search outreach events
+              </label>
+              <input
+                id="outreach-search-input"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter by title or location..."
+                className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-xs text-white placeholder-marble/50 focus:border-ares-cyan focus:outline-none focus:ring-1 focus:ring-ares-cyan"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6">
           {!isLoading && logs.length === 0 && !error && (
             <div className="hero-card border border-white/10 bg-white/5 p-10 text-center">
@@ -177,12 +259,28 @@ export function OutreachImpactFeed({ logs, isLoading, isRefreshing, error, onRef
               <p className="mt-2 text-sm text-marble/75">Verified service records will appear here after publication.</p>
             </div>
           )}
-          {logs.map((log) => (
+          {!isLoading && logs.length > 0 && filteredLogs.length === 0 && (
+            <div className="hero-card border border-white/10 bg-white/5 p-10 text-center">
+              <h3 className="font-heading text-lg font-black uppercase text-white">No matching outreach events</h3>
+              <p className="mt-2 text-xs text-marble/75">Try clearing the search query or selecting All Years.</p>
+            </div>
+          )}
+          {filteredLogs.map((log) => (
             <div key={log.key} className="bg-white/5 border border-white/5 p-8 rounded-2xl ares-cut-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:border-white/10 transition-all duration-300">
               <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-2 text-marble/75 text-[10px] font-mono uppercase font-bold">
+                <div className="flex flex-wrap items-center gap-2 text-marble/75 text-[10px] font-mono uppercase font-bold">
                   <MapPin aria-hidden="true" size={10} className="text-ares-gold" />
-                  <span>{log.location ?? "Location not provided"}</span><span>&middot;</span><span>{log.date ?? "Date not provided"}</span>
+                  <span>{log.location ?? "Location not provided"}</span>
+                  <span>&middot;</span>
+                  <span>{log.date ?? "Date not provided"}</span>
+                  {log.hours !== undefined && (
+                    <>
+                      <span>&middot;</span>
+                      <span className="inline-flex items-center gap-1 rounded bg-ares-gold/15 px-2 py-0.5 text-ares-gold">
+                        <Clock aria-hidden="true" size={10} /> {log.hours} hrs
+                      </span>
+                    </>
+                  )}
                 </div>
                 <h3 className="text-xl font-bold text-white group-hover:text-ares-gold transition-colors font-heading leading-tight uppercase">{log.title}</h3>
                 <p className="text-xs text-marble/75 leading-relaxed max-w-2xl">{log.impactSummary ?? "Impact summary not provided"}</p>

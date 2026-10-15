@@ -18,7 +18,10 @@ import {
   Phone,
   School,
   Briefcase,
-  UserPlus
+  UserPlus,
+  Download,
+  Building2,
+  Award
 } from "lucide-react";
 
 interface Inquiry {
@@ -34,10 +37,55 @@ interface Inquiry {
     occupation?: string;
     interests?: string[];
     additional?: string;
+    level?: string;
+    organization?: string;
+    message?: string;
   };
   createdAt: string;
   isDeleted: boolean;
   archivedAt?: string | null;
+}
+
+function escapeCsvCell(value: unknown): string {
+  const raw = typeof value === "string" ? value : value == null ? "" : String(value);
+  const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+export function buildInquiriesCsv(rows: Inquiry[]): string {
+  const header = [
+    "ID",
+    "Type",
+    "Status",
+    "Name",
+    "Email",
+    "Phone",
+    "School",
+    "Grade",
+    "Occupation",
+    "Organization",
+    "Sponsorship Level",
+    "Interests",
+    "Message / Additional",
+    "Created At",
+  ];
+  const lines = rows.map((inq) => [
+    inq.id,
+    inq.type,
+    inq.status,
+    inq.name,
+    inq.email,
+    inq.metadata?.phone || "",
+    inq.metadata?.school || "",
+    inq.metadata?.grade || "",
+    inq.metadata?.occupation || "",
+    inq.metadata?.organization || "",
+    inq.metadata?.level || "",
+    Array.isArray(inq.metadata?.interests) ? inq.metadata.interests.join("; ") : "",
+    inq.metadata?.message || inq.metadata?.additional || "",
+    inq.createdAt,
+  ].map(escapeCsvCell).join(","));
+  return [header.map(escapeCsvCell).join(","), ...lines].join("\r\n");
 }
 
 interface InquiryPageResponse {
@@ -211,6 +259,20 @@ export default function InquiriesPage() {
     return matchesSearch && matchesType && matchesStatus && matchesArchived;
   });
 
+  const handleExportCsv = () => {
+    if (filteredInquiries.length === 0) return;
+    const csvContent = buildInquiriesCsv(filteredInquiries);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ares-inquiries-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
@@ -265,12 +327,22 @@ export default function InquiriesPage() {
             Review and manage student enrollments, mentor applications, sponsorship interests, demo requests, and general messages.
           </p>
         </div>
-        <button 
-          onClick={() => void fetchInquiries()}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold"
-        >
-          <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={filteredInquiries.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/30 text-ares-gold text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <Download size={14} /> Export CSV
+          </button>
+          <button 
+            onClick={() => void fetchInquiries()}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold"
+          >
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </header>
 
       {/* Filters Toolbar */}
@@ -298,6 +370,7 @@ export default function InquiriesPage() {
             <option value="student">Students</option>
             <option value="mentor">Mentors</option>
             <option value="sponsor">Sponsors</option>
+            <option value="demo">Demos</option>
             <option value="general">General</option>
           </select>
           <select
@@ -361,6 +434,8 @@ export default function InquiriesPage() {
                   {inq.metadata?.phone && <span className="flex items-center gap-1.5"><Phone size={14} className="text-marble/40" /> {inq.metadata.phone}</span>}
                   {inq.metadata?.school && <span className="flex items-center gap-1.5"><School size={14} className="text-marble/40" /> {inq.metadata.school} (Grade {inq.metadata.grade}th)</span>}
                   {inq.metadata?.occupation && <span className="flex items-center gap-1.5"><Briefcase size={14} className="text-marble/40" /> {inq.metadata.occupation}</span>}
+                  {inq.metadata?.organization && <span className="flex items-center gap-1.5"><Building2 size={14} className="text-marble/40" /> {inq.metadata.organization}</span>}
+                  {inq.metadata?.level && <span className="flex items-center gap-1.5 text-ares-gold"><Award size={14} className="text-ares-gold" /> {inq.metadata.level}</span>}
                   <span className="flex items-center gap-1.5"><Clock size={14} className="text-marble/40" /> {new Date(inq.createdAt).toLocaleDateString()} at {new Date(inq.createdAt).toLocaleTimeString()}</span>
                 </div>
 
@@ -374,11 +449,16 @@ export default function InquiriesPage() {
                   </div>
                 )}
 
-                {/* Additional text payload */}
-                {inq.metadata?.additional && (
-                  <div className="bg-obsidian/60 border border-white/5 p-4 ares-cut-sm text-xs text-marble/85 leading-relaxed font-medium">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 leading-none">Additional details</p>
-                    {inq.metadata.additional}
+                {/* Message or Additional text payload */}
+                {(inq.metadata?.message || inq.metadata?.additional) && (
+                  <div className="bg-obsidian/60 border border-white/5 p-4 ares-cut-sm text-xs text-marble/85 leading-relaxed font-medium space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-marble/40 mb-1 leading-none">
+                      {inq.metadata?.message ? "Inquiry Message" : "Additional details"}
+                    </p>
+                    {inq.metadata?.message && <p>{inq.metadata.message}</p>}
+                    {inq.metadata?.additional && inq.metadata.additional !== inq.metadata.message && (
+                      <p>{inq.metadata.additional}</p>
+                    )}
                   </div>
                 )}
               </div>

@@ -99,13 +99,20 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
       .replace(/[\\`*_{}[\]()<>]/g, "\\$&");
     const maskedEmail = maskEmail(email);
 
-    // The applicant's free-text message can contain PII they typed themselves;
-    // keep it in the encrypted record only and point reviewers at the Command
-    // Center instead of forwarding it into Zulip retention.
+    const sponsorTier =
+      type === "sponsor" &&
+      metadata &&
+      typeof metadata === "object" &&
+      typeof (metadata as Record<string, unknown>).level === "string"
+        ? String((metadata as Record<string, unknown>).level)
+            .trim()
+            .slice(0, 60)
+        : "";
+    const tierLine = sponsorTier ? `\n**Tier:** ${sponsorTier}` : "";
     const messageBody = `**Name:** ${maskedName}
 **Email:** ${maskedEmail}
-**Type:** ${type}
-[Open Command Center to review the applicant's message](https://aresfirst.org/dashboard)`;
+**Type:** ${type}${tierLine}
+[Open Command Center to review the applicant's message](https://ares-ftc.org/dashboard/inquiries)`;
 
     // Await Zulip Sync
     await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);
@@ -336,42 +343,61 @@ router.post("/:id/approve-account", ensureAdmin, asyncHandler(async (req, res) =
   const authRef = adminDb.collection("authorized_users").doc(targetId);
   const profileRef = adminDb.collection("user_profiles").doc(targetId);
 
-  const existingAuthData = foundExistingAuthUser
-    ? (await authRef.get())?.data?.()
-    : (
+  const existingSnapshots = foundExistingAuthUser
+    ? [await authRef.get()].filter((snap) => Boolean(snap?.exists))
+    : ((
         await adminDb
           .collection("authorized_users")
           .where("email", "==", cleanEmail)
-          .limit(1)
+          .limit(5)
           .get()
-      )?.docs?.[0]?.data?.();
-  const existingRole =
-    typeof existingAuthData?.role === "string"
-      ? existingAuthData.role.trim().toLowerCase()
-      : "";
-  if (
-    existingAuthData &&
-    existingAuthData.isDeleted !== 1 &&
-    existingAuthData.isDeleted !== true &&
-    ["admin", "coach", "mentor", "member", "student", "parent", "lead"].includes(
-      existingRole,
-    )
-  ) {
+      )?.docs ?? []);
+  const hasActiveAuthorizedAccount = existingSnapshots.some((snap) => {
+    const authData = snap?.data?.();
+    if (!authData) return false;
+    const existingRole =
+      typeof authData.role === "string"
+        ? authData.role.trim().toLowerCase()
+        : "";
+    return (
+      authData.isDeleted !== 1 &&
+      authData.isDeleted !== true &&
+      [
+        "admin",
+        "coach",
+        "mentor",
+        "member",
+        "student",
+        "parent",
+        "lead",
+      ].includes(existingRole)
+    );
+  });
+  if (hasActiveAuthorizedAccount) {
     throw new ApiError(
       409,
       "An active authorized account already exists for this email.",
       "USER_ALREADY_EXISTS",
     );
   }
+  const wasArchived = existingSnapshots.some((snap) => {
+    const authData = snap?.data?.();
+    return authData?.isDeleted === 1 || authData?.isDeleted === true;
+  });
 
   const batch = adminDb.batch();
 
   // 1. Create or merge authorized_users doc
-  batch.set(authRef, {
-    email: cleanEmail,
-    role,
-    name: cleanName
-  }, { merge: true });
+  batch.set(
+    authRef,
+    {
+      email: cleanEmail,
+      role,
+      name: cleanName,
+      ...(wasArchived ? { isDeleted: 0 } : {}),
+    },
+    { merge: true },
+  );
 
   // 2. Create or merge user_profiles stub
   const nameParts = cleanName.split(/\s+/);

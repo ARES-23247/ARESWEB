@@ -239,6 +239,8 @@ function applyOccurrenceOverrides<T extends ReturnType<typeof eventDto>>(
       result.coverImage = "coverPhotoId" in dto
         ? managedPhotoGatewayUrls(coverPhotoId, "admin").publicUrl
         : `/api/calendar/events/${encodeURIComponent(dto.id)}/cover?occurrence=${encodeURIComponent(String(result.occurrenceDate ?? ""))}`;
+    } else if (!("coverImage" in overrides)) {
+      result.coverImage = null;
     }
   }
   return result as T;

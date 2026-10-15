@@ -16,6 +16,8 @@ interface TaskFiltersProps {
   showDuplicatesOnly: boolean;
   onShowDuplicatesOnlyChange: (show: boolean) => void;
   duplicateTaskCount: number;
+  assignedToMeOnly?: boolean;
+  onAssignedToMeOnlyChange?: (show: boolean) => void;
 }
 
 export default function TaskFilters({
@@ -32,6 +34,8 @@ export default function TaskFilters({
   showDuplicatesOnly,
   onShowDuplicatesOnlyChange,
   duplicateTaskCount,
+  assignedToMeOnly = false,
+  onAssignedToMeOnlyChange,
 }: TaskFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center shrink-0 w-full lg:w-auto text-left">
@@ -94,6 +98,21 @@ export default function TaskFilters({
           Show Archived
         </label>
 
+        {onAssignedToMeOnlyChange && (
+          <>
+            <div className="h-4 w-px bg-white/10" />
+            <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-marble/75 hover:text-white cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={assignedToMeOnly}
+                onChange={(event) => onAssignedToMeOnlyChange(event.target.checked)}
+                className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 cursor-pointer"
+              />
+              My Tasks
+            </label>
+          </>
+        )}
+
         <div className="h-4 w-px bg-white/10" />
 
         <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-marble/75 hover:text-white cursor-pointer select-none">
@@ -113,6 +132,8 @@ export default function TaskFilters({
         {["all", "software", "hardware", "business", "outreach"].map((st) => (
           <button
             key={st}
+            type="button"
+            aria-pressed={filterSubteam === st}
             onClick={() => onFilterSubteamChange(st)}
             className={`px-3 py-1.5 text-[10px] font-black uppercase rounded transition-all duration-200 cursor-pointer ${
               filterSubteam === st

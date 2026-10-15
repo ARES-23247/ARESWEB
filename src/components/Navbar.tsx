@@ -18,6 +18,7 @@ import { TEAM_LINKS, RESOURCE_LINKS } from "./navigation/navItems";
 import { NavDropdown } from "./navigation/NavDropdown";
 import { DesktopUserMenu } from "./navigation/DesktopUserMenu";
 import { MobileNavDrawer } from "./navigation/MobileNavDrawer";
+import { CommandPalette } from "./navigation/CommandPalette";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -204,39 +205,43 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Desktop User Menu */}
-        <DesktopUserMenu
-          loading={loading}
-          isSignedIn={isSignedIn}
-          user={user}
-          userRole={userRole}
-          userImage={userImage}
-          hasPendingInquiries={hasPendingInquiries === true}
-          pendingInquiriesError={pendingInquiriesError}
-          logout={logout}
-          loginWithGoogle={loginWithGoogle}
-        />
+        {/* Right-hand Actions: Quick Jump, User Menu & Mobile Trigger */}
+        <div className="flex items-center gap-3">
+          <CommandPalette isSignedIn={isSignedIn} userRole={userRole} />
 
-        {/* Mobile menu trigger */}
-        <button
-          ref={mobileMenuButtonRef}
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="group flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded text-ares-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan xl:hidden"
-          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
-          aria-expanded={open}
-          aria-controls="mobile-navigation-drawer"
-        >
-          <span
-            className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "rotate-45 translate-y-2.5" : "group-hover:w-8"}`}
-          ></span>
-          <span
-            className={`w-7 h-1 bg-current block rounded-full transition-opacity duration-300 ${open ? "opacity-0" : "group-hover:w-5"}`}
-          ></span>
-          <span
-            className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "-rotate-45 -translate-y-2.5" : "group-hover:w-8"}`}
-          ></span>
-        </button>
+          <DesktopUserMenu
+            loading={loading}
+            isSignedIn={isSignedIn}
+            user={user}
+            userRole={userRole}
+            userImage={userImage}
+            hasPendingInquiries={hasPendingInquiries === true}
+            pendingInquiriesError={pendingInquiriesError}
+            logout={logout}
+            loginWithGoogle={loginWithGoogle}
+          />
+
+          {/* Mobile menu trigger */}
+          <button
+            ref={mobileMenuButtonRef}
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="group flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded text-ares-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan xl:hidden"
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={open}
+            aria-controls="mobile-navigation-drawer"
+          >
+            <span
+              className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "rotate-45 translate-y-2.5" : "group-hover:w-8"}`}
+            ></span>
+            <span
+              className={`w-7 h-1 bg-current block rounded-full transition-opacity duration-300 ${open ? "opacity-0" : "group-hover:w-5"}`}
+            ></span>
+            <span
+              className={`w-7 h-1 bg-current block rounded-full transition-all duration-300 ${open ? "-rotate-45 -translate-y-2.5" : "group-hover:w-8"}`}
+            ></span>
+          </button>
+        </div>
       </div>
 
       {/* Mobile Drawer */}

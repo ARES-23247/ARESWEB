@@ -171,5 +171,11 @@ describe("SponsorsPage partner directory and inquiry form", () => {
       await screen.findByRole("button", { name: /become a sponsor/i }),
     );
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Gold" }));
+    expect(screen.getByLabelText("Sponsorship Level")).toHaveValue(
+      "Gold Tier Sponsor",
+    );
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
   });
 });

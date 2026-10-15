@@ -26,6 +26,7 @@ import {
   TournamentHero,
   TournamentPhotoLightbox,
   TournamentPhotosSection,
+  TournamentPitChecklistSection,
   TournamentScoutingSection,
   type TournamentPhoto,
 } from "./TournamentDetailSections";
@@ -401,6 +402,7 @@ export default function TournamentDetailPage() {
             )}
 
             <TournamentScoutingSection tournament={tournament} />
+            <TournamentPitChecklistSection matches={matches} />
             <TournamentAlliancePlanner tournament={tournament} />
             <TournamentPhotosSection
               hasAlbum={Boolean(tournament.photoAlbumId)}

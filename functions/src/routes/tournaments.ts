@@ -2,6 +2,7 @@ import express, { NextFunction, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
+import { linkAuthorizedUserByEmail } from "../lib/linkAuthorizedUser";
 import {
   AuthenticatedRequest,
   currentAuthorizationRole,
@@ -157,10 +158,16 @@ export async function ensureAdminOrCoach(
       return next(new ApiError(401, "Unauthorized: User not authenticated"));
     }
 
-    const userDoc = await adminDb
-      .collection("authorized_users")
-      .doc(req.user.uid)
-      .get();
+    const ref = adminDb.collection("authorized_users").doc(req.user.uid);
+    let userDoc = await ref.get();
+    if (!userDoc.exists && req.user.email_verified === true) {
+      const linked = await linkAuthorizedUserByEmail({
+        uid: req.user.uid,
+        email: req.user.email,
+        emailVerified: req.user.email_verified,
+      });
+      if (linked) userDoc = await ref.get();
+    }
     if (!userDoc.exists) {
       return next(new ApiError(403, "Forbidden: User not authorized"));
     }
@@ -372,9 +379,10 @@ router.get(
         location: readString(data.location) ?? "",
         description: readString(data.description),
         status:
-          date && date >= new Date().toISOString().slice(0, 10)
+          readString(data.status) ??
+          (date && date >= new Date().toISOString().slice(0, 10)
             ? "upcoming"
-            : "past",
+            : "past"),
         opr: readNumber(data.opr),
       };
     });
@@ -392,11 +400,11 @@ router.get(
       100,
       Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 50),
     );
-    const snapshot = await adminDb
-      .collection("tournaments")
-      .where("isDeleted", "==", 0)
-      .limit(limitValue)
-      .get();
+    let query = adminDb.collection("tournaments").where("isDeleted", "==", 0);
+    if (typeof query.orderBy === "function") {
+      query = query.orderBy("date", "desc");
+    }
+    const snapshot = await query.limit(limitValue).get();
     const tournaments = snapshot.docs
       .map((document) =>
         tournamentDto(document.id, document.data() as TournamentRecord),

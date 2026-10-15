@@ -59,9 +59,21 @@ describe("OutreachPage public community impact and STEM requests", () => {
 
     expect(await screen.findByText("Monongalia County Library STEM Demo")).toBeInTheDocument();
     expect(screen.getByText("WV Regional Science Fair Judging")).toBeInTheDocument();
+    expect(screen.getByText("6 hrs")).toBeInTheDocument();
+    expect(screen.getByText("8 hrs")).toBeInTheDocument();
     expect(screen.getByText("370")).toBeInTheDocument(); // 120 + 250
     expect(screen.getByText("14 hrs")).toBeInTheDocument(); // 6 + 8
     expect(screen.getByText("2")).toBeInTheDocument(); // 2 events
+
+    const searchInput = screen.getByLabelText("Search outreach events");
+    fireEvent.change(searchInput, { target: { value: "Science Fair" } });
+    expect(screen.getByText("WV Regional Science Fair Judging")).toBeInTheDocument();
+    expect(screen.queryByText("Monongalia County Library STEM Demo")).not.toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "" } });
+    const yearButton = screen.getByRole("button", { name: "2026" });
+    fireEvent.click(yearButton);
+    expect(yearButton).toHaveAttribute("aria-pressed", "true");
 
     const exportCsvLink = screen.getByRole("link", { name: /export outreach impact log as csv/i });
     expect(exportCsvLink).toBeInTheDocument();

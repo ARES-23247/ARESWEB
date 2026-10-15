@@ -44,7 +44,15 @@ const mockRoster = {
       nickname: "Jason R.",
       subteams: ["Design"],
       memberType: "alumni" as const,
-      colleges: ["WVU Engineering"],
+      colleges: [
+        "WVU Engineering",
+        {
+          name: "Carnegie Mellon University",
+          domain: "cmu.edu",
+          years: "2026-2030",
+          degree: "B.S. Robotics",
+        },
+      ],
       bio: "Founding member of ARES 23247.",
     },
   ],
@@ -77,6 +85,7 @@ describe("AboutPage Roster Presentation & Privacy", () => {
 
     expect(screen.queryByText("they/them")).not.toBeInTheDocument();
     expect(screen.queryByText("Autonomous pathing specialist.")).not.toBeInTheDocument();
+    expect(screen.getByText("Active FTC #23247 student team member.")).toBeInTheDocument();
     expect(screen.queryByText("Programming")).not.toBeInTheDocument();
     expect(screen.getByText(/he\/him/)).toBeInTheDocument();
     expect(screen.getByText("Lead FTC coach and systems mentor.")).toBeInTheDocument();
@@ -110,5 +119,7 @@ describe("AboutPage Roster Presentation & Privacy", () => {
     fireEvent.click(screen.getByRole("button", { name: /Alumni/i }));
     expect(screen.getByRole("heading", { name: "Jason R." })).toBeInTheDocument();
     expect(screen.getByText("WVU Engineering")).toBeInTheDocument();
+    expect(screen.getByText("Carnegie Mellon University")).toBeInTheDocument();
+    expect(screen.getByText("B.S. Robotics (2026-2030)")).toBeInTheDocument();
   });
 });

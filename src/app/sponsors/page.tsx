@@ -341,6 +341,96 @@ export default function SponsorsPage() {
           </>
         )}
 
+        {/* Interactive Sponsorship Tiers & Impact Matrix */}
+        <section aria-labelledby="sponsorship-tiers-heading" className="mt-24">
+          <div className="mb-10 text-center">
+            <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-2 font-heading">
+              Partnership Opportunities
+            </p>
+            <h2 id="sponsorship-tiers-heading" className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white font-heading">
+              Sponsorship <span className="text-ares-gold">Tiers</span>
+            </h2>
+            <p className="text-marble/75 text-sm max-w-2xl mx-auto mt-3 font-medium">
+              Select a partnership tier below to pre-fill the inquiry form, or contact us about custom grants, machining, and in-kind equipment support.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              {
+                tier: "Titanium" as SponsorTier,
+                formLevel: "Titanium Tier Sponsor",
+                summary: "Headline competition robot, pit display, and STEM outreach partner.",
+                perks: ["Primary robot & pit banner placement", "Featured website & season showcase", "Custom STEM demo visit"],
+              },
+              {
+                tier: "Gold" as SponsorTier,
+                formLevel: "Gold Tier Sponsor",
+                summary: "Major subsystem, travel, and tournament registration support.",
+                perks: ["Robot chassis & team jersey logo", "Website partner card & link", "Season impact briefing"],
+              },
+              {
+                tier: "Silver" as SponsorTier,
+                formLevel: "Silver Tier Sponsor",
+                summary: "Prototyping materials, sensors, and regional competition support.",
+                perks: ["Pit display & t-shirt recognition", "Website partner listing", "Team thank-you packet"],
+              },
+              {
+                tier: "Bronze" as SponsorTier,
+                formLevel: "Bronze Tier Sponsor",
+                summary: "Hardware fasteners, electronics, and student workshop supplies.",
+                perks: ["Website partner listing", "Pit banner recognition", "Season recap newsletter"],
+              },
+              {
+                tier: "In-Kind" as SponsorTier,
+                formLevel: "In-Kind Donation / Material",
+                summary: "CNC machining, 3D filament, tools, workspace, or technical mentorship.",
+                perks: ["Partner recognition on website", "Direct student mentorship impact", "Material & tooling credit"],
+              },
+            ].map((item) => {
+              const style = TIER_STYLING[item.tier];
+              const isSelected = level === item.formLevel;
+              return (
+                <div
+                  key={item.tier}
+                  className={`ares-cut p-5 border flex flex-col justify-between transition-all ${style.glass} ${
+                    isSelected ? "border-ares-gold ring-1 ring-ares-gold/50" : style.border
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      {style.icon}
+                      <h3 className={`text-lg font-black uppercase font-heading ${style.text}`}>
+                        {item.tier}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-marble/80 leading-relaxed mb-4 font-medium">
+                      {item.summary}
+                    </p>
+                    <ul className="space-y-1.5 mb-6 text-[11px] text-marble/70 font-semibold">
+                      {item.perks.map((perk) => (
+                        <li key={perk} className="flex items-start gap-1.5">
+                          <span className="text-ares-gold font-black">•</span>
+                          <span>{perk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLevel(item.formLevel);
+                      document.getElementById("sponsor-form-section")?.scrollIntoView?.({ behavior: "smooth" });
+                    }}
+                    className="w-full py-2 px-3 bg-white/5 hover:bg-ares-red border border-white/10 hover:border-ares-red text-white text-[10px] font-black uppercase tracking-widest ares-cut-sm transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  >
+                    Select {item.tier}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Form Section */}
         <section id="sponsor-form-section" aria-labelledby="sponsor-form-heading" className="mt-24 p-6 md:p-12 ares-cut-lg bg-obsidian border border-ares-red/20 text-left flex flex-col lg:flex-row gap-12 overflow-hidden relative shadow-2xl">
           

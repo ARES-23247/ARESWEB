@@ -12,10 +12,12 @@ import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "./lib/utils";
 import type { ClientMessage } from "./generated/games/biobuzz/protocol";
+const PREVIEW_ORIGIN_PATTERN=/^https:\/\/aresfirst-portal--[a-z0-9-]+\.web\.app$/;
 export function attachBiobuzzSockets(server:Server,rooms:BiobuzzRooms,origins:readonly string[]) {
   const wss=new WebSocketServer({noServer:true,maxPayload:32768,perMessageDeflate:{threshold:1024,serverNoContextTakeover:true,clientNoContextTakeover:true,concurrencyLimit:4,zlibDeflateOptions:{level:1}}});
   server.on("upgrade",(req,socket,head)=>{
-    if(req.url!=="/play"||!req.headers.origin||!origins.includes(req.headers.origin)||wss.clients.size>=128){socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");socket.destroy();return;}
+    const reqOrigin=req.headers.origin;
+    if(req.url!=="/play"||!reqOrigin||(!origins.includes(reqOrigin)&&!PREVIEW_ORIGIN_PATTERN.test(reqOrigin))||wss.clients.size>=128){socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");socket.destroy();return;}
     wss.handleUpgrade(req,socket,head,ws=>wss.emit("connection",ws));
   });
   wss.on("connection",ws=>{

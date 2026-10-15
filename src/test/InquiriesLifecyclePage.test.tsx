@@ -113,4 +113,42 @@ describe("InquiriesPage recoverable lifecycle", () => {
     await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledTimes(2));
     expect(await screen.findByText("No Inquiries Found")).toBeInTheDocument();
   });
+
+  it("renders sponsor tier/message metadata and filters demo inquiries", async () => {
+    vi.mocked(authenticatedFetch).mockReset();
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(response({
+      inquiries: [
+        {
+          id: "inq-sponsor",
+          type: "sponsor",
+          name: "Apex Dynamics",
+          email: "sponsor@apex.org",
+          status: "pending",
+          metadata: { level: "Gold", message: "Excited to support CAD & CNC." },
+          createdAt: "2026-08-03T12:00:00.000Z",
+          isDeleted: false,
+        },
+        {
+          id: "inq-demo",
+          type: "demo",
+          name: "Morgantown Library",
+          email: "events@library.org",
+          status: "pending",
+          metadata: { organization: "Public Library", message: "STEM Night robot demo." },
+          createdAt: "2026-08-04T12:00:00.000Z",
+          isDeleted: false,
+        },
+      ],
+    }));
+
+    render(<InquiriesPage />);
+    expect(await screen.findByText("Apex Dynamics")).toBeInTheDocument();
+    expect(screen.getByText("Gold")).toBeInTheDocument();
+    expect(screen.getByText(/Excited to support CAD & CNC/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/filter inquiries by type/i), { target: { value: "demo" } });
+    expect(screen.queryByText("Apex Dynamics")).not.toBeInTheDocument();
+    expect(screen.getByText("Morgantown Library")).toBeInTheDocument();
+    expect(screen.getByText("Public Library")).toBeInTheDocument();
+  });
 });

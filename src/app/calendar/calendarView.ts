@@ -60,3 +60,51 @@ export function formatFullDate(date: Date): string {
     year: "numeric",
   });
 }
+
+function formatIcsUtcTimestamp(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return (
+    `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}` +
+    `T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`
+  );
+}
+
+function escapeIcsText(raw: string): string {
+  return raw
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+}
+
+export function buildSingleEventIcsDataUrl(event: TeamEvent): string {
+  const start = event.dateStart ? new Date(event.dateStart) : new Date();
+  const safeStart = Number.isNaN(start.getTime()) ? new Date() : start;
+  const parsedEnd = event.dateEnd ? new Date(event.dateEnd) : null;
+  const safeEnd =
+    parsedEnd && !Number.isNaN(parsedEnd.getTime()) && parsedEnd.getTime() > safeStart.getTime()
+      ? parsedEnd
+      : new Date(safeStart.getTime() + 60 * 60 * 1000);
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//ARES Robotics FTC 23247//Team Calendar//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${escapeIcsText(event.id)}@ares-ftc.org`,
+    `DTSTAMP:${formatIcsUtcTimestamp(safeStart)}`,
+    `DTSTART:${formatIcsUtcTimestamp(safeStart)}`,
+    `DTEND:${formatIcsUtcTimestamp(safeEnd)}`,
+    `SUMMARY:${escapeIcsText(event.title || "ARES Team Event")}`,
+  ];
+  if (event.location) {
+    lines.push(`LOCATION:${escapeIcsText(event.location)}`);
+  }
+  if (event.description) {
+    lines.push(`DESCRIPTION:${escapeIcsText(event.description)}`);
+  }
+  lines.push("END:VEVENT", "END:VCALENDAR");
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines.join("\r\n"))}`;
+}
+

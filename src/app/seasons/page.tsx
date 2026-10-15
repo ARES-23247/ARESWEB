@@ -1,10 +1,10 @@
 "use client";
 
 import { logger } from "@/utils/logger";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Trophy, History, MapPin, Cpu, ExternalLink } from "lucide-react";
+import { Trophy, History, MapPin, Cpu, ExternalLink, ArrowRight } from "lucide-react";
 
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
@@ -26,48 +26,48 @@ export default function SeasonsPage() {
   const [seasonsError, setSeasonsError] = useState<string | null>(null);
   const [awardsError, setAwardsError] = useState<string | null>(null);
 
-  // Fetch explicit published DTOs from the public API.
-  useEffect(() => {
-    const fetchSeasons = async () => {
-      try {
-        const list = await fetchPublicSeasons();
-        // Sort seasons by start year descending
-        list.sort((a, b) => b.startYear - a.startYear);
-        setSeasons(list);
-        setSeasonsError(null);
-      } catch (err) {
-        logger.error("Error fetching seasons:", err);
-        setSeasonsError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsLoadingSeasons(false);
-      }
-    };
-    fetchSeasons();
+  const loadSeasons = useCallback(async () => {
+    setIsLoadingSeasons(true);
+    try {
+      const list = await fetchPublicSeasons();
+      list.sort((a, b) => b.startYear - a.startYear);
+      setSeasons(list);
+      setSeasonsError(null);
+    } catch (err) {
+      logger.error("Error fetching seasons:", err);
+      setSeasonsError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoadingSeasons(false);
+    }
   }, []);
 
-  // Fetch explicit published DTOs from the public API.
-  useEffect(() => {
-    const fetchAwards = async () => {
-      try {
-        const list = (await fetchPublicAwards()).map((data) => {
-          return {
-            ...data,
-            year: data.date ? new Date(data.date).getFullYear() : new Date().getFullYear()
-          };
-        }) as Award[];
-        // Sort awards by date descending
-        list.sort((a, b) => b.date.localeCompare(a.date));
-        setAwards(list);
-        setAwardsError(null);
-      } catch (err) {
-        logger.error("Error fetching awards:", err);
-        setAwardsError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setIsLoadingAwards(false);
-      }
-    };
-    fetchAwards();
+  const loadAwards = useCallback(async () => {
+    setIsLoadingAwards(true);
+    try {
+      const list = (await fetchPublicAwards()).map((data) => {
+        return {
+          ...data,
+          year: data.date ? new Date(data.date).getFullYear() : new Date().getFullYear(),
+        };
+      }) as Award[];
+      list.sort((a, b) => b.date.localeCompare(a.date));
+      setAwards(list);
+      setAwardsError(null);
+    } catch (err) {
+      logger.error("Error fetching awards:", err);
+      setAwardsError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoadingAwards(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadSeasons();
+  }, [loadSeasons]);
+
+  useEffect(() => {
+    void loadAwards();
+  }, [loadAwards]);
 
   return (
     <div className="flex flex-col w-full bg-obsidian min-h-screen text-marble relative overflow-hidden">
@@ -119,7 +119,7 @@ export default function SeasonsPage() {
                 title="Unable to load team seasons"
                 message="The legacy timeline could not be reached. Check your connection and try again."
                 diagnostic={seasonsError}
-                onRetry={() => window.location.reload()}
+                onRetry={() => void loadSeasons()}
               />
             ) : seasons.length > 0 ? (
               seasons.map((season: Season, idx: number) => {
@@ -158,7 +158,7 @@ export default function SeasonsPage() {
                               isEven ? "md:justify-end" : "md:justify-start"
                             }`}
                           >
-                            <Cpu size={20} className="text-ares-gold" />
+                            <Cpu size={20} className="text-ares-gold" aria-hidden="true" />
                             <div className={isEven ? "md:text-right" : "md:text-left"}>
                               <span className="block text-xs font-black text-ares-gold uppercase tracking-widest">
                                 Designated Asset
@@ -174,11 +174,25 @@ export default function SeasonsPage() {
                               href={season.robotCadUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2 bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 ares-cut-sm text-xs font-black tracking-widest transition-all flex items-center gap-2"
+                              className="px-4 py-2 bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 ares-cut-sm text-xs font-black tracking-widest transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                             >
-                              CAD REPOSITORY <ExternalLink size={12} />
+                              CAD REPOSITORY <ExternalLink size={12} aria-hidden="true" />
                             </a>
                           )}
+                          {season.robotName && (
+                            <Link
+                              to="/robots"
+                              className="px-4 py-2 bg-ares-red/15 border border-ares-red/40 text-white hover:bg-ares-red ares-cut-sm text-xs font-black tracking-widest transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                            >
+                              ROBOT FLEET <ArrowRight size={12} aria-hidden="true" />
+                            </Link>
+                          )}
+                          <Link
+                            to="/tournaments"
+                            className="px-4 py-2 bg-white/5 border border-white/10 text-marble hover:text-white hover:bg-white/10 ares-cut-sm text-xs font-black tracking-widest transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                          >
+                            MATCH RESULTS <ArrowRight size={12} aria-hidden="true" />
+                          </Link>
                         </div>
                       </div>
 
@@ -209,9 +223,17 @@ export default function SeasonsPage() {
       {/* Trophy Case Section */}
       <section className="py-32 px-6 relative z-10 bg-obsidian">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-16">
-            <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Digital Trophy Case</h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent" />
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-16">
+            <div className="flex items-center gap-4 flex-1">
+              <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Digital Trophy Case</h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-ares-gold/50 to-transparent" />
+            </div>
+            <Link
+              to="/tournaments"
+              className="text-xs font-black uppercase tracking-widest text-ares-gold hover:text-white transition-colors inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              View Competition History <ArrowRight size={14} aria-hidden="true" />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -223,7 +245,7 @@ export default function SeasonsPage() {
                   title="Unable to load team awards"
                   message="The trophy case could not be reached. Check your connection and try again."
                   diagnostic={awardsError}
-                  onRetry={() => window.location.reload()}
+                  onRetry={() => void loadAwards()}
                 />
               </div>
             ) : awards.length > 0 ? (

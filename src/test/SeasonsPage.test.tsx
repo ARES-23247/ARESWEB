@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SeasonsPage from "../app/seasons/page";
@@ -72,6 +72,8 @@ describe("SeasonsPage Team Legacy & Trophy Case UX", () => {
     expect(screen.getByText("PROMETHEUS")).toBeInTheDocument();
     expect(screen.getByText(/ARES rookie season pushing submersible manipulation boundaries/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /CAD REPOSITORY/i })).toHaveAttribute("href", "https://cad.onshape.com/prometheus");
+    expect(screen.getByRole("link", { name: /ROBOT FLEET/i })).toHaveAttribute("href", "/robots");
+    expect(screen.getByRole("link", { name: /MATCH RESULTS/i })).toHaveAttribute("href", "/tournaments");
 
     expect(await screen.findByRole("heading", { name: "Innovate Award Winner" })).toBeInTheDocument();
     expect(screen.getByText(/WV State Championship/i)).toBeInTheDocument();
@@ -93,9 +95,13 @@ describe("SeasonsPage Team Legacy & Trophy Case UX", () => {
     expect(screen.getByText("The Case is Open.")).toBeInTheDocument();
   });
 
-  it("displays PublicDataState error component when the DTO APIs fail to load", async () => {
-    vi.mocked(fetchPublicSeasons).mockRejectedValue(new Error("Content API timeout"));
-    vi.mocked(fetchPublicAwards).mockRejectedValue(new Error("Content API timeout"));
+  it("displays PublicDataState error component when the DTO APIs fail to load and retries in-place", async () => {
+    vi.mocked(fetchPublicSeasons)
+      .mockRejectedValueOnce(new Error("Content API timeout"))
+      .mockResolvedValueOnce(mockSeasons);
+    vi.mocked(fetchPublicAwards)
+      .mockRejectedValueOnce(new Error("Content API timeout"))
+      .mockResolvedValueOnce(mockAwards);
 
     render(
       <MemoryRouter>
@@ -105,5 +111,14 @@ describe("SeasonsPage Team Legacy & Trophy Case UX", () => {
 
     expect(await screen.findByText("Unable to load team seasons")).toBeInTheDocument();
     expect(screen.getByText("Unable to load team awards")).toBeInTheDocument();
+
+    const retryButtons = screen.getAllByRole("button", { name: "Try again" });
+    fireEvent.click(retryButtons[0]);
+    fireEvent.click(retryButtons[1]);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "INTO THE DEEP" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Innovate Award Winner" })).toBeInTheDocument();
+    });
   });
 });

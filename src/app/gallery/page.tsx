@@ -2,7 +2,7 @@
 
 import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarDays, Eye, MapPin, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Eye, MapPin, RefreshCw, Search, X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { GreekMeander } from "@/components/GreekMeander";
 import { PublicDataState } from "@/components/PublicDataState";
@@ -76,6 +76,7 @@ export default function GalleryPage() {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [activeCategory, setActiveCategory] = useState<"all" | GalleryCategory>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -126,10 +127,19 @@ export default function GalleryPage() {
     void loadPhotos();
   }, [loadPhotos]);
 
-  const filteredPhotos = useMemo(
-    () => activeCategory === "all" ? photos : photos.filter((photo) => photo.category === activeCategory),
-    [activeCategory, photos],
-  );
+  const filteredPhotos = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    return photos.filter((photo) => {
+      if (activeCategory !== "all" && photo.category !== activeCategory) return false;
+      if (!normalizedSearch) return true;
+      return (
+        (photo.title ?? "").toLowerCase().includes(normalizedSearch) ||
+        (photo.description ?? "").toLowerCase().includes(normalizedSearch) ||
+        (photo.location ?? "").toLowerCase().includes(normalizedSearch) ||
+        (photo.altText ?? "").toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [activeCategory, photos, searchQuery]);
 
   const selectAdjacentPhoto = useCallback((direction: -1 | 1) => {
     if (!selectedPhoto || filteredPhotos.length === 0) return;
@@ -175,29 +185,51 @@ export default function GalleryPage() {
           <h2 id="gallery-heading" className="sr-only">Published photos</h2>
           <fieldset className="mb-10 border-b border-white/10 pb-6">
             <legend className="sr-only">Filter photos by category</legend>
-            <div className="flex flex-wrap gap-2">
-              {(["all", ...CATEGORIES] as const).map((category) => (
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap gap-2">
+                {(["all", ...CATEGORIES] as const).map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    aria-pressed={activeCategory === category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`rounded-lg px-3.5 py-2 text-[9px] font-black uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
+                      activeCategory === category ? "bg-ares-red text-white" : "bg-white/5 text-marble/75 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {category === "all" ? "All media" : category}
+                  </button>
+                ))}
                 <button
-                  key={category}
                   type="button"
-                  aria-pressed={activeCategory === category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`rounded-lg px-3.5 py-2 text-[9px] font-black uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ${
-                    activeCategory === category ? "bg-ares-red text-white" : "bg-white/5 text-marble/75 hover:bg-white/10 hover:text-white"
-                  }`}
+                  onClick={() => void loadPhotos(undefined, true)}
+                  disabled={isLoading || isRefreshing}
+                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-[9px] font-black uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                 >
-                  {category === "all" ? "All media" : category}
+                  <RefreshCw aria-hidden="true" size={12} />
+                  Refresh photos
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => void loadPhotos(undefined, true)}
-                disabled={isLoading || isRefreshing}
-                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-[9px] font-black uppercase tracking-wider text-marble/80 hover:bg-white/10 hover:text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                <RefreshCw aria-hidden="true" size={12} />
-                Refresh photos
-              </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 sm:w-64">
+                  <Search
+                    size={13}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ares-bronze"
+                  />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    aria-label="Search photos by title, description, or location"
+                    placeholder="Search photos..."
+                    className="w-full rounded-lg border border-white/10 bg-black/30 py-2 pl-8 pr-3 text-xs text-white placeholder:text-marble/45 focus:border-ares-gold/50 focus:outline-none"
+                  />
+                </div>
+                <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-wider text-marble/60">
+                  {filteredPhotos.length} of {photos.length} photos
+                </span>
+              </div>
             </div>
           </fieldset>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft, Layers } from "lucide-react";
+import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft, Layers, Printer, FileText } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
 import { canEmbedCadUrl, fetchRobot, isSafeExternalUrl, isTrustedPrintablesUrl, RobotApiError } from "../api";
@@ -11,6 +11,7 @@ import { canEmbedCadUrl, fetchRobot, isSafeExternalUrl, isTrustedPrintablesUrl, 
 export default function RobotDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [selectedVersionIndex, setSelectedVersionIndex] = useState<number | null>(null);
+  const [showPitSheet, setShowPitSheet] = useState(false);
   const { data: robot, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ["robots", id],
     queryFn: () => fetchRobot(id ?? ""),
@@ -77,10 +78,15 @@ export default function RobotDetailPage() {
       />
       <div className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20">
         
-        {/* Back Link */}
-        <Link to="/robots" className="inline-flex items-center gap-2 text-marble/70 hover:text-ares-gold transition-colors mb-8 font-black uppercase tracking-[0.2em] text-xs focus-visible:ring-2 focus-visible:ring-ares-cyan">
-          <ChevronLeft aria-hidden="true" size={14} /> Back to Fleet
-        </Link>
+        {/* Top Breadcrumb Links */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 print:hidden">
+          <Link to="/robots" className="inline-flex items-center gap-2 text-marble/70 hover:text-ares-gold transition-colors font-black uppercase tracking-[0.2em] text-xs focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <ChevronLeft aria-hidden="true" size={14} /> Back to Fleet
+          </Link>
+          <Link to="/seasons" className="inline-flex items-center gap-2 text-marble/70 hover:text-ares-gold transition-colors font-black uppercase tracking-[0.2em] text-xs focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            Season Legacy Archive
+          </Link>
+        </div>
 
         {/* Title Block */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12 border-b border-white/5 pb-8">
@@ -93,7 +99,16 @@ export default function RobotDetailPage() {
             </h1>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 print:hidden">
+            <button
+              type="button"
+              onClick={() => setShowPitSheet((prev) => !prev)}
+              aria-pressed={showPitSheet}
+              className="clipped-button bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/40 text-ares-gold shadow-xl text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none inline-flex items-center cursor-pointer"
+            >
+              <FileText aria-hidden="true" size={16} className="mr-2" />
+              {showPitSheet ? "Hide Judge / Pit Sheet" : "Judge / Pit Sheet"}
+            </button>
             {robot.revealVideoId && (
               <a
                 href={`https://youtube.com/watch?v=${robot.revealVideoId}`}
@@ -126,6 +141,66 @@ export default function RobotDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Printable Judge / Pit Summary Sheet */}
+        {showPitSheet && (
+          <section
+            aria-label="Printable Judge and Pit Technical Sheet"
+            className="mb-12 rounded-2xl border-2 border-ares-gold/40 bg-black/80 p-8 shadow-2xl print:border-black print:bg-white print:text-black"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6 mb-6 print:border-black/20">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-ares-gold print:text-black">
+                  FIRST® Tech Challenge #23247 • Pit &amp; Judging Dossier
+                </p>
+                <h2 className="mt-1 font-heading text-3xl font-black uppercase text-white print:text-black">
+                  {robot.name} {activeVersion ? `(${activeVersion.name})` : ""}
+                </h2>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-marble/70 print:text-black/75">
+                  Season: {robot.seasonName} • Challenge: {robot.challengeName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="clipped-button bg-ares-red text-white text-xs uppercase font-black inline-flex items-center gap-2 cursor-pointer print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <Printer aria-hidden="true" size={14} /> Print Pit Sheet
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 print:border-black/20">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-ares-gold print:text-black">Weight Class</span>
+                <span className="mt-1 block font-heading text-lg font-bold text-white print:text-black">
+                  {activeWeight !== undefined && activeWeight !== null ? `${activeWeight} lbs` : "Not specified"}
+                </span>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 print:border-black/20">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-ares-gold print:text-black">Drivetrain</span>
+                <span className="mt-1 block font-heading text-sm font-bold text-white print:text-black">
+                  {activeDrivetrain || "Not specified"}
+                </span>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 print:border-black/20">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-ares-gold print:text-black">Primary Mechanism</span>
+                <span className="mt-1 block font-heading text-sm font-bold text-white print:text-black">
+                  {activeMechanism || "Not specified"}
+                </span>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 print:border-black/20">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-ares-gold print:text-black">Control Stack</span>
+                <span className="mt-1 block font-heading text-sm font-bold text-white print:text-black">
+                  {robot.programmingLanguage || "Not specified"}
+                </span>
+              </div>
+            </div>
+            {activeContent && (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm leading-relaxed text-marble/90 whitespace-pre-line print:border-black/20 print:text-black">
+                {activeContent}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Versions Dropdown */}
         {robot.versions && robot.versions.length > 0 && (

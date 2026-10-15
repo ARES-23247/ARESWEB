@@ -8,6 +8,13 @@ import SEO from "@/components/SEO";
 import { logger } from "@/utils/logger";
 import { PublicDataState } from "@/components/PublicDataState";
 
+interface RosterCollege {
+  name: string;
+  domain?: string;
+  years?: string;
+  degree?: string;
+}
+
 interface TeamMember {
   key: string;
   nickname: string;
@@ -16,7 +23,7 @@ interface TeamMember {
   memberType: "student" | "alumni" | "mentor" | "coach";
   avatar?: string;
   bio?: string;
-  colleges?: string[];
+  colleges?: RosterCollege[];
 }
 
 const FILTER_SECTIONS = [
@@ -53,6 +60,25 @@ function readTextArray(record: Record<string, unknown>, key: string): string[] {
     : [];
 }
 
+function parseRosterColleges(record: Record<string, unknown>): RosterCollege[] {
+  const value = record.colleges;
+  if (!Array.isArray(value)) return [];
+  const results: RosterCollege[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item.trim()) {
+      results.push({ name: item.trim() });
+    } else if (isRecord(item) && typeof item.name === "string" && item.name.trim()) {
+      results.push({
+        name: item.name.trim(),
+        domain: readText(item, "domain"),
+        years: readText(item, "years"),
+        degree: readText(item, "degree"),
+      });
+    }
+  }
+  return results;
+}
+
 function safeAvatarUrl(value: unknown): string | undefined {
   if (typeof value !== "string" || !value.trim()) return undefined;
   try {
@@ -69,7 +95,7 @@ function parseTeamMember(value: unknown, index: number): TeamMember | null {
 
   const memberType = value.memberType as PublicMemberType;
   const isStudent = memberType === "student";
-  const colleges = isStudent ? [] : readTextArray(value, "colleges");
+  const colleges = isStudent ? [] : parseRosterColleges(value);
   return {
     key: `${memberType}-${readText(value, "nickname") ?? "ARES Member"}-${index}`,
     nickname: readText(value, "nickname") ?? "ARES Member",
@@ -290,7 +316,10 @@ export default function AboutPage() {
                       </span>
                     )}
                     <p className="text-xs text-marble/70 mt-3 leading-relaxed font-medium">
-                      {member.bio ?? "Bio not provided"}
+                      {member.bio ??
+                        (member.memberType === "student"
+                          ? "Active FTC #23247 student team member."
+                          : "Bio not provided")}
                     </p>
                   </div>
 
@@ -307,8 +336,31 @@ export default function AboutPage() {
                     </div>
 
                     {member.memberType === "alumni" && member.colleges && member.colleges.length > 0 && (
-                      <div className="flex items-center justify-center gap-1.5 mt-3 text-[9px] font-mono text-ares-gold uppercase font-bold">
-                        <GraduationCap size={12} /> {member.colleges[0].split(".")[0]}
+                      <div className="mt-3 space-y-1.5">
+                        {member.colleges.map((college, cIdx) => {
+                          const meta = [
+                            college.degree,
+                            college.years ? `(${college.years})` : undefined,
+                          ]
+                            .filter(Boolean)
+                            .join(" ");
+                          return (
+                            <div
+                              key={`${college.name}-${cIdx}`}
+                              className="flex flex-col items-center text-center"
+                            >
+                              <div className="flex items-center justify-center gap-1.5 text-[9px] font-mono text-ares-gold uppercase font-bold">
+                                <GraduationCap size={12} aria-hidden="true" />{" "}
+                                <span>{college.name.split(".")[0]}</span>
+                              </div>
+                              {meta && (
+                                <span className="text-[9px] text-marble/70 font-medium mt-0.5">
+                                  {meta}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

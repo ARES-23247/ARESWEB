@@ -13,6 +13,7 @@ import {
   Clock,
   Sparkles,
   Award,
+  Search,
 } from "lucide-react";
 import EventsManagementPage from "@/app/dashboard/events/page";
 import SEO from "@/components/SEO";
@@ -24,12 +25,14 @@ import { fetchPublicEvents } from "./api";
 import { CalendarHeader, type CalendarFilter } from "./components/CalendarHeader";
 import { buildCalendarDays, eventDetailHref, formatEventTime, formatFullDate, isSameDay } from "./calendarView";
 import { toPlainText } from "@/lib/contentFormatters";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 export default function CalendarPage() {
   const { user, authorizedUser } = useAuth();
   const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const [events, setEvents] = useState<TeamEvent[]>([]);
   const [filter, setFilter] = useState<CalendarFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export default function CalendarPage() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+  const { copyStatus, copyToClipboard } = useCopyToClipboard();
 
   const feedUrl = typeof window !== "undefined" ? `${window.location.origin}/api/calendar/feed` : "";
   const webcalUrl = feedUrl.replace(/^https?:/, "webcal:");
@@ -45,13 +48,9 @@ export default function CalendarPage() {
 
   const handleCopyFeedUrl = async () => {
     if (!feedUrl) return;
-    try {
-      await navigator.clipboard.writeText(feedUrl);
-      setCopyStatus("copied");
-      window.setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch (error) {
-      logger.error("Unable to copy the calendar feed URL:", error);
-      setCopyStatus("error");
+    const ok = await copyToClipboard(feedUrl);
+    if (!ok) {
+      logger.error("Unable to copy the calendar feed URL.");
     }
   };
 
@@ -131,6 +130,12 @@ export default function CalendarPage() {
     setCurrentDate(new Date(activeYear, activeMonth + 1, 1));
   };
 
+  const handleJumpToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDate(today);
+  };
+
   // Get events on a specific day, filtered by active category
   const getEventsForDay = (date: Date) => {
     return events.filter((event) => {
@@ -142,8 +147,19 @@ export default function CalendarPage() {
     });
   };
 
-  // All events filtered by selected tab (for the summary view)
-  const filteredEvents = events.filter((e) => filter === "all" || e.category === filter);
+  // All events filtered by selected tab and optional search query (for the summary view)
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredEvents = events.filter((e) => {
+    const matchesCategory = filter === "all" || e.category === filter;
+    if (!matchesCategory) return false;
+    if (!normalizedSearch) return true;
+    const plainDesc = toPlainText(e.description).toLowerCase();
+    return (
+      e.title.toLowerCase().includes(normalizedSearch) ||
+      (e.location ?? "").toLowerCase().includes(normalizedSearch) ||
+      plainDesc.includes(normalizedSearch)
+    );
+  });
 
   const selectedDayEvents = getEventsForDay(selectedDate);
 
@@ -206,6 +222,15 @@ export default function CalendarPage() {
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
+                    onClick={handleJumpToToday}
+                    aria-label="Jump to Today"
+                    className="h-8 px-3 rounded bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-marble hover:bg-white/10 hover:text-ares-gold transition-colors cursor-pointer"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
                     onClick={handlePrevMonth}
                     aria-label="Previous Month"
                     className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold transition-colors cursor-pointer"
@@ -213,6 +238,7 @@ export default function CalendarPage() {
                     <ChevronLeft size={16} />
                   </button>
                   <button
+                    type="button"
                     onClick={handleNextMonth}
                     aria-label="Next Month"
                     className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:text-ares-gold transition-colors cursor-pointer"
@@ -341,6 +367,22 @@ export default function CalendarPage() {
             <Sparkles size={10} className="text-ares-gold" /> Detailed Timelines & Archive
           </span>
           <div className="flex-grow border-t border-white/10"></div>
+        </div>
+
+        <div className="mb-8 max-w-md relative">
+          <Search
+            size={14}
+            aria-hidden="true"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ares-bronze pointer-events-none"
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            aria-label="Search events by title or location"
+            placeholder="Search events by title or location..."
+            className="w-full bg-black/30 border border-white/10 rounded pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-marble/45 focus:outline-none focus:border-ares-gold/50 transition-colors"
+          />
         </div>
 
         {/* ─── CHRONOLOGICAL EVENT LOGS & ARCHIVE (Bottom Timeline Section) ─── */}

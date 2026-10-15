@@ -1,16 +1,31 @@
 import { logger } from "@/utils/logger";
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { doc, setDoc, writeBatch, collection as fsCollection, onSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit } from "firebase/firestore";
+import { useLayoutEffect, useRef, useState } from "react";
+import { doc, setDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebaseFirestore";
-import { Trash2, Archive, X, Maximize2, Minimize2, Sparkles, AlertCircle, Plus, Link2, History } from "lucide-react";
-import { authenticatedFetch } from "@/lib/api";
+import {
+  Trash2,
+  Archive,
+  X,
+  Maximize2,
+  Minimize2,
+  Sparkles,
+  AlertCircle,
+  Plus,
+  Link2,
+} from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import TaskCommentsSection from "./TaskCommentsSection";
-import { MemberProfile, TaskItem, SubTask } from "@/types/task";
+import { MemberProfile, TaskItem } from "@/types/task";
 import TaskEditorAiCopilot from "./TaskEditorAiCopilot";
 import TaskOperationErrorAlert from "./TaskOperationErrorAlert";
+import TaskSubtasksSection from "./TaskSubtasksSection";
+import TaskRevisionsSection from "./TaskRevisionsSection";
+import TaskDeleteConfirmDialog from "./TaskDeleteConfirmDialog";
 import { describeTaskError, TaskOperationError } from "../taskErrors";
+import { notifyTaskZulip, type TaskSyncState } from "../utils/notifyTaskZulip";
+import { getSubteamDescription } from "../utils/taskStyles";
 import type { User } from "firebase/auth";
 
 interface TaskDetailsModalProps {
@@ -28,7 +43,7 @@ interface TaskDetailsModalProps {
   onArchiveTask: (taskId: string, isArchived: boolean) => Promise<TaskOperationError | null>;
   onCreateTask?: (task: TaskItem) => Promise<TaskOperationError | null>;
   onNotificationError?: (error: TaskOperationError) => void;
-  setSyncState?: (state: "idle" | "syncing" | "success" | "error") => void;
+  setSyncState?: (state: TaskSyncState) => void;
 }
 
 export default function TaskDetailsModal({
@@ -66,21 +81,16 @@ export default function TaskDetailsModal({
   const [modalAssignees, setModalAssignees] = useState<string[]>(task?.assignees || []);
   const [modalDueDate, setModalDueDate] = useState(task?.dueDate || "");
   const [submitting, setSubmitting] = useState(false);
-  const [newSubTitle, setNewSubTitle] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showAiSidebar, setShowAiSidebar] = useState(false);
   const [revertAlert, setRevertAlert] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [revisions, setRevisions] = useState<Array<{ id: string; action: string; actorName: string; createdAt: string; from?: string; to?: string; fields?: string[] }>>([]);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const { copied: linkCopied, copyToClipboard } = useCopyToClipboard();
   const deleteTriggerRef = useRef<HTMLButtonElement>(null);
-  const deleteCancelRef = useRef<HTMLButtonElement>(null);
   const initializedTaskIdRef = useRef<string | null | undefined>(undefined);
-  const deleteTitleId = useId();
-  const deleteDescriptionId = useId();
 
   const cancelDeleteConfirmation = () => {
     setDeleteConfirmationOpen(false);
@@ -96,10 +106,6 @@ export default function TaskDetailsModal({
   });
   const titleError = modalTitle.trim() ? null : "Enter a task title before saving.";
 
-  useEffect(() => {
-    if (deleteConfirmationOpen) deleteCancelRef.current?.focus();
-  }, [deleteConfirmationOpen]);
-
   // Initialize a newly selected task before the browser can accept input. A
   // passive effect could otherwise overwrite a title entered immediately
   // after the drawer becomes visible on a busy browser thread.
@@ -107,7 +113,14 @@ export default function TaskDetailsModal({
     if (taskId && !task) return;
     if (initializedTaskIdRef.current === taskId) return;
     initializedTaskIdRef.current = taskId;
-    if (taskId && taskTitle !== undefined && taskDescription !== undefined && taskPriority !== undefined && taskSubteam !== undefined && taskStatus !== undefined) {
+    if (
+      taskId &&
+      taskTitle !== undefined &&
+      taskDescription !== undefined &&
+      taskPriority !== undefined &&
+      taskSubteam !== undefined &&
+      taskStatus !== undefined
+    ) {
       setModalTitle(taskTitle);
       setModalDesc(taskDescription);
       setModalPriority(taskPriority);
@@ -124,28 +137,17 @@ export default function TaskDetailsModal({
       setModalAssignees([]);
       setModalDueDate("");
     }
-  }, [task, taskAssignees, taskDescription, taskDueDate, taskId, taskPriority, taskStatus, taskSubteam, taskTitle]);
-
-  // Activity trail for this card, newest first, bounded to the last 30 entries.
-  useEffect(() => {
-    if (isCreateMode || !taskId) {
-      setRevisions([]);
-      return;
-    }
-    const revisionsQuery = fsQuery(
-      fsCollection(db, "tasks", taskId, "revisions"),
-      fsOrderBy("createdAt", "desc"),
-      fsLimit(30),
-    );
-    const unsubscribe = onSnapshot(
-      revisionsQuery,
-      (snapshot) => {
-        setRevisions(snapshot.docs.map((docSnap) => docSnap.data() as typeof revisions[number]));
-      },
-      (err) => logger.warn("Task history unavailable:", err),
-    );
-    return () => unsubscribe();
-  }, [isCreateMode, taskId]);
+  }, [
+    task,
+    taskAssignees,
+    taskDescription,
+    taskDueDate,
+    taskId,
+    taskPriority,
+    taskStatus,
+    taskSubteam,
+    taskTitle,
+  ]);
 
   if (taskId && !task) return null;
 
@@ -165,11 +167,12 @@ export default function TaskDetailsModal({
           status: modalStatus,
           priority: modalPriority,
           subteam: modalSubteam,
-          assignees: modalAssignees.length > 0 ? modalAssignees : user ? [user.uid] : [],
+          assignees:
+            modalAssignees.length > 0 ? modalAssignees : user ? [user.uid] : [],
           subtasks: [],
           archived: false,
           dueDate: modalDueDate || null,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         };
 
         if (onCreateTask) {
@@ -182,11 +185,8 @@ export default function TaskDetailsModal({
           await setDoc(doc(db, "tasks", newTaskId), newTaskData);
         }
 
-        if (setSyncState) setSyncState("syncing");
-        authenticatedFetch("/api/tasks/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        void notifyTaskZulip(
+          {
             taskId: newTaskId,
             action: "create",
             title: newTaskData.title,
@@ -194,37 +194,28 @@ export default function TaskDetailsModal({
             priority: newTaskData.priority,
             subteam: newTaskData.subteam,
             dueDate: newTaskData.dueDate || undefined,
-          }),
-        }).then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          if (setSyncState) setSyncState("success");
-          setTimeout(() => {
-            if (setSyncState) setSyncState("idle");
-          }, 3000);
-        }).catch((err) => {
-          logger.error("Zulip notification failed:", err);
-          const notificationError = describeTaskError("notify Zulip", err);
-          onNotificationError?.({
-            ...notificationError,
-            message: "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
-          });
-          if (setSyncState) setSyncState("error");
-          setTimeout(() => {
-            if (setSyncState) setSyncState("idle");
-          }, 3000);
-        });
-
+          },
+          { setSyncState, onNotificationError },
+        );
       } else if (task) {
         const taskRef = doc(db, "tasks", task.id);
-        const changedFields = ([
-          ["title", task.title, modalTitle.trim()],
-          ["description", task.description || "", modalDesc.trim()],
-          ["priority", task.priority, modalPriority],
-          ["subteam", task.subteam, modalSubteam],
-          ["status", task.status, modalStatus],
-          ["assignees", JSON.stringify(task.assignees || []), JSON.stringify(modalAssignees)],
-          ["due date", task.dueDate || "", modalDueDate || ""],
-        ] as const).filter(([, before, after]) => before !== after).map(([field]) => field);
+        const changedFields = (
+          [
+            ["title", task.title, modalTitle.trim()],
+            ["description", task.description || "", modalDesc.trim()],
+            ["priority", task.priority, modalPriority],
+            ["subteam", task.subteam, modalSubteam],
+            ["status", task.status, modalStatus],
+            [
+              "assignees",
+              JSON.stringify(task.assignees || []),
+              JSON.stringify(modalAssignees),
+            ],
+            ["due date", task.dueDate || "", modalDueDate || ""],
+          ] as const
+        )
+          .filter(([, before, after]) => before !== after)
+          .map(([field]) => field);
 
         const batch = writeBatch(db);
         batch.update(taskRef, {
@@ -237,22 +228,32 @@ export default function TaskDetailsModal({
           dueDate: modalDueDate || null,
         });
         if (changedFields.length > 0) {
-          batch.set(doc(db, "tasks", task.id, "revisions", `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`), {
-            action: "updated",
-            ...(task.status !== modalStatus ? { from: task.status, to: modalStatus } : {}),
-            fields: changedFields,
-            actorUid: user?.uid || "unknown",
-            actorName: teamProfiles.find((p) => p.uid === user?.uid)?.nickname || "Team Member",
-            createdAt: new Date().toISOString(),
-          });
+          batch.set(
+            doc(
+              db,
+              "tasks",
+              task.id,
+              "revisions",
+              `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            ),
+            {
+              action: "updated",
+              ...(task.status !== modalStatus
+                ? { from: task.status, to: modalStatus }
+                : {}),
+              fields: changedFields,
+              actorUid: user?.uid || "unknown",
+              actorName:
+                teamProfiles.find((p) => p.uid === user?.uid)?.nickname ||
+                "Team Member",
+              createdAt: new Date().toISOString(),
+            },
+          );
         }
         await batch.commit();
 
-        if (setSyncState) setSyncState("syncing");
-        authenticatedFetch("/api/tasks/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        void notifyTaskZulip(
+          {
             taskId: task.id,
             action: "move",
             title: modalTitle.trim(),
@@ -260,48 +261,20 @@ export default function TaskDetailsModal({
             subteam: modalSubteam,
             status: modalStatus,
             dueDate: modalDueDate || undefined,
-          }),
-        }).then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          if (setSyncState) setSyncState("success");
-          setTimeout(() => {
-            if (setSyncState) setSyncState("idle");
-          }, 3000);
-        }).catch((err) => {
-          logger.error("Zulip notification failed:", err);
-          const notificationError = describeTaskError("notify Zulip", err);
-          onNotificationError?.({
-            ...notificationError,
-            message: "The task was saved, but its Zulip notification failed. The board remains the source of truth.",
-          });
-          if (setSyncState) setSyncState("error");
-          setTimeout(() => {
-            if (setSyncState) setSyncState("idle");
-          }, 3000);
-        });
+          },
+          { setSyncState, onNotificationError },
+        );
       }
 
       onClose();
     } catch (e) {
       logger.error("Failed to save task", e);
-      setOperationError(describeTaskError(isCreateMode ? "create task" : "save task", e));
+      setOperationError(
+        describeTaskError(isCreateMode ? "create task" : "save task", e),
+      );
     } finally {
       setSubmitting(false);
     }
-  };
-
-
-
-  const handleAddSub = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubTitle.trim() || !canEdit || !task) return;
-    const error = await onAddSubtask(task.id, newSubTitle.trim());
-    if (error) {
-      setOperationError(error);
-      return;
-    }
-    setOperationError(null);
-    setNewSubTitle("");
   };
 
   const handleDeleteTask = async () => {
@@ -328,10 +301,13 @@ export default function TaskDetailsModal({
       <header className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/20 shrink-0">
         <div>
           <h3 className="text-white font-extrabold text-lg font-heading uppercase tracking-tight flex items-center gap-2">
-            {isCreateMode ? <Plus size={18} /> : null} {isCreateMode ? "Create New Task Card" : "Edit Task Details"}
+            {isCreateMode ? <Plus size={18} /> : null}{" "}
+            {isCreateMode ? "Create New Task Card" : "Edit Task Details"}
           </h3>
           <p className="text-[10px] text-marble/60 uppercase font-bold mt-0.5">
-            {isCreateMode ? "Populates on task boards dynamically" : "Synchronizes with Zulip chat stream"}
+            {isCreateMode
+              ? "Populates on task boards dynamically"
+              : "Synchronizes with Zulip chat stream"}
           </p>
         </div>
 
@@ -342,13 +318,7 @@ export default function TaskDetailsModal({
               type="button"
               onClick={async () => {
                 const url = `https://aresfirst.org/dashboard/tasks?task=${encodeURIComponent(task.id)}`;
-                try {
-                  await navigator.clipboard.writeText(url);
-                } catch {
-                  // Clipboard access can be blocked; the URL is still shown via the title hint.
-                }
-                setLinkCopied(true);
-                setTimeout(() => setLinkCopied(false), 2000);
+                await copyToClipboard(url);
               }}
               title={`Card link: https://aresfirst.org/dashboard/tasks?task=${task.id}`}
               aria-label="Copy a link to this task card"
@@ -365,8 +335,8 @@ export default function TaskDetailsModal({
               type="button"
               onClick={() => setShowAiSidebar(!showAiSidebar)}
               className={`h-8 px-3 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${
-                showAiSidebar 
-                  ? "border-ares-cyan/30 bg-ares-cyan/10 text-ares-cyan" 
+                showAiSidebar
+                  ? "border-ares-cyan/30 bg-ares-cyan/10 text-ares-cyan"
                   : "border-white/10 hover:border-white/25 text-marble/60 hover:text-white"
               }`}
             >
@@ -385,7 +355,7 @@ export default function TaskDetailsModal({
           >
             {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
-          
+
           {/* Close */}
           <button
             onClick={onClose}
@@ -400,7 +370,10 @@ export default function TaskDetailsModal({
       <div className="flex-1 overflow-hidden bg-black/10 p-6 flex flex-col">
         {operationError && (
           <div className="mb-4 shrink-0">
-            <TaskOperationErrorAlert error={operationError} onDismiss={() => setOperationError(null)} />
+            <TaskOperationErrorAlert
+              error={operationError}
+              onDismiss={() => setOperationError(null)}
+            />
           </div>
         )}
 
@@ -411,283 +384,277 @@ export default function TaskDetailsModal({
               <AlertCircle size={14} className="shrink-0" />
               <span>{revertAlert}</span>
             </div>
-            <button onClick={() => setRevertAlert(null)} className="text-ares-gold hover:text-white cursor-pointer font-bold text-[10px] uppercase">
+            <button
+              onClick={() => setRevertAlert(null)}
+              className="text-ares-gold hover:text-white cursor-pointer font-bold text-[10px] uppercase"
+            >
               Dismiss
             </button>
           </div>
         )}
 
         <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
-          <div className={`space-y-6 flex-grow overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent transition-all duration-300 ${
-            !isCreateMode && showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
-          }`}>
-        <div>
-          <label htmlFor="modal-title" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Task Title</label>
-          <input
-            id="modal-title"
-            type="text"
-            required
-            value={modalTitle}
-            onChange={(e) => {
-              setModalTitle(e.target.value);
-              if (operationError) setOperationError(null);
-            }}
-            onBlur={() => setTitleTouched(true)}
-            placeholder="Task Title"
-            disabled={!canEdit}
-            aria-invalid={titleTouched && !!titleError}
-            aria-describedby={titleTouched && titleError ? "modal-title-error" : undefined}
-            className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
-          />
-          {titleTouched && titleError && (
-            <p id="modal-title-error" className="mt-1.5 text-xs font-semibold text-white" role="alert">
-              <span className="mr-1 rounded bg-ares-red px-1.5 py-0.5 text-white">Required</span>
-              {titleError}
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="modal-status" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Status</label>
-            <select
-              id="modal-status"
-              value={modalStatus}
-              onChange={(e) => setModalStatus(e.target.value as TaskItem["status"])}
-              className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
-              disabled={!canEdit}
-            >
-              <option value="todo">📋 To Do</option>
-              <option value="in_progress">⚙️ In Progress</option>
-              <option value="review">👀 In Review</option>
-              <option value="completed">✅ Completed</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="modal-subteam" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Subteam</label>
-            <select
-              id="modal-subteam"
-              value={modalSubteam}
-              onChange={(e) => setModalSubteam(e.target.value as TaskItem["subteam"])}
-              className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
-              disabled={!canEdit}
-            >
-              <option value="software">Software</option>
-              <option value="hardware">Hardware</option>
-              <option value="business">Business</option>
-              <option value="outreach">Outreach</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="modal-priority" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Priority</label>
-            <select
-              id="modal-priority"
-              value={modalPriority}
-              onChange={(e) => setModalPriority(e.target.value as TaskItem["priority"])}
-              className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
-              disabled={!canEdit}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="modal-due-date" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">
-            Due Date <span className="normal-case font-medium">(optional)</span>
-          </label>
-          <input
-            id="modal-due-date"
-            type="date"
-            value={modalDueDate}
-            onChange={(event) => setModalDueDate(event.target.value)}
-            disabled={!canEdit}
-            className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
-          />
-          <p className="mt-1.5 text-[10px] text-marble/55">
-            Uses the team member's local calendar date; no time of day is implied.
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">
-            Assignees ({modalAssignees.length})
-          </label>
-          <div className="bg-black/35 border border-white/10 rounded-lg p-3 max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-            {teamProfiles.map((member) => {
-              const isAssigned = modalAssignees.includes(member.uid);
-              return (
-                <label
-                  key={member.uid}
-                  className="flex items-center gap-2 text-xs text-marble/80 cursor-pointer select-none hover:text-white"
+          <div
+            className={`space-y-6 flex-grow overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent transition-all duration-300 ${
+              !isCreateMode && showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
+            }`}
+          >
+            <div>
+              <label
+                htmlFor="modal-title"
+                className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60"
+              >
+                Task Title
+              </label>
+              <input
+                id="modal-title"
+                type="text"
+                required
+                value={modalTitle}
+                onChange={(e) => {
+                  setModalTitle(e.target.value);
+                  if (operationError) setOperationError(null);
+                }}
+                onBlur={() => setTitleTouched(true)}
+                placeholder="Task Title"
+                disabled={!canEdit}
+                aria-invalid={titleTouched && !!titleError}
+                aria-describedby={
+                  titleTouched && titleError ? "modal-title-error" : undefined
+                }
+                className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              />
+              {titleTouched && titleError && (
+                <p
+                  id="modal-title-error"
+                  className="mt-1.5 text-xs font-semibold text-white"
+                  role="alert"
                 >
-                  <input
-                    type="checkbox"
-                    checked={isAssigned}
-                    disabled={!canEdit}
-                    onChange={() => {
-                      if (isAssigned) {
-                        setModalAssignees(modalAssignees.filter((uid: string) => uid !== member.uid));
-                      } else {
-                        setModalAssignees([...modalAssignees, member.uid]);
-                      }
-                    }}
-                    className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
-                  />
-                  <img src={member.avatar} alt={member.nickname} className="w-4 h-4 rounded-full object-contain shrink-0 bg-black/50" />
-                  <span className="truncate">{member.nickname}</span>
+                  <span className="mr-1 rounded bg-ares-red px-1.5 py-0.5 text-white">
+                    Required
+                  </span>
+                  {titleError}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label
+                  htmlFor="modal-status"
+                  className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60"
+                >
+                  Status
                 </label>
-              );
-            })}
-          </div>
-        </div>
+                <select
+                  id="modal-status"
+                  value={modalStatus}
+                  onChange={(e) =>
+                    setModalStatus(e.target.value as TaskItem["status"])
+                  }
+                  className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
+                  disabled={!canEdit}
+                >
+                  <option value="todo">📋 To Do</option>
+                  <option value="in_progress">⚙️ In Progress</option>
+                  <option value="review">👀 In Review</option>
+                  <option value="completed">✅ Completed</option>
+                </select>
+              </div>
 
-        <div>
-          <label htmlFor="modal-desc" className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">Description</label>
-          <MarkdownEditor
-            id="modal-desc"
-            value={modalDesc}
-            onChange={setModalDesc}
-            placeholder="Detail technical requirements, subsystem specs, etc..."
-            className="h-32"
-            disabled={!canEdit}
-          />
-        </div>
+              <div>
+                <label
+                  htmlFor="modal-subteam"
+                  className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60"
+                >
+                  Subteam
+                </label>
+                <select
+                  id="modal-subteam"
+                  value={modalSubteam}
+                  onChange={(e) =>
+                    setModalSubteam(e.target.value as TaskItem["subteam"])
+                  }
+                  aria-describedby="modal-subteam-hint"
+                  className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
+                  disabled={!canEdit}
+                >
+                  <option value="software">Software</option>
+                  <option value="hardware">Hardware</option>
+                  <option value="business">Business</option>
+                  <option value="outreach">Outreach</option>
+                </select>
+                <p id="modal-subteam-hint" className="mt-1.5 text-[10px] text-marble/60 leading-snug">
+                  {getSubteamDescription(modalSubteam)}
+                </p>
+              </div>
 
-        {!isCreateMode && task && (
-          <>
-            <div className="bg-black/20 p-4 rounded-xl border border-white/5 space-y-4">
-              <h4 className="text-xs font-black text-ares-gold uppercase tracking-wider">
-                Subtasks Checklist
-              </h4>
-
-              {task.subtasks?.length > 0 ? (
-                <div className="space-y-2">
-                  {task.subtasks.map((sub: SubTask) => (
-                    <div key={sub.id} className="flex justify-between items-center group/sub">
-                      <label className="flex items-center gap-2.5 text-xs text-marble/80 cursor-pointer select-none hover:text-white">
-                        <input
-                          type="checkbox"
-                          checked={sub.done}
-                          disabled={!canEdit}
-                          onChange={async () => {
-                            const error = await onToggleSubtask(task.id, sub.id);
-                            setOperationError(error);
-                          }}
-                          className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
-                        />
-                        <span className={sub.done ? "line-through text-marble/40" : ""}>
-                          {sub.title}
-                        </span>
-                      </label>
-                      {canEdit && (
-                        <button
-                          onClick={async () => {
-                            const error = await onDeleteSubtask(task.id, sub.id);
-                            setOperationError(error);
-                          }}
-                          aria-label={`Delete subtask: ${sub.title}`}
-                          className="opacity-0 group-hover/sub:opacity-100 focus-visible:opacity-100 text-marble/40 hover:text-white transition-all cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                          title="Delete subtask"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-marble/40 italic">No subtasks defined yet.</p>
-              )}
-
-              {canEdit && (
-                <form onSubmit={handleAddSub} className="flex gap-1.5 pt-2">
-                  <label htmlFor={`new-subtask-${task.id}`} className="sr-only">
-                    Add a subtask to {task.title}
-                  </label>
-                  <input
-                    id={`new-subtask-${task.id}`}
-                    type="text"
-                    value={newSubTitle}
-                    onChange={(e) => setNewSubTitle(e.target.value)}
-                    placeholder="New subtask..."
-                    className="flex-grow bg-black/65 border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-ares-red placeholder:text-marble/30"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newSubTitle.trim()}
-                    className="bg-ares-gold/20 hover:bg-ares-gold/30 border border-ares-gold/30 text-ares-gold text-xs font-bold px-3 py-1.5 rounded transition-all cursor-pointer disabled:opacity-50 shrink-0"
-                  >
-                    Add
-                  </button>
-                </form>
-              )}
+              <div>
+                <label
+                  htmlFor="modal-priority"
+                  className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60"
+                >
+                  Priority
+                </label>
+                <select
+                  id="modal-priority"
+                  value={modalPriority}
+                  onChange={(e) =>
+                    setModalPriority(e.target.value as TaskItem["priority"])
+                  }
+                  className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red cursor-pointer"
+                  disabled={!canEdit}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
             </div>
 
-            {(() => {
-              const knownUids = new Set(teamProfiles.map((p) => p.uid));
-              const unknownAssignees = (task.assignees || []).filter((uid) => !knownUids.has(uid));
-              if (unknownAssignees.length === 0) return null;
-              return (
-                <div className="bg-black/20 p-3 rounded-xl border border-ares-gold/20">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-ares-gold mb-2">
-                    Unknown assignees
-                  </p>
-                  <p className="text-[11px] text-marble/70 mb-2">
-                    {unknownAssignees.length} assignee{unknownAssignees.length === 1 ? "" : "s"} on this card no longer match the team roster. Remove them below.
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {unknownAssignees.map((uid) => (
-                      <button
-                        key={uid}
-                        type="button"
-                        onClick={() => setModalAssignees(modalAssignees.filter((a) => a !== uid))}
+            <div>
+              <label
+                htmlFor="modal-due-date"
+                className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60"
+              >
+                Due Date <span className="normal-case font-medium">(optional)</span>
+              </label>
+              <input
+                id="modal-due-date"
+                type="date"
+                value={modalDueDate}
+                onChange={(event) => setModalDueDate(event.target.value)}
+                disabled={!canEdit}
+                className="w-full bg-black/35 border border-white/10 rounded-lg px-3.5 py-2 text-xs text-white outline-none focus:border-ares-red focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              />
+              <p className="mt-1.5 text-[10px] text-marble/55">
+                Uses the team member's local calendar date; no time of day is implied.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60">
+                Assignees ({modalAssignees.length})
+              </label>
+              {isCreateMode && modalAssignees.length === 0 && (
+                <p className="mb-2 text-[10px] text-ares-cyan/90 font-medium">
+                  Tip: Leave unselected when creating a task to automatically assign it to yourself.
+                </p>
+              )}
+              <div className="bg-black/35 border border-white/10 rounded-lg p-3 max-h-36 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                {teamProfiles.map((member) => {
+                  const isAssigned = modalAssignees.includes(member.uid);
+                  return (
+                    <label
+                      key={member.uid}
+                      className="flex items-center gap-2 text-xs text-marble/80 cursor-pointer select-none hover:text-white"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isAssigned}
                         disabled={!canEdit}
-                        className="bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-bold px-2 py-1 rounded inline-flex items-center gap-1 cursor-pointer hover:bg-ares-gold/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                        aria-label={`Remove unknown assignee ${uid}`}
-                      >
-                        {uid} <X size={10} aria-hidden="true" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            <TaskCommentsSection task={task} canEdit={canEdit} user={user} teamProfiles={teamProfiles} setSyncState={setSyncState} />
-
-            <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-              <h4 className="text-xs font-black text-ares-gold uppercase tracking-wider flex items-center gap-1.5 mb-3">
-                <History size={12} aria-hidden="true" /> Card History
-              </h4>
-              {revisions.length === 0 ? (
-                <p className="text-[11px] text-marble/40 italic">No recorded activity yet.</p>
-              ) : (
-                <ol className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5">
-                  {revisions.map((entry) => (
-                    <li key={entry.id} className="text-[11px] text-marble/70 flex flex-wrap gap-x-2">
-                      <span className="font-bold text-white">
-                        {new Date(entry.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </span>
-                      <span>
-                        <span className="text-ares-cyan font-semibold">{entry.actorName || "Member"}</span>{" "}
-                        {entry.action === "moved"
-                          ? `moved ${entry.from || "?"} → ${entry.to || "?"}`
-                          : entry.action === "updated"
-                            ? `edited${entry.fields && entry.fields.length > 0 ? ` (${entry.fields.join(", ")})` : ""}`
-                            : entry.action}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              )}
+                        onChange={() => {
+                          if (isAssigned) {
+                            setModalAssignees(
+                              modalAssignees.filter(
+                                (uid: string) => uid !== member.uid,
+                              ),
+                            );
+                          } else {
+                            setModalAssignees([...modalAssignees, member.uid]);
+                          }
+                        }}
+                        className="rounded bg-black border-white/25 text-ares-red focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
+                      />
+                      <img
+                        src={member.avatar}
+                        alt={member.nickname}
+                        className="w-4 h-4 rounded-full object-contain shrink-0 bg-black/50"
+                      />
+                      <span className="truncate">{member.nickname}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </>
-        )}
+
+            <div>
+              <label
+                htmlFor="modal-desc"
+                className="block text-[10px] font-black uppercase tracking-wider mb-1.5 text-marble/60"
+              >
+                Description
+              </label>
+              <MarkdownEditor
+                id="modal-desc"
+                value={modalDesc}
+                onChange={setModalDesc}
+                placeholder="Detail technical requirements, subsystem specs, etc..."
+                className="h-32"
+                disabled={!canEdit}
+              />
+            </div>
+
+            {!isCreateMode && task && (
+              <>
+                <TaskSubtasksSection
+                  task={task}
+                  canEdit={canEdit}
+                  onToggleSubtask={onToggleSubtask}
+                  onDeleteSubtask={onDeleteSubtask}
+                  onAddSubtask={onAddSubtask}
+                  onOperationError={setOperationError}
+                />
+
+                {(() => {
+                  const knownUids = new Set(teamProfiles.map((p) => p.uid));
+                  const unknownAssignees = (task.assignees || []).filter(
+                    (uid) => !knownUids.has(uid),
+                  );
+                  if (unknownAssignees.length === 0) return null;
+                  return (
+                    <div className="bg-black/20 p-3 rounded-xl border border-ares-gold/20">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-ares-gold mb-2">
+                        Unknown assignees
+                      </p>
+                      <p className="text-[11px] text-marble/70 mb-2">
+                        {unknownAssignees.length} assignee
+                        {unknownAssignees.length === 1 ? "" : "s"} on this card no
+                        longer match the team roster. Remove them below.
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {unknownAssignees.map((uid) => (
+                          <button
+                            key={uid}
+                            type="button"
+                            onClick={() =>
+                              setModalAssignees(
+                                modalAssignees.filter((a) => a !== uid),
+                              )
+                            }
+                            disabled={!canEdit}
+                            className="bg-ares-gold/10 border border-ares-gold/30 text-ares-gold text-[10px] font-bold px-2 py-1 rounded inline-flex items-center gap-1 cursor-pointer hover:bg-ares-gold/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                            aria-label={`Remove unknown assignee ${uid}`}
+                          >
+                            {uid} <X size={10} aria-hidden="true" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <TaskCommentsSection
+                  task={task}
+                  canEdit={canEdit}
+                  user={user}
+                  teamProfiles={teamProfiles}
+                  setSyncState={setSyncState}
+                />
+
+                <TaskRevisionsSection taskId={task.id} />
+              </>
+            )}
           </div>
 
           {!isCreateMode && canUseAi && showAiSidebar && (
@@ -704,37 +671,12 @@ export default function TaskDetailsModal({
       </div>
 
       {deleteConfirmationOpen && task && (
-        <section
-          role="alertdialog"
-          aria-labelledby={deleteTitleId}
-          aria-describedby={deleteDescriptionId}
-          className="mx-6 mb-3 border border-ares-red bg-ares-red/10 p-4 text-sm text-white"
-        >
-          <h4 id={deleteTitleId} className="font-bold">Delete this task card?</h4>
-          <p id={deleteDescriptionId} className="mt-1 text-marble/80">
-            This removes <span className="font-semibold text-white">{task.title}</span> from the active board. A coach or administrator can recover archived task data.
-          </p>
-          <p className="mt-2 font-mono text-xs text-marble/80">Task ID: {task.id}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleDeleteTask}
-              disabled={deleteSubmitting}
-              className="rounded bg-ares-red px-3 py-2 text-xs font-bold text-white hover:bg-ares-bronze disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              {deleteSubmitting ? "Deleting…" : "Confirm delete"}
-            </button>
-            <button
-              ref={deleteCancelRef}
-              type="button"
-              onClick={cancelDeleteConfirmation}
-              disabled={deleteSubmitting}
-              className="rounded border border-marble/40 px-3 py-2 text-xs font-semibold text-marble hover:border-white hover:text-white disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              Keep task
-            </button>
-          </div>
-        </section>
+        <TaskDeleteConfirmDialog
+          task={task}
+          deleteSubmitting={deleteSubmitting}
+          onConfirmDelete={handleDeleteTask}
+          onCancelDelete={cancelDeleteConfirmation}
+        />
       )}
 
       <footer className="px-6 py-4 border-t border-white/10 flex justify-between items-center bg-black/20 shrink-0">
@@ -763,20 +705,23 @@ export default function TaskDetailsModal({
           >
             Cancel
           </button>
-          
-          {canEdit && !isCreateMode && task && (task.status === "completed" || task.archived) && (
-            <button
-              type="button"
-              onClick={async () => {
-                const error = await onArchiveTask(task.id, !task.archived);
-                setOperationError(error);
-                if (!error) onClose();
-              }}
-              className="px-4 py-2 border border-ares-gold/30 hover:bg-ares-gold/10 text-ares-gold rounded font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1.5"
-            >
-              <Archive size={12} /> {task.archived ? "Restore" : "Archive"}
-            </button>
-          )}
+
+          {canEdit &&
+            !isCreateMode &&
+            task &&
+            (task.status === "completed" || task.archived) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const error = await onArchiveTask(task.id, !task.archived);
+                  setOperationError(error);
+                  if (!error) onClose();
+                }}
+                className="px-4 py-2 border border-ares-gold/30 hover:bg-ares-gold/10 text-ares-gold rounded font-black text-[10px] uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <Archive size={12} /> {task.archived ? "Restore" : "Archive"}
+              </button>
+            )}
 
           {canEdit && (
             <button
@@ -785,7 +730,11 @@ export default function TaskDetailsModal({
               disabled={submitting || !!titleError}
               className="clipped-button-sm bg-ares-red text-white font-black uppercase tracking-widest text-[11px] py-2 px-6 transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-lg disabled:opacity-50"
             >
-              {submitting ? "Saving..." : isCreateMode ? "Add Task Card" : "Save Changes"}
+              {submitting
+                ? "Saving..."
+                : isCreateMode
+                  ? "Add Task Card"
+                  : "Save Changes"}
             </button>
           )}
         </div>
@@ -800,11 +749,11 @@ export default function TaskDetailsModal({
         className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
         onClick={deleteConfirmationOpen ? cancelDeleteConfirmation : onClose}
       />
-      
+
       {/* Editor Drawer container */}
-      <div 
-        ref={modalRef} 
-        tabIndex={-1} 
+      <div
+        ref={modalRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={isCreateMode ? "Create Task Card" : "Task Card Details"}
