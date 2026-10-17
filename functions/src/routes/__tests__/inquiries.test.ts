@@ -768,4 +768,60 @@ describe("Inquiry submission complete Express chain", () => {
     expect(response.status).toBe(400);
     expect(adminDb.collection("inquiries").doc().set).not.toHaveBeenCalled();
   });
+
+  it.each([
+    "@**all**",
+    "[Review here](https://example.invalid)",
+    "Gold Tier Sponsor\n**Email:** private@example.test",
+    "private@example.test +1-555-0100",
+    "Unrecognized tier",
+    { label: "Gold Tier Sponsor" },
+    null,
+  ])("keeps untrusted sponsor tier metadata out of bot Markdown: %j", async (level) => {
+    vi.mocked(adminAppCheck.verifyToken).mockResolvedValueOnce({ appId: "1:205869391101:web:ca1bb24da790e4904ff294" } as never);
+    const metadata = { level, message: "Private applicant message" };
+    const response = await postInquiry({
+      type: "sponsor", name: "Sponsor Applicant", email: "sponsor@example.test", metadata,
+    }, "valid-app-check-token");
+    expect(response.status).toBe(200);
+    const content = mockSendZulipAlert.mock.calls[0][2];
+    expect(content).not.toContain("**Tier:**");
+    expect(content).not.toContain("@**all**");
+    expect(content).not.toContain("Private applicant message");
+    expect(content).not.toContain("private@example.test");
+    expect(content).not.toContain("example.invalid");
+    expect(adminDb.collection("inquiries").doc().set).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: `encrypted:${JSON.stringify(metadata)}` }),
+    );
+  });
+
+  it.each([
+    "Titanium Tier Sponsor", "Gold Tier Sponsor", "Silver Tier Sponsor",
+    "Bronze Tier Sponsor", "In-Kind Donation / Material",
+  ])("includes only a supported sponsor label: %s", async (level) => {
+    vi.mocked(adminAppCheck.verifyToken).mockResolvedValueOnce({ appId: "1:205869391101:web:ca1bb24da790e4904ff294" } as never);
+    const response = await postInquiry({
+      type: "sponsor", name: "Sponsor Applicant", email: "sponsor@example.test", metadata: { level },
+    }, "valid-app-check-token");
+    expect(response.status).toBe(200);
+    expect(mockSendZulipAlert).toHaveBeenCalledWith(
+      "Applicant", "New sponsor Submission", expect.stringContaining(`**Tier:** ${level}`),
+    );
+  });
+
+  it.each(["student", "mentor", "sponsor", "demo", "general"])(
+    "links %s alerts to the canonical inquiry queue without forwarding free text", async (type) => {
+      vi.mocked(adminAppCheck.verifyToken).mockResolvedValueOnce({ appId: "1:205869391101:web:ca1bb24da790e4904ff294" } as never);
+      const response = await postInquiry({
+        type, name: "Test Applicant", email: "applicant@example.test",
+        metadata: { message: "Private free text", level: "@**all**" },
+      }, "valid-app-check-token");
+      expect(response.status).toBe(200);
+      const content = mockSendZulipAlert.mock.calls[0][2];
+      expect(content).toContain("](https://aresfirst.org/dashboard/inquiries)");
+      expect(content).not.toContain("ares-ftc.org");
+      expect(content).not.toContain("Private free text");
+      expect(content).not.toContain("@**all**");
+    },
+  );
 });

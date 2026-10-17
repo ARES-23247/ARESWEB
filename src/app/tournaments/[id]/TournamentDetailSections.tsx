@@ -167,11 +167,17 @@ export function TournamentPitChecklistSection({
 }: {
   matches: TournamentMatch[];
 }) {
-  const [checkedIds, setCheckedIds] = useState<string[]>([]);
-  const nextMatch = useMemo(
-    () => matches.find((m) => !m.completed) ?? matches[0] ?? null,
-    [matches],
+  const nextMatch = matches.find((match) => !match.completed) ?? null;
+  return (
+    <MatchPitChecklist
+      key={nextMatch ? JSON.stringify([nextMatch.tournamentId, nextMatch.id]) : "none"}
+      nextMatch={nextMatch}
+    />
   );
+}
+
+function MatchPitChecklist({ nextMatch }: { nextMatch: TournamentMatch | null }) {
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
 
   const toggleItem = (id: string) => {
     setCheckedIds((prev) =>
@@ -179,7 +185,7 @@ export function TournamentPitChecklistSection({
     );
   };
 
-  const isReady = checkedIds.length === PIT_CHECKLIST_ITEMS.length;
+  const isReady = !!nextMatch && checkedIds.length === PIT_CHECKLIST_ITEMS.length;
 
   return (
     <section
@@ -224,7 +230,7 @@ export function TournamentPitChecklistSection({
                 : "border-ares-gold/30 bg-ares-gold/10 text-ares-gold"
             }`}
           >
-            {isReady
+            {!nextMatch ? "No upcoming match" : isReady
               ? "Queue Ready"
               : `${checkedIds.length} / ${PIT_CHECKLIST_ITEMS.length} Ready`}
           </span>
@@ -254,6 +260,7 @@ export function TournamentPitChecklistSection({
             >
               <input
                 type="checkbox"
+                disabled={!nextMatch}
                 checked={checked}
                 onChange={() => toggleItem(item.id)}
                 className="mt-0.5 h-4 w-4 shrink-0 accent-ares-gold"

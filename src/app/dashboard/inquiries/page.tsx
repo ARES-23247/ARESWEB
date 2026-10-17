@@ -4,6 +4,8 @@ import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { PENDING_INQUIRIES_QUERY_KEY } from "@/lib/usePendingInquiries";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { 
   MessageSquare, 
@@ -97,6 +99,7 @@ interface InquiryPageResponse {
 
 export default function InquiriesPage() {
   const { user, authorizedUser } = useAuth();
+  const queryClient = useQueryClient();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -173,6 +176,7 @@ export default function InquiriesPage() {
         prev.map((inq) => (inq.id === id ? { ...inq, status: newStatus as Inquiry["status"] } : inq))
       );
       setSuccess("Inquiry status updated.");
+      void queryClient.invalidateQueries({ queryKey: PENDING_INQUIRIES_QUERY_KEY });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Failed to update inquiry status.");
     }
@@ -194,6 +198,7 @@ export default function InquiriesPage() {
       setInquiries((prev) => prev.map((inq) => inq.id === id ? { ...inq, isDeleted: true } : inq));
       setPendingAction(null);
       setSuccess("Inquiry archived. It can be restored from the Archived filter.");
+      void queryClient.invalidateQueries({ queryKey: PENDING_INQUIRIES_QUERY_KEY });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Failed to archive inquiry.");
     } finally {
@@ -212,6 +217,7 @@ export default function InquiriesPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error || res.statusText}`);
       setInquiries((prev) => prev.map((inq) => inq.id === id ? { ...inq, isDeleted: false } : inq));
       setSuccess("Inquiry restored.");
+      void queryClient.invalidateQueries({ queryKey: PENDING_INQUIRIES_QUERY_KEY });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Failed to restore inquiry.");
     } finally {
@@ -238,6 +244,7 @@ export default function InquiriesPage() {
       );
       setPendingAction(null);
       setSuccess(data.message || "Account pre-authorized successfully.");
+      void queryClient.invalidateQueries({ queryKey: PENDING_INQUIRIES_QUERY_KEY });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Failed to pre-authorize account.");
     } finally {
