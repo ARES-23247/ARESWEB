@@ -250,7 +250,7 @@ deployment; it is not a claim about the repaired release.
 | R02 | Every inquiry alert links to `https://aresfirst.org/dashboard/inquiries`. | Express-chain tests for all five inquiry types. |
 | R03 | Navbar and dashboard share an identity/role-scoped API query, with foreground refresh, one-minute foreground polling, cancellation, and invalidation after successful queue mutations. | Shared-query and lifecycle tests cover concurrent observers, account/role changes, stale responses, refresh errors/recovery, resolve/reject/reopen, account approval, archive/restore, and failed mutations. |
 | R04 | Checklist state is keyed by tournament and next incomplete match; an empty/completed schedule cannot show readiness. | Rerender tests cover advancing matches, switching tournaments, unchanged refetches, and no upcoming match. |
-| R05 | The focus trap and modal semantics now belong to the same element. | Component and Playwright tests cover initial focus, Tab/Shift+Tab wrapping, Escape from search/results, and trigger focus restoration. |
+| R05 | The focus trap and modal semantics now belong to the same element; the duplicate animation-frame focus handler is removed. | Component and Playwright tests cover initial focus, delayed-focus races, Tab/Shift+Tab wrapping, Escape from search/results, and trigger focus restoration. |
 | R06 | Interactive Simulations opens `/academy/playground`. | Component navigation assertion and Playwright verification of the actual destination heading. |
 
 Regression files: `functions/src/routes/__tests__/inquiries.test.ts`,

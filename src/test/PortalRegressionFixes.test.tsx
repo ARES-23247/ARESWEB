@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CommandPalette } from "@/components/navigation/CommandPalette";
 import { TournamentPitChecklistSection } from "@/app/tournaments/[id]/TournamentDetailSections";
 import type { TournamentMatch } from "@/types/tournament";
@@ -10,6 +10,31 @@ function LocationProbe() {
 }
 
 describe("Quick Jump regressions", () => {
+  it("does not let a delayed animation frame steal focus after keyboard navigation", () => {
+    vi.useFakeTimers();
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    try {
+      const view = render(<MemoryRouter><CommandPalette isSignedIn={false} userRole="unverified" /></MemoryRouter>);
+      fireEvent.click(screen.getByRole("button", { name: "Open quick jump search" }));
+      act(() => vi.advanceTimersByTime(50));
+      const search = screen.getByRole("searchbox");
+      expect(search).toHaveFocus();
+      fireEvent.keyDown(search, { key: "Tab", shiftKey: true });
+      const last = screen.getAllByRole("option").at(-1)!;
+      expect(last).toHaveFocus();
+      act(() => frames.forEach((callback) => callback(100)));
+      expect(last).toHaveFocus();
+      view.unmount();
+    } finally {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    }
+  });
+
   it("traps Tab in both directions, closes with Escape, and restores each trigger", async () => {
     render(<MemoryRouter><CommandPalette isSignedIn={false} userRole="unverified" /></MemoryRouter>);
     const trigger = screen.getByRole("button", { name: "Open quick jump search" });

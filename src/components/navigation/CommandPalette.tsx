@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -82,7 +82,6 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -109,14 +108,6 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    }
-  }, [isOpen]);
 
   const allItems = useMemo(() => {
     const items = [...PUBLIC_COMMAND_ITEMS];
@@ -196,7 +187,6 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
                 Quick jump to any portal page, tool, or game
               </label>
               <input
-                ref={inputRef}
                 id="command-palette-input"
                 type="search"
                 value={query}
