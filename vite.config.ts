@@ -223,6 +223,7 @@ export default defineConfig({
         "src/lib/contentUrls.ts",
         "src/lib/authorization.ts",
         "src/lib/canonicalHost.ts",
+        "src/lib/usePendingInquiries.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
