@@ -9,14 +9,15 @@ describe("Firebase startup service boundaries", () => {
     const authContext = source("src/context/AuthContext.tsx");
     const navbar = source("src/components/Navbar.tsx");
     const authModule = source("src/lib/firebaseAuth.ts");
+    const pendingInquiries = source("src/lib/usePendingInquiries.ts");
     const apiModule = source("src/lib/api.ts");
 
-    for (const startupModule of [authContext, navbar, authModule, apiModule]) {
+    for (const startupModule of [authContext, navbar, authModule, apiModule, pendingInquiries]) {
       expect(startupModule).not.toMatch(/^import .*firebase\/(?:firestore|storage|app-check)/m);
       expect(startupModule).not.toMatch(/^import .*firebase(?:Firestore|Storage)/m);
     }
     expect(navbar).not.toContain("onSnapshot");
-    expect(navbar).toContain("/api/inquiries/pending-exists");
+    expect(pendingInquiries).toContain("/api/inquiries/pending-exists");
   });
 
   it("loads App Check and development Firestore bootstrapping dynamically", () => {

@@ -15,6 +15,15 @@ import { encryptedPrivateUpdates } from "./profileSelf";
 
 const router = express.Router();
 
+// Only server-owned labels may leave the encrypted inquiry as bot Markdown.
+const SPONSOR_TIER_LABELS = [
+  "Titanium Tier Sponsor",
+  "Gold Tier Sponsor",
+  "Silver Tier Sponsor",
+  "Bronze Tier Sponsor",
+  "In-Kind Donation / Material",
+] as const;
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -99,20 +108,14 @@ router.post("/", inquiryLimiter, validate(createInquirySchema), asyncHandler(asy
       .replace(/[\\`*_{}[\]()<>]/g, "\\$&");
     const maskedEmail = maskEmail(email);
 
-    const sponsorTier =
-      type === "sponsor" &&
-      metadata &&
-      typeof metadata === "object" &&
-      typeof (metadata as Record<string, unknown>).level === "string"
-        ? String((metadata as Record<string, unknown>).level)
-            .trim()
-            .slice(0, 60)
-        : "";
+    const sponsorTier = type === "sponsor"
+      ? SPONSOR_TIER_LABELS.find((label) => label === metadata?.level)
+      : undefined;
     const tierLine = sponsorTier ? `\n**Tier:** ${sponsorTier}` : "";
     const messageBody = `**Name:** ${maskedName}
 **Email:** ${maskedEmail}
 **Type:** ${type}${tierLine}
-[Open Command Center to review the applicant's message](https://ares-ftc.org/dashboard/inquiries)`;
+[Open Command Center to review the applicant's message](https://aresfirst.org/dashboard/inquiries)`;
 
     // Await Zulip Sync
     await sendZulipAlert("Applicant", `New ${type} Submission`, messageBody);

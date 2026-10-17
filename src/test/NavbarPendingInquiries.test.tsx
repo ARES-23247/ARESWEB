@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,7 +23,7 @@ vi.mock("@/context/AuthContext", () => ({ useAuth: () => mocks.authState, useOpt
 vi.mock("@/lib/api", () => ({ authenticatedFetch: mocks.authenticatedFetch }));
 
 function renderNavbar() {
-  return render(<MemoryRouter><Navbar /></MemoryRouter>);
+  return render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><Navbar /></MemoryRouter></QueryClientProvider>);
 }
 
 describe("Navbar pending inquiry status", () => {

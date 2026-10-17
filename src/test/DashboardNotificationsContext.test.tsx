@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -107,9 +108,9 @@ describe("dashboard notifications", () => {
     });
 
     const view = render(
-      <DashboardNotificationsProvider>
+      <QueryClientProvider client={new QueryClient()}><DashboardNotificationsProvider>
         <NotificationProbe />
-      </DashboardNotificationsProvider>,
+      </DashboardNotificationsProvider></QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -135,9 +136,9 @@ describe("dashboard notifications", () => {
     });
 
     render(
-      <DashboardNotificationsProvider>
+      <QueryClientProvider client={new QueryClient()}><DashboardNotificationsProvider>
         <NotificationProbe />
-      </DashboardNotificationsProvider>,
+      </DashboardNotificationsProvider></QueryClientProvider>,
     );
 
     expect(await screen.findByText("0|error|false|connected")).toBeInTheDocument();
@@ -150,9 +151,9 @@ describe("dashboard notifications", () => {
     };
 
     render(
-      <DashboardNotificationsProvider>
+      <QueryClientProvider client={new QueryClient()}><DashboardNotificationsProvider>
         <NotificationProbe />
-      </DashboardNotificationsProvider>,
+      </DashboardNotificationsProvider></QueryClientProvider>,
     );
 
     expect(screen.getByText("0|idle|false|idle")).toBeInTheDocument();

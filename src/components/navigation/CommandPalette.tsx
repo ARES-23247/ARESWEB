@@ -45,7 +45,7 @@ const PUBLIC_COMMAND_ITEMS: CommandPaletteItem[] = [
   { id: "robots", label: "Robots Fleet & Technical Specs", category: "Engineering & Academy", to: "/robots", keywords: "robots fleet cad specs hardware subsystems pit sheet" },
   { id: "tech-stack", label: "Engineering Tech Stack", category: "Engineering & Academy", to: "/tech-stack", keywords: "tech stack software hardware tools vision control" },
   { id: "score-calc", label: "BIOBUZZ Score Calculator", category: "Engineering & Academy", to: "/biobuzz/score-calculator", keywords: "biobuzz score calculator points match" },
-  { id: "simulations", label: "Interactive Simulations", category: "Engineering & Academy", to: "/simulations", keywords: "simulations physics control pid visualizer" },
+  { id: "simulations", label: "Interactive Simulations", category: "Engineering & Academy", to: "/academy/playground", keywords: "simulations physics control pid visualizer" },
   { id: "arcade", label: "ARES Arcade Hub", category: "Arcade", to: "/arcade", keywords: "arcade games hub play" },
   { id: "biobuzz-sim", label: "BIOBUZZ Field Simulator", category: "Arcade", to: "/biobuzz/simulator", keywords: "biobuzz simulator game robot drive" },
   { id: "waggle-way", label: "Waggle Way", category: "Arcade", to: "/waggle-way", keywords: "waggle way puzzle bee game" },
@@ -178,14 +178,15 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
 
       {isOpen && (
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="command-palette-title"
           onClick={closePalette}
           className="fixed inset-0 z-[80] flex items-start justify-center bg-black/80 px-4 pt-20 pb-8 backdrop-blur-sm"
         >
           <div
             ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="command-palette-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
             className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-obsidian shadow-2xl"
           >

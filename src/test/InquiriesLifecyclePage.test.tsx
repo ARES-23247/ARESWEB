@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import InquiriesPage from "../app/dashboard/inquiries/page";
@@ -43,7 +44,7 @@ describe("InquiriesPage recoverable lifecycle", () => {
   });
 
   it("archives through an accessible confirmation and restores from the archive filter", async () => {
-    render(<InquiriesPage />);
+    render(<QueryClientProvider client={new QueryClient()}><InquiriesPage /></QueryClientProvider>);
 
     expect(await screen.findByText("Applicant Nickname")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /archive inquiry from applicant nickname/i }));
@@ -93,7 +94,7 @@ describe("InquiriesPage recoverable lifecycle", () => {
         nextCursor: null,
       }));
 
-    render(<InquiriesPage />);
+    render(<QueryClientProvider client={new QueryClient()}><InquiriesPage /></QueryClientProvider>);
     expect(await screen.findByText("First Applicant")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Load more inquiries" }));
     expect(await screen.findByText("Second Applicant")).toBeInTheDocument();
@@ -107,7 +108,7 @@ describe("InquiriesPage recoverable lifecycle", () => {
       .mockResolvedValueOnce(response({ error: "Database unavailable" }, 503, "Unavailable"))
       .mockResolvedValueOnce(response({ inquiries: [], hasMore: false, nextCursor: null }));
 
-    render(<InquiriesPage />);
+    render(<QueryClientProvider client={new QueryClient()}><InquiriesPage /></QueryClientProvider>);
     expect(await screen.findByText("HTTP 503: Database unavailable")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledTimes(2));
@@ -141,7 +142,7 @@ describe("InquiriesPage recoverable lifecycle", () => {
       ],
     }));
 
-    render(<InquiriesPage />);
+    render(<QueryClientProvider client={new QueryClient()}><InquiriesPage /></QueryClientProvider>);
     expect(await screen.findByText("Apex Dynamics")).toBeInTheDocument();
     expect(screen.getByText("Gold")).toBeInTheDocument();
     expect(screen.getByText(/Excited to support CAD & CNC/i)).toBeInTheDocument();

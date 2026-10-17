@@ -1,6 +1,5 @@
 "use client";
 
-import { logger } from "@/utils/logger";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -11,7 +10,7 @@ import {
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
-import { authenticatedFetch } from "@/lib/api";
+import { usePendingInquiries } from "@/lib/usePendingInquiries";
 
 // Shared data configs and subcomponents
 import { TEAM_LINKS, RESOURCE_LINKS } from "./navigation/navItems";
@@ -23,12 +22,6 @@ import { CommandPalette } from "./navigation/CommandPalette";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [hasPendingInquiries, setHasPendingInquiries] = useState<
-    boolean | null
-  >(null);
-  const [pendingInquiriesError, setPendingInquiriesError] = useState<
-    string | null
-  >(null);
   const navbarRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const { user, authorizedUser, loading, loginWithGoogle, logout } = useAuth();
@@ -37,53 +30,7 @@ export default function Navbar() {
   const userImage = user?.photoURL;
   const userRole = authorizedUser?.role || "Pending Verification";
 
-  useEffect(() => {
-    if (!user?.uid || (userRole !== "admin" && userRole !== "coach")) {
-      setHasPendingInquiries(false);
-      setPendingInquiriesError(null);
-      return;
-    }
-
-    const controller = new AbortController();
-    setHasPendingInquiries(null);
-    setPendingInquiriesError(null);
-
-    async function loadPendingInquiryState() {
-      try {
-        const response = await authenticatedFetch(
-          "/api/inquiries/pending-exists",
-          {
-            signal: controller.signal,
-          },
-        );
-        if (!response.ok) {
-          throw new Error(
-            `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
-          );
-        }
-        const result = (await response.json()) as { hasPending?: unknown };
-        if (typeof result.hasPending !== "boolean") {
-          throw new Error("Invalid pending inquiry response");
-        }
-        setHasPendingInquiries(result.hasPending);
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        const diagnostic =
-          error instanceof Error
-            ? error.message
-            : "Pending inquiry request failed";
-        logger.error(
-          "Error loading pending inquiry status for navigation:",
-          error,
-        );
-        setHasPendingInquiries(null);
-        setPendingInquiriesError(diagnostic);
-      }
-    }
-
-    void loadPendingInquiryState();
-    return () => controller.abort();
-  }, [user?.uid, userRole]);
+  const { hasPendingInquiries, error: pendingInquiriesError } = usePendingInquiries();
 
   // Close dropdowns when clicking outside navbar
   useEffect(() => {
@@ -216,7 +163,7 @@ export default function Navbar() {
             userRole={userRole}
             userImage={userImage}
             hasPendingInquiries={hasPendingInquiries === true}
-            pendingInquiriesError={pendingInquiriesError}
+            pendingInquiriesError={pendingInquiriesError?.message ?? null}
             logout={logout}
             loginWithGoogle={loginWithGoogle}
           />
@@ -254,7 +201,7 @@ export default function Navbar() {
         userRole={userRole}
         userImage={userImage}
         hasPendingInquiries={hasPendingInquiries === true}
-        pendingInquiriesError={pendingInquiriesError}
+        pendingInquiriesError={pendingInquiriesError?.message ?? null}
         logout={logout}
         loginWithGoogle={loginWithGoogle}
         returnFocusRef={mobileMenuButtonRef}

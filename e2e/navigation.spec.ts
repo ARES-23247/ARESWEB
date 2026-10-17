@@ -1,6 +1,34 @@
 import { test, expect } from "./fixtures";
 
 test.describe("Navigation & Accessibility E2E tests", () => {
+  test("Quick Jump traps focus, dismisses with Escape, and opens simulations", async ({ page }) => {
+    await page.goto("/");
+    const trigger = page.getByRole("button", { name: "Open quick jump search" });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Quick jump to any portal page, tool, or game" });
+    const search = dialog.getByRole("searchbox");
+    await expect(search).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(dialog.getByRole("option").last()).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(search).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press("Control+k");
+    await expect(search).toBeFocused();
+    await dialog.getByRole("option").first().focus();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await trigger.click();
+    await search.fill("Interactive Simulations");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/academy\/playground$/);
+    await expect(page.getByRole("heading", { name: "Simulation Playground" })).toBeVisible();
+  });
+
   test("desktop disclosures agree with visible state and dismiss with Escape", async ({ page, browserName }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/", { waitUntil: "domcontentloaded" });

@@ -462,6 +462,10 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
+        "src/lib/usePendingInquiries.ts": {
+          lines: 85,
+          functions: 100,
+        },
         "src/lib/outreachExport.ts": {
           lines: 85,
           functions: 100,
