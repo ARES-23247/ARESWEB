@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { sendZulipMessage, sendZulipAlert, getZulipCredentials, getZulipUsers } from "../zulip";
+import {
+  sendZulipMessage,
+  sendZulipAlert,
+  sendZulipApprovalQueueNotification,
+  getZulipCredentials,
+  getZulipUsers,
+} from "../zulip";
 
 describe("Zulip Integration Library", () => {
   const originalEnv = { ...process.env };
@@ -107,6 +113,60 @@ describe("Zulip Integration Library", () => {
         expect.objectContaining({
           body: expect.stringContaining("to=admin-alerts"),
         })
+      );
+    });
+  });
+
+  describe("sendZulipApprovalQueueNotification", () => {
+    it("posts new pending review notifications to the leadership Content Approval Queue topic", async () => {
+      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
+      process.env.ZULIP_API_KEY = "super-secret-api-key";
+      delete process.env.ZULIP_ADMIN_STREAM;
+
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const delivered = await sendZulipApprovalQueueNotification({
+        section: "Blog Posts",
+        title: "Regional Qualifier Recap",
+        contentId: "regional-qualifier-recap",
+        authorLabel: "CircuitFox",
+        dashboardPath: "/dashboard/blog?tab=pending",
+      });
+
+      expect(delivered).toBe(true);
+      const body = String(mockFetch.mock.calls[0]?.[1]?.body ?? "");
+      const params = new URLSearchParams(body);
+      expect(params.get("to")).toBe("leadership");
+      expect(params.get("topic")).toBe("Content Approval Queue");
+      expect(params.get("content")).toContain("**[Blog Posts] Pending Review: Regional Qualifier Recap**");
+      expect(params.get("content")).toContain("CircuitFox submitted an item for mentor/coach review (`regional-qualifier-recap`).");
+      expect(params.get("content")).toContain("https://aresfirst.org/dashboard/blog?tab=pending");
+    });
+
+    it("formats staged edits and falls back to generic team member actor when authorLabel is omitted", async () => {
+      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
+      process.env.ZULIP_API_KEY = "super-secret-api-key";
+      process.env.ZULIP_ADMIN_STREAM = "mentors";
+
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const delivered = await sendZulipApprovalQueueNotification({
+        section: "Academy Curriculum",
+        title: "PID Tuning",
+        contentId: "pid-tuning",
+        dashboardPath: "/dashboard/academy",
+        isStagedEdit: true,
+      });
+
+      expect(delivered).toBe(true);
+      const body = String(mockFetch.mock.calls[0]?.[1]?.body ?? "");
+      const params = new URLSearchParams(body);
+      expect(params.get("to")).toBe("mentors");
+      expect(params.get("topic")).toBe("Content Approval Queue");
+      expect(params.get("content")).toContain(
+        "An ARES team member submitted a pending edit to a published item (`pid-tuning`).",
       );
     });
   });

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentSync, type DocRecord } from "@/hooks/useDocumentSync";
+import { notifyPendingApprovalQueue } from "@/lib/approvalNotifications";
 import {
   parseDocumentationApprovalReview,
   syndicationChannelDetails,
@@ -248,6 +249,15 @@ export function useDashboardDocController(
     await saveDoc(slug, finalPayload, userNickname, userAvatar, {
       isCreate: !selectedDoc,
     });
+
+    if (
+      (status === "pending_approval" || approvalStatus === "pending_approval") &&
+      (collectionName === "posts" ||
+        collectionName === "docs" ||
+        collectionName === "documents")
+    ) {
+      void notifyPendingApprovalQueue(collectionName, slug);
+    }
 
     if (collectionName === "posts" && becamePublished) {
       await runSocialAnnouncement(slug);

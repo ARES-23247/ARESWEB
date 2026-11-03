@@ -51,10 +51,20 @@ function NotificationProbe() {
   const notifications = useDashboardNotifications();
   return (
     <output>
-      {notifications.pendingBlogApprovals}|
-      {notifications.blogApprovalsState}|
-      {String(notifications.hasPendingInquiries)}|
-      {notifications.inquiriesState}
+      {[
+        notifications.pendingBlogApprovals,
+        notifications.blogApprovalsState,
+        notifications.pendingEventApprovals,
+        notifications.eventApprovalsState,
+        notifications.pendingAcademyApprovals,
+        notifications.academyApprovalsState,
+        notifications.pendingAreslibApprovals,
+        notifications.areslibApprovalsState,
+        notifications.pendingDocumentApprovals,
+        notifications.documentApprovalsState,
+        String(notifications.hasPendingInquiries),
+        notifications.inquiriesState,
+      ].join("|")}
     </output>
   );
 }
@@ -88,7 +98,7 @@ describe("dashboard notifications", () => {
     expect(canReviewDashboardContent()).toBe(false);
   });
 
-  it("deduplicates pending records across both approval fields and shares inquiry state", async () => {
+  it("deduplicates pending records across all approval queues and shares inquiry state", async () => {
     firestore.onSnapshot.mockImplementation((queryValue, onNext) => {
       const details = queryDetails(queryValue);
       if (details.collection === "posts" && details.field === "status") {
@@ -103,6 +113,43 @@ describe("dashboard notifications", () => {
             { id: "archived", data: () => ({ isDeleted: 1 }) },
           ],
         });
+      } else if (details.collection === "events") {
+        onNext({
+          docs: [{ id: "event-1", data: () => ({ isDeleted: 0 }) }],
+        });
+      } else if (details.collection === "docs" && details.field === "status") {
+        onNext({
+          docs: [
+            {
+              id: "academy-1",
+              data: () => ({ isDeleted: 0, displayInMathCorner: 1, displayInAreslib: 0 }),
+            },
+          ],
+        });
+      } else if (details.collection === "docs") {
+        onNext({
+          docs: [
+            {
+              id: "academy-1",
+              data: () => ({ isDeleted: 0, displayInMathCorner: 1, displayInAreslib: 0 }),
+            },
+            {
+              id: "areslib-1",
+              data: () => ({ isDeleted: 0, displayInMathCorner: 0, displayInAreslib: 1 }),
+            },
+            {
+              id: "areslib-2",
+              data: () => ({ isDeleted: 0, displayInScienceCorner: 1, displayInAreslib: 1 }),
+            },
+          ],
+        });
+      } else if (details.collection === "documents") {
+        onNext({
+          docs: [
+            { id: "resource-1", data: () => ({ isDeleted: 0 }) },
+            { id: "resource-deleted", data: () => ({ isDeleted: true }) },
+          ],
+        });
       }
       return vi.fn();
     });
@@ -114,9 +161,11 @@ describe("dashboard notifications", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("2|connected|true|connected")).toBeInTheDocument();
+      expect(
+        screen.getByText("2|connected|1|connected|2|connected|2|connected|1|connected|true|connected"),
+      ).toBeInTheDocument();
     });
-    expect(firestore.onSnapshot).toHaveBeenCalledTimes(2);
+    expect(firestore.onSnapshot).toHaveBeenCalledTimes(8);
     expect(api.authenticatedFetch).toHaveBeenCalledWith(
       "/api/inquiries/pending-exists",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -132,6 +181,9 @@ describe("dashboard notifications", () => {
     firestore.onSnapshot.mockImplementation((queryValue, _onNext, onError) => {
       const details = queryDetails(queryValue);
       if (details.collection === "posts") onError(new Error("offline"));
+      if (details.collection === "events") onError(new Error("offline"));
+      if (details.collection === "docs") onError(new Error("offline"));
+      if (details.collection === "documents") onError(new Error("offline"));
       return vi.fn();
     });
 
@@ -141,7 +193,9 @@ describe("dashboard notifications", () => {
       </DashboardNotificationsProvider></QueryClientProvider>,
     );
 
-    expect(await screen.findByText("0|error|false|connected")).toBeInTheDocument();
+    expect(
+      await screen.findByText("0|error|0|error|0|error|0|error|0|error|false|connected"),
+    ).toBeInTheDocument();
   });
 
   it("does not subscribe for members who cannot review queues", () => {
@@ -156,7 +210,7 @@ describe("dashboard notifications", () => {
       </DashboardNotificationsProvider></QueryClientProvider>,
     );
 
-    expect(screen.getByText("0|idle|false|idle")).toBeInTheDocument();
+    expect(screen.getByText("0|idle|0|idle|0|idle|0|idle|0|idle|false|idle")).toBeInTheDocument();
     expect(firestore.onSnapshot).not.toHaveBeenCalled();
   });
 });

@@ -78,9 +78,9 @@ describe("dependency security contracts", () => {
       readFileSync(resolve(workspaceRoot, "functions/package-lock.json"), "utf8"),
     ) as { packages?: Record<string, { version?: string }> };
 
-    expect(workspace).toMatch(/^\s+qs: \^6\.16\.0$/mu);
-    expect(functionsPackage.overrides?.qs).toBe("^6.16.0");
-    expect(functionsLock.packages?.["node_modules/qs"]?.version).toBe("6.16.0");
+    expect(workspace).toMatch(/^\s+qs: \^6\.16\.1$/mu);
+    expect(functionsPackage.overrides?.qs).toBe("^6.16.1");
+    expect(functionsLock.packages?.["node_modules/qs"]?.version).toBe("6.17.1");
   });
 
   it("backports a bounded filter depth while firebase-tools requires stream-json 1.x", async () => {

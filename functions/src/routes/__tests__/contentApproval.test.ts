@@ -6,17 +6,21 @@ const mocks = vi.hoisted(() => ({
   transactionUpdate: vi.fn(),
   transactionSet: vi.fn(),
   runTransaction: vi.fn(),
+  sendZulipApprovalQueueNotification: vi.fn(),
   rateLimiter: vi.fn((_req: unknown, _res: unknown, next: () => void) => next()),
 }));
 
 vi.mock("express-rate-limit", () => ({ default: () => mocks.rateLimiter }));
+vi.mock("../../lib/zulip", () => ({
+  sendZulipApprovalQueueNotification: mocks.sendZulipApprovalQueueNotification,
+}));
 vi.mock("../../lib/firebase-admin", () => {
   const docsRef = { id: "lesson-one", get: mocks.documentGet };
-  const auditRef = { id: "audit-one" };
+  const auditRef = { id: "audit-one", get: mocks.documentGet };
   return {
     adminDb: {
       collection: vi.fn((name: string) => ({
-        doc: vi.fn(() => name === "docs" ? docsRef : auditRef),
+        doc: vi.fn(() => (name === "docs" ? docsRef : auditRef)),
       })),
       runTransaction: mocks.runTransaction,
     },
@@ -88,6 +92,7 @@ describe("content approval routes", () => {
     vi.clearAllMocks();
     mocks.documentGet.mockResolvedValue({ exists: true, data: () => validDocument() });
     mocks.transactionGet.mockResolvedValue({ exists: true, data: () => validDocument() });
+    mocks.sendZulipApprovalQueueNotification.mockResolvedValue(true);
     mocks.runTransaction.mockImplementation(async (operation: (transaction: unknown) => Promise<unknown>) => operation({
       get: mocks.transactionGet,
       update: mocks.transactionUpdate,
@@ -103,6 +108,163 @@ describe("content approval routes", () => {
         expect.any(String),
       ]);
     }
+    expect(route("/notify-pending", "post").stack.map((entry) => entry.name)).toEqual([
+      "ensureTeamMember",
+      expect.any(String),
+    ]);
+  });
+
+  it("delivers Zulip approval queue notifications for pending records across all supported collections", async () => {
+    const cases = [
+      {
+        collection: "posts",
+        contentId: "post-1",
+        data: { title: "Scrimmage Update", status: "pending_approval", author: "Bolt" },
+        expectedSection: "Blog Posts",
+        expectedPath: "/dashboard/blog?tab=pending",
+        expectedAuthor: "Bolt",
+        expectedStaged: false,
+      },
+      {
+        collection: "docs",
+        contentId: "lesson-one",
+        data: validDocument({ displayInAreslib: 0, original_authorNickname: "Ada" }),
+        expectedSection: "Academy Curriculum",
+        expectedPath: "/dashboard/academy",
+        expectedAuthor: "Ada",
+        expectedStaged: false,
+      },
+      {
+        collection: "docs",
+        contentId: "areslib-kinematics",
+        data: validDocument({
+          displayInAreslib: 1,
+          displayInMathCorner: 0,
+          publishedSnapshot: { title: "Old" },
+        }),
+        expectedSection: "ARESLib Reference",
+        expectedPath: "/dashboard/areslib",
+        expectedAuthor: undefined,
+        expectedStaged: true,
+      },
+      {
+        collection: "documents",
+        contentId: "doc-1",
+        data: { title: "CAD Checklist", approvalStatus: "pending_approval" },
+        expectedSection: "Cloud Resources",
+        expectedPath: "/dashboard/documents",
+        expectedAuthor: undefined,
+        expectedStaged: false,
+      },
+      {
+        collection: "events",
+        contentId: "event-1",
+        data: { title: "Build Session", status: "pending", pendingEdit: { title: "Updated" } },
+        expectedSection: "Calendar Events",
+        expectedPath: "/dashboard/events",
+        expectedAuthor: undefined,
+        expectedStaged: true,
+      },
+      {
+        collection: "event_locations",
+        contentId: "venue-1",
+        data: { name: "Engineering Lab", status: "pending_approval" },
+        expectedSection: "Calendar Venues",
+        expectedPath: "/dashboard/events",
+        expectedAuthor: undefined,
+        expectedStaged: false,
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      mocks.documentGet.mockResolvedValueOnce({ exists: true, data: () => testCase.data });
+      const res = response();
+      const next = vi.fn();
+      await handler("/notify-pending", "post")(
+        {
+          body: { collection: testCase.collection, contentId: testCase.contentId },
+          authorizationRole: "member",
+        },
+        res,
+        next,
+      );
+      expect(next).not.toHaveBeenCalled();
+      expect(mocks.sendZulipApprovalQueueNotification).toHaveBeenLastCalledWith({
+        section: testCase.expectedSection,
+        title: expect.any(String),
+        contentId: testCase.contentId,
+        authorLabel: testCase.expectedAuthor,
+        dashboardPath: testCase.expectedPath,
+        isStagedEdit: testCase.expectedStaged,
+      });
+      expect(res.payload).toEqual({
+        success: true,
+        delivered: true,
+        collection: testCase.collection,
+        contentId: testCase.contentId,
+      });
+    }
+  });
+
+  it("rejects invalid, missing, archived, or non-pending notify-pending requests", async () => {
+    const next = vi.fn();
+    await handler("/notify-pending", "post")(
+      { body: { collection: "users", contentId: "post-1" } },
+      response(),
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 400, code: "INVALID_COLLECTION" }),
+    );
+
+    next.mockClear();
+    await handler("/notify-pending", "post")(
+      { body: { collection: "posts", contentId: "../bad" } },
+      response(),
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 400, code: "INVALID_CONTENT_ID" }),
+    );
+
+    next.mockClear();
+    mocks.documentGet.mockResolvedValueOnce({ exists: false });
+    await handler("/notify-pending", "post")(
+      { body: { collection: "posts", contentId: "post-1" } },
+      response(),
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 404, code: "CONTENT_NOT_FOUND" }),
+    );
+
+    next.mockClear();
+    mocks.documentGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ status: "pending_approval", isDeleted: 1 }),
+    });
+    await handler("/notify-pending", "post")(
+      { body: { collection: "posts", contentId: "post-1" } },
+      response(),
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 409, code: "CONTENT_ARCHIVED" }),
+    );
+
+    next.mockClear();
+    mocks.documentGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ status: "published", approvalStatus: "approved" }),
+    });
+    await handler("/notify-pending", "post")(
+      { body: { collection: "posts", contentId: "post-1" } },
+      response(),
+      next,
+    );
+    expect(next).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 409, code: "CONTENT_NOT_PENDING" }),
+    );
   });
 
   it("allows only admin, coach, and mentor roles", () => {

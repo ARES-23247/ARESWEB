@@ -46,6 +46,14 @@ describe("DashboardSidebar profile DTO", () => {
     vi.mocked(useDashboardNotifications).mockReturnValue({
       pendingBlogApprovals: 0,
       blogApprovalsState: "connected",
+      pendingEventApprovals: 0,
+      eventApprovalsState: "connected",
+      pendingAcademyApprovals: 0,
+      academyApprovalsState: "connected",
+      pendingAreslibApprovals: 0,
+      areslibApprovalsState: "connected",
+      pendingDocumentApprovals: 0,
+      documentApprovalsState: "connected",
       hasPendingInquiries: false,
       inquiriesState: "connected",
     });
@@ -89,10 +97,18 @@ describe("DashboardSidebar profile DTO", () => {
     await waitFor(() => expect(screen.getByRole("link", { name: /My Profile/i })).toBeInTheDocument());
   });
 
-  it("puts the pending mentor approval count on the Blog Management link", async () => {
+  it("puts pending mentor approval counts on all five content management links", async () => {
     vi.mocked(useDashboardNotifications).mockReturnValue({
       pendingBlogApprovals: 2,
       blogApprovalsState: "connected",
+      pendingEventApprovals: 1,
+      eventApprovalsState: "connected",
+      pendingAcademyApprovals: 3,
+      academyApprovalsState: "connected",
+      pendingAreslibApprovals: 1,
+      areslibApprovalsState: "connected",
+      pendingDocumentApprovals: 4,
+      documentApprovalsState: "connected",
       hasPendingInquiries: false,
       inquiriesState: "connected",
     });
@@ -108,6 +124,26 @@ describe("DashboardSidebar profile DTO", () => {
     expect(
       await screen.findByRole("link", {
         name: /Manage Blogs 2 pending blog posts awaiting mentor approval/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: /Manage Events 1 pending event awaiting mentor approval/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: /Academy Manager 3 pending academy lessons awaiting mentor approval/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: /ARESLib Manager 1 pending ARESLib document awaiting mentor approval/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: /Cloud Resources 4 pending cloud resources awaiting mentor approval/i,
       }),
     ).toBeInTheDocument();
   });

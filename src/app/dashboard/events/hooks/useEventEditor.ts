@@ -3,6 +3,7 @@ import { collection, getDocs, query, orderBy, limit, } from "firebase/firestore"
 import { db } from "@/lib/firebaseFirestore";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
+import { notifyPendingApprovalQueue } from "@/lib/approvalNotifications";
 import { resizeAndCompressImage } from "@/lib/image";
 import { logger } from "@/utils/logger";
 import { TeamEvent } from "@/types/event";
@@ -381,8 +382,18 @@ export function useEventEditor({
           occurrenceContextDate,
           occurrenceInput,
         );
-      } else if (editId) await updateEvent(editId, newEvent);
-      else await createEvent(newEvent);
+      } else if (editId) {
+        const savedEvent = await updateEvent(editId, newEvent);
+        if (savedEvent.status === "pending") {
+          void notifyPendingApprovalQueue("events", savedEvent.id);
+        }
+      }
+      else {
+        const savedEvent = await createEvent(newEvent);
+        if (savedEvent.status === "pending") {
+          void notifyPendingApprovalQueue("events", savedEvent.id);
+        }
+      }
       onClose();
     } catch (err: unknown) {
       logger.error("Error saving event:", err);

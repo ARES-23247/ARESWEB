@@ -12,6 +12,14 @@ export type DashboardNotificationState = "idle" | "loading" | "connected" | "err
 export interface DashboardNotifications {
   pendingBlogApprovals: number;
   blogApprovalsState: DashboardNotificationState;
+  pendingEventApprovals?: number;
+  eventApprovalsState?: DashboardNotificationState;
+  pendingAcademyApprovals?: number;
+  academyApprovalsState?: DashboardNotificationState;
+  pendingAreslibApprovals?: number;
+  areslibApprovalsState?: DashboardNotificationState;
+  pendingDocumentApprovals?: number;
+  documentApprovalsState?: DashboardNotificationState;
   hasPendingInquiries: boolean;
   inquiriesState: DashboardNotificationState;
 }
@@ -19,6 +27,14 @@ export interface DashboardNotifications {
 const EMPTY_NOTIFICATIONS: DashboardNotifications = {
   pendingBlogApprovals: 0,
   blogApprovalsState: "idle",
+  pendingEventApprovals: 0,
+  eventApprovalsState: "idle",
+  pendingAcademyApprovals: 0,
+  academyApprovalsState: "idle",
+  pendingAreslibApprovals: 0,
+  areslibApprovalsState: "idle",
+  pendingDocumentApprovals: 0,
+  documentApprovalsState: "idle",
   hasPendingInquiries: false,
   inquiriesState: "idle",
 };
@@ -33,6 +49,10 @@ export function canReviewDashboardContent(role?: string): boolean {
   return !!role && APPROVER_ROLES.has(role);
 }
 
+function isNonDeletedRecord(data: Record<string, unknown>): boolean {
+  return data.isDeleted !== 1 && data.isDeleted !== true;
+}
+
 export function DashboardNotificationsProvider({
   children,
 }: {
@@ -45,53 +65,164 @@ export function DashboardNotificationsProvider({
   const [pendingBlogApprovals, setPendingBlogApprovals] = useState(0);
   const [blogApprovalsState, setBlogApprovalsState] =
     useState<DashboardNotificationState>("idle");
+  const [pendingEventApprovals, setPendingEventApprovals] = useState(0);
+  const [eventApprovalsState, setEventApprovalsState] =
+    useState<DashboardNotificationState>("idle");
+  const [pendingAcademyApprovals, setPendingAcademyApprovals] = useState(0);
+  const [academyApprovalsState, setAcademyApprovalsState] =
+    useState<DashboardNotificationState>("idle");
+  const [pendingAreslibApprovals, setPendingAreslibApprovals] = useState(0);
+  const [areslibApprovalsState, setAreslibApprovalsState] =
+    useState<DashboardNotificationState>("idle");
+  const [pendingDocumentApprovals, setPendingDocumentApprovals] = useState(0);
+  const [documentApprovalsState, setDocumentApprovalsState] =
+    useState<DashboardNotificationState>("idle");
   const { hasPendingInquiries, inquiriesState } = usePendingInquiries();
 
   useEffect(() => {
     if (!subscriptionsEnabled) {
       setPendingBlogApprovals(0);
       setBlogApprovalsState("idle");
+      setPendingEventApprovals(0);
+      setEventApprovalsState("idle");
+      setPendingAcademyApprovals(0);
+      setAcademyApprovalsState("idle");
+      setPendingAreslibApprovals(0);
+      setAreslibApprovalsState("idle");
+      setPendingDocumentApprovals(0);
+      setDocumentApprovalsState("idle");
       return;
     }
 
     setBlogApprovalsState("loading");
-    const idsByField = {
-      status: new Set<string>(),
-      approvalStatus: new Set<string>(),
-    };
-    const loadedFields = new Set<keyof typeof idsByField>();
+    setEventApprovalsState("loading");
+    setAcademyApprovalsState("loading");
+    setAreslibApprovalsState("loading");
+    setDocumentApprovalsState("loading");
 
-    const subscribe = (field: keyof typeof idsByField) =>
+    const subscribeDualFieldCount = (
+      collectionName: string,
+      statusValue: string,
+      setCount: (count: number) => void,
+      setState: (state: DashboardNotificationState) => void,
+      errorMessage: string,
+    ) => {
+      const idsByField = {
+        status: new Set<string>(),
+        approvalStatus: new Set<string>(),
+      };
+      const loadedFields = new Set<keyof typeof idsByField>();
+
+      const subscribeField = (
+        field: keyof typeof idsByField,
+        expectedValue: string,
+      ) =>
+        onSnapshot(
+          query(collection(db, collectionName), where(field, "==", expectedValue)),
+          (snapshot) => {
+            idsByField[field] = new Set(
+              snapshot.docs
+                .filter((document) => isNonDeletedRecord(document.data()))
+                .map((document) => document.id),
+            );
+            loadedFields.add(field);
+            const pendingIds = new Set([
+              ...idsByField.status,
+              ...idsByField.approvalStatus,
+            ]);
+            setCount(pendingIds.size);
+            if (loadedFields.size === 2) setState("connected");
+          },
+          (error) => {
+            logger.error(errorMessage, error);
+            setState("error");
+          },
+        );
+
+      const unsubStatus = subscribeField("status", statusValue);
+      const unsubApproval = subscribeField("approvalStatus", "pending_approval");
+      return () => {
+        unsubStatus();
+        unsubApproval();
+      };
+    };
+
+    const docsByField = {
+      status: new Map<string, Record<string, unknown>>(),
+      approvalStatus: new Map<string, Record<string, unknown>>(),
+    };
+    const loadedDocFields = new Set<keyof typeof docsByField>();
+    const subscribeDocsField = (field: keyof typeof docsByField) =>
       onSnapshot(
-        query(collection(db, "posts"), where(field, "==", "pending_approval")),
+        query(collection(db, "docs"), where(field, "==", "pending_approval")),
         (snapshot) => {
-          idsByField[field] = new Set(
-            snapshot.docs
-              .filter((document) => {
-                const data = document.data();
-                return data.isDeleted !== 1 && data.isDeleted !== true;
-              })
-              .map((document) => document.id),
-          );
-          loadedFields.add(field);
-          const pendingIds = new Set([
-            ...idsByField.status,
-            ...idsByField.approvalStatus,
+          const map = new Map<string, Record<string, unknown>>();
+          for (const document of snapshot.docs) {
+            const data = document.data();
+            if (isNonDeletedRecord(data)) {
+              map.set(document.id, data);
+            }
+          }
+          docsByField[field] = map;
+          loadedDocFields.add(field);
+          const merged = new Map<string, Record<string, unknown>>([
+            ...docsByField.status,
+            ...docsByField.approvalStatus,
           ]);
-          setPendingBlogApprovals(pendingIds.size);
-          if (loadedFields.size === 2) setBlogApprovalsState("connected");
+          let academyCount = 0;
+          let areslibCount = 0;
+          for (const data of merged.values()) {
+            if (data.displayInMathCorner === 1 || data.displayInScienceCorner === 1) {
+              academyCount += 1;
+            }
+            if (data.displayInAreslib === 1) {
+              areslibCount += 1;
+            }
+          }
+          setPendingAcademyApprovals(academyCount);
+          setPendingAreslibApprovals(areslibCount);
+          if (loadedDocFields.size === 2) {
+            setAcademyApprovalsState("connected");
+            setAreslibApprovalsState("connected");
+          }
         },
         (error) => {
-          logger.error("Pending blog approval subscription failed", error);
-          setBlogApprovalsState("error");
+          logger.error("Pending documentation approval subscription failed", error);
+          setAcademyApprovalsState("error");
+          setAreslibApprovalsState("error");
         },
       );
 
-    const unsubscribeStatus = subscribe("status");
-    const unsubscribeApprovalStatus = subscribe("approvalStatus");
+    const unsubBlogs = subscribeDualFieldCount(
+      "posts",
+      "pending_approval",
+      setPendingBlogApprovals,
+      setBlogApprovalsState,
+      "Pending blog approval subscription failed",
+    );
+    const unsubEvents = subscribeDualFieldCount(
+      "events",
+      "pending",
+      setPendingEventApprovals,
+      setEventApprovalsState,
+      "Pending event approval subscription failed",
+    );
+    const unsubDocuments = subscribeDualFieldCount(
+      "documents",
+      "pending_approval",
+      setPendingDocumentApprovals,
+      setDocumentApprovalsState,
+      "Pending cloud resource approval subscription failed",
+    );
+    const unsubDocsStatus = subscribeDocsField("status");
+    const unsubDocsApproval = subscribeDocsField("approvalStatus");
+
     return () => {
-      unsubscribeStatus();
-      unsubscribeApprovalStatus();
+      unsubBlogs();
+      unsubEvents();
+      unsubDocuments();
+      unsubDocsStatus();
+      unsubDocsApproval();
     };
   }, [subscriptionsEnabled]);
 
@@ -99,12 +230,28 @@ export function DashboardNotificationsProvider({
     () => ({
       pendingBlogApprovals,
       blogApprovalsState,
+      pendingEventApprovals,
+      eventApprovalsState,
+      pendingAcademyApprovals,
+      academyApprovalsState,
+      pendingAreslibApprovals,
+      areslibApprovalsState,
+      pendingDocumentApprovals,
+      documentApprovalsState,
       hasPendingInquiries,
       inquiriesState,
     }),
     [
       pendingBlogApprovals,
       blogApprovalsState,
+      pendingEventApprovals,
+      eventApprovalsState,
+      pendingAcademyApprovals,
+      academyApprovalsState,
+      pendingAreslibApprovals,
+      areslibApprovalsState,
+      pendingDocumentApprovals,
+      documentApprovalsState,
       hasPendingInquiries,
       inquiriesState,
     ],
