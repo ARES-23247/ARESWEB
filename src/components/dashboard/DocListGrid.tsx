@@ -209,6 +209,11 @@ export default function DocListGrid({
                             <p className="font-extrabold text-white text-sm tracking-tight truncate">
                               {item.title}
                             </p>
+                            {variant === "documents" && isPendingApproval && (
+                              <span className="px-1.5 py-0.5 bg-ares-gold/15 border border-ares-gold/30 text-ares-gold rounded text-[9px] font-black uppercase tracking-wider">
+                                Pending Approval
+                              </span>
+                            )}
                             {item.importedFrom === "ares-robotics-studio" && (
                               <span className="px-1.5 py-0.5 bg-ares-cyan/15 border border-ares-cyan/35 text-ares-cyan rounded text-[9px] font-black uppercase tracking-wider">
                                 Studio Notebook{typeof item.studioRevision === "number" ? ` r${item.studioRevision}` : ""}
@@ -360,7 +365,7 @@ export default function DocListGrid({
                             {syndicatingSlug === item.slug ? "Sending…" : "Crosspost"}
                           </button>
                         )}
-                        {item.isDeleted === 1 && canEdit && onRestore ? (
+                        {item.isDeleted === 1 && isApprover && onRestore ? (
                           <button
                             onClick={() => onRestore(item.slug)}
                             className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -368,7 +373,7 @@ export default function DocListGrid({
                           >
                             <RotateCcw size={12} aria-hidden="true" /> Restore
                           </button>
-                        ) : canEdit ? (
+                        ) : item.isDeleted !== 1 && canEdit ? (
                           <>
                             <button
                               onClick={() => onEdit(item)}
@@ -378,14 +383,16 @@ export default function DocListGrid({
                             >
                               <Pencil size={12} aria-hidden="true" />
                             </button>
-                            <button
-                              onClick={() => onDelete(item.slug)}
-                              className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                              title="Archive Record"
-                              aria-label={`Archive ${item.title}`}
-                            >
-                              <Archive size={12} aria-hidden="true" />
-                            </button>
+                            {isApprover && (
+                              <button
+                                onClick={() => onDelete(item.slug)}
+                                className="p-2 bg-white/5 hover:bg-ares-red/20 text-white/70 hover:text-white border border-white/10 rounded transition-all cursor-pointer focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                                title="Archive Record"
+                                aria-label={`Archive ${item.title}`}
+                              >
+                                <Archive size={12} aria-hidden="true" />
+                              </button>
+                            )}
                           </>
                         ) : (
                           <span className="text-[9px] text-marble/40 uppercase font-black tracking-widest">

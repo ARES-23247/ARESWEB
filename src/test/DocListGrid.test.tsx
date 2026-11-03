@@ -29,6 +29,7 @@ describe("DocListGrid archive confirmation", () => {
         items={[record]}
         loadingList={false}
         canEdit
+        isApprover
         variant="documents"
         onEdit={vi.fn()}
         onDelete={onDelete}
@@ -47,6 +48,7 @@ describe("DocListGrid archive confirmation", () => {
         items={[record]}
         loadingList={false}
         canEdit
+        isApprover
         variant="documents"
         onEdit={vi.fn()}
         onDelete={onDelete}
@@ -62,6 +64,40 @@ describe("DocListGrid archive confirmation", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Keep Record" })).toHaveFocus());
     fireEvent.click(screen.getByRole("button", { name: "Archive Record" }));
     expect(onConfirmArchive).toHaveBeenCalledOnce();
+  });
+
+  it("hides publisher-only archive and restore actions from non-approver members while keeping edit enabled", () => {
+    const { rerender } = render(
+      <DocListGrid
+        items={[{ ...record, status: "pending_approval", approvalStatus: "pending_approval" }]}
+        loadingList={false}
+        canEdit
+        isApprover={false}
+        variant="documents"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onRestore={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Pending Approval")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit Safety Guide" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Archive Safety Guide" })).not.toBeInTheDocument();
+
+    rerender(
+      <DocListGrid
+        items={[{ ...record, isDeleted: 1 }]}
+        loadingList={false}
+        canEdit
+        isApprover={false}
+        variant="documents"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onRestore={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Restore Safety Guide" })).not.toBeInTheDocument();
   });
 
   it("labels documentation drafts that require human review as pending approval", () => {

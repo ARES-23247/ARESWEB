@@ -183,6 +183,22 @@ describe("useDashboardDocController archive workflow", () => {
     expect(restoreDocMock).toHaveBeenCalledWith("archived-guide");
   });
 
+  it("prevents non-approver members from triggering archive or restore mutations", async () => {
+    authState.role = "student";
+    const { result } = renderHook(
+      () => useDashboardDocController("docs", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleDelete("safety-guide"));
+    expect(result.current.pendingArchiveSlug).toBeNull();
+    await act(async () => result.current.handleConfirmArchive());
+    expect(deleteDocMock).not.toHaveBeenCalled();
+
+    await act(async () => result.current.handleRestore("archived-guide"));
+    expect(restoreDocMock).not.toHaveBeenCalled();
+  });
+
   it("saves documentation changes as pending even for an approver", async () => {
     const { result } = renderHook(
       () => useDashboardDocController("docs", () => true),

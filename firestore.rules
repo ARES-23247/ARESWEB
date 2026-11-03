@@ -102,30 +102,21 @@ service cloud.firestore {
     function canUpdateContent(collectionName, contentId) {
       return isContentPublisher() || (
         isAuthorized() &&
-        isPendingContent(resource.data) &&
-        resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
-        resource.data.get('isApproved', false) == false &&
-        isSafeMemberDraftWrite(request.resource.data) &&
-        request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
-        (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
-        isContentOwner(collectionName, contentId)
-      );
-    }
-
-    function canUpdatePost(postSlug) {
-      return isContentPublisher() || (
-        isAuthorized() &&
         resource.data.get('isDeleted', 0) == 0 &&
         request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
         isSafeMemberPendingFields(request.resource.data) &&
         preservesOrBindsAuthorId() &&
         request.resource.data.get('importedFrom', null) == resource.data.get('importedFrom', null) &&
         (
-          isContentOwner('posts', postSlug) ||
+          isContentOwner(collectionName, contentId) ||
           (resource.data.status == 'published' && isActiveMemberEditorOnPost()) ||
           (isPendingContent(resource.data) && hasPriorCollaborativePostState() && isActiveMemberEditorOnPost())
         )
       );
+    }
+
+    function canUpdatePost(postSlug) {
+      return canUpdateContent('posts', postSlug);
     }
 
     // Reviewed documentation is saved as pending by browser clients. Only the
@@ -140,18 +131,8 @@ service cloud.firestore {
 
     function canUpdatePendingDoc(docSlug) {
       return isPendingContent(request.resource.data) &&
-        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' && (
-          isContentPublisher() || (
-            isAuthorized() &&
-            isPendingContent(resource.data) &&
-            resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
-            resource.data.get('isApproved', false) == false &&
-            isSafeMemberDraftWrite(request.resource.data) &&
-            request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
-            (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
-            isContentOwner('docs', docSlug)
-          )
-        );
+        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        canUpdateContent('docs', docSlug);
     }
 
     function canChangeApprovedDocLifecycleOnly() {
@@ -167,18 +148,18 @@ service cloud.firestore {
 
     function canCreateRevision(collectionName, contentId) {
       return isAuthorized() &&
-        request.resource.data.editedBy == request.auth.uid &&
-        (isContentPublisher() || isContentOwnerAfter(collectionName, contentId));
+        request.resource.data.editedBy == request.auth.uid && (
+          isContentPublisher() ||
+          isContentOwnerAfter(collectionName, contentId) || (
+            existsAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)) &&
+            isSafeMemberPendingFields(getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data) &&
+            getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data.get('lastEditedByUid', '') == request.auth.uid
+          )
+        );
     }
 
     function canCreatePostRevision(postSlug) {
-      return canCreateRevision('posts', postSlug) || (
-        isAuthorized() &&
-        request.resource.data.editedBy == request.auth.uid &&
-        existsAfter(/databases/$(database)/documents/posts/$(postSlug)) &&
-        isSafeMemberPendingFields(getAfter(/databases/$(database)/documents/posts/$(postSlug)).data) &&
-        getAfter(/databases/$(database)/documents/posts/$(postSlug)).data.get('lastEditedByUid', '') == request.auth.uid
-      );
+      return canCreateRevision('posts', postSlug);
     }
 
     function hasNoServerDriveFields() {

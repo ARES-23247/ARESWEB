@@ -171,6 +171,14 @@ export function useEventEditor({
     return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
   }, [user, authorizedUser]);
 
+  const canEditEventDetails = useMemo(() => {
+    if (!canEdit) return false;
+    if (canPublishDirectly) return true;
+    if (!editId) return true;
+    if (occurrenceContextDate && editScope === "occurrence") return false;
+    return (eventToEdit?.status || "published") !== "published";
+  }, [canEdit, canPublishDirectly, editId, occurrenceContextDate, editScope, eventToEdit?.status]);
+
   // Preserve an explicit editor error when the shared profile DTO is unavailable.
   useEffect(() => {
     if (!profileQuery.error) return;
@@ -311,7 +319,7 @@ export function useEventEditor({
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim() || !formDateStart) return;
-    if (!canEdit) return;
+    if (!canEditEventDetails) return;
 
     let canonicalDateStart: string;
     let canonicalDateEnd: string | undefined;
@@ -420,6 +428,7 @@ export function useEventEditor({
 
   // Action: Revert To Revision
   const handleRevertToRevision = (rev: EventRevision) => {
+    if (!canEditEventDetails) return;
     setFormTitle(rev.title);
     setFormDateStart(storedDateTimeToLocalInput(rev.dateStart));
     setFormDateEnd(storedDateTimeToLocalInput(rev.dateEnd));
@@ -534,20 +543,20 @@ export function useEventEditor({
 
   const handleCancelOccurrence = useCallback(
     async (date: string) => {
-      if (!editId) return;
+      if (!editId || !canPublishDirectly) return;
       await cancelEventOccurrence(editId, date);
       await refreshOccurrences();
     },
-    [editId, refreshOccurrences],
+    [editId, canPublishDirectly, refreshOccurrences],
   );
 
   const handleRestoreOccurrence = useCallback(
     async (date: string) => {
-      if (!editId) return;
+      if (!editId || !canPublishDirectly) return;
       await restoreEventOccurrence(editId, date);
       await refreshOccurrences();
     },
-    [editId, refreshOccurrences],
+    [editId, canPublishDirectly, refreshOccurrences],
   );
 
   return {
@@ -599,6 +608,7 @@ export function useEventEditor({
     currentUser: user,
     editId,
     canEdit,
+    canEditEventDetails,
     isAdmin,
     canPublishDirectly,
     displayedMembers,

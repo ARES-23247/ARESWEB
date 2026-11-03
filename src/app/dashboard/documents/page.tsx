@@ -26,10 +26,15 @@ export default function DocumentsManagementPage() {
     selectedDoc,
     isEditorOpen,
     canEdit,
+    isApprover,
     handleOpenEdit,
     handleOpenCreate,
     handleCloseEditor,
     handleSave,
+    handleApproveAndPublish,
+    approvingSlug,
+    approvalNotice,
+    dismissApprovalNotice,
     handleDelete,
     handleRestore,
     handleCancelArchive,
@@ -79,6 +84,26 @@ export default function DocumentsManagementPage() {
 
       {canManageDrive && <GoogleDriveLibraryBrowser />}
 
+      {approvalNotice && (
+        <div
+          role={approvalNotice.kind === "error" ? "alert" : "status"}
+          className={`rounded-lg border px-4 py-3 text-xs flex items-center justify-between gap-4 ${
+            approvalNotice.kind === "error"
+              ? "border-ares-red/50 bg-ares-red/15 text-white"
+              : "border-ares-cyan/40 bg-ares-cyan/10 text-ares-cyan"
+          }`}
+        >
+          <span>{approvalNotice.message}</span>
+          <button
+            type="button"
+            onClick={dismissApprovalNotice}
+            className="rounded border border-current/35 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider hover:bg-white/10"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* List Grid View */}
       <div className="flex justify-end">
         <button
@@ -94,6 +119,9 @@ export default function DocumentsManagementPage() {
         items={showArchived ? archivedDocs : docs}
         loadingList={loadingList}
         canEdit={canEdit}
+        isApprover={isApprover}
+        onApprove={handleApproveAndPublish}
+        approvingSlug={approvingSlug}
         variant="documents"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}

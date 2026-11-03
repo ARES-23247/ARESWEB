@@ -185,16 +185,16 @@ export default function EventFormRoster({
                       onClick={() => {
                         if (isAdmin) handleToggleAttendance(su.userId, !!su.attended);
                       }}
-                      className={`cursor-pointer transition-colors p-1 rounded-full ${
+                      className={`cursor-pointer transition-colors p-1 rounded-full disabled:cursor-default ${
                         su.attended
                           ? "text-ares-gold hover:text-white"
                           : "text-marble/35 hover:text-white"
                       }`}
                       title={isAdmin ? "Toggle Attendance status" : "RSVP Status"}
-                    >
-                      {su.attended ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                       aria-label={isAdmin ? `Toggle attendance for ${su.nickname}` : `${su.nickname} RSVP status`}
                       disabled={!isAdmin}
+                    >
+                      {su.attended ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                     </button>
                     <div className="text-left">
                       <p className="text-xs font-bold text-white uppercase tracking-tight">

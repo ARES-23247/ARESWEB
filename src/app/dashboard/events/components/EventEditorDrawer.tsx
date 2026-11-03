@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Trash2, X, Maximize2, Minimize2, Sparkles, AlertCircle, RotateCcw, } from "lucide-react";
+import { Trash2, X, Maximize2, Minimize2, Sparkles, AlertCircle, RotateCcw, Shield, } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import EventGalleryTab from "./EventGalleryTab";
@@ -100,6 +100,7 @@ export default function EventEditorDrawer({
     currentUser,
     editId,
     canEdit,
+    canEditEventDetails,
     isAdmin,
     canPublishDirectly,
     displayedMembers,
@@ -205,7 +206,7 @@ export default function EventEditorDrawer({
             }
           />
 
-          {activeTab === "edit" && canEdit && (
+          {activeTab === "edit" && canEditEventDetails && (
             <button
               type="button"
               onClick={() => setShowAiSidebar(!showAiSidebar)}
@@ -265,9 +266,21 @@ export default function EventEditorDrawer({
               <form
                 onSubmit={handleSaveEvent}
                 className={`space-y-6 flex-grow overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/5 transition-all duration-300 ${
-                  showAiSidebar ? "w-full lg:max-w-[68%]" : "w-full"
+                  showAiSidebar && canEditEventDetails ? "w-full lg:max-w-[68%]" : "w-full"
                 }`}
               >
+                {editId && canEdit && !canEditEventDetails && (
+                  <div
+                    role="status"
+                    className="rounded-lg border border-ares-gold/30 bg-ares-gold/10 px-4 py-3 text-xs text-ares-gold flex items-start gap-2.5 text-left"
+                  >
+                    <Shield size={15} className="shrink-0 mt-0.5" />
+                    <span>
+                      Published event schedules and individual repeating sessions are managed by coaches, mentors, and admins. Use the <strong>Roster &amp; RSVPs</strong> or <strong>Gallery</strong> tabs above to RSVP or upload event photos.
+                    </span>
+                  </div>
+                )}
+
                 {occurrenceContextDate && (
                   <fieldset className="rounded-xl border border-ares-gold/25 bg-ares-gold/5 p-4">
                     <legend className="px-1 text-[10px] font-black uppercase tracking-widest text-ares-gold">
@@ -345,7 +358,7 @@ export default function EventEditorDrawer({
                   formStatus={formStatus}
                   setFormStatus={setFormStatus}
                   locations={locations}
-                  canEdit={canEdit}
+                  canEdit={canEditEventDetails}
                   canPublishDirectly={canPublishDirectly}
                   setIsLocationModalOpen={setIsLocationModalOpen}
                   setIsPhotoPickerOpen={setIsPhotoPickerOpen}
@@ -353,7 +366,7 @@ export default function EventEditorDrawer({
 
                 {editScope === "series" && (
                   <EventRecurrenceSection
-                    canEdit={canEdit}
+                    canEdit={canEditEventDetails}
                     formDateStart={formDateStart}
                     formRepeats={formRepeats}
                     setFormRepeats={setFormRepeats}
@@ -364,7 +377,7 @@ export default function EventEditorDrawer({
                     formUntil={formUntil}
                     setFormUntil={setFormUntil}
                     isEditingExistingRecurring={Boolean(
-                      editId && eventToEdit?.recurrence,
+                      editId && eventToEdit?.recurrence && canPublishDirectly,
                     )}
                     occurrenceExceptions={occurrenceExceptions}
                     onCancelOccurrence={handleCancelOccurrence}
@@ -413,7 +426,7 @@ export default function EventEditorDrawer({
                     >
                       Cancel
                     </button>
-                    {canEdit && (
+                    {canEditEventDetails && (
                       <button
                         type="submit"
                         disabled={
@@ -435,7 +448,7 @@ export default function EventEditorDrawer({
               </form>
 
               {/* SIDE AI PANEL */}
-              {showAiSidebar && canEdit && (
+              {showAiSidebar && canEditEventDetails && (
                 <EventEditorAiCopilot
                   formTitle={formTitle}
                   formDescription={formDescription}

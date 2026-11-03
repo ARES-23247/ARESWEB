@@ -365,7 +365,7 @@ export function useDashboardDocController(
   };
 
   const handleDelete = async (slug: string) => {
-    if (!canEdit) return;
+    if (!isApprover) return;
     setArchiveError(null);
     setPendingArchiveSlug(slug);
   };
@@ -377,7 +377,7 @@ export function useDashboardDocController(
   };
 
   const handleConfirmArchive = async () => {
-    if (!canEdit || !pendingArchiveSlug || isArchiving) return;
+    if (!isApprover || !pendingArchiveSlug || isArchiving) return;
     setIsArchiving(true);
     setArchiveError(null);
     try {
@@ -393,7 +393,7 @@ export function useDashboardDocController(
   };
 
   const handleRestore = async (slug: string) => {
-    if (!canEdit) return;
+    if (!isApprover) return;
     await restoreDoc(slug);
   };
 

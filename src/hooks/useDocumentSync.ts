@@ -332,11 +332,11 @@ export const useDocumentSync = (
             approvedByUid: deleteField(),
             approvedByRole: deleteField(),
             isApproved: deleteField(),
-            ...(collectionName === "posts" && !options.isCreate && user?.uid
+            ...(!options.isCreate && user?.uid
               ? { lastEditedByUid: user.uid }
               : {}),
           }
-        : isApprovedPublishSave && collectionName === "posts"
+        : isApprovedPublishSave
           ? { lastEditedByUid: deleteField() }
           : {}),
     };

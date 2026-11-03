@@ -357,4 +357,57 @@ describe("useDocumentSync", () => {
       { merge: true },
     );
   });
+
+  it("records the active editor on pending updates across docs and documents collections", async () => {
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
+    const transactionSet = vi.fn();
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => true }),
+          set: transactionSet,
+        }),
+    );
+
+    for (const collectionName of ["docs", "documents"] as const) {
+      transactionSet.mockClear();
+      const { result } = renderHook(() =>
+        useDocumentSync(collectionName, () => true),
+      );
+      await act(() =>
+        result.current.saveDoc(
+          "published-item",
+          {
+            ...payload,
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+          },
+          "Member",
+          "",
+          { isCreate: false },
+        ),
+      );
+      expect(transactionSet).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        expect.objectContaining({
+          status: "pending_approval",
+          approvalStatus: "pending_approval",
+          lastEditedByUid: "member-1",
+        }),
+        { merge: true },
+      );
+    }
+  });
 });

@@ -537,4 +537,65 @@ describe("useEventEditor custom hook", () => {
     expect(setFormRepeats).toHaveBeenCalledWith("weekly");
     expect(setFormByDay).toHaveBeenCalledWith(["TH"]);
   });
+
+  it("prevents non-publisher students from editing published events or skipping occurrences while allowing draft creation", async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser,
+      authorizedUser: { email: "test@example.com", role: "student" },
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+      loginWithMockUser: vi.fn(),
+    });
+
+    const publishedEvent = {
+      id: "published-1",
+      title: "Published Event",
+      dateStart: "2026-08-20T20:00:00.000Z",
+      category: "internal" as const,
+      status: "published" as const,
+      recurrence: { frequency: "weekly" as const, interval: 1, byDay: ["TH"] },
+    };
+
+    const { result, rerender } = renderHook(
+      (props: Parameters<typeof useEventEditor>[0]) => useEventEditor(props),
+      {
+        initialProps: {
+          isOpen: true,
+          onClose: vi.fn(),
+          eventToEdit: publishedEvent as Parameters<typeof useEventEditor>[0]["eventToEdit"],
+          locations: mockLocations,
+          setLocations: mockSetLocations,
+          teamMembers: mockTeamMembers,
+        },
+      },
+    );
+
+    expect(result.current.canEdit).toBe(true);
+    expect(result.current.canPublishDirectly).toBe(false);
+    expect(result.current.canEditEventDetails).toBe(false);
+
+    await act(async () => {
+      await result.current.handleSaveEvent({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent);
+      await result.current.handleCancelOccurrence("2026-08-27");
+    });
+
+    expect(updateEvent).not.toHaveBeenCalled();
+    expect(cancelEventOccurrence).not.toHaveBeenCalled();
+
+    rerender({
+      isOpen: true,
+      onClose: vi.fn(),
+      eventToEdit: null,
+      locations: mockLocations,
+      setLocations: mockSetLocations,
+      teamMembers: mockTeamMembers,
+    });
+
+    expect(result.current.canEditEventDetails).toBe(true);
+  });
 });
