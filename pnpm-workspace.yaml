@@ -4,8 +4,8 @@ packages:
   - "packages/*"
 optimisticRepeatInstall: false
 overrides:
-  dompurify: ^3.4.16
-  monaco-editor>dompurify: ^3.4.16
+  dompurify: ^3.4.17
+  monaco-editor>dompurify: ^3.4.17
   hono: ^4.13.5
   js-yaml: ^4.3.2
   morgan: ^1.12.0
@@ -17,7 +17,9 @@ overrides:
   # Pub/Sub only consumes the stable W3CTraceContextPropagator export.
   '@google-cloud/pubsub>@opentelemetry/core': ^2.8.0
   '@hono/node-server': ^2.0.5
-  body-parser: ^1.20.6
+  body-parser: ^1.20.9
+  zod: ^4.6.6
+  re2js: ^2.8.7
   'brace-expansion@<2.1.7': ^2.1.7
   fast-uri: ^3.1.8
   ip-address: ^10.7.1

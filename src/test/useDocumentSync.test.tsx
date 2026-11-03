@@ -4,6 +4,7 @@ import { DocumentSlugConflictError, DOCUMENT_PAGE_SIZE, useDocumentSync, } from 
 
 const firestoreMocks = vi.hoisted(() => ({
   collection: vi.fn(() => ({ kind: "collection" })),
+  deleteField: vi.fn(() => ({ kind: "deleteField" })),
   doc: vi.fn((...parts: string[]) => ({ kind: "doc", parts })),
   limit: vi.fn((count: number) => ({ kind: "limit", count })),
   onSnapshot: vi.fn(),
@@ -16,6 +17,7 @@ const firestoreMocks = vi.hoisted(() => ({
 
 vi.mock("firebase/firestore", () => ({
   collection: firestoreMocks.collection,
+  deleteField: firestoreMocks.deleteField,
   doc: firestoreMocks.doc,
   limit: firestoreMocks.limit,
   onSnapshot: firestoreMocks.onSnapshot,
@@ -270,5 +272,142 @@ describe("useDocumentSync", () => {
       expect.anything(),
       expect.objectContaining({ isDeleted: 0 }),
     );
+  });
+
+  it("clears stale approval metadata and records the active editor when saving a pending blog post update", async () => {
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
+    const transactionSet = vi.fn();
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => true }),
+          set: transactionSet,
+        }),
+    );
+    const { result } = renderHook(() =>
+      useDocumentSync("posts", () => true),
+    );
+
+    await act(() =>
+      result.current.saveDoc(
+        "published-post",
+        {
+          ...payload,
+          status: "pending_approval",
+          approvalStatus: "pending_approval",
+        },
+        "Member",
+        "",
+        { isCreate: false },
+      ),
+    );
+
+    expect(transactionSet).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        approvedBy: { kind: "deleteField" },
+        approvedAt: { kind: "deleteField" },
+        approvedByUid: { kind: "deleteField" },
+        approvedByRole: { kind: "deleteField" },
+        isApproved: { kind: "deleteField" },
+        lastEditedByUid: "member-1",
+      }),
+      { merge: true },
+    );
+
+    transactionSet.mockClear();
+    await act(() =>
+      result.current.saveDoc(
+        "published-post",
+        {
+          ...payload,
+          status: "published",
+          approvalStatus: "approved",
+          approvedBy: "Coach",
+          approvedAt: "2026-11-02T12:00:00.000Z",
+        },
+        "Coach",
+        "",
+      ),
+    );
+
+    expect(transactionSet).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({
+        status: "published",
+        approvalStatus: "approved",
+        approvedBy: "Coach",
+        lastEditedByUid: { kind: "deleteField" },
+      }),
+      { merge: true },
+    );
+  });
+
+  it("records the active editor on pending updates across docs and documents collections", async () => {
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
+    const transactionSet = vi.fn();
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => true }),
+          set: transactionSet,
+        }),
+    );
+
+    for (const collectionName of ["docs", "documents"] as const) {
+      transactionSet.mockClear();
+      const { result } = renderHook(() =>
+        useDocumentSync(collectionName, () => true),
+      );
+      await act(() =>
+        result.current.saveDoc(
+          "published-item",
+          {
+            ...payload,
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+          },
+          "Member",
+          "",
+          { isCreate: false },
+        ),
+      );
+      expect(transactionSet).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        expect.objectContaining({
+          status: "pending_approval",
+          approvalStatus: "pending_approval",
+          lastEditedByUid: "member-1",
+        }),
+        { merge: true },
+      );
+    }
   });
 });

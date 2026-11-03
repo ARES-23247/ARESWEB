@@ -1,6 +1,8 @@
-import { renderHook, act } from "@testing-library/react";
+import React from "react";
+import { render, renderHook, act, fireEvent, screen } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useEventEditor } from "../app/dashboard/events/hooks/useEventEditor";
+import EventRecurrenceSection from "../app/dashboard/events/components/EventRecurrenceSection";
 import { useAuth } from "../context/AuthContext";
 import { onSnapshot, getDocs } from "firebase/firestore";
 import { authenticatedFetch } from "@/lib/api";
@@ -92,9 +94,9 @@ describe("useEventEditor custom hook", () => {
     displayName: "Test User",
     email: "test@example.com",
   } as unknown as User;
-  const mockLocations = [{ id: "mars-building", name: "Mars Building", address: "123 Mars Way" },];
+  const mockLocations = [{ id: "mars-building", name: "Mars Building", address: "123 Mars Way" }];
   const mockSetLocations = vi.fn();
-  const mockTeamMembers = [{ uid: "member-1", nickname: "Aariketh", avatar: "avatar1" },];
+  const mockTeamMembers = [{ uid: "member-1", nickname: "Aariketh", avatar: "avatar1" }];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -496,10 +498,104 @@ describe("useEventEditor custom hook", () => {
     expect(associateEventPhoto).toHaveBeenCalledWith(
       "event-123",
       "photo-1",
-      null,);
+      null,
+    );
 
     await act(async () => {
       await result.current.handleDeletePhoto("photo-1");
     });
-    expect(archiveEventPhoto).toHaveBeenCalledWith("event-123", "photo-1"); });
+    expect(archiveEventPhoto).toHaveBeenCalledWith("event-123", "photo-1");
   });
+
+  it("seeds the local weekday rather than the UTC weekday when enabling weekly recurrence for evening events", () => {
+    const setFormRepeats = vi.fn();
+    const setFormByDay = vi.fn();
+
+    render(
+      <EventRecurrenceSection
+        canEdit={true}
+        formDateStart="2026-08-20T20:00"
+        formRepeats="none"
+        setFormRepeats={setFormRepeats}
+        formInterval={1}
+        setFormInterval={vi.fn()}
+        formByDay={[]}
+        setFormByDay={setFormByDay}
+        formUntil=""
+        setFormUntil={vi.fn()}
+        isEditingExistingRecurring={false}
+        occurrenceExceptions={[]}
+        onCancelOccurrence={vi.fn()}
+        onRestoreOccurrence={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Repeat pattern"), {
+      target: { value: "weekly" },
+    });
+
+    expect(setFormRepeats).toHaveBeenCalledWith("weekly");
+    expect(setFormByDay).toHaveBeenCalledWith(["TH"]);
+  });
+
+  it("prevents non-publisher students from editing published events or skipping occurrences while allowing draft creation", async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: testUser,
+      authorizedUser: { email: "test@example.com", role: "student" },
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+      loginWithMockUser: vi.fn(),
+    });
+
+    const publishedEvent = {
+      id: "published-1",
+      title: "Published Event",
+      dateStart: "2026-08-20T20:00:00.000Z",
+      category: "internal" as const,
+      status: "published" as const,
+      recurrence: { frequency: "weekly" as const, interval: 1, byDay: ["TH"] },
+    };
+
+    const { result, rerender } = renderHook(
+      (props: Parameters<typeof useEventEditor>[0]) => useEventEditor(props),
+      {
+        initialProps: {
+          isOpen: true,
+          onClose: vi.fn(),
+          eventToEdit: publishedEvent as Parameters<typeof useEventEditor>[0]["eventToEdit"],
+          locations: mockLocations,
+          setLocations: mockSetLocations,
+          teamMembers: mockTeamMembers,
+        },
+      },
+    );
+
+    expect(result.current.canEdit).toBe(true);
+    expect(result.current.canPublishDirectly).toBe(false);
+    expect(result.current.canEditEventDetails).toBe(false);
+
+    await act(async () => {
+      await result.current.handleSaveEvent({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent);
+      await result.current.handleCancelOccurrence("2026-08-27");
+    });
+
+    expect(updateEvent).not.toHaveBeenCalled();
+    expect(cancelEventOccurrence).not.toHaveBeenCalled();
+
+    rerender({
+      isOpen: true,
+      onClose: vi.fn(),
+      eventToEdit: null,
+      locations: mockLocations,
+      setLocations: mockSetLocations,
+      teamMembers: mockTeamMembers,
+    });
+
+    expect(result.current.canEditEventDetails).toBe(true);
+  });
+});

@@ -1852,14 +1852,17 @@ describe("calendar recurrence", () => {
     });
     collectionRef.get.mockResolvedValue({ docs: [thursday] });
     (adminDb as any).__occurrences.queryGet.mockResolvedValue({
-      docs: [occurrenceExceptionDocument("weekly-1", "2026-09-03", { isCancelled: 1 })],
+      docs: [
+        occurrenceExceptionDocument("weekly-1", "2026-09-03", { isCancelled: 1 }),
+        occurrenceExceptionDocument("weekly-1", "2026-11-12", { isCancelled: 1 }),
+      ],
     });
     await handler("/feed", "get")(req, res, next);
     const body = res.send.mock.calls[0][0] as string;
     expect(body).toContain(
       "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20261231T235959Z",
     );
-    expect(body).toContain("EXDATE:20260903T180000Z");
+    expect(body).toContain("EXDATE:20260903T180000Z,20261112T190000Z");
     expect(body).toContain("UID:weekly-1@aresfirst.org");
   });
 

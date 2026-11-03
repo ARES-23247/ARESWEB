@@ -8,6 +8,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -285,6 +286,65 @@ describe("Firestore zero-trust rules", () => {
       updateDoc(doc(mentorDb, "posts", "published-post"), {
         title: "Reviewed update",
         status: "published",
+        approvalStatus: "approved",
+        approvedBy: "Mentor",
+        approvedAt: "2026-08-20T12:10:00.000Z",
+        authorId: "mentor-user",
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(otherDb, "posts", "published-post"), {
+        title: "Student edit keeping stale approval",
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "other-member",
+      }),
+    );
+    await assertSucceeds(
+      runTransaction(otherDb, async (transaction) => {
+        transaction.set(
+          doc(otherDb, "posts", "published-post"),
+          {
+            title: "Student edit awaiting mentor review",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            approvedBy: deleteField(),
+            approvedAt: deleteField(),
+            approvedByUid: deleteField(),
+            approvedByRole: deleteField(),
+            isApproved: deleteField(),
+            lastEditedByUid: "other-member",
+          },
+          { merge: true },
+        );
+        transaction.set(
+          doc(otherDb, "posts", "published-post", "revisions", "rev-student-1"),
+          {
+            editedBy: "other-member",
+            timestamp: "2026-08-20T12:15:00.000Z",
+          },
+        );
+      }),
+    );
+    await assertSucceeds(
+      runTransaction(otherDb, async (transaction) => {
+        transaction.set(
+          doc(otherDb, "posts", "published-post"),
+          {
+            title: "Student follow-up edit before mentor review",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            lastEditedByUid: "other-member",
+          },
+          { merge: true },
+        );
+        transaction.set(
+          doc(otherDb, "posts", "published-post", "revisions", "rev-student-2"),
+          {
+            editedBy: "other-member",
+            timestamp: "2026-08-20T12:16:00.000Z",
+          },
+        );
       }),
     );
     await assertFails(
@@ -345,6 +405,85 @@ describe("Firestore zero-trust rules", () => {
     await assertFails(setDoc(doc(mentorDb, "content_approval_audit", "fake"), {
       action: "content.approved",
     }));
+  });
+
+  it("allows members to submit pending-approval edits on published docs and documents while blocking member archival", async () => {
+    await seedAuthorizedUser("member-editor", "member");
+    const memberDb = testEnvironment.authenticatedContext("member-editor").firestore();
+
+    await seedDocument("docs", "published-lesson", {
+      title: "Published lesson",
+      content: "Original lesson",
+      status: "published",
+      approvalStatus: "approved",
+      approvedAt: "2026-08-20T12:00:00.000Z",
+      isDeleted: 0,
+    });
+    await seedDocument("documents", "published-spec", {
+      title: "Published spec",
+      description: "Original spec",
+      status: "published",
+      approvalStatus: "approved",
+      approvedAt: "2026-08-20T12:00:00.000Z",
+      isDeleted: 0,
+      source: "google_drive",
+      driveFileId: "1DRIVE_FILE_123456789",
+    });
+
+    await assertFails(updateDoc(doc(memberDb, "docs", "published-lesson"), {
+      isDeleted: 1,
+      updatedAt: "2026-08-21T12:00:00.000Z",
+    }));
+    await assertFails(updateDoc(doc(memberDb, "documents", "published-spec"), {
+      isDeleted: 1,
+      updatedAt: "2026-08-21T12:00:00.000Z",
+    }));
+
+    await assertSucceeds(
+      runTransaction(memberDb, async (transaction) => {
+        transaction.set(
+          doc(memberDb, "docs", "published-lesson"),
+          {
+            content: "Member pending lesson edit",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            approvedAt: deleteField(),
+            lastEditedByUid: "member-editor",
+          },
+          { merge: true },
+        );
+        transaction.set(
+          doc(memberDb, "docs", "published-lesson", "revisions", "rev-member-1"),
+          {
+            editedBy: "member-editor",
+            timestamp: "2026-08-21T12:05:00.000Z",
+          },
+        );
+      }),
+    );
+
+    await assertSucceeds(
+      runTransaction(memberDb, async (transaction) => {
+        transaction.set(
+          doc(memberDb, "documents", "published-spec"),
+          {
+            description: "Member pending spec edit",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            approvedAt: deleteField(),
+            lastEditedByUid: "member-editor",
+          },
+          { merge: true },
+        );
+        transaction.set(
+          doc(memberDb, "documents", "published-spec", "revisions", "rev-member-1"),
+          {
+            editedBy: "member-editor",
+            timestamp: "2026-08-21T12:06:00.000Z",
+          },
+        );
+      }),
+    );
   });
 
   it("limits docs_feedback writes to authorized team members", async () => {

@@ -24,7 +24,7 @@ const INTERVAL_LABELS: Record<number, string> = {
 function weekdayOf(dateStart: string): string | null {
   const date = new Date(dateStart);
   if (Number.isNaN(date.getTime())) return null;
-  return WEEKDAYS[(date.getUTCDay() + 6) % 7].code;
+  return WEEKDAYS[(date.getDay() + 6) % 7].code;
 }
 
 interface EventRecurrenceSectionProps {

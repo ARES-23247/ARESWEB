@@ -8,13 +8,17 @@ import {
   useDashboardDocController,
 } from "@/hooks/dashboard/useDashboardDocController";
 
-const { authenticatedFetchMock, deleteDocMock, restoreDocMock, saveDocMock } = vi.hoisted(() => ({
+const { authState, authenticatedFetchMock, deleteDocMock, restoreDocMock, saveDocMock } = vi.hoisted(() => ({
+  authState: {
+    role: "mentor",
+    name: "CircuitFox",
+  },
   authenticatedFetchMock: vi.fn(() => Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200,
           headers: { "Content-Type": "application/json" },
         }))),
-  deleteDocMock: vi.fn(() => Promise.resolve()),
-  restoreDocMock: vi.fn(() => Promise.resolve()),
-  saveDocMock: vi.fn(() => Promise.resolve()),
+  deleteDocMock: vi.fn((..._args: unknown[]) => Promise.resolve()),
+  restoreDocMock: vi.fn((..._args: unknown[]) => Promise.resolve()),
+  saveDocMock: vi.fn((..._args: unknown[]) => Promise.resolve()),
 }));
 
 vi.mock("@/lib/api", () => ({ authenticatedFetch: authenticatedFetchMock }));
@@ -22,7 +26,7 @@ vi.mock("@/lib/api", () => ({ authenticatedFetch: authenticatedFetchMock }));
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     user: { uid: "member_uid", displayName: "CircuitFox", photoURL: "https://avatars.example.org/member.png", },
-    authorizedUser: { role: "mentor", name: "CircuitFox" },
+    authorizedUser: { role: authState.role, name: authState.name },
   }),
   useOptionalAuth: () => undefined,
 }));
@@ -98,6 +102,8 @@ function documentationReviewPayload(overrides: Record<string, unknown> = {}) {
 describe("useDashboardDocController archive workflow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.role = "mentor";
+    authState.name = "CircuitFox";
     deleteDocMock.mockResolvedValue(undefined);
     restoreDocMock.mockResolvedValue(undefined);
     saveDocMock.mockResolvedValue(undefined);
@@ -175,6 +181,22 @@ describe("useDashboardDocController archive workflow", () => {
     await act(async () => result.current.handleRestore("archived-guide"));
 
     expect(restoreDocMock).toHaveBeenCalledWith("archived-guide");
+  });
+
+  it("prevents non-approver members from triggering archive or restore mutations", async () => {
+    authState.role = "student";
+    const { result } = renderHook(
+      () => useDashboardDocController("docs", () => true),
+      { wrapper },
+    );
+
+    await act(async () => result.current.handleDelete("safety-guide"));
+    expect(result.current.pendingArchiveSlug).toBeNull();
+    await act(async () => result.current.handleConfirmArchive());
+    expect(deleteDocMock).not.toHaveBeenCalled();
+
+    await act(async () => result.current.handleRestore("archived-guide"));
+    expect(restoreDocMock).not.toHaveBeenCalled();
   });
 
   it("saves documentation changes as pending even for an approver", async () => {
@@ -383,6 +405,55 @@ describe("useDashboardDocController archive workflow", () => {
     } as never));
 
     expect(saveDocMock).toHaveBeenCalledOnce();
+    expect(authenticatedFetchMock).not.toHaveBeenCalled();
+  });
+
+  it("moves a published blog post back to pending_approval and strips approval stamps when edited by a student", async () => {
+    authState.role = "student";
+    authState.name = "StudentBuilder";
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    act(() => result.current.handleOpenEdit({
+      slug: "published-post",
+      title: "Published Post",
+      status: "published",
+      approvalStatus: "approved",
+      approvedBy: "Coach",
+      approvedAt: "2026-10-01T12:00:00.000Z",
+      original_authorNickname: "OriginalAuthor",
+      original_authorAvatar: "https://avatars.example.org/original.png",
+    } as never));
+
+    await act(async () => result.current.handleSave("published-post", {
+      title: "Published Post Updated by Student",
+      category: "Build",
+      content: "Updated content awaiting mentor review.",
+      description: "Student edit",
+      status: "published",
+      approvalStatus: "approved",
+      approvedBy: "Coach",
+      approvedAt: "2026-10-01T12:00:00.000Z",
+    } as never));
+
+    expect(saveDocMock).toHaveBeenCalledWith(
+      "published-post",
+      expect.objectContaining({
+        title: "Published Post Updated by Student",
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        original_authorNickname: "OriginalAuthor",
+        original_authorAvatar: "https://avatars.example.org/original.png",
+      }),
+      "StudentBuilder",
+      "https://avatars.example.org/member.png",
+      { isCreate: false },
+    );
+    const savedPayload = saveDocMock.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(savedPayload).not.toHaveProperty("approvedBy");
+    expect(savedPayload).not.toHaveProperty("approvedAt");
     expect(authenticatedFetchMock).not.toHaveBeenCalled();
   });
 

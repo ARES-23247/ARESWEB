@@ -148,7 +148,7 @@ export default function ShiftScheduleEditor({
             >
               Location / Venue
             </label>
-            {canEdit && (
+            {canEdit && canPublishDirectly && (
               <button
                 type="button"
                 onClick={() => setIsLocationModalOpen(true)}

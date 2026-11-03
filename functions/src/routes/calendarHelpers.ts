@@ -18,10 +18,121 @@ const dateTimeSchema = z
   .max(40)
   .refine((value) => !Number.isNaN(new Date(value).getTime()), "Date must be valid");
 
-export const WEEKDAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU",] as const;
+export const WEEKDAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
 export type WeekdayCode = (typeof WEEKDAY_CODES)[number];
 
 export const weekdaySet = new Set<string>(WEEKDAY_CODES);
+
+/**
+ * Team home timezone (Morgantown, WV). Recurring sessions are scheduled in the
+ * team's wall-clock time so Daylight Saving Time transitions do not shift event
+ * hours by an hour.
+ */
+export const CALENDAR_TIME_ZONE = "America/New_York";
+
+interface ZonedDateTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getZonedFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = formatterCache.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    formatterCache.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+function getZonedDateTimeParts(
+  date: Date,
+  timeZone = CALENDAR_TIME_ZONE,
+): ZonedDateTimeParts {
+  const parts = getZonedFormatter(timeZone).formatToParts(date);
+  const map: Record<string, number> = {};
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      map[part.type] = Number.parseInt(part.value, 10);
+    }
+  }
+  return {
+    year: map.year,
+    month: map.month,
+    day: map.day,
+    hour: map.hour % 24,
+    minute: map.minute,
+    second: map.second,
+  };
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone = CALENDAR_TIME_ZONE): number {
+  const parts = getZonedDateTimeParts(date, timeZone);
+  const asUtcMs = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+    date.getUTCMilliseconds(),
+  );
+  return asUtcMs - date.getTime();
+}
+
+function zonedWallTimeToDate(
+  parts: ZonedDateTimeParts,
+  millisecond = 0,
+  timeZone = CALENDAR_TIME_ZONE,
+): Date {
+  const utcGuess = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+    millisecond,
+  );
+  const firstOffset = getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
+  const firstCandidate = utcGuess - firstOffset;
+  const secondOffset = getTimeZoneOffsetMs(new Date(firstCandidate), timeZone);
+  return new Date(utcGuess - secondOffset);
+}
+
+/**
+ * Extracts the YYYY-MM-DD calendar date of an ISO datetime in the team
+ * timezone (`America/New_York`) for zoned timestamps, or directly for floating
+ * ISO strings without an explicit offset.
+ */
+export function calendarDateInTimeZone(
+  value: string,
+  timeZone = CALENDAR_TIME_ZONE,
+): string | null {
+  const floatingDateTime = value.match(/^(\d{4}-\d{2}-\d{2})(?:$|T)/);
+  const hasExplicitTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  if (floatingDateTime && !hasExplicitTimezone) {
+    return floatingDateTime[1];
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = getZonedDateTimeParts(date, timeZone);
+  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
 
 /**
  * Weekly recurrence: repeat on the selected weekdays every `interval` weeks,
@@ -41,7 +152,9 @@ export const recurrenceSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.until && new Date(`${value.until}T23:59:59Z`).getTime() <
+    if (
+      value.until &&
+      new Date(`${value.until}T23:59:59Z`).getTime() <
         new Date("2000-01-01T00:00:00Z").getTime()
     ) {
       context.addIssue({
@@ -152,7 +265,8 @@ export function occurrenceDates(
   fromDate: string,
   toDate: string,
 ): string[] {
-  const first = new Date(`${firstDateStart.slice(0, 10)}T00:00:00Z`);
+  const firstDate = calendarDateInTimeZone(firstDateStart);
+  const first = new Date(`${firstDate ?? ""}T00:00:00Z`);
   const from = new Date(`${fromDate}T00:00:00Z`);
   const to = new Date(`${toDate}T00:00:00Z`);
   if ([first, from, to].some((value) => Number.isNaN(value.getTime())))
@@ -170,6 +284,7 @@ export function occurrenceDates(
     guard += 1, cursor.setUTCDate(cursor.getUTCDate() + 1)
   ) {
     const iso = ymd(cursor);
+    if (firstDate && iso < firstDate) continue;
     if (rule.until && iso > rule.until) break;
     if (!byDay.has(weekdayCode(cursor))) continue;
     const weekStart = cursor.getTime() - cursor.getUTCDay() * DAY_MS;
@@ -180,8 +295,15 @@ export function occurrenceDates(
   return dates;
 }
 
-/** Shift an ISO datetime by whole days, preserving its local wall-clock time. */
-function shiftIsoDays(value: string, days: number): string {
+/**
+ * Shift an ISO datetime by whole calendar days while preserving its local
+ * wall-clock time across Daylight Saving Time transitions in the team timezone.
+ */
+export function shiftIsoDays(
+  value: string,
+  days: number,
+  timeZone = CALENDAR_TIME_ZONE,
+): string {
   const floatingDateTime = value.match(/^(\d{4}-\d{2}-\d{2})(T.+)$/);
   const hasExplicitTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
   if (floatingDateTime && !hasExplicitTimezone) {
@@ -193,7 +315,22 @@ function shiftIsoDays(value: string, days: number): string {
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Date(date.getTime() + days * DAY_MS).toISOString();
+  const sourceParts = getZonedDateTimeParts(date, timeZone);
+  const shiftedDay = new Date(
+    Date.UTC(sourceParts.year, sourceParts.month - 1, sourceParts.day + days),
+  );
+  return zonedWallTimeToDate(
+    {
+      year: shiftedDay.getUTCFullYear(),
+      month: shiftedDay.getUTCMonth() + 1,
+      day: shiftedDay.getUTCDate(),
+      hour: sourceParts.hour,
+      minute: sourceParts.minute,
+      second: sourceParts.second,
+    },
+    date.getUTCMilliseconds(),
+    timeZone,
+  ).toISOString();
 }
 
 export interface OccurrenceDtoOptions {
@@ -288,10 +425,11 @@ export function expandEventOccurrences(
   )
     .filter((date) => !options.cancelledDates?.has(date))
     .slice(0, options.maxPerEvent ?? 4);
+  const anchorDate = calendarDateInTimeZone(dateStart) ?? dateStart.slice(0, 10);
   const dayShift = (date: string) =>
     Math.round(
       (new Date(`${date}T00:00:00Z`).getTime() -
-        new Date(`${dateStart.slice(0, 10)}T00:00:00Z`).getTime()) /
+        new Date(`${anchorDate}T00:00:00Z`).getTime()) /
         DAY_MS,
     );
   const seriesDefaults = seriesDefaultsForOccurrence(dto);
@@ -362,9 +500,11 @@ export const eventWriteSchema = z
         message: "End time must be after the start time",
       });
     }
+    const startCalendarDate =
+      calendarDateInTimeZone(value.dateStart) ?? value.dateStart.slice(0, 10);
     if (
       value.recurrence?.until &&
-      value.recurrence.until < value.dateStart.slice(0, 10)
+      value.recurrence.until < startCalendarDate
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

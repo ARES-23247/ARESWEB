@@ -57,15 +57,37 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/content_owners/$(ownerId)).data.ownerUid == request.auth.uid;
     }
 
-    function isSafeMemberDraftWrite(data) {
+    function isSafeMemberPendingFields(data) {
       return isPendingContent(data) &&
         data.get('approvalStatus', 'pending_approval') != 'approved' &&
         data.get('isApproved', false) == false &&
         !('approvedBy' in data) &&
         !('approvedAt' in data) &&
         !('approvedByUid' in data) &&
-        !('approvedByRole' in data) &&
+        !('approvedByRole' in data);
+    }
+
+    function isSafeMemberDraftWrite(data) {
+      return isSafeMemberPendingFields(data) &&
         (!('authorId' in data) || data.authorId == request.auth.uid);
+    }
+
+    function preservesOrBindsAuthorId() {
+      return 'authorId' in resource.data
+        ? request.resource.data.get('authorId', null) == resource.data.authorId
+        : (!('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid);
+    }
+
+    function isActiveMemberEditorOnPost() {
+      return request.resource.data.get('lastEditedByUid', '') is string &&
+        request.resource.data.get('lastEditedByUid', '') == request.auth.uid;
+    }
+
+    function hasPriorCollaborativePostState() {
+      return (
+        resource.data.get('lastEditedByUid', '') is string &&
+        resource.data.get('lastEditedByUid', '').size() > 0
+      ) || resource.data.get('importedFrom', '') == 'ares-robotics-studio';
     }
 
     function canCreateContent(collectionName, contentId) {
@@ -80,14 +102,21 @@ service cloud.firestore {
     function canUpdateContent(collectionName, contentId) {
       return isContentPublisher() || (
         isAuthorized() &&
-        isPendingContent(resource.data) &&
-        resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
-        resource.data.get('isApproved', false) == false &&
-        isSafeMemberDraftWrite(request.resource.data) &&
+        resource.data.get('isDeleted', 0) == 0 &&
         request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
-        (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
-        isContentOwner(collectionName, contentId)
+        isSafeMemberPendingFields(request.resource.data) &&
+        preservesOrBindsAuthorId() &&
+        request.resource.data.get('importedFrom', null) == resource.data.get('importedFrom', null) &&
+        (
+          isContentOwner(collectionName, contentId) ||
+          (resource.data.status == 'published' && isActiveMemberEditorOnPost()) ||
+          (isPendingContent(resource.data) && hasPriorCollaborativePostState() && isActiveMemberEditorOnPost())
+        )
       );
+    }
+
+    function canUpdatePost(postSlug) {
+      return canUpdateContent('posts', postSlug);
     }
 
     // Reviewed documentation is saved as pending by browser clients. Only the
@@ -102,18 +131,8 @@ service cloud.firestore {
 
     function canUpdatePendingDoc(docSlug) {
       return isPendingContent(request.resource.data) &&
-        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' && (
-          isContentPublisher() || (
-            isAuthorized() &&
-            isPendingContent(resource.data) &&
-            resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
-            resource.data.get('isApproved', false) == false &&
-            isSafeMemberDraftWrite(request.resource.data) &&
-            request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
-            (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
-            isContentOwner('docs', docSlug)
-          )
-        );
+        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        canUpdateContent('docs', docSlug);
     }
 
     function canChangeApprovedDocLifecycleOnly() {
@@ -129,8 +148,18 @@ service cloud.firestore {
 
     function canCreateRevision(collectionName, contentId) {
       return isAuthorized() &&
-        request.resource.data.editedBy == request.auth.uid &&
-        (isContentPublisher() || isContentOwnerAfter(collectionName, contentId));
+        request.resource.data.editedBy == request.auth.uid && (
+          isContentPublisher() ||
+          isContentOwnerAfter(collectionName, contentId) || (
+            existsAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)) &&
+            isSafeMemberPendingFields(getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data) &&
+            getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data.get('lastEditedByUid', '') == request.auth.uid
+          )
+        );
+    }
+
+    function canCreatePostRevision(postSlug) {
+      return canCreateRevision('posts', postSlug);
     }
 
     function hasNoServerDriveFields() {
@@ -270,12 +299,12 @@ service cloud.firestore {
       // Public readers use the explicit /api/content DTO boundary.
       allow read: if isAuthorized();
       allow create: if canCreateContent('posts', postSlug);
-      allow update: if canUpdateContent('posts', postSlug);
+      allow update: if canUpdatePost(postSlug);
       allow delete: if isContentPublisher();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
-        allow create: if canCreateRevision('posts', postSlug);
+        allow create: if canCreatePostRevision(postSlug);
         allow update, delete: if false;
       }
     }
