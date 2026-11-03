@@ -4,6 +4,7 @@ import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
 import {
+  canPublish,
   type LocationDocument,
   locationDto,
   locationWriteSchema,
@@ -28,13 +29,15 @@ router.get(
 router.post(
   "/locations",
   ensureTeamMember,
-  ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const input = parseBody(locationWriteSchema, req.body);
+    const isPublisher = canPublish(req.authorizationRole);
     const document = adminDb.collection("locations").doc();
     const timestamp = new Date().toISOString();
     const data = {
       ...input,
+      isAddressPublic: isPublisher ? (input.isAddressPublic ?? 0) : 0,
+      approvalStatus: isPublisher ? "approved" : "pending_approval",
       isDeleted: 0,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -48,10 +51,10 @@ router.post(
 router.put(
   "/locations/:id",
   ensureTeamMember,
-  ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const id = parseId(req.params.id, "location");
     const input = parseBody(locationWriteSchema, req.body);
+    const isPublisher = canPublish(req.authorizationRole);
     const ref = adminDb.collection("locations").doc(id);
     const snapshot = await ref.get();
     const current = snapshot.data() as LocationDocument | undefined;
@@ -59,6 +62,8 @@ router.put(
     if (current?.isDeleted === 1) throw new ApiError(409, "Restore this venue before editing it.", "LOCATION_ARCHIVED");
     const update = {
       ...input,
+      isAddressPublic: isPublisher ? (input.isAddressPublic ?? 0) : 0,
+      approvalStatus: isPublisher ? "approved" : "pending_approval",
       updatedAt: new Date().toISOString(),
       updatedBy: req.user!.uid,
     };
@@ -119,4 +124,3 @@ router.patch(
   }),
 );
 }
-

@@ -18,6 +18,7 @@ import {
   publicVenueDto,
   readOccurrenceOverrides,
   readString,
+  resolvePublicEventData,
 } from "./calendarHelpers";
 import {
   managedPhotoGatewayUrls,
@@ -63,7 +64,8 @@ router.get(
 router.get(
   "/events/:id",
   asyncHandler(async (req, res) => {
-    const { id, ref, data, derivedOccurrence } = await getEvent(req.params.id, false);
+    const { id, ref, data: rawData, derivedOccurrence } = await getEvent(req.params.id, false);
+    const data = resolvePublicEventData(rawData);
     const occurrenceValue = req.query.occurrence ?? derivedOccurrence;
     let event = eventDto(id, data, false);
     let occurrenceOverrides: ReturnType<typeof readOccurrenceOverrides> = {};
@@ -136,7 +138,8 @@ router.get(
 router.get(
   "/events/:id/cover",
   asyncHandler(async (req, res) => {
-    const { ref, data, derivedOccurrence } = await getEvent(req.params.id, false);
+    const { ref, data: rawData, derivedOccurrence } = await getEvent(req.params.id, false);
+    const data = resolvePublicEventData(rawData);
     const occurrenceValue = req.query.occurrence ?? derivedOccurrence;
     let coverPhotoId = readString(data.coverPhotoId);
     if (occurrenceValue !== undefined) {

@@ -200,6 +200,18 @@ function normalizeEvent(value: unknown): TeamEvent {
     isVolunteer: record.isVolunteer === 1 ? 1 : 0,
     isDeleted: record.isDeleted === 1 ? 1 : 0,
     status,
+    approvalStatus:
+      record.approvalStatus === "pending_approval"
+        ? "pending_approval"
+        : record.approvalStatus === "approved"
+          ? "approved"
+          : undefined,
+    publishedSnapshot:
+      record.publishedSnapshot &&
+      typeof record.publishedSnapshot === "object" &&
+      !Array.isArray(record.publishedSnapshot)
+        ? (record.publishedSnapshot as Record<string, unknown>)
+        : undefined,
     createdAt: optionalString(record, "createdAt"),
     updatedAt: optionalString(record, "updatedAt"),
     archivedAt: optionalString(record, "archivedAt"),
@@ -217,6 +229,12 @@ function normalizeLocation(value: unknown): TeamLocation {
     description: optionalString(record, "description"),
     gmapsUrl: optionalString(record, "gmapsUrl"),
     isAddressPublic: record.isAddressPublic === 1 ? 1 : 0,
+    approvalStatus:
+      record.approvalStatus === "pending_approval"
+        ? "pending_approval"
+        : record.approvalStatus === "approved"
+          ? "approved"
+          : undefined,
     isDeleted: record.isDeleted === 1 ? 1 : 0,
     createdAt: optionalString(record, "createdAt"),
     updatedAt: optionalString(record, "updatedAt"),
@@ -372,6 +390,16 @@ export async function publishEvent(eventId: string): Promise<void> {
     `/api/calendar/manage/${encodeURIComponent(eventId)}/publish`,
     { method: "PATCH" },
   );
+}
+
+export async function discardPendingEventEdit(
+  eventId: string,
+): Promise<TeamEvent> {
+  const payload = await requestJson<EventPayload>(
+    `/api/calendar/manage/${encodeURIComponent(eventId)}/discard-pending`,
+    { method: "POST" },
+  );
+  return normalizeEvent(payload.event);
 }
 
 export interface EventOccurrenceException {

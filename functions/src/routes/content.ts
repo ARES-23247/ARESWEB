@@ -3,7 +3,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { publishedDocumentDto } from "../lib/contentDtos";
-import { isPublishedContent } from "../lib/contentVisibility";
+import { resolvePublishedContentData } from "../lib/contentVisibility";
 
 const router = express.Router();
 
@@ -25,11 +25,16 @@ function requestedLibrary(value: unknown): PublicLibrary {
   throw new ApiError(400, "Choose the academy or areslib library.");
 }
 
-function isVisibleInLibrary(data: Record<string, unknown>, library: PublicLibrary): boolean {
-  if (!isPublishedContent(data)) return false;
-  return library === "areslib"
-    ? data.displayInAreslib === 1
-    : data.displayInMathCorner === 1 || data.displayInScienceCorner === 1;
+function resolveVisibleLibraryDoc(
+  data: Record<string, unknown>,
+  library: PublicLibrary,
+): Record<string, unknown> | null {
+  const resolved = resolvePublishedContentData(data);
+  if (!resolved) return null;
+  const inLibrary = library === "areslib"
+    ? resolved.displayInAreslib === 1
+    : resolved.displayInMathCorner === 1 || resolved.displayInScienceCorner === 1;
+  return inLibrary ? resolved : null;
 }
 
 function postDto(id: string, data: Record<string, unknown>, includeContent: boolean) {
@@ -59,9 +64,15 @@ router.get(
       .limit(100)
       .get();
     const posts = snapshot.docs
-      .filter((document) => isPublishedContent(document.data()))
-      .slice(0, 50)
-      .map((document) => postDto(document.id, document.data(), false));
+      .map((document) => {
+        const resolved = resolvePublishedContentData({
+          status: "published",
+          ...document.data(),
+        });
+        return resolved ? postDto(document.id, resolved, false) : null;
+      })
+      .filter((post): post is NonNullable<typeof post> => post !== null)
+      .slice(0, 50);
     res.json({ posts });
   }),
 );
@@ -73,10 +84,11 @@ router.get(
     const slug = safeContentId(req.params.slug);
     const snapshot = await adminDb.collection("posts").doc(slug).get();
     const data = (snapshot.data() || {}) as Record<string, unknown>;
-    if (!snapshot.exists || !isPublishedContent(data)) {
+    const resolved = snapshot.exists ? resolvePublishedContentData(data) : null;
+    if (!resolved) {
       throw new ApiError(404, "Published blog post not found.", "CONTENT_NOT_FOUND");
     }
-    res.json({ post: postDto(slug, data, true) });
+    res.json({ post: postDto(slug, resolved, true) });
   }),
 );
 
@@ -91,9 +103,15 @@ router.get(
       .limit(250)
       .get();
     const documents = snapshot.docs
-      .filter((document) => isVisibleInLibrary(document.data(), library))
+      .map((document) => {
+        const resolved = resolveVisibleLibraryDoc(
+          { status: "published", ...document.data() },
+          library,
+        );
+        return resolved ? publishedDocumentDto(document.id, resolved, library, false) : null;
+      })
+      .filter((document): document is NonNullable<typeof document> => document !== null)
       .slice(0, 200)
-      .map((document) => publishedDocumentDto(document.id, document.data(), library, false))
       .sort((left, right) =>
         left.category.localeCompare(right.category)
         || left.sortOrder - right.sortOrder
@@ -110,10 +128,11 @@ router.get(
     const library = requestedLibrary(req.query.library);
     const snapshot = await adminDb.collection("docs").doc(slug).get();
     const data = (snapshot.data() || {}) as Record<string, unknown>;
-    if (!snapshot.exists || !isVisibleInLibrary(data, library)) {
+    const resolved = snapshot.exists ? resolveVisibleLibraryDoc(data, library) : null;
+    if (!resolved) {
       throw new ApiError(404, "Published document not found.", "CONTENT_NOT_FOUND");
     }
-    res.json({ document: publishedDocumentDto(slug, data, library, true) });
+    res.json({ document: publishedDocumentDto(slug, resolved, library, true) });
   }),
 );
 

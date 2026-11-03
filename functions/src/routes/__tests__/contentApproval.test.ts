@@ -100,8 +100,12 @@ describe("content approval routes", () => {
     }));
   });
 
-  it("registers authentication and approver middleware before both handlers", () => {
-    for (const [path, method] of [["/docs/:slug/review", "get"], ["/docs/:slug/approve", "post"]] as const) {
+  it("registers authentication and approver middleware before approver handlers", () => {
+    for (const [path, method] of [
+      ["/docs/:slug/review", "get"],
+      ["/docs/:slug/approve", "post"],
+      ["/discard-pending", "post"],
+    ] as const) {
       expect(route(path, method).stack.map((entry) => entry.name)).toEqual([
         "ensureTeamMember",
         "ensureContentApprover",
@@ -169,6 +173,15 @@ describe("content approval routes", () => {
         collection: "event_locations",
         contentId: "venue-1",
         data: { name: "Engineering Lab", status: "pending_approval" },
+        expectedSection: "Calendar Venues",
+        expectedPath: "/dashboard/events",
+        expectedAuthor: undefined,
+        expectedStaged: false,
+      },
+      {
+        collection: "locations",
+        contentId: "venue-2",
+        data: { name: "Community Center", approvalStatus: "pending_approval" },
         expectedSection: "Calendar Venues",
         expectedPath: "/dashboard/events",
         expectedAuthor: undefined,
@@ -378,5 +391,129 @@ describe("content approval routes", () => {
       authorizationRole: "admin",
     }, response(), next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: "transaction unavailable" }));
+  });
+
+  it("includes publishedSnapshot in review DTO and clears it on approval", async () => {
+    const stagedDoc = validDocument({
+      status: "published",
+      approvalStatus: "pending_approval",
+      title: "Robot intent v2",
+      publishedSnapshot: {
+        title: "Robot intent v1",
+        category: "Robotics & Engineering",
+        content: "# Robot intent v1",
+      },
+    });
+    mocks.documentGet.mockResolvedValueOnce({ exists: true, data: () => stagedDoc });
+    const reviewRes = response();
+    const next = vi.fn();
+    await handler("/docs/:slug/review", "get")({
+      params: { slug: "lesson-one" },
+      query: { library: "academy" },
+      authorizationRole: "mentor",
+    }, reviewRes, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(reviewRes.payload).toEqual({
+      review: expect.objectContaining({
+        slug: "lesson-one",
+        title: "Robot intent v2",
+        publishedSnapshot: expect.objectContaining({
+          slug: "lesson-one",
+          title: "Robot intent v1",
+          content: "# Robot intent v1",
+          status: "published",
+        }),
+      }),
+    });
+
+    mocks.transactionGet.mockResolvedValueOnce({ exists: true, data: () => stagedDoc });
+    const digest = contentReviewDigest(stagedDoc);
+    const approveRes = response();
+    await handler("/docs/:slug/approve", "post")({
+      params: { slug: "lesson-one" },
+      body: { library: "academy", digest },
+      authorizationRole: "coach",
+    }, approveRes, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(mocks.transactionUpdate).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "published",
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+    );
+  });
+
+  it("discards a staged pending edit and restores publishedSnapshot", async () => {
+    const stagedPost = {
+      title: "Draft Edit",
+      content: "Unapproved content",
+      status: "published",
+      approvalStatus: "pending_approval",
+      isDeleted: 0,
+      publishedSnapshot: {
+        title: "Live Post",
+        content: "Approved content",
+        summary: "Short summary",
+      },
+    };
+    mocks.transactionGet.mockResolvedValueOnce({ exists: true, data: () => stagedPost });
+    const res = response();
+    const next = vi.fn();
+    await handler("/discard-pending", "post")({
+      body: { collection: "posts", contentId: "post-1" },
+      authorizationRole: "mentor",
+    }, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(mocks.transactionUpdate).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        title: "Live Post",
+        content: "Approved content",
+        summary: "Short summary",
+        status: "published",
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+    );
+    expect(mocks.transactionSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "content.pending_edit_discarded",
+        collection: "posts",
+        contentId: "post-1",
+        actorRole: "mentor",
+      }),
+    );
+    expect(res.payload).toEqual({
+      success: true,
+      discarded: true,
+      collection: "posts",
+      contentId: "post-1",
+    });
+
+    // Rejects invalid collection, invalid contentId, missing doc, archived doc, or missing publishedSnapshot
+    for (const [body, txDoc, expectedCode] of [
+      [{ collection: "events", contentId: "post-1" }, stagedPost, "INVALID_COLLECTION"],
+      [{ collection: "posts", contentId: "../bad" }, stagedPost, "INVALID_CONTENT_ID"],
+      [{ collection: "posts", contentId: "post-1" }, null, "CONTENT_NOT_FOUND"],
+      [{ collection: "posts", contentId: "post-1" }, { ...stagedPost, isDeleted: 1 }, "CONTENT_ARCHIVED"],
+      [{ collection: "posts", contentId: "post-1" }, { title: "No snapshot", status: "pending_approval" }, "NO_STAGED_EDIT"],
+    ] as const) {
+      next.mockClear();
+      mocks.transactionGet.mockResolvedValue(
+        txDoc ? { exists: true, data: () => txDoc } : { exists: false, data: () => undefined },
+      );
+      await handler("/discard-pending", "post")(
+        { body, authorizationRole: "coach" },
+        response(),
+        next,
+      );
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ code: expectedCode }));
+    }
   });
 });

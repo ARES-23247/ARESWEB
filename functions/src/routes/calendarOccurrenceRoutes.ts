@@ -5,8 +5,10 @@ import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
 import {
+  canPublish,
   eventDto,
   expandEventOccurrences,
+  extractPublishedEventSnapshot,
   isOccurrenceDate,
   occurrenceOverridesForInput,
   occurrenceUpdateSchema,
@@ -15,11 +17,14 @@ import {
   readRecurrence,
 } from "./calendarHelpers";
 import {
-  ensureCalendarPublisher,
   getEvent,
   rejectDirectManagedStorageUrl,
   requireManagedCoverPhoto,
 } from "./calendarShared";
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export function registerCalendarOccurrenceRoutes(router: Router): void {
 // Recurring-event occurrence management. Occurrence ids are calendar dates
@@ -49,9 +54,8 @@ router.get(
 router.put(
   "/manage/:id/occurrences/:date",
   ensureTeamMember,
-  ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const { id, data } = await getEvent(req.params.id, true);
+    const { id, ref: parentRef, data } = await getEvent(req.params.id, true);
     if (data.isDeleted === 1) {
       throw new ApiError(409, "Restore the event before editing occurrences.", "EVENT_ARCHIVED");
     }
@@ -85,6 +89,16 @@ router.put(
       },
       { merge: true },
     );
+    if (!canPublish(req.authorizationRole) && data.status === "published") {
+      await parentRef.update({
+        approvalStatus: "pending_approval",
+        publishedSnapshot: isPlainObject(data.publishedSnapshot)
+          ? data.publishedSnapshot
+          : extractPublishedEventSnapshot(data),
+        updatedAt: timestamp,
+        updatedBy: req.user!.uid,
+      });
+    }
     await adminDb.collection("audit_logs").doc().set({
       action: "calendar.occurrence.updated",
       actorUid: req.user!.uid,
@@ -105,9 +119,8 @@ router.put(
 router.patch(
   "/manage/:id/occurrences/:date",
   ensureTeamMember,
-  ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const { id, data } = await getEvent(req.params.id, true);
+    const { id, ref: parentRef, data } = await getEvent(req.params.id, true);
     if (data.isDeleted === 1) {
       throw new ApiError(409, "Restore the event before editing occurrences.", "EVENT_ARCHIVED");
     }
@@ -131,6 +144,16 @@ router.patch(
       },
       { merge: true },
     );
+    if (!canPublish(req.authorizationRole) && data.status === "published") {
+      await parentRef.update({
+        approvalStatus: "pending_approval",
+        publishedSnapshot: isPlainObject(data.publishedSnapshot)
+          ? data.publishedSnapshot
+          : extractPublishedEventSnapshot(data),
+        updatedAt: timestamp,
+        updatedBy: req.user!.uid,
+      });
+    }
     await adminDb.collection("audit_logs").doc().set({
       action: "calendar.occurrence.cancelled",
       actorUid: req.user!.uid,
@@ -145,9 +168,8 @@ router.patch(
 router.patch(
   "/manage/:id/occurrences/:date/restore",
   ensureTeamMember,
-  ensureCalendarPublisher,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const { id, data } = await getEvent(req.params.id, true);
+    const { id, ref: parentRef, data } = await getEvent(req.params.id, true);
     if (data.isDeleted === 1) {
       throw new ApiError(409, "Restore the event before editing occurrences.", "EVENT_ARCHIVED");
     }
@@ -178,6 +200,16 @@ router.patch(
       },
       { merge: true },
     );
+    if (!canPublish(req.authorizationRole) && data.status === "published") {
+      await parentRef.update({
+        approvalStatus: "pending_approval",
+        publishedSnapshot: isPlainObject(data.publishedSnapshot)
+          ? data.publishedSnapshot
+          : extractPublishedEventSnapshot(data),
+        updatedAt: timestamp,
+        updatedBy: req.user!.uid,
+      });
+    }
     await adminDb.collection("audit_logs").doc().set({
       action: "calendar.occurrence.restored",
       actorUid: req.user!.uid,

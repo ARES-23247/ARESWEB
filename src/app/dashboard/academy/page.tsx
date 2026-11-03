@@ -51,8 +51,10 @@ export default function AcademyManagementPage() {
     isApprover,
     loadDocumentationApprovalReview,
     handleApproveDocumentationReview,
+    handleDiscardPendingEdit,
     reviewingSlug,
     approvingSlug,
+    discardingSlug,
     approvalNotice,
     dismissApprovalNotice,
     handleDelete,
@@ -128,8 +130,10 @@ export default function AcademyManagementPage() {
           const review = await loadDocumentationApprovalReview(item, "academy");
           if (review) setApprovalReview(review);
         }}
+        onDiscardPending={handleDiscardPendingEdit}
         reviewingSlug={reviewingSlug}
         approvingSlug={approvingSlug}
+        discardingSlug={discardingSlug}
         variant="docs"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
@@ -149,16 +153,22 @@ export default function AcademyManagementPage() {
 
       <DocumentApprovalReviewDialog
         item={approvalReview?.document ?? null}
+        publishedSnapshot={approvalReview?.publishedSnapshot ?? null}
         categories={ACADEMY_CATEGORIES}
         defaultCategory="Robotics & Engineering"
         libraryLabel="Academy"
         isApproving={Boolean(approvalReview && approvingSlug === approvalReview.document.slug)}
+        isDiscarding={Boolean(approvalReview && discardingSlug === approvalReview.document.slug)}
         errorMessage={approvalNotice?.kind === "error" ? approvalNotice.message : null}
         onClose={() => setApprovalReview(null)}
         onApprove={async () => {
           if (!approvalReview) return;
           const approved = await handleApproveDocumentationReview(approvalReview);
           if (approved) setApprovalReview(null);
+        }}
+        onDiscard={async (docItem) => {
+          const discarded = await handleDiscardPendingEdit(docItem);
+          if (discarded) setApprovalReview(null);
         }}
       />
 

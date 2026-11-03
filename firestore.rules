@@ -41,6 +41,40 @@ service cloud.firestore {
       return data.status in ['draft', 'pending', 'pending_approval'];
     }
 
+    function isPendingOrStagedContent(data) {
+      return isPendingContent(data) || (
+        data.status == 'published' &&
+        data.get('approvalStatus', '') == 'pending_approval' &&
+        data.get('publishedSnapshot', null) is map
+      );
+    }
+
+    function hasValidPublishedSnapshotOnPendingUpdate() {
+      return resource.data.status == 'published' &&
+        request.resource.data.status == 'published' &&
+        request.resource.data.get('approvalStatus', '') == 'pending_approval' &&
+        request.resource.data.get('publishedSnapshot', null) is map && (
+          (
+            resource.data.get('approvalStatus', 'approved') == 'pending_approval' &&
+            resource.data.get('publishedSnapshot', null) is map &&
+            request.resource.data.publishedSnapshot == resource.data.publishedSnapshot
+          ) || (
+            resource.data.get('approvalStatus', 'approved') != 'pending_approval' &&
+            request.resource.data.publishedSnapshot.get('title', null) == resource.data.get('title', null) &&
+            request.resource.data.publishedSnapshot.get('content', null) == resource.data.get('content', null) &&
+            request.resource.data.publishedSnapshot.get('summary', null) == resource.data.get('summary', null) &&
+            request.resource.data.publishedSnapshot.get('category', null) == resource.data.get('category', null) &&
+            request.resource.data.publishedSnapshot.get('library', null) == resource.data.get('library', null) &&
+            request.resource.data.publishedSnapshot.get('slug', null) == resource.data.get('slug', null) &&
+            request.resource.data.publishedSnapshot.get('author', null) == resource.data.get('author', null) &&
+            request.resource.data.publishedSnapshot.get('coverImage', null) == resource.data.get('coverImage', null) &&
+            request.resource.data.publishedSnapshot.get('fileUrl', null) == resource.data.get('fileUrl', null) &&
+            request.resource.data.publishedSnapshot.get('fileName', null) == resource.data.get('fileName', null) &&
+            request.resource.data.publishedSnapshot.get('fileType', null) == resource.data.get('fileType', null)
+          )
+        );
+    }
+
     function contentOwnerId(collectionName, contentId) {
       return collectionName + '__' + contentId;
     }
@@ -59,6 +93,30 @@ service cloud.firestore {
 
     function isSafeMemberPendingFields(data) {
       return isPendingContent(data) &&
+        !('publishedSnapshot' in data) &&
+        data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        data.get('isApproved', false) == false &&
+        !('approvedBy' in data) &&
+        !('approvedAt' in data) &&
+        !('approvedByUid' in data) &&
+        !('approvedByRole' in data);
+    }
+
+    function isSafeMemberPendingUpdateFields(data) {
+      return (
+          (isPendingContent(data) && !('publishedSnapshot' in data)) ||
+          hasValidPublishedSnapshotOnPendingUpdate()
+        ) &&
+        data.get('approvalStatus', 'pending_approval') != 'approved' &&
+        data.get('isApproved', false) == false &&
+        !('approvedBy' in data) &&
+        !('approvedAt' in data) &&
+        !('approvedByUid' in data) &&
+        !('approvedByRole' in data);
+    }
+
+    function isSafeMemberPendingOrStagedData(data) {
+      return isPendingOrStagedContent(data) &&
         data.get('approvalStatus', 'pending_approval') != 'approved' &&
         data.get('isApproved', false) == false &&
         !('approvedBy' in data) &&
@@ -104,13 +162,13 @@ service cloud.firestore {
         isAuthorized() &&
         resource.data.get('isDeleted', 0) == 0 &&
         request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
-        isSafeMemberPendingFields(request.resource.data) &&
+        isSafeMemberPendingUpdateFields(request.resource.data) &&
         preservesOrBindsAuthorId() &&
         request.resource.data.get('importedFrom', null) == resource.data.get('importedFrom', null) &&
         (
           isContentOwner(collectionName, contentId) ||
           (resource.data.status == 'published' && isActiveMemberEditorOnPost()) ||
-          (isPendingContent(resource.data) && hasPriorCollaborativePostState() && isActiveMemberEditorOnPost())
+          (isPendingOrStagedContent(resource.data) && hasPriorCollaborativePostState() && isActiveMemberEditorOnPost())
         )
       );
     }
@@ -125,12 +183,16 @@ service cloud.firestore {
     // record without changing its reviewed content.
     function canCreatePendingDoc(docSlug) {
       return isPendingContent(request.resource.data) &&
+        !('publishedSnapshot' in request.resource.data) &&
         request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
         canCreateContent('docs', docSlug);
     }
 
     function canUpdatePendingDoc(docSlug) {
-      return isPendingContent(request.resource.data) &&
+      return (
+          (isPendingContent(request.resource.data) && !('publishedSnapshot' in request.resource.data)) ||
+          hasValidPublishedSnapshotOnPendingUpdate()
+        ) &&
         request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
         canUpdateContent('docs', docSlug);
     }
@@ -152,7 +214,7 @@ service cloud.firestore {
           isContentPublisher() ||
           isContentOwnerAfter(collectionName, contentId) || (
             existsAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)) &&
-            isSafeMemberPendingFields(getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data) &&
+            isSafeMemberPendingOrStagedData(getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data) &&
             getAfter(/databases/$(database)/documents/$(collectionName)/$(contentId)).data.get('lastEditedByUid', '') == request.auth.uid
           )
         );

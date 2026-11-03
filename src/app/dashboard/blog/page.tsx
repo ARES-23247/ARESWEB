@@ -7,6 +7,7 @@ import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocCont
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
+import PendingEditCompareDialog from "@/components/dashboard/PendingEditCompareDialog";
 
 const BLOG_CATEGORIES: string[] = [];
 
@@ -60,6 +61,14 @@ export default function BlogManagementPage({
     handleCloseEditor,
     handleSave,
     handleApproveAndPublish,
+    comparingDoc,
+    handleOpenCompare,
+    handleCloseCompare,
+    handleDiscardPendingEdit,
+    approvingSlug,
+    discardingSlug,
+    approvalNotice,
+    dismissApprovalNotice,
     handleDelete,
     handleRestore,
     handleCancelArchive,
@@ -202,6 +211,25 @@ export default function BlogManagementPage({
       </div>
 
       {/* List Grid View */}
+      {approvalNotice && (
+        <div
+          role={approvalNotice.kind === "error" ? "alert" : "status"}
+          className={`mb-5 flex flex-col gap-3 rounded-xl border p-4 text-sm sm:flex-row sm:items-center sm:justify-between ${
+            approvalNotice.kind === "error"
+              ? "border-ares-red/40 bg-ares-red/10 text-white"
+              : "border-ares-cyan/35 bg-ares-cyan/10 text-white"
+          }`}
+        >
+          <p>{approvalNotice.message}</p>
+          <button
+            type="button"
+            onClick={dismissApprovalNotice}
+            className="rounded border border-white/15 px-3 py-2 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {syndicationNotice && (
         <div
           role={syndicationNotice.kind === "error" ? "alert" : "status"}
@@ -254,6 +282,10 @@ export default function BlogManagementPage({
         canEdit={canEdit}
         isApprover={isApprover}
         onApprove={handleApproveAndPublish}
+        onCompare={handleOpenCompare}
+        onDiscardPending={handleDiscardPendingEdit}
+        approvingSlug={approvingSlug}
+        discardingSlug={discardingSlug}
         onSyndicate={handleSyndicatePost}
         syndicatingSlug={syndicatingSlug}
         variant="blog"
@@ -271,6 +303,17 @@ export default function BlogManagementPage({
         onLoadMore={loadMore}
         searchPlaceholder="Search blogs by title, snippet, or author..."
         noItemsMessage="No blog posts match the selected filter."
+      />
+
+      <PendingEditCompareDialog
+        item={comparingDoc}
+        sectionLabel="Blog Post"
+        isApproving={Boolean(comparingDoc && approvingSlug === comparingDoc.slug)}
+        isDiscarding={Boolean(comparingDoc && discardingSlug === comparingDoc.slug)}
+        errorMessage={approvalNotice?.kind === "error" ? approvalNotice.message : null}
+        onClose={handleCloseCompare}
+        onApprove={handleApproveAndPublish}
+        onDiscard={handleDiscardPendingEdit}
       />
 
       {/* Drawer Editor */}

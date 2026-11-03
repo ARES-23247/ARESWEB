@@ -208,4 +208,39 @@ describe("DocListGrid archive confirmation", () => {
       title: "Build Recap",
     }));
   });
+
+  it("renders Live + Pending Edit badge, Compare, and Discard Edit actions for staged pending records", () => {
+    const onCompare = vi.fn();
+    const onDiscardPending = vi.fn();
+    const stagedItem: DocRecord = {
+      ...record,
+      title: "Safety Guide v2",
+      status: "published",
+      approvalStatus: "pending_approval",
+      publishedSnapshot: {
+        title: "Safety Guide v1",
+        content: "Original safety content",
+      },
+    };
+    render(
+      <DocListGrid
+        items={[stagedItem]}
+        loadingList={false}
+        canEdit
+        isApprover
+        onApprove={vi.fn()}
+        onCompare={onCompare}
+        onDiscardPending={onDiscardPending}
+        variant="blog"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Live + Pending Edit")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Compare pending edit for Safety Guide v2" }));
+    expect(onCompare).toHaveBeenCalledWith(stagedItem);
+    fireEvent.click(screen.getByRole("button", { name: "Discard pending edit for Safety Guide v2" }));
+    expect(onDiscardPending).toHaveBeenCalledWith(stagedItem);
+  });
 });

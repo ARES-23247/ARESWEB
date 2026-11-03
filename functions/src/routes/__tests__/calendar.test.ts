@@ -189,6 +189,7 @@ describe("calendar API", () => {
       "DELETE /manage/:id",
       "PATCH /manage/:id/restore",
       "PATCH /manage/:id/publish",
+      "POST /manage/:id/discard-pending",
       "GET /manage/:id/occurrences",
       "PUT /manage/:id/occurrences/:date",
       "PATCH /manage/:id/occurrences/:date",
@@ -986,10 +987,10 @@ describe("calendar API", () => {
     );
   });
 
-  it("rejects edits to archived events and member edits to published events", async () => {
+  it("rejects edits to archived events and stages member edits to published events while keeping the live snapshot public", async () => {
     req.params = { id: "event-1" };
     req.body = {
-      title: "Edit",
+      title: "Student Proposed Title",
       dateStart: "2026-09-10T18:00:00.000Z",
       category: "internal",
     };
@@ -1004,7 +1005,100 @@ describe("calendar API", () => {
       exists: true,
       data: () => eventDocument("event-1", { status: "published" }).data(),
     });
-    await expectApiError("/manage/:id", "put", 403);
+    await handler("/manage/:id", "put")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({
+        title: "Student Proposed Title",
+        status: "published",
+        approvalStatus: "pending_approval",
+        publishedSnapshot: expect.objectContaining({
+          title: "Team Practice",
+        }),
+      }),
+    );
+
+    // Public GET /events/:id continues serving the approved publishedSnapshot
+    res.json.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () =>
+        eventDocument("event-1", {
+          title: "Student Proposed Title",
+          status: "published",
+          approvalStatus: "pending_approval",
+          publishedSnapshot: {
+            title: "Team Practice",
+            dateStart: "2026-09-01T18:00:00.000Z",
+            category: "internal",
+          },
+        }).data(),
+    });
+    await handler("/events/:id", "get")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          id: "event-1",
+          title: "Team Practice",
+        }),
+      }),
+    );
+
+    // Mentor discards the staged pending edit via POST /manage/:id/discard-pending
+    req.authorizationRole = "mentor";
+    res.json.mockClear();
+    batch.update.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () =>
+        eventDocument("event-1", {
+          title: "Student Proposed Title",
+          status: "published",
+          approvalStatus: "pending_approval",
+          publishedSnapshot: {
+            title: "Team Practice",
+            dateStart: "2026-09-01T18:00:00.000Z",
+            category: "internal",
+          },
+        }).data(),
+    });
+    await handler("/manage/:id/discard-pending", "post")(req, res, next);
+    expect(batch.update).toHaveBeenCalledWith(
+      documentRef,
+      expect.objectContaining({
+        title: "Team Practice",
+        status: "published",
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        discarded: true,
+        event: expect.objectContaining({
+          id: "event-1",
+          title: "Team Practice",
+          approvalStatus: "approved",
+        }),
+      }),
+    );
+
+    // Rejects discard-pending when there is no staged edit or when archived
+    next.mockClear();
+    res.json.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { status: "published" }).data(),
+    });
+    await expectApiError("/manage/:id/discard-pending", "post", 409, "NO_STAGED_EDIT");
+
+    next.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => eventDocument("event-1", { isDeleted: 1 }).data(),
+    });
+    await expectApiError("/manage/:id/discard-pending", "post", 409, "EVENT_ARCHIVED");
   });
 
   it("archives and restores events without hard deletion", async () => {
@@ -1650,7 +1744,7 @@ describe("calendar recurrence", () => {
     });
   });
 
-  it("guards occurrence endpoints behind the publisher role and validates dates", async () => {
+  it("guards occurrence endpoints behind team membership and validates dates", async () => {
     const cancelLayer = calendarRouter.stack.find(
       (entry) =>
         entry.route?.path === "/manage/:id/occurrences/:date" &&
@@ -1658,7 +1752,6 @@ describe("calendar recurrence", () => {
     );
     expect(cancelLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
       "ensureTeamMember",
-      "ensureCalendarPublisher",
       expect.any(String),
     ]);
     const updateLayer = calendarRouter.stack.find(
@@ -1668,7 +1761,6 @@ describe("calendar recurrence", () => {
     );
     expect(updateLayer?.route?.stack.map((entry: any) => entry.name)).toEqual([
       "ensureTeamMember",
-      "ensureCalendarPublisher",
       expect.any(String),
     ]);
     const detailLayer = calendarRouter.stack.find(
@@ -1742,6 +1834,52 @@ describe("calendar recurrence", () => {
       {
         merge: true,
       },
+    );
+  });
+
+  it("stages parent event pending_approval when a student member updates, cancels, or restores an occurrence", async () => {
+    req.authorizationRole = "member";
+    req.params = { id: "weekly-1", date: todayYmdStr };
+    req.body = {
+      title: "Student Drive Practice",
+      dateStart: `${todayYmdStr}T18:00:00.000Z`,
+      dateEnd: `${todayYmdStr}T20:00:00.000Z`,
+      locationId: null,
+      location: "Team Lab",
+      description: null,
+      category: "internal",
+      coverImage: null,
+      isPotluck: 0,
+      isVolunteer: 0,
+    };
+
+    await handler("/manage/:id/occurrences/:date", "put")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approvalStatus: "pending_approval",
+        publishedSnapshot: expect.objectContaining({ title: "Team Practice" }),
+      }),
+    );
+
+    documentRef.update.mockClear();
+    req.body = { cancelled: true };
+    await handler("/manage/:id/occurrences/:date", "patch")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approvalStatus: "pending_approval",
+      }),
+    );
+
+    documentRef.update.mockClear();
+    (adminDb as any).__occurrences.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ isCancelled: 1 }),
+    });
+    await handler("/manage/:id/occurrences/:date/restore", "patch")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approvalStatus: "pending_approval",
+      }),
     );
   });
 

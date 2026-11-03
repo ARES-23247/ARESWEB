@@ -26,6 +26,7 @@ export interface DocumentationApprovalReview {
   digest: string;
   library: "academy" | "areslib";
   document: DocRecord;
+  publishedSnapshot?: DocRecord;
 }
 
 const BUFFER_CHANNEL_LABELS = {
@@ -42,20 +43,15 @@ function isFlag(value: unknown): value is 0 | 1 {
   return value === 0 || value === 1;
 }
 
-export function parseDocumentationApprovalReview(
-  value: unknown,
-): DocumentationApprovalReview | null {
-  if (!isRecord(value) || !isRecord(value.review)) return null;
-  const review = value.review;
-  const document = review.document;
+function parseReviewDocRecord(
+  slug: string,
+  library: "academy" | "areslib",
+  document: unknown,
+  requireCompleteMetadata: boolean,
+): DocRecord | null {
   if (
-    typeof review.digest !== "string" ||
-    !/^[a-f0-9]{64}$/u.test(review.digest) ||
-    (review.library !== "academy" && review.library !== "areslib") ||
-    typeof review.slug !== "string" ||
-    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,299}$/u.test(review.slug) ||
     !isRecord(document) ||
-    document.slug !== review.slug ||
+    document.slug !== slug ||
     typeof document.title !== "string" ||
     document.title.length > 200 ||
     typeof document.category !== "string" ||
@@ -73,40 +69,79 @@ export function parseDocumentationApprovalReview(
     !isFlag(document.displayInScienceCorner) ||
     !isFlag(document.isPortfolio) ||
     !isFlag(document.isExecutiveSummary)
-  )
+  ) {
     return null;
+  }
 
   const metadata = normalizeLearningMetadata(document, {
     category: document.category,
-    reference: review.library === "areslib",
+    reference: library === "areslib",
   });
-  if (metadata.metadataStatus !== "complete") return null;
+  if (requireCompleteMetadata && metadata.metadataStatus !== "complete") {
+    return null;
+  }
+
+  return {
+    slug,
+    title: document.title,
+    category: document.category,
+    description: document.description,
+    content: document.content,
+    status: document.status,
+    sortOrder: Math.trunc(document.sortOrder),
+    isDeleted: document.isDeleted,
+    displayInAreslib: document.displayInAreslib,
+    displayInMathCorner: document.displayInMathCorner,
+    displayInScienceCorner: document.displayInScienceCorner,
+    isPortfolio: document.isPortfolio,
+    isExecutiveSummary: document.isExecutiveSummary,
+    ...(typeof document.approvalStatus === "string"
+      ? { approvalStatus: document.approvalStatus }
+      : {}),
+    ...(typeof document.updatedAt === "string"
+      ? { updatedAt: document.updatedAt }
+      : {}),
+    ...metadata,
+  };
+}
+
+export function parseDocumentationApprovalReview(
+  value: unknown,
+): DocumentationApprovalReview | null {
+  if (!isRecord(value) || !isRecord(value.review)) return null;
+  const review = value.review;
+  if (
+    typeof review.digest !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(review.digest) ||
+    (review.library !== "academy" && review.library !== "areslib") ||
+    typeof review.slug !== "string" ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,299}$/u.test(review.slug)
+  ) {
+    return null;
+  }
+
+  const parsedDoc = parseReviewDocRecord(
+    review.slug,
+    review.library,
+    review.document,
+    true,
+  );
+  if (!parsedDoc) return null;
+
+  const parsedPublishedSnapshot = isRecord(review.publishedSnapshot)
+    ? parseReviewDocRecord(
+        review.slug,
+        review.library,
+        review.publishedSnapshot,
+        false,
+      )
+    : null;
 
   return {
     digest: review.digest,
     library: review.library,
-    document: {
-      slug: review.slug,
-      title: document.title,
-      category: document.category,
-      description: document.description,
-      content: document.content,
-      status: document.status,
-      sortOrder: Math.trunc(document.sortOrder),
-      isDeleted: document.isDeleted,
-      displayInAreslib: document.displayInAreslib,
-      displayInMathCorner: document.displayInMathCorner,
-      displayInScienceCorner: document.displayInScienceCorner,
-      isPortfolio: document.isPortfolio,
-      isExecutiveSummary: document.isExecutiveSummary,
-      ...(typeof document.approvalStatus === "string"
-        ? { approvalStatus: document.approvalStatus }
-        : {}),
-      ...(typeof document.updatedAt === "string"
-        ? { updatedAt: document.updatedAt }
-        : {}),
-      ...metadata,
-    },
+    document: parsedDoc,
+    ...(parsedPublishedSnapshot ? { publishedSnapshot: parsedPublishedSnapshot } : {}),
   };
 }
 

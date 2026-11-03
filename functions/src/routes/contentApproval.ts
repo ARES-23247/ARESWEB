@@ -19,7 +19,13 @@ const APPROVAL_NOTIFICATION_COLLECTIONS = new Set([
   "docs",
   "documents",
   "events",
+  "locations",
   "event_locations",
+] as const);
+const DISCARDABLE_CONTENT_COLLECTIONS = new Set([
+  "posts",
+  "docs",
+  "documents",
 ] as const);
 const REVIEW_FIELDS = [
   "title", "category", "sortOrder", "description", "content",
@@ -37,7 +43,9 @@ type ApprovalNotificationCollection =
   | "docs"
   | "documents"
   | "events"
+  | "locations"
   | "event_locations";
+type DiscardableContentCollection = "posts" | "docs" | "documents";
 
 const approvalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -46,6 +54,10 @@ const approvalLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many content review requests. Try again later." },
 });
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function library(value: unknown): Library {
   if (value === "academy" || value === "areslib") return value;
@@ -60,6 +72,16 @@ function notificationCollection(value: unknown): ApprovalNotificationCollection 
     return value as ApprovalNotificationCollection;
   }
   throw new ApiError(400, "Choose a supported approval queue collection.", "INVALID_COLLECTION");
+}
+
+function discardableCollection(value: unknown): DiscardableContentCollection {
+  if (
+    typeof value === "string" &&
+    DISCARDABLE_CONTENT_COLLECTIONS.has(value as DiscardableContentCollection)
+  ) {
+    return value as DiscardableContentCollection;
+  }
+  throw new ApiError(400, "Choose a supported content collection.", "INVALID_COLLECTION");
 }
 
 function slug(value: unknown): string {
@@ -106,7 +128,10 @@ function validateReviewableDocument(data: Record<string, unknown>, requestedLibr
   if (data.isDeleted === 1 || data.isDeleted === true) {
     throw new ApiError(409, "Archived content cannot be approved.", "CONTENT_ARCHIVED");
   }
-  if (!PENDING_STATUSES.has(String(data.status)) || data.approvalStatus === "approved") {
+  const isPendingDoc =
+    PENDING_STATUSES.has(String(data.status)) ||
+    data.approvalStatus === "pending_approval";
+  if (!isPendingDoc || data.approvalStatus === "approved") {
     throw new ApiError(409, "Only pending content can be approved.", "CONTENT_NOT_PENDING");
   }
   if (!visibleInLibrary(data, requestedLibrary)) {
@@ -154,6 +179,7 @@ function approvalNotificationRouteMetadata(
       return { section: "Cloud Resources", dashboardPath: "/dashboard/documents" };
     case "events":
       return { section: "Calendar Events", dashboardPath: "/dashboard/events" };
+    case "locations":
     case "event_locations":
       return { section: "Calendar Venues", dashboardPath: "/dashboard/events" };
   }
@@ -166,8 +192,10 @@ router.post(
   ensureTeamMember,
   asyncHandler(async (req, res) => {
     const requestedCollection = notificationCollection(req.body?.collection);
+    const firestoreCollection =
+      requestedCollection === "event_locations" ? "locations" : requestedCollection;
     const contentId = slug(req.body?.contentId);
-    const snapshot = await adminDb.collection(requestedCollection).doc(contentId).get();
+    const snapshot = await adminDb.collection(firestoreCollection).doc(contentId).get();
     if (!snapshot.exists) {
       throw new ApiError(404, "Pending record not found.", "CONTENT_NOT_FOUND");
     }
@@ -213,6 +241,56 @@ router.post(
   }),
 );
 
+router.post(
+  "/discard-pending",
+  ensureTeamMember,
+  ensureContentApprover,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const requestedCollection = discardableCollection(req.body?.collection);
+    const contentId = slug(req.body?.contentId);
+    const discardedAt = new Date().toISOString();
+    const documentRef = adminDb.collection(requestedCollection).doc(contentId);
+    const auditRef = adminDb.collection("content_approval_audit").doc();
+
+    await adminDb.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(documentRef);
+      if (!snapshot.exists) {
+        throw new ApiError(404, "Content record not found.", "CONTENT_NOT_FOUND");
+      }
+      const data = snapshot.data() as Record<string, unknown>;
+      if (data.isDeleted === 1 || data.isDeleted === true) {
+        throw new ApiError(409, "Archived content cannot be modified.", "CONTENT_ARCHIVED");
+      }
+      if (data.approvalStatus !== "pending_approval" || !isPlainObject(data.publishedSnapshot)) {
+        throw new ApiError(409, "No staged pending edit to discard.", "NO_STAGED_EDIT");
+      }
+      const { publishedSnapshot: _nested, id: _id, ...restoredFields } = data.publishedSnapshot;
+      transaction.update(documentRef, {
+        ...restoredFields,
+        status: "published",
+        approvalStatus: "approved",
+        isDeleted: 0,
+        publishedSnapshot: null,
+        updatedAt: discardedAt,
+      });
+      transaction.set(auditRef, {
+        action: "content.pending_edit_discarded",
+        collection: requestedCollection,
+        contentId,
+        actorRole: req.authorizationRole,
+        createdAt: discardedAt,
+      });
+    });
+
+    res.json({
+      success: true,
+      discarded: true,
+      collection: requestedCollection,
+      contentId,
+    });
+  }),
+);
+
 router.get(
   "/docs/:slug/review",
   ensureTeamMember,
@@ -224,6 +302,13 @@ router.get(
     if (!snapshot.exists) throw new ApiError(404, "Draft not found.", "CONTENT_NOT_FOUND");
     const data = snapshot.data() as Record<string, unknown>;
     validateReviewableDocument(data, requestedLibrary);
+    const publishedSnapshot = isPlainObject(data.publishedSnapshot)
+      ? reviewableDocumentDto(
+          contentSlug,
+          { ...data, ...data.publishedSnapshot, status: "published", approvalStatus: "approved" },
+          requestedLibrary,
+        )
+      : null;
     res.set("Cache-Control", "private, no-store");
     res.json({
       review: {
@@ -233,6 +318,7 @@ router.get(
         library: requestedLibrary,
         digest: contentReviewDigest(data),
         document: reviewableDocumentDto(contentSlug, data, requestedLibrary),
+        ...(publishedSnapshot ? { publishedSnapshot } : {}),
       },
     });
   }),
@@ -268,6 +354,7 @@ router.post(
         approvedAt,
         approvedByRole: req.authorizationRole,
         approvalDigest: actualDigest,
+        ...(isPlainObject(data.publishedSnapshot) ? { publishedSnapshot: null } : {}),
       });
       transaction.set(auditRef, {
         action: "content.approved",

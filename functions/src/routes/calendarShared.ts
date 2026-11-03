@@ -16,6 +16,7 @@ import {
   readOccurrenceOverrides,
   readRecurrence,
   readString,
+  resolvePublicEventData,
 } from "./calendarHelpers";
 import {
   safeManagedPhotoPath,
@@ -143,7 +144,8 @@ export function feedLocationIds(
 ): string[] {
   const ids = new Set<string>();
   for (const document of documents) {
-    const id = readString((document.data() as EventDocument).locationId);
+    const data = resolvePublicEventData(document.data() as EventDocument);
+    const id = readString(data.locationId);
     if (id && /^[A-Za-z0-9_-]{1,128}$/.test(id)) ids.add(id);
     for (const overrides of occurrenceStates.get(document.id)?.overrides.values() ?? []) {
       const overrideId = readString(overrides.locationId);
@@ -179,9 +181,15 @@ export async function renderEventPage(
   includeLifecycle: boolean,
   windowDays: number,
 ) {
-  const dtos = documents.map((document) => eventDto(document.id, document.data() as EventDocument, includeLifecycle));
+  const resolvedData = documents.map((document) => {
+    const raw = document.data() as EventDocument;
+    return includeLifecycle ? raw : resolvePublicEventData(raw);
+  });
+  const dtos = documents.map((document) =>
+    eventDto(document.id, document.data() as EventDocument, includeLifecycle),
+  );
   const recurringIds = documents
-    .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
+    .filter((_, index) => readRecurrence(resolvedData[index].recurrence))
     .map((document) => document.id);
   if (recurringIds.length === 0) return { events: dtos };
 
@@ -196,7 +204,7 @@ export async function renderEventPage(
   const cap = perEventCap(windowDays);
   const expanded: ReturnType<typeof eventDto>[] = [];
   for (const [index, dto] of dtos.entries()) {
-    const data = documents[index].data() as EventDocument;
+    const data = resolvedData[index];
     if (!readRecurrence(data.recurrence)) {
       expanded.push(dto);
       continue;
@@ -248,7 +256,12 @@ export async function getEvent(idValue: string | string[], includeArchived: bool
     const parentRef = adminDb.collection("events").doc(compoundMatch[1]);
     const parentSnap = await parentRef.get();
     const parentData = parentSnap.data() as EventDocument | undefined;
-    if (parentSnap.exists && readRecurrence(parentData?.recurrence)) {
+    const effectiveData = includeArchived
+      ? parentData
+      : parentData
+        ? resolvePublicEventData(parentData)
+        : undefined;
+    if (parentSnap.exists && readRecurrence(effectiveData?.recurrence)) {
       if (!includeArchived && (parentData?.status !== "published" || parentData?.isDeleted === 1)) {
         throw new ApiError(404, "Event not found.", "EVENT_NOT_FOUND");
       }
@@ -270,4 +283,3 @@ export async function getEvent(idValue: string | string[], includeArchived: bool
   }
   return { id: rawId, ref, snapshot, data: data ?? {}, derivedOccurrence: undefined };
 }
-

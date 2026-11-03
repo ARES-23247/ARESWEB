@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw, Share2 } from "lucide-react";
+import { FileText, Pencil, Archive, ExternalLink, Search, CheckCircle2, RotateCcw, Share2, GitCompare } from "lucide-react";
 import { cleanThumbnailUrl } from "@/lib/utils";
 import type { DocRecord, DocumentConnectionState } from "@/hooks/useDocumentSync";
 import AuthenticatedImage from "@/components/media/AuthenticatedImage";
@@ -11,8 +11,11 @@ interface DocListGridProps {
   canEdit: boolean;
   isApprover?: boolean;
   onApprove?: (item: DocRecord) => void | Promise<unknown>;
+  onCompare?: (item: DocRecord) => void | Promise<unknown>;
+  onDiscardPending?: (item: DocRecord) => void | Promise<unknown>;
   reviewingSlug?: string | null;
   approvingSlug?: string | null;
+  discardingSlug?: string | null;
   onSyndicate?: (item: DocRecord) => void | Promise<void>;
   syndicatingSlug?: string | null;
   variant?: "docs" | "documents" | "blog";
@@ -38,8 +41,11 @@ export default function DocListGrid({
   canEdit,
   isApprover = false,
   onApprove,
+  onCompare,
+  onDiscardPending,
   reviewingSlug = null,
   approvingSlug = null,
+  discardingSlug = null,
   onSyndicate,
   syndicatingSlug = null,
   variant = "docs",
@@ -187,6 +193,7 @@ export default function DocListGrid({
                 const isPublished = item.status === "published";
                 const isPendingApproval = item.status === "pending_approval"
                   || item.approvalStatus === "pending_approval";
+                const hasStagedSnapshot = Boolean(isPendingApproval && item.publishedSnapshot);
 
                 return (
                   <tr key={item.slug} className="hover:bg-white/5 transition-colors">
@@ -211,7 +218,7 @@ export default function DocListGrid({
                             </p>
                             {variant === "documents" && isPendingApproval && (
                               <span className="px-1.5 py-0.5 bg-ares-gold/15 border border-ares-gold/30 text-ares-gold rounded text-[9px] font-black uppercase tracking-wider">
-                                Pending Approval
+                                {hasStagedSnapshot ? "Live + Pending Edit" : "Pending Approval"}
                               </span>
                             )}
                             {item.importedFrom === "ares-robotics-studio" && (
@@ -282,7 +289,9 @@ export default function DocListGrid({
                                 : "bg-ares-gold/15 border-ares-gold/30 text-ares-gold"
                             }`}
                           >
-                            {isPendingApproval ? "Pending Approval" : (item.status || "published")}
+                            {isPendingApproval
+                              ? (hasStagedSnapshot ? "Live + Pending Edit" : "Pending Approval")
+                              : (item.status || "published")}
                           </span>
                         </td>
                       </>
@@ -331,7 +340,7 @@ export default function DocListGrid({
                           }`}
                         >
                           {isPendingApproval
-                            ? "Pending Approval"
+                            ? (hasStagedSnapshot ? "Live + Pending Edit" : "Pending Approval")
                             : (item.status || "published")}
                         </span>
                       </td>
@@ -340,16 +349,40 @@ export default function DocListGrid({
                     {/* Actions Column */}
                     <td className="p-4 text-right">
                       <div className="inline-flex gap-1.5 items-center">
+                        {isApprover && onCompare && hasStagedSnapshot && (
+                          <button
+                            type="button"
+                            onClick={() => void onCompare(item)}
+                            disabled={reviewingSlug !== null || approvingSlug === item.slug || discardingSlug === item.slug}
+                            className="px-2 py-1 bg-ares-cyan/15 hover:bg-ares-cyan/30 text-ares-cyan border border-ares-cyan/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60"
+                            aria-label={`Compare pending edit for ${item.title}`}
+                            title="Compare Live vs. Pending Edit"
+                          >
+                            <GitCompare size={12} aria-hidden="true" /> Compare
+                          </button>
+                        )}
                         {isApprover && onApprove && isPendingApproval && (
                           <button
                             type="button"
                             onClick={() => void onApprove(item)}
-                            disabled={reviewingSlug !== null || approvingSlug === item.slug}
+                            disabled={reviewingSlug !== null || approvingSlug === item.slug || discardingSlug === item.slug}
                             className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60"
                             aria-label={variant === "docs" ? `Review and approve ${item.title}` : `Approve ${item.title}`}
                             title={variant === "docs" ? "Review & Publish" : "Approve & Publish"}
                           >
                             <CheckCircle2 size={12} aria-hidden="true" /> {reviewingSlug === item.slug ? "Loading review…" : approvingSlug === item.slug ? "Approving…" : variant === "docs" ? "Review" : "Approve"}
+                          </button>
+                        )}
+                        {isApprover && onDiscardPending && hasStagedSnapshot && (
+                          <button
+                            type="button"
+                            onClick={() => void onDiscardPending(item)}
+                            disabled={reviewingSlug !== null || approvingSlug === item.slug || discardingSlug === item.slug}
+                            className="px-2 py-1 bg-ares-red/15 hover:bg-ares-red/30 text-white border border-ares-red/40 text-[9px] font-black uppercase tracking-wider rounded transition-all cursor-pointer inline-flex items-center gap-1 disabled:cursor-wait disabled:opacity-60"
+                            aria-label={`Discard pending edit for ${item.title}`}
+                            title="Discard Pending Edit & Keep Live Version"
+                          >
+                            <RotateCcw size={12} aria-hidden="true" /> {discardingSlug === item.slug ? "Discarding…" : "Discard Edit"}
                           </button>
                         )}
                         {variant === "blog" && isApprover && onSyndicate && isPublished && item.isDeleted !== 1 && (

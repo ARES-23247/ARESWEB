@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { MapPin, X, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { notifyPendingApprovalQueue } from "@/lib/approvalNotifications";
 import {
   archiveLocation,
   createLocation,
@@ -34,6 +35,7 @@ export default function LocationManagerModal({
 }: LocationManagerModalProps) {
   const { authorizedUser } = useAuth();
   const canManage = !!authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role);
+  const canPropose = !!authorizedUser && authorizedUser.role !== "unverified";
   const [editingLocation, setEditingLocation] = useState<TeamLocation | null>(null);
   const [locFormName, setLocFormName] = useState("");
   const [locFormAddress, setLocFormAddress] = useState("");
@@ -56,7 +58,7 @@ export default function LocationManagerModal({
   // Action: Save Location (Create or Update)
   const handleSaveLocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canManage || !locFormName.trim() || !locFormAddress.trim()) return;
+    if (!canPropose || !locFormName.trim() || !locFormAddress.trim()) return;
     setIsSaving(true);
     setOperationStatus(null);
     const input = {
@@ -64,20 +66,30 @@ export default function LocationManagerModal({
       address: locFormAddress.trim(),
       description: locFormDescription.trim() || undefined,
       gmapsUrl: locFormGmapsUrl.trim() || undefined,
-      isAddressPublic: locFormIsAddressPublic ? 1 as const : 0 as const,
+      isAddressPublic: canManage && locFormIsAddressPublic ? (1 as const) : (0 as const),
     };
 
     try {
       const savedLocation = editingLocation
         ? await updateLocation(editingLocation.id, input)
         : await createLocation(input);
+      if (!canManage || savedLocation.approvalStatus === "pending_approval") {
+        void notifyPendingApprovalQueue("locations", savedLocation.id);
+      }
       if (editingLocation) {
         setLocations((current) => current.map((location) => location.id === savedLocation.id ? savedLocation : location));
       } else {
         setLocations((current) => [...current, savedLocation].sort((a, b) => a.name.localeCompare(b.name)));
       }
       setFormLocationId(savedLocation.id);
-      setOperationStatus({ kind: "success", message: editingLocation ? "Venue updated." : "Venue created." });
+      setOperationStatus({
+        kind: "success",
+        message: !canManage
+          ? "Venue proposal saved for mentor review (address kept private until approved)."
+          : editingLocation
+            ? "Venue updated."
+            : "Venue created.",
+      });
       resetForm();
     } catch (error) {
       logger.error("Unable to save location:", error);
@@ -181,6 +193,11 @@ export default function LocationManagerModal({
                                 Public address
                               </span>
                             )}
+                            {loc.isDeleted !== 1 && loc.approvalStatus === "pending_approval" && (
+                              <span className="bg-ares-cyan/15 text-ares-cyan text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-cyan/30 uppercase shrink-0">
+                                Pending Review
+                              </span>
+                            )}
                           </p>
                           <p className="text-[10px] text-marble/60 font-medium truncate">{loc.address}</p>
                           {loc.description && (
@@ -189,7 +206,7 @@ export default function LocationManagerModal({
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
-                          {canManage && loc.isDeleted !== 1 && <button
+                          {canPropose && loc.isDeleted !== 1 && <button
                             type="button"
                             onClick={() => {
                               setEditingLocation(loc);
@@ -238,7 +255,7 @@ export default function LocationManagerModal({
               </div>
 
               {/* Right Column: Add/Edit Form */}
-              {canManage ? <form
+              {canPropose ? <form
                 onSubmit={handleSaveLocation}
                 className="w-full md:w-1/2 p-5 overflow-y-auto space-y-4 flex flex-col justify-between scrollbar-thin scrollbar-thumb-white/5"
               >
@@ -316,23 +333,29 @@ export default function LocationManagerModal({
                     />
                   </div>
 
-                  <div className="rounded border border-ares-gold/25 bg-ares-gold/5 p-3">
-                    <label htmlFor="loc-address-public" className="flex cursor-pointer items-start gap-3 text-xs text-white">
-                      <input
-                        id="loc-address-public"
-                        type="checkbox"
-                        checked={locFormIsAddressPublic}
-                        onChange={(event) => setLocFormIsAddressPublic(event.target.checked)}
-                        className="mt-0.5 h-4 w-4 accent-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
-                      />
-                      <span>
-                        <span className="block font-bold">Publish this address</span>
-                        <span className="mt-1 block text-[10px] leading-relaxed text-marble/65">
-                          Allow the full venue name and address to appear on public event pages and in search metadata. Leave this off for homes, schools, or private team locations.
+                  {canManage ? (
+                    <div className="rounded border border-ares-gold/25 bg-ares-gold/5 p-3">
+                      <label htmlFor="loc-address-public" className="flex cursor-pointer items-start gap-3 text-xs text-white">
+                        <input
+                          id="loc-address-public"
+                          type="checkbox"
+                          checked={locFormIsAddressPublic}
+                          onChange={(event) => setLocFormIsAddressPublic(event.target.checked)}
+                          className="mt-0.5 h-4 w-4 accent-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                        />
+                        <span>
+                          <span className="block font-bold">Publish this address</span>
+                          <span className="mt-1 block text-[10px] leading-relaxed text-marble/65">
+                            Allow the full venue name and address to appear on public event pages and in search metadata. Leave this off for homes, schools, or private team locations.
+                          </span>
                         </span>
-                      </span>
-                    </label>
-                  </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="rounded border border-ares-gold/25 bg-ares-gold/5 p-3 text-[10px] leading-relaxed text-marble/70">
+                      Student venue proposals keep addresses private until a coach or mentor reviews and approves public display.
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-white/5 flex gap-2 shrink-0">

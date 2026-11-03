@@ -67,6 +67,7 @@ export interface DocRecord extends Partial<LearningMetadata> {
   studioEntryId?: string;
   studioRevision?: number;
   studioWorkspace?: string;
+  publishedSnapshot?: Record<string, unknown>;
 }
 
 export interface DocRevision extends Partial<LearningMetadata> {
@@ -103,6 +104,40 @@ export function contentOwnerDocumentId(
   slug: string,
 ): string {
   return `${collectionName}__${slug}`;
+}
+
+const SNAPSHOT_EXCLUDED_KEYS = new Set([
+  "publishedSnapshot",
+  "status",
+  "approvalStatus",
+  "approvedBy",
+  "approvedAt",
+  "approvedByUid",
+  "approvedByRole",
+  "approvalDigest",
+  "isApproved",
+  "lastEditedByUid",
+  "isDeleted",
+]);
+
+export function extractPublishedDocSnapshot(
+  existingData: Record<string, unknown>,
+): Record<string, unknown> {
+  if (
+    existingData.approvalStatus === "pending_approval" &&
+    existingData.publishedSnapshot &&
+    typeof existingData.publishedSnapshot === "object" &&
+    !Array.isArray(existingData.publishedSnapshot)
+  ) {
+    return existingData.publishedSnapshot as Record<string, unknown>;
+  }
+  const snapshot: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(existingData)) {
+    if (!SNAPSHOT_EXCLUDED_KEYS.has(key) && value !== undefined) {
+      snapshot[key] = value;
+    }
+  }
+  return snapshot;
 }
 
 function describeFirestoreError(error: unknown, operation: string): string {
@@ -176,6 +211,12 @@ export function mapDocumentSnapshot(
       typeof data.studioRevision === "number" ? data.studioRevision : undefined,
     studioWorkspace:
       typeof data.studioWorkspace === "string" ? data.studioWorkspace : undefined,
+    publishedSnapshot:
+      data.publishedSnapshot &&
+      typeof data.publishedSnapshot === "object" &&
+      !Array.isArray(data.publishedSnapshot)
+        ? (data.publishedSnapshot as Record<string, unknown>)
+        : undefined,
     ...normalizeLearningMetadata(data, {
       category,
       reference: data.displayInAreslib === 1
@@ -337,7 +378,7 @@ export const useDocumentSync = (
               : {}),
           }
         : isApprovedPublishSave
-          ? { lastEditedByUid: deleteField() }
+          ? { lastEditedByUid: deleteField(), publishedSnapshot: deleteField() }
           : {}),
     };
     const revisionData: DocRevision | null = user
@@ -375,6 +416,16 @@ export const useDocumentSync = (
       if (options.isCreate) {
         const existing = await transaction.get(documentRef);
         if (existing.exists()) throw new DocumentSlugConflictError(slug);
+      } else if (isPendingApprovalSave) {
+        const existing = await transaction.get(documentRef);
+        if (existing.exists() && typeof existing.data === "function") {
+          const existingData = existing.data();
+          if (existingData?.status === "published") {
+            documentPayload.status = "published";
+            documentPayload.approvalStatus = "pending_approval";
+            documentPayload.publishedSnapshot = extractPublishedDocSnapshot(existingData);
+          }
+        }
       }
       // Preserve server-owned integration metadata (for example Drive source
       // identity and sync state) when a member edits the website fields.

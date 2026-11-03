@@ -408,7 +408,7 @@ describe("useDashboardDocController archive workflow", () => {
     expect(authenticatedFetchMock).not.toHaveBeenCalled();
   });
 
-  it("moves a published blog post back to pending_approval, strips approval stamps, and notifies the approval queue when edited by a student", async () => {
+  it("keeps status published with pending_approval, strips approval stamps, and notifies the approval queue when a published blog post is edited by a student", async () => {
     authState.role = "student";
     authState.name = "StudentBuilder";
     const { result } = renderHook(
@@ -442,7 +442,7 @@ describe("useDashboardDocController archive workflow", () => {
       "published-post",
       expect.objectContaining({
         title: "Published Post Updated by Student",
-        status: "pending_approval",
+        status: "published",
         approvalStatus: "pending_approval",
         original_authorNickname: "OriginalAuthor",
         original_authorAvatar: "https://avatars.example.org/original.png",
@@ -462,6 +462,48 @@ describe("useDashboardDocController archive workflow", () => {
         body: JSON.stringify({ collection: "posts", contentId: "published-post" }),
       }),
     );
+  });
+
+  it("opens comparison and discards a staged pending edit via the server endpoint", async () => {
+    const stagedDoc = {
+      slug: "published-post",
+      title: "Draft Title",
+      category: "Build",
+      content: "Draft content",
+      description: "Draft desc",
+      status: "published",
+      approvalStatus: "pending_approval",
+      publishedSnapshot: {
+        title: "Live Title",
+        content: "Live content",
+      },
+    } as never;
+
+    const { result } = renderHook(
+      () => useDashboardDocController("posts", () => true),
+      { wrapper },
+    );
+
+    act(() => result.current.handleOpenCompare(stagedDoc));
+    expect(result.current.comparingDoc).toEqual(stagedDoc);
+
+    let discarded = false;
+    await act(async () => {
+      discarded = await result.current.handleDiscardPendingEdit(stagedDoc);
+    });
+    expect(discarded).toBe(true);
+    expect(result.current.comparingDoc).toBeNull();
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      "/api/content-admin/discard-pending",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ collection: "posts", contentId: "published-post" }),
+      }),
+    );
+    expect(result.current.approvalNotice).toMatchObject({
+      kind: "success",
+      message: expect.stringContaining("discarded"),
+    });
   });
 
   it("allows an approver to crosspost or retry a published blog explicitly", async () => {

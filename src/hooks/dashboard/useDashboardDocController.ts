@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useDocumentSync, type DocRecord } from "@/hooks/useDocumentSync";
-import { notifyPendingApprovalQueue } from "@/lib/approvalNotifications";
+import {
+  discardPendingContentEdit,
+  notifyPendingApprovalQueue,
+} from "@/lib/approvalNotifications";
 import {
   parseDocumentationApprovalReview,
   syndicationChannelDetails,
@@ -41,6 +44,8 @@ export function useDashboardDocController(
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [reviewingSlug, setReviewingSlug] = useState<string | null>(null);
   const [approvingSlug, setApprovingSlug] = useState<string | null>(null);
+  const [discardingSlug, setDiscardingSlug] = useState<string | null>(null);
+  const [comparingDoc, setComparingDoc] = useState<DocRecord | null>(null);
   const [approvalNotice, setApprovalNotice] = useState<{
     kind: "success" | "error";
     message: string;
@@ -82,8 +87,10 @@ export function useDashboardDocController(
   const publishedDocs = docs.filter(
     (d: DocRecord) =>
       (!d.status || d.status === "published" || d.approvalStatus === "approved")
-      && d.status !== "pending_approval"
-      && d.approvalStatus !== "pending_approval"
+      && (
+        (d.status !== "pending_approval" && d.approvalStatus !== "pending_approval")
+        || Boolean(d.publishedSnapshot)
+      )
   );
 
   useEffect(() => {
@@ -215,8 +222,9 @@ export function useDashboardDocController(
     const requiresReview = collectionName === "docs";
     const wasPublished = selectedDoc?.status === "published"
       && selectedDoc.approvalStatus !== "pending_approval";
+    const isEditingPublishedRecord = selectedDoc?.status === "published";
     const status = isMemberRole || requiresReview
-      ? "pending_approval"
+      ? (isEditingPublishedRecord ? "published" : "pending_approval")
       : payload.status || "published";
     const approvalStatus = isMemberRole || requiresReview
       ? "pending_approval"
@@ -224,8 +232,9 @@ export function useDashboardDocController(
     const becamePublished = status === "published"
       && approvalStatus === "approved"
       && !wasPublished;
+    const { publishedSnapshot: _existingSnapshot, ...cleanPayload } = payload;
     const finalPayload: Omit<DocRecord, "slug"> = {
-      ...payload,
+      ...cleanPayload,
       original_authorNickname: selectedDoc
         ? selectedDoc.original_authorNickname || userNickname
         : userNickname,
@@ -334,7 +343,7 @@ export function useDashboardDocController(
     setApprovingSlug(docItem.slug);
     try {
 
-      const { slug, ...existingPayload } = docItem;
+      const { slug, publishedSnapshot: _publishedSnapshot, ...existingPayload } = docItem;
       const finalPayload: Omit<DocRecord, "slug"> = {
         ...existingPayload,
         status: "published",
@@ -344,8 +353,11 @@ export function useDashboardDocController(
       };
       await saveDoc(slug, finalPayload, userNickname, userAvatar);
 
-      if (collectionName === "posts") {
+      if (collectionName === "posts" && !docItem.publishedSnapshot) {
         await runSocialAnnouncement(slug);
+      }
+      if (comparingDoc?.slug === slug) {
+        setComparingDoc(null);
       }
       setApprovalNotice({ kind: "success", message: `${docItem.title} was approved and published.` });
       return true;
@@ -356,6 +368,55 @@ export function useDashboardDocController(
       return false;
     } finally {
       setApprovingSlug(null);
+    }
+  };
+
+  const handleOpenCompare = (docItem: DocRecord) => {
+    if (!isApprover || !docItem.publishedSnapshot) return;
+    setApprovalNotice(null);
+    setComparingDoc(docItem);
+  };
+
+  const handleCloseCompare = () => {
+    if (approvingSlug || discardingSlug) return;
+    setComparingDoc(null);
+  };
+
+  const handleDiscardPendingEdit = async (docItem: DocRecord) => {
+    if (
+      !isApprover ||
+      discardingSlug ||
+      (collectionName !== "posts" &&
+        collectionName !== "docs" &&
+        collectionName !== "documents")
+    ) {
+      return false;
+    }
+    setApprovalNotice(null);
+    setDiscardingSlug(docItem.slug);
+    try {
+      await discardPendingContentEdit(collectionName, docItem.slug);
+      if (comparingDoc?.slug === docItem.slug) {
+        setComparingDoc(null);
+      }
+      setApprovalNotice({
+        kind: "success",
+        message: `Pending edits for ${docItem.title} were discarded and the live published version was restored.`,
+      });
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not discard the pending edit.";
+      logger.error("Discard pending edit failed", {
+        collectionName,
+        slug: docItem.slug,
+      });
+      setApprovalNotice({ kind: "error", message });
+      return false;
+    } finally {
+      setDiscardingSlug(null);
     }
   };
 
@@ -437,8 +498,13 @@ export function useDashboardDocController(
     loadDocumentationApprovalReview,
     handleApproveDocumentationReview,
     handleApproveAndPublish,
+    comparingDoc,
+    handleOpenCompare,
+    handleCloseCompare,
+    handleDiscardPendingEdit,
     reviewingSlug,
     approvingSlug,
+    discardingSlug,
     approvalNotice,
     dismissApprovalNotice: () => setApprovalNotice(null),
     handleDelete,

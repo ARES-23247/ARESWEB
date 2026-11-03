@@ -377,7 +377,7 @@ export default function EventEditorDrawer({
                     formUntil={formUntil}
                     setFormUntil={setFormUntil}
                     isEditingExistingRecurring={Boolean(
-                      editId && eventToEdit?.recurrence && canPublishDirectly,
+                      editId && eventToEdit?.recurrence && canEdit,
                     )}
                     occurrenceExceptions={occurrenceExceptions}
                     onCancelOccurrence={handleCancelOccurrence}

@@ -51,6 +51,8 @@ export interface TeamEvent {
   isVolunteer?: number; // 0 or 1
   isDeleted?: number; // 0 or 1 for Soft Delete
   status?: "published" | "pending" | "draft";
+  approvalStatus?: "pending_approval" | "approved";
+  publishedSnapshot?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
   archivedAt?: string;

@@ -208,4 +208,87 @@ describe("public content DTO API", () => {
     await handler("/docs")(req, res, next);
     expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400 }));
   });
+
+  it("serves publishedSnapshot for staged pending blog posts and lessons while keeping unapproved edits private", async () => {
+    mocks.get.mockResolvedValueOnce({
+      docs: [
+        document("staged-post", {
+          title: "Unapproved Draft Title",
+          content: "Unapproved body",
+          status: "published",
+          approvalStatus: "pending_approval",
+          isDeleted: 0,
+          publishedSnapshot: {
+            title: "Approved Live Title",
+            content: "Approved live body",
+            date: "2026-10-01",
+            author: "Bolt",
+          },
+        }),
+      ],
+    });
+    await handler("/posts")(req, res, next);
+    expect(res.json).toHaveBeenLastCalledWith({
+      posts: [
+        expect.objectContaining({
+          slug: "staged-post",
+          title: "Approved Live Title",
+          snippet: "Approved live body",
+        }),
+      ],
+    });
+
+    req.params.slug = "staged-post";
+    mocks.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        title: "Unapproved Draft Title",
+        content: "Unapproved body",
+        status: "published",
+        approvalStatus: "pending_approval",
+        isDeleted: 0,
+        publishedSnapshot: {
+          title: "Approved Live Title",
+          content: "Approved live body",
+          date: "2026-10-01",
+        },
+      }),
+    });
+    await handler("/posts/:slug")(req, res, next);
+    expect(res.json).toHaveBeenLastCalledWith({
+      post: expect.objectContaining({
+        slug: "staged-post",
+        title: "Approved Live Title",
+        content: "Approved live body",
+      }),
+    });
+
+    req.params = { slug: "staged-doc" };
+    req.query = { library: "areslib" };
+    mocks.docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        title: "Unapproved Doc Title",
+        content: "Unapproved Doc Content",
+        status: "published",
+        approvalStatus: "pending_approval",
+        isDeleted: 0,
+        displayInAreslib: 1,
+        publishedSnapshot: {
+          title: "Approved Doc Title",
+          content: "Approved Doc Content",
+          category: "Controls",
+          displayInAreslib: 1,
+        },
+      }),
+    });
+    await handler("/docs/:slug")(req, res, next);
+    expect(res.json).toHaveBeenLastCalledWith({
+      document: expect.objectContaining({
+        slug: "staged-doc",
+        title: "Approved Doc Title",
+        content: "Approved Doc Content",
+      }),
+    });
+  });
 });

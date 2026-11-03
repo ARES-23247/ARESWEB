@@ -8,6 +8,7 @@ import {
   cancelEventOccurrence,
   createEvent,
   createLocation,
+  discardPendingEventEdit,
   approveEventPhoto,
   associateEventPhoto,
   fetchEventOccurrences,
@@ -148,6 +149,7 @@ describe("calendar API client", () => {
     await archiveEvent("event-1");
     await restoreEvent("event-1");
     await publishEvent("event-1");
+    await discardPendingEventEdit("event-1");
     await expect(fetchLocations()).resolves.toEqual([expect.objectContaining({ id: "venue-1", isAddressPublic: 1 }),]);
     await createLocation(venueInput);
     await updateLocation("venue-1", venueInput);
