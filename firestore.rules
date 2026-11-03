@@ -57,15 +57,37 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/content_owners/$(ownerId)).data.ownerUid == request.auth.uid;
     }
 
-    function isSafeMemberDraftWrite(data) {
+    function isSafeMemberPendingFields(data) {
       return isPendingContent(data) &&
         data.get('approvalStatus', 'pending_approval') != 'approved' &&
         data.get('isApproved', false) == false &&
         !('approvedBy' in data) &&
         !('approvedAt' in data) &&
         !('approvedByUid' in data) &&
-        !('approvedByRole' in data) &&
+        !('approvedByRole' in data);
+    }
+
+    function isSafeMemberDraftWrite(data) {
+      return isSafeMemberPendingFields(data) &&
         (!('authorId' in data) || data.authorId == request.auth.uid);
+    }
+
+    function preservesOrBindsAuthorId() {
+      return 'authorId' in resource.data
+        ? request.resource.data.get('authorId', null) == resource.data.authorId
+        : (!('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid);
+    }
+
+    function isActiveMemberEditorOnPost() {
+      return request.resource.data.get('lastEditedByUid', '') is string &&
+        request.resource.data.get('lastEditedByUid', '') == request.auth.uid;
+    }
+
+    function hasPriorCollaborativePostState() {
+      return (
+        resource.data.get('lastEditedByUid', '') is string &&
+        resource.data.get('lastEditedByUid', '').size() > 0
+      ) || resource.data.get('importedFrom', '') == 'ares-robotics-studio';
     }
 
     function canCreateContent(collectionName, contentId) {
@@ -87,6 +109,22 @@ service cloud.firestore {
         request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
         (!('authorId' in resource.data) || request.resource.data.get('authorId', null) == resource.data.authorId) &&
         isContentOwner(collectionName, contentId)
+      );
+    }
+
+    function canUpdatePost(postSlug) {
+      return isContentPublisher() || (
+        isAuthorized() &&
+        resource.data.get('isDeleted', 0) == 0 &&
+        request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
+        isSafeMemberPendingFields(request.resource.data) &&
+        preservesOrBindsAuthorId() &&
+        request.resource.data.get('importedFrom', null) == resource.data.get('importedFrom', null) &&
+        (
+          isContentOwner('posts', postSlug) ||
+          (resource.data.status == 'published' && isActiveMemberEditorOnPost()) ||
+          (isPendingContent(resource.data) && hasPriorCollaborativePostState() && isActiveMemberEditorOnPost())
+        )
       );
     }
 
@@ -131,6 +169,16 @@ service cloud.firestore {
       return isAuthorized() &&
         request.resource.data.editedBy == request.auth.uid &&
         (isContentPublisher() || isContentOwnerAfter(collectionName, contentId));
+    }
+
+    function canCreatePostRevision(postSlug) {
+      return canCreateRevision('posts', postSlug) || (
+        isAuthorized() &&
+        request.resource.data.editedBy == request.auth.uid &&
+        existsAfter(/databases/$(database)/documents/posts/$(postSlug)) &&
+        isSafeMemberPendingFields(getAfter(/databases/$(database)/documents/posts/$(postSlug)).data) &&
+        getAfter(/databases/$(database)/documents/posts/$(postSlug)).data.get('lastEditedByUid', '') == request.auth.uid
+      );
     }
 
     function hasNoServerDriveFields() {
@@ -270,12 +318,12 @@ service cloud.firestore {
       // Public readers use the explicit /api/content DTO boundary.
       allow read: if isAuthorized();
       allow create: if canCreateContent('posts', postSlug);
-      allow update: if canUpdateContent('posts', postSlug);
+      allow update: if canUpdatePost(postSlug);
       allow delete: if isContentPublisher();
 
       match /revisions/{revisionId} {
         allow read: if isAuthorized();
-        allow create: if canCreateRevision('posts', postSlug);
+        allow create: if canCreatePostRevision(postSlug);
         allow update, delete: if false;
       }
     }

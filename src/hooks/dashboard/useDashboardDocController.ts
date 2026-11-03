@@ -79,7 +79,10 @@ export function useDashboardDocController(
     (d: DocRecord) => d.status === "pending_approval" || d.approvalStatus === "pending_approval"
   );
   const publishedDocs = docs.filter(
-    (d: DocRecord) => !d.status || d.status === "published" || d.approvalStatus === "approved"
+    (d: DocRecord) =>
+      (!d.status || d.status === "published" || d.approvalStatus === "approved")
+      && d.status !== "pending_approval"
+      && d.approvalStatus !== "pending_approval"
   );
 
   useEffect(() => {
@@ -220,7 +223,7 @@ export function useDashboardDocController(
     const becamePublished = status === "published"
       && approvalStatus === "approved"
       && !wasPublished;
-    const finalPayload = {
+    const finalPayload: Omit<DocRecord, "slug"> = {
       ...payload,
       original_authorNickname: selectedDoc
         ? selectedDoc.original_authorNickname || userNickname
@@ -238,6 +241,10 @@ export function useDashboardDocController(
         ? { approvedBy: userNickname, approvedAt: new Date().toISOString() }
         : {}),
     };
+    if (status !== "published" || approvalStatus !== "approved") {
+      delete finalPayload.approvedBy;
+      delete finalPayload.approvedAt;
+    }
     await saveDoc(slug, finalPayload, userNickname, userAvatar, {
       isCreate: !selectedDoc,
     });

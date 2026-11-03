@@ -2,6 +2,7 @@ import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useState } from "react";
 import {
   collection,
+  deleteField,
   doc,
   limit as firestoreLimit,
   onSnapshot,
@@ -30,7 +31,7 @@ export type DocumentConnectionState = "loading" | "connected" | "offline" | "err
 
 export class DocumentSlugConflictError extends Error {
   constructor(slug: string) {
-    super(`A record already exists at slug \"${slug}\". Choose a unique slug.`);
+    super(`A record already exists at slug "${slug}". Choose a unique slug.`);
     this.name = "DocumentSlugConflictError";
   }
 }
@@ -61,6 +62,7 @@ export interface DocRecord extends Partial<LearningMetadata> {
   approvalStatus?: string;
   approvedBy?: string;
   approvedAt?: string;
+  lastEditedByUid?: string;
   importedFrom?: string;
   studioEntryId?: string;
   studioRevision?: number;
@@ -96,11 +98,10 @@ export interface SaveDocumentOptions {
   isCreate?: boolean;
 }
 
-export
-
-function contentOwnerDocumentId(
+export function contentOwnerDocumentId(
   collectionName: string,
-  slug: string): string {
+  slug: string,
+): string {
   return `${collectionName}__${slug}`;
 }
 
@@ -165,6 +166,8 @@ export function mapDocumentSnapshot(
       typeof data.approvedBy === "string" ? data.approvedBy : undefined,
     approvedAt:
       typeof data.approvedAt === "string" ? data.approvedAt : undefined,
+    lastEditedByUid:
+      typeof data.lastEditedByUid === "string" ? data.lastEditedByUid : undefined,
     importedFrom:
       typeof data.importedFrom === "string" ? data.importedFrom : undefined,
     studioEntryId:
@@ -312,6 +315,31 @@ export const useDocumentSync = (
         && payload.displayInMathCorner !== 1
         && payload.displayInScienceCorner !== 1,
     });
+    const isPendingApprovalSave =
+      payload.approvalStatus === "pending_approval"
+      || payload.approvalStatus === "pending"
+      || payload.status === "pending_approval"
+      || payload.status === "pending";
+    const isApprovedPublishSave =
+      payload.status === "published"
+      && payload.approvalStatus === "approved";
+    const documentPayload: Record<string, unknown> = {
+      ...payload,
+      ...(isPendingApprovalSave
+        ? {
+            approvedBy: deleteField(),
+            approvedAt: deleteField(),
+            approvedByUid: deleteField(),
+            approvedByRole: deleteField(),
+            isApproved: deleteField(),
+            ...(collectionName === "posts" && !options.isCreate && user?.uid
+              ? { lastEditedByUid: user.uid }
+              : {}),
+          }
+        : isApprovedPublishSave && collectionName === "posts"
+          ? { lastEditedByUid: deleteField() }
+          : {}),
+    };
     const revisionData: DocRevision | null = user
       ? {
           id: revId,
@@ -339,8 +367,9 @@ export const useDocumentSync = (
             userProfileAvatar ||
             user.photoURL ||
             `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`,
-      timestamp: now,
-    } : null;
+          timestamp: now,
+        }
+      : null;
 
     await runTransaction(db, async (transaction) => {
       if (options.isCreate) {
@@ -349,7 +378,7 @@ export const useDocumentSync = (
       }
       // Preserve server-owned integration metadata (for example Drive source
       // identity and sync state) when a member edits the website fields.
-      transaction.set(documentRef, payload, { merge: true });
+      transaction.set(documentRef, documentPayload, { merge: true });
       if (options.isCreate && user) {
         transaction.set(
           doc(

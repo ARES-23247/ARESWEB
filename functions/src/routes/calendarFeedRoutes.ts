@@ -69,6 +69,7 @@ router.get(
       if (!end) continue;
       const updated = formatIcalDate(readString(data.updatedAt)) ?? start;
       const recurrence = readRecurrence(data.recurrence);
+      const managedDto = recurrence ? eventDto(document.id, data, true) : null;
       const occurrenceState = occurrenceStates.get(document.id);
       lines.push("BEGIN:VEVENT");
       lines.push(`UID:${document.id}@aresfirst.org`);
@@ -88,11 +89,21 @@ router.get(
           rule.push(`UNTIL=${recurrence.until.replace(/-/g, "")}T235959Z`);
         lines.push(`RRULE:${rule.join(";")}`);
         const cancelled = occurrenceState?.cancelledDates;
-        if (cancelled && cancelled.size > 0) {
+        if (cancelled && cancelled.size > 0 && managedDto) {
           lines.push(
             `EXDATE:${[...cancelled]
               .sort()
-              .map((date) => `${date.replace(/-/g, "")}T${start.slice(9, 15)}Z`)
+              .map((date) => {
+                const [baseOccurrence] = expandEventOccurrences(managedDto, data, {
+                  fromDate: date,
+                  toDate: date,
+                  maxPerEvent: 1,
+                });
+                return (
+                  formatIcalDate(baseOccurrence?.dateStart ?? null) ??
+                  `${date.replace(/-/g, "")}T${start.slice(9, 15)}Z`
+                );
+              })
               .join(",")}`,
           );
         }
@@ -112,8 +123,7 @@ router.get(
 
       // RFC 5545 recurrence exceptions keep the series UID and identify the
       // original generated session with RECURRENCE-ID.
-      if (recurrence && occurrenceState?.overrides.size) {
-        const managedDto = eventDto(document.id, data, true);
+      if (recurrence && managedDto && occurrenceState?.overrides.size) {
         for (const [date, overrides] of [...occurrenceState.overrides].sort(
           ([a], [b]) => a.localeCompare(b),
         )) {
@@ -185,4 +195,3 @@ router.get(
   }),
 );
 }
-

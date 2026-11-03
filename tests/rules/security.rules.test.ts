@@ -8,6 +8,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -285,6 +286,65 @@ describe("Firestore zero-trust rules", () => {
       updateDoc(doc(mentorDb, "posts", "published-post"), {
         title: "Reviewed update",
         status: "published",
+        approvalStatus: "approved",
+        approvedBy: "Mentor",
+        approvedAt: "2026-08-20T12:10:00.000Z",
+        authorId: "mentor-user",
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(otherDb, "posts", "published-post"), {
+        title: "Student edit keeping stale approval",
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "other-member",
+      }),
+    );
+    await assertSucceeds(
+      runTransaction(otherDb, async (transaction) => {
+        transaction.set(
+          doc(otherDb, "posts", "published-post"),
+          {
+            title: "Student edit awaiting mentor review",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            approvedBy: deleteField(),
+            approvedAt: deleteField(),
+            approvedByUid: deleteField(),
+            approvedByRole: deleteField(),
+            isApproved: deleteField(),
+            lastEditedByUid: "other-member",
+          },
+          { merge: true },
+        );
+        transaction.set(
+          doc(otherDb, "posts", "published-post", "revisions", "rev-student-1"),
+          {
+            editedBy: "other-member",
+            timestamp: "2026-08-20T12:15:00.000Z",
+          },
+        );
+      }),
+    );
+    await assertSucceeds(
+      runTransaction(otherDb, async (transaction) => {
+        transaction.set(
+          doc(otherDb, "posts", "published-post"),
+          {
+            title: "Student follow-up edit before mentor review",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            lastEditedByUid: "other-member",
+          },
+          { merge: true },
+        );
+        transaction.set(
+          doc(otherDb, "posts", "published-post", "revisions", "rev-student-2"),
+          {
+            editedBy: "other-member",
+            timestamp: "2026-08-20T12:16:00.000Z",
+          },
+        );
       }),
     );
     await assertFails(
