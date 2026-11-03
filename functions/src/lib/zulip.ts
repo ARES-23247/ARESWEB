@@ -75,6 +75,34 @@ export async function sendZulipAlert(
   return sendZulipMessage(adminStream, topic, content);
 }
 
+export interface ApprovalQueueNotificationInput {
+  section: string;
+  title: string;
+  contentId: string;
+  authorLabel?: string;
+  dashboardPath: string;
+  isStagedEdit?: boolean;
+}
+
+export async function sendZulipApprovalQueueNotification(
+  input: ApprovalQueueNotificationInput,
+): Promise<boolean> {
+  const adminStream = process.env.ZULIP_ADMIN_STREAM || "leadership";
+  const topic = "Content Approval Queue";
+  const actionLabel = input.isStagedEdit
+    ? "submitted a pending edit to a published item"
+    : "submitted an item for mentor/coach review";
+  const actor = input.authorLabel?.trim() || "An ARES team member";
+  const portalUrl = `https://aresfirst.org${input.dashboardPath}`;
+  const content = [
+    `**[${input.section}] Pending Review: ${input.title}**`,
+    `${actor} ${actionLabel} (\`${input.contentId}\`).`,
+    `Review in dashboard: ${portalUrl}`,
+  ].join("\n\n");
+
+  return sendZulipMessage(adminStream, topic, content);
+}
+
 export interface ZulipUser {
   user_id?: number;
   email?: string;

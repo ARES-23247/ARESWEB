@@ -5,6 +5,7 @@ import { adminDb } from "../lib/firebase-admin";
 import { reviewableDocumentDto } from "../lib/contentDtos";
 import { publicLearningMetadata } from "../lib/learningContent";
 import { asyncHandler } from "../lib/utils";
+import { sendZulipApprovalQueueNotification } from "../lib/zulip";
 import { ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 
@@ -13,6 +14,13 @@ const CONTENT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,299}$/u;
 const DIGEST = /^[a-f0-9]{64}$/u;
 const PENDING_STATUSES = new Set(["draft", "pending", "pending_approval"]);
 const APPROVER_ROLES = new Set(["admin", "coach", "mentor"]);
+const APPROVAL_NOTIFICATION_COLLECTIONS = new Set([
+  "posts",
+  "docs",
+  "documents",
+  "events",
+  "event_locations",
+] as const);
 const REVIEW_FIELDS = [
   "title", "category", "sortOrder", "description", "content",
   "displayInAreslib", "displayInMathCorner", "displayInScienceCorner",
@@ -24,6 +32,12 @@ const REVIEW_FIELDS = [
 ] as const;
 
 type Library = "academy" | "areslib";
+type ApprovalNotificationCollection =
+  | "posts"
+  | "docs"
+  | "documents"
+  | "events"
+  | "event_locations";
 
 const approvalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -36,6 +50,16 @@ const approvalLimiter = rateLimit({
 function library(value: unknown): Library {
   if (value === "academy" || value === "areslib") return value;
   throw new ApiError(400, "Choose the academy or areslib library.", "INVALID_LIBRARY");
+}
+
+function notificationCollection(value: unknown): ApprovalNotificationCollection {
+  if (
+    typeof value === "string" &&
+    APPROVAL_NOTIFICATION_COLLECTIONS.has(value as ApprovalNotificationCollection)
+  ) {
+    return value as ApprovalNotificationCollection;
+  }
+  throw new ApiError(400, "Choose a supported approval queue collection.", "INVALID_COLLECTION");
 }
 
 function slug(value: unknown): string {
@@ -115,7 +139,79 @@ export function ensureContentApprover(
   next();
 }
 
+function approvalNotificationRouteMetadata(
+  requestedCollection: ApprovalNotificationCollection,
+  data: Record<string, unknown>,
+): { section: string; dashboardPath: string } {
+  switch (requestedCollection) {
+    case "posts":
+      return { section: "Blog Posts", dashboardPath: "/dashboard/blog?tab=pending" };
+    case "docs":
+      return data.displayInAreslib === 1
+        ? { section: "ARESLib Reference", dashboardPath: "/dashboard/areslib" }
+        : { section: "Academy Curriculum", dashboardPath: "/dashboard/academy" };
+    case "documents":
+      return { section: "Cloud Resources", dashboardPath: "/dashboard/documents" };
+    case "events":
+      return { section: "Calendar Events", dashboardPath: "/dashboard/events" };
+    case "event_locations":
+      return { section: "Calendar Venues", dashboardPath: "/dashboard/events" };
+  }
+}
+
 router.use(approvalLimiter);
+
+router.post(
+  "/notify-pending",
+  ensureTeamMember,
+  asyncHandler(async (req, res) => {
+    const requestedCollection = notificationCollection(req.body?.collection);
+    const contentId = slug(req.body?.contentId);
+    const snapshot = await adminDb.collection(requestedCollection).doc(contentId).get();
+    if (!snapshot.exists) {
+      throw new ApiError(404, "Pending record not found.", "CONTENT_NOT_FOUND");
+    }
+    const data = snapshot.data() as Record<string, unknown>;
+    if (data.isDeleted === 1 || data.isDeleted === true) {
+      throw new ApiError(409, "Archived content cannot trigger a review notification.", "CONTENT_ARCHIVED");
+    }
+    const isPending =
+      PENDING_STATUSES.has(String(data.status)) ||
+      PENDING_STATUSES.has(String(data.approvalStatus)) ||
+      Boolean(data.pendingEdit);
+    if (!isPending) {
+      throw new ApiError(409, "Only pending content can trigger an approval notification.", "CONTENT_NOT_PENDING");
+    }
+    const { section, dashboardPath } = approvalNotificationRouteMetadata(requestedCollection, data);
+    const rawTitle =
+      typeof data.title === "string" && data.title.trim()
+        ? data.title.trim()
+        : typeof data.name === "string" && data.name.trim()
+          ? data.name.trim()
+          : contentId;
+    const rawAuthor =
+      typeof data.author === "string" && data.author.trim()
+        ? data.author.trim()
+        : typeof data.original_authorNickname === "string" && data.original_authorNickname.trim()
+          ? data.original_authorNickname.trim()
+          : undefined;
+    const delivered = await sendZulipApprovalQueueNotification({
+      section,
+      title: rawTitle.slice(0, 160),
+      contentId,
+      authorLabel: rawAuthor ? rawAuthor.slice(0, 80) : undefined,
+      dashboardPath,
+      isStagedEdit: Boolean(data.publishedSnapshot || data.pendingEdit),
+    });
+
+    res.json({
+      success: true,
+      delivered,
+      collection: requestedCollection,
+      contentId,
+    });
+  }),
+);
 
 router.get(
   "/docs/:slug/review",

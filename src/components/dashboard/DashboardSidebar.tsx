@@ -107,6 +107,14 @@ export default function DashboardSidebar({
   const {
     pendingBlogApprovals,
     blogApprovalsState,
+    pendingEventApprovals = 0,
+    eventApprovalsState = "idle",
+    pendingAcademyApprovals = 0,
+    academyApprovalsState = "idle",
+    pendingAreslibApprovals = 0,
+    areslibApprovalsState = "idle",
+    pendingDocumentApprovals = 0,
+    documentApprovalsState = "idle",
     hasPendingInquiries,
     inquiriesState,
   } = useDashboardNotifications();
@@ -255,6 +263,13 @@ export default function DashboardSidebar({
               icon={Calendar}
               label="Manage Events"
               currentPath={pathname}
+              hasAlert={eventApprovalsState === "error"}
+              alertCount={pendingEventApprovals}
+              alertLabel={
+                eventApprovalsState === "error"
+                  ? "Event approval queue status unavailable"
+                  : `${pendingEventApprovals} pending ${pendingEventApprovals === 1 ? "event" : "events"} awaiting mentor approval`
+              }
               onNavigate={onCloseMobile}
             />
             <NavButton
@@ -262,6 +277,13 @@ export default function DashboardSidebar({
               icon={GraduationCap}
               label="Academy Manager"
               currentPath={pathname}
+              hasAlert={academyApprovalsState === "error"}
+              alertCount={pendingAcademyApprovals}
+              alertLabel={
+                academyApprovalsState === "error"
+                  ? "Academy approval queue status unavailable"
+                  : `${pendingAcademyApprovals} pending academy ${pendingAcademyApprovals === 1 ? "lesson" : "lessons"} awaiting mentor approval`
+              }
               onNavigate={onCloseMobile}
             />
             <NavButton
@@ -269,6 +291,13 @@ export default function DashboardSidebar({
               icon={BookOpen}
               label="ARESLib Manager"
               currentPath={pathname}
+              hasAlert={areslibApprovalsState === "error"}
+              alertCount={pendingAreslibApprovals}
+              alertLabel={
+                areslibApprovalsState === "error"
+                  ? "ARESLib approval queue status unavailable"
+                  : `${pendingAreslibApprovals} pending ARESLib ${pendingAreslibApprovals === 1 ? "document" : "documents"} awaiting mentor approval`
+              }
               onNavigate={onCloseMobile}
             />
             <NavButton
@@ -283,6 +312,13 @@ export default function DashboardSidebar({
               icon={FileText}
               label="Cloud Resources"
               currentPath={pathname}
+              hasAlert={documentApprovalsState === "error"}
+              alertCount={pendingDocumentApprovals}
+              alertLabel={
+                documentApprovalsState === "error"
+                  ? "Cloud resource approval queue status unavailable"
+                  : `${pendingDocumentApprovals} pending cloud ${pendingDocumentApprovals === 1 ? "resource" : "resources"} awaiting mentor approval`
+              }
               onNavigate={onCloseMobile}
             />
             <NavButton

@@ -1,6 +1,10 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-pwa/client" />
 
+declare module "monaco-vim-esm" {
+  export * from "monaco-vim";
+}
+
 interface GooglePickerDocsView {
   setIncludeFolders: (value: boolean) => GooglePickerDocsView;
   setSelectFolderEnabled: (enabled: boolean) => GooglePickerDocsView;

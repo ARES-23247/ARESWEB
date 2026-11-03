@@ -408,7 +408,7 @@ describe("useDashboardDocController archive workflow", () => {
     expect(authenticatedFetchMock).not.toHaveBeenCalled();
   });
 
-  it("moves a published blog post back to pending_approval and strips approval stamps when edited by a student", async () => {
+  it("moves a published blog post back to pending_approval, strips approval stamps, and notifies the approval queue when edited by a student", async () => {
     authState.role = "student";
     authState.name = "StudentBuilder";
     const { result } = renderHook(
@@ -454,7 +454,14 @@ describe("useDashboardDocController archive workflow", () => {
     const savedPayload = saveDocMock.mock.calls[0]?.[1] as Record<string, unknown>;
     expect(savedPayload).not.toHaveProperty("approvedBy");
     expect(savedPayload).not.toHaveProperty("approvedAt");
-    expect(authenticatedFetchMock).not.toHaveBeenCalled();
+    expect(authenticatedFetchMock).toHaveBeenCalledTimes(1);
+    expect(authenticatedFetchMock).toHaveBeenCalledWith(
+      "/api/content-admin/notify-pending",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ collection: "posts", contentId: "published-post" }),
+      }),
+    );
   });
 
   it("allows an approver to crosspost or retry a published blog explicitly", async () => {

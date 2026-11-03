@@ -107,6 +107,16 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
       // monaco-vim 0.4.4 still imports the pre-0.56 private editor path.
       "monaco-editor/esm/vs/editor/editor.api": "monaco-editor/editor",
+      "monaco-editor/esm/vs/editor/common/commands/shiftCommand":
+        "monaco-editor/editor/common/commands/shiftCommand",
+      "monaco-vim": path.resolve(
+        import.meta.dirname,
+        "src/components/editor/monaco-vim.ts",
+      ),
+      "monaco-vim-esm": path.resolve(
+        import.meta.dirname,
+        "node_modules/monaco-vim/dist/index.mjs",
+      ),
     },
     dedupe: ["react", "react-dom"],
   },
@@ -224,6 +234,7 @@ export default defineConfig({
         "src/lib/authorization.ts",
         "src/lib/canonicalHost.ts",
         "src/lib/usePendingInquiries.ts",
+        "src/lib/approvalNotifications.ts",
         "src/lib/diff.ts",
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
@@ -464,6 +475,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/usePendingInquiries.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/approvalNotifications.ts": {
           lines: 85,
           functions: 100,
         },
