@@ -105,6 +105,11 @@ export default function EventsCalendarView({
                           {evt.publishedSnapshot ? "Live + Pending Edit" : "Pending Approval"}
                         </span>
                       )}
+                      {evt.hasPendingPhotos === 1 && (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-cyan/15 border-ares-cyan/35 text-ares-cyan rounded">
+                          Pending Photos
+                        </span>
+                      )}
                       {evt.status === "draft" && (
                         <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-white/5 border-white/20 text-marble/60 rounded">
                           Draft

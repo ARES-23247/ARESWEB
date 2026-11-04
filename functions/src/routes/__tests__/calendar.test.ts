@@ -197,6 +197,8 @@ describe("calendar API", () => {
       "GET /locations",
       "POST /locations",
       "PUT /locations/:id",
+      "PATCH /locations/:id/approve",
+      "POST /locations/:id/discard-pending",
       "DELETE /locations/:id",
       "PATCH /locations/:id/restore",
       "GET /feed",
@@ -1267,6 +1269,182 @@ describe("calendar API", () => {
     await expectApiError("/locations/:id", "put", 409, "LOCATION_ARCHIVED");
   });
 
+  it("stages student venue edits, preserves live public venue addresses, and approves or discards pending venues", async () => {
+    req.authorizationRole = "member";
+    req.params = { id: "venue-1" };
+    req.body = {
+      name: "Student Edited Venue",
+      address: "999 Unapproved Road",
+      isAddressPublic: 1,
+    };
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        name: "Approved Public Lab",
+        address: "109 Wilson Ave, Morgantown, WV",
+        isAddressPublic: 1,
+        approvalStatus: "approved",
+        isDeleted: 0,
+      }),
+    });
+    await handler("/locations/:id", "put")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Student Edited Venue",
+        isAddressPublic: 0,
+        approvalStatus: "pending_approval",
+        publishedSnapshot: expect.objectContaining({
+          name: "Approved Public Lab",
+          address: "109 Wilson Ave, Morgantown, WV",
+          isAddressPublic: 1,
+        }),
+      }),
+    );
+
+    // Public GET /events/:id keeps serving the approved publishedSnapshot for the venue
+    res.json.mockClear();
+    documentRef.get
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => eventDocument("event-1", { locationId: "venue-1" }).data(),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          name: "Student Edited Venue",
+          address: "999 Unapproved Road",
+          isAddressPublic: 0,
+          approvalStatus: "pending_approval",
+          publishedSnapshot: {
+            name: "Approved Public Lab",
+            address: "109 Wilson Ave, Morgantown, WV",
+            description: null,
+            gmapsUrl: null,
+            isAddressPublic: 1,
+          },
+          isDeleted: 0,
+        }),
+      });
+    await handler("/events/:id", "get")(req, res, next);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          publicVenue: {
+            name: "Approved Public Lab",
+            address: "109 Wilson Ave, Morgantown, WV",
+          },
+        }),
+      }),
+    );
+
+    // Mentor approves the venue with public address
+    req.authorizationRole = "mentor";
+    req.params = { id: "venue-1" };
+    req.body = { isAddressPublic: 1 };
+    documentRef.update.mockClear();
+    res.json.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        name: "Student Edited Venue",
+        address: "999 Unapproved Road",
+        isAddressPublic: 0,
+        approvalStatus: "pending_approval",
+        publishedSnapshot: {
+          name: "Approved Public Lab",
+          address: "109 Wilson Ave, Morgantown, WV",
+          isAddressPublic: 1,
+        },
+        isDeleted: 0,
+      }),
+    });
+    await handler("/locations/:id/approve", "patch")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isAddressPublic: 1,
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        location: expect.objectContaining({
+          id: "venue-1",
+          approvalStatus: "approved",
+          isAddressPublic: 1,
+        }),
+      }),
+    );
+
+    // Mentor discards a staged edit on an existing venue (restores publishedSnapshot)
+    documentRef.update.mockClear();
+    res.json.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        name: "Student Edited Venue",
+        address: "999 Unapproved Road",
+        isAddressPublic: 0,
+        approvalStatus: "pending_approval",
+        publishedSnapshot: {
+          name: "Approved Public Lab",
+          address: "109 Wilson Ave, Morgantown, WV",
+          description: null,
+          gmapsUrl: null,
+          isAddressPublic: 1,
+        },
+        isDeleted: 0,
+      }),
+    });
+    await handler("/locations/:id/discard-pending", "post")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Approved Public Lab",
+        isAddressPublic: 1,
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        discarded: true,
+        archived: false,
+      }),
+    );
+
+    // Mentor discards a brand-new unapproved venue proposal (archives it)
+    documentRef.update.mockClear();
+    res.json.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        name: "New Student Venue",
+        address: "123 Student St",
+        isAddressPublic: 0,
+        approvalStatus: "pending_approval",
+        publishedSnapshot: null,
+        isDeleted: 0,
+      }),
+    });
+    await handler("/locations/:id/discard-pending", "post")(req, res, next);
+    expect(documentRef.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isDeleted: 1,
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        discarded: true,
+        archived: true,
+      }),
+    );
+  });
+
   it("rejects missing venue archive targets and restores existing venues", async () => {
     req.authorizationRole = "admin";
     req.params = { id: "venue-1" };
@@ -1961,6 +2139,123 @@ describe("calendar recurrence", () => {
       restored: true,
       message: "Occurrence is already scheduled.",
     });
+  });
+
+  it("keeps unapproved occurrence exceptions off public routes and approves or reverts them with the parent event", async () => {
+    collectionRef.get.mockResolvedValue({ docs: [recurringDocument()] });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValueOnce({
+      docs: [
+        occurrenceExceptionDocument("weekly-1", todayYmdStr, {
+          isCancelled: 1,
+          approvalStatus: "pending_approval",
+          publishedSnapshot: { isNewException: true },
+        }),
+      ],
+    });
+    await handler("/events", "get")(req, res, next);
+    const publicEvents = res.json.mock.calls[0][0].events;
+    expect(publicEvents.map((e: any) => e.occurrenceDate)).toContain(todayYmdStr);
+
+    // Approving the parent recurring event approves pending occurrence exceptions
+    req.authorizationRole = "coach";
+    req.params = { id: "weekly-1" };
+    res.json.mockClear();
+    (adminDb as any).__occurrences.docSet.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () =>
+        eventDocument("weekly-1", {
+          recurrence: { frequency: "weekly", interval: 1, byDay: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] },
+          approvalStatus: "pending_approval",
+        }).data(),
+    });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValueOnce({
+      docs: [
+        {
+          id: todayYmdStr,
+          data: () => ({
+            date: todayYmdStr,
+            isCancelled: 1,
+            approvalStatus: "pending_approval",
+            publishedSnapshot: { isNewException: true },
+          }),
+        },
+      ],
+    });
+    await handler("/manage/:id/publish", "patch")(req, res, next);
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+      { merge: true },
+    );
+
+    // Discarding pending edits on a recurring event reverts pending occurrence exceptions
+    (adminDb as any).__occurrences.docSet.mockClear();
+    documentRef.get.mockResolvedValueOnce({
+      exists: true,
+      data: () =>
+        eventDocument("weekly-1", {
+          recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+          approvalStatus: "pending_approval",
+          publishedSnapshot: {
+            title: "Team Practice",
+            dateStart: "2026-08-20T18:00:00.000Z",
+            category: "internal",
+            recurrence: { frequency: "weekly", interval: 1, byDay: ["TH"] },
+          },
+        }).data(),
+    });
+    (adminDb as any).__occurrences.queryGet.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "2026-09-03",
+          data: () => ({
+            date: "2026-09-03",
+            isCancelled: 1,
+            approvalStatus: "pending_approval",
+            publishedSnapshot: { isNewException: true },
+          }),
+        },
+        {
+          id: "2026-09-10",
+          data: () => ({
+            date: "2026-09-10",
+            isCancelled: 1,
+            approvalStatus: "pending_approval",
+            publishedSnapshot: {
+              isCancelled: 0,
+              overrides: { title: "Prior Approved Title" },
+            },
+          }),
+        },
+      ],
+    });
+    await handler("/manage/:id/discard-pending", "post")(req, res, next);
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenCalledTimes(2);
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        date: "2026-09-03",
+        isCancelled: 0,
+        overrides: {},
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+      { merge: false },
+    );
+    expect((adminDb as any).__occurrences.docSet).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        date: "2026-09-10",
+        isCancelled: 0,
+        overrides: { title: "Prior Approved Title" },
+        approvalStatus: "approved",
+        publishedSnapshot: null,
+      }),
+      { merge: false },
+    );
   });
 
   it("lists stored occurrence exceptions", async () => {

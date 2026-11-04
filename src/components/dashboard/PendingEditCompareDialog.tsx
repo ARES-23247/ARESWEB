@@ -4,6 +4,12 @@ import { CheckCircle2, GitCompare, RotateCcw, X } from "lucide-react";
 import type { DocRecord } from "@/hooks/useDocumentSync";
 import { computeLineDiff } from "@/lib/diff";
 
+export interface MetadataDiffEntry {
+  label: string;
+  before: string;
+  after: string;
+}
+
 interface ComparableFields {
   title: string;
   category: string;
@@ -37,9 +43,11 @@ function toComparableFields(
 export function StagedContentDiffView({
   liveSnapshot,
   pendingDoc,
+  extraMetadataChanges = [],
 }: {
   liveSnapshot: Record<string, unknown> | DocRecord;
   pendingDoc: DocRecord;
+  extraMetadataChanges?: MetadataDiffEntry[];
 }) {
   const live = useMemo(
     () => toComparableFields(liveSnapshot, pendingDoc),
@@ -55,7 +63,7 @@ export function StagedContentDiffView({
   );
 
   const metadataChanges = useMemo(() => {
-    const entries: Array<{ label: string; before: string; after: string }> = [];
+    const entries: MetadataDiffEntry[] = [];
     if (live.title !== pending.title) {
       entries.push({ label: "Title", before: live.title, after: pending.title });
     }
@@ -80,8 +88,13 @@ export function StagedContentDiffView({
         after: pending.fileUrl || "(none)",
       });
     }
+    for (const extra of extraMetadataChanges) {
+      if (extra.before !== extra.after) {
+        entries.push(extra);
+      }
+    }
     return entries;
-  }, [live, pending]);
+  }, [live, pending, extraMetadataChanges]);
 
   return (
     <div
@@ -105,7 +118,7 @@ export function StagedContentDiffView({
       {metadataChanges.length > 0 && (
         <div className="space-y-2">
           <p className="text-[11px] font-black uppercase tracking-wider text-ares-gold">
-            Metadata Changes ({metadataChanges.length})
+            Metadata &amp; Schedule Changes ({metadataChanges.length})
           </p>
           <div className="grid gap-2">
             {metadataChanges.map((change) => (
@@ -177,6 +190,7 @@ export function StagedContentDiffView({
 interface PendingEditCompareDialogProps {
   item: DocRecord | null;
   sectionLabel: string;
+  extraMetadataChanges?: MetadataDiffEntry[];
   isApproving: boolean;
   isDiscarding: boolean;
   errorMessage?: string | null;
@@ -188,6 +202,7 @@ interface PendingEditCompareDialogProps {
 export default function PendingEditCompareDialog({
   item,
   sectionLabel,
+  extraMetadataChanges,
   isApproving,
   isDiscarding,
   errorMessage = null,
@@ -235,6 +250,7 @@ export default function PendingEditCompareDialog({
               <StagedContentDiffView
                 liveSnapshot={item.publishedSnapshot}
                 pendingDoc={item}
+                extraMetadataChanges={extraMetadataChanges}
               />
             )}
           </div>

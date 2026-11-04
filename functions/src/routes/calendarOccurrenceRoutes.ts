@@ -26,6 +26,33 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function buildOccurrenceStagingFields(
+  isPendingProposal: boolean,
+  existing:
+    | { exists?: boolean; data?: () => Record<string, unknown> | undefined }
+    | undefined,
+): Record<string, unknown> {
+  if (!isPendingProposal) {
+    return {
+      approvalStatus: "approved",
+      publishedSnapshot: null,
+    };
+  }
+  const existingData = existing?.exists ? existing.data?.() : undefined;
+  const publishedSnapshot = !existing?.exists
+    ? { isNewException: true }
+    : isPlainObject(existingData?.publishedSnapshot)
+      ? existingData.publishedSnapshot
+      : {
+          isCancelled: existingData?.isCancelled === 1 ? 1 : 0,
+          overrides: readOccurrenceOverrides(existingData?.overrides),
+        };
+  return {
+    approvalStatus: "pending_approval",
+    publishedSnapshot,
+  };
+}
+
 export function registerCalendarOccurrenceRoutes(router: Router): void {
 // Recurring-event occurrence management. Occurrence ids are calendar dates
 // (YYYY-MM-DD) under events/{id}/occurrences; only exceptions are stored.
@@ -42,11 +69,20 @@ router.get(
       success: true,
       occurrences: snapshot.docs
         .filter((document) => isOccurrenceDate(document.id))
-        .map((document) => ({
-          date: document.id,
-          isCancelled: document.data().isCancelled === 1,
-          hasOverrides: Object.keys(readOccurrenceOverrides(document.data().overrides)).length > 0,
-        })),
+        .map((document) => {
+          const occData = document.data();
+          const overrides = readOccurrenceOverrides(occData.overrides);
+          const hasOverrides = Object.keys(overrides).length > 0;
+          return {
+            date: document.id,
+            isCancelled: occData.isCancelled === 1,
+            hasOverrides,
+            ...(hasOverrides ? { overrides } : {}),
+            ...(occData.approvalStatus === "pending_approval"
+              ? { approvalStatus: "pending_approval" as const }
+              : {}),
+          };
+        }),
     });
   }),
 );
@@ -80,16 +116,19 @@ router.put(
     const overrides = occurrenceOverridesForInput(input, baseOccurrences[0]);
     const timestamp = new Date().toISOString();
     const ref = adminDb.collection("events").doc(id).collection("occurrences").doc(date);
+    const isPendingProposal = !canPublish(req.authorizationRole) && data.status === "published";
+    const existing = isPendingProposal ? await ref.get() : undefined;
     await ref.set(
       {
         date,
         overrides,
+        ...buildOccurrenceStagingFields(isPendingProposal, existing),
         updatedAt: timestamp,
         updatedBy: req.user!.uid,
       },
       { merge: true },
     );
-    if (!canPublish(req.authorizationRole) && data.status === "published") {
+    if (isPendingProposal) {
       await parentRef.update({
         approvalStatus: "pending_approval",
         publishedSnapshot: isPlainObject(data.publishedSnapshot)
@@ -134,17 +173,20 @@ router.patch(
     parseBody(z.object({ cancelled: z.literal(true) }).strict(), req.body);
     const timestamp = new Date().toISOString();
     const ref = adminDb.collection("events").doc(id).collection("occurrences").doc(date);
+    const isPendingProposal = !canPublish(req.authorizationRole) && data.status === "published";
+    const existing = isPendingProposal ? await ref.get() : undefined;
     await ref.set(
       {
         date,
         isCancelled: 1,
+        ...buildOccurrenceStagingFields(isPendingProposal, existing),
         cancelledAt: timestamp,
         cancelledBy: req.user!.uid,
         updatedAt: timestamp,
       },
       { merge: true },
     );
-    if (!canPublish(req.authorizationRole) && data.status === "published") {
+    if (isPendingProposal) {
       await parentRef.update({
         approvalStatus: "pending_approval",
         publishedSnapshot: isPlainObject(data.publishedSnapshot)
@@ -191,16 +233,18 @@ router.patch(
       });
       return;
     }
+    const isPendingProposal = !canPublish(req.authorizationRole) && data.status === "published";
     await ref.set(
       {
         isCancelled: 0,
+        ...buildOccurrenceStagingFields(isPendingProposal, snapshot),
         restoredAt: timestamp,
         restoredBy: req.user!.uid,
         updatedAt: timestamp,
       },
       { merge: true },
     );
-    if (!canPublish(req.authorizationRole) && data.status === "published") {
+    if (isPendingProposal) {
       await parentRef.update({
         approvalStatus: "pending_approval",
         publishedSnapshot: isPlainObject(data.publishedSnapshot)

@@ -212,6 +212,7 @@ function normalizeEvent(value: unknown): TeamEvent {
       !Array.isArray(record.publishedSnapshot)
         ? (record.publishedSnapshot as Record<string, unknown>)
         : undefined,
+    ...(record.hasPendingPhotos === 1 ? { hasPendingPhotos: 1 } : {}),
     createdAt: optionalString(record, "createdAt"),
     updatedAt: optionalString(record, "updatedAt"),
     archivedAt: optionalString(record, "archivedAt"),
@@ -235,6 +236,12 @@ function normalizeLocation(value: unknown): TeamLocation {
         : record.approvalStatus === "approved"
           ? "approved"
           : undefined,
+    publishedSnapshot:
+      record.publishedSnapshot &&
+      typeof record.publishedSnapshot === "object" &&
+      !Array.isArray(record.publishedSnapshot)
+        ? (record.publishedSnapshot as Record<string, unknown>)
+        : undefined,
     isDeleted: record.isDeleted === 1 ? 1 : 0,
     createdAt: optionalString(record, "createdAt"),
     updatedAt: optionalString(record, "updatedAt"),
@@ -265,7 +272,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function jsonRequest(method: "POST" | "PUT", body: unknown): RequestInit {
+function jsonRequest(method: "POST" | "PUT" | "PATCH", body: unknown): RequestInit {
   return {
     method,
     headers: { "Content-Type": "application/json" },
@@ -406,6 +413,8 @@ export interface EventOccurrenceException {
   date: string;
   isCancelled: boolean;
   hasOverrides: boolean;
+  overrides?: Record<string, unknown>;
+  approvalStatus?: "pending_approval" | "approved";
 }
 
 export async function fetchEventOccurrences(
@@ -426,6 +435,16 @@ export async function fetchEventOccurrences(
       date: record.date,
       isCancelled: record.isCancelled === true,
       hasOverrides: record.hasOverrides === true,
+      ...(record.overrides &&
+      typeof record.overrides === "object" &&
+      !Array.isArray(record.overrides)
+        ? { overrides: record.overrides as Record<string, unknown> }
+        : {}),
+      ...(record.approvalStatus === "pending_approval"
+        ? { approvalStatus: "pending_approval" as const }
+        : record.approvalStatus === "approved"
+          ? { approvalStatus: "approved" as const }
+          : {}),
     };
   });
 }
@@ -542,6 +561,30 @@ export async function updateLocation(
     jsonRequest("PUT", input),
   );
   return normalizeLocation(payload.location);
+}
+
+export async function approveLocation(
+  locationId: string,
+  isAddressPublic: 0 | 1,
+): Promise<TeamLocation> {
+  const payload = await requestJson<{ location: unknown }>(
+    `/api/calendar/locations/${encodeURIComponent(locationId)}/approve`,
+    jsonRequest("PATCH", { isAddressPublic }),
+  );
+  return normalizeLocation(payload.location);
+}
+
+export async function discardPendingLocation(
+  locationId: string,
+): Promise<{ archived: boolean; location: TeamLocation }> {
+  const payload = await requestJson<{ archived?: unknown; location: unknown }>(
+    `/api/calendar/locations/${encodeURIComponent(locationId)}/discard-pending`,
+    { method: "POST" },
+  );
+  return {
+    archived: payload.archived === true,
+    location: normalizeLocation(payload.location),
+  };
 }
 
 export async function archiveLocation(locationId: string): Promise<void> {

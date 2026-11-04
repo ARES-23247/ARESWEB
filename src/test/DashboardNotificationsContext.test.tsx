@@ -28,7 +28,7 @@ vi.mock("@/lib/api", () => ({
 
 vi.mock("firebase/firestore", () => ({
   collection: vi.fn((_db: unknown, name: string) => ({ name })),
-  where: vi.fn((field: string, operator: string, value: string) => ({
+  where: vi.fn((field: string, operator: string, value: string | number) => ({
     field,
     operator,
     value,
@@ -117,6 +117,13 @@ describe("dashboard notifications", () => {
         onNext({
           docs: [{ id: "event-1", data: () => ({ isDeleted: 0 }) }],
         });
+      } else if (details.collection === "locations") {
+        onNext({
+          docs: [
+            { id: "venue-1", data: () => ({ isDeleted: 0 }) },
+            { id: "venue-archived", data: () => ({ isDeleted: 1 }) },
+          ],
+        });
       } else if (details.collection === "docs" && details.field === "status") {
         onNext({
           docs: [
@@ -162,10 +169,10 @@ describe("dashboard notifications", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("2|connected|1|connected|2|connected|2|connected|1|connected|true|connected"),
+        screen.getByText("2|connected|2|connected|2|connected|2|connected|1|connected|true|connected"),
       ).toBeInTheDocument();
     });
-    expect(firestore.onSnapshot).toHaveBeenCalledTimes(8);
+    expect(firestore.onSnapshot).toHaveBeenCalledTimes(10);
     expect(api.authenticatedFetch).toHaveBeenCalledWith(
       "/api/inquiries/pending-exists",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -182,6 +189,7 @@ describe("dashboard notifications", () => {
       const details = queryDetails(queryValue);
       if (details.collection === "posts") onError(new Error("offline"));
       if (details.collection === "events") onError(new Error("offline"));
+      if (details.collection === "locations") onError(new Error("offline"));
       if (details.collection === "docs") onError(new Error("offline"));
       if (details.collection === "documents") onError(new Error("offline"));
       return vi.fn();

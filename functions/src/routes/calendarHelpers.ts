@@ -179,6 +179,8 @@ export interface EventOccurrence {
   overrides?: unknown;
   cancelledAt?: unknown;
   cancelledBy?: unknown;
+  approvalStatus?: unknown;
+  publishedSnapshot?: unknown;
 }
 
 export const occurrenceUpdateSchema = z
@@ -543,6 +545,7 @@ export interface EventDocument {
   status?: unknown;
   approvalStatus?: unknown;
   publishedSnapshot?: unknown;
+  hasPendingPhotos?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
   archivedAt?: unknown;
@@ -555,6 +558,7 @@ export interface LocationDocument {
   gmapsUrl?: unknown;
   isAddressPublic?: unknown;
   approvalStatus?: unknown;
+  publishedSnapshot?: unknown;
   isDeleted?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -581,6 +585,33 @@ export function readString(value: unknown): string | null {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Resolves the publicly visible occurrence exception state. When a student
+ * proposes an edit or cancellation to a single occurrence of a published
+ * recurring event (`approvalStatus === "pending_approval"`), public consumers
+ * continue to see the prior approved state (or no exception if `isNewException`
+ * is true) until a publisher approves or discards the pending proposal.
+ */
+export function resolvePublicOccurrenceData(
+  data: EventOccurrence | undefined,
+): EventOccurrence | null {
+  if (!data) return null;
+  if (data.approvalStatus === "pending_approval") {
+    if (
+      !isPlainObject(data.publishedSnapshot) ||
+      data.publishedSnapshot.isNewException === true
+    ) {
+      return null;
+    }
+    return {
+      date: data.date,
+      isCancelled: data.publishedSnapshot.isCancelled === 1 ? 1 : 0,
+      overrides: data.publishedSnapshot.overrides,
+    };
+  }
+  return data;
 }
 
 const LEGACY_PRIVATE_NOTES_MARKER = /\s*-{3,}\s*meeting notes\s*-{3,}\s*/i;
@@ -723,11 +754,49 @@ export function eventDto(
       : ("draft" as const),
     ...(approvalStatus ? { approvalStatus } : {}),
     ...(publishedSnapshot ? { publishedSnapshot } : {}),
+    ...(rawData.hasPendingPhotos === 1 ? { hasPendingPhotos: 1 as const } : {}),
     isDeleted: readFlag(data.isDeleted),
     createdAt: readString(data.createdAt),
     updatedAt: readString(data.updatedAt),
     archivedAt: readString(data.archivedAt),
   };
+}
+
+export interface PublishedLocationSnapshot {
+  name: string;
+  address: string;
+  description: string | null;
+  gmapsUrl: string | null;
+  isAddressPublic: 0 | 1;
+}
+
+export function extractPublishedLocationSnapshot(
+  data: LocationDocument,
+): PublishedLocationSnapshot {
+  return {
+    name: readString(data.name) ?? "Unnamed venue",
+    address: readString(data.address) ?? "",
+    description: readString(data.description),
+    gmapsUrl: readString(data.gmapsUrl),
+    isAddressPublic: readFlag(data.isAddressPublic),
+  };
+}
+
+export function resolvePublicLocationData(
+  data: LocationDocument,
+): LocationDocument | null {
+  if (data.isDeleted === 1) return null;
+  if (data.approvalStatus === "pending_approval") {
+    if (!isPlainObject(data.publishedSnapshot)) {
+      return null;
+    }
+    return {
+      ...data,
+      ...data.publishedSnapshot,
+      approvalStatus: "approved",
+    };
+  }
+  return data;
 }
 
 export function locationDto(id: string, data: LocationDocument) {
@@ -737,6 +806,9 @@ export function locationDto(id: string, data: LocationDocument) {
       : data.approvalStatus === "approved"
         ? ("approved" as const)
         : undefined;
+  const publishedSnapshot = isPlainObject(data.publishedSnapshot)
+    ? extractPublishedLocationSnapshot(data.publishedSnapshot as LocationDocument)
+    : undefined;
   return {
     id,
     name: readString(data.name) ?? "Unnamed venue",
@@ -745,6 +817,7 @@ export function locationDto(id: string, data: LocationDocument) {
     gmapsUrl: readString(data.gmapsUrl),
     isAddressPublic: readFlag(data.isAddressPublic),
     ...(approvalStatus ? { approvalStatus } : {}),
+    ...(publishedSnapshot ? { publishedSnapshot } : {}),
     isDeleted: readFlag(data.isDeleted),
     createdAt: readString(data.createdAt),
     updatedAt: readString(data.updatedAt),
@@ -752,12 +825,9 @@ export function locationDto(id: string, data: LocationDocument) {
   };
 }
 
-export function publicVenueDto(data: LocationDocument) {
-  if (
-    data.isDeleted === 1 ||
-    data.isAddressPublic !== 1 ||
-    data.approvalStatus === "pending_approval"
-  ) {
+export function publicVenueDto(rawData: LocationDocument) {
+  const data = resolvePublicLocationData(rawData);
+  if (!data || data.isDeleted === 1 || data.isAddressPublic !== 1) {
     return null;
   }
   const name = readString(data.name)?.trim();

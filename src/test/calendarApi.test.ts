@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authenticatedFetch } from "@/lib/api";
 import {
+  approveLocation,
   archiveEvent,
   archiveEventPhoto,
   archiveLocation,
@@ -9,6 +10,7 @@ import {
   createEvent,
   createLocation,
   discardPendingEventEdit,
+  discardPendingLocation,
   approveEventPhoto,
   associateEventPhoto,
   fetchEventOccurrences,
@@ -45,6 +47,9 @@ const event = {
   isPotluck: 0,
   isVolunteer: 1,
   status: "published",
+  approvalStatus: "pending_approval",
+  publishedSnapshot: { title: "Live Practice" },
+  hasPendingPhotos: 1,
   isDeleted: 0,
 };
 
@@ -56,6 +61,8 @@ const location = {
   gmapsUrl: null,
   isDeleted: 0,
   isAddressPublic: 1,
+  approvalStatus: "pending_approval",
+  publishedSnapshot: { name: "Old Lab", address: "Morgantown, WV" },
 };
 
 function response(body: unknown, ok = true, status = 200, statusText = "OK") {
@@ -84,6 +91,9 @@ describe("calendar API client", () => {
           id: "event-1",
           dateEnd: undefined,
           isVolunteer: 1,
+          hasPendingPhotos: 1,
+          approvalStatus: "pending_approval",
+          publishedSnapshot: { title: "Live Practice" },
         }),
       ],
       nextCursor: "event-1",
@@ -132,7 +142,7 @@ describe("calendar API client", () => {
     vi.mocked(authenticatedFetch).mockImplementation(async (path) => {
       const url = String(path);
       if (url === "/api/calendar/locations") return response({ locations: [location], location });
-      if (url.includes("/locations/")) return response({ success: true, location });
+      if (url.includes("/locations/")) return response({ success: true, archived: true, location });
       if (url === "/api/calendar/manage") return response({ event });
       if (url.includes("/manage/")) return response({ success: true, event });
       return response({ success: true });
@@ -150,9 +160,21 @@ describe("calendar API client", () => {
     await restoreEvent("event-1");
     await publishEvent("event-1");
     await discardPendingEventEdit("event-1");
-    await expect(fetchLocations()).resolves.toEqual([expect.objectContaining({ id: "venue-1", isAddressPublic: 1 }),]);
+    await expect(fetchLocations()).resolves.toEqual([
+      expect.objectContaining({
+        id: "venue-1",
+        isAddressPublic: 1,
+        approvalStatus: "pending_approval",
+        publishedSnapshot: { name: "Old Lab", address: "Morgantown, WV" },
+      }),
+    ]);
     await createLocation(venueInput);
     await updateLocation("venue-1", venueInput);
+    await approveLocation("venue-1", 1);
+    await expect(discardPendingLocation("venue-1")).resolves.toEqual({
+      archived: true,
+      location: expect.objectContaining({ id: "venue-1" }),
+    });
     await archiveLocation("venue-1");
     await restoreLocation("venue-1");
 
@@ -286,11 +308,27 @@ describe("calendar recurrence client", () => {
     vi.mocked(authenticatedFetch).mockResolvedValue(
       response({
         success: true,
-        occurrences: [{ date: "2026-09-03", isCancelled: true, hasOverrides: true },],
+        occurrences: [
+          {
+            date: "2026-09-03",
+            isCancelled: true,
+            hasOverrides: true,
+            overrides: { title: "Special Session" },
+            approvalStatus: "pending_approval",
+          },
+        ],
       }),
     );
     const exceptions = await fetchEventOccurrences("weekly-1");
-    expect(exceptions).toEqual([{ date: "2026-09-03", isCancelled: true, hasOverrides: true },]);
+    expect(exceptions).toEqual([
+      {
+        date: "2026-09-03",
+        isCancelled: true,
+        hasOverrides: true,
+        overrides: { title: "Special Session" },
+        approvalStatus: "pending_approval",
+      },
+    ]);
     expect(vi.mocked(authenticatedFetch).mock.calls[0][0]).toBe("/api/calendar/manage/weekly-1/occurrences");
 
     vi.mocked(authenticatedFetch).mockResolvedValue(response({ success: true }));
@@ -339,7 +377,7 @@ describe("calendar recurrence client", () => {
             filename: "Progress.jpg",
             occurrenceDate: "2026-08-20",
             publicationStatus: "pending",
-},
+          },
         }),
       )
       .mockResolvedValue(response({ success: true }));

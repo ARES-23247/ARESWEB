@@ -147,6 +147,62 @@ export function DashboardNotificationsProvider({
       };
     };
 
+    const subscribeEventsAndLocationsCount = () => {
+      const idsBySource = {
+        eventStatus: new Set<string>(),
+        eventApproval: new Set<string>(),
+        eventPhotos: new Set<string>(),
+        locations: new Set<string>(),
+      };
+      const loadedSources = new Set<keyof typeof idsBySource>();
+
+      const updateCount = () => {
+        const pendingEventIds = new Set([
+          ...idsBySource.eventStatus,
+          ...idsBySource.eventApproval,
+          ...idsBySource.eventPhotos,
+        ]);
+        setPendingEventApprovals(pendingEventIds.size + idsBySource.locations.size);
+        if (loadedSources.size === 4) {
+          setEventApprovalsState("connected");
+        }
+      };
+
+      const subscribeSource = (
+        source: keyof typeof idsBySource,
+        collectionName: string,
+        field: string,
+        expectedValue: string | number,
+      ) =>
+        onSnapshot(
+          query(collection(db, collectionName), where(field, "==", expectedValue)),
+          (snapshot) => {
+            idsBySource[source] = new Set(
+              snapshot.docs
+                .filter((document) => isNonDeletedRecord(document.data()))
+                .map((document) => document.id),
+            );
+            loadedSources.add(source);
+            updateCount();
+          },
+          (error) => {
+            logger.error("Pending event approval subscription failed", error);
+            setEventApprovalsState("error");
+          },
+        );
+
+      const unsubStatus = subscribeSource("eventStatus", "events", "status", "pending");
+      const unsubApproval = subscribeSource("eventApproval", "events", "approvalStatus", "pending_approval");
+      const unsubPhotos = subscribeSource("eventPhotos", "events", "hasPendingPhotos", 1);
+      const unsubLocations = subscribeSource("locations", "locations", "approvalStatus", "pending_approval");
+      return () => {
+        unsubStatus();
+        unsubApproval();
+        unsubPhotos();
+        unsubLocations();
+      };
+    };
+
     const docsByField = {
       status: new Map<string, Record<string, unknown>>(),
       approvalStatus: new Map<string, Record<string, unknown>>(),
@@ -200,13 +256,7 @@ export function DashboardNotificationsProvider({
       setBlogApprovalsState,
       "Pending blog approval subscription failed",
     );
-    const unsubEvents = subscribeDualFieldCount(
-      "events",
-      "pending",
-      setPendingEventApprovals,
-      setEventApprovalsState,
-      "Pending event approval subscription failed",
-    );
+    const unsubEvents = subscribeEventsAndLocationsCount();
     const unsubDocuments = subscribeDualFieldCount(
       "documents",
       "pending_approval",

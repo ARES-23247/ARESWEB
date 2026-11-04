@@ -504,6 +504,9 @@ export function useEventEditor({
           ? occurrenceContextDate
           : null,
       );
+      if (associated.publicationStatus === "pending") {
+        void notifyPendingApprovalQueue("events", editId);
+      }
       setRevertAlert(
         associated.publicationStatus === "published"
           ? "Photo uploaded and published to the event gallery."
