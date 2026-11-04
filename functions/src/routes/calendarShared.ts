@@ -17,6 +17,7 @@ import {
   readRecurrence,
   readString,
   resolvePublicEventData,
+  resolvePublicOccurrenceData,
 } from "./calendarHelpers";
 import {
   safeManagedPhotoPath,
@@ -102,6 +103,7 @@ export async function loadOccurrenceStates(
   fromDate: string,
   toDate: string,
   maximumDocuments: number,
+  includeLifecycle = false,
 ): Promise<Map<string, OccurrenceState>> {
   const states = new Map<string, OccurrenceState>();
   if (parentIds.length === 0) return states;
@@ -123,7 +125,11 @@ export async function loadOccurrenceStates(
 
   for (const document of snapshot.docs) {
     const parentId = document.ref.parent.parent?.id;
-    const data = document.data() as EventOccurrence;
+    const rawData = document.data() as EventOccurrence;
+    const data = includeLifecycle
+      ? rawData
+      : resolvePublicOccurrenceData(rawData);
+    if (!data) continue;
     const date = readString(data.date) ?? document.id;
     if (!parentId || !parentSet.has(parentId) || !isOccurrenceDate(date)) continue;
     const state = states.get(parentId) ?? {
@@ -200,6 +206,7 @@ export async function renderEventPage(
     fromDate,
     toDate,
     OCCURRENCE_EXCEPTION_QUERY_MAX,
+    includeLifecycle,
   );
   const cap = perEventCap(windowDays);
   const expanded: ReturnType<typeof eventDto>[] = [];

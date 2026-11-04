@@ -53,6 +53,7 @@ export interface TeamEvent {
   status?: "published" | "pending" | "draft";
   approvalStatus?: "pending_approval" | "approved";
   publishedSnapshot?: Record<string, unknown>;
+  hasPendingPhotos?: number; // 0 or 1
   createdAt?: string;
   updatedAt?: string;
   archivedAt?: string;

@@ -1,0 +1,11 @@
+diff --git a/dist/commonjs/index.js b/dist/commonjs/index.js
+index 1111111..2222222 100644
+--- a/dist/commonjs/index.js
++++ b/dist/commonjs/index.js
+@@ -1546,5 +1546,6 @@ Object.defineProperty(exports, "unescape", { enumerable: true, get: function ()
+ /* c8 ignore stop */
+ exports.minimatch.Minimatch = Minimatch;
+ exports.minimatch.escape = escape_js_1.escape;
+ exports.minimatch.unescape = unescape_js_1.unescape;
++module.exports = Object.assign(exports.minimatch, exports);
+ //# sourceMappingURL=index.js.map

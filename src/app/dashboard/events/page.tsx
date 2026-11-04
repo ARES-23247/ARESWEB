@@ -10,13 +10,17 @@ import {
   archiveEvent,
   cancelEventOccurrence,
   discardPendingEventEdit,
+  fetchEventOccurrences,
   fetchLocations,
   fetchManagedEvent,
   fetchManagedEvents,
   publishEvent,
   restoreEvent,
+  type EventOccurrenceException,
 } from "@/app/calendar/api";
-import PendingEditCompareDialog from "@/components/dashboard/PendingEditCompareDialog";
+import PendingEditCompareDialog, {
+  type MetadataDiffEntry,
+} from "@/components/dashboard/PendingEditCompareDialog";
 import type { DocRecord } from "@/hooks/useDocumentSync";
 
 import LocationManagerModal, { TeamLocation } from "./components/LocationManagerModal";
@@ -24,6 +28,25 @@ import EventEditorDrawer, { TeamEvent } from "./components/EventEditorDrawer";
 import EventsCalendarView from "./components/EventsCalendarView";
 import EventsFilterPanel from "./components/EventsFilterPanel";
 import { PublicDataState } from "@/components/PublicDataState";
+
+function formatRecurrenceSummary(value: unknown): string {
+  if (!value || typeof value !== "object") return "Does not repeat";
+  const rec = value as Record<string, unknown>;
+  if (rec.frequency !== "weekly" || !Array.isArray(rec.byDay) || rec.byDay.length === 0) {
+    return "Does not repeat";
+  }
+  const interval = typeof rec.interval === "number" ? rec.interval : 1;
+  const days = rec.byDay.filter((d): d is string => typeof d === "string").join(", ");
+  const until = typeof rec.until === "string" && rec.until ? ` until ${rec.until}` : "";
+  return `Every ${interval === 1 ? "week" : `${interval} weeks`} on ${days}${until}`;
+}
+
+function formatFlagSummary(potluck: unknown, volunteer: unknown): string {
+  const parts: string[] = [];
+  if (potluck === 1) parts.push("Potluck");
+  if (volunteer === 1) parts.push("Volunteer Shift");
+  return parts.length > 0 ? parts.join(", ") : "Standard Event";
+}
 
 export default function EventsManagementPage({
   editorOnly = false,
@@ -63,6 +86,7 @@ export default function EventsManagementPage({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<TeamEvent | null>(null);
   const [comparingEvent, setComparingEvent] = useState<TeamEvent | null>(null);
+  const [comparingOccurrences, setComparingOccurrences] = useState<EventOccurrenceException[]>([]);
   const [isDiscardingEvent, setIsDiscardingEvent] = useState(false);
   const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
@@ -169,6 +193,24 @@ export default function EventsManagementPage({
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [editorOnly, prefilledAction, prefilledDate, prefilledEventId, prefilledOccurrenceDate]);
+
+  useEffect(() => {
+    if (!comparingEvent) {
+      setComparingOccurrences([]);
+      return;
+    }
+    const targetId = comparingEvent.recurrenceOf || comparingEvent.id;
+    const isRecurring =
+      Boolean(comparingEvent.recurrence) ||
+      Boolean(comparingEvent.publishedSnapshot?.recurrence);
+    if (!isRecurring) {
+      setComparingOccurrences([]);
+      return;
+    }
+    void fetchEventOccurrences(targetId)
+      .then(setComparingOccurrences)
+      .catch(() => setComparingOccurrences([]));
+  }, [comparingEvent]);
 
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
@@ -290,23 +332,17 @@ export default function EventsManagementPage({
   const comparingDocAdapter = useMemo<DocRecord | null>(() => {
     if (!comparingEvent || !comparingEvent.publishedSnapshot) return null;
     const snap = comparingEvent.publishedSnapshot;
-    const formatSchedule = (start?: unknown, end?: unknown, loc?: unknown) =>
-      [
-        `Start: ${typeof start === "string" ? start : comparingEvent.dateStart}`,
-        `End: ${typeof end === "string" ? end : comparingEvent.dateEnd || "(none)"}`,
-        `Location: ${typeof loc === "string" ? loc : comparingEvent.location || "(none)"}`,
-      ].join("\n");
+    const seriesDefaults = comparingEvent.seriesDefaults;
+    const pendingTitle = seriesDefaults?.title ?? comparingEvent.title;
+    const pendingCategory = seriesDefaults?.category ?? comparingEvent.category;
+    const pendingDescription = seriesDefaults?.description ?? comparingEvent.description ?? "";
     return {
       slug: comparingEvent.recurrenceOf || comparingEvent.id,
-      title: comparingEvent.title,
-      category: comparingEvent.category,
+      title: pendingTitle,
+      category: pendingCategory,
       sortOrder: 0,
-      description: formatSchedule(
-        comparingEvent.dateStart,
-        comparingEvent.dateEnd,
-        comparingEvent.location,
-      ),
-      content: comparingEvent.description || "",
+      description: "",
+      content: pendingDescription,
       status: comparingEvent.status || "published",
       isDeleted: 0,
       displayInAreslib: 0,
@@ -315,14 +351,79 @@ export default function EventsManagementPage({
       isPortfolio: 0,
       isExecutiveSummary: 0,
       publishedSnapshot: {
-        title: typeof snap.title === "string" ? snap.title : comparingEvent.title,
-        category:
-          typeof snap.category === "string" ? snap.category : comparingEvent.category,
-        description: formatSchedule(snap.dateStart, snap.dateEnd, snap.location),
+        title: typeof snap.title === "string" ? snap.title : pendingTitle,
+        category: typeof snap.category === "string" ? snap.category : pendingCategory,
+        description: "",
         content: typeof snap.description === "string" ? snap.description : "",
       },
     };
   }, [comparingEvent]);
+
+  const eventScheduleChanges = useMemo<MetadataDiffEntry[]>(() => {
+    if (!comparingEvent || !comparingEvent.publishedSnapshot) return [];
+    const snap = comparingEvent.publishedSnapshot;
+    const seriesStart = comparingEvent.seriesDateStart ?? comparingEvent.dateStart;
+    const seriesEnd =
+      comparingEvent.seriesDateEnd !== undefined
+        ? comparingEvent.seriesDateEnd
+        : comparingEvent.dateEnd;
+    const seriesDefaults = comparingEvent.seriesDefaults;
+    const resolveVenueLabel = (locId: unknown, locName: unknown) => {
+      if (typeof locId === "string" && locId) {
+        const matched = locations.find((l) => l.id === locId);
+        if (matched) return matched.name;
+      }
+      return typeof locName === "string" && locName ? locName : "(none)";
+    };
+    const entries: MetadataDiffEntry[] = [
+      {
+        label: "Start Time",
+        before: typeof snap.dateStart === "string" ? snap.dateStart : seriesStart,
+        after: seriesStart,
+      },
+      {
+        label: "End Time",
+        before: typeof snap.dateEnd === "string" && snap.dateEnd ? snap.dateEnd : "(none)",
+        after: typeof seriesEnd === "string" && seriesEnd ? seriesEnd : "(none)",
+      },
+      {
+        label: "Recurrence Rule",
+        before: formatRecurrenceSummary(snap.recurrence),
+        after: formatRecurrenceSummary(comparingEvent.recurrence),
+      },
+      {
+        label: "Venue / Location",
+        before: resolveVenueLabel(snap.locationId, snap.location),
+        after: resolveVenueLabel(
+          seriesDefaults?.locationId ?? comparingEvent.locationId,
+          seriesDefaults?.location ?? comparingEvent.location,
+        ),
+      },
+      {
+        label: "Event Flags",
+        before: formatFlagSummary(snap.isPotluck, snap.isVolunteer),
+        after: formatFlagSummary(
+          seriesDefaults?.isPotluck ?? comparingEvent.isPotluck,
+          seriesDefaults?.isVolunteer ?? comparingEvent.isVolunteer,
+        ),
+      },
+    ];
+    for (const occ of comparingOccurrences) {
+      if (occ.approvalStatus !== "pending_approval") continue;
+      const overrideKeys = Object.keys(occ.overrides || {});
+      const afterSummary = occ.isCancelled
+        ? "Cancelled / Skipped"
+        : overrideKeys.length > 0
+          ? `Modified (${overrideKeys.join(", ")})`
+          : "Scheduled";
+      entries.push({
+        label: `Session ${occ.date}`,
+        before: "Scheduled (series default)",
+        after: afterSummary,
+      });
+    }
+    return entries;
+  }, [comparingEvent, comparingOccurrences, locations]);
 
   const handleClearFilters = () => {
     setFilterSearch("");
@@ -550,6 +651,7 @@ export default function EventsManagementPage({
           <PendingEditCompareDialog
             item={comparingDocAdapter}
             sectionLabel="Calendar Event"
+            extraMetadataChanges={eventScheduleChanges}
             isApproving={false}
             isDiscarding={isDiscardingEvent}
             errorMessage={operationStatus?.kind === "error" ? operationStatus.message : null}

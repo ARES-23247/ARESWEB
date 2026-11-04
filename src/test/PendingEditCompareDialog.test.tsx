@@ -45,7 +45,7 @@ describe("PendingEditCompareDialog", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("renders metadata changes, line-level diff, error alert, and invokes approve/discard/close callbacks", () => {
+  it("renders metadata changes, extraMetadataChanges, line-level diff, error alert, and invokes approve/discard/close callbacks", () => {
     const onClose = vi.fn();
     const onApprove = vi.fn();
     const onDiscard = vi.fn();
@@ -57,6 +57,9 @@ describe("PendingEditCompareDialog", () => {
         isApproving={false}
         isDiscarding={false}
         errorMessage="Sample error alert"
+        extraMetadataChanges={[
+          { label: "Start Time", before: "2026-08-20 18:00", after: "2026-08-20 19:00" },
+        ]}
         onClose={onClose}
         onApprove={onApprove}
         onDiscard={onDiscard}
@@ -67,6 +70,9 @@ describe("PendingEditCompareDialog", () => {
       screen.getByRole("dialog", { name: "Compare & Review Pending Blog Post Edit" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Sample error alert");
+    expect(screen.getByText("Start Time")).toBeInTheDocument();
+    expect(screen.getByText("2026-08-20 18:00")).toBeInTheDocument();
+    expect(screen.getByText("2026-08-20 19:00")).toBeInTheDocument();
     expect(screen.getByText("Live Title")).toBeInTheDocument();
     expect(screen.getAllByText("Proposed Title").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Old summary")).toBeInTheDocument();

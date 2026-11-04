@@ -16,6 +16,7 @@ import {
   parseBody,
   parseLimit,
   readOccurrenceOverrides,
+  readRecurrence,
 } from "./calendarHelpers";
 import {
   applyCursor,
@@ -281,6 +282,23 @@ router.patch(
       publishedBy: req.user!.uid,
       updatedAt: timestamp,
     });
+    if (readRecurrence(data.recurrence)) {
+      const occSnap = await ref.collection("occurrences").limit(200).get();
+      for (const occDoc of occSnap.docs) {
+        const occData = occDoc.data() as EventOccurrence | undefined;
+        if (occData?.approvalStatus === "pending_approval") {
+          await ref.collection("occurrences").doc(occDoc.id).set(
+            {
+              approvalStatus: "approved",
+              publishedSnapshot: null,
+              updatedAt: timestamp,
+              updatedBy: req.user!.uid,
+            },
+            { merge: true },
+          );
+        }
+      }
+    }
     res.json({
       success: true,
       published: true,
@@ -319,6 +337,38 @@ router.post(
       createdAt: timestamp,
     });
     await batch.commit();
+    if (readRecurrence(data.recurrence) || readRecurrence(restored.recurrence)) {
+      const occSnap = await ref.collection("occurrences").limit(200).get();
+      for (const occDoc of occSnap.docs) {
+        const occData = occDoc.data() as EventOccurrence | undefined;
+        if (occData?.approvalStatus !== "pending_approval") continue;
+        const occSnapshot = isPlainObject(occData.publishedSnapshot)
+          ? occData.publishedSnapshot
+          : null;
+        await ref.collection("occurrences").doc(occDoc.id).set(
+          occSnapshot && occSnapshot.isNewException !== true
+            ? {
+                date: occDoc.id,
+                isCancelled: occSnapshot.isCancelled === 1 ? 1 : 0,
+                overrides: readOccurrenceOverrides(occSnapshot.overrides),
+                approvalStatus: "approved",
+                publishedSnapshot: null,
+                updatedAt: timestamp,
+                updatedBy: req.user!.uid,
+              }
+            : {
+                date: occDoc.id,
+                isCancelled: 0,
+                overrides: {},
+                approvalStatus: "approved",
+                publishedSnapshot: null,
+                updatedAt: timestamp,
+                updatedBy: req.user!.uid,
+              },
+          { merge: false },
+        );
+      }
+    }
     res.json({
       success: true,
       discarded: true,

@@ -3,12 +3,14 @@
 import { logger } from "@/utils/logger";
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { MapPin, X, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { MapPin, X, Pencil, Trash2, RotateCcw, Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { notifyPendingApprovalQueue } from "@/lib/approvalNotifications";
 import {
+  approveLocation,
   archiveLocation,
   createLocation,
+  discardPendingLocation,
   restoreLocation,
   updateLocation,
 } from "@/app/calendar/api";
@@ -99,6 +101,56 @@ export default function LocationManagerModal({
     }
   };
 
+  const handleApproveLocation = async (locId: string, isAddressPublic: 0 | 1) => {
+    if (!canManage) return;
+    setOperationStatus(null);
+    try {
+      const updated = await approveLocation(locId, isAddressPublic);
+      setLocations((current) =>
+        current.map((location) => (location.id === locId ? updated : location)),
+      );
+      setOperationStatus({
+        kind: "success",
+        message:
+          isAddressPublic === 1
+            ? "Venue approved with public address."
+            : "Venue approved (address kept private).",
+      });
+    } catch (error) {
+      logger.error("Unable to approve location:", error);
+      setOperationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  const handleDiscardLocation = async (locId: string) => {
+    if (!canManage) return;
+    setOperationStatus(null);
+    try {
+      const { archived, location: updated } = await discardPendingLocation(locId);
+      setLocations((current) =>
+        current.map((location) => (location.id === locId ? updated : location)),
+      );
+      if (archived && formLocationId === locId) {
+        setFormLocationId("");
+      }
+      setOperationStatus({
+        kind: "success",
+        message: archived
+          ? "Pending venue proposal discarded."
+          : "Pending venue edit discarded and prior venue restored.",
+      });
+    } catch (error) {
+      logger.error("Unable to discard pending location:", error);
+      setOperationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
   const handleArchiveLocation = async (locId: string) => {
     if (!canManage) return;
     setOperationStatus(null);
@@ -174,70 +226,104 @@ export default function LocationManagerModal({
                     {locations.map((loc) => (
                       <React.Fragment key={loc.id}>
                       <div
-                        className={`p-3 border rounded-lg transition-all text-left flex items-start justify-between gap-3 ${
+                        className={`p-3 border rounded-lg transition-all text-left flex flex-col gap-2 ${
                           editingLocation?.id === loc.id
                             ? "bg-ares-gold/15 border-ares-gold"
                             : "bg-white/5 border-white/5 hover:border-white/15"
                         }`}
                       >
-                        <div className="min-w-0 space-y-1">
-                          <p className="text-xs font-bold text-white uppercase tracking-tight truncate flex items-center gap-1.5">
-                            {loc.name}
-                            {loc.isDeleted === 1 && (
-                              <span className="bg-ares-red text-white text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-bronze uppercase shrink-0">
-                                Archived
-                              </span>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-1">
+                            <p className="text-xs font-bold text-white uppercase tracking-tight truncate flex flex-wrap items-center gap-1.5">
+                              {loc.name}
+                              {loc.isDeleted === 1 && (
+                                <span className="bg-ares-red text-white text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-bronze uppercase shrink-0">
+                                  Archived
+                                </span>
+                              )}
+                              {loc.isDeleted !== 1 && loc.isAddressPublic === 1 && (
+                                <span className="bg-ares-gold/15 text-ares-gold text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-gold/30 uppercase shrink-0">
+                                  Public address
+                                </span>
+                              )}
+                              {loc.isDeleted !== 1 && loc.approvalStatus === "pending_approval" && (
+                                <span className="bg-ares-cyan/15 text-ares-cyan text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-cyan/30 uppercase shrink-0">
+                                  {loc.publishedSnapshot ? "Live + Pending Edit" : "Pending Review"}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-marble/60 font-medium truncate">{loc.address}</p>
+                            {loc.description && (
+                              <p className="text-[9px] text-marble/40 line-clamp-1 italic">{loc.description}</p>
                             )}
-                            {loc.isDeleted !== 1 && loc.isAddressPublic === 1 && (
-                              <span className="bg-ares-gold/15 text-ares-gold text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-gold/30 uppercase shrink-0">
-                                Public address
-                              </span>
-                            )}
-                            {loc.isDeleted !== 1 && loc.approvalStatus === "pending_approval" && (
-                              <span className="bg-ares-cyan/15 text-ares-cyan text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded border border-ares-cyan/30 uppercase shrink-0">
-                                Pending Review
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-[10px] text-marble/60 font-medium truncate">{loc.address}</p>
-                          {loc.description && (
-                            <p className="text-[9px] text-marble/40 line-clamp-1 italic">{loc.description}</p>
-                          )}
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {canPropose && loc.isDeleted !== 1 && <button
+                              type="button"
+                              onClick={() => {
+                                setEditingLocation(loc);
+                                setLocFormName(loc.name);
+                                setLocFormAddress(loc.address);
+                                setLocFormDescription(loc.description || "");
+                                setLocFormGmapsUrl(loc.gmapsUrl || "");
+                                setLocFormIsAddressPublic(loc.isAddressPublic === 1);
+                              }}
+                              className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded border border-white/10 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+                              title="Edit Venue"
+                              aria-label={`Edit venue ${loc.name}`}
+                            >
+                              <Pencil size={11} />
+                            </button>}
+                            {canManage && loc.isDeleted !== 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => setPendingArchiveId(loc.id)}
+                                className="p-1.5 bg-white/5 hover:bg-ares-red/25 text-white/70 hover:text-white rounded border border-white/10 hover:border-ares-red/35 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+                                title="Archive Venue"
+                                aria-label={`Archive venue ${loc.name}`}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            ) : canManage ? (
+                              <button type="button" onClick={() => void handleRestoreLocation(loc.id)} className="p-1.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold rounded border border-ares-gold/30 focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none" aria-label={`Restore venue ${loc.name}`}>
+                                <RotateCcw aria-hidden="true" size={11} />
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0">
-                          {canPropose && loc.isDeleted !== 1 && <button
-                            type="button"
-                            onClick={() => {
-                              setEditingLocation(loc);
-                              setLocFormName(loc.name);
-                              setLocFormAddress(loc.address);
-                              setLocFormDescription(loc.description || "");
-                              setLocFormGmapsUrl(loc.gmapsUrl || "");
-                              setLocFormIsAddressPublic(loc.isAddressPublic === 1);
-                            }}
-                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded border border-white/10 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
-                            title="Edit Venue"
-                            aria-label={`Edit venue ${loc.name}`}
-                          >
-                            <Pencil size={11} />
-                          </button>}
-                          {canManage && loc.isDeleted !== 1 ? (
+                        {canManage && loc.isDeleted !== 1 && loc.approvalStatus === "pending_approval" && (
+                          <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => setPendingArchiveId(loc.id)}
-                              className="p-1.5 bg-white/5 hover:bg-ares-red/25 text-white/70 hover:text-white rounded border border-white/10 hover:border-ares-red/35 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
-                              title="Archive Venue"
-                              aria-label={`Archive venue ${loc.name}`}
+                              onClick={() => void handleApproveLocation(loc.id, 0)}
+                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+                              aria-label={`Approve venue ${loc.name} as private`}
                             >
-                              <Trash2 size={11} />
+                              <Check size={10} />
+                              Approve (Private)
                             </button>
-                          ) : canManage ? (
-                            <button type="button" onClick={() => void handleRestoreLocation(loc.id)} className="p-1.5 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold rounded border border-ares-gold/30 focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none" aria-label={`Restore venue ${loc.name}`}>
-                              <RotateCcw aria-hidden="true" size={11} />
+                            <button
+                              type="button"
+                              onClick={() => void handleApproveLocation(loc.id, 1)}
+                              className="px-2 py-1 bg-ares-gold/15 hover:bg-ares-gold/25 text-ares-gold border border-ares-gold/35 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+                              aria-label={`Approve venue ${loc.name} with public address`}
+                            >
+                              <Check size={10} />
+                              Approve (Public Address)
                             </button>
-                          ) : null}
-                        </div>
+                            <button
+                              type="button"
+                              onClick={() => void handleDiscardLocation(loc.id)}
+                              className="px-2 py-1 bg-ares-red/15 hover:bg-ares-red/25 text-white border border-ares-red/35 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan outline-none"
+                              aria-label={`Discard pending venue ${loc.name}`}
+                            >
+                              <RotateCcw size={10} />
+                              Discard
+                            </button>
+                          </div>
+                        )}
                       </div>
                       {pendingArchiveId === loc.id && (
                         <div role="alertdialog" aria-label={`Confirm archive of ${loc.name}`} className="mt-2 rounded border border-ares-red/35 bg-ares-red/10 p-3 text-[10px] text-white">

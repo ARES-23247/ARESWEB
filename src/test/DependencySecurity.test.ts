@@ -58,13 +58,13 @@ describe("dependency security contracts", () => {
   });
 
   it("rejects excessive nesting through the CLI's real parser and public pick filter", async () => {
-    const { parser } = firebaseRequire("stream-json") as { parser(): Transform };
-    const { pick } = firebaseRequire("stream-json/filters/Pick") as {
-      pick(options: { filter: string }): Transform;
+    const { parserStream } = firebaseRequire("stream-json") as { parserStream(): Transform };
+    const { pick } = firebaseRequire("stream-json/filters/pick.js") as {
+      pick: { asStream(options: { filter: string; maxDepth?: number }): Transform };
     };
-    const deepJson = '{"meta":'.repeat(1050) + '1' + '}'.repeat(1050);
+    const deepJson = '{"meta":'.repeat(1050) + "1" + "}".repeat(1050);
     await expect(pipeline(
-      Readable.from([deepJson]), parser(), pick({ filter: "data" }),
+      Readable.from([deepJson]), parserStream(), pick.asStream({ filter: "data" }),
       new Writable({ objectMode: true, write(_chunk, _encoding, callback) { callback(); } }),
     )).rejects.toThrow("JSON nesting depth exceeds maxDepth (1024)");
   });
@@ -83,35 +83,15 @@ describe("dependency security contracts", () => {
     expect(functionsLock.packages?.["node_modules/qs"]?.version).toBe("6.17.1");
   });
 
-  it("backports a bounded filter depth while firebase-tools requires stream-json 1.x", async () => {
+  it("enforces bounded filter depth and CommonJS/null-prototype patches for CLI dependencies", async () => {
     const workspace = readFileSync(resolve(workspaceRoot, "pnpm-workspace.yaml"), "utf8");
-    const patch = readFileSync(
-      resolve(workspaceRoot, "patches/stream-json@1.9.1.patch"),
-      "utf8",
-    );
+    expect(workspace).toContain("minimatch@11.0.4: patches/minimatch@11.0.4.patch");
+    expect(workspace).toContain("deepmerge@4.3.1: patches/deepmerge@4.3.1.patch");
 
-    expect(workspace).toContain(
-      "stream-json@1.9.1: patches/stream-json@1.9.1.patch",
-    );
-    expect(patch).toContain("DEFAULT_MAX_DEPTH = 1024");
-
-    type FilterToken = { name: string; value?: string };
-    type FilterStream = {
-      once(event: "error", listener: (error: Error) => void): FilterStream;
-      write(token: FilterToken): boolean;
+    const { pick } = firebaseRequire("stream-json/filters/pick.js") as {
+      pick: { asStream(options: { filter: string; maxDepth?: number }): Transform };
     };
-    const FilterBase = firebaseRequire("stream-json/filters/FilterBase") as new (
-      options: { filter: string; maxDepth: number },
-    ) => FilterStream;
-    class TestFilter extends FilterBase {
-      _checkChunk(): boolean {
-        return false;
-      }
-    }
-
-    expect(() => new TestFilter({ filter: "missing", maxDepth: -1 })).toThrow(RangeError);
-
-    const stream = new TestFilter({ filter: "missing", maxDepth: 2 });
+    const stream = pick.asStream({ filter: "missing", maxDepth: 2 });
     const errorPromise = new Promise<Error>((resolveError) => {
       stream.once("error", resolveError);
     });
@@ -122,6 +102,7 @@ describe("dependency security contracts", () => {
       { name: "keyValue", value: "b" },
       { name: "startObject" },
       { name: "keyValue", value: "c" },
+      { name: "numberValue", value: "1" },
     ]) {
       stream.write(token);
     }
@@ -129,6 +110,19 @@ describe("dependency security contracts", () => {
     const error = await errorPromise;
     expect(error).toBeInstanceOf(RangeError);
     expect(error.message).toContain("maxDepth (2)");
+
+    const minimatch = firebaseRequire("minimatch") as ((target: string, pattern: string) => boolean) & {
+      minimatch: (target: string, pattern: string) => boolean;
+    };
+    expect(typeof minimatch).toBe("function");
+    expect(minimatch("src/App.tsx", "src/*.tsx")).toBe(true);
+    expect(minimatch.minimatch("src/App.tsx", "src/*.tsx")).toBe(true);
+
+    const archiverRequire = createRequire(firebaseRequire.resolve("archiver/package.json"));
+    const readdirGlobRequire = createRequire(archiverRequire.resolve("readdir-glob/package.json"));
+    const mm = readdirGlobRequire("minimatch") as (target: string, pattern: string) => boolean;
+    expect(typeof mm).toBe("function");
+    expect(mm("test.js", "*.js")).toBe(true);
   });
 
   it("ignores Codex attachment staging without deleting user files", () => {
