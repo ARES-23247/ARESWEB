@@ -538,7 +538,7 @@ describe("useEventEditor custom hook", () => {
     expect(setFormByDay).toHaveBeenCalledWith(["TH"]);
   });
 
-  it("prevents non-publisher students from editing published events or skipping occurrences while allowing draft creation", async () => {
+  it("allows students to propose staged edits and occurrence skips on published events", async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: testUser,
       authorizedUser: { email: "test@example.com", role: "student" },
@@ -548,6 +548,14 @@ describe("useEventEditor custom hook", () => {
       loginWithGoogle: vi.fn(),
       logout: vi.fn(),
       loginWithMockUser: vi.fn(),
+    });
+    vi.mocked(updateEvent).mockResolvedValueOnce({
+      id: "published-1",
+      title: "Published Event",
+      dateStart: "2026-08-20T20:00:00.000Z",
+      category: "internal",
+      status: "published",
+      approvalStatus: "pending_approval",
     });
 
     const publishedEvent = {
@@ -575,7 +583,7 @@ describe("useEventEditor custom hook", () => {
 
     expect(result.current.canEdit).toBe(true);
     expect(result.current.canPublishDirectly).toBe(false);
-    expect(result.current.canEditEventDetails).toBe(false);
+    expect(result.current.canEditEventDetails).toBe(true);
 
     await act(async () => {
       await result.current.handleSaveEvent({
@@ -584,8 +592,11 @@ describe("useEventEditor custom hook", () => {
       await result.current.handleCancelOccurrence("2026-08-27");
     });
 
-    expect(updateEvent).not.toHaveBeenCalled();
-    expect(cancelEventOccurrence).not.toHaveBeenCalled();
+    expect(updateEvent).toHaveBeenCalledWith(
+      "published-1",
+      expect.objectContaining({ title: "Published Event" }),
+    );
+    expect(cancelEventOccurrence).toHaveBeenCalledWith("published-1", "2026-08-27");
 
     rerender({
       isOpen: true,

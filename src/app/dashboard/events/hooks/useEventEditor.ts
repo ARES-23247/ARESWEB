@@ -172,13 +172,7 @@ export function useEventEditor({
     return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
   }, [user, authorizedUser]);
 
-  const canEditEventDetails = useMemo(() => {
-    if (!canEdit) return false;
-    if (canPublishDirectly) return true;
-    if (!editId) return true;
-    if (occurrenceContextDate && editScope === "occurrence") return false;
-    return (eventToEdit?.status || "published") !== "published";
-  }, [canEdit, canPublishDirectly, editId, occurrenceContextDate, editScope, eventToEdit?.status]);
+  const canEditEventDetails = canEdit;
 
   // Preserve an explicit editor error when the shared profile DTO is unavailable.
   useEffect(() => {
@@ -377,14 +371,24 @@ export function useEventEditor({
           isPotluck: newEvent.isPotluck ?? 0,
           isVolunteer: newEvent.isVolunteer ?? 0,
         };
-        await updateEventOccurrence(
+        const savedEvent = await updateEventOccurrence(
           editId,
           occurrenceContextDate,
           occurrenceInput,
         );
+        if (
+          !canPublishDirectly ||
+          savedEvent.status === "pending" ||
+          savedEvent.approvalStatus === "pending_approval"
+        ) {
+          void notifyPendingApprovalQueue("events", editId);
+        }
       } else if (editId) {
         const savedEvent = await updateEvent(editId, newEvent);
-        if (savedEvent.status === "pending") {
+        if (
+          savedEvent.status === "pending" ||
+          savedEvent.approvalStatus === "pending_approval"
+        ) {
           void notifyPendingApprovalQueue("events", savedEvent.id);
         }
       }
@@ -554,20 +558,26 @@ export function useEventEditor({
 
   const handleCancelOccurrence = useCallback(
     async (date: string) => {
-      if (!editId || !canPublishDirectly) return;
+      if (!editId || !canEdit) return;
       await cancelEventOccurrence(editId, date);
+      if (!canPublishDirectly) {
+        void notifyPendingApprovalQueue("events", editId);
+      }
       await refreshOccurrences();
     },
-    [editId, canPublishDirectly, refreshOccurrences],
+    [editId, canEdit, canPublishDirectly, refreshOccurrences],
   );
 
   const handleRestoreOccurrence = useCallback(
     async (date: string) => {
-      if (!editId || !canPublishDirectly) return;
+      if (!editId || !canEdit) return;
       await restoreEventOccurrence(editId, date);
+      if (!canPublishDirectly) {
+        void notifyPendingApprovalQueue("events", editId);
+      }
       await refreshOccurrences();
     },
-    [editId, canPublishDirectly, refreshOccurrences],
+    [editId, canEdit, canPublishDirectly, refreshOccurrences],
   );
 
   return {

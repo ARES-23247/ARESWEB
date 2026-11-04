@@ -1,5 +1,5 @@
 import express from "express";
-import { isPublishedContent } from "../lib/contentVisibility";
+import { resolvePublishedContentData } from "../lib/contentVisibility";
 import { adminDb, adminFieldValue } from "../lib/firebase-admin";
 import { ensureAdmin, ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
@@ -117,11 +117,12 @@ function contentMediaCollection(value: unknown): ContentMediaCollection {
 }
 
 function includesPublishedPhoto(data: Record<string, unknown>, photoId: string): boolean {
-  const mediaPhotoIds = Array.isArray(data.mediaPhotoIds)
-    ? data.mediaPhotoIds.filter((value): value is string => typeof value === "string").slice(0, 100)
+  const resolved = resolvePublishedContentData(data);
+  if (!resolved) return false;
+  const mediaPhotoIds = Array.isArray(resolved.mediaPhotoIds)
+    ? resolved.mediaPhotoIds.filter((value): value is string => typeof value === "string").slice(0, 100)
     : [];
-  return isPublishedContent(data)
-    && mediaPhotoIds.includes(photoId);
+  return mediaPhotoIds.includes(photoId);
 }
 
 async function withCursor(query: FirebaseFirestore.Query, cursor: unknown): Promise<FirebaseFirestore.Query> {

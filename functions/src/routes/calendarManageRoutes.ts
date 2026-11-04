@@ -5,11 +5,13 @@ import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
 import {
   canPublish,
+  type EventDocument,
   type EventOccurrence,
   eventDto,
   eventWriteData,
   eventWriteSchema,
   expandEventOccurrences,
+  extractPublishedEventSnapshot,
   isOccurrenceDate,
   parseBody,
   parseLimit,
@@ -24,6 +26,10 @@ import {
   renderEventPage,
   requireManagedCoverPhoto,
 } from "./calendarShared";
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export function registerCalendarManageRoutes(router: Router): void {
 router.get(
@@ -52,11 +58,14 @@ router.post(
     const input = parseBody(eventWriteSchema, req.body);
     await requireManagedCoverPhoto(input.coverPhotoId);
     rejectDirectManagedStorageUrl(input.coverImage);
-    const status = canPublish(req.authorizationRole) ? (input.status ?? "published") : "pending";
+    const isPublisher = canPublish(req.authorizationRole);
+    const status = isPublisher ? (input.status ?? "published") : "pending";
+    const approvalStatus = status === "published" ? "approved" : "pending_approval";
     const document = adminDb.collection("events").doc();
     const timestamp = new Date().toISOString();
     const data = {
       ...eventWriteData(input, status),
+      approvalStatus,
       isDeleted: 0,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -125,20 +134,40 @@ router.put(
     if (currentData.isDeleted === 1) {
       throw new ApiError(409, "Restore this event before editing it.", "EVENT_ARCHIVED");
     }
-    if (!canPublish(req.authorizationRole) && currentData.status === "published") {
-      throw new ApiError(403, "Published events can only be edited by an admin, coach, or mentor.");
-    }
-    const status = canPublish(req.authorizationRole) ? (input.status ?? "draft") : "pending";
+    const isPublisher = canPublish(req.authorizationRole);
+    const wasPublished = currentData.status === "published";
+    const status = isPublisher
+      ? (input.status ?? "draft")
+      : wasPublished
+        ? "published"
+        : "pending";
+    const approvalStatus =
+      isPublisher && status === "published" ? "approved" : "pending_approval";
+    const preservedPublishedSnapshot =
+      !isPublisher && wasPublished
+        ? isPlainObject(currentData.publishedSnapshot)
+          ? currentData.publishedSnapshot
+          : extractPublishedEventSnapshot(currentData)
+        : null;
     const timestamp = new Date().toISOString();
-    const update = {
+    const update: Record<string, unknown> = {
       ...eventWriteData(input, status),
+      approvalStatus,
+      publishedSnapshot: preservedPublishedSnapshot,
       updatedAt: timestamp,
       updatedBy: req.user!.uid,
+    };
+    const nextEventState: EventDocument = {
+      ...currentData,
+      ...eventWriteData(input, status),
+      approvalStatus,
+      publishedSnapshot: preservedPublishedSnapshot,
+      updatedAt: timestamp,
     };
     const batch = adminDb.batch();
     batch.update(ref, update);
     batch.set(ref.collection("revisions").doc(), {
-      ...eventDto(id, { ...currentData, ...update }, true),
+      ...eventDto(id, nextEventState, true),
       editedBy: req.user!.uid,
       editedByName: "ARES Member",
       editedByAvatar: "",
@@ -153,7 +182,7 @@ router.put(
     await batch.commit();
     res.json({
       success: true,
-      event: eventDto(id, { ...currentData, ...update }, true),
+      event: eventDto(id, nextEventState, true),
     });
   }),
 );
@@ -246,6 +275,8 @@ router.patch(
     const timestamp = new Date().toISOString();
     await ref.update({
       status: "published",
+      approvalStatus: "approved",
+      publishedSnapshot: null,
       publishedAt: timestamp,
       publishedBy: req.user!.uid,
       updatedAt: timestamp,
@@ -257,5 +288,53 @@ router.patch(
     });
   }),
 );
-}
 
+router.post(
+  "/manage/:id/discard-pending",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, ref, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "Restore this event before discarding edits.", "EVENT_ARCHIVED");
+    }
+    if (data.approvalStatus !== "pending_approval" || !isPlainObject(data.publishedSnapshot)) {
+      throw new ApiError(409, "No staged pending edit to discard.", "NO_STAGED_EDIT");
+    }
+    const restored = extractPublishedEventSnapshot(data.publishedSnapshot as EventDocument);
+    const timestamp = new Date().toISOString();
+    const batch = adminDb.batch();
+    batch.update(ref, {
+      ...restored,
+      status: "published",
+      approvalStatus: "approved",
+      publishedSnapshot: null,
+      updatedAt: timestamp,
+      updatedBy: req.user!.uid,
+    });
+    batch.set(adminDb.collection("audit_logs").doc(), {
+      action: "calendar.event.pending_discarded",
+      actorUid: req.user!.uid,
+      targetId: id,
+      createdAt: timestamp,
+    });
+    await batch.commit();
+    res.json({
+      success: true,
+      discarded: true,
+      event: eventDto(
+        id,
+        {
+          ...data,
+          ...restored,
+          status: "published",
+          approvalStatus: "approved",
+          publishedSnapshot: null,
+          updatedAt: timestamp,
+        },
+        true,
+      ),
+    });
+  }),
+);
+}

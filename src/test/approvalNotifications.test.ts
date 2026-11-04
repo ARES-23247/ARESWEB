@@ -15,7 +15,10 @@ vi.mock("@/utils/logger", () => ({
   },
 }));
 
-import { notifyPendingApprovalQueue } from "@/lib/approvalNotifications";
+import {
+  discardPendingContentEdit,
+  notifyPendingApprovalQueue,
+} from "@/lib/approvalNotifications";
 
 describe("notifyPendingApprovalQueue", () => {
   beforeEach(() => {
@@ -61,6 +64,61 @@ describe("notifyPendingApprovalQueue", () => {
     expect(mocks.warn).toHaveBeenCalledWith(
       "Pending approval notification failed",
       expect.objectContaining({ collection: "documents", contentId: "doc-1" }),
+    );
+  });
+});
+
+describe("discardPendingContentEdit", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("rejects empty content identifiers before calling the API", async () => {
+    await expect(discardPendingContentEdit("posts", "   ")).rejects.toThrow(
+      "Content identifier is required",
+    );
+    expect(mocks.authenticatedFetch).not.toHaveBeenCalled();
+  });
+
+  it("posts a discard-pending request and resolves on success", async () => {
+    mocks.authenticatedFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+
+    await expect(discardPendingContentEdit("posts", "post-1")).resolves.toBeUndefined();
+    expect(mocks.authenticatedFetch).toHaveBeenCalledWith(
+      "/api/content-admin/discard-pending",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collection: "posts", contentId: "post-1" }),
+      },
+    );
+  });
+
+  it("throws a descriptive error when the backend rejects discard-pending", async () => {
+    mocks.authenticatedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: "Record does not have a staged pending edit." }),
+    });
+
+    await expect(discardPendingContentEdit("docs", "doc-1")).rejects.toThrow(
+      "Record does not have a staged pending edit.",
+    );
+
+    mocks.authenticatedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error("invalid json");
+      },
+    });
+
+    await expect(discardPendingContentEdit("documents", "doc-2")).rejects.toThrow(
+      "Could not discard the pending edit.",
     );
   });
 });

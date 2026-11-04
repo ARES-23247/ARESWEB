@@ -5,6 +5,7 @@ export interface TeamLocation {
   description?: string;
   gmapsUrl?: string;
   isAddressPublic?: number;
+  approvalStatus?: "pending_approval" | "approved";
   isDeleted?: number;
   createdAt?: string;
   updatedAt?: string;

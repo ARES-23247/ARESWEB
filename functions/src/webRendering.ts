@@ -1,5 +1,5 @@
-import { isPublishedContent } from "./lib/contentVisibility";
-import { publicEventDescription } from "./routes/calendarHelpers";
+import { resolvePublishedContentData } from "./lib/contentVisibility";
+import { publicEventDescription, resolvePublicEventData } from "./routes/calendarHelpers";
 
 export interface PageMetadata {
   title: string;
@@ -114,11 +114,20 @@ export function parseDynamicRoute(pathname: string): DynamicRoute | null {
 
 export function metadataForDocument(
   route: DynamicRoute,
-  data: Record<string, unknown>,
+  rawData: Record<string, unknown>,
 ): PageMetadata | null {
-  if (data.isDeleted === 1 || data.isDeleted === true || data.searchIndexable === false) return null;
-  if (route.collection !== "robots" && data.status !== "published") return null;
-  if ((route.collection === "posts" || route.collection === "docs") && !isPublishedContent(data)) return null;
+  if (rawData.isDeleted === 1 || rawData.isDeleted === true || rawData.searchIndexable === false) return null;
+  if (route.collection !== "robots" && rawData.status !== "published") return null;
+
+  let data = rawData;
+  if (route.collection === "posts" || route.collection === "docs") {
+    const resolved = resolvePublishedContentData(rawData);
+    if (!resolved) return null;
+    data = resolved;
+  } else if (route.collection === "events") {
+    data = resolvePublicEventData(rawData);
+  }
+
   if (route.kind === "academy" && data.displayInMathCorner !== 1 && data.displayInScienceCorner !== 1) return null;
   if (route.kind === "docs" && data.displayInAreslib !== 1) return null;
 

@@ -9,12 +9,15 @@ import { authenticatedFetch } from "@/lib/api";
 import {
   archiveEvent,
   cancelEventOccurrence,
+  discardPendingEventEdit,
   fetchLocations,
   fetchManagedEvent,
   fetchManagedEvents,
   publishEvent,
   restoreEvent,
 } from "@/app/calendar/api";
+import PendingEditCompareDialog from "@/components/dashboard/PendingEditCompareDialog";
+import type { DocRecord } from "@/hooks/useDocumentSync";
 
 import LocationManagerModal, { TeamLocation } from "./components/LocationManagerModal";
 import EventEditorDrawer, { TeamEvent } from "./components/EventEditorDrawer";
@@ -59,6 +62,8 @@ export default function EventsManagementPage({
   // Modal control states
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<TeamEvent | null>(null);
+  const [comparingEvent, setComparingEvent] = useState<TeamEvent | null>(null);
+  const [isDiscardingEvent, setIsDiscardingEvent] = useState(false);
   const [isLocationManagerOpen, setIsLocationManagerOpen] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
   const openedPrefillRef = useRef<string | null>(null);
@@ -239,6 +244,9 @@ export default function EventsManagementPage({
     try {
       const targetId = evt.recurrenceOf || evt.id;
       await publishEvent(targetId);
+      if (comparingEvent && (comparingEvent.recurrenceOf || comparingEvent.id) === targetId) {
+        setComparingEvent(null);
+      }
       setOperationStatus({
         kind: "success",
         message: `“${evt.title}” is now published.`,
@@ -252,6 +260,69 @@ export default function EventsManagementPage({
       });
     }
   };
+
+  const handleDiscardPendingEvent = async (evt: TeamEvent) => {
+    if (!canPublishDirectly || isDiscardingEvent) return;
+    setOperationStatus(null);
+    setIsDiscardingEvent(true);
+    try {
+      const targetId = evt.recurrenceOf || evt.id;
+      await discardPendingEventEdit(targetId);
+      if (comparingEvent && (comparingEvent.recurrenceOf || comparingEvent.id) === targetId) {
+        setComparingEvent(null);
+      }
+      setOperationStatus({
+        kind: "success",
+        message: `Pending edits for “${evt.title}” were discarded and the live event was restored.`,
+      });
+      await loadManagementData();
+    } catch (error) {
+      logger.error("Error discarding pending event edit:", error);
+      setOperationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setIsDiscardingEvent(false);
+    }
+  };
+
+  const comparingDocAdapter = useMemo<DocRecord | null>(() => {
+    if (!comparingEvent || !comparingEvent.publishedSnapshot) return null;
+    const snap = comparingEvent.publishedSnapshot;
+    const formatSchedule = (start?: unknown, end?: unknown, loc?: unknown) =>
+      [
+        `Start: ${typeof start === "string" ? start : comparingEvent.dateStart}`,
+        `End: ${typeof end === "string" ? end : comparingEvent.dateEnd || "(none)"}`,
+        `Location: ${typeof loc === "string" ? loc : comparingEvent.location || "(none)"}`,
+      ].join("\n");
+    return {
+      slug: comparingEvent.recurrenceOf || comparingEvent.id,
+      title: comparingEvent.title,
+      category: comparingEvent.category,
+      sortOrder: 0,
+      description: formatSchedule(
+        comparingEvent.dateStart,
+        comparingEvent.dateEnd,
+        comparingEvent.location,
+      ),
+      content: comparingEvent.description || "",
+      status: comparingEvent.status || "published",
+      isDeleted: 0,
+      displayInAreslib: 0,
+      displayInMathCorner: 0,
+      displayInScienceCorner: 0,
+      isPortfolio: 0,
+      isExecutiveSummary: 0,
+      publishedSnapshot: {
+        title: typeof snap.title === "string" ? snap.title : comparingEvent.title,
+        category:
+          typeof snap.category === "string" ? snap.category : comparingEvent.category,
+        description: formatSchedule(snap.dateStart, snap.dateEnd, snap.location),
+        content: typeof snap.description === "string" ? snap.description : "",
+      },
+    };
+  }, [comparingEvent]);
 
   const handleClearFilters = () => {
     setFilterSearch("");
@@ -289,8 +360,9 @@ export default function EventsManagementPage({
         deleted++;
       } else {
         all++;
-        if (evt.status === "published" || !evt.status) published++;
-        else if (evt.status === "pending") pending++;
+        const isPending = evt.status === "pending" || evt.approvalStatus === "pending_approval";
+        if (isPending) pending++;
+        if ((evt.status === "published" || !evt.status) && (!isPending || Boolean(evt.publishedSnapshot))) published++;
         else if (evt.status === "draft") draft++;
       }
     });
@@ -307,7 +379,11 @@ export default function EventsManagementPage({
         if (evt.isDeleted === 1) return false;
         if (filterStatus !== "all") {
           const status = evt.status || "published";
-          if (status !== filterStatus) return false;
+          if (filterStatus === "pending") {
+            if (status !== "pending" && evt.approvalStatus !== "pending_approval") return false;
+          } else if (status !== filterStatus) {
+            return false;
+          }
         }
       }
 
@@ -378,14 +454,12 @@ export default function EventsManagementPage({
 
             {canEdit && (
               <div className="flex gap-3">
-                {canPublishDirectly && (
-                  <button
-                    onClick={() => setIsLocationManagerOpen(true)}
-                    className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
-                  >
-                    <MapPin size={16} className="text-ares-gold" /> Locations
-                  </button>
-                )}
+                <button
+                  onClick={() => setIsLocationManagerOpen(true)}
+                  className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                >
+                  <MapPin size={16} className="text-ares-gold" /> Locations
+                </button>
                 <button
                   onClick={handleOpenCreate}
                   className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:outline-none"
@@ -457,6 +531,8 @@ export default function EventsManagementPage({
             canPublishDirectly={canPublishDirectly}
             onRestore={handleRestoreEvent}
             onApprove={handleApproveEvent}
+            onCompare={(evt) => setComparingEvent(evt)}
+            onDiscardPending={handleDiscardPendingEvent}
             onEdit={handleOpenEdit}
             onDelete={handleDeleteEvent}
             onClearFilters={handleClearFilters}
@@ -469,6 +545,21 @@ export default function EventsManagementPage({
                 filterYear !== "all"
               )
             }
+          />
+
+          <PendingEditCompareDialog
+            item={comparingDocAdapter}
+            sectionLabel="Calendar Event"
+            isApproving={false}
+            isDiscarding={isDiscardingEvent}
+            errorMessage={operationStatus?.kind === "error" ? operationStatus.message : null}
+            onClose={() => setComparingEvent(null)}
+            onApprove={() => {
+              if (comparingEvent) void handleApproveEvent(comparingEvent);
+            }}
+            onDiscard={() => {
+              if (comparingEvent) void handleDiscardPendingEvent(comparingEvent);
+            }}
           />
 
           {nextCursor && (

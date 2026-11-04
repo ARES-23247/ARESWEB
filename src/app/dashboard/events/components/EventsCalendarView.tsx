@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Clock, MapPin, RotateCcw, Check, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Clock, MapPin, RotateCcw, Check, Pencil, Trash2, GitCompare } from "lucide-react";
 import { TeamEvent } from "./EventEditorDrawer";
 import { TeamLocation } from "./LocationManagerModal";
 import { toPlainText } from "@/lib/contentFormatters";
@@ -12,6 +12,8 @@ interface EventsCalendarViewProps {
   canPublishDirectly: boolean;
   onRestore: (evt: TeamEvent) => void;
   onApprove: (evt: TeamEvent) => void;
+  onCompare?: (evt: TeamEvent) => void;
+  onDiscardPending?: (evt: TeamEvent) => void;
   onEdit: (evt: TeamEvent) => void;
   onDelete: (evt: TeamEvent) => void;
   onClearFilters: () => void;
@@ -26,6 +28,8 @@ export default function EventsCalendarView({
   canPublishDirectly,
   onRestore,
   onApprove,
+  onCompare,
+  onDiscardPending,
   onEdit,
   onDelete,
   onClearFilters,
@@ -96,9 +100,9 @@ export default function EventsCalendarView({
                           Archived
                         </span>
                       )}
-                      {evt.status === "pending" && (
+                      {(evt.status === "pending" || evt.approvalStatus === "pending_approval") && (
                         <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-gold/15 border-ares-gold/30 text-ares-gold rounded">
-                          Pending Approval
+                          {evt.publishedSnapshot ? "Live + Pending Edit" : "Pending Approval"}
                         </span>
                       )}
                       {evt.status === "draft" && (
@@ -106,7 +110,7 @@ export default function EventsCalendarView({
                           Draft
                         </span>
                       )}
-                      {evt.status === "published" && (
+                      {evt.status === "published" && evt.approvalStatus !== "pending_approval" && (
                         <span className="text-[9px] font-black uppercase px-2 py-0.5 border bg-ares-gold/15 border-ares-gold/30 text-ares-gold rounded">
                           Published
                         </span>
@@ -170,7 +174,20 @@ export default function EventsCalendarView({
                       )
                     ) : (
                       <>
-                        {canPublishDirectly && evt.status === "pending" && (
+                        {canPublishDirectly && evt.publishedSnapshot && onCompare && (
+                          <button
+                            onClick={() => onCompare(evt)}
+                            className="p-2 bg-ares-cyan/15 hover:bg-ares-cyan/30 text-ares-cyan border border-ares-cyan/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                            title="Compare Live vs. Pending Edit"
+                            aria-label={`Compare pending edit for event ${evt.title}`}
+                          >
+                            <GitCompare size={13} />
+                            <span className="text-[9px] font-black uppercase tracking-wider pr-1">
+                              Compare
+                            </span>
+                          </button>
+                        )}
+                        {canPublishDirectly && (evt.status === "pending" || evt.approvalStatus === "pending_approval") && (
                           <button
                             onClick={() => onApprove(evt)}
                             className="p-2 bg-ares-gold/15 hover:bg-ares-gold/30 text-ares-gold border border-ares-gold/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
@@ -180,6 +197,19 @@ export default function EventsCalendarView({
                             <Check size={13} />
                             <span className="text-[9px] font-black uppercase tracking-wider pr-1">
                               Approve
+                            </span>
+                          </button>
+                        )}
+                        {canPublishDirectly && evt.publishedSnapshot && onDiscardPending && (
+                          <button
+                            onClick={() => onDiscardPending(evt)}
+                            className="p-2 bg-ares-red/15 hover:bg-ares-red/30 text-white border border-ares-red/30 rounded transition-all cursor-pointer text-xs focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center gap-1"
+                            title="Discard Pending Edit & Keep Live Event"
+                            aria-label={`Discard pending edit for event ${evt.title}`}
+                          >
+                            <RotateCcw size={13} />
+                            <span className="text-[9px] font-black uppercase tracking-wider pr-1">
+                              Discard Edit
                             </span>
                           </button>
                         )}

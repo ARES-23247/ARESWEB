@@ -12,6 +12,7 @@ import {
   publicEventDescription,
   readRecurrence,
   readString,
+  resolvePublicEventData,
 } from "./calendarHelpers";
 import {
   FEED_EXCEPTION_QUERY_MAX,
@@ -48,7 +49,9 @@ router.get(
     ];
 
     const recurringIds = snapshot.docs
-      .filter((document) => readRecurrence((document.data() as EventDocument).recurrence))
+      .filter((document) =>
+        readRecurrence(resolvePublicEventData(document.data() as EventDocument).recurrence),
+      )
       .map((document) => document.id);
     const occurrenceStates = await loadOccurrenceStates(
       recurringIds,
@@ -61,7 +64,7 @@ router.get(
     );
 
     for (const document of snapshot.docs) {
-      const data = document.data() as EventDocument;
+      const data = resolvePublicEventData(document.data() as EventDocument);
       const dateStart = readString(data.dateStart);
       const start = formatIcalDate(dateStart);
       if (!start || !dateStart) continue;

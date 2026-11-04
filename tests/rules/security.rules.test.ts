@@ -484,6 +484,66 @@ describe("Firestore zero-trust rules", () => {
         );
       }),
     );
+
+    // Staged pending edits keeping status === "published" with a verified publishedSnapshot
+    await seedDocument("posts", "staged-post", {
+      title: "Approved Blog Title",
+      content: "Approved Blog Content",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    await assertFails(
+      updateDoc(doc(memberDb, "posts", "staged-post"), {
+        title: "Student Draft Title",
+        content: "Student Draft Content",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-editor",
+        publishedSnapshot: {
+          title: "Forged Live Title",
+          content: "Approved Blog Content",
+        },
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "posts", "staged-post"), {
+        title: "Student Draft Title",
+        content: "Student Draft Content",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-editor",
+        publishedSnapshot: {
+          title: "Approved Blog Title",
+          content: "Approved Blog Content",
+        },
+      }),
+    );
+    // Subsequent pending edit must preserve the original publishedSnapshot
+    await assertFails(
+      updateDoc(doc(memberDb, "posts", "staged-post"), {
+        title: "Student Draft Title v2",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-editor",
+        publishedSnapshot: {
+          title: "Student Draft Title",
+          content: "Student Draft Content",
+        },
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "posts", "staged-post"), {
+        title: "Student Draft Title v2",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-editor",
+        publishedSnapshot: {
+          title: "Approved Blog Title",
+          content: "Approved Blog Content",
+        },
+      }),
+    );
   });
 
   it("limits docs_feedback writes to authorized team members", async () => {

@@ -410,4 +410,108 @@ describe("useDocumentSync", () => {
       );
     }
   });
+
+  it("captures and preserves publishedSnapshot when staging pending edits on a published record", async () => {
+    subscribeWith({
+      docs: [],
+      empty: true,
+      size: 0,
+      metadata: { fromCache: false },
+    });
+    const transactionSet = vi.fn();
+    let existingDocData: Record<string, unknown> = {
+      title: "Live Published Post",
+      content: "Original live content",
+      status: "published",
+      approvalStatus: "approved",
+    };
+    firestoreMocks.runTransaction.mockImplementation(
+      async (
+        _db: unknown,
+        callback: (transaction: {
+          get: () => Promise<{ exists: () => boolean; data: () => Record<string, unknown> }>;
+          set: typeof transactionSet;
+        }) => Promise<void>,
+      ) =>
+        callback({
+          get: async () => ({ exists: () => true, data: () => existingDocData }),
+          set: transactionSet,
+        }),
+    );
+
+    const { result } = renderHook(() => useDocumentSync("posts", () => true));
+    await act(() =>
+      result.current.saveDoc(
+        "live-post",
+        {
+          ...payload,
+          title: "Proposed Edit 1",
+          content: "Proposed content 1",
+          status: "pending_approval",
+          approvalStatus: "pending_approval",
+        },
+        "Member",
+        "",
+        { isCreate: false },
+      ),
+    );
+
+    expect(transactionSet).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({
+        title: "Proposed Edit 1",
+        status: "published",
+        approvalStatus: "pending_approval",
+        publishedSnapshot: {
+          title: "Live Published Post",
+          content: "Original live content",
+        },
+      }),
+      { merge: true },
+    );
+
+    // Subsequent pending edit preserves the original publishedSnapshot
+    existingDocData = {
+      title: "Proposed Edit 1",
+      content: "Proposed content 1",
+      status: "published",
+      approvalStatus: "pending_approval",
+      publishedSnapshot: {
+        title: "Live Published Post",
+        content: "Original live content",
+      },
+    };
+    transactionSet.mockClear();
+    await act(() =>
+      result.current.saveDoc(
+        "live-post",
+        {
+          ...payload,
+          title: "Proposed Edit 2",
+          content: "Proposed content 2",
+          status: "published",
+          approvalStatus: "pending_approval",
+        },
+        "Member",
+        "",
+        { isCreate: false },
+      ),
+    );
+
+    expect(transactionSet).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({
+        title: "Proposed Edit 2",
+        status: "published",
+        approvalStatus: "pending_approval",
+        publishedSnapshot: {
+          title: "Live Published Post",
+          content: "Original live content",
+        },
+      }),
+      { merge: true },
+    );
+  });
 });

@@ -6,6 +6,7 @@ import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
 import GoogleDriveLibraryBrowser from "@/components/dashboard/GoogleDriveLibraryBrowser";
+import PendingEditCompareDialog from "@/components/dashboard/PendingEditCompareDialog";
 
 const DOCUMENTS_CATEGORIES = ["spec", "guide", "business"];
 
@@ -32,7 +33,12 @@ export default function DocumentsManagementPage() {
     handleCloseEditor,
     handleSave,
     handleApproveAndPublish,
+    comparingDoc,
+    handleOpenCompare,
+    handleCloseCompare,
+    handleDiscardPendingEdit,
     approvingSlug,
+    discardingSlug,
     approvalNotice,
     dismissApprovalNotice,
     handleDelete,
@@ -121,7 +127,10 @@ export default function DocumentsManagementPage() {
         canEdit={canEdit}
         isApprover={isApprover}
         onApprove={handleApproveAndPublish}
+        onCompare={handleOpenCompare}
+        onDiscardPending={handleDiscardPendingEdit}
         approvingSlug={approvingSlug}
+        discardingSlug={discardingSlug}
         variant="documents"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
@@ -137,6 +146,17 @@ export default function DocumentsManagementPage() {
         onLoadMore={loadMore}
         searchPlaceholder="Search documents by title, category, or summary..."
         noItemsMessage="No documents indexed in the library. Create one or import selected Drive files as drafts to get started."
+      />
+
+      <PendingEditCompareDialog
+        item={comparingDoc}
+        sectionLabel="Cloud Resource"
+        isApproving={Boolean(comparingDoc && approvingSlug === comparingDoc.slug)}
+        isDiscarding={Boolean(comparingDoc && discardingSlug === comparingDoc.slug)}
+        errorMessage={approvalNotice?.kind === "error" ? approvalNotice.message : null}
+        onClose={handleCloseCompare}
+        onApprove={handleApproveAndPublish}
+        onDiscard={handleDiscardPendingEdit}
       />
 
       {/* Drawer Article Editor */}

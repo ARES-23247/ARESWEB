@@ -1,5 +1,6 @@
 import express from "express";
-import { hasPublicContentLifecycle } from "../lib/contentVisibility";
+import { hasPublicContentLifecycle, resolvePublishedContentData } from "../lib/contentVisibility";
+import { resolvePublicEventData } from "./calendarHelpers";
 import { FieldPath } from "firebase-admin/firestore";
 import { adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
@@ -200,11 +201,10 @@ export async function buildSitemapXml(): Promise<string> {
   const [postsSnap, robotsSnap, docsSnap, eventsSnap] = snapshots;
 
   postsSnap.forEach((doc) => {
-    const data = doc.data() as Record<string, unknown>;
+    const rawData = doc.data() as Record<string, unknown>;
+    if (!hasPublicContentLifecycle(rawData)) return;
+    const data = resolvePublishedContentData({ status: "published", ...rawData }) ?? rawData;
     if (!isSitemapRecordIndexable(doc.id, data)) return;
-    // Match the syndication gate: posts with explicit approval metadata must
-    // be approved to be sitemap-visible (legacy records predate approvals).
-    if (!hasPublicContentLifecycle(data)) return;
     addEntry({
       loc: `${BASE_URL}/blog/${encodeURIComponent(doc.id)}`,
       changefreq: "weekly",
@@ -225,9 +225,10 @@ export async function buildSitemapXml(): Promise<string> {
   });
 
   docsSnap.forEach((doc) => {
-    const data = doc.data() as Record<string, unknown>;
+    const rawData = doc.data() as Record<string, unknown>;
+    if (!hasPublicContentLifecycle(rawData)) return;
+    const data = resolvePublishedContentData({ status: "published", ...rawData }) ?? rawData;
     if (!isSitemapRecordIndexable(doc.id, data)) return;
-    if (!hasPublicContentLifecycle(data)) return;
     const path = data.displayInMathCorner === 1 || data.displayInScienceCorner === 1
       ? "academy"
       : data.displayInAreslib === 1
@@ -245,7 +246,8 @@ export async function buildSitemapXml(): Promise<string> {
   });
 
   eventsSnap.forEach((doc) => {
-    const data = doc.data() as Record<string, unknown>;
+    const rawData = doc.data() as Record<string, unknown>;
+    const data = resolvePublicEventData(rawData);
     if (!isSitemapRecordIndexable(doc.id, data)) return;
     addEntry({
       loc: `${BASE_URL}/events/${encodeURIComponent(doc.id)}`,

@@ -541,6 +541,8 @@ export interface EventDocument {
   isVolunteer?: unknown;
   isDeleted?: unknown;
   status?: unknown;
+  approvalStatus?: unknown;
+  publishedSnapshot?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
   archivedAt?: unknown;
@@ -552,6 +554,7 @@ export interface LocationDocument {
   description?: unknown;
   gmapsUrl?: unknown;
   isAddressPublic?: unknown;
+  approvalStatus?: unknown;
   isDeleted?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -576,6 +579,10 @@ export function readString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 const LEGACY_PRIVATE_NOTES_MARKER = /\s*-{3,}\s*meeting notes\s*-{3,}\s*/i;
 
 export function publicEventDescription(value: unknown): string | null {
@@ -592,11 +599,81 @@ function readFlag(value: unknown): 0 | 1 {
   return value === 1 ? 1 : 0;
 }
 
+export interface PublishedEventSnapshot {
+  title: string;
+  dateStart: string;
+  dateEnd: string | null;
+  locationId: string | null;
+  location: string | null;
+  description: string | null;
+  category: "internal" | "outreach" | "competition";
+  coverImage: string | null;
+  coverPhotoId: string | null;
+  isPotluck: 0 | 1;
+  isVolunteer: 0 | 1;
+  recurrence: RecurrenceRule | null;
+}
+
+export function extractPublishedEventSnapshot(
+  data: EventDocument,
+): PublishedEventSnapshot {
+  const candidateCoverPhotoId = readString(data.coverPhotoId);
+  const coverPhotoId =
+    candidateCoverPhotoId && /^[A-Za-z0-9_-]{1,300}$/.test(candidateCoverPhotoId)
+      ? candidateCoverPhotoId
+      : null;
+  return {
+    title: readString(data.title) ?? "Untitled event",
+    dateStart: readString(data.dateStart) ?? "",
+    dateEnd: readString(data.dateEnd),
+    locationId: readString(data.locationId),
+    location: readString(data.location),
+    description: readString(data.description),
+    category:
+      data.category === "outreach"
+        ? ("outreach" as const)
+        : data.category === "competition"
+          ? ("competition" as const)
+          : ("internal" as const),
+    coverImage: readString(data.coverImage),
+    coverPhotoId,
+    isPotluck: readFlag(data.isPotluck),
+    isVolunteer: readFlag(data.isVolunteer),
+    recurrence: readRecurrence(data.recurrence),
+  };
+}
+
+/**
+ * Resolves the publicly visible event fields. When a published event has a
+ * staged pending edit (`approvalStatus === "pending_approval"` and a valid
+ * `publishedSnapshot` object), public consumers continue to see the last
+ * approved snapshot until a publisher approves or discards the pending edit.
+ */
+export function resolvePublicEventData<
+  T extends EventDocument | Record<string, unknown>,
+>(data: T): T {
+  if (
+    data.approvalStatus === "pending_approval" &&
+    isPlainObject(data.publishedSnapshot)
+  ) {
+    const { publishedSnapshot: _nested, ...snapshotFields } =
+      data.publishedSnapshot;
+    return {
+      ...data,
+      ...snapshotFields,
+      status: "published",
+      isDeleted: 0,
+    };
+  }
+  return data;
+}
+
 export function eventDto(
   id: string,
-  data: EventDocument,
+  rawData: EventDocument,
   includeLifecycle: boolean,
 ) {
+  const data = includeLifecycle ? rawData : resolvePublicEventData(rawData);
   const recurrence = readRecurrence(data.recurrence);
   const candidateCoverPhotoId = readString(data.coverPhotoId);
   const coverPhotoId = candidateCoverPhotoId && /^[A-Za-z0-9_-]{1,300}$/.test(candidateCoverPhotoId)
@@ -627,6 +704,15 @@ export function eventDto(
   };
 
   if (!includeLifecycle) return base;
+  const approvalStatus =
+    rawData.approvalStatus === "pending_approval"
+      ? ("pending_approval" as const)
+      : rawData.approvalStatus === "approved"
+        ? ("approved" as const)
+        : undefined;
+  const publishedSnapshot = isPlainObject(rawData.publishedSnapshot)
+    ? extractPublishedEventSnapshot(rawData.publishedSnapshot as EventDocument)
+    : undefined;
   return {
     ...base,
     coverPhotoId,
@@ -635,6 +721,8 @@ export function eventDto(
     status: eventStatusSchema.safeParse(data.status).success
       ? (data.status as z.infer<typeof eventStatusSchema>)
       : ("draft" as const),
+    ...(approvalStatus ? { approvalStatus } : {}),
+    ...(publishedSnapshot ? { publishedSnapshot } : {}),
     isDeleted: readFlag(data.isDeleted),
     createdAt: readString(data.createdAt),
     updatedAt: readString(data.updatedAt),
@@ -643,6 +731,12 @@ export function eventDto(
 }
 
 export function locationDto(id: string, data: LocationDocument) {
+  const approvalStatus =
+    data.approvalStatus === "pending_approval"
+      ? ("pending_approval" as const)
+      : data.approvalStatus === "approved"
+        ? ("approved" as const)
+        : undefined;
   return {
     id,
     name: readString(data.name) ?? "Unnamed venue",
@@ -650,6 +744,7 @@ export function locationDto(id: string, data: LocationDocument) {
     description: readString(data.description),
     gmapsUrl: readString(data.gmapsUrl),
     isAddressPublic: readFlag(data.isAddressPublic),
+    ...(approvalStatus ? { approvalStatus } : {}),
     isDeleted: readFlag(data.isDeleted),
     createdAt: readString(data.createdAt),
     updatedAt: readString(data.updatedAt),
@@ -658,7 +753,13 @@ export function locationDto(id: string, data: LocationDocument) {
 }
 
 export function publicVenueDto(data: LocationDocument) {
-  if (data.isDeleted === 1 || data.isAddressPublic !== 1) return null;
+  if (
+    data.isDeleted === 1 ||
+    data.isAddressPublic !== 1 ||
+    data.approvalStatus === "pending_approval"
+  ) {
+    return null;
+  }
   const name = readString(data.name)?.trim();
   const address = readString(data.address)?.trim();
   if (!name || !address) return null;

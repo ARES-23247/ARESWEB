@@ -1,32 +1,41 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RotateCcw, X } from "lucide-react";
 import type { DocRecord } from "@/hooks/useDocumentSync";
 import DocumentDraftPreview from "./DocumentDraftPreview";
 import { createDocumentEditorDraft } from "./documentEditorDraft";
+import { StagedContentDiffView } from "./PendingEditCompareDialog";
 
 interface DocumentApprovalReviewDialogProps {
   item: DocRecord | null;
+  publishedSnapshot?: DocRecord | Record<string, unknown> | null;
   categories: string[];
   defaultCategory: string;
   libraryLabel: "Academy" | "ARESLib";
   isApproving: boolean;
+  isDiscarding?: boolean;
   errorMessage?: string | null;
   onClose: () => void;
   onApprove: (item: DocRecord) => void | Promise<void>;
+  onDiscard?: (item: DocRecord) => void | Promise<unknown>;
 }
 
 export default function DocumentApprovalReviewDialog({
   item,
+  publishedSnapshot = null,
   categories,
   defaultCategory,
   libraryLabel,
   isApproving,
+  isDiscarding = false,
   errorMessage = null,
   onClose,
   onApprove,
+  onDiscard,
 }: DocumentApprovalReviewDialogProps) {
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const isBusy = isApproving || isDiscarding;
+  const resolvedPublishedSnapshot = publishedSnapshot ?? item?.publishedSnapshot ?? null;
   const draft = useMemo(() => item
     ? createDocumentEditorDraft({
         editDoc: item,
@@ -42,11 +51,11 @@ export default function DocumentApprovalReviewDialog({
   }, [item?.slug]);
 
   const handleOpenChange = (open: boolean) => {
-    if (!open && !isApproving) onClose();
+    if (!open && !isBusy) onClose();
   };
 
   const handleApprove = async () => {
-    if (!item || !reviewConfirmed || isApproving) return;
+    if (!item || !reviewConfirmed || isBusy) return;
     await onApprove(item);
   };
 
@@ -76,7 +85,13 @@ export default function DocumentApprovalReviewDialog({
             </Dialog.Close>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-3 sm:p-6">
+            {item && resolvedPublishedSnapshot && (
+              <StagedContentDiffView
+                liveSnapshot={resolvedPublishedSnapshot}
+                pendingDoc={item}
+              />
+            )}
             {draft && (
               <DocumentDraftPreview
                 draft={draft}
@@ -108,25 +123,40 @@ export default function DocumentApprovalReviewDialog({
               />
               <span>I reviewed this saved lesson, including its learning goals, source links, version, and safety guidance.</span>
             </label>
-            <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Dialog.Close asChild>
+            <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+              <div>
+                {item && resolvedPublishedSnapshot && onDiscard && (
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => void onDiscard(item)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 border border-ares-red/45 bg-ares-red/15 px-4 py-2 text-xs font-black uppercase text-white hover:bg-ares-red/25 focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                  >
+                    <RotateCcw aria-hidden="true" size={16} />
+                    {isDiscarding ? "Discarding edit…" : "Discard pending edit"}
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    className="min-h-11 border border-white/15 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                  >
+                    Keep pending
+                  </button>
+                </Dialog.Close>
                 <button
                   type="button"
-                  disabled={isApproving}
-                  className="min-h-11 border border-white/15 px-4 py-2 text-xs font-bold uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                  onClick={() => void handleApprove()}
+                  disabled={!reviewConfirmed || isBusy}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 bg-ares-red px-4 py-2 text-xs font-black uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Keep pending
+                  <CheckCircle2 aria-hidden="true" size={16} />
+                  {isApproving ? "Checking exact version…" : "Approve exact version"}
                 </button>
-              </Dialog.Close>
-              <button
-                type="button"
-                onClick={() => void handleApprove()}
-                disabled={!reviewConfirmed || isApproving}
-                className="inline-flex min-h-11 items-center justify-center gap-2 bg-ares-red px-4 py-2 text-xs font-black uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <CheckCircle2 aria-hidden="true" size={16} />
-                {isApproving ? "Checking exact version…" : "Approve exact version"}
-              </button>
+              </div>
             </div>
           </footer>
         </Dialog.Content>
