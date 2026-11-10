@@ -8,8 +8,10 @@ import { asyncHandler } from "../lib/utils";
 import { sendZulipApprovalQueueNotification } from "../lib/zulip";
 import { ensureTeamMember, type AuthenticatedRequest } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
+import portfolioRouter from "./portfolio";
 
 const router = express.Router();
+router.use("/portfolio", portfolioRouter);
 const CONTENT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,299}$/u;
 const DIGEST = /^[a-f0-9]{64}$/u;
 const PENDING_STATUSES = new Set(["draft", "pending", "pending_approval"]);
