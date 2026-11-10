@@ -64,4 +64,17 @@ describe("prerendered route shells", () => {
     expect(new Set(listed).size).toBe(listed.length);
     expect([...listed].sort()).toEqual([...indexable].sort());
   });
+
+  it("keeps prerendered store, arcade, and join shells truthful to live routes", () => {
+    const storeShell = renderStaticShell(shell, cast(routes.find((m) => m[0] === "/store")!));
+    expect(bodyText(storeShell)).toContain("online merchandise ordering is not open yet");
+
+    const arcadeShell = renderStaticShell(shell, cast(routes.find((m) => m[0] === "/arcade")!));
+    expect(bodyText(arcadeShell)).toContain("biobuzz simulator");
+    expect(bodyText(arcadeShell)).toContain("waggle way");
+
+    const joinShell = renderStaticShell(shell, cast(routes.find((m) => m[0] === "/join")!));
+    expect(bodyText(joinShell)).toContain("grades 6–12");
+    expect(bodyText(joinShell)).not.toContain("grades 7–12");
+  });
 });

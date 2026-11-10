@@ -124,10 +124,34 @@ export default function Footer() {
             </li>
             <li>
               <Link
+                to="/tournaments"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Tournaments
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/outreach"
                 className="hover:text-ares-gold transition-colors flex items-center gap-2"
               >
                 Outreach & Impact
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/sponsors"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Sponsors & Partners
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/finance"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Financial Ledger
               </Link>
             </li>
             <li>
@@ -245,6 +269,14 @@ export default function Footer() {
                 className="hover:text-ares-gold transition-colors flex items-center gap-2 mt-2 pt-2 border-t border-white/5"
               >
                 ARES Academy
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/academy/playground"
+                className="hover:text-ares-gold transition-colors flex items-center gap-2"
+              >
+                Interactive Simulations
               </Link>
             </li>
             <li>

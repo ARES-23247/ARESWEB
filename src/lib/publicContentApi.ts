@@ -118,3 +118,24 @@ export async function fetchPublicSeasons(): Promise<PublicSeason[]> {
 export async function fetchPublicAwards(): Promise<PublicAward[]> {
   return (await requestJson<{ awards: PublicAward[] }>("/api/awards")).awards;
 }
+
+export interface PublicSponsor {
+  name: string;
+  tier: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+}
+
+export async function fetchPublicSponsors(): Promise<PublicSponsor[]> {
+  const payload = await requestJson<{ sponsors: unknown }>("/api/sponsors");
+  if (!Array.isArray(payload.sponsors)) {
+    throw new PublicContentApiError(502, "Public sponsor response is invalid.");
+  }
+  return payload.sponsors.filter(
+    (entry): entry is PublicSponsor =>
+      typeof entry === "object" &&
+      entry !== null &&
+      typeof (entry as Record<string, unknown>).name === "string" &&
+      typeof (entry as Record<string, unknown>).tier === "string",
+  );
+}

@@ -77,6 +77,20 @@ export const test = base.extend<AresFixtures>({
         body: JSON.stringify({ announcement: null }),
       }),
     );
+    await page.route("**/api/calendar/events*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ events: [], nextCursor: null }),
+      }),
+    );
+    await page.route("**/api/sponsors", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ sponsors: [] }),
+      }),
+    );
     await page.route("**/api/outreach?*", (route) =>
       route.fulfill({
         status: 200,
