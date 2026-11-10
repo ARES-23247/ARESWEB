@@ -3,6 +3,7 @@ import { AlertTriangle, Eye, Info, Megaphone, Save, Trash2 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import {
+  ANNOUNCEMENT_SEVERITY_STYLES,
   ANNOUNCEMENT_UPDATED_EVENT,
   type AnnouncementSeverity,
   type PublicAnnouncement,
@@ -297,13 +298,7 @@ export default function AnnouncementManagerPage() {
             </div>
             <div
               aria-label="Banner visual preview"
-              className={`rounded-xl border-2 px-4 py-3.5 shadow-xl transition-colors ${
-                severity === "urgent"
-                  ? "border-white/35 bg-ares-red text-white"
-                  : severity === "important"
-                    ? "border-ares-gold bg-[#3d2b00] text-white"
-                    : "border-ares-cyan bg-[#07343b] text-white"
-              }`}
+              className={`rounded-xl border-2 px-4 py-3.5 shadow-xl transition-colors ${ANNOUNCEMENT_SEVERITY_STYLES[severity]}`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3 sm:items-center">

@@ -30,7 +30,7 @@ export default function LeaderboardPage() {
         description="Learn how ARES 23247 plans to recognize teamwork, community impact, and growth without publishing unverified rankings."
       />
 
-      <section className="relative flex min-h-[50vh] items-center overflow-hidden bg-obsidian py-28">
+      <section className="relative flex items-center overflow-hidden bg-obsidian py-16 md:py-20">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute left-0 top-0" />
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-ares-gold/30 bg-ares-gold/10">

@@ -1,6 +1,19 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+function collectSourceFiles(dir: string): string[] {
+  const results: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const fullPath = join(dir, entry);
+    if (statSync(fullPath).isDirectory()) {
+      results.push(...collectSourceFiles(fullPath));
+    } else if (/\.(ts|tsx)$/.test(entry)) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
 
 function luminance(hex: string) {
   const channels = hex.match(/[0-9a-f]{2}/gi)?.map((channel) => Number.parseInt(channel, 16) / 255);
@@ -58,10 +71,13 @@ describe("semantic contrast tokens", () => {
       contract.accessibility.normalTextMinimumContrast,
     );
     expect(css).toContain(".bg-obsidian .text-ares-red");
+    expect(css).toContain(".marble-band .text-ares-red");
     expect(css).toContain("outline: 2px solid var(--ares-cyan) !important");
   });
 
   it("uses dark text on every bright shared action and status fill", () => {
+    const css = readFileSync(join(process.cwd(), "src", "app", "globals.css"), "utf8");
+
     for (const [name, fill] of Object.entries({
       technicalCyan: contract.brand.technicalCyan,
       gold: contract.brand.gold,
@@ -75,5 +91,29 @@ describe("semantic contrast tokens", () => {
         `${name} must remain readable with the shared bright-accent foreground`,
       ).toBeGreaterThanOrEqual(contract.accessibility.normalTextMinimumContrast);
     }
+
+    expect(css).toContain('.clipped-button:hover:not([class*="hover:text-"])');
+    expect(css).toContain('.clipped-button-sm:hover:not([class*="hover:text-"])');
+    expect(css).toContain('.hover\\:bg-ares-bronze:hover:not([class*="hover:text-"])');
+    expect(css).toContain("color: var(--ares-on-bright-accent);");
+  });
+
+  it("forbids arbitrary hex Tailwind color classes across src/app and src/components", () => {
+    const files = [
+      ...collectSourceFiles(join(process.cwd(), "src", "app")),
+      ...collectSourceFiles(join(process.cwd(), "src", "components")),
+    ];
+    const forbiddenPattern = /(bg-\[#[0-9a-f]{3,8}\]|text-\[#[0-9a-f]{3,8}\]|border-\[#[0-9a-f]{3,8}\]|#fa6831|#e05620|#07343b|#3d2b00)/i;
+    const violations: string[] = [];
+
+    for (const file of files) {
+      const content = readFileSync(file, "utf8");
+      const match = content.match(forbiddenPattern);
+      if (match) {
+        violations.push(`${file}: ${match[0]}`);
+      }
+    }
+
+    expect(violations).toEqual([]);
   });
 });

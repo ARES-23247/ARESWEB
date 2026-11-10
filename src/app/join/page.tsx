@@ -117,7 +117,7 @@ export default function JoinPage() {
       {/* ─── HERO SECTION ─── */}
       <section className="relative max-w-5xl mx-auto px-6 z-10 text-center mb-16">
         <div className="bg-obsidian p-8 ares-cut-lg border border-white/10 shadow-2xl inline-block max-w-3xl">
-          <span className="bg-ares-red text-white inline-block px-4 py-1 ares-cut-sm uppercase tracking-[0.25em] font-black text-[10px] mb-6 shadow-lg shadow-ares-red/20 animate-pulse select-none">
+          <span className="bg-ares-red text-white inline-block px-4 py-1 ares-cut-sm uppercase tracking-[0.25em] font-black text-[10px] mb-6 shadow-lg shadow-ares-red/20 select-none">
             Enrollment Open
           </span>
           <h1 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter font-heading leading-tight">

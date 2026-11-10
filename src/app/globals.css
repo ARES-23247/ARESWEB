@@ -27,6 +27,8 @@
   --color-ares-offwhite: var(--ares-offwhite);
   --color-ares-muted: var(--ares-muted);
   --color-ares-success: var(--ares-success);
+  --color-app-surface: var(--ares-app-surface);
+  --color-app-surface-elevated: var(--ares-app-surface-elevated);
   --color-ares-black: var(--obsidian);
   --color-obsidian-900: var(--obsidian);
   --color-obsidian-800: var(--obsidian);
@@ -124,6 +126,28 @@ h1, h2, h3, h4, .font-heading {
   border-color: var(--ares-red);
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
+}
+
+/* Accessibility: Enforce dark foreground on bright bronze hover fills (WCAG AA 6.58:1) */
+.clipped-button:hover:not([class*="hover:text-"]),
+.clipped-button-sm:hover:not([class*="hover:text-"]),
+.hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
+  color: var(--ares-on-bright-accent);
+}
+
+.ares-surface {
+  background: var(--ares-app-surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ares-surface-elevated {
+  background: var(--ares-app-surface-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.marble-band {
+  background: var(--marble);
+  color: var(--obsidian);
 }
 
 .marble-card {
@@ -230,6 +254,8 @@ select option {
 
 /* Accessibility: Enforce WCAG AA Contrast for ARES Red Text on Light Backgrounds */
 .bg-marble .text-ares-red,
+.marble-band .text-ares-red,
+.marble-card .text-ares-red,
 .bg-white .text-ares-red,
 .text-obsidian .text-ares-red,
 [class*="bg-marble"] .text-ares-red,

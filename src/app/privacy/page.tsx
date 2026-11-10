@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen bg-obsidian text-white pt-24 pb-16 w-full"
+      className="min-h-screen bg-obsidian text-white py-12 md:py-16 w-full"
     >
       <SEO
         title="Privacy Policy"

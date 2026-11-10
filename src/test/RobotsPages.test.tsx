@@ -194,7 +194,7 @@ describe("Robots Feed & Detail Pages", () => {
       </Wrapper>
     );
 
-    expect(await screen.findByRole("heading", { name: /robot not found/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: /robot not found/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to fleet/i })).toHaveAttribute("href", "/robots");
   });
 });

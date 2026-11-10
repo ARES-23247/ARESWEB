@@ -21,7 +21,7 @@ const publicEndpoints = [
 
 export default function DeveloperApiPage() {
   return (
-    <div className="min-h-screen bg-obsidian px-4 pb-16 pt-24 text-white">
+    <div className="min-h-screen bg-obsidian px-4 py-12 md:py-16 text-white">
       <SEO title="API Reference" description="A limited reference for supported ARESWEB public endpoints." noindex />
       <div className="mx-auto max-w-5xl">
         <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-ares-gold focus-visible:ring-2 focus-visible:ring-ares-cyan">
@@ -32,7 +32,7 @@ export default function DeveloperApiPage() {
           ARESWEB does not offer personal access tokens or a public interactive explorer. Team-only endpoints accept Firebase ID tokens from the signed-in portal and enforce roles on the server.
         </p>
 
-        <section className="mt-10 border border-white/10 bg-white/5 p-6" aria-labelledby="public-api-heading">
+        <section className="mt-10 rounded-2xl ares-surface p-6" aria-labelledby="public-api-heading">
           <h2 id="public-api-heading" className="flex items-center gap-2 text-2xl font-bold"><BookOpen aria-hidden="true" className="text-ares-gold" /> Supported public reads</h2>
           <div className="mt-5 overflow-x-auto">
             <table className="w-full text-left text-sm">
