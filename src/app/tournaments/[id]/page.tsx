@@ -218,12 +218,12 @@ export default function TournamentDetailPage() {
         <div className="w-full max-w-md mx-auto px-6 z-10">
           <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
             <AlertCircle
-              className="text-ares-gold w-12 h-12 mb-4 animate-bounce"
+              className="text-ares-gold w-12 h-12 mb-4"
               aria-hidden="true"
             />
-            <h2 className="text-xl font-bold uppercase tracking-tight text-white mb-2">
+            <h1 className="text-xl font-bold uppercase tracking-tight text-white mb-2">
               Access Gated
-            </h2>
+            </h1>
             <p className="text-xs text-marble/60 mb-6">
               You must log in to view tournament matches, scouting reports, and
               OPR logs.

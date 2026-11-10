@@ -24,7 +24,7 @@ export default function PendingVolunteerEvents({
       <div className="absolute top-0 right-0 w-32 h-32 bg-ares-gold/5 blur-2xl pointer-events-none rounded-full"></div>
       <div className="flex items-center justify-between border-b border-white/5 pb-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-ares-gold flex items-center gap-2 font-heading">
-          <Clock size={14} className="text-ares-gold animate-pulse" />
+          <Clock size={14} className="text-ares-gold" aria-hidden="true" />
           Unlogged Volunteer Calendar Events ({pendingEvents.length})
         </h2>
         <span className="text-[10px] bg-ares-gold/15 text-ares-gold px-2 py-0.5 font-mono font-bold ares-cut-sm">

@@ -318,7 +318,7 @@ export default function SponsorsManagerPage() {
       <header className="border-b border-white/5 pb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-            <Heart size={12} className="text-ares-red animate-pulse" /> Partnerships & Funding
+            <Heart size={12} className="text-ares-red" aria-hidden="true" /> Partnerships & Funding
           </p>
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading">
             Sponsors Manager

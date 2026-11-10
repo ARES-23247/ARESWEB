@@ -533,7 +533,7 @@ export default function EventsManagementPage({
           <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
             <div>
               <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-                <Activity size={12} className="animate-pulse" /> Operational Timelines
+                <Activity size={12} aria-hidden="true" /> Operational Timelines
               </p>
               <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
                 Manage Events

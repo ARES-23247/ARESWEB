@@ -68,7 +68,7 @@ export function TournamentList({
         <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl bg-white/5">
           <Trophy
             size={48}
-            className="mx-auto text-marble/25 mb-4 animate-pulse"
+            className="mx-auto text-marble/25 mb-4"
             aria-hidden="true"
           />
           <h3 className="text-sm font-bold text-white uppercase">

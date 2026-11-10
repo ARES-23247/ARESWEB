@@ -289,7 +289,7 @@ export default function InquiriesPage() {
         return <span className="px-2 py-0.5 bg-ares-red text-white text-[10px] font-black uppercase tracking-wider ares-cut-sm">Rejected</span>;
       case "pending":
       default:
-        return <span className="px-2 py-0.5 bg-ares-gold/15 text-ares-gold text-[10px] font-black uppercase tracking-wider ares-cut-sm border border-ares-gold/30 animate-pulse">Pending</span>;
+        return <span className="px-2 py-0.5 bg-ares-gold/15 text-ares-gold text-[10px] font-black uppercase tracking-wider ares-cut-sm border border-ares-gold/30">Pending</span>;
     }
   };
 
@@ -309,7 +309,7 @@ export default function InquiriesPage() {
     return (
       <div className="min-h-[60vh] flex flex-col justify-center items-center text-center p-6 bg-obsidian text-marble">
         <div className="w-16 h-16 bg-ares-red/10 border border-ares-red/40 ares-cut flex items-center justify-center mb-6 text-ares-red">
-          <AlertCircle size={28} className="animate-bounce" />
+          <AlertCircle size={28} aria-hidden="true" />
         </div>
         <h1 className="text-3xl font-black uppercase tracking-wider text-white mb-2 font-heading">Access Denied</h1>
         <p className="text-marble/60 text-sm max-w-md">

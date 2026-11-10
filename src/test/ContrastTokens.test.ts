@@ -116,4 +116,35 @@ describe("semantic contrast tokens", () => {
 
     expect(violations).toEqual([]);
   });
+
+  it("removes infinite animate-bounce loops and static non-loading animate-pulse icons across src/app and src/components", () => {
+    const files = [
+      ...collectSourceFiles(join(process.cwd(), "src", "app")),
+      ...collectSourceFiles(join(process.cwd(), "src", "components")),
+    ];
+    const bounceViolations: string[] = [];
+
+    for (const file of files) {
+      const content = readFileSync(file, "utf8");
+      if (content.includes("animate-bounce")) {
+        bounceViolations.push(file);
+      }
+    }
+
+    expect(bounceViolations).toEqual([]);
+
+    const tournamentsPage = readFileSync(
+      join(process.cwd(), "src", "app", "tournaments", "page.tsx"),
+      "utf8",
+    );
+    expect(tournamentsPage).not.toContain("w-8 h-8 animate-pulse");
+
+    for (const portalHeaderFile of [
+      join(process.cwd(), "src", "app", "dashboard", "events", "page.tsx"),
+      join(process.cwd(), "src", "app", "dashboard", "simulations", "page.tsx"),
+      join(process.cwd(), "src", "app", "dashboard", "sponsors", "page.tsx"),
+    ]) {
+      expect(readFileSync(portalHeaderFile, "utf8")).not.toContain("animate-pulse");
+    }
+  });
 });

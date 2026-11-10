@@ -381,7 +381,7 @@ export default function DashboardUsersPage() {
     return (
       <div className="min-h-[60vh] flex flex-col justify-center items-center text-center p-6 bg-obsidian text-marble">
         <div className="w-16 h-16 bg-ares-red/10 border border-ares-red/40 ares-cut flex items-center justify-center mb-6 text-ares-red">
-          <ShieldAlert size={28} className="animate-bounce" />
+          <ShieldAlert size={28} aria-hidden="true" />
         </div>
         <h1 className="text-3xl font-black uppercase tracking-wider text-white mb-2 font-heading">Access Denied</h1>
         <p className="text-marble/60 text-sm max-w-md">

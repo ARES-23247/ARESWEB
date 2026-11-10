@@ -84,7 +84,7 @@ export default function TaskCard({
               {task.subteam}
             </span>
             {task.archived && (
-              <span className="text-[9px] bg-ares-gold/20 border border-ares-gold/30 px-2 py-0.5 rounded font-black uppercase tracking-wider text-ares-gold animate-pulse">
+              <span className="text-[9px] bg-ares-gold/20 border border-ares-gold/30 px-2 py-0.5 rounded font-black uppercase tracking-wider text-ares-gold">
                 Archived
               </span>
             )}
