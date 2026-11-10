@@ -74,7 +74,7 @@ private var lastPower = 0.0
 The getter has two states:
 
 ```kotlin
-get() = if (hasPowerCommand) lastPower else delegate.power
+override fun getPower(): Double = if (hasPowerCommand) lastPower else delegate.power
 ```
 
 - Before the first accepted command, a read asks the delegate for its power.
@@ -89,7 +89,7 @@ hardware-free from construction time.
 The setter makes a safe command first. Then it decides whether to write.
 
 ```kotlin
-set(value) {
+override fun setPower(value: Double) {
     val command = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
     if (!hasPowerCommand || powerWriteUncertain || (command != lastPower &&
         (command == 0.0 || abs(command - lastPower) >= epsilon))) {
@@ -154,7 +154,7 @@ connect to an FTC device.
 Use these commands from the ARES monorepo root. They locate the wrapper and its test.
 
 ```powershell
-rg -n "class CachedDcMotorEx|lastPower|override var power" `
+rg -n "class CachedDcMotorEx|lastPower|override fun (get|set)Power" `
   ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt
 
 rg -n "motor suppresses|delegate.readCount|delegate.writeCount" `
@@ -247,6 +247,7 @@ keep stop control ready. Website posts use the separate Lead Coach review flow.
 
 Read the `CachedServo` source and its focused test in the same files. Compare it with the motor
 wrapper. The servo also uses a command flag and epsilon, but it has no special hard-stop rule.
+Direction and range changes also clear the servo command cache.
 
 Build a two-column trace for the first command, a small repeated command, a larger command, and a
 getter after initialization. State which behavior is shared and which is motor-only. Do not invent a
