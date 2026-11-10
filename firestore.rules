@@ -380,10 +380,33 @@ service cloud.firestore {
 
       match /signups/{userId} {
         allow read: if isAuthorized();
-        allow create, update: if isAuthorized() &&
-          (request.auth.uid == userId || hasRole('admin') || hasRole('coach')) &&
-          isValidEventSignup(userId);
-        allow delete: if isAuthorized() && (request.auth.uid == userId || hasRole('admin') || hasRole('coach'));
+        allow create: if isAuthorized() &&
+          isValidEventSignup(userId) && (
+            hasRole('admin') ||
+            hasRole('coach') ||
+            hasRole('mentor') || (
+              request.auth.uid == userId &&
+              (!('attended' in request.resource.data) || request.resource.data.attended == false)
+            )
+          );
+        allow update: if isAuthorized() &&
+          isValidEventSignup(userId) && (
+            hasRole('admin') ||
+            hasRole('coach') ||
+            hasRole('mentor') || (
+              request.auth.uid == userId && (
+                !('attended' in request.resource.data) ||
+                request.resource.data.attended == false ||
+                ('attended' in resource.data && request.resource.data.attended == resource.data.attended)
+              )
+            )
+          );
+        allow delete: if isAuthorized() && (
+          request.auth.uid == userId ||
+          hasRole('admin') ||
+          hasRole('coach') ||
+          hasRole('mentor')
+        );
       }
 
       match /photos/{photoId} {
@@ -407,6 +430,10 @@ service cloud.firestore {
     }
 
     match /imported_photos/{photoId} {
+      allow read, write: if false;
+    }
+
+    match /event_checkin_codes/{eventId} {
       allow read, write: if false;
     }
 

@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Users, AlertCircle, CheckCircle2, Circle } from "lucide-react";
+import { authenticatedFetch } from "@/lib/api";
 import { EventItem, EventSignup } from "./types";
 
 interface EventRsvpsProps {
   event: EventItem;
+  eventParentId?: string;
   isVerified: boolean;
   isAdmin: boolean;
   signups: EventSignup[];
@@ -26,6 +28,7 @@ interface EventRsvpsProps {
 
 export default function EventRsvps({
   event,
+  eventParentId,
   isVerified,
   isAdmin,
   signups,
@@ -44,6 +47,49 @@ export default function EventRsvps({
   handleRsvpCancel,
   handleToggleAttendance
 }: EventRsvpsProps) {
+  const [pinCode, setPinCode] = useState("");
+  const [pinSubmitting, setPinSubmitting] = useState(false);
+  const [pinMessage, setPinMessage] = useState<{
+    tone: "ok" | "err";
+    text: string;
+  } | null>(null);
+
+  const handlePinCheckin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = pinCode.replace(/\D/g, "").slice(0, 4);
+    if (cleaned.length !== 4) {
+      setPinMessage({ tone: "err", text: "Enter the 4-digit Lab PIN." });
+      return;
+    }
+    setPinSubmitting(true);
+    setPinMessage(null);
+    try {
+      const targetId = eventParentId || event.id;
+      const response = await authenticatedFetch(
+        `/api/calendar/manage/${encodeURIComponent(targetId)}/self-checkin`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: cleaned }),
+        },
+      );
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error || `HTTP ${response.status}`);
+      }
+      setPinCode("");
+      setPinMessage({ tone: "ok", text: "Checked in present!" });
+    } catch (error) {
+      setPinMessage({
+        tone: "err",
+        text: error instanceof Error ? error.message : "Invalid Lab PIN.",
+      });
+    } finally {
+      setPinSubmitting(false);
+    }
+  };
   return (
     <div className="glass-card border border-white/10 p-6 rounded-2xl bg-black/20 space-y-6">
       <div>
@@ -148,20 +194,66 @@ export default function EventRsvps({
             </div>
           </form>
 
-          {/* RSVP Attendance Check-in Button */}
-          {mySignup && userId && (
-            <button
-              type="button"
-              onClick={() => handleToggleAttendance(userId, mySignup.attended)}
-              className={`w-full flex items-center justify-center gap-1.5 py-2 border rounded text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
-                mySignup.attended
-                  ? "bg-ares-red/15 border-ares-red/45 text-white"
-                  : "bg-white/5 border-white/10 hover:border-ares-gold hover:text-ares-gold text-marble"
-              }`}
-            >
-              <CheckCircle2 size={12} />
-              {mySignup.attended ? "Checked In (Undo)" : "Check In to Event"}
-            </button>
+          {/* Lab 4-Digit PIN Attendance Check-in */}
+          {userId && (
+            <div className="rounded-xl border border-white/10 bg-black/30 p-3 space-y-2">
+              {mySignup?.attended ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-ares-success">
+                    <CheckCircle2 size={13} /> Checked In Present
+                  </span>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAttendance(userId, true)}
+                      className="rounded border border-white/15 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-marble/70 hover:text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={(e) => void handlePinCheckin(e)} className="space-y-2">
+                  <label
+                    htmlFor="event-rsvp-lab-pin"
+                    className="block text-[9px] font-black uppercase tracking-wider text-ares-gold"
+                  >
+                    Lab Check-In (4-Digit PIN)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="event-rsvp-lab-pin"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={pinCode}
+                      onChange={(e) =>
+                        setPinCode(e.target.value.replace(/\D/g, "").slice(0, 4))
+                      }
+                      placeholder="4-digit PIN"
+                      className="w-full flex-1 rounded border border-white/15 bg-black/60 px-2.5 py-1.5 font-mono text-xs tracking-widest text-white placeholder:font-sans placeholder:tracking-normal placeholder:text-marble/50 focus:border-ares-cyan focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={pinSubmitting}
+                      className="shrink-0 rounded border border-ares-gold/40 bg-ares-gold/15 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-ares-gold hover:bg-ares-gold/25 focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                    >
+                      {pinSubmitting ? "Checking…" : "Check In"}
+                    </button>
+                  </div>
+                </form>
+              )}
+              {pinMessage && (
+                <p
+                  role="status"
+                  className={`text-[10px] font-bold ${
+                    pinMessage.tone === "ok" ? "text-ares-success" : "text-ares-red-light"
+                  }`}
+                >
+                  {pinMessage.text}
+                </p>
+              )}
+            </div>
           )}
 
           {/* RSVP List Table */}

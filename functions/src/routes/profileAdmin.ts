@@ -6,6 +6,7 @@ import {
 } from "firebase-admin/firestore";
 import { z } from "zod";
 import { adminAuth, adminDb } from "../lib/firebase-admin";
+import { getEncryptionSecret } from "../lib/crypto";
 import { logger } from "../lib/logger";
 import { getZulipUsers } from "../lib/zulip";
 import { asyncHandler } from "../lib/utils";
@@ -13,6 +14,19 @@ import { type AuthenticatedRequest, ensureAdmin } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { validate } from "../middleware/validation";
 import { sanitizeAvatarUrl } from "./profileRoster";
+import { privateProfileValues } from "./profileSelf";
+
+const adminConsentSchema = z
+  .object({
+    firstConsentVerified: z.boolean(),
+  })
+  .strict();
+
+const adminRevealSchema = z
+  .object({
+    reason: z.string().trim().max(200).optional(),
+  })
+  .strict();
 
 const userIdParamSchema = z.object({
   userId: z
@@ -702,6 +716,196 @@ export function registerProfileAdminRoutes(router: Router): void {
         role: restoredRole,
       });
       res.json({ success: true, restored: true, role: restoredRole });
+    }),
+  );
+
+  async function loadActiveTravelRoster() {
+    const secret = getEncryptionSecret();
+    const authSnap = await adminDb
+      .collection("authorized_users")
+      .orderBy(FieldPath.documentId())
+      .limit(200)
+      .get();
+
+    const activeDocs = authSnap.docs.filter((doc) => {
+      const data = doc.data();
+      const deleted = data.isDeleted === 1 || data.isDeleted === true;
+      const normalized = normalizeAdminRole(data.role);
+      return !deleted && normalized.role !== "unverified";
+    });
+
+    const profileSnaps = await Promise.all(
+      activeDocs.map((doc) =>
+        adminDb.collection("user_profiles").doc(doc.id).get(),
+      ),
+    );
+
+    return Promise.all(
+      activeDocs.map(async (doc, idx) => {
+        const authData = doc.data();
+        const profileSnap = profileSnaps[idx];
+        const profileData = profileSnap.exists ? profileSnap.data() || {} : {};
+        const normalizedRole = normalizeAdminRole(authData.role);
+        const memberType =
+          normalizeAdminMemberType(
+            profileData.memberType || authData.memberType,
+          ) || normalizedRole.impliedMemberType;
+        const nickname =
+          safeString(profileData.nickname, 120) ||
+          (["parent", "coach", "mentor", "alumni", "sponsor"].includes(memberType)
+            ? safeString(authData.name, 120)
+            : "") ||
+          "ARES Member";
+        const privateVals = await privateProfileValues(profileData, secret);
+        return {
+          id: doc.id,
+          nickname,
+          role: normalizedRole.role,
+          memberType,
+          subteams: safeStringArray(profileData.subteams),
+          firstConsentVerified: profileData.firstConsentVerified === true,
+          firstConsentUpdatedAt: safeCreatedAt(profileData.firstConsentUpdatedAt),
+          privateVals,
+        };
+      }),
+    );
+  }
+
+  router.get(
+    "/admin/travel-readiness",
+    ensureAdmin,
+    asyncHandler(async (_req: AuthenticatedRequest, res) => {
+      const roster = await loadActiveTravelRoster();
+      const tshirtCounts: Record<string, number> = {};
+      const dietaryCounts: Record<string, number> = {};
+
+      const members = roster.map((entry) => {
+        const size = entry.privateVals.tshirtSize.trim().toLowerCase();
+        if (size) {
+          tshirtCounts[size] = (tshirtCounts[size] ?? 0) + 1;
+        }
+        for (const item of entry.privateVals.dietaryRestrictions) {
+          dietaryCounts[item] = (dietaryCounts[item] ?? 0) + 1;
+        }
+        return {
+          id: entry.id,
+          nickname: entry.nickname,
+          role: entry.role,
+          memberType: entry.memberType,
+          subteams: entry.subteams,
+          tshirtSize: size,
+          dietaryRestrictions: entry.privateVals.dietaryRestrictions,
+          hasEmergencyContact: Boolean(
+            entry.privateVals.emergencyContactName &&
+              entry.privateVals.emergencyContactPhone,
+          ),
+          firstConsentVerified: entry.firstConsentVerified,
+          firstConsentUpdatedAt: entry.firstConsentUpdatedAt,
+        };
+      });
+
+      res.json({
+        members,
+        tshirtCounts,
+        dietaryCounts,
+      });
+    }),
+  );
+
+  router.patch(
+    "/admin/users/:userId/consent",
+    ensureAdmin,
+    validate(adminConsentSchema),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const userId = requireSafeUserId(req.params.userId);
+      const { firstConsentVerified } = req.body as z.infer<
+        typeof adminConsentSchema
+      >;
+      const actorUid = req.user!.uid;
+
+      const authSnap = await adminDb
+        .collection("authorized_users")
+        .doc(userId)
+        .get();
+      if (!authSnap.exists) {
+        throw new ApiError(404, "User authorization record not found.");
+      }
+
+      const timestamp = new Date().toISOString();
+      const batch = adminDb.batch();
+      batch.set(
+        adminDb.collection("user_profiles").doc(userId),
+        {
+          firstConsentVerified,
+          firstConsentUpdatedAt: timestamp,
+          updatedAt: timestamp,
+        },
+        { merge: true },
+      );
+      batch.set(adminDb.collection("audit_logs").doc(), {
+        action: "user.consent.updated",
+        actorUid,
+        targetUid: userId,
+        after: { firstConsentVerified },
+        createdAt: timestamp,
+      });
+      await batch.commit();
+
+      res.json({
+        success: true,
+        userId,
+        firstConsentVerified,
+        firstConsentUpdatedAt: timestamp,
+      });
+    }),
+  );
+
+  router.post(
+    "/admin/travel-readiness/reveal",
+    ensureAdmin,
+    validate(adminRevealSchema),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const actorUid = req.user!.uid;
+      const roster = await loadActiveTravelRoster();
+      const packetGeneratedAt = new Date().toISOString();
+
+      await adminDb.collection("audit_logs").doc().set({
+        action: "travel.emergency_packet.accessed",
+        actorUid,
+        memberCount: roster.length,
+        createdAt: packetGeneratedAt,
+      });
+      logger.info("profiles", "Revealed emergency travel readiness packet", {
+        actorUid,
+        memberCount: roster.length,
+      });
+
+      const members = roster.map((entry) => {
+        const legalName = [
+          entry.privateVals.firstName,
+          entry.privateVals.lastName,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return {
+          id: entry.id,
+          nickname: entry.nickname,
+          legalName: legalName || null,
+          role: entry.role,
+          memberType: entry.memberType,
+          tshirtSize: entry.privateVals.tshirtSize.trim().toLowerCase(),
+          dietaryRestrictions: entry.privateVals.dietaryRestrictions,
+          emergencyContactName: entry.privateVals.emergencyContactName || null,
+          emergencyContactPhone:
+            entry.privateVals.emergencyContactPhone || null,
+          firstConsentVerified: entry.firstConsentVerified,
+        };
+      });
+
+      res.json({
+        packetGeneratedAt,
+        members,
+      });
     }),
   );
 }

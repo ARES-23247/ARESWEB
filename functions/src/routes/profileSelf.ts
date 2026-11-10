@@ -143,7 +143,7 @@ async function decryptPrivateText(value: unknown, secret: string, field: string)
   return plaintext.trim();
 }
 
-async function privateProfileValues(data: Record<string, unknown>, secret: string) {
+export async function privateProfileValues(data: Record<string, unknown>, secret: string) {
   const values: Record<(typeof encryptedTextFields)[number], string> = {
     firstName: "", lastName: "", phone: "", tshirtSize: "",
     emergencyContactName: "", emergencyContactPhone: "",

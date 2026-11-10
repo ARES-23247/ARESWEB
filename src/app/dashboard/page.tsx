@@ -835,12 +835,19 @@ export default function DashboardHome() {
           </div>
 
           {nextEvent && !eventError && (
-            <Link
-              to={eventDetailHref(nextEvent)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 bg-ares-red hover:bg-ares-bronze px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white ares-cut-sm transition-colors focus-visible:ring-2 focus-visible:ring-ares-cyan"
-            >
-              View details and RSVP <ArrowRight aria-hidden="true" size={15} />
-            </Link>
+            <div className="space-y-2.5">
+              {!isUnverified && (
+                <NextEventPinCheckin
+                  eventId={nextEvent.recurrenceOf || nextEvent.id}
+                />
+              )}
+              <Link
+                to={eventDetailHref(nextEvent)}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-ares-red hover:bg-ares-bronze px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white ares-cut-sm transition-colors focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                View details and RSVP <ArrowRight aria-hidden="true" size={15} />
+              </Link>
+            </div>
           )}
         </section>
 
@@ -1176,5 +1183,90 @@ export default function DashboardHome() {
         </div>
       </div>
     </div>
+  );
+}
+
+function NextEventPinCheckin({ eventId }: { eventId: string }) {
+  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    tone: "ok" | "err";
+    text: string;
+  } | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const cleaned = code.replace(/\D/g, "").slice(0, 4);
+    if (cleaned.length !== 4) {
+      setFeedback({ tone: "err", text: "Enter the 4-digit Lab PIN." });
+      return;
+    }
+    setSubmitting(true);
+    setFeedback(null);
+    try {
+      const response = await authenticatedFetch(
+        `/api/calendar/manage/${encodeURIComponent(eventId)}/self-checkin`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: cleaned }),
+        },
+      );
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error || `HTTP ${response.status}`);
+      }
+      setCode("");
+      setFeedback({ tone: "ok", text: "Checked in present!" });
+    } catch (error) {
+      setFeedback({
+        tone: "err",
+        text: error instanceof Error ? error.message : "Check-in failed.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={(e) => void handleSubmit(e)}
+      className="rounded-lg border border-white/10 bg-black/30 p-2.5 space-y-2"
+    >
+      <div className="flex items-center gap-2">
+        <label htmlFor={`next-event-pin-${eventId}`} className="sr-only">
+          4-Digit Lab Check-In PIN
+        </label>
+        <input
+          id={`next-event-pin-${eventId}`}
+          type="text"
+          inputMode="numeric"
+          maxLength={4}
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          placeholder="4-digit Lab PIN"
+          className="min-h-9 w-full flex-1 rounded border border-white/15 bg-obsidian px-2.5 py-1.5 font-mono text-xs tracking-widest text-white placeholder:font-sans placeholder:tracking-normal placeholder:text-marble/50 focus:border-ares-cyan focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="min-h-9 shrink-0 rounded border border-ares-gold/40 bg-ares-gold/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-ares-gold hover:bg-ares-gold/25 focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+        >
+          {submitting ? "Checking…" : "Lab Check-In"}
+        </button>
+      </div>
+      {feedback && (
+        <p
+          role="status"
+          className={`text-[11px] font-bold ${
+            feedback.tone === "ok" ? "text-ares-success" : "text-ares-red-light"
+          }`}
+        >
+          {feedback.text}
+        </p>
+      )}
+    </form>
   );
 }

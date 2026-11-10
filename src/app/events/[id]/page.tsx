@@ -81,7 +81,11 @@ export default function EventDetailPage() {
   };
 
   const isVerified = !!(user && authorizedUser && authorizedUser.role !== "unverified");
-  const isAdmin = !!(user && authorizedUser && (authorizedUser.role === "admin" || authorizedUser.role === "coach"));
+  const canManageAttendance = !!(
+    user &&
+    authorizedUser &&
+    ["admin", "coach", "mentor"].includes(authorizedUser.role)
+  );
 
   const loadEvent = useCallback(async () => {
     if (!id) return;
@@ -327,14 +331,12 @@ export default function EventDetailPage() {
     }
   };
 
-  // Toggle RSVP attendance (for Admins or Self Check-in)
+  // Toggle RSVP attendance (Mentors, Coaches, and Admins)
   const handleToggleAttendance = async (
     userId: string,
     currentStatus?: boolean,
   ) => {
-    if (!id || !isVerified) return;
-    const isSelf = user?.uid === userId;
-    if (!isSelf && !isAdmin) return;
+    if (!id || !isVerified || !canManageAttendance) return;
     if (updatingAttendance.has(userId)) return;
     setUpdatingAttendance((current) => new Set(current).add(userId));
 
@@ -606,8 +608,9 @@ export default function EventDetailPage() {
         <aside className="lg:col-span-4 space-y-6">
           <EventRsvps
             event={event}
+            eventParentId={id}
             isVerified={isVerified}
-            isAdmin={isAdmin}
+            isAdmin={canManageAttendance}
             signups={signups}
             signupsError={signupsError}
             mySignup={mySignup}

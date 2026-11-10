@@ -12,6 +12,7 @@ import {
 import UserRosterTable from "./components/UserRosterTable";
 import UserInviteForm from "./components/UserInviteForm";
 import UserEmailRosterPanel from "./components/UserEmailRosterPanel";
+import TravelReadinessPanel from "./components/TravelReadinessPanel";
 import {
   UserDirectoryFilters,
   UserDirectoryNotices,
@@ -94,7 +95,8 @@ export default function DashboardUsersPage() {
   const [sortBy, setSortBy] = useState("name_asc");
   const [pendingRevocation, setPendingRevocation] = useState<UserAuth | null>(null);
 
-  // Audit Log Viewer State
+  // Audit Log & Travel Safety Readiness Viewer State
+  const [travelPanelOpen, setTravelPanelOpen] = useState(false);
   const [auditLogsOpen, setAuditLogsOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([]);
   const [auditLogsLoading, setAuditLogsLoading] = useState(false);
@@ -406,7 +408,15 @@ export default function DashboardUsersPage() {
             Manage user roles, authorize team access, and link or provision organization Zulip accounts.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 print:hidden">
+          <button
+            type="button"
+            onClick={() => setTravelPanelOpen((prev) => !prev)}
+            aria-expanded={travelPanelOpen}
+            className="flex items-center gap-2 px-4 py-2 bg-ares-cyan/10 hover:bg-ares-cyan/20 border border-ares-cyan/35 text-ares-cyan text-xs font-black uppercase tracking-wider transition-colors cursor-pointer w-fit font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <Shield size={14} /> {travelPanelOpen ? "Hide Travel & Safety" : "Travel & Safety Readiness"}
+          </button>
           <button
             type="button"
             onClick={handleToggleAuditLogs}
@@ -426,6 +436,8 @@ export default function DashboardUsersPage() {
           </button>
         </div>
       </header>
+
+      {travelPanelOpen && <TravelReadinessPanel />}
 
       {auditLogsOpen && (
         <section
