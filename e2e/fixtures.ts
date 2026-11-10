@@ -98,6 +98,13 @@ export const test = base.extend<AresFixtures>({
         body: JSON.stringify({ logs: [], nextCursor: null }),
       }),
     );
+    await page.route("**/api/photos?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ photos: [] }),
+      }),
+    );
     // The isolated role fixture intentionally does not start Firebase Auth's
     // emulator. WebKit still requests its helper iframe during SDK startup;
     // satisfy only that loopback origin so a missing, unused emulator does not

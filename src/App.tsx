@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, Link, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -65,7 +65,6 @@ const TournamentDetailPage = lazy(() => import("@/app/tournaments/[id]/page"));
 // Lazy-load dashboard pages
 const DashboardLayout = lazy(() => import("@/app/dashboard/layout"));
 const DashboardPage = lazy(() => import("@/app/dashboard/page"));
-const DashboardTodayPage = lazy(() => import("@/app/dashboard/today/page"));
 const DashboardProfilePage = lazy(() => import("@/app/dashboard/profile/page"));
 const DashboardBlogPage = lazy(() => import("@/app/dashboard/blog/page"));
 const DashboardDocumentsPage = lazy(() => import("@/app/dashboard/documents/page"));
@@ -169,7 +168,7 @@ export default function App() {
                   {/* Dashboard routes nested under DashboardLayout */}
                   <Route path="/dashboard" element={<DashboardLayout><Outlet /></DashboardLayout>}>
                     <Route index element={<DashboardPage />} />
-                    <Route path="today" element={<DashboardTodayPage />} />
+                    <Route path="today" element={<Navigate to="/dashboard" replace />} />
                     <Route path="profile" element={<DashboardProfilePage />} />
                     <Route path="tasks" element={<DashboardTasksPage />} />
                     <Route path="blog" element={<DashboardBlogPage />} />

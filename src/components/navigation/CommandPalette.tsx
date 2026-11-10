@@ -57,20 +57,32 @@ const PUBLIC_COMMAND_ITEMS: CommandPaletteItem[] = [
 ];
 
 const DASHBOARD_COMMAND_ITEMS: CommandPaletteItem[] = [
-  { id: "dash-home", label: "Command Center Overview", category: "Command Center", to: "/dashboard", keywords: "dashboard command center overview home" },
+  { id: "dash-home", label: "Command Center Overview", category: "Command Center", to: "/dashboard", keywords: "dashboard command center overview home today daily" },
   { id: "dash-tasks", label: "Operational Tasks Board", category: "Command Center", to: "/dashboard/tasks", keywords: "dashboard tasks kanban todo board" },
-  { id: "dash-blog", label: "Blog Management", category: "Command Center", to: "/dashboard/blog", keywords: "dashboard blog posts editor approvals" },
-  { id: "dash-events", label: "Events & Tournaments Manager", category: "Command Center", to: "/dashboard/events", keywords: "dashboard events calendar tournaments manager" },
-  { id: "dash-academy", label: "Academy Lesson Manager", category: "Command Center", to: "/dashboard/academy", keywords: "dashboard academy lessons docs editor" },
+  { id: "dash-zulip", label: "Zulip Chat Hub", category: "Command Center", to: "/dashboard/zulip", keywords: "dashboard zulip chat messaging streams channels" },
   { id: "dash-profile", label: "My Member Profile", category: "Command Center", to: "/dashboard/profile", keywords: "dashboard profile avatar bio settings" },
+  { id: "dash-blog", label: "Blog Management", category: "Command Center", to: "/dashboard/blog", keywords: "dashboard blog posts editor approvals" },
+  { id: "dash-events", label: "Events Calendar Manager", category: "Command Center", to: "/dashboard/events", keywords: "dashboard events calendar rsvp venues manager" },
+  { id: "dash-academy", label: "Academy Lesson Manager", category: "Command Center", to: "/dashboard/academy", keywords: "dashboard academy lessons curriculum math science editor" },
+  { id: "dash-areslib", label: "ARESLib Documentation Manager", category: "Command Center", to: "/dashboard/areslib", keywords: "dashboard areslib docs kotlin documentation manager" },
+  { id: "dash-simulations", label: "Simulations IDE & Manager", category: "Command Center", to: "/dashboard/simulations", keywords: "dashboard simulations ide playground code editor" },
+  { id: "dash-documents", label: "Cloud Resources & Drive", category: "Command Center", to: "/dashboard/documents", keywords: "dashboard documents cloud resources google drive files" },
+  { id: "dash-videos", label: "Video Library Manager", category: "Command Center", to: "/dashboard/videos", keywords: "dashboard videos youtube media sync" },
+  { id: "dash-photos", label: "Photo Library Manager", category: "Command Center", to: "/dashboard/photos", keywords: "dashboard photos gallery google photos albums" },
+];
+
+const MENTOR_COMMAND_ITEMS: CommandPaletteItem[] = [
+  { id: "dash-tournaments", label: "Tournaments & Scouting Manager", category: "Command Center", to: "/dashboard/tournaments", keywords: "dashboard tournaments matches scouting opr alliance" },
+  { id: "dash-seasons", label: "Seasons & Awards Manager", category: "Command Center", to: "/dashboard/seasons", keywords: "dashboard seasons awards trophies legacy" },
+  { id: "dash-outreach", label: "Outreach Ledger Manager", category: "Command Center", to: "/dashboard/outreach", keywords: "dashboard outreach impact events hours" },
+  { id: "dash-sponsors", label: "Sponsors Manager", category: "Command Center", to: "/dashboard/sponsors", keywords: "dashboard sponsors partners logos" },
 ];
 
 const ADMIN_COMMAND_ITEMS: CommandPaletteItem[] = [
-  { id: "dash-announcements", label: "Site-Wide Announcements", category: "Command Center", to: "/dashboard/announcements", keywords: "dashboard announcements banner alert" },
   { id: "dash-inquiries", label: "Recruitment & Sponsor Inquiries", category: "Command Center", to: "/dashboard/inquiries", keywords: "dashboard inquiries messages recruitment contact" },
-  { id: "dash-outreach", label: "Outreach Ledger Manager", category: "Command Center", to: "/dashboard/outreach", keywords: "dashboard outreach impact events hours" },
-  { id: "dash-sponsors", label: "Sponsors Manager", category: "Command Center", to: "/dashboard/sponsors", keywords: "dashboard sponsors partners logos" },
+  { id: "dash-finance", label: "Finance Ledger Manager", category: "Command Center", to: "/dashboard/finance", keywords: "dashboard finance ledger budget expenses grants" },
   { id: "dash-users", label: "Team User Roster & Roles", category: "Command Center", to: "/dashboard/users", keywords: "dashboard users roles permissions roster" },
+  { id: "dash-announcements", label: "Site-Wide Announcements", category: "Command Center", to: "/dashboard/announcements", keywords: "dashboard announcements banner alert" },
 ];
 
 interface CommandPaletteProps {
@@ -113,6 +125,9 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
     const items = [...PUBLIC_COMMAND_ITEMS];
     if (isSignedIn && userRole !== "unverified" && userRole !== "Pending Verification") {
       items.push(...DASHBOARD_COMMAND_ITEMS);
+      if (userRole === "mentor" || userRole === "coach" || userRole === "admin") {
+        items.push(...MENTOR_COMMAND_ITEMS);
+      }
       if (userRole === "admin" || userRole === "coach") {
         items.push(...ADMIN_COMMAND_ITEMS);
       }

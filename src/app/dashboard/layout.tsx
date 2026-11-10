@@ -93,16 +93,16 @@ export default function DashboardLayout({
           <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
             {/* Icon Group */}
             <div className="relative w-20 h-20 bg-ares-red/15 border border-ares-red/45 ares-cut flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(192,0,0,0.2)]">
-              <KeyRound className="text-ares-red w-8 h-8 animate-bounce" />
+              <KeyRound className="text-ares-red w-8 h-8" aria-hidden="true" />
             </div>
 
             <span className="text-ares-gold font-bold uppercase tracking-[0.4em] text-[10px] font-heading mb-3">
               <em>FIRST</em>® Tech Challenge #23247
             </span>
 
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white uppercase font-heading mb-3 tracking-tighter">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white uppercase font-heading mb-3 tracking-tighter">
               Administrative Gate
-            </h2>
+            </h1>
 
             <p className="text-marble/70 text-sm leading-relaxed mb-8 max-w-sm">
               Access to team operations, task boards, and workspace analytics is
@@ -118,7 +118,7 @@ export default function DashboardLayout({
 
             {mockAuthEnabled && (
               <div className="w-full mt-4 pt-4 border-t border-white/5 space-y-2.5">
-                <p className="text-[9px] font-black text-ares-gold uppercase tracking-widest text-center animate-pulse">
+                <p className="text-[9px] font-black text-ares-gold uppercase tracking-widest text-center">
                   ⚡ Developer Bypass Active
                 </p>
                 <div className="grid grid-cols-3 gap-2">

@@ -98,7 +98,7 @@ export default function DashboardServiceStatusCard({
               <>
                 <AlertCircle
                   size={12}
-                  className="text-ares-gold animate-pulse"
+                  className="text-ares-gold"
                 />
                 <span className="text-ares-gold">Not configured</span>
               </>
