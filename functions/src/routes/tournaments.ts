@@ -12,6 +12,11 @@ import {
 import { requireRouteParam, validate } from "../middleware/validation";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
+import {
+  picklistEntrySchema,
+  readPicklist,
+  registerTournamentOperationsRoutes,
+} from "./tournamentOperations";
 
 const router = express.Router();
 
@@ -36,6 +41,14 @@ type TournamentRecord = {
   status?: unknown;
   opr?: unknown;
   oprList?: unknown;
+  ftcSeason?: unknown;
+  ftcEventCode?: unknown;
+  lastSyncedAt?: unknown;
+  wins?: unknown;
+  losses?: unknown;
+  ties?: unknown;
+  rank?: unknown;
+  picklist?: unknown;
   scoutingDetails?: unknown;
   photoAlbumId?: unknown;
   isDeleted?: unknown;
@@ -67,6 +80,10 @@ const oprEntrySchema = z
     teamNumber: boundedText(12).min(1),
     teamName: boundedText(120),
     opr: z.number().finite().min(0).max(10000),
+    autoOpr: z.number().finite().min(0).max(10000).nullable().optional(),
+    teleopOpr: z.number().finite().min(0).max(10000).nullable().optional(),
+    endgameOpr: z.number().finite().min(0).max(10000).nullable().optional(),
+    rank: z.number().int().min(1).max(500).nullable().optional(),
   })
   .strict();
 
@@ -90,6 +107,13 @@ export const createTournamentSchema = z
     status: z.enum(["upcoming", "past"]).optional(),
     opr: z.number().finite().min(0).max(10000).optional(),
     oprList: z.array(oprEntrySchema).max(100).optional(),
+    ftcSeason: z.number().int().min(2019).max(2100).nullable().optional(),
+    ftcEventCode: boundedText(20).nullable().optional(),
+    wins: z.number().int().min(0).max(200).nullable().optional(),
+    losses: z.number().int().min(0).max(200).nullable().optional(),
+    ties: z.number().int().min(0).max(200).nullable().optional(),
+    rank: z.number().int().min(1).max(500).nullable().optional(),
+    picklist: z.array(picklistEntrySchema).max(100).optional(),
     scoutingDetails: scoutingDetailsSchema.optional(),
     photoAlbumId: optionalText(160),
   })
@@ -199,8 +223,15 @@ function readNumber(value: unknown): number | null {
 
 function readOprList(value: unknown) {
   if (!Array.isArray(value)) return [];
-  const entries: Array<{ teamNumber: string; teamName: string; opr: number }> =
-    [];
+  const entries: Array<{
+    teamNumber: string;
+    teamName: string;
+    opr: number;
+    autoOpr?: number;
+    teleopOpr?: number;
+    endgameOpr?: number;
+    rank?: number;
+  }> = [];
   for (const candidate of value.slice(0, 100)) {
     if (!candidate || typeof candidate !== "object") continue;
     const record = candidate as Record<string, unknown>;
@@ -208,7 +239,24 @@ function readOprList(value: unknown) {
     const teamName = readString(record.teamName);
     const opr = readNumber(record.opr);
     if (teamNumber && teamName !== null && opr !== null) {
-      entries.push({ teamNumber, teamName, opr });
+      const entry: {
+        teamNumber: string;
+        teamName: string;
+        opr: number;
+        autoOpr?: number;
+        teleopOpr?: number;
+        endgameOpr?: number;
+        rank?: number;
+      } = { teamNumber, teamName, opr };
+      const autoOpr = readNumber(record.autoOpr);
+      const teleopOpr = readNumber(record.teleopOpr);
+      const endgameOpr = readNumber(record.endgameOpr);
+      const rank = readNumber(record.rank);
+      if (autoOpr !== null) entry.autoOpr = autoOpr;
+      if (teleopOpr !== null) entry.teleopOpr = teleopOpr;
+      if (endgameOpr !== null) entry.endgameOpr = endgameOpr;
+      if (rank !== null) entry.rank = rank;
+      entries.push(entry);
     }
   }
   return entries;
@@ -243,6 +291,14 @@ function tournamentDto(id: string, data: TournamentRecord) {
         : derivedStatus,
     opr: readNumber(data.opr),
     oprList: readOprList(data.oprList),
+    ftcSeason: readNumber(data.ftcSeason),
+    ftcEventCode: readString(data.ftcEventCode),
+    lastSyncedAt: readString(data.lastSyncedAt),
+    wins: readNumber(data.wins),
+    losses: readNumber(data.losses),
+    ties: readNumber(data.ties),
+    rank: readNumber(data.rank),
+    picklist: readPicklist(data.picklist),
     scoutingDetails: readScoutingDetails(data.scoutingDetails),
     photoAlbumId: readString(data.photoAlbumId),
     createdAt: readString(data.createdAt),
@@ -384,6 +440,10 @@ router.get(
             ? "upcoming"
             : "past"),
         opr: readNumber(data.opr),
+        wins: readNumber(data.wins),
+        losses: readNumber(data.losses),
+        ties: readNumber(data.ties),
+        rank: readNumber(data.rank),
       };
     });
     res.json({ success: true, results });
@@ -447,6 +507,12 @@ router.get(
     res.json({ success: true, matches });
   }),
 );
+
+registerTournamentOperationsRoutes(router, {
+  getActiveTournament,
+  tournamentDto: (id, data) => tournamentDto(id, data as TournamentRecord),
+  ensureAdminOrCoach,
+});
 
 router.get(
   "/:id",

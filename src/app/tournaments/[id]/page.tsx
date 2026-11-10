@@ -8,14 +8,24 @@ import { useAuth } from "@/context/AuthContext";
 import SEO from "@/components/SEO";
 import { GreekMeander } from "@/components/GreekMeander";
 import { PublicDataState } from "@/components/PublicDataState";
-import type { Tournament, TournamentMatch } from "@/types/tournament";
+import type {
+  Tournament,
+  TournamentMatch,
+  TournamentPitState,
+  TournamentScoutingBundle,
+} from "@/types/tournament";
 import TournamentMatchesList from "./TournamentMatchesList";
 import {
   archiveTournamentMatch,
   createTournamentMatch,
   fetchTournament,
   fetchTournamentMatches,
+  fetchTournamentPitState,
+  fetchTournamentScouting,
+  saveTournamentPicklist,
+  saveTournamentPitState,
   setTournamentMatchCompletion,
+  syncTournamentFtcScout,
   TournamentApiError,
   updateTournamentMatch,
 } from "@/lib/tournamentApi";
@@ -26,11 +36,12 @@ import {
   TournamentHero,
   TournamentPhotoLightbox,
   TournamentPhotosSection,
-  TournamentPitChecklistSection,
   TournamentScoutingSection,
   type TournamentPhoto,
 } from "./TournamentDetailSections";
 import { TournamentAlliancePlanner } from "./TournamentAlliancePlanner";
+import { TournamentPitCommand } from "./TournamentPitCommand";
+import { TournamentScoutingHub } from "./TournamentScoutingHub";
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +50,7 @@ export default function TournamentDetailPage() {
   const [activeLightboxImage, setActiveLightboxImage] =
     useState<TournamentPhoto | null>(null);
   const [mutationError, setMutationError] = useState<Error | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const isAuthorized = useMemo(
     () =>
@@ -53,6 +65,19 @@ export default function TournamentDetailPage() {
         ["admin", "coach"].includes(authorizedUser.role),
       ),
     [user, authorizedUser],
+  );
+  const canManagePicklist = useMemo(
+    () =>
+      Boolean(
+        user &&
+        authorizedUser &&
+        ["admin", "coach", "mentor"].includes(authorizedUser.role),
+      ),
+    [user, authorizedUser],
+  );
+  const hasLiveSession = useMemo(
+    () => typeof (user as { getIdToken?: unknown } | null)?.getIdToken === "function",
+    [user],
   );
 
   const {
@@ -108,6 +133,57 @@ export default function TournamentDetailPage() {
         .filter((photo) => photo.src);
     },
     enabled: Boolean(tournament?.photoAlbumId),
+  });
+
+  const {
+    data: scoutingBundle,
+    isLoading: isScoutingLoading,
+    refetch: refetchScouting,
+  } = useQuery<TournamentScoutingBundle>({
+    queryKey: ["tournament_scouting", id],
+    queryFn: async () => {
+      if (!id) throw new Error("Tournament route is missing an ID");
+      return fetchTournamentScouting(id);
+    },
+    enabled: isAuthorized && Boolean(id) && hasLiveSession,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const { data: pitState } = useQuery<TournamentPitState>({
+    queryKey: ["tournament_pit_state", id],
+    queryFn: async () => {
+      if (!id) throw new Error("Tournament route is missing an ID");
+      return fetchTournamentPitState(id);
+    },
+    enabled: isAuthorized && Boolean(id) && hasLiveSession,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const syncFtcScoutMutation = useMutation({
+    mutationFn: async ({
+      season,
+      eventCode,
+    }: {
+      season: number;
+      eventCode: string;
+    }) => {
+      if (!id) throw new Error("Tournament route is missing an ID");
+      return syncTournamentFtcScout(id, season, eventCode);
+    },
+    onSuccess: (result) => {
+      setSyncMessage(
+        `Synced FTCScout (${result.syncedMatches} ARES match${result.syncedMatches === 1 ? "" : "es"}, ${result.tournament.oprList?.length ?? 0} team OPRs).`,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["tournament", id] });
+      void queryClient.invalidateQueries({
+        queryKey: ["tournament_matches", id],
+      });
+    },
+    onError: (err: Error) => {
+      setSyncMessage(err.message);
+    },
   });
 
   const handleMutationError = (error: Error) => {
@@ -323,7 +399,15 @@ export default function TournamentDetailPage() {
           Back to scouting list
         </Link>
 
-        <TournamentHero tournament={tournament} />
+        <TournamentHero
+          tournament={tournament}
+          canEdit={canEdit}
+          isSyncingFtcScout={syncFtcScoutMutation.isPending}
+          syncMessage={syncMessage}
+          onSyncFtcScout={(season, eventCode) =>
+            syncFtcScoutMutation.mutate({ season, eventCode })
+          }
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
@@ -402,8 +486,36 @@ export default function TournamentDetailPage() {
             )}
 
             <TournamentScoutingSection tournament={tournament} />
-            <TournamentPitChecklistSection matches={matches} />
-            <TournamentAlliancePlanner tournament={tournament} />
+            <TournamentPitCommand
+              tournament={tournament}
+              matches={matches}
+              pitState={pitState}
+              onSavePitState={async (next) => {
+                if (!id) return;
+                const saved = await saveTournamentPitState(id, next);
+                queryClient.setQueryData(["tournament_pit_state", id], saved);
+              }}
+            />
+            <TournamentScoutingHub
+              tournamentId={tournament.id}
+              scoutingBundle={scoutingBundle}
+              isLoading={isScoutingLoading}
+              onRefresh={() => void refetchScouting()}
+            />
+            <TournamentAlliancePlanner
+              tournament={tournament}
+              teamSummaries={scoutingBundle?.teamSummaries}
+              canManagePicklist={canManagePicklist}
+              onSavePicklist={async (picklist) => {
+                if (!id) return;
+                const saved = await saveTournamentPicklist(id, picklist);
+                queryClient.setQueryData(
+                  ["tournament", id],
+                  (prev: Tournament | undefined) =>
+                    prev ? { ...prev, picklist: saved } : prev,
+                );
+              }}
+            />
             <TournamentPhotosSection
               hasAlbum={Boolean(tournament.photoAlbumId)}
               photos={photos}

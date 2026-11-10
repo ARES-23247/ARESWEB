@@ -35,6 +35,12 @@ export function TournamentForm({
     tournament?.status ?? "upcoming",
   );
   const [opr, setOpr] = useState(tournament?.opr?.toString() ?? "");
+  const [ftcSeason, setFtcSeason] = useState(
+    tournament?.ftcSeason?.toString() ?? "",
+  );
+  const [ftcEventCode, setFtcEventCode] = useState(
+    tournament?.ftcEventCode ?? "",
+  );
   const [photoAlbumId, setPhotoAlbumId] = useState(
     tournament?.photoAlbumId ?? "",
   );
@@ -80,6 +86,10 @@ export function TournamentForm({
       description,
       status,
       opr: opr ? Number.parseFloat(opr) : 0,
+      ftcSeason: ftcSeason.trim() ? Number.parseInt(ftcSeason, 10) : undefined,
+      ftcEventCode: ftcEventCode.trim()
+        ? ftcEventCode.trim().toUpperCase()
+        : undefined,
       photoAlbumId,
       scoutingDetails: { autoPathNotes, driverFeedback, robotSpecs },
       oprList,
@@ -269,6 +279,42 @@ export function TournamentForm({
                 placeholder="e.g. wv-state-2026"
                 className="w-full bg-black/40 border border-white/15 rounded-lg px-4 py-2.5 text-xs text-white placeholder-marble/35 focus:outline-none focus:border-ares-red"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+              <div>
+                <label
+                  htmlFor="tourney-ftc-season"
+                  className="block text-[10px] uppercase font-bold text-ares-gold mb-1"
+                >
+                  FTC Kickoff Yr
+                </label>
+                <input
+                  id="tourney-ftc-season"
+                  type="number"
+                  min={2019}
+                  max={2100}
+                  value={ftcSeason}
+                  onChange={(event) => setFtcSeason(event.target.value)}
+                  placeholder="2026"
+                  className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-marble/35 focus:outline-none focus:border-ares-red"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="tourney-ftc-code"
+                  className="block text-[10px] uppercase font-bold text-ares-gold mb-1"
+                >
+                  FTC Event Code
+                </label>
+                <input
+                  id="tourney-ftc-code"
+                  type="text"
+                  value={ftcEventCode}
+                  onChange={(event) => setFtcEventCode(event.target.value)}
+                  placeholder="USWVSTATE"
+                  className="w-full bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs font-mono uppercase text-white placeholder-marble/35 focus:outline-none focus:border-ares-red"
+                />
+              </div>
             </div>
           </div>
         </div>

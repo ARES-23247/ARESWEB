@@ -20,6 +20,8 @@ export default defineConfig({
         "src/biobuzzServer.ts": { lines: 85, functions: 100 },
         "src/lib/waggle*.ts": { lines: 85, functions: 100 },
         "src/routes/waggleWay.ts": { lines: 85, functions: 100 },
+        "src/lib/ftcScoutSync.ts": { lines: 85, functions: 100 },
+        "src/routes/tournamentOperations.ts": { lines: 85, functions: 100 },
         "src/lib/contentVisibility.ts": {
           lines: 100,
           functions: 100,

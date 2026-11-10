@@ -7,8 +7,15 @@ import {
   createTournamentMatch,
   fetchTournament,
   fetchTournamentMatches,
+  fetchTournamentPitState,
+  fetchTournamentScouting,
   fetchTournaments,
+  saveTournamentPicklist,
+  saveTournamentPitState,
   setTournamentMatchCompletion,
+  submitPitScouting,
+  submitStandScouting,
+  syncTournamentFtcScout,
   TournamentApiError,
   updateTournament,
   updateTournamentMatch,
@@ -209,6 +216,142 @@ describe("tournament API client", () => {
 
     await expect(fetchTournaments(0)).rejects.toThrow(
       "HTTP 503: Request failed",
+    );
+  });
+
+  it("routes scouting, picklist, pit-state, and FTCScout sync endpoints", async () => {
+    const pitEntry = {
+      id: "11115",
+      teamNumber: "11115",
+      drivetrain: "Mecanum",
+      canClearBarrierOrTrench: true,
+    };
+    const standEntry = {
+      id: "sub_1",
+      matchNumber: "QM1",
+      teamNumber: "11115",
+      alliance: "red" as const,
+      autoScoreEstimate: 30,
+      teleopCycles: 8,
+      endgameTier: "high" as const,
+      disconnected: false,
+      penalties: "none" as const,
+      defenseRating: 0,
+    };
+    const pitState = {
+      checklists: { QM1: ["battery"] },
+      batteries: [],
+      triageItems: [],
+      updatedAt: "2026-08-14T10:00:00.000Z",
+    };
+
+    vi.mocked(authenticatedFetch)
+      .mockResolvedValueOnce(
+        jsonResponse({ success: true, tournament, syncedMatches: 7 }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          success: true,
+          pitScouting: [pitEntry],
+          standScouting: [standEntry],
+          teamSummaries: [],
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ success: true, entry: pitEntry }))
+      .mockResolvedValueOnce(
+        jsonResponse({ success: true, entry: standEntry, duplicate: false }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          success: true,
+          picklist: [{ teamNumber: "11115", tier: "first_pick" }],
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ success: true, pitState }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, pitState }));
+
+    await expect(
+      syncTournamentFtcScout("states", 2025, "USWVCMP"),
+    ).resolves.toEqual({ tournament, syncedMatches: 7 });
+
+    await expect(fetchTournamentScouting("states")).resolves.toEqual({
+      pitScouting: [pitEntry],
+      standScouting: [standEntry],
+      teamSummaries: [],
+    });
+
+    await expect(
+      submitPitScouting("states", {
+        teamNumber: "11115",
+        drivetrain: "Mecanum",
+        canClearBarrierOrTrench: true,
+      }),
+    ).resolves.toEqual(pitEntry);
+
+    await expect(
+      submitStandScouting("states", {
+        matchNumber: "QM1",
+        teamNumber: "11115",
+        alliance: "red",
+        autoScoreEstimate: 30,
+        teleopCycles: 8,
+        endgameTier: "high",
+        disconnected: false,
+        penalties: "none",
+        defenseRating: 0,
+      }),
+    ).resolves.toEqual({ entry: standEntry, duplicate: false });
+
+    await expect(
+      saveTournamentPicklist("states", [
+        { teamNumber: "11115", tier: "first_pick" },
+      ]),
+    ).resolves.toEqual([{ teamNumber: "11115", tier: "first_pick" }]);
+
+    await expect(fetchTournamentPitState("states")).resolves.toEqual(pitState);
+
+    await expect(
+      saveTournamentPitState("states", {
+        checklists: pitState.checklists,
+        batteries: [],
+        triageItems: [],
+      }),
+    ).resolves.toEqual(pitState);
+
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/tournaments/states/sync-ftcscout",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/tournaments/states/scouting",
+      undefined,
+    );
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      3,
+      "/api/tournaments/states/scouting/pit",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      4,
+      "/api/tournaments/states/scouting/stand",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      5,
+      "/api/tournaments/states/picklist",
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      6,
+      "/api/tournaments/states/pit-state",
+      undefined,
+    );
+    expect(authenticatedFetch).toHaveBeenNthCalledWith(
+      7,
+      "/api/tournaments/states/pit-state",
+      expect.objectContaining({ method: "PUT" }),
     );
   });
 });
