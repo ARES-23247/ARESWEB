@@ -35,6 +35,7 @@ export interface PublicSeason {
   startYear: number;
   endYear: number | null;
   challengeName: string;
+  robotId?: string | null;
   robotName?: string | null;
   robotImage?: string | null;
   robotDescription?: string | null;

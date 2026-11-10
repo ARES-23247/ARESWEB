@@ -7,6 +7,7 @@ import { siteConfig } from "@/lib/site-config";
 import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight, RefreshCw } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
+import SponsorFactSheetSection from "./SponsorFactSheetSection";
 
 type SponsorTier = "Titanium" | "Gold" | "Silver" | "Bronze" | "In-Kind";
 
@@ -224,6 +225,8 @@ export default function SponsorsPage() {
             Refresh partners
           </button>
         </div>
+
+        <SponsorFactSheetSection publishedPartnerCount={sponsors.length} />
 
         {/* Sponsor showcase */}
         {isLoadingSponsors ? (

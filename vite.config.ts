@@ -236,6 +236,7 @@ export default defineConfig({
         "src/lib/usePendingInquiries.ts",
         "src/lib/approvalNotifications.ts",
         "src/lib/diff.ts",
+        "src/lib/qrSvg.ts",
         "src/lib/dateOnly.ts",
         "src/lib/firebaseAppCheck.ts",
         "src/lib/analyticsConsent.ts",
@@ -412,6 +413,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/diff.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/qrSvg.ts": {
           lines: 85,
           functions: 100,
         },
