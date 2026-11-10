@@ -7,7 +7,7 @@ import SEO from "@/components/SEO";
 
 export default function AccessibilityPage() {
   return (
-    <div className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian pt-24 pb-20">
+    <div className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian py-12 md:py-16">
       <SEO 
         title="Accessibility & Web Standards" 
         description="How ARES 23247 reviews and improves website accessibility for students, families, and community visitors."

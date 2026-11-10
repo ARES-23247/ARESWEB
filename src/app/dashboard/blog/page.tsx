@@ -130,7 +130,7 @@ export default function BlogManagementPage({
       <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
           <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-            <Activity size={12} className="animate-pulse" /> Engineering Records
+            <Activity size={12} aria-hidden="true" /> Engineering Records
           </p>
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
             Manage Blogs
@@ -187,7 +187,7 @@ export default function BlogManagementPage({
         >
           <span>Pending Mentor Approval</span>
           {pendingDocs.length > 0 && (
-            <span className="w-5 h-5 rounded-full bg-ares-gold text-black text-[10px] font-black flex items-center justify-center animate-bounce">
+            <span className="w-5 h-5 rounded-full bg-ares-gold text-black text-[10px] font-black flex items-center justify-center">
               {pendingDocs.length}
             </span>
           )}

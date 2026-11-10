@@ -1,20 +1,33 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { DashboardNotifications } from "@/context/DashboardNotificationsContext";
 
 const firestore = vi.hoisted(() => ({
   getCountFromServer: vi.fn(),
   onSnapshot: vi.fn(),
 }));
 
+const authState = vi.hoisted(() => ({
+  role: "admin",
+}));
+
 const notifications = vi.hoisted(() => ({
   value: {
     pendingBlogApprovals: 2,
-    blogApprovalsState: "connected" as const,
+    blogApprovalsState: "connected",
+    pendingEventApprovals: 0,
+    eventApprovalsState: "connected",
+    pendingAcademyApprovals: 0,
+    academyApprovalsState: "connected",
+    pendingAreslibApprovals: 0,
+    areslibApprovalsState: "connected",
+    pendingDocumentApprovals: 0,
+    documentApprovalsState: "connected",
     hasPendingInquiries: false,
-    inquiriesState: "connected" as const,
-  },
+    inquiriesState: "connected",
+  } as DashboardNotifications,
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -28,6 +41,14 @@ vi.mock("firebase/firestore", () => ({
   where: vi.fn((...constraint: unknown[]) => ({ constraint })),
 }));
 
+vi.mock("@/app/calendar/api", () => ({
+  fetchPublicEvents: vi.fn(),
+}));
+
+vi.mock("@/lib/api", () => ({
+  authenticatedFetch: vi.fn(),
+}));
+
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     user: {
@@ -36,7 +57,7 @@ vi.mock("@/context/AuthContext", () => ({
       displayName: "Team Admin",
       photoURL: null,
     },
-    authorizedUser: { role: "admin" },
+    authorizedUser: { role: authState.role },
   }),
   useOptionalAuth: () => undefined,
 }));
@@ -47,19 +68,49 @@ vi.mock("@/context/DashboardNotificationsContext", () => ({
 }));
 
 import DashboardHome from "@/app/dashboard/page";
+import { fetchPublicEvents } from "@/app/calendar/api";
+import { authenticatedFetch } from "@/lib/api";
 
-describe("Command center task summary", () => {
+describe("Command center task summary & unified 6-queue approval panel", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
+    authState.role = "admin";
+    vi.mocked(fetchPublicEvents).mockResolvedValue({ events: [], nextCursor: null });
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ photos: [] }),
+    } as Response);
     notifications.value = {
       pendingBlogApprovals: 2,
       blogApprovalsState: "connected",
+      pendingEventApprovals: 0,
+      eventApprovalsState: "connected",
+      pendingAcademyApprovals: 0,
+      academyApprovalsState: "connected",
+      pendingAreslibApprovals: 0,
+      areslibApprovalsState: "connected",
+      pendingDocumentApprovals: 0,
+      documentApprovalsState: "connected",
       hasPendingInquiries: false,
       inquiriesState: "connected",
     };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ announcement: null }),
+      }),
+    );
     firestore.getCountFromServer
+      .mockReset()
       .mockResolvedValueOnce({ data: () => ({ count: 3 }) })
       .mockResolvedValueOnce({ data: () => ({ count: 5 }) });
-    firestore.onSnapshot.mockImplementation((_query, onNext) => {
+    firestore.onSnapshot.mockReset().mockImplementation((_query, onNext) => {
       onNext({
         docs: [
           {
@@ -120,5 +171,46 @@ describe("Command center task summary", () => {
     expect(
       screen.getByRole("link", { name: /Review approval queue/i }),
     ).toHaveAttribute("href", "/dashboard/blog?tab=pending");
+  });
+
+  it("surfaces all 6 approval queues for admins/coaches, scopes inquiries out for mentors, and reports unavailable queues", async () => {
+    notifications.value = {
+      pendingBlogApprovals: 1,
+      blogApprovalsState: "connected",
+      pendingEventApprovals: 3,
+      eventApprovalsState: "connected",
+      pendingAcademyApprovals: 2,
+      academyApprovalsState: "connected",
+      pendingAreslibApprovals: 0,
+      areslibApprovalsState: "error",
+      pendingDocumentApprovals: 4,
+      documentApprovalsState: "connected",
+      hasPendingInquiries: true,
+      inquiriesState: "connected",
+    };
+
+    const view = render(<MemoryRouter><DashboardHome /></MemoryRouter>);
+
+    expect(await screen.findByText("No urgent team alert is active.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Mentor & Coach Approval Queues/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Check queue status")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "1 blog post needs mentor approval" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "3 events need mentor approval" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "2 academy lessons need mentor approval" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "4 cloud resources need mentor approval" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Pending recruitment or sponsor inquiries require review" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("ARESLib Docs queue status is unavailable. Open directly to verify."),
+    ).toBeInTheDocument();
+
+    // Mentor sees 5 content queues, never Encrypted Inquiries
+    authState.role = "mentor";
+    view.rerender(<MemoryRouter><DashboardHome /></MemoryRouter>);
+    expect(screen.queryByText("Encrypted Inquiries")).not.toBeInTheDocument();
+    expect(screen.getByText("Blog Posts")).toBeInTheDocument();
   });
 });

@@ -161,10 +161,10 @@ export default function AboutPage() {
       <SEO title="About Us" description="Meet the students, coaches, mentors, and alumni of ARES 23247. Learn about our mission to bring robotics and STEM education to Morgantown and West Virginia." />
       
       {/* ─── HERO ─── */}
-      <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
+      <section className="py-16 md:py-20 bg-obsidian relative overflow-hidden flex items-center">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <p className="text-ares-bronze uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4 animate-pulse">
+          <p className="text-ares-gold uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4">
             Our Community & Heritage
           </p>
           <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading">
@@ -176,47 +176,46 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ─── INSTITUTIONAL LEGACY & STRATEGY ─── */}
-      <section className="py-20 bg-black/30 border-y border-white/5">
+      {/* ─── INSTITUTIONAL LEGACY & STRATEGY (MARBLE CONTRAST BAND) ─── */}
+      <section className="py-20 marble-band border-y border-ares-bronze/30">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left: Philosophy & Mindset */}
             <div className="space-y-6">
-              <h2 className="text-3xl font-black uppercase text-white font-heading tracking-tight leading-none">
+              <h2 className="text-3xl font-black uppercase text-obsidian font-heading tracking-tight leading-none">
                 The Mountaineer <br />
-                <span className="text-ares-gold">Mindset Ethos</span>
+                <span className="text-ares-red">Mindset Ethos</span>
               </h2>
-              <div className="border-l-4 border-ares-bronze pl-5 italic text-marble/85 leading-relaxed text-sm space-y-4">
+              <div className="border-l-4 border-ares-red pl-5 italic text-obsidian/90 leading-relaxed text-sm space-y-4">
                 <p>
                   &ldquo;Robotics is hard. Code breaks, gears slip, and systems bind. But with Grit, Determination, and relentless Innovation, we conquer technical boundaries.&rdquo;
                 </p>
-                <p className="text-xs font-bold uppercase text-ares-bronze not-italic tracking-widest font-heading mt-2">
+                <p className="text-xs font-bold uppercase text-obsidian not-italic tracking-widest font-heading mt-2">
                   — Supported by FRC 2614 MARS
                 </p>
               </div>
-              <p className="text-xs text-marble/65 leading-relaxed">
+              <p className="text-sm text-obsidian/80 leading-relaxed">
                 Competing in the <em>FIRST</em>® Tech Challenge, we don&apos;t just assemble kits; we engineer complex, high-frequency, telemetry-driven systems from scratch. Our students learn industry-grade CAD modeling, software versioning, and mathematical control theory.
               </p>
             </div>
 
             {/* Right: Core Vehicle Philosophy Callout Card */}
-            <div className="bg-white/5 border border-white/10 p-8 rounded-2xl relative overflow-hidden ares-cut group hover:border-ares-red/30 transition-colors">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-ares-red/5 rounded-full blur-2xl group-hover:bg-ares-red/10 transition-all"></div>
+            <div className="bg-white border border-ares-bronze/30 p-8 rounded-2xl relative overflow-hidden ares-cut shadow-lg">
               <span className="px-3 py-1 bg-ares-red text-white text-[9px] font-black uppercase tracking-wider rounded-md font-heading">
                 Our Primary Principle
               </span>
-              <h3 className="text-xl font-bold text-white mt-4 font-heading uppercase group-hover:text-ares-gold transition-colors">
+              <h3 className="text-xl font-bold text-obsidian mt-4 font-heading uppercase">
                 &ldquo;The robots are the vehicle; the students are the cargo.&rdquo;
               </h3>
-              <p className="text-xs text-marble/70 mt-3 leading-relaxed">
+              <p className="text-sm text-obsidian/80 mt-3 leading-relaxed">
                 Winning awards and qualifying for championships represents our dedication, but our ultimate product is the long-term professional development, technical confidence, and leadership progression of West Virginia&apos;s youth.
               </p>
               <div className="mt-6">
                 <Link
                   to="/join"
-                  className="text-white font-bold text-xs uppercase tracking-widest inline-flex items-center gap-2 hover:translate-x-1.5 transition-transform"
+                  className="text-ares-red font-bold text-xs uppercase tracking-widest inline-flex items-center gap-2 hover:translate-x-1.5 transition-transform"
                 >
-                  Apply to Join the Roster <ArrowRight aria-hidden="true" size={12} className="text-ares-gold" />
+                  Apply to Join the Roster <ArrowRight aria-hidden="true" size={12} />
                 </Link>
               </div>
             </div>

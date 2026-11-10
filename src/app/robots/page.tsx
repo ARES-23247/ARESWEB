@@ -156,7 +156,7 @@ export default function RobotsFeedPage() {
                         <div className="flex items-center justify-between gap-2">
                           {robot.drivetrainType && <Spec icon={<Cpu aria-hidden="true" size={14} />} text={robot.drivetrainType} />}
                           {robot.printablesUrl && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#fa6831]/15 border border-[#fa6831]/30 text-[#fa6831] text-[10px] font-black uppercase ares-cut-sm shrink-0">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-ares-gold/15 border border-ares-gold/35 text-ares-gold text-[10px] font-black uppercase ares-cut-sm shrink-0">
                               <Layers aria-hidden="true" size={12} /> 3D Files
                             </span>
                           )}
@@ -197,12 +197,12 @@ export default function RobotsFeedPage() {
         <section aria-labelledby="printables-hub-heading" className="mt-28 border-t border-white/10 pt-20">
           <div className="glass-card p-8 md:p-12 ares-cut-lg border border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-gradient-to-br from-white/5 to-black/40">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 ares-cut-sm bg-[#fa6831]/15 border border-[#fa6831]/30 text-[#fa6831] text-xs font-black uppercase tracking-widest mb-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 ares-cut-sm bg-ares-gold/15 border border-ares-gold/35 text-ares-gold text-xs font-black uppercase tracking-widest mb-4">
                 <Layers aria-hidden="true" size={14} />
                 Printables
               </div>
               <h2 id="printables-hub-heading" className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight font-heading">
-                3D Models on <span className="text-[#fa6831]">Printables</span>
+                3D Models on <span className="text-ares-gold">Printables</span>
               </h2>
               <p className="text-marble/75 text-base mt-3 leading-relaxed">
                 Explore 3D models and printable components on our official Printables account. Robot CAD workspaces and specific model files are also accessible directly from individual fleet profiles above.
@@ -213,7 +213,7 @@ export default function RobotsFeedPage() {
               href="https://www.printables.com/@ARESFTC_3784306"
               target="_blank"
               rel="noopener noreferrer"
-              className="clipped-button bg-[#fa6831] hover:bg-[#e05620] text-white text-xs font-black uppercase tracking-wider py-4 px-8 inline-flex items-center gap-3 shrink-0 shadow-xl shadow-[#fa6831]/20 focus-visible:ring-2 focus-visible:ring-ares-cyan font-heading"
+              className="clipped-button bg-ares-gold hover:bg-ares-bronze text-obsidian text-xs font-black uppercase tracking-wider py-4 px-8 inline-flex items-center gap-3 shrink-0 shadow-xl shadow-ares-gold/15 focus-visible:ring-2 focus-visible:ring-ares-cyan font-heading"
             >
               <span>View @ARESFTC on Printables</span>
               <ExternalLink aria-hidden="true" size={16} />

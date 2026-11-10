@@ -124,7 +124,7 @@ export function OutreachInitiative() {
         </div>
         <div className="relative justify-self-center lg:justify-self-end w-full max-w-[320px] aspect-square">
           <div className="absolute inset-0 bg-ares-red ares-cut-lg rotate-3 shadow-2xl border-4 border-obsidian flex items-center justify-center">
-            <Target size={96} className="text-white/20 animate-pulse" aria-hidden="true" />
+            <Target size={96} className="text-white/20" aria-hidden="true" />
           </div>
           <div className="absolute -bottom-6 -left-6 bg-ares-gold text-black p-6 ares-cut font-black -rotate-3 shadow-xl text-center text-xs tracking-wider uppercase font-heading">Empowering <br /> Future Pioneers</div>
         </div>

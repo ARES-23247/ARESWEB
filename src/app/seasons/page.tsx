@@ -76,7 +76,7 @@ export default function SeasonsPage() {
         description="A chronicle of ARES 23247's journey through FIRST® Robotics. Explore our seasonal achievements, awards, and growth."
       />
 
-      <section className="py-32 px-6 relative z-10 text-center bg-obsidian">
+      <section className="py-16 md:py-24 px-6 relative z-10 text-center bg-obsidian">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}

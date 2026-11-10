@@ -156,7 +156,7 @@ export default function UserRosterTable({
                 <span className="text-[9px] font-black text-marble/40 uppercase tracking-widest">Zulip Account</span>
                 {u.zulipAccount ? (
                   <div className="flex items-center gap-1.5 text-xs font-bold text-ares-cyan">
-                    <span className="w-1.5 h-1.5 rounded-full bg-ares-cyan animate-pulse"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-ares-cyan" aria-hidden="true"></span>
                     <span className="truncate max-w-[140px]">{u.zulipAccount.full_name}</span>
                   </div>
                 ) : (

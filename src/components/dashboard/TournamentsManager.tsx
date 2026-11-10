@@ -121,7 +121,7 @@ export default function TournamentsManager() {
     return (
       <div className="p-8 bg-ares-red/5 border border-ares-red/20 rounded-2xl flex flex-col items-center justify-center text-center max-w-md mx-auto my-12">
         <ShieldAlert
-          className="text-ares-gold w-12 h-12 mb-4 animate-pulse"
+          className="text-ares-gold w-12 h-12 mb-4"
           aria-hidden="true"
         />
         <h2 className="text-lg font-bold text-white uppercase mb-2">

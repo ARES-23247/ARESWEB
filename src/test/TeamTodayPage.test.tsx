@@ -1,24 +1,42 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import TeamTodayPage from "@/app/dashboard/today/page";
+import DashboardHome from "@/app/dashboard/page";
 import { authenticatedFetch } from "@/lib/api";
 import { fetchPublicEvents } from "@/app/calendar/api";
 
-const firestore = vi.hoisted(() => ({ onSnapshot: vi.fn() }));
+const firestore = vi.hoisted(() => ({
+  getCountFromServer: vi.fn(),
+  onSnapshot: vi.fn(),
+}));
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
-    user: { uid: "member-1", email: "member@example.org", displayName: "Alex Ares" },
+    user: { uid: "member-1", email: "member@example.org", displayName: "Alex Ares", photoURL: null },
+    authorizedUser: { role: "member" },
+  }),
+  useOptionalAuth: () => undefined,
+}));
+vi.mock("@/context/DashboardNotificationsContext", () => ({
+  canReviewDashboardContent: () => false,
+  useDashboardNotifications: () => ({
+    pendingBlogApprovals: 0,
+    blogApprovalsState: "idle",
+    hasPendingInquiries: false,
+    inquiriesState: "idle",
   }),
 }));
 vi.mock("@/lib/api", () => ({ authenticatedFetch: vi.fn() }));
 vi.mock("@/app/calendar/api", () => ({ fetchPublicEvents: vi.fn() }));
 vi.mock("firebase/firestore", () => ({
+  and: vi.fn((...constraints: unknown[]) => ({ constraints })),
   collection: vi.fn(() => ({})),
-  limit: vi.fn((value) => value),
-  query: vi.fn((...values) => values),
+  getCountFromServer: firestore.getCountFromServer,
+  limit: vi.fn((value: number) => value),
   onSnapshot: firestore.onSnapshot,
+  or: vi.fn((...constraints: unknown[]) => ({ constraints })),
+  query: vi.fn((...values: unknown[]) => values),
+  where: vi.fn((...constraint: unknown[]) => ({ constraint })),
 }));
 
 function response(body: object, status = 200): Response {
@@ -29,17 +47,31 @@ function response(body: object, status = 200): Response {
   } as Response;
 }
 
-function renderPage() {
-  return render(<MemoryRouter><TeamTodayPage /></MemoryRouter>);
+function LocationDisplay() {
+  const location = useLocation();
+  return <output data-testid="current-path">{location.pathname}</output>;
 }
 
-describe("Team Today page", () => {
+function renderPage(initialEntry = "/dashboard") {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <LocationDisplay />
+      <Routes>
+        <Route path="/dashboard" element={<DashboardHome />} />
+        <Route path="/dashboard/today" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+describe("Unified Command Center daily workspace & /dashboard/today redirect", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    firestore.getCountFromServer.mockResolvedValue({ data: () => ({ count: 4 }) });
     vi.mocked(fetchPublicEvents).mockResolvedValue({
       events: [{
         id: "practice-1",
@@ -98,12 +130,14 @@ describe("Team Today page", () => {
     });
   });
 
-  it("combines the real daily team sources into accessible actions", async () => {
-    renderPage();
+  it("redirects /dashboard/today cleanly to /dashboard and combines daily team sources", async () => {
+    renderPage("/dashboard/today");
 
-    expect(screen.getByRole("heading", { name: "Team Today" })).toBeInTheDocument();
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard");
+    expect(screen.getByRole("heading", { level: 1, name: "Command Center" })).toBeInTheDocument();
     expect(await screen.findByText("Practice starts one hour later.")).toBeInTheDocument();
     expect(await screen.findByText("Sunday practice")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Priority Operational Tasks" })).toBeInTheDocument();
     expect(screen.getByText("Finish intake guard")).toBeInTheDocument();
     expect(await screen.findByAltText("Robot intake prototype on the workbench")).toHaveAttribute(
       "src",
@@ -113,7 +147,7 @@ describe("Team Today page", () => {
       "href",
       "/events/practice-1",
     );
-    expect(screen.getByRole("link", { name: /Cloud resources/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Cloud Resources/i })).toHaveAttribute(
       "href",
       "/dashboard/documents",
     );
@@ -121,9 +155,10 @@ describe("Team Today page", () => {
       "/api/photos?limit=4&includeArchived=false",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
+    expect(document.body.innerHTML).not.toContain("member-1");
   });
 
-  it("preserves truthful empty states", async () => {
+  it("preserves truthful empty states across alerts, events, tasks, and photos", async () => {
     vi.mocked(fetchPublicEvents).mockResolvedValue({ events: [], nextCursor: null });
     vi.mocked(authenticatedFetch).mockResolvedValue(response({ photos: [] }));
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response({ announcement: null })));

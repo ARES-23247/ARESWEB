@@ -50,7 +50,7 @@ export default function RobotDetailPage() {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-obsidian text-marble p-6">
         <SEO title="Robot Not Found" description="This ARES 23247 robot record does not exist or is no longer published." noindex />
-        <h2 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Robot Not Found</h2>
+        <h1 className="text-3xl font-black uppercase text-white tracking-widest font-heading mb-4">Robot Not Found</h1>
         <p className="text-marble/60 text-sm mb-8">The robot record you are looking for does not exist or has been removed.</p>
         <Link to="/robots" className="clipped-button bg-ares-red text-white uppercase text-xs">
           Back to Fleet
@@ -104,7 +104,7 @@ export default function RobotDetailPage() {
               type="button"
               onClick={() => setShowPitSheet((prev) => !prev)}
               aria-pressed={showPitSheet}
-              className="clipped-button bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/40 text-ares-gold shadow-xl text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none inline-flex items-center cursor-pointer"
+              className="clipped-button bg-ares-gold/15 hover:bg-ares-gold/25 border border-ares-gold/40 text-ares-gold hover:text-ares-gold shadow-xl text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none inline-flex items-center cursor-pointer"
             >
               <FileText aria-hidden="true" size={16} className="mr-2" />
               {showPitSheet ? "Hide Judge / Pit Sheet" : "Judge / Pit Sheet"}
@@ -124,7 +124,7 @@ export default function RobotDetailPage() {
                 href={robot.onshapeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="clipped-button bg-white/10 hover:bg-white/20 text-white shadow-xl group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                className="clipped-button bg-white/10 hover:bg-white/20 text-white hover:text-white shadow-xl group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none"
               >
                 <LinkIcon aria-hidden="true" size={16} className="mr-2 group-hover:rotate-12 transition-transform" /> View CAD Workspace
               </a>
@@ -134,7 +134,7 @@ export default function RobotDetailPage() {
                 href={activePrintables}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="clipped-button bg-[#fa6831] hover:bg-[#e05620] text-white shadow-xl shadow-[#fa6831]/20 group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center"
+                className="clipped-button bg-ares-gold hover:bg-ares-bronze text-obsidian shadow-xl shadow-ares-gold/15 group text-xs uppercase font-extrabold focus:ring-2 focus:ring-ares-cyan focus:outline-none flex items-center"
               >
                 <Layers aria-hidden="true" size={16} className="mr-2 group-hover:scale-110 transition-transform" /> 3D Printable Parts
               </a>
@@ -338,14 +338,14 @@ export default function RobotDetailPage() {
 
                 {isTrustedPrintablesUrl(activePrintables) && (
                   <div className="pt-2 border-t border-white/5">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#fa6831] block mb-2 font-heading">3D Printable Models</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-gold block mb-2 font-heading">3D Printable Models</span>
                     <a
                       href={activePrintables}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-[#fa6831]/10 hover:bg-[#fa6831]/20 border border-[#fa6831]/30 ares-cut-sm text-white text-xs font-bold uppercase tracking-wider transition-colors group/link"
+                      className="flex items-center gap-3 p-3 bg-ares-gold/10 hover:bg-ares-gold/20 border border-ares-gold/35 ares-cut-sm text-white text-xs font-bold uppercase tracking-wider transition-colors group/link"
                     >
-                      <Layers aria-hidden="true" size={16} className="text-[#fa6831] group-hover/link:scale-110 transition-transform" />
+                      <Layers aria-hidden="true" size={16} className="text-ares-gold group-hover/link:scale-110 transition-transform" />
                       <span>Download on Printables</span>
                     </a>
                   </div>

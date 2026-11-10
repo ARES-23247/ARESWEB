@@ -36,7 +36,7 @@ export function UserDirectoryNotices({ success, error, zulipWarning, pendingCoun
       {pendingCount > 0 && (
         <div className="p-4 bg-ares-gold/15 border border-ares-gold/40 text-white rounded flex items-center justify-between gap-3 text-sm font-semibold animate-fade-in shadow-xl">
           <div className="flex items-center gap-3">
-            <UserCheck aria-hidden="true" size={22} className="text-ares-gold animate-pulse shrink-0" />
+            <UserCheck aria-hidden="true" size={22} className="text-ares-gold shrink-0" />
             <div>
               <span className="font-bold text-ares-gold uppercase tracking-wider text-xs block">{pendingCount} User(s) Pending Role Verification</span>
               <span className="text-marble/80 text-xs">Newly registered team members are awaiting role assignment (Admin, Mentor, or Member).</span>

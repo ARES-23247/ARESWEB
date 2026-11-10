@@ -46,4 +46,18 @@ describe("Footer social links", () => {
       document.querySelector('a[href="https://www.instagram.com/ares23247/"]'),
     ).toBeNull();
   });
+
+  it("surfaces Tournaments, Sponsors, Financial Ledger, Simulations, and Store in the footer IA", () => {
+    render(
+      <MemoryRouter>
+        <Footer />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Tournaments" })).toHaveAttribute("href", "/tournaments");
+    expect(screen.getByRole("link", { name: "Sponsors & Partners" })).toHaveAttribute("href", "/sponsors");
+    expect(screen.getByRole("link", { name: "Financial Ledger" })).toHaveAttribute("href", "/finance");
+    expect(screen.getByRole("link", { name: "Interactive Simulations" })).toHaveAttribute("href", "/academy/playground");
+    expect(screen.getByRole("link", { name: /Official Store/i })).toHaveAttribute("href", "/store");
+  });
 });

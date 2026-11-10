@@ -11,12 +11,12 @@ import { siteConfig } from "@/lib/site-config";
  * token contract).
  */
 const BRAND_COLORS: Array<{ name: string; hex: string; role: string; className: string }> = [
-  { name: "ARES Red", hex: "#C00000", role: "Primary identity and calls to action", className: "bg-[#c00000]" },
-  { name: "ARES Gold", hex: "#FFB81C", role: "Accents, highlights, and recognition", className: "bg-[#ffb81c]" },
-  { name: "ARES Cyan", hex: "#00E5FF", role: "Technical accents and focus states", className: "bg-[#00e5ff]" },
-  { name: "ARES Bronze", hex: "#CD7F32", role: "Secondary warmth and hover depth", className: "bg-[#cd7f32]" },
-  { name: "Obsidian", hex: "#1A1A1A", role: "Foundation background", className: "bg-[#1a1a1a] border border-white/20" },
-  { name: "Marble", hex: "#F9F9F9", role: "Primary text on dark surfaces", className: "bg-[#f9f9f9]" },
+  { name: "ARES Red", hex: "#C00000", role: "Primary identity and calls to action", className: "bg-ares-red" },
+  { name: "ARES Gold", hex: "#FFB81C", role: "Accents, highlights, and recognition", className: "bg-ares-gold" },
+  { name: "ARES Cyan", hex: "#00E5FF", role: "Technical accents and focus states", className: "bg-ares-cyan" },
+  { name: "ARES Bronze", hex: "#CD7F32", role: "Secondary warmth and hover depth", className: "bg-ares-bronze" },
+  { name: "Obsidian", hex: "#1A1A1A", role: "Foundation background", className: "bg-obsidian border border-white/20" },
+  { name: "Marble", hex: "#F9F9F9", role: "Primary text on dark surfaces", className: "bg-marble" },
 ];
 
 const ASSETS: Array<{ label: string; href: string; note: string }> = [

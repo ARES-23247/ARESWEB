@@ -29,7 +29,8 @@ test.describe('Dashboard Authentication & Access Control E2E tests', () => {
     await loginAs('member', 'Mobile Member');
     await page.goto('/dashboard/today');
 
-    await expect(page.getByRole('heading', { name: 'Team Today' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByText('No urgent team alert is active.')).toBeVisible();
     await expect(page.getByText('No upcoming event is currently published.')).toBeVisible();
     const viewport = await page.locator('html').evaluate((element) => ({

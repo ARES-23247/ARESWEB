@@ -60,7 +60,7 @@ export default function LocationMorgantownPage() {
             Robotics Programs in <span className="text-ares-gold">Morgantown</span>
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-red/50 transition-all">
+            <div className="ares-surface rounded-2xl p-8 hover:border-ares-red/50 transition-all">
               <div className="w-14 h-14 bg-ares-red rounded-lg flex items-center justify-center mb-6 text-white">
                 <Trophy aria-hidden="true" className="w-7 h-7" />
               </div>
@@ -69,7 +69,7 @@ export default function LocationMorgantownPage() {
                 Compete in the world&apos;s premier middle and high school robotics competition. Design, build, and program robots to compete in tournaments throughout West Virginia and beyond.
               </p>
             </div>
-            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-gold/50 transition-all">
+            <div className="ares-surface rounded-2xl p-8 hover:border-ares-gold/50 transition-all">
               <div className="w-14 h-14 bg-ares-gold/20 rounded-lg flex items-center justify-center mb-6">
                 <GraduationCap className="w-7 h-7 text-ares-gold" />
               </div>
@@ -78,7 +78,7 @@ export default function LocationMorgantownPage() {
                 Learn real-world engineering skills including CAD design, 3D printing, programming, electronics, and project management. No prior experience needed.
               </p>
             </div>
-            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-cyan/50 transition-all">
+            <div className="ares-surface rounded-2xl p-8 hover:border-ares-cyan/50 transition-all">
               <div className="w-14 h-14 bg-ares-cyan/20 rounded-lg flex items-center justify-center mb-6">
                 <Users className="w-7 h-7 text-ares-cyan" />
               </div>

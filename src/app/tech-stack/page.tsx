@@ -13,10 +13,10 @@ export default function TechStackPage() {
         description="Explore the verified frontend, Firebase services, Cloud Functions, security controls, and testing workflow behind the ARES 23247 team portal."
       />
       {/* Hero Header */}
-      <section className="py-28 bg-obsidian relative overflow-hidden flex items-center min-h-[50vh]">
+      <section className="py-16 md:py-20 bg-obsidian relative overflow-hidden flex items-center">
         <GreekMeander variant="thin" opacity="opacity-25" className="absolute top-0 left-0" />
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <p className="text-ares-bronze uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4 animate-pulse">
+          <p className="text-ares-gold uppercase tracking-[0.4em] text-[10px] font-black font-heading mb-4">
             Championship Architecture
           </p>
           <h1 className="text-4xl md:text-7xl font-black text-white mb-6 uppercase tracking-tight font-heading">
@@ -102,7 +102,7 @@ export default function TechStackPage() {
             ].map((tech) => (
               <div
                 key={tech.title}
-                className="bg-white/5 border border-white/10 p-8 rounded-2xl hero-card hover:border-white/20 hover:shadow-[0_10px_30px_rgba(255,255,255,0.02)] transition-all flex flex-col justify-between group"
+                className="ares-surface p-8 rounded-2xl hero-card hover:border-white/25 transition-all flex flex-col justify-between group"
               >
                 <div className="space-y-6">
                   <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">

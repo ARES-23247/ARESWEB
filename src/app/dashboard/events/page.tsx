@@ -533,7 +533,7 @@ export default function EventsManagementPage({
           <header className="border-b border-white/5 pb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
             <div>
               <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
-                <Activity size={12} className="animate-pulse" /> Operational Timelines
+                <Activity size={12} aria-hidden="true" /> Operational Timelines
               </p>
               <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading flex flex-wrap items-center gap-3">
                 Manage Events
@@ -557,7 +557,7 @@ export default function EventsManagementPage({
               <div className="flex gap-3">
                 <button
                   onClick={() => setIsLocationManagerOpen(true)}
-                  className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
+                  className="clipped-button bg-black/40 hover:bg-black/60 text-marble/80 hover:text-white border border-white/10 hover:border-white/20 font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl focus:ring-2 focus:ring-ares-cyan focus:outline-none"
                 >
                   <MapPin size={16} className="text-ares-gold" /> Locations
                 </button>

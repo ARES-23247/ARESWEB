@@ -11,10 +11,11 @@ import {
   Calculator,
   Layers,
   GraduationCap,
-  ShoppingBag,
   Hexagon,
   Gamepad2,
   Flower2,
+  Heart,
+  ShieldCheck,
   LucideIcon
 } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
@@ -32,12 +33,15 @@ export interface NavItemConfig {
 export const TEAM_LINKS: NavItemConfig[] = [
   { label: "Who We Are", to: "/about", icon: Users, iconColor: "text-ares-cyan" },
   { label: "Seasons & Legacy", to: "/seasons", icon: Trophy, iconColor: "text-ares-gold" },
+  { label: "Tournaments", to: "/tournaments", icon: Trophy, iconColor: "text-ares-bronze" },
   { label: "Outreach & Impact", to: "/outreach", icon: Sparkles, iconColor: "text-ares-red" },
-  { label: "Photo Gallery", to: "/gallery", icon: ImageIcon, iconColor: "text-ares-red" },
+  { label: "Sponsors & Partners", to: "/sponsors", icon: Heart, iconColor: "text-ares-red" },
+  { label: "Financial Ledger", to: "/finance", icon: ShieldCheck, iconColor: "text-ares-cyan" },
+  { label: "Photo Gallery", to: "/gallery", icon: ImageIcon, iconColor: "text-ares-red", dividerBefore: true },
   { label: "Video Gallery", to: "/videos", icon: Play, iconColor: "text-ares-red" },
   { label: "Team Blog", to: "/blog", icon: BookOpen, iconColor: "text-ares-bronze" },
-  { label: "Join the Team", to: "/join", icon: Check, iconColor: "text-ares-cyan" },
-  { label: "Team Calendar", to: "/calendar", icon: CalendarIcon, iconColor: "text-ares-red", dividerBefore: true },
+  { label: "Join the Team", to: "/join", icon: Check, iconColor: "text-ares-cyan", dividerBefore: true },
+  { label: "Team Calendar", to: "/calendar", icon: CalendarIcon, iconColor: "text-ares-red" },
 ];
 
 export const ARCADE_GAMES = [
@@ -56,12 +60,12 @@ export const ARCADE_LINKS: NavItemConfig[] = [
 ];
 
 export const RESOURCE_LINKS: NavItemConfig[] = [
-  { label: "BIOBUZZ Score Calculator", to: "/biobuzz/score-calculator", icon: Calculator, iconColor: "text-ares-gold" },
-  { label: "Tech Stack", to: "/tech-stack", icon: Cpu, iconColor: "text-ares-cyan" },
   { label: "Robots Fleet", to: "/robots", icon: Cpu, iconColor: "text-ares-bronze" },
+  { label: "Tech Stack", to: "/tech-stack", icon: Cpu, iconColor: "text-ares-cyan" },
+  { label: "BIOBUZZ Score Calculator", to: "/biobuzz/score-calculator", icon: Calculator, iconColor: "text-ares-gold" },
   { label: "3D Models Archive", href: "https://www.printables.com/@ARESFTC_3784306", icon: Layers, iconColor: "text-ares-red" },
   { label: "CAD Workspace", href: siteConfig.urls.onshape, icon: Layers, iconColor: "text-ares-gold" },
   { label: "ARES Academy", to: "/academy", icon: GraduationCap, iconColor: "text-ares-gold", dividerBefore: true },
+  { label: "Interactive Simulations", to: "/academy/playground", icon: Play, iconColor: "text-ares-cyan" },
   { label: "ARESLib", to: "/docs", icon: BookOpen, iconColor: "text-ares-red", isAresLib: true },
-  { label: "Official Store", to: "/store", icon: ShoppingBag, iconColor: "text-ares-bronze" },
 ];

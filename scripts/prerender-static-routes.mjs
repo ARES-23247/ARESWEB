@@ -27,8 +27,8 @@ export const staticPageMetadata = [
     ["Manual V1 scoring", "Based on sections 10.5–10.6 of the 2026–2027 BIOBUZZ Competition Manual V1. Championship RP thresholds are TBA in V1; enter event-specific thresholds when announced. Practice estimates do not model cards or disqualifications."],
   ]],
   ["/buzzhex", "BUZZHEX · Connect the hive", "Play 11 × 11 Hex with yellow and black Buzzello tiles on one device.", false, [["Connect your edges", "Two players take turns placing tiles. Connect your opposite edges to win. Find more games in the <a href=\"/arcade\">ARES Arcade</a>."]]],
-  ["/arcade", "ARES Arcade", "Play BUZZHEX, BUZZLE, BUZZELLO, Pollinator Pile-Up from ARES 23247.", false, [
-    ["Choose your next game", "Connect the hive in <a href=\"/buzzhex\">BUZZHEX</a>. Build words in BUZZLE, claim the hexagonal board in BUZZELLO, or balance critters in Pollinator Pile-Up. Visit <a href=\"/buzzle\">BUZZLE</a>, <a href=\"/buzzello\">BUZZELLO</a>, or <a href=\"/pollen\">Pollinator Pile-Up</a>."],
+  ["/arcade", "ARES Arcade", "Play BIOBUZZ Simulator, Waggle Way, BUZZHEX, BUZZLE, BUZZELLO, and Pollinator Pile-Up from ARES 23247.", false, [
+    ["Choose your next game", "Drive and test autonomous routines in the <a href=\"/biobuzz/simulator\">BIOBUZZ Simulator</a>, connect the hive in <a href=\"/buzzhex\">BUZZHEX</a>, build words in <a href=\"/buzzle\">BUZZLE</a>, claim the hexagonal board in <a href=\"/buzzello\">BUZZELLO</a>, guide the swarm in Waggle Way, or balance critters in <a href=\"/pollen\">Pollinator Pile-Up</a>."],
     ["Tools for physical play", "Check legal BUZZLE words, browse the two-letter list, and find definitions in <a href=\"/buzzle/word-tools\">BUZZLE Word Tools</a>."],
   ]],
   ["/pollen", "Pollinator Pile-Up", "Balance Appalachian critters on a blossom. Play solo, share a device, or challenge Ranger Dave.", false, [
@@ -81,7 +81,7 @@ export const staticPageMetadata = [
     ["Team photos", "A curated gallery of published photographs from build seasons, competitions, and community outreach. For match footage and reveal videos, visit the <a href=\"/videos\">video hub</a>."],
   ]],
   ["/join", "Join the Team", "Apply to join ARES 23247 as a student member, mentor, or volunteer.", false, [
-    ["Join ARES 23247", "Students in grades 7–12 in and around Morgantown, West Virginia can apply to join the team — no robotics experience required. Adults can support the team as technical mentors, business mentors, or volunteers. <a href=\"/join\">Start your application</a> or read about <a href=\"/robotics-west-virginia\">robotics opportunities across West Virginia</a>."],
+    ["Join ARES 23247", "Students in grades 6–12 in and around Morgantown, West Virginia can apply to join the team — no robotics experience required. Adults can support the team as technical mentors, business mentors, or volunteers. <a href=\"/join\">Start your application</a> or read about <a href=\"/robotics-west-virginia\">robotics opportunities across West Virginia</a>."],
   ]],
   ["/leaderboard", "Team Recognition", "Learn how ARES 23247 recognizes teamwork, community impact, and growth.", false, [
     ["Team recognition", "ARES 23247 celebrates members for teamwork, community impact, technical growth, and leadership throughout the season. This page explains the recognition categories and how recipients are chosen. See the results in our <a href=\"/seasons\">season history</a>."],
@@ -108,8 +108,8 @@ export const staticPageMetadata = [
   ["/sponsors", "Our Sponsors", "Meet the organizations supporting ARES 23247 youth robotics and STEM education.", false, [
     ["Sponsors and partners", "ARES 23247 is powered by organizations and families who fund parts, tools, registration, and travel for student engineers. Meet our current sponsors and learn how sponsorship supports West Virginia STEM education. Support details are also in the <a href=\"/finance\">public finance ledger</a>."],
   ]],
-  ["/store", "Team Store", "Official ARES 23247 merchandise and team fundraising information.", false, [
-    ["Team merchandise", "Official ARES 23247 merchandise. Purchases directly support the team's parts, tools, and competition travel — see the <a href=\"/finance\">finance ledger</a> for how funds are used."],
+  ["/store", "Team Store", "Official ARES 23247 merchandise previews and team fundraising information; online ordering is not open yet.", false, [
+    ["Team merchandise preview", "Online merchandise ordering is not open yet while ARES 23247 finalizes apparel fulfillment. Supporters who want to back student parts, tools, and competition travel right now can <a href=\"/sponsors\">become a team sponsor</a>, <a href=\"/join\">contact the team</a>, or review how every dollar is used in our <a href=\"/finance\">public financial ledger</a>."],
   ]],
   ["/tech-stack", "Technical Stack & Cloud Architecture", "Explore the technology and cloud architecture behind the ARES 23247 team portal.", false, [
     ["How this site is built", "This portal is a Vite + React application on Firebase Hosting with Cloud Functions, Firestore, and Storage — with security, accessibility, and testing gates in CI. This page documents the stack and the engineering practices behind it. Student projects like <a href=\"/academy\">ARES Academy</a> are built on the same principles."],

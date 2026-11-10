@@ -66,6 +66,26 @@ describe("Quick Jump regressions", () => {
     expect(screen.getByText("/academy/playground")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("exposes complete role-gated Command Center destinations in Quick Jump", () => {
+    const view = render(<MemoryRouter><CommandPalette isSignedIn={true} userRole="member" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Open quick jump search" }));
+    expect(screen.getByRole("option", { name: /Zulip Chat Hub/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Cloud Resources & Drive/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Video Library Manager/i })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Tournaments & Scouting Manager/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Finance Ledger Manager/i })).not.toBeInTheDocument();
+
+    view.rerender(<MemoryRouter><CommandPalette isSignedIn={true} userRole="mentor" /></MemoryRouter>);
+    expect(screen.getByRole("option", { name: /Tournaments & Scouting Manager/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Seasons & Awards Manager/i })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Finance Ledger Manager/i })).not.toBeInTheDocument();
+
+    view.rerender(<MemoryRouter><CommandPalette isSignedIn={true} userRole="admin" /></MemoryRouter>);
+    expect(screen.getByRole("option", { name: /Finance Ledger Manager/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Recruitment & Sponsor Inquiries/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Team User Roster & Roles/i })).toBeInTheDocument();
+  });
 });
 
 const match: TournamentMatch = {

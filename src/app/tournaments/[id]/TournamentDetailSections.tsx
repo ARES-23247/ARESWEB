@@ -523,7 +523,7 @@ export function TournamentAnalyticsSidebar({
           <span className="text-[10px] text-ares-gold font-bold uppercase flex items-center gap-1.5">
             <Activity
               size={10}
-              className="text-ares-gold animate-pulse"
+              className="text-ares-gold"
               aria-hidden="true"
             />
             Showing recorded data

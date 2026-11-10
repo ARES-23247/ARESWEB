@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
@@ -146,5 +146,78 @@ describe("DashboardSidebar profile DTO", () => {
         name: /Cloud Resources 4 pending cloud resources awaiting mentor approval/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it("organizes portal navigation into collapsible role-accurate sections and removes duplicate Team Today", async () => {
+    vi.mocked(useDashboardNotifications).mockReturnValue({
+      pendingBlogApprovals: 3,
+      blogApprovalsState: "connected",
+      pendingEventApprovals: 0,
+      eventApprovalsState: "connected",
+      pendingAcademyApprovals: 2,
+      academyApprovalsState: "connected",
+      pendingAreslibApprovals: 0,
+      areslibApprovalsState: "connected",
+      pendingDocumentApprovals: 0,
+      documentApprovalsState: "connected",
+      hasPendingInquiries: false,
+      inquiriesState: "connected",
+    });
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({ exists: false, profile: { nickname: "", avatar: "" } }),
+    } as Response);
+
+    // 1. Member sees Overview & Tasks and Publishing & Media, no Team Today, no mentor/admin sections
+    const memberView = renderSidebar();
+    expect(screen.queryByRole("link", { name: /Team Today/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Overview & Tasks/i })).toHaveAttribute("aria-expanded", "true");
+    const publishingToggle = screen.getByRole("button", { name: /Publishing & Media/i });
+    expect(publishingToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button", { name: /Competition & Community/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Administration/i })).not.toBeInTheDocument();
+
+    // Collapsing Publishing & Media unmounts its links and surfaces summary count (3 + 2 = 5)
+    fireEvent.click(publishingToggle);
+    expect(publishingToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: /Manage Blogs/i })).not.toBeInTheDocument();
+    expect(publishingToggle).toHaveTextContent("5");
+    memberView.unmount();
+
+    // 2. Mentor sees Competition & Community, but NOT Administration / Inquiries Hub
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "mentor_uid", displayName: "Mentor", photoURL: null },
+      authorizedUser: { role: "mentor" },
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+      loginWithMockUser: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
+    const mentorView = renderSidebar();
+    expect(screen.getByRole("button", { name: /Competition & Community/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Administration/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Inquiries Hub/i })).not.toBeInTheDocument();
+    mentorView.unmount();
+
+    // 3. Coach/Admin sees all 4 sections including Inquiries Hub and Manage Users
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "coach_uid", displayName: "Coach", photoURL: null },
+      authorizedUser: { role: "coach" },
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+      loginWithMockUser: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
+    renderSidebar();
+    expect(screen.getByRole("button", { name: /Administration/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: /Inquiries Hub/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Manage Users/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Finance Ledger/i })).toBeInTheDocument();
   });
 });

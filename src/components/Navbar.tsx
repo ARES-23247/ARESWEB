@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
-  ShoppingBag,
   GraduationCap,
   Gamepad2,
+  Heart,
 } from "lucide-react";
 import { GreekMeander } from "./GreekMeander";
 import { useAuth } from "@/context/AuthContext";
@@ -89,7 +89,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden xl:flex items-center gap-4 2xl:gap-6 text-sm font-bold uppercase tracking-widest animate-fade-in">
+        <div className="hidden xl:flex items-center gap-3.5 2xl:gap-5 text-xs 2xl:text-sm font-bold uppercase tracking-wider 2xl:tracking-widest animate-fade-in">
           {/* 1. Team Dropdown */}
           <NavDropdown
             label="Team"
@@ -111,31 +111,38 @@ export default function Navbar() {
           {/* 3. High-Priority Links */}
           <Link
             to="/calendar"
-            className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
+            className="flex min-h-11 items-center gap-1.5 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
           >
-            <CalendarIcon size={14} /> Calendar
-          </Link>
-
-          <Link
-            to="/store"
-            className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
-          >
-            <ShoppingBag size={14} /> Store
+            <CalendarIcon aria-hidden="true" size={14} /> Calendar
           </Link>
 
           <Link
             to="/academy"
             aria-label="Academy"
-            className="flex items-center gap-2 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
+            className="flex min-h-11 items-center gap-1.5 text-white hover:text-ares-gold transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1"
           >
-            <GraduationCap size={14} /> Academy
+            <GraduationCap aria-hidden="true" size={14} /> Academy
           </Link>
 
           <Link
             to="/arcade"
-            className="flex min-h-11 items-center gap-2 rounded px-1 text-white transition-colors hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            className="flex min-h-11 items-center gap-1.5 rounded px-1 text-white transition-colors hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
           >
             <Gamepad2 aria-hidden="true" size={14} /> Arcade
+          </Link>
+
+          <Link
+            to="/sponsors"
+            className="flex min-h-11 items-center gap-1.5 rounded px-1 text-white transition-colors hover:text-ares-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+          >
+            <Heart aria-hidden="true" size={14} className="text-ares-gold" /> Sponsors
+          </Link>
+
+          <Link
+            to="/join"
+            className="flex min-h-9 items-center gap-1.5 bg-ares-red px-3 py-1.5 text-xs font-black uppercase tracking-widest text-white shadow-md transition-colors hover:bg-ares-gold hover:text-obsidian focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm"
+          >
+            Join
           </Link>
 
           <Link

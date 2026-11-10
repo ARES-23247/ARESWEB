@@ -128,7 +128,7 @@ export default function TournamentsFeedPage() {
           <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
             <div className="relative w-20 h-20 bg-ares-red/15 border border-ares-red/45 ares-cut flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(192,0,0,0.2)]">
               <Lock
-                className="text-ares-gold w-8 h-8 animate-pulse"
+                className="text-ares-gold w-8 h-8"
                 aria-hidden="true"
               />
             </div>

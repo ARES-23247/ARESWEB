@@ -72,7 +72,7 @@ export default function RoboticsWestVirginiaPage() {
             participate in each level, and new teams form every season.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-cyan/50 transition-all">
+            <div className="ares-surface rounded-2xl p-8 hover:border-ares-cyan/50 transition-all">
               <div className="w-14 h-14 bg-ares-cyan/20 rounded-lg flex items-center justify-center mb-6">
                 <Compass aria-hidden="true" className="w-7 h-7 text-ares-cyan" />
               </div>
@@ -82,7 +82,7 @@ export default function RoboticsWestVirginiaPage() {
                 LEGO prototype, and present their ideas. A welcoming first step into competitive robotics.
               </p>
             </div>
-            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-red/50 transition-all">
+            <div className="ares-surface rounded-2xl p-8 hover:border-ares-red/50 transition-all">
               <div className="w-14 h-14 bg-ares-red rounded-lg flex items-center justify-center mb-6 text-white">
                 <Wrench aria-hidden="true" className="w-7 h-7" />
               </div>
@@ -93,7 +93,7 @@ export default function RoboticsWestVirginiaPage() {
                 competes in.
               </p>
             </div>
-            <div className="bg-obsidian p-8 border border-white/10 hover:border-ares-gold/50 transition-all">
+            <div className="ares-surface rounded-2xl p-8 hover:border-ares-gold/50 transition-all">
               <div className="w-14 h-14 bg-ares-gold/20 rounded-lg flex items-center justify-center mb-6">
                 <Rocket aria-hidden="true" className="w-7 h-7 text-ares-gold" />
               </div>
@@ -108,31 +108,31 @@ export default function RoboticsWestVirginiaPage() {
         </div>
       </section>
 
-      {/* Find a team */}
-      <section className="py-20 bg-obsidian">
+      {/* Find a team (Marble Contrast Band) */}
+      <section className="py-20 marble-band border-y border-ares-bronze/30">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-6 font-heading uppercase">
-                Find a Robotics Team <span className="text-ares-gold">Near You</span>
+              <h2 className="text-3xl md:text-4xl font-black text-obsidian mb-6 font-heading uppercase">
+                Find a Robotics Team <span className="text-ares-red">Near You</span>
               </h2>
-              <p className="text-marble/80 leading-relaxed mb-4">
+              <p className="text-obsidian/85 leading-relaxed mb-4">
                 West Virginia robotics teams meet in schools, libraries, 4-H clubs, and community
                 centers across the state. The official FIRST team and event search lists programs by
                 location and age group, and The Orange Alliance tracks FIRST Tech Challenge team
                 histories and results.
               </p>
-              <p className="text-marble/80 leading-relaxed">
+              <p className="text-obsidian/85 leading-relaxed">
                 Many teams — including ours — welcome students from surrounding communities, so check
                 nearby towns even if your county has no team yet.
               </p>
             </div>
-            <div className="bg-white/5 border border-white/10 p-8 space-y-4">
+            <div className="marble-card bg-white rounded-2xl p-8 space-y-4 shadow-md">
               <a
                 href={EXTERNAL_LINKS.firstFinder}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                className="flex items-center gap-3 text-ares-red font-bold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
               >
                 <Search aria-hidden="true" className="w-5 h-5 shrink-0" />
                 Search FIRST teams and events (firstinspires.org)
@@ -141,16 +141,16 @@ export default function RoboticsWestVirginiaPage() {
                 href={EXTERNAL_LINKS.toa}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                className="flex items-center gap-3 text-ares-red font-bold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
               >
                 <Search aria-hidden="true" className="w-5 h-5 shrink-0" />
                 Browse FIRST Tech Challenge teams (The Orange Alliance)
               </a>
               <Link
                 to="/join"
-                className="flex items-center gap-3 text-ares-gold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
+                className="flex items-center gap-3 text-obsidian font-bold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded"
               >
-                <Users aria-hidden="true" className="w-5 h-5 shrink-0" />
+                <Users aria-hidden="true" className="w-5 h-5 shrink-0 text-ares-red" />
                 Ask ARES 23247 about joining from your town
               </Link>
             </div>
@@ -159,7 +159,7 @@ export default function RoboticsWestVirginiaPage() {
       </section>
 
       {/* Start a team */}
-      <section className="py-20 bg-obsidian border-t border-white/10">
+      <section className="py-20 bg-obsidian">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <div className="w-14 h-14 bg-ares-red rounded-lg flex items-center justify-center mx-auto mb-6 text-white">
             <GraduationCap aria-hidden="true" className="w-7 h-7" />
@@ -190,7 +190,7 @@ export default function RoboticsWestVirginiaPage() {
             Join a <span className="bg-ares-red px-2 text-white">West Virginia Robotics Team</span>
           </h2>
           <p className="text-marble/80 text-lg mb-10 max-w-2xl mx-auto">
-            ARES 23247 trains in Morgantown and welcomes students in grades 7–12 plus mentors and
+            ARES 23247 trains in Morgantown and welcomes students in grades 6–12 plus mentors and
             volunteers from across North Central West Virginia.
           </p>
           <Link

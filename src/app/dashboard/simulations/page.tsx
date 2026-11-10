@@ -19,7 +19,7 @@ export default function SimulationsDashboardPage() {
       <header className="border-b border-white/5 pb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-2 font-heading flex items-center gap-2">
-            <Cpu size={12} className="animate-pulse" /> Interactive Tools
+            <Cpu size={12} aria-hidden="true" /> Interactive Tools
           </p>
           <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter font-heading">
             Simulations Manager
