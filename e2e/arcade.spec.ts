@@ -10,6 +10,7 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   await arcade.click();
   await expect(page).toHaveURL(/\/arcade$/);
   await expect(page.getByRole("heading", { name: "ARES Arcade", exact: true })).toBeVisible();
+  await expect(page.getByText(/no chat, public lobby, player profile, or spectator mode/i)).toBeVisible();
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--obsidian").trim())).toBe("#1a1a1a");
   await expect(page.getByRole("link", { name: "Play BUZZLE", exact: true })).toHaveCSS("background-color", "rgb(192, 0, 0)");
   const main = page.getByRole("main").last();

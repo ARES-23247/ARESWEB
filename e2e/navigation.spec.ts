@@ -81,13 +81,17 @@ test.describe("Navigation & Accessibility E2E tests", () => {
       analyticsSection.getByRole("link", { name: "Terms" }),
     ).toHaveAttribute("href", "/terms");
 
-    const gamesSection = page.getByRole("region", { name: "ARES Games" });
+    const openSourceSection = page.getByRole("region", {
+      name: "Open-Source Software & Learning",
+    });
     await expect(
-      gamesSection.getByRole("heading", { name: "ARES Games" }),
+      openSourceSection.getByRole("heading", {
+        name: "Open-Source Software & Learning",
+      }),
     ).toBeVisible();
     await expect(
-      gamesSection.getByRole("link", { name: "Play BUZZELLO" }),
-    ).toHaveAttribute("href", "/buzzello");
+      page.getByRole("heading", { name: "ARES Games" }),
+    ).toHaveCount(0);
   });
 
   test("should have a working skip link for accessibility", async ({
@@ -181,11 +185,11 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     expect(reflow.documentWidth).toBeLessThanOrEqual(reflow.viewportWidth);
     expect(reflow.linesFit).toBe(true);
 
-    const gamesSection = page.getByRole("region", { name: "ARES Games" });
+    const studioSection = page.getByLabel("ARES Robotics Studio");
     await expect(
-      gamesSection.getByRole("link", { name: "Play BUZZELLO" }),
+      studioSection.getByRole("link", { name: "Privacy" }),
     ).toBeVisible();
-    const gamesBounds = await gamesSection.evaluate((element) => {
+    const studioBounds = await studioSection.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
         left: rect.left,
@@ -194,10 +198,10 @@ test.describe("Navigation & Accessibility E2E tests", () => {
         documentWidth: document.documentElement.scrollWidth,
       };
     });
-    expect(gamesBounds.left).toBeGreaterThanOrEqual(0);
-    expect(gamesBounds.right).toBeLessThanOrEqual(gamesBounds.viewportWidth + 1);
-    expect(gamesBounds.documentWidth).toBeLessThanOrEqual(
-      gamesBounds.viewportWidth,
+    expect(studioBounds.left).toBeGreaterThanOrEqual(0);
+    expect(studioBounds.right).toBeLessThanOrEqual(studioBounds.viewportWidth + 1);
+    expect(studioBounds.documentWidth).toBeLessThanOrEqual(
+      studioBounds.viewportWidth,
     );
 
     const trigger = page.getByRole("button", { name: "Open navigation menu" });

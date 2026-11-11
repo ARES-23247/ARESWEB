@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
 import Home from "@/app/page";
+import ArcadePage from "@/app/arcade/page";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicEvents } from "@/app/calendar/api";
 import {
@@ -30,7 +32,15 @@ vi.mock("@/lib/publicContentApi", async (importOriginal) => {
   };
 });
 
-describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
+function renderWithProviders(ui: React.ReactElement) {
+  return render(
+    <HelmetProvider>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </HelmetProvider>,
+  );
+}
+
+describe("Home page branding, decluttered IA, and OAuth truthfulness", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchPublicEvents).mockResolvedValue({ events: [], nextCursor: null });
@@ -51,12 +61,8 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
 
   afterEach(cleanup);
 
-  it("renders public-first Hero CTAs, OAuth Studio compliance, all 6 Arcade games, and zero auth-walled links when signed out", async () => {
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>,
-    );
+  it("renders a focused 5-band public homepage with unified Open-Source/OAuth Studio compliance and no Arcade grid", async () => {
+    renderWithProviders(<Home />);
 
     // Primary team identity
     expect(screen.getByText("Appalachian Robotics & Engineering Society")).toBeInTheDocument();
@@ -75,7 +81,7 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
       "/calendar",
     );
 
-    // Truthful empty states in "Live from ARES"
+    // Truthful concise empty states in "Live from ARES"
     await waitFor(() => {
       expect(
         screen.getByText(/No upcoming public events are currently published/i),
@@ -85,29 +91,41 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
       screen.getByText(/No engineering dispatches are currently published/i),
     ).toBeInTheDocument();
 
-    // ARES Robotics Studio product section & Google OAuth compliance
+    // Unified Open-Source Software & Learning band + compact OAuth Studio panel
+    const openSourceSection = screen.getByRole("region", {
+      name: "Open-Source Software & Learning",
+    });
+    expect(within(openSourceSection).getByRole("link", { name: /ARES Academy/i })).toHaveAttribute(
+      "href",
+      "/academy",
+    );
+    expect(within(openSourceSection).getByRole("link", { name: /ARESLib Docs/i })).toHaveAttribute(
+      "href",
+      "/docs",
+    );
     expect(
-      screen.getByRole("heading", { name: "ARES Robotics Studio" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Local-first:/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
-    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+      within(openSourceSection).getByRole("link", { name: /Simulation Playground/i }),
+    ).toHaveAttribute("href", "/academy/playground");
 
-    // Full 6-game ARES Games collection + online safety notice
-    expect(screen.getByRole("heading", { name: "ARES Games" })).toBeInTheDocument();
-    for (const [label, href] of [
-      ["Play BIOBUZZ Simulator", "/biobuzz/simulator"],
-      ["Play Waggle Way", "/waggle-way"],
-      ["Play BUZZHEX", "/buzzhex"],
-      ["Play BUZZLE", "/buzzle"],
-      ["Play BUZZELLO", "/buzzello"],
-      ["Play Pollinator Pile-Up", "/pollen"],
-    ] as const) {
-      expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
-    }
+    const studioRegion = within(openSourceSection).getByRole("region", {
+      name: "ARES Robotics Studio",
+    });
     expect(
-      screen.getByText(/No chat, public lobby, player profile, or spectator mode/i),
+      within(studioRegion).getByRole("heading", { name: "ARES Robotics Studio" }),
     ).toBeInTheDocument();
+    expect(within(studioRegion).getByText(/Local-first:/i)).toBeInTheDocument();
+    expect(within(studioRegion).getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
+    expect(within(studioRegion).getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+
+    // Games section is removed from `/`
+    expect(screen.queryByRole("heading", { name: /ARES Games/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Play BUZZELLO/i })).toBeNull();
 
     // Signed-out homepage must not expose broken /dashboard/* links
     const allLinks = screen.getAllByRole("link");
@@ -116,8 +134,7 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
     }
   });
 
-  it("preserves signed-in member quick-jump to Portal alongside View Schedule", async () => {
-    const logout = vi.fn();
+  it("renders a clean signed-in Hero CTA row without duplicating Navbar profile/logout widgets", async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: {
         uid: "member-1",
@@ -133,34 +150,51 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
       authError: null,
       clearAuthError: vi.fn(),
       loginWithGoogle: vi.fn(),
-      logout,
+      logout: vi.fn(),
       loginWithMockUser: vi.fn(),
     });
 
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>,
-    );
+    renderWithProviders(<Home />);
 
-    expect(screen.getByText("Mountaineer Coder")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to Portal" })).toHaveAttribute(
       "href",
       "/dashboard",
+    );
+    expect(screen.getByRole("link", { name: "Explore Robots & Legacy" })).toHaveAttribute(
+      "href",
+      "/robots",
     );
     expect(screen.getByRole("link", { name: "View Schedule" })).toHaveAttribute(
       "href",
       "/calendar",
     );
-
-    fireEvent.click(screen.getByRole("button", { name: "Logout" }));
-    expect(logout).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Active Session")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Logout" })).toBeNull();
 
     await waitFor(() => {
       expect(
         screen.getByText(/No upcoming public events are currently published/i),
       ).toBeInTheDocument();
     });
+  });
+
+  it("keeps all 6 games and the online matchmaking youth-safety notice on /arcade", () => {
+    renderWithProviders(<ArcadePage />);
+
+    expect(screen.getByRole("heading", { name: "ARES Arcade" })).toBeInTheDocument();
+    for (const [label, href] of [
+      ["Play BIOBUZZ Simulator", "/biobuzz/simulator"],
+      ["Play Waggle Way", "/waggle-way"],
+      ["Play BUZZHEX", "/buzzhex"],
+      ["Play BUZZLE", "/buzzle"],
+      ["Play BUZZELLO", "/buzzello"],
+      ["Play Pollinator Pile-Up", "/pollen"],
+    ] as const) {
+      expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
+    }
+    expect(
+      screen.getByText(/no chat, public lobby, player profile, or spectator mode/i),
+    ).toBeInTheDocument();
   });
 
   it("renders verified Live from ARES event, blog dispatch, and season/sponsor records", async () => {
@@ -207,11 +241,7 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
       { name: "Appalachian Photonics", tier: "Silver" },
     ]);
 
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>,
-    );
+    renderWithProviders(<Home />);
 
     await waitFor(() => {
       expect(
@@ -242,11 +272,7 @@ describe("Home page branding, public-first IA, and OAuth truthfulness", () => {
     vi.mocked(fetchPublicBlogPosts).mockRejectedValueOnce(new Error("HTTP 502: Bad Gateway"));
     vi.mocked(fetchPublicSeasons).mockRejectedValueOnce(new Error("HTTP 500: Internal Error"));
 
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>,
-    );
+    renderWithProviders(<Home />);
 
     await waitFor(() => {
       expect(screen.getByText("Upcoming schedule unavailable")).toBeInTheDocument();

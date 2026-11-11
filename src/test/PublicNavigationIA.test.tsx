@@ -44,6 +44,9 @@ describe("Public navigation IA and sponsor DTO helper", () => {
     expect(screen.getByRole("link", { name: "Sponsors" })).toHaveAttribute("href", "/sponsors");
     expect(screen.getByRole("link", { name: "Join" })).toHaveAttribute("href", "/join");
     expect(nav.querySelector('a[href="/store"]')).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "ARES Documentation Library" }),
+    ).toBeNull();
 
     // Academy must immediately precede Arcade in desktop navigation
     const academyLink = screen.getByRole("link", { name: "Academy" });
@@ -56,12 +59,13 @@ describe("Public navigation IA and sponsor DTO helper", () => {
     expect(screen.getByRole("link", { name: "Sponsors & Partners" })).toHaveAttribute("href", "/sponsors");
     expect(screen.getByRole("link", { name: "Financial Ledger" })).toHaveAttribute("href", "/finance");
 
-    // Resources dropdown includes Interactive Simulations and omits Official Store
+    // Resources dropdown includes Interactive Simulations and ARESLib while omitting Official Store
     fireEvent.click(screen.getByRole("button", { name: "Resources" }));
     expect(screen.getByRole("link", { name: "Interactive Simulations" })).toHaveAttribute(
       "href",
       "/academy/playground",
     );
+    expect(screen.getByRole("link", { name: /ARES\s*Lib/i })).toHaveAttribute("href", "/docs");
     expect(RESOURCE_LINKS.some((item) => item.to === "/store")).toBe(false);
     expect(TEAM_LINKS[0]?.to).toBe("/about");
   });

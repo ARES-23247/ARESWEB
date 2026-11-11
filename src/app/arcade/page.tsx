@@ -8,12 +8,15 @@ import { GamePrintablesLink } from "@/components/games/GamePrintablesLink";
 export default function ArcadePage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-16">
-      <SEO title="ARES Arcade" description="Play BUZZHEX, BUZZLE, BUZZELLO, Pollinator Pile-Up, and the Waggle Way beta. Explore word games, hexagonal strategy, and physics challenges from ARES 23247." />
+      <SEO title="ARES Arcade" description="Play BIOBUZZ Simulator, Waggle Way, BUZZHEX, BUZZLE, BUZZELLO, and Pollinator Pile-Up — original robotics simulations, hexagonal strategy, word, and physics games built by ARES 23247." />
       <PageHeader
         eyebrow={<><Gamepad2 aria-hidden="true" size={18} /> Play, think, try again</>}
         title="ARES Arcade"
-        description="Solve a word challenge, battle for the board, stack critters, or guide a hive to the flowers. Pick a game and make your next move."
+        description="Drive the BIOBUZZ field, guide a hive, solve a word challenge, battle for the hex board, or stack critters. Pick a game and make your next move."
       />
+      <p className="mt-3 text-xs leading-relaxed text-marble/70 sm:text-sm">
+        Online rooms use private codes or bounded matchmaking — no chat, public lobby, player profile, or spectator mode.
+      </p>
       <section aria-label="Games" className="my-8 grid gap-5 md:grid-cols-2">
         {ARCADE_GAMES.map(({ label, to, icon: Icon, iconColor, description, modes }) => (
           <article key={to} className="flex min-w-0 flex-col rounded-2xl border border-ares-bronze/30 bg-white/5 p-6 sm:p-8">
