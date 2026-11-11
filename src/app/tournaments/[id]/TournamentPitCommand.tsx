@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   AlertTriangle,
   BatteryCharging,
@@ -101,7 +101,41 @@ export function TournamentPitCommand({
     setTriageItems(pitState.triageItems);
   }, [pitState]);
 
-  const kioskRef = useFocusTrap(kioskOpen, () => setKioskOpen(false));
+  const kioskTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const closeKiosk = useCallback(() => {
+    setKioskOpen(false);
+    try {
+      if (document.fullscreenElement) {
+        void document.exitFullscreen?.().catch(() => undefined);
+      }
+    } catch {
+      // Ignore fullscreen exit errors.
+    }
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        kioskTriggerRef.current?.focus();
+      });
+    }
+  }, []);
+
+  const kioskRef = useFocusTrap(kioskOpen, closeKiosk);
+
+  useEffect(() => {
+    if (!kioskOpen) return;
+    let enteredFullscreen = Boolean(document.fullscreenElement);
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement) {
+        enteredFullscreen = true;
+      } else if (enteredFullscreen) {
+        setKioskOpen(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [kioskOpen]);
 
   const persistState = async (
     nextChecklists: Record<string, string[]>,
@@ -216,22 +250,16 @@ export function TournamentPitCommand({
   };
 
   const openKiosk = () => {
+    kioskTriggerRef.current?.focus();
     setKioskOpen(true);
+    const isE2EBypass =
+      typeof window !== "undefined" &&
+      Boolean((window as Window & { ARES_E2E_BYPASS?: unknown }).ARES_E2E_BYPASS);
+    if (isE2EBypass) return;
     try {
       void document.documentElement.requestFullscreen?.().catch(() => undefined);
     } catch {
       // Fullscreen API optional in jsdom / restricted browsers.
-    }
-  };
-
-  const closeKiosk = () => {
-    setKioskOpen(false);
-    try {
-      if (document.fullscreenElement) {
-        void document.exitFullscreen?.().catch(() => undefined);
-      }
-    } catch {
-      // Ignore fullscreen exit errors.
     }
   };
 
@@ -307,6 +335,7 @@ export function TournamentPitCommand({
           )}
 
           <button
+            ref={kioskTriggerRef}
             type="button"
             onClick={openKiosk}
             className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-ares-gold/40 bg-ares-gold/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-ares-gold hover:bg-ares-gold hover:text-obsidian focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
@@ -553,6 +582,7 @@ export function TournamentPitCommand({
           role="dialog"
           aria-modal="true"
           aria-label="Pit Command Kiosk Display"
+          tabIndex={-1}
           ref={kioskRef}
           className="fixed inset-0 z-50 bg-obsidian text-marble p-6 md:p-10 overflow-y-auto flex flex-col justify-between"
         >

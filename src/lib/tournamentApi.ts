@@ -198,19 +198,31 @@ export async function fetchTournamentScouting(
   tournamentId: string,
 ): Promise<TournamentScoutingBundle> {
   const payload = await requestJson<
-    { success: true } & TournamentScoutingBundle
+    { success: true } & Partial<TournamentScoutingBundle>
   >(tournamentPath(tournamentId, "/scouting"));
   return {
-    pitScouting: payload.pitScouting,
-    standScouting: payload.standScouting,
-    teamSummaries: payload.teamSummaries,
+    pitScouting: Array.isArray(payload.pitScouting) ? payload.pitScouting : [],
+    standScouting: Array.isArray(payload.standScouting) ? payload.standScouting : [],
+    teamSummaries: Array.isArray(payload.teamSummaries) ? payload.teamSummaries : [],
   };
+}
+
+function assertBrowserOnline(): void {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new TournamentApiError(
+      0,
+      "Offline",
+      "OFFLINE",
+      "Browser is offline",
+    );
+  }
 }
 
 export async function submitPitScouting(
   tournamentId: string,
   input: PitScoutingWriteInput,
 ): Promise<PitScoutingEntry> {
+  assertBrowserOnline();
   const payload = await requestJson<{
     success: true;
     entry: PitScoutingEntry;
@@ -225,6 +237,7 @@ export async function submitStandScouting(
   tournamentId: string,
   input: StandScoutingWriteInput,
 ): Promise<{ entry: StandScoutingEntry; duplicate: boolean }> {
+  assertBrowserOnline();
   const payload = await requestJson<{
     success: true;
     entry: StandScoutingEntry;
@@ -255,15 +268,22 @@ export async function fetchTournamentPitState(
 ): Promise<TournamentPitState> {
   const payload = await requestJson<{
     success: true;
-    pitState: TournamentPitState;
+    pitState?: TournamentPitState;
   }>(tournamentPath(tournamentId, "/pit-state"));
-  return payload.pitState;
+  return (
+    payload.pitState ?? {
+      checklists: {},
+      batteries: [],
+      triageItems: [],
+    }
+  );
 }
 
 export async function saveTournamentPitState(
   tournamentId: string,
   input: Pick<TournamentPitState, "checklists" | "batteries" | "triageItems">,
 ): Promise<TournamentPitState> {
+  assertBrowserOnline();
   const payload = await requestJson<{
     success: true;
     pitState: TournamentPitState;

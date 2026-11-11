@@ -108,7 +108,7 @@ export default function SponsorFactSheetSection({
         >
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5 mb-5 print:border-black/20">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-ares-gold print:text-black">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ares-gold print:text-black">
                 FIRST® Tech Challenge #23247 • Morgantown, West Virginia
               </p>
               <h2 className="mt-1 font-heading text-2xl sm:text-3xl font-black uppercase text-white print:text-black">

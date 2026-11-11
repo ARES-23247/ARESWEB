@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ClipboardCheck,
   CloudOff,
@@ -67,7 +67,11 @@ export function TournamentScoutingHub({
   const [endgameCap, setEndgameCap] = useState("");
   const [pitNotes, setPitNotes] = useState("");
 
+  const flushingRef = useRef(false);
+
   const syncOutboxNow = useCallback(async () => {
+    if (flushingRef.current) return;
+    flushingRef.current = true;
     setIsFlushing(true);
     try {
       const result = await flushTournamentOutbox(tournamentId, {
@@ -83,6 +87,7 @@ export function TournamentScoutingHub({
         onRefresh();
       }
     } finally {
+      flushingRef.current = false;
       setIsFlushing(false);
     }
   }, [onRefresh, tournamentId]);

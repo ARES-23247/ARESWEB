@@ -236,5 +236,15 @@ describe("Championship Phase 1 Tournament Components", () => {
     expect(
       screen.queryByRole("dialog", { name: /Pit Command Kiosk Display/i }),
     ).not.toBeInTheDocument();
+
+    // Re-launch Pit Kiosk and verify Escape key closes it via focus trap
+    fireEvent.click(screen.getByRole("button", { name: /Launch Pit Kiosk/i }));
+    expect(
+      screen.getByRole("dialog", { name: /Pit Command Kiosk Display/i }),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(
+      screen.queryByRole("dialog", { name: /Pit Command Kiosk Display/i }),
+    ).not.toBeInTheDocument();
   });
 });

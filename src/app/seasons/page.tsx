@@ -122,19 +122,21 @@ export default function SeasonsPage() {
   };
 
   const competitionsForSeason = (season: Season): PublicCompetitionSummary[] => {
-    const challengeLower = season.challengeName.trim().toLowerCase();
+    const challengeLower = (season.challengeName ?? "").trim().toLowerCase();
     const spanLabel = season.endYear
       ? `${season.startYear}-${season.endYear}`
       : String(season.startYear);
     return competitions.filter((comp) => {
+      const compChallenge = (comp.challengeName ?? "").toLowerCase();
+      const compSeason = comp.seasonName ?? "";
       if (
         challengeLower &&
-        (comp.challengeName.toLowerCase().includes(challengeLower) ||
-          comp.seasonName.toLowerCase().includes(challengeLower))
+        (compChallenge.includes(challengeLower) ||
+          compSeason.toLowerCase().includes(challengeLower))
       ) {
         return true;
       }
-      if (comp.seasonName.includes(spanLabel) || comp.seasonName.includes(String(season.startYear))) {
+      if (compSeason.includes(spanLabel) || compSeason.includes(String(season.startYear))) {
         return true;
       }
       if (comp.date) {

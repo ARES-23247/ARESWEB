@@ -4,11 +4,16 @@ import { fileURLToPath } from "node:url";
 
 export function testIds(report) {
   const ids = [];
-  function visit(suite) {
-    for (const spec of suite.specs ?? [])
+  function visit(suite, parents = []) {
+    const nextParents = suite.title ? [...parents, suite.title] : parents;
+    for (const spec of suite.specs ?? []) {
+      const specKey = spec.file
+        ? `${spec.file}:${spec.line}:${spec.column}:${[...nextParents, spec.title].join(" > ")}`
+        : spec.id;
       for (const test of spec.tests ?? [])
-        ids.push(`${spec.id}:${test.projectId}`);
-    for (const child of suite.suites ?? []) visit(child);
+        ids.push(`${specKey}:${test.projectId}`);
+    }
+    for (const child of suite.suites ?? []) visit(child, nextParents);
   }
   visit(report);
   if (!ids.length || new Set(ids).size !== ids.length)
