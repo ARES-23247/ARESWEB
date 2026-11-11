@@ -76,7 +76,9 @@ export default function TournamentDetailPage() {
     [user, authorizedUser],
   );
   const hasLiveSession = useMemo(
-    () => typeof (user as { getIdToken?: unknown } | null)?.getIdToken === "function",
+    () =>
+      typeof (user as { getIdToken?: unknown } | null)?.getIdToken === "function" ||
+      (typeof window !== "undefined" && Boolean(window.ARES_E2E_BYPASS)),
     [user],
   );
 

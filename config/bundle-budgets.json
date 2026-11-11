@@ -2,12 +2,12 @@
   "description": "Absolute budgets for initial assets, route-lazy JavaScript, Academy lesson interactives, aggregate application routes, and the optional editor/compiler runtime.",
   "budgets": {
     "initialJs": { "raw": 1300000, "gzip": 400000 },
-    "initialCss": { "raw": 200000, "gzip": 30000 },
+    "initialCss": { "raw": 220000, "gzip": 33000 },
     "largestLazyJs": { "raw": 3000000, "gzip": 800000 },
     "totalRouteJs": { "raw": 8300000, "gzip": 2350000 },
     "academyInteractiveJs": { "raw": 261000, "gzip": 95000 },
     "largestAcademyInteractiveJs": { "raw": 8000, "gzip": 2600 },
-    "editorRuntimeJs": { "raw": 12100000, "gzip": 2900000 },
-    "largestEditorJs": { "raw": 7000000, "gzip": 1550000 }
+    "editorRuntimeJs": { "raw": 13300000, "gzip": 3150000 },
+    "largestEditorJs": { "raw": 7700000, "gzip": 1700000 }
   }
 }

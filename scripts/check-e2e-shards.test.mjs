@@ -67,3 +67,44 @@ it("loads isolated artifact directories and rejects missing or differing invento
     rmSync(root, { recursive: true, force: true });
   }
 });
+it("matches cross-project shard splits when Playwright assigns per-shard spec.id", () => {
+  const mkSpec = (id, projectIds) => ({
+    id,
+    file: "championship.spec.ts",
+    line: 42,
+    column: 3,
+    title: "renders pit command",
+    tests: projectIds.map((projectId) => ({ projectId })),
+  });
+  const splitInventory = {
+    suites: [
+      {
+        title: "championship",
+        suites: [{ specs: [mkSpec("hash-webkit", ["webkit", "firefox"])] }],
+      },
+    ],
+  };
+  const shard1 = {
+    config: { shard: { current: 1, total: 2 } },
+    stats: { expected: 1, unexpected: 0, skipped: 0, flaky: 0 },
+    errors: [],
+    suites: [
+      {
+        title: "championship",
+        suites: [{ specs: [mkSpec("hash-webkit", ["webkit"])] }],
+      },
+    ],
+  };
+  const shard2 = {
+    config: { shard: { current: 2, total: 2 } },
+    stats: { expected: 1, unexpected: 0, skipped: 0, flaky: 0 },
+    errors: [],
+    suites: [
+      {
+        title: "championship",
+        suites: [{ specs: [mkSpec("hash-firefox", ["firefox"])] }],
+      },
+    ],
+  };
+  expect(verifyShards(splitInventory, [shard1, shard2])).toBe(2);
+});

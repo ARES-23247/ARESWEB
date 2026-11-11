@@ -70,6 +70,20 @@ describe("conservative affected-area selection", () => {
     expect(
       selectAreas(manifest, ["content/learning/catalog.json"], inventory).areas,
     ).toEqual(["academy"]);
+    expect(
+      selectAreas(
+        manifest,
+        ["src/app/dashboard/portfolio/page.tsx"],
+        [...inventory, "e2e/championship.spec.ts"],
+      ).areas,
+    ).toEqual(["team"]);
+    expect(
+      selectAreas(
+        manifest,
+        ["src/app/seasons/page.tsx"],
+        [...inventory, "e2e/championship.spec.ts"],
+      ).areas,
+    ).toEqual(["public"]);
   });
   it("never guesses unknown, generated, dependency or shared security changes are isolated", () => {
     for (const file of [

@@ -208,12 +208,19 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     await trigger.click();
     const drawer = page.getByRole("dialog", { name: "Mobile navigation menu" });
     await expect(drawer).toBeVisible();
-    const targetHeights = await drawer
-      .getByRole("link")
-      .or(drawer.getByRole("button"))
-      .evaluateAll((targets) =>
-        targets.map((target) => target.getBoundingClientRect().height),
-      );
+    const targetHeights = await drawer.evaluate((element) =>
+      Array.from(element.querySelectorAll<HTMLElement>("a[href], button"))
+        .filter((target) => {
+          const style = window.getComputedStyle(target);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            !target.closest('[hidden], [aria-hidden="true"]')
+          );
+        })
+        .map((target) => target.getBoundingClientRect().height),
+    );
+    expect(targetHeights.length).toBeGreaterThan(0);
     expect(targetHeights.every((height) => height >= 44)).toBe(true);
   });
 
@@ -247,9 +254,17 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     // Wait for rendered touch targets before measuring the rest of the layout.
     const choices = banner.getByRole("button");
     await expect(choices).toHaveCount(2);
-    await expect.poll(() => choices.evaluateAll((buttons) =>
-      buttons.every((button) => button.getBoundingClientRect().height >= 44),
-    )).toBe(true);
+    await expect
+      .poll(() =>
+        banner.evaluate((element) => {
+          const buttons = Array.from(element.querySelectorAll("button"));
+          return (
+            buttons.length === 2 &&
+            buttons.every((button) => button.getBoundingClientRect().height >= 44)
+          );
+        }),
+      )
+      .toBe(true);
     const bounds = await banner.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
@@ -341,12 +356,19 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     expect(bounds.closeWidth).toBeGreaterThanOrEqual(44);
     expect(bounds.closeHeight).toBeGreaterThanOrEqual(44);
 
-    const targetHeights = await drawer
-      .getByRole("link")
-      .or(drawer.getByRole("button"))
-      .evaluateAll((targets) =>
-        targets.map((target) => target.getBoundingClientRect().height),
-      );
+    const targetHeights = await drawer.evaluate((element) =>
+      Array.from(element.querySelectorAll<HTMLElement>("a[href], button"))
+        .filter((target) => {
+          const style = window.getComputedStyle(target);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            !target.closest('[hidden], [aria-hidden="true"]')
+          );
+        })
+        .map((target) => target.getBoundingClientRect().height),
+    );
+    expect(targetHeights.length).toBeGreaterThan(0);
     expect(targetHeights.every((height) => height >= 44)).toBe(true);
 
     await drawer.getByRole("link", { name: "Manage Users" }).click();
