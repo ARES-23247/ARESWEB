@@ -1,19 +1,11 @@
 import { logger } from "./logger";
 import { sendBlueskyPost } from "./bluesky";
-import {
-  sendBufferPosts,
-} from "./buffer";
-import type {
-  BufferChannelOutcomes,
-  BufferSyndicationResult,
-} from "./buffer";
 import { sendZulipMessage } from "./zulip";
 
-export const SYNDICATION_CHANNELS = ["zulip", "bluesky", "buffer"] as const;
+export const SYNDICATION_CHANNELS = ["zulip", "bluesky"] as const;
 export type SyndicationChannel = (typeof SYNDICATION_CHANNELS)[number];
 export interface SyndicationResult {
   deliveries: Partial<Record<SyndicationChannel, boolean>>;
-  bufferChannels?: BufferChannelOutcomes;
 }
 
 export interface PublishedPostPayload {
@@ -79,9 +71,7 @@ async function deliverToZulip(
       logger.warn(
         "socialSyndication",
         "Zulip did not accept blog announcement",
-        {
-          slug: post.slug,
-        },
+        { slug: post.slug },
       );
     }
     return delivered;
@@ -124,43 +114,6 @@ async function deliverToBluesky(post: PublishedPostPayload): Promise<boolean> {
   }
 }
 
-async function deliverToBuffer(
-  post: PublishedPostPayload,
-): Promise<BufferSyndicationResult> {
-  try {
-    const result = await sendBufferPosts({
-      title: boundedPlainText(post.title, "New Blog Post", 160),
-      slug: post.slug,
-      snippet: boundedPlainText(
-        post.snippet,
-        "Read our latest team update on the ARES Robotics engineering blog.",
-        500,
-      ),
-      thumbnail: post.thumbnail,
-      kind: post.kind,
-    });
-    if (result.success) {
-      logger.info("socialSyndication", "Submitted syndication announcement for immediate Buffer delivery", {
-        slug: post.slug,
-      });
-    }
-    return result;
-  } catch (error) {
-    logger.error("socialSyndication", "Error sending Buffer announcement", {
-      slug: post.slug,
-      reason: error instanceof Error ? error.name : "unknown",
-    });
-    return {
-      success: false,
-      channels: {
-        facebook: "unavailable",
-        instagram: "unavailable",
-        twitter: "unavailable",
-      },
-    };
-  }
-}
-
 export async function syndicatePublishedPost(
   post: PublishedPostPayload,
   channels: readonly SyndicationChannel[] = SYNDICATION_CHANNELS,
@@ -172,29 +125,19 @@ export async function syndicatePublishedPost(
       async (channel): Promise<{
         channel: SyndicationChannel;
         delivered: boolean;
-        bufferChannels?: BufferChannelOutcomes;
-      }> => {
-        if (channel === "zulip") {
-          return { channel, delivered: await deliverToZulip(post, postUrl) };
-        }
-        if (channel === "bluesky") {
-          return { channel, delivered: await deliverToBluesky(post) };
-        }
-        const buffer = await deliverToBuffer(post);
-        return {
-          channel,
-          delivered: buffer.success,
-          bufferChannels: buffer.channels,
-        };
-      },
+      }> => ({
+        channel,
+        delivered:
+          channel === "zulip"
+            ? await deliverToZulip(post, postUrl)
+            : await deliverToBluesky(post),
+      }),
     ),
   );
   const deliveries = Object.fromEntries(
     results.map(({ channel, delivered }) => [channel, delivered]),
   ) as SyndicationResult["deliveries"];
-  const bufferChannels = results.find(({ channel }) => channel === "buffer")
-    ?.bufferChannels;
-  return { deliveries, ...(bufferChannels ? { bufferChannels } : {}) };
+  return { deliveries };
 }
 
 export interface PublishedVideoPayload {
@@ -207,36 +150,9 @@ export interface PublishedVideoPayload {
   thumbnail?: string;
 }
 
-async function deliverVideoToChannel(
-  channel: Exclude<SyndicationChannel, "buffer">,
-  video: PublishedVideoPayload,
-  videoUrl: string,
-): Promise<boolean> {
-  if (channel === "zulip") {
-    return deliverToZulip(
-      {
-        title: video.title,
-        slug: video.docId,
-        version: video.version,
-        snippet: video.snippet,
-        category: "Video",
-      },
-      videoUrl,
-      "Video",
-    );
-  }
-  return deliverToBluesky({
-    title: video.title,
-    slug: video.docId,
-    version: video.version,
-    snippet: video.snippet,
-    kind: "video",
-  });
-}
-
 /**
- * Announces a newly published video on every enabled channel. Each post
- * carries the on-site video hub URL so social traffic lands on aresfirst.org.
+ * Announces a newly published video on every direct channel (Zulip and Bluesky).
+ * Each post carries the on-site video hub URL so social traffic lands on aresfirst.org.
  */
 export async function syndicatePublishedVideo(
   video: PublishedVideoPayload,
@@ -249,34 +165,33 @@ export async function syndicatePublishedVideo(
       async (channel): Promise<{
         channel: SyndicationChannel;
         delivered: boolean;
-        bufferChannels?: BufferChannelOutcomes;
-      }> => {
-        if (channel === "buffer") {
-          const buffer = await deliverToBuffer({
-            title: video.title,
-            slug: video.docId,
-            version: video.version,
-            snippet: video.snippet,
-            thumbnail: video.thumbnail,
-            kind: "video",
-          });
-          return {
-            channel,
-            delivered: buffer.success,
-            bufferChannels: buffer.channels,
-          };
-        }
-        return {
-          channel,
-          delivered: await deliverVideoToChannel(channel, video, videoUrl),
-        };
-      },
+      }> => ({
+        channel,
+        delivered:
+          channel === "zulip"
+            ? await deliverToZulip(
+                {
+                  title: video.title,
+                  slug: video.docId,
+                  version: video.version,
+                  snippet: video.snippet,
+                  category: "Video",
+                },
+                videoUrl,
+                "Video",
+              )
+            : await deliverToBluesky({
+                title: video.title,
+                slug: video.docId,
+                version: video.version,
+                snippet: video.snippet,
+                kind: "video",
+              }),
+      }),
     ),
   );
   const deliveries = Object.fromEntries(
     results.map(({ channel, delivered }) => [channel, delivered]),
   ) as SyndicationResult["deliveries"];
-  const bufferChannels = results.find(({ channel }) => channel === "buffer")
-    ?.bufferChannels;
-  return { deliveries, ...(bufferChannels ? { bufferChannels } : {}) };
+  return { deliveries };
 }

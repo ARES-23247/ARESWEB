@@ -22,7 +22,6 @@ const LEGACY_EXEMPT = new Set<string>([
   "src/lib/logger.ts",
   "src/lib/onshape.ts",
   "src/lib/photoDerivatives.ts",
-  "src/lib/socialSyndication.ts",
   "src/lib/taskDigest.ts",
   "src/lib/utils.ts",
   "src/lib/vertex.ts",

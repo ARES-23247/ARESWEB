@@ -12,13 +12,6 @@ import {
   SyndicationChannel,
   syndicatePublishedPost,
 } from "../lib/socialSyndication";
-import {
-  BUFFER_SERVICES,
-} from "../lib/buffer";
-import type {
-  BufferChannelOutcome,
-  BufferChannelOutcomes,
-} from "../lib/buffer";
 import { formatOnshapeEvent } from "../lib/onshape";
 import { sendZulipMessage } from "../lib/zulip";
 
@@ -86,7 +79,6 @@ interface ClaimedPost {
   version: string;
   channels?: SyndicationChannel[];
   deliveries?: Record<SyndicationChannel, boolean>;
-  bufferChannels?: BufferChannelOutcomes;
   payload?: {
     slug: string;
     title: string;
@@ -98,44 +90,12 @@ interface ClaimedPost {
   };
 }
 
-const BUFFER_CHANNEL_OUTCOMES = new Set<BufferChannelOutcome>([
-  "submitted",
-  "already-submitted",
-  "failed",
-  "not-connected",
-  "unavailable",
-]);
-
-function receiptBufferChannels(
-  receipt: Record<string, unknown>,
-  version: string,
-): BufferChannelOutcomes | undefined {
-  if (
-    receipt.version !== version ||
-    !receipt.bufferChannels ||
-    typeof receipt.bufferChannels !== "object" ||
-    Array.isArray(receipt.bufferChannels)
-  ) return undefined;
-  const stored = receipt.bufferChannels as Record<string, unknown>;
-  const entries = BUFFER_SERVICES.map((service) => {
-    const outcome = stored[service];
-    return typeof outcome === "string" &&
-      BUFFER_CHANNEL_OUTCOMES.has(outcome as BufferChannelOutcome)
-      ? [service, outcome] as const
-      : undefined;
-  });
-  if (entries.some((entry) => entry === undefined)) return undefined;
-  return Object.fromEntries(
-    entries as Array<readonly [string, BufferChannelOutcome]>,
-  ) as BufferChannelOutcomes;
-}
-
 function receiptDeliveries(
   receipt: Record<string, unknown>,
   version: string,
 ): Record<SyndicationChannel, boolean> {
   if (receipt.version !== version) {
-    return { zulip: false, bluesky: false, buffer: false };
+    return { zulip: false, bluesky: false };
   }
   const stored =
     receipt.deliveries && typeof receipt.deliveries === "object"
@@ -149,7 +109,6 @@ function receiptDeliveries(
   return {
     zulip: stored.zulip === true || legacyZulipComplete,
     bluesky: stored.bluesky === true,
-    buffer: stored.buffer === true,
   };
 }
 
@@ -212,7 +171,6 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
 
     const receipt = receiptSnapshot.exists ? receiptSnapshot.data() || {} : {};
     const deliveries = receiptDeliveries(receipt, version);
-    const bufferChannels = receiptBufferChannels(receipt, version);
     const channels = SYNDICATION_CHANNELS.filter(
       (channel) => !deliveries[channel],
     );
@@ -221,7 +179,6 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
         alreadyComplete: true,
         version,
         deliveries,
-        ...(bufferChannels ? { bufferChannels } : {}),
       };
     }
     const startedAtMs =
@@ -248,12 +205,13 @@ async function claimPublishedPost(slug: string): Promise<ClaimedPost> {
       version,
       channels,
       deliveries,
-      ...(bufferChannels ? { bufferChannels } : {}),
       payload: {
         slug,
         title,
         version,
-        snippet: optionalText(data.snippet, 500),
+        snippet:
+          optionalText(data.snippet, 500) ||
+          optionalText(data.description, 500),
         category: optionalText(data.category, 60),
         author:
           optionalText(data.author, 80) ||
@@ -449,9 +407,6 @@ router.post(
         success: true,
         alreadySyndicated: true,
         syndication: claim.deliveries,
-        ...(claim.bufferChannels
-          ? { bufferChannels: claim.bufferChannels }
-          : {}),
       });
       return;
     }
@@ -470,7 +425,6 @@ router.post(
       .doc(parsed.data.slug);
     const result = await syndicatePublishedPost(claim.payload, claim.channels);
     const deliveries = { ...claim.deliveries, ...result.deliveries };
-    const bufferChannels = result.bufferChannels || claim.bufferChannels;
     const allDelivered = SYNDICATION_CHANNELS.every(
       (channel) => deliveries[channel],
     );
@@ -481,7 +435,6 @@ router.post(
           version: claim.version,
           status: "failed",
           deliveries,
-          ...(bufferChannels ? { bufferChannels } : {}),
           updatedAt: completedAt,
         },
         { merge: true },
@@ -490,7 +443,6 @@ router.post(
         success: false,
         error: "Some social channels did not accept the announcement.",
         syndication: deliveries,
-        ...(bufferChannels ? { bufferChannels } : {}),
       });
       return;
     }
@@ -500,7 +452,6 @@ router.post(
         version: claim.version,
         status: "complete",
         deliveries,
-        ...(bufferChannels ? { bufferChannels } : {}),
         completedAt,
         updatedAt: completedAt,
       },
@@ -509,7 +460,6 @@ router.post(
     res.json({
       success: true,
       syndication: deliveries,
-      ...(bufferChannels ? { bufferChannels } : {}),
     });
   }),
 );

@@ -15,7 +15,6 @@ firebase functions:secrets:set GITHUB_PAT
 firebase functions:secrets:set ABUSE_HMAC_SECRET
 firebase functions:secrets:set PROFILE_SYNC_SECRET
 firebase functions:secrets:set BLUESKY_APP_PASSWORD
-firebase functions:secrets:set BUFFER_API_KEY
 firebase functions:secrets:set ONSHAPE_WEBHOOK_TOKEN
 ```
 
@@ -168,9 +167,9 @@ not inherit unrelated credentials:
 - `mediaApi`: photo, video, and AI routes, with only their six media secrets.
 - `driveApi`: Drive preview and draft-import routes, with encryption, the
   OAuth client pair, and the dedicated Drive refresh token (four secrets).
-- `communicationsApi`: task, Zulip, webhook, simulation, and social
-  syndication routes, with the anonymous-quota HMAC secret plus seven
-  integration secrets (GitHub, Zulip x3, Bluesky, Buffer, Onshape webhook).
+- `communicationsApi`: task, Zulip, webhook, simulation, and direct social
+  syndication routes, with the anonymous-quota HMAC secret plus six
+  integration secrets (GitHub, Zulip x3, Bluesky, Onshape webhook).
 
 `refreshPublicSitemap` runs every 30 minutes with the public runtime identity
 and no secrets. It alone scans published source collections and writes the
@@ -204,7 +203,7 @@ The production access baseline is:
 | `aresweb-game-api`       | Firestore user, App Check token verifier, Firebase Auth viewer                                        | anonymous-quota HMAC, encryption                                   |
 | `mediaApi`               | Firestore user, App Check token verifier, Vertex AI user, object admin on the production media bucket | encryption, Photos OAuth, Gemini, YouTube                          |
 | `driveApi`               | Firestore user, App Check token verifier                                                              | encryption, Drive OAuth                                            |
-| `communicationsApi`      | Firestore user, App Check token verifier                                                              | anonymous-quota HMAC; GitHub, Zulip, Bluesky, Buffer, Onshape      |
+| `communicationsApi`      | Firestore user, App Check token verifier                                                              | anonymous-quota HMAC; GitHub, Zulip, Bluesky, Onshape              |
 | `refreshPublicSitemap`   | Firestore user                                                                                        | none                                                               |
 | `refreshSimulationArtifacts` | Firestore user                                                                                   | GitHub                                                             |
 | `taskDueDigest`          | Firestore user                                                                                        | Zulip bot credentials                                              |

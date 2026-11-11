@@ -112,28 +112,13 @@ describe("useDashboardDocController archive workflow", () => {
       }));
   });
 
-  it("translates provider results into truthful per-channel details", () => {
+  it("translates direct Zulip and Bluesky results into truthful per-channel details", () => {
     expect(syndicationChannelDetails({
-      syndication: { zulip: true, bluesky: false, buffer: false },
-      bufferChannels: {
-        facebook: "submitted",
-        instagram: "already-submitted",
-        twitter: "not-connected",
-      },
+      syndication: { zulip: true, bluesky: false },
     })).toEqual([
       { label: "Zulip", detail: "Delivered", ok: true },
       { label: "Bluesky", detail: "Not delivered", ok: false },
-      { label: "Facebook", detail: "Submitted immediately via Buffer", ok: true },
-      { label: "Instagram", detail: "Already submitted via Buffer", ok: true },
-      { label: "X", detail: "Not connected in Buffer", ok: false },
     ]);
-    expect(syndicationChannelDetails({
-      syndication: { buffer: true },
-    })).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "Facebook", ok: true }),
-      expect.objectContaining({ label: "Instagram", ok: true }),
-      expect.objectContaining({ label: "X", ok: true }),
-    ]));
   });
 
   it("requests confirmation without archiving, supports cancel, then archives only after confirmation", async () => {
@@ -536,12 +521,7 @@ describe("useDashboardDocController archive workflow", () => {
         new Response(JSON.stringify({
           success: false,
           error: "Some social channels did not accept the announcement.",
-          syndication: { zulip: true, bluesky: true, buffer: false },
-          bufferChannels: {
-            facebook: "submitted",
-            instagram: "failed",
-            twitter: "not-connected",
-          },
+          syndication: { zulip: true, bluesky: false },
         }), {
           status: 207,
           headers: { "Content-Type": "application/json" },
@@ -569,11 +549,10 @@ describe("useDashboardDocController archive workflow", () => {
     expect(result.current.syndicationNotice).toMatchObject({
       kind: "error",
       slug: "robot-reveal",
-      channels: expect.arrayContaining([
-        { label: "Facebook", detail: "Submitted immediately via Buffer", ok: true },
-        { label: "Instagram", detail: "Buffer rejected the submission", ok: false },
-        { label: "X", detail: "Not connected in Buffer", ok: false },
-      ]),
+      channels: [
+        { label: "Zulip", detail: "Delivered", ok: true },
+        { label: "Bluesky", detail: "Not delivered", ok: false },
+      ],
     });
     expect(saveDocMock).toHaveBeenCalledTimes(1);
 

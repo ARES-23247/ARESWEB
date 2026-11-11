@@ -16,8 +16,7 @@ interface DocListGridProps {
   reviewingSlug?: string | null;
   approvingSlug?: string | null;
   discardingSlug?: string | null;
-  onSyndicate?: (item: DocRecord) => void | Promise<void>;
-  syndicatingSlug?: string | null;
+  onShare?: (item: DocRecord) => void;
   variant?: "docs" | "documents" | "blog";
   onEdit: (item: DocRecord) => void;
   onDelete: (slug: string) => void;
@@ -46,8 +45,7 @@ export default function DocListGrid({
   reviewingSlug = null,
   approvingSlug = null,
   discardingSlug = null,
-  onSyndicate,
-  syndicatingSlug = null,
+  onShare,
   variant = "docs",
   onEdit,
   onDelete,
@@ -385,17 +383,19 @@ export default function DocListGrid({
                             <RotateCcw size={12} aria-hidden="true" /> {discardingSlug === item.slug ? "Discarding…" : "Discard Edit"}
                           </button>
                         )}
-                        {variant === "blog" && isApprover && onSyndicate && isPublished && item.isDeleted !== 1 && (
+                        {variant === "blog" && canEdit && onShare && isPublished && item.isDeleted !== 1 && (
                           <button
                             type="button"
-                            onClick={() => void onSyndicate(item)}
-                            disabled={syndicatingSlug !== null}
-                            className="inline-flex min-h-9 items-center gap-1 rounded border border-ares-cyan/40 bg-ares-cyan/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-ares-cyan transition-all hover:bg-ares-cyan/20 focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:cursor-wait disabled:opacity-60"
-                            aria-label={`Crosspost or retry social delivery for ${item.title}`}
-                            title="Crosspost / Retry social delivery"
+                            onClick={(event) => {
+                              event.currentTarget.focus();
+                              onShare(item);
+                            }}
+                            className="inline-flex min-h-9 items-center gap-1 rounded border border-ares-cyan/40 bg-ares-cyan/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-ares-cyan transition-all hover:bg-ares-cyan/20 focus-visible:ring-2 focus-visible:ring-ares-cyan cursor-pointer"
+                            aria-label={`Open Share Kit for ${item.title}`}
+                            title="Open Share Kit (X, Facebook, Instagram, Bluesky, LinkedIn)"
                           >
                             <Share2 size={12} aria-hidden="true" />
-                            {syndicatingSlug === item.slug ? "Sending…" : "Crosspost"}
+                            Share Kit
                           </button>
                         )}
                         {item.isDeleted === 1 && isApprover && onRestore ? (

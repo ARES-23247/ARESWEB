@@ -127,7 +127,6 @@ describe("production deployment contract", () => {
     ).toEqual([
       "ABUSE_HMAC_SECRET",
       "BLUESKY_APP_PASSWORD",
-      "BUFFER_API_KEY",
       "GITHUB_PAT",
       "ONSHAPE_WEBHOOK_TOKEN",
       "ZULIP_API_KEY",

@@ -257,6 +257,7 @@ export default defineConfig({
         "src/lib/publicContentApi.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
+        "src/lib/blogShareKit.ts",
         "src/lib/pitModeOutbox.ts",
         "src/lib/tournamentApi.ts",
         "src/lib/tournamentStats.ts",
@@ -513,6 +514,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/simulationDrafts.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/blogShareKit.ts": {
           lines: 85,
           functions: 100,
         },
