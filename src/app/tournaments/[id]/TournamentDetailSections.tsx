@@ -25,7 +25,30 @@ export interface TournamentPhoto {
   caption: string;
 }
 
-export function TournamentHero({ tournament }: { tournament: Tournament }) {
+export function TournamentHero({
+  tournament,
+  canEdit = false,
+  isSyncingFtcScout = false,
+  syncMessage = null,
+  onSyncFtcScout,
+}: {
+  tournament: Tournament;
+  canEdit?: boolean;
+  isSyncingFtcScout?: boolean;
+  syncMessage?: string | null;
+  onSyncFtcScout?: (season: number, eventCode: string) => void;
+}) {
+  const [syncSeason, setSyncSeason] = useState(
+    String(tournament.ftcSeason ?? new Date().getFullYear()),
+  );
+  const [syncEventCode, setSyncEventCode] = useState(
+    tournament.ftcEventCode ?? "",
+  );
+
+  const hasWlt =
+    typeof tournament.wins === "number" &&
+    typeof tournament.losses === "number";
+
   return (
     <header className="border border-white/10 bg-black/45 p-8 rounded-2xl mb-10 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full">
@@ -33,7 +56,7 @@ export function TournamentHero({ tournament }: { tournament: Tournament }) {
       </div>
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <span
               className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
                 tournament.status === "upcoming"
@@ -43,6 +66,16 @@ export function TournamentHero({ tournament }: { tournament: Tournament }) {
             >
               {tournament.status}
             </span>
+            {typeof tournament.rank === "number" && tournament.rank > 0 && (
+              <span className="px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/10 text-ares-gold border border-ares-gold/30 font-mono">
+                Rank #{tournament.rank}
+              </span>
+            )}
+            {hasWlt && (
+              <span className="px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/5 text-white border border-white/15 font-mono">
+                Record: {tournament.wins}W–{tournament.losses}L–{tournament.ties ?? 0}T
+              </span>
+            )}
             <span className="text-xs text-marble/55 flex items-center gap-1 font-semibold">
               <Calendar size={12} aria-hidden="true" />
               {formatDateOnly(tournament.date, {
@@ -85,6 +118,64 @@ export function TournamentHero({ tournament }: { tournament: Tournament }) {
           </div>
         )}
       </div>
+
+      {canEdit && onSyncFtcScout && (
+        <div className="relative z-10 mt-6 pt-5 border-t border-white/10 flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label
+                htmlFor="ftcscout-season-input"
+                className="block text-[10px] font-black uppercase tracking-wider text-ares-gold mb-1"
+              >
+                FTCScout Kickoff Year
+              </label>
+              <input
+                id="ftcscout-season-input"
+                type="number"
+                min={2019}
+                max={2100}
+                value={syncSeason}
+                onChange={(e) => setSyncSeason(e.target.value)}
+                className="w-28 rounded-lg border border-white/15 bg-black/50 px-3 py-1.5 text-xs font-mono text-white"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="ftcscout-code-input"
+                className="block text-[10px] font-black uppercase tracking-wider text-ares-gold mb-1"
+              >
+                FTC Event Code
+              </label>
+              <input
+                id="ftcscout-code-input"
+                type="text"
+                placeholder="e.g. USWVSTATE"
+                value={syncEventCode}
+                onChange={(e) => setSyncEventCode(e.target.value)}
+                className="w-40 rounded-lg border border-white/15 bg-black/50 px-3 py-1.5 text-xs font-mono uppercase text-white"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={isSyncingFtcScout || !syncEventCode.trim()}
+              onClick={() =>
+                onSyncFtcScout(
+                  Number.parseInt(syncSeason, 10) || new Date().getFullYear(),
+                  syncEventCode.trim(),
+                )
+              }
+              className="rounded-lg bg-ares-red px-4 py-1.5 text-xs font-black uppercase tracking-wider text-white hover:bg-ares-bronze disabled:opacity-50"
+            >
+              {isSyncingFtcScout ? "Syncing FTCScout..." : "Sync FTCScout"}
+            </button>
+          </div>
+          {syncMessage && (
+            <p role="status" className="text-xs font-mono text-ares-cyan">
+              {syncMessage}
+            </p>
+          )}
+        </div>
+      )}
     </header>
   );
 }

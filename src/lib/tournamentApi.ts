@@ -1,5 +1,9 @@
 import { authenticatedFetch } from "@/lib/api";
 import type {
+  PitScoutingEntry,
+  PitScoutingWriteInput,
+  StandScoutingEntry,
+  StandScoutingWriteInput,
   Tournament,
   TournamentMatch,
   TournamentMatchesResponse,
@@ -7,7 +11,10 @@ import type {
   TournamentMatchRevisionInput,
   TournamentMatchUpdateInput,
   TournamentMatchWriteInput,
+  TournamentPicklistEntry,
+  TournamentPitState,
   TournamentResponse,
+  TournamentScoutingBundle,
   TournamentsResponse,
   TournamentWriteInput,
 } from "@/types/tournament";
@@ -169,4 +176,97 @@ export async function archiveTournamentMatch(
     tournamentPath(tournamentId, `/matches/${encodeURIComponent(matchId)}`),
     jsonRequest("DELETE", { expectedUpdatedAt }),
   );
+}
+
+export async function syncTournamentFtcScout(
+  tournamentId: string,
+  season: number,
+  eventCode: string,
+): Promise<{ tournament: Tournament; syncedMatches: number }> {
+  const payload = await requestJson<{
+    success: true;
+    tournament: Tournament;
+    syncedMatches: number;
+  }>(
+    tournamentPath(tournamentId, "/sync-ftcscout"),
+    jsonRequest("POST", { season, eventCode }),
+  );
+  return { tournament: payload.tournament, syncedMatches: payload.syncedMatches };
+}
+
+export async function fetchTournamentScouting(
+  tournamentId: string,
+): Promise<TournamentScoutingBundle> {
+  const payload = await requestJson<
+    { success: true } & TournamentScoutingBundle
+  >(tournamentPath(tournamentId, "/scouting"));
+  return {
+    pitScouting: payload.pitScouting,
+    standScouting: payload.standScouting,
+    teamSummaries: payload.teamSummaries,
+  };
+}
+
+export async function submitPitScouting(
+  tournamentId: string,
+  input: PitScoutingWriteInput,
+): Promise<PitScoutingEntry> {
+  const payload = await requestJson<{
+    success: true;
+    entry: PitScoutingEntry;
+  }>(
+    tournamentPath(tournamentId, "/scouting/pit"),
+    jsonRequest("POST", input),
+  );
+  return payload.entry;
+}
+
+export async function submitStandScouting(
+  tournamentId: string,
+  input: StandScoutingWriteInput,
+): Promise<{ entry: StandScoutingEntry; duplicate: boolean }> {
+  const payload = await requestJson<{
+    success: true;
+    entry: StandScoutingEntry;
+    duplicate: boolean;
+  }>(
+    tournamentPath(tournamentId, "/scouting/stand"),
+    jsonRequest("POST", input),
+  );
+  return { entry: payload.entry, duplicate: payload.duplicate };
+}
+
+export async function saveTournamentPicklist(
+  tournamentId: string,
+  picklist: TournamentPicklistEntry[],
+): Promise<TournamentPicklistEntry[]> {
+  const payload = await requestJson<{
+    success: true;
+    picklist: TournamentPicklistEntry[];
+  }>(
+    tournamentPath(tournamentId, "/picklist"),
+    jsonRequest("PUT", { picklist }),
+  );
+  return payload.picklist;
+}
+
+export async function fetchTournamentPitState(
+  tournamentId: string,
+): Promise<TournamentPitState> {
+  const payload = await requestJson<{
+    success: true;
+    pitState: TournamentPitState;
+  }>(tournamentPath(tournamentId, "/pit-state"));
+  return payload.pitState;
+}
+
+export async function saveTournamentPitState(
+  tournamentId: string,
+  input: Pick<TournamentPitState, "checklists" | "batteries" | "triageItems">,
+): Promise<TournamentPitState> {
+  const payload = await requestJson<{
+    success: true;
+    pitState: TournamentPitState;
+  }>(tournamentPath(tournamentId, "/pit-state"), jsonRequest("PUT", input));
+  return payload.pitState;
 }

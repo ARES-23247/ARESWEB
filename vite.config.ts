@@ -256,6 +256,7 @@ export default defineConfig({
         "src/lib/publicContentApi.ts",
         "src/lib/security.ts",
         "src/lib/simulationDrafts.ts",
+        "src/lib/pitModeOutbox.ts",
         "src/lib/tournamentApi.ts",
         "src/lib/tournamentStats.ts",
         "src/utils/lazySucrase.ts",
@@ -487,6 +488,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/lib/publicContentApi.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/lib/pitModeOutbox.ts": {
           lines: 85,
           functions: 100,
         },
