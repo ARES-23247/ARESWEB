@@ -36,7 +36,34 @@ export interface FtcScoutEventSyncResult {
   aresMatches: FtcScoutNormalizedMatch[];
 }
 
-const EVENT_CODE_PATTERN = /^[A-Za-z0-9]{2,20}$/u;
+const ALLOWED_SEASONS: ReadonlyMap<number, string> = new Map(
+  Array.from({ length: 82 }, (_, idx) => [2019 + idx, String(2019 + idx)]),
+);
+const EVENT_CODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+function sanitizeFtcEventCode(rawCode: string): string {
+  const upper = rawCode.trim().toUpperCase();
+  if (!/^[A-Z0-9]{2,20}$/.test(upper)) {
+    throw new ApiError(400, "FTC event code must contain 2–20 alphanumeric characters.", "FTCSCOUT_CODE_INVALID");
+  }
+  let sanitized = "";
+  for (let i = 0; i < upper.length; i += 1) {
+    const charIndex = EVENT_CODE_ALPHABET.indexOf(upper[i] ?? "");
+    if (charIndex < 0) {
+      throw new ApiError(400, "FTC event code must contain 2–20 alphanumeric characters.", "FTCSCOUT_CODE_INVALID");
+    }
+    sanitized += EVENT_CODE_ALPHABET[charIndex];
+  }
+  return sanitized;
+}
+
+function buildFtcScoutUrl(safeSeason: string, safeCode: string, suffix = ""): string {
+  const url = new URL(`/rest/v1/events/${safeSeason}/${safeCode}${suffix}`, "https://api.ftcscout.org");
+  if (url.protocol !== "https:" || url.hostname !== "api.ftcscout.org" || url.port !== "") {
+    throw new ApiError(400, "Invalid FTCScout request target.", "FTCSCOUT_TARGET_INVALID");
+  }
+  return url.toString();
+}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -242,24 +269,24 @@ export async function fetchFtcScoutEventData(
   targetTeamNumber = 23247,
   fetchImpl: typeof fetch = fetch,
 ): Promise<FtcScoutEventSyncResult> {
-  if (!Number.isInteger(season) || season < 2019 || season > 2100) {
+  const safeSeason = Number.isInteger(season) ? ALLOWED_SEASONS.get(season) : undefined;
+  if (!safeSeason) {
     throw new ApiError(400, "FTC season must be a valid kickoff year (2019–2100).", "FTCSCOUT_SEASON_INVALID");
   }
-  const normalizedCode = eventCode.trim().toUpperCase();
-  if (!EVENT_CODE_PATTERN.test(normalizedCode)) {
-    throw new ApiError(400, "FTC event code must contain 2–20 alphanumeric characters.", "FTCSCOUT_CODE_INVALID");
-  }
+  const normalizedCode = sanitizeFtcEventCode(eventCode);
 
-  const baseUrl = `https://api.ftcscout.org/rest/v1/events/${season}/${encodeURIComponent(normalizedCode)}`;
+  const eventUrl = buildFtcScoutUrl(safeSeason, normalizedCode);
+  const teamsUrl = buildFtcScoutUrl(safeSeason, normalizedCode, "/teams");
+  const matchesUrl = buildFtcScoutUrl(safeSeason, normalizedCode, "/matches");
   const requestInit: RequestInit = {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(8_000),
   };
 
   const [eventRes, teamsRes, matchesRes] = await Promise.all([
-    fetchImpl(baseUrl, requestInit),
-    fetchImpl(`${baseUrl}/teams`, requestInit),
-    fetchImpl(`${baseUrl}/matches`, requestInit),
+    fetchImpl(eventUrl, requestInit),
+    fetchImpl(teamsUrl, requestInit),
+    fetchImpl(matchesUrl, requestInit),
   ]);
 
   if (eventRes.status === 404) {
