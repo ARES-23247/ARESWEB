@@ -238,6 +238,7 @@ export default function DashboardSidebar({
         },
         { tab: "videos", icon: Video, label: "Manage Videos" },
         { tab: "photos", icon: ImageIcon, label: "Manage Photos" },
+        { tab: "portfolio", icon: Trophy, label: "Portfolio & Awards" },
       ],
     },
     ...(isMentorOrAbove

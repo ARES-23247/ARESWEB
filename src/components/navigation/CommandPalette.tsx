@@ -69,6 +69,7 @@ const DASHBOARD_COMMAND_ITEMS: CommandPaletteItem[] = [
   { id: "dash-documents", label: "Cloud Resources & Drive", category: "Command Center", to: "/dashboard/documents", keywords: "dashboard documents cloud resources google drive files" },
   { id: "dash-videos", label: "Video Library Manager", category: "Command Center", to: "/dashboard/videos", keywords: "dashboard videos youtube media sync" },
   { id: "dash-photos", label: "Photo Library Manager", category: "Command Center", to: "/dashboard/photos", keywords: "dashboard photos gallery google photos albums" },
+  { id: "dash-portfolio", label: "Engineering Portfolio & Awards Hub", category: "Command Center", to: "/dashboard/portfolio", keywords: "dashboard portfolio engineering awards inspire think control motivate connect innovate design judges" },
 ];
 
 const MENTOR_COMMAND_ITEMS: CommandPaletteItem[] = [
