@@ -144,19 +144,6 @@ export default function Navbar() {
           >
             Join
           </Link>
-
-          <Link
-            to="/docs"
-            aria-label="ARES Documentation Library"
-            className="h-9 hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan ares-cut-sm overflow-hidden flex items-center shadow-xl group/lib border border-white/5 bg-white/5"
-          >
-            <span className="bg-ares-red h-full px-3 flex items-center text-[10px] font-heading font-black uppercase text-white tracking-[0.15em] border-r border-white/10 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.2)]">
-              ARES
-            </span>
-            <span className="text-marble h-full px-3 flex items-center text-[10px] font-heading font-bold uppercase tracking-[0.2em] group-hover/lib:bg-white/10 transition-colors">
-              LIB
-            </span>
-          </Link>
         </div>
 
         {/* Right-hand Actions: Quick Jump, User Menu & Mobile Trigger */}
