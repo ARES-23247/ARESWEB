@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
-import { Plus, Shield, Activity } from "lucide-react";
+import { Plus, Shield, Activity, Share2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useDashboardDocController } from "@/hooks/dashboard/useDashboardDocController";
+import type { DocRecord } from "@/hooks/useDocumentSync";
+import BlogShareKitModal from "@/components/dashboard/BlogShareKitModal";
 import DocListGrid from "@/components/dashboard/DocListGrid";
 import DocFormDrawer from "@/components/dashboard/DocFormDrawer";
 import DocumentConnectionBadge from "@/components/dashboard/DocumentConnectionBadge";
@@ -24,6 +26,7 @@ export default function BlogManagementPage({
 } = {}) {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = React.useState<"all" | "published" | "pending" | "studio" | "archived">("all");
+  const [sharingPost, setSharingPost] = React.useState<DocRecord | null>(null);
 
   React.useEffect(() => {
     const requestedTab = searchParams.get("tab");
@@ -256,6 +259,22 @@ export default function BlogManagementPage({
             </ul>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
+            {(() => {
+              const targetPost = docs.find((d) => d.slug === syndicationNotice.slug);
+              return targetPost ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.focus();
+                    setSharingPost(targetPost);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded border border-ares-cyan/45 bg-ares-cyan/15 px-3 py-2 text-xs font-black uppercase text-ares-cyan hover:bg-ares-cyan/25 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  <Share2 size={13} aria-hidden="true" />
+                  Open Share Kit
+                </button>
+              ) : null;
+            })()}
             {syndicationNotice.kind === "error" && (
               <button
                 type="button"
@@ -263,7 +282,7 @@ export default function BlogManagementPage({
                 disabled={isRetryingSyndication}
                 className="rounded bg-ares-red px-3 py-2 text-xs font-black uppercase text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-60"
               >
-                {isRetryingSyndication ? "Retrying…" : "Retry social delivery"}
+                {isRetryingSyndication ? "Retrying…" : "Retry Zulip & Bluesky"}
               </button>
             )}
             <button
@@ -286,8 +305,7 @@ export default function BlogManagementPage({
         onDiscardPending={handleDiscardPendingEdit}
         approvingSlug={approvingSlug}
         discardingSlug={discardingSlug}
-        onSyndicate={handleSyndicatePost}
-        syndicatingSlug={syndicatingSlug}
+        onShare={setSharingPost}
         variant="blog"
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
@@ -314,6 +332,14 @@ export default function BlogManagementPage({
         onClose={handleCloseCompare}
         onApprove={handleApproveAndPublish}
         onDiscard={handleDiscardPendingEdit}
+      />
+
+      <BlogShareKitModal
+        post={sharingPost}
+        isApprover={isApprover}
+        syndicatingSlug={syndicatingSlug}
+        onSyndicate={handleSyndicatePost}
+        onClose={() => setSharingPost(null)}
       />
 
       {/* Drawer Editor */}

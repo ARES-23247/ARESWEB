@@ -161,3 +161,74 @@ test("same-origin gallery media renders without direct Storage traffic", async (
   expect(gatewayRequests).toBeGreaterThanOrEqual(2);
   expect(directStorageRequests).toBe(0);
 });
+
+test("published blog post opens the Zero-Key Share Kit with Web Share Intents and a 1080x1080 Instagram PNG card", async ({
+  page,
+  context,
+  loginAs,
+}) => {
+  await context.route("https://firestore.googleapis.com/**", (route) =>
+    route.abort("blockedbyclient"),
+  );
+  await page.route("**/api/content/posts/state-finals-recap", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        post: {
+          slug: "state-finals-recap",
+          title: "State Finals Recap",
+          date: "2026-11-10",
+          snippet: "Autonomous odometry tuning and alliance strategy highlights.",
+          thumbnail: "/favicon.svg",
+          author: "CircuitFox",
+          authorAvatar: "/favicon.svg",
+          content: "# State Finals Recap\n\nFull match engineering breakdown.",
+        },
+      }),
+    }),
+  );
+
+  await loginAs("coach");
+  await page.goto("/blog/state-finals-recap");
+
+  const shareKitButton = page.getByRole("button", { name: "Share Kit" });
+  await expect(shareKitButton).toBeVisible();
+  await shareKitButton.click();
+
+  const dialog = page.getByRole("dialog", {
+    name: /Share Kit: State Finals Recap/i,
+  });
+  await expect(dialog).toBeVisible();
+
+  await expect(dialog.getByRole("link", { name: /Post on X/i })).toHaveAttribute(
+    "href",
+    /https:\/\/x\.com\/intent\/tweet\?/,
+  );
+  await expect(
+    dialog.getByRole("link", { name: /Share on Facebook/i }),
+  ).toHaveAttribute("href", /https:\/\/www\.facebook\.com\/sharer\/sharer\.php\?/);
+  await expect(
+    dialog.getByRole("link", { name: /Compose on Bluesky/i }),
+  ).toHaveAttribute("href", /https:\/\/bsky\.app\/intent\/compose\?/);
+  await expect(
+    dialog.getByRole("link", { name: /Share on LinkedIn/i }),
+  ).toHaveAttribute(
+    "href",
+    /https:\/\/www\.linkedin\.com\/sharing\/share-offsite\/\?/,
+  );
+
+  const downloadLink = dialog.getByRole("link", {
+    name: /Download 1080×1080 Instagram PNG/i,
+  });
+  await expect(downloadLink).toBeVisible();
+  await expect(downloadLink).toHaveAttribute("href", /^data:image\/png;base64,/);
+  await expect(downloadLink).toHaveAttribute(
+    "download",
+    "ares-23247-state-finals-recap-instagram.png",
+  );
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(shareKitButton).toBeFocused();
+});

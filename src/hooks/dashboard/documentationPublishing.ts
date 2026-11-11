@@ -1,13 +1,6 @@
 import type { DocRecord } from "@/hooks/useDocumentSync";
 import { normalizeLearningMetadata } from "@/lib/learningContent";
 
-type BufferChannelOutcome =
-  | "submitted"
-  | "already-submitted"
-  | "failed"
-  | "not-connected"
-  | "unavailable";
-
 export interface SyndicationChannelDetail {
   label: string;
   detail: string;
@@ -19,7 +12,6 @@ export interface SyndicationResponse {
   pending?: unknown;
   alreadySyndicated?: unknown;
   syndication?: unknown;
-  bufferChannels?: unknown;
 }
 
 export interface DocumentationApprovalReview {
@@ -28,12 +20,6 @@ export interface DocumentationApprovalReview {
   document: DocRecord;
   publishedSnapshot?: DocRecord;
 }
-
-const BUFFER_CHANNEL_LABELS = {
-  facebook: "Facebook",
-  instagram: "Instagram",
-  twitter: "X",
-} as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -166,42 +152,6 @@ export function syndicationChannelDetails(
       detail: syndication.bluesky ? "Delivered" : "Not delivered",
       ok: syndication.bluesky,
     });
-  }
-
-  const bufferChannels = isRecord(payload.bufferChannels)
-    ? payload.bufferChannels
-    : null;
-  if (bufferChannels) {
-    for (const [service, label] of Object.entries(BUFFER_CHANNEL_LABELS)) {
-      const outcome = bufferChannels[service];
-      const detailByOutcome: Record<BufferChannelOutcome, string> = {
-        submitted: "Submitted immediately via Buffer",
-        "already-submitted": "Already submitted via Buffer",
-        failed: "Buffer rejected the submission",
-        "not-connected": "Not connected in Buffer",
-        unavailable: "Buffer was unavailable",
-      };
-      if (typeof outcome === "string" && outcome in detailByOutcome) {
-        const typedOutcome = outcome as BufferChannelOutcome;
-        details.push({
-          label,
-          detail: detailByOutcome[typedOutcome],
-          ok:
-            typedOutcome === "submitted" ||
-            typedOutcome === "already-submitted",
-        });
-      }
-    }
-  } else if (typeof syndication.buffer === "boolean") {
-    for (const label of Object.values(BUFFER_CHANNEL_LABELS)) {
-      details.push({
-        label,
-        detail: syndication.buffer
-          ? "Previously accepted by Buffer; platform status unavailable"
-          : "Not submitted through Buffer",
-        ok: syndication.buffer,
-      });
-    }
   }
 
   return details;

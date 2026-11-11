@@ -63,7 +63,7 @@ export default defineConfig({
           lines: 85,
           functions: 100,
         },
-        "src/lib/buffer.ts": {
+        "src/lib/socialSyndication.ts": {
           lines: 85,
           functions: 100,
         },

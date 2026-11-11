@@ -7,7 +7,8 @@ import DocsMarkdownRenderer from "@/components/docs/DocsMarkdownRenderer";
 import TiptapRenderer from "@/components/TiptapRenderer";
 import { useAuth } from "@/context/AuthContext";
 import BlogManagementPage from "@/app/dashboard/blog/page";
-import { Pencil } from "lucide-react";
+import BlogShareKitModal from "@/components/dashboard/BlogShareKitModal";
+import { Pencil, Share2 } from "lucide-react";
 import SEO from "@/components/SEO";
 import ShareButtons from "@/components/ShareButtons";
 import { PublicDataState } from "@/components/PublicDataState";
@@ -40,6 +41,7 @@ export default function BlogPostPage() {
 
   // Editor Drawer States
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isShareKitOpen, setIsShareKitOpen] = useState(false);
   const [editorAction, setEditorAction] = useState<"create" | "edit" | null>(
     null,
   );
@@ -206,14 +208,28 @@ export default function BlogPostPage() {
               </div>
             </div>
             {canEdit && (
-              <button
-                onClick={handleOpenInlineEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/40 rounded ares-cut-sm text-xs font-bold transition-all shadow-[0_0_15px_rgba(255,215,0,0.15)] cursor-pointer w-fit"
-                title="Edit this post in the dashboard drawer"
-              >
-                <Pencil size={14} />
-                <span>Edit Post</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.focus();
+                    setIsShareKitOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-ares-cyan/15 hover:bg-ares-cyan/25 text-ares-cyan border border-ares-cyan/45 rounded ares-cut-sm text-xs font-bold transition-all cursor-pointer w-fit focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  <Share2 size={14} aria-hidden="true" />
+                  <span>Share Kit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenInlineEdit}
+                  className="flex items-center gap-2 px-4 py-2 bg-ares-gold/10 hover:bg-ares-gold/20 text-ares-gold border border-ares-gold/40 rounded ares-cut-sm text-xs font-bold transition-all shadow-[0_0_15px_rgba(255,215,0,0.15)] cursor-pointer w-fit focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  title="Edit this post in the dashboard drawer"
+                >
+                  <Pencil size={14} aria-hidden="true" />
+                  <span>Edit Post</span>
+                </button>
+              </div>
             )}
           </div>
           <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white font-heading">
@@ -243,6 +259,22 @@ export default function BlogPostPage() {
           theme="gold"
         />
       </div>
+
+      <BlogShareKitModal
+        post={
+          isShareKitOpen
+            ? {
+                slug: post.slug,
+                title: post.title,
+                description: post.snippet,
+                author: post.author,
+                date: post.date,
+              }
+            : null
+        }
+        isApprover={false}
+        onClose={() => setIsShareKitOpen(false)}
+      />
 
       {/* ─── UPGRADED FULL BLOG EDITOR DRAWER ─── */}
       {isEditorOpen && (

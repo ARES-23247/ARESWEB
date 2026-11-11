@@ -185,15 +185,15 @@ describe("DocListGrid archive confirmation", () => {
     expect(screen.getByRole("button", { name: "Review and approve Second Guide" })).toBeDisabled();
   });
 
-  it("offers published blog approvers an explicit crosspost or retry action", () => {
-    const onSyndicate = vi.fn();
+  it("offers published blog editors a Share Kit action", () => {
+    const onShare = vi.fn();
     render(
       <DocListGrid
         items={[{ ...record, title: "Build Recap", author: "ARES", date: "2026-08-26" }]}
         loadingList={false}
         canEdit
-        isApprover
-        onSyndicate={onSyndicate}
+        isApprover={false}
+        onShare={onShare}
         variant="blog"
         onEdit={vi.fn()}
         onDelete={vi.fn()}
@@ -201,9 +201,9 @@ describe("DocListGrid archive confirmation", () => {
     );
 
     fireEvent.click(screen.getByRole("button", {
-      name: "Crosspost or retry social delivery for Build Recap",
+      name: "Open Share Kit for Build Recap",
     }));
-    expect(onSyndicate).toHaveBeenCalledWith(expect.objectContaining({
+    expect(onShare).toHaveBeenCalledWith(expect.objectContaining({
       slug: "safety-guide",
       title: "Build Recap",
     }));

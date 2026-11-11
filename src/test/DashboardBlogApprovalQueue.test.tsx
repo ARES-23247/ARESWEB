@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -66,6 +66,7 @@ import BlogManagementPage from "@/app/dashboard/blog/page";
 describe("blog approval queue deep link", () => {
   beforeEach(() => {
     controllerState.syndicationNotice = null;
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   });
 
   it("opens the pending mentor approval filter from the command center link", async () => {
@@ -79,15 +80,14 @@ describe("blog approval queue deep link", () => {
     expect(screen.queryByText("Published post")).not.toBeInTheDocument();
   });
 
-  it("shows truthful status for each social destination", async () => {
+  it("shows truthful status for each social destination and opens the Share Kit", async () => {
     controllerState.syndicationNotice = {
       kind: "error",
       message: "Some social deliveries need attention.",
       slug: "published",
       channels: [
-        { label: "Bluesky", detail: "Delivered", ok: true },
-        { label: "Facebook", detail: "Submitted immediately via Buffer", ok: true },
-        { label: "X", detail: "Not connected in Buffer", ok: false },
+        { label: "Zulip", detail: "Delivered", ok: true },
+        { label: "Bluesky", detail: "App password rejected", ok: false },
       ],
     };
     render(
@@ -98,8 +98,10 @@ describe("blog approval queue deep link", () => {
 
     expect(await screen.findByText("Some social deliveries need attention.")).toBeInTheDocument();
     expect(screen.getByText("Delivered")).toBeInTheDocument();
-    expect(screen.getByText("Submitted immediately via Buffer")).toBeInTheDocument();
-    expect(screen.getByText("Not connected in Buffer")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry social delivery" })).toBeInTheDocument();
+    expect(screen.getByText("App password rejected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry Zulip & Bluesky" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Share Kit" }));
+    expect(await screen.findByRole("dialog", { name: /Share Kit: Published post/i })).toBeInTheDocument();
   });
 });

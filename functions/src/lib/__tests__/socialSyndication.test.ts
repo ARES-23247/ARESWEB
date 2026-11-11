@@ -2,15 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendZulipMessageMock = vi.fn();
 const sendBlueskyPostMock = vi.fn();
-const sendBufferPostsMock = vi.fn();
-const bufferSuccess = {
-  success: true,
-  channels: {
-    facebook: "submitted",
-    instagram: "submitted",
-    twitter: "submitted",
-  },
-};
 
 vi.mock("../zulip", () => ({
   sendZulipMessage: (...args: unknown[]) => sendZulipMessageMock(...args),
@@ -20,11 +11,11 @@ vi.mock("../bluesky", () => ({
   sendBlueskyPost: (...args: unknown[]) => sendBlueskyPostMock(...args),
 }));
 
-vi.mock("../buffer", () => ({
-  sendBufferPosts: (...args: unknown[]) => sendBufferPostsMock(...args),
-}));
-
-import { syndicatePublishedPost, syndicatePublishedVideo } from "../socialSyndication";
+import {
+  SYNDICATION_CHANNELS,
+  syndicatePublishedPost,
+  syndicatePublishedVideo,
+} from "../socialSyndication";
 
 const post = {
   title: "Championship Victory",
@@ -41,10 +32,10 @@ describe("socialSyndication videos", () => {
     vi.clearAllMocks();
     sendZulipMessageMock.mockResolvedValue(true);
     sendBlueskyPostMock.mockResolvedValue(true);
-    sendBufferPostsMock.mockResolvedValue(bufferSuccess);
   });
 
-  it("announces a published video on every channel with the hub link", async () => {
+  it("announces a published video on Zulip and Bluesky with the hub link", async () => {
+    expect(SYNDICATION_CHANNELS).toEqual(["zulip", "bluesky"]);
     await expect(
       syndicatePublishedVideo({
         title: "Season Reveal",
@@ -54,8 +45,7 @@ describe("socialSyndication videos", () => {
         thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
       }),
     ).resolves.toEqual({
-      deliveries: { zulip: true, bluesky: true, buffer: true },
-      bufferChannels: bufferSuccess.channels,
+      deliveries: { zulip: true, bluesky: true },
     });
 
     expect(sendZulipMessageMock).toHaveBeenCalledWith(
@@ -70,14 +60,6 @@ describe("socialSyndication videos", () => {
         kind: "video",
       }),
     );
-    expect(sendBufferPostsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Season Reveal",
-        slug: "video_dQw4w9WgXcQ",
-        kind: "video",
-        thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-      }),
-    );
   });
 });
 
@@ -86,13 +68,11 @@ describe("socialSyndication", () => {
     vi.clearAllMocks();
     sendZulipMessageMock.mockResolvedValue(true);
     sendBlueskyPostMock.mockResolvedValue(true);
-    sendBufferPostsMock.mockResolvedValue(bufferSuccess);
   });
 
-  it("sends announcements to Zulip, Bluesky, and Buffer concurrently", async () => {
+  it("sends announcements to Zulip and Bluesky concurrently without third-party SaaS", async () => {
     await expect(syndicatePublishedPost(post)).resolves.toEqual({
-      deliveries: { zulip: true, bluesky: true, buffer: true },
-      bufferChannels: bufferSuccess.channels,
+      deliveries: { zulip: true, bluesky: true },
     });
     expect(sendZulipMessageMock).toHaveBeenCalledWith(
       "announcements",
@@ -106,13 +86,6 @@ describe("socialSyndication", () => {
         title: "Championship Victory",
         slug: "championship-victory",
         version: post.version,
-      }),
-    );
-    expect(sendBufferPostsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Championship Victory",
-        slug: "championship-victory",
-        thumbnail: "https://images.example.org/championship.jpg",
       }),
     );
   });
@@ -132,27 +105,33 @@ describe("socialSyndication", () => {
     expect(content).toContain("@\u200B");
   });
 
-  it("retries only the requested failed channel", async () => {
-    await expect(syndicatePublishedPost(post, ["buffer"])).resolves.toEqual({
-      deliveries: { buffer: true },
-      bufferChannels: bufferSuccess.channels,
+  it("handles non-throwing false responses from Zulip and Bluesky cleanly", async () => {
+    sendZulipMessageMock.mockResolvedValue(false);
+    sendBlueskyPostMock.mockResolvedValue(false);
+    await expect(
+      syndicatePublishedPost({
+        title: "   ",
+        slug: "fallback-post",
+        version: post.version,
+      }),
+    ).resolves.toEqual({
+      deliveries: { zulip: false, bluesky: false },
     });
-    expect(sendBufferPostsMock).toHaveBeenCalledTimes(1);
-    expect(sendBlueskyPostMock).not.toHaveBeenCalled();
+  });
+
+  it("retries only the requested failed channel", async () => {
+    await expect(syndicatePublishedPost(post, ["bluesky"])).resolves.toEqual({
+      deliveries: { bluesky: true },
+    });
+    expect(sendBlueskyPostMock).toHaveBeenCalledTimes(1);
     expect(sendZulipMessageMock).not.toHaveBeenCalled();
   });
 
-  it("reports independent channel failures without rejecting", async () => {
-    sendZulipMessageMock.mockRejectedValue(new Error("zulip unavailable"));
+  it("reports independent channel exceptions without rejecting", async () => {
+    sendZulipMessageMock.mockRejectedValue("non-error failure");
     sendBlueskyPostMock.mockRejectedValue(new Error("bluesky unavailable"));
-    sendBufferPostsMock.mockRejectedValue(new Error("buffer unavailable"));
     await expect(syndicatePublishedPost(post)).resolves.toEqual({
-      deliveries: { zulip: false, bluesky: false, buffer: false },
-      bufferChannels: {
-        facebook: "unavailable",
-        instagram: "unavailable",
-        twitter: "unavailable",
-      },
+      deliveries: { zulip: false, bluesky: false },
     });
   });
 
@@ -162,6 +141,5 @@ describe("socialSyndication", () => {
     });
     expect(sendZulipMessageMock).not.toHaveBeenCalled();
     expect(sendBlueskyPostMock).not.toHaveBeenCalled();
-    expect(sendBufferPostsMock).not.toHaveBeenCalled();
   });
 });
