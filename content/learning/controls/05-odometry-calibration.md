@@ -29,7 +29,7 @@ This lesson will help you:
 
 The endpoint lab uses simple geometry. It does not reproduce the full ARES estimator.
 
-This lesson follows ARES 20.0.3, FTC SDK 12.0.0, and Studio 7.0.71. Its source links are pinned to
+This lesson follows ARES 20.0.6, FTC SDK 12.0.0, and Studio 7.0.73. Its source links are pinned to
 the exact public monorepo commit used for review. The browser supplies ready-made health results. It
 does not read robot sensors or execute the Kotlin runtime.
 
@@ -122,19 +122,19 @@ ARES FRC uses a different platform boundary. Its CTRE estimator remains authorit
 and independent-truth ideas in this lesson still apply, but the FTC source buttons in the browser
 lab do not describe FRC source selection.
 
-### Read the exact ARES 20.0.3 boundaries
+### Read the exact ARES 20.0.6 boundaries
 
 The Pinpoint adapter tests four kinds of evidence before calling a packet healthy:
 
-| Check | Pinned ARES 20.0.3 rule |
+| Check | Pinned ARES 20.0.6 rule |
 | --- | --- |
 | Finite values | X, Y, heading, linear velocity, and angular velocity must all be finite. |
 | Speed | Linear speed must be at most `8 m/s`. Angular speed must be at most `4π rad/s`. |
-| One-packet jump | Distance and heading changes must fit the speed bound plus a `0.75` tolerance. |
+| One-packet jump | Distance and heading changes must fit the speed bound plus a `0.75` tolerance, with non-decreasing time. |
 | Sample age | A trusted packet must be from `0` through `100 ms` old. |
 
-An invalid packet changes the health label and keeps the last trusted pose. It does not publish the
-bad coordinates as healthy evidence.
+An invalid packet changes the health label and keeps the last trusted pose. It clears motion flags,
+sets packet time to zero, and does not publish bad numbers as healthy data.
 
 The source selector is a smaller state machine:
 
