@@ -1,7 +1,10 @@
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import type { Router } from "express";
+import { z } from "zod";
 import { adminDb } from "../lib/firebase-admin";
 import { AuthenticatedRequest, ensureTeamMember } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
+import { validate } from "../middleware/validation";
 import { asyncHandler } from "../lib/utils";
 import {
   canPublish,
@@ -30,6 +33,31 @@ import {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const selfCheckinSchema = z
+  .object({
+    code: z.string().trim().regex(/^\d{4}$/u, "Enter a 4-digit Lab PIN."),
+  })
+  .strict();
+
+const rollCallSchema = z
+  .object({
+    userId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(128)
+      .regex(/^[a-zA-Z0-9_@.-]+$/u, "Invalid member identifier."),
+    nickname: z.string().trim().min(1).max(100),
+    attended: z.boolean(),
+  })
+  .strict();
+
+function hashCheckinPin(saltHex: string, eventId: string, code: string): string {
+  return createHmac("sha256", `${saltHex}:${process.env.ABUSE_HMAC_SECRET ?? ""}`)
+    .update(`${eventId}:${code}`)
+    .digest("hex");
 }
 
 export function registerCalendarManageRoutes(router: Router): void {
@@ -384,6 +412,136 @@ router.post(
         },
         true,
       ),
+    });
+  }),
+);
+
+router.post(
+  "/manage/:id/checkin-code",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "Restore this event before creating a check-in code.", "EVENT_ARCHIVED");
+    }
+    const code = String(randomInt(1000, 10000));
+    const saltHex = randomBytes(16).toString("hex");
+    const codeHash = hashCheckinPin(saltHex, id, code);
+    const createdAt = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+
+    const batch = adminDb.batch();
+    batch.set(adminDb.collection("event_checkin_codes").doc(id), {
+      eventId: id,
+      saltHex,
+      codeHash,
+      expiresAt,
+      createdBy: req.user!.uid,
+      createdAt,
+    });
+    batch.set(adminDb.collection("audit_logs").doc(), {
+      action: "calendar.event.checkin_code_created",
+      actorUid: req.user!.uid,
+      targetId: id,
+      createdAt,
+    });
+    await batch.commit();
+
+    res.json({
+      success: true,
+      code,
+      expiresAt,
+    });
+  }),
+);
+
+router.post(
+  "/manage/:id/self-checkin",
+  ensureTeamMember,
+  validate(selfCheckinSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { id, ref, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "This event is archived.", "EVENT_ARCHIVED");
+    }
+    const { code } = req.body as z.infer<typeof selfCheckinSchema>;
+    const codeSnap = await adminDb.collection("event_checkin_codes").doc(id).get();
+    const codeData = codeSnap.data() as Record<string, unknown> | undefined;
+    const expiresMs = codeData?.expiresAt ? Date.parse(String(codeData.expiresAt)) : 0;
+
+    if (!codeSnap.exists || !codeData || !Number.isFinite(expiresMs) || expiresMs <= Date.now()) {
+      throw new ApiError(
+        403,
+        "No active Lab PIN for this session. Ask a mentor to project a fresh code.",
+        "PIN_EXPIRED",
+      );
+    }
+
+    const expectedHex = String(codeData.codeHash ?? "");
+    const actualHex = hashCheckinPin(String(codeData.saltHex ?? ""), id, code);
+    const expectedBuf = Buffer.from(expectedHex, "hex");
+    const actualBuf = Buffer.from(actualHex, "hex");
+    if (expectedBuf.length === 0 || expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) {
+      throw new ApiError(403, "Incorrect 4-digit Lab PIN.", "INVALID_PIN");
+    }
+
+    const uid = req.user!.uid;
+    const profileSnap = await adminDb.collection("user_profiles").doc(uid).get();
+    const rawNickname =
+      typeof profileSnap.data()?.nickname === "string"
+        ? profileSnap.data()!.nickname.trim()
+        : "";
+    const nickname =
+      rawNickname && !rawNickname.includes("@")
+        ? rawNickname.slice(0, 100)
+        : "ARES Member";
+
+    await ref.collection("signups").doc(uid).set(
+      {
+        userId: uid,
+        nickname,
+        attended: true,
+      },
+      { merge: true },
+    );
+
+    res.json({
+      success: true,
+      attended: true,
+      nickname,
+    });
+  }),
+);
+
+router.put(
+  "/manage/:id/roll-call",
+  ensureTeamMember,
+  ensureCalendarPublisher,
+  validate(rollCallSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { ref, data } = await getEvent(req.params.id, true);
+    if (data.isDeleted === 1) {
+      throw new ApiError(409, "Restore this event before taking roll call.", "EVENT_ARCHIVED");
+    }
+    const input = req.body as z.infer<typeof rollCallSchema>;
+    const safeNickname = input.nickname.includes("@")
+      ? "ARES Member"
+      : input.nickname.slice(0, 100);
+
+    await ref.collection("signups").doc(input.userId).set(
+      {
+        userId: input.userId,
+        nickname: safeNickname,
+        attended: input.attended,
+      },
+      { merge: true },
+    );
+
+    res.json({
+      success: true,
+      userId: input.userId,
+      attended: input.attended,
     });
   }),
 );

@@ -474,6 +474,7 @@ export default function EventEditorDrawer({
                 editId={editId}
                 signups={signups}
                 isAdmin={isAdmin}
+                canManageAttendance={canPublishDirectly}
                 formIsPotluck={formIsPotluck}
                 formIsVolunteer={formIsVolunteer}
                 user={currentUser}

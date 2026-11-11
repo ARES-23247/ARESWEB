@@ -1365,9 +1365,10 @@ describe("Firestore zero-trust rules", () => {
     );
   });
 
-  it("validates event signup payloads while allowing self-RSVP, partial check-ins, and admin/coach attendance updates", async () => {
+  it("validates event signup payloads while blocking member self-promotion of attended and allowing mentor/coach/admin roll call", async () => {
     await seedAuthorizedUser("member-user", "member");
     await seedAuthorizedUser("other-member", "member");
+    await seedAuthorizedUser("mentor-user", "mentor");
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("coach-user", "coach");
     await seedDocument("events", "practice-1", {
@@ -1378,9 +1379,19 @@ describe("Firestore zero-trust rules", () => {
 
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
     const otherDb = testEnvironment.authenticatedContext("other-member").firestore();
+    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
     const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
     const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
     const ownSignup = doc(memberDb, "events", "practice-1", "signups", "member-user");
+
+    // Regular member cannot forge attended: true on initial create
+    await assertFails(
+      setDoc(ownSignup, {
+        userId: "member-user",
+        nickname: "RobotBuilder",
+        attended: true,
+      }),
+    );
 
     await assertSucceeds(
       setDoc(ownSignup, {
@@ -1392,7 +1403,28 @@ describe("Firestore zero-trust rules", () => {
         attended: false,
       }),
     );
-    await assertSucceeds(setDoc(ownSignup, { attended: true }, { merge: true }));
+
+    // Regular member cannot self-promote attended: true from client SDK
+    await assertFails(setDoc(ownSignup, { attended: true }, { merge: true }));
+
+    // Mentor can take roll call and mark member attended: true
+    await assertSucceeds(
+      setDoc(
+        doc(mentorDb, "events", "practice-1", "signups", "member-user"),
+        { attended: true },
+        { merge: true },
+      ),
+    );
+
+    // Once checked in, member can still update RSVP notes while preserving attended: true
+    await assertSucceeds(
+      setDoc(
+        ownSignup,
+        { notes: "In lab — working on odometry", attended: true },
+        { merge: true },
+      ),
+    );
+
     await assertSucceeds(
       setDoc(
         doc(adminDb, "events", "practice-1", "signups", "other-member"),
@@ -1405,6 +1437,13 @@ describe("Firestore zero-trust rules", () => {
         doc(coachDb, "events", "practice-1", "signups", "member-user"),
         { attended: false },
       ),
+    );
+
+    // Server-only check-in PIN records are closed to all browser SDK roles
+    await assertFails(
+      setDoc(doc(adminDb, "event_checkin_codes", "practice-1"), {
+        codeHash: "forged",
+      }),
     );
 
     await assertFails(
