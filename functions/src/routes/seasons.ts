@@ -58,12 +58,27 @@ function safeHttpsUrlOrNull(value: unknown): string | null {
   return url.length <= 2048 && url.startsWith("https://") ? url : null;
 }
 
+const SAFE_ROBOT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
+
+function optionalRobotId(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "string" || !SAFE_ROBOT_ID.test(value.trim())) {
+    throw new ApiError(
+      400,
+      "Robot id may only contain letters, numbers, dashes, and underscores.",
+    );
+  }
+  return value.trim();
+}
+
 function seasonDto(id: string, data: Record<string, unknown>) {
+  const rawRobotId = typeof data.robotId === "string" ? data.robotId.trim() : "";
   return {
     id,
     startYear: typeof data.startYear === "number" ? data.startYear : 0,
     endYear: typeof data.endYear === "number" ? data.endYear : null,
     challengeName: text(data.challengeName, 160),
+    robotId: rawRobotId && SAFE_ROBOT_ID.test(rawRobotId) ? rawRobotId : null,
     robotName: text(data.robotName, 120) || null,
     robotImage: safeHttpsUrlOrNull(data.robotImage),
     robotDescription: text(data.robotDescription, 2_000) || null,
@@ -107,6 +122,7 @@ interface SeasonWriteInput {
   startYear?: unknown;
   endYear?: unknown;
   challengeName?: unknown;
+  robotId?: unknown;
   robotName?: unknown;
   robotImage?: unknown;
   robotDescription?: unknown;
@@ -232,6 +248,7 @@ seasonsRouter.post(
       startYear,
       endYear: endYearRaw,
       challengeName,
+      robotId: optionalRobotId(input.robotId),
       robotName: text(input.robotName, 120) || null,
       robotImage: optionalHttpsUrl(input.robotImage),
       robotDescription: text(input.robotDescription, 2_000) || null,

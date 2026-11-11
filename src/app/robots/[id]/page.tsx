@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom";
 import { Cpu, Scale, Code, Wrench, Video, Link as LinkIcon, ChevronLeft, Layers, Printer, FileText } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PublicDataState } from "@/components/PublicDataState";
+import { encodeQrMatrix, qrMatrixToSvgPath } from "@/lib/qrSvg";
 import { canEmbedCadUrl, fetchRobot, isSafeExternalUrl, isTrustedPrintablesUrl, RobotApiError } from "../api";
 
 export default function RobotDetailPage() {
@@ -143,7 +144,12 @@ export default function RobotDetailPage() {
         </div>
 
         {/* Printable Judge / Pit Summary Sheet */}
-        {showPitSheet && (
+        {showPitSheet && (() => {
+          const canonicalRobotUrl = `https://aresfirst.org/robots/${encodeURIComponent(robot.id)}`;
+          const qrMatrix = encodeQrMatrix(canonicalRobotUrl);
+          const qrViewBoxSize = qrMatrix.size + 4;
+          const qrPath = qrMatrixToSvgPath(qrMatrix, 2);
+          return (
           <section
             aria-label="Printable Judge and Pit Technical Sheet"
             className="mb-12 rounded-2xl border-2 border-ares-gold/40 bg-black/80 p-8 shadow-2xl print:border-black print:bg-white print:text-black"
@@ -160,13 +166,34 @@ export default function RobotDetailPage() {
                   Season: {robot.seasonName} • Challenge: {robot.challengeName}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="clipped-button bg-ares-red text-white text-xs uppercase font-black inline-flex items-center gap-2 cursor-pointer print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
-              >
-                <Printer aria-hidden="true" size={14} /> Print Pit Sheet
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white p-2 text-black print:border-black">
+                  <svg
+                    role="img"
+                    aria-label={`QR code for ${robot.name} technical dossier`}
+                    viewBox={`0 0 ${qrViewBoxSize} ${qrViewBoxSize}`}
+                    className="h-16 w-16 shrink-0"
+                  >
+                    <rect width={qrViewBoxSize} height={qrViewBoxSize} fill="#ffffff" />
+                    <path d={qrPath} fill="#000000" />
+                  </svg>
+                  <div className="pr-1 text-left">
+                    <span className="block text-[9px] font-black uppercase tracking-wider">
+                      Scan for Live CAD &amp; Specs
+                    </span>
+                    <span className="block font-mono text-[10px] font-bold">
+                      aresfirst.org/robots/{robot.id}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="clipped-button bg-ares-red text-white text-xs uppercase font-black inline-flex items-center gap-2 cursor-pointer print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  <Printer aria-hidden="true" size={14} /> Print Pit Sheet
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 print:border-black/20">
@@ -200,7 +227,8 @@ export default function RobotDetailPage() {
               </div>
             )}
           </section>
-        )}
+          );
+        })()}
 
         {/* Versions Dropdown */}
         {robot.versions && robot.versions.length > 0 && (

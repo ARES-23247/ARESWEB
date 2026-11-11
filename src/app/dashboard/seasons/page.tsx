@@ -12,7 +12,12 @@ interface SeasonRecord {
   startYear: number;
   endYear: number | null;
   challengeName: string;
+  robotId?: string | null;
   robotName: string | null;
+  robotImage?: string | null;
+  robotDescription?: string | null;
+  robotCadUrl?: string | null;
+  albumUrl?: string | null;
   summary: string | null;
   status: "published" | "draft";
   isDeleted?: number;
@@ -35,7 +40,12 @@ interface SeasonForm {
   startYear: string;
   endYear: string;
   challengeName: string;
+  robotId: string;
   robotName: string;
+  robotImage: string;
+  robotDescription: string;
+  robotCadUrl: string;
+  albumUrl: string;
   summary: string;
   status: "published" | "draft";
 }
@@ -51,8 +61,18 @@ interface AwardForm {
 }
 
 const EMPTY_SEASON: SeasonForm = {
-  id: null, startYear: String(new Date().getFullYear()), endYear: "",
-  challengeName: "", robotName: "", summary: "", status: "published",
+  id: null,
+  startYear: String(new Date().getFullYear()),
+  endYear: "",
+  challengeName: "",
+  robotId: "",
+  robotName: "",
+  robotImage: "",
+  robotDescription: "",
+  robotCadUrl: "",
+  albumUrl: "",
+  summary: "",
+  status: "published",
 };
 
 const EMPTY_AWARD: AwardForm = {
@@ -125,7 +145,12 @@ export default function SeasonsAwardsManagerPage() {
           startYear: Number(seasonForm.startYear),
           endYear: seasonForm.endYear ? Number(seasonForm.endYear) : null,
           challengeName: seasonForm.challengeName,
+          robotId: seasonForm.robotId.trim() || undefined,
           robotName: seasonForm.robotName || undefined,
+          robotImage: seasonForm.robotImage.trim() || undefined,
+          robotDescription: seasonForm.robotDescription.trim() || undefined,
+          robotCadUrl: seasonForm.robotCadUrl.trim() || undefined,
+          albumUrl: seasonForm.albumUrl.trim() || undefined,
           summary: seasonForm.summary || undefined,
           status: seasonForm.status,
         }),
@@ -308,12 +333,66 @@ export default function SeasonsAwardsManagerPage() {
                     className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
                   />
                 </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-xs font-bold text-marble">
+                    Robot name (optional)
+                    <input
+                      maxLength={120}
+                      value={seasonForm.robotName}
+                      onChange={(e) => setSeasonForm({ ...seasonForm, robotName: e.target.value })}
+                      className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    />
+                  </label>
+                  <label className="block text-xs font-bold text-marble">
+                    Linked Robot ID / Slug (optional, e.g. ares-mk4)
+                    <input
+                      maxLength={80}
+                      value={seasonForm.robotId}
+                      onChange={(e) => setSeasonForm({ ...seasonForm, robotId: e.target.value })}
+                      placeholder="ares-mk4"
+                      className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="block text-xs font-bold text-marble">
+                    Robot Image URL (https://, optional)
+                    <input
+                      type="url"
+                      value={seasonForm.robotImage}
+                      onChange={(e) => setSeasonForm({ ...seasonForm, robotImage: e.target.value })}
+                      placeholder="https://..."
+                      className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    />
+                  </label>
+                  <label className="block text-xs font-bold text-marble">
+                    Onshape / CAD URL (https://, optional)
+                    <input
+                      type="url"
+                      value={seasonForm.robotCadUrl}
+                      onChange={(e) => setSeasonForm({ ...seasonForm, robotCadUrl: e.target.value })}
+                      placeholder="https://cad.onshape.com/..."
+                      className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    />
+                  </label>
+                  <label className="block text-xs font-bold text-marble">
+                    Photo Album URL (https://, optional)
+                    <input
+                      type="url"
+                      value={seasonForm.albumUrl}
+                      onChange={(e) => setSeasonForm({ ...seasonForm, albumUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                    />
+                  </label>
+                </div>
                 <label className="block text-xs font-bold text-marble">
-                  Robot name (optional)
-                  <input
-                    maxLength={120}
-                    value={seasonForm.robotName}
-                    onChange={(e) => setSeasonForm({ ...seasonForm, robotName: e.target.value })}
+                  Robot technical highlight (optional)
+                  <textarea
+                    maxLength={2000}
+                    rows={2}
+                    value={seasonForm.robotDescription}
+                    onChange={(e) => setSeasonForm({ ...seasonForm, robotDescription: e.target.value })}
                     className="mt-1 w-full border border-white/15 bg-obsidian px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
                   />
                 </label>
@@ -375,7 +454,12 @@ export default function SeasonsAwardsManagerPage() {
                             startYear: String(season.startYear),
                             endYear: season.endYear ? String(season.endYear) : "",
                             challengeName: season.challengeName,
+                            robotId: season.robotId ?? "",
                             robotName: season.robotName ?? "",
+                            robotImage: season.robotImage ?? "",
+                            robotDescription: season.robotDescription ?? "",
+                            robotCadUrl: season.robotCadUrl ?? "",
+                            albumUrl: season.albumUrl ?? "",
                             summary: season.summary ?? "",
                             status: season.status,
                           })

@@ -106,13 +106,13 @@ export default function TournamentsFeedPage() {
     );
   }
 
-  // Lockscreen gate if not authenticated or unauthorized
+  // Public Competition Hub when signed out or unverified
   if (!isAuthorized) {
     return (
-      <div className="w-full min-h-screen bg-obsidian text-marble py-8 flex flex-col justify-center relative overflow-hidden">
+      <div className="w-full min-h-screen bg-obsidian text-marble py-12 flex flex-col relative overflow-hidden">
         <SEO
-          title="Tournaments & Competition History | ARES Scouting Vault"
-          description="Public competition history for ARES 23247 with the members-only scouting vault."
+          title="Tournaments & Competition History | ARES 23247"
+          description="Official FIRST Tech Challenge competition schedule, match records, and OPR history for ARES 23247."
           noindex={false}
         />
         <div className="absolute top-0 left-0 w-full z-10">
@@ -122,57 +122,85 @@ export default function TournamentsFeedPage() {
             className="w-full"
           />
         </div>
+
+        <header className="w-full max-w-5xl mx-auto px-6 pt-8 pb-10 z-10">
+          <div className="inline-flex items-center gap-2 bg-white/5 text-ares-gold border border-white/10 px-3.5 py-1.5 ares-cut-sm text-xs font-black uppercase tracking-widest mb-5">
+            <Trophy size={13} aria-hidden="true" />
+            <span>FIRST® Tech Challenge #23247</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading text-white">
+            Competition Hub &amp; Match Results
+          </h1>
+          <p className="mt-3 text-base text-marble/80 max-w-2xl leading-relaxed">
+            Explore ARES 23247&apos;s regional qualifiers, state championships, and published
+            Offensive Power Ratings (OPR), cross-linked with our seasonal robots and awards.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              to="/seasons"
+              className="inline-flex items-center gap-1.5 rounded border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:border-ares-gold/50 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Season Dossiers &amp; Awards <ChevronRight size={14} aria-hidden="true" />
+            </Link>
+            <Link
+              to="/robots"
+              className="inline-flex items-center gap-1.5 rounded border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:border-ares-gold/50 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Robot Fleet &amp; CAD <ChevronRight size={14} aria-hidden="true" />
+            </Link>
+            <Link
+              to="/calendar"
+              className="inline-flex items-center gap-1.5 rounded border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:border-ares-gold/50 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+            >
+              Team Calendar <ChevronRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
+        </header>
+
         <PublicResults />
 
-        <div className="mt-12 w-full max-w-md mx-auto px-6 z-10">
-          <div className="glass-card hero-card p-8 border border-white/10 bg-black/60 shadow-2xl flex flex-col items-center text-center">
-            <div className="relative w-20 h-20 bg-ares-red/15 border border-ares-red/45 ares-cut flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(192,0,0,0.2)]">
-              <Lock
-                className="text-ares-gold w-8 h-8"
-                aria-hidden="true"
-              />
+        <div className="mt-14 w-full max-w-5xl mx-auto px-6 z-10">
+          <div className="glass-card p-6 sm:p-8 border border-white/10 bg-black/50 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 shrink-0 bg-ares-red/15 border border-ares-red/45 ares-cut flex items-center justify-center">
+                <Lock className="text-ares-gold w-5 h-5" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold text-white uppercase font-heading tracking-tight">
+                  Scouting &amp; Tournaments Vault
+                </h2>
+                <p className="text-marble/70 text-xs sm:text-sm leading-relaxed mt-1 max-w-xl">
+                  Stand scouting logs, alliance simulation tools, and pit command checklists are
+                  reserved for verified ARES 23247 students, mentors, and coaches.
+                </p>
+                {user && authorizedUser?.role === "unverified" && (
+                  <div className="mt-3 p-3 bg-ares-red/10 border border-ares-red/30 rounded-lg flex items-start gap-2 text-left">
+                    <ShieldAlert
+                      size={15}
+                      className="text-ares-gold shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-white uppercase">
+                        Verification Required
+                      </p>
+                      <p className="text-[11px] text-marble/80 mt-0.5">
+                        Signed in as <strong>{user.email}</strong> — awaiting coach or administrator
+                        role verification.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <span className="text-ares-gold font-bold uppercase tracking-[0.4em] text-[10px] font-heading mb-3">
-              <i>FIRST</i>® Tech Challenge #23247
-            </span>
-
-            <h2 className="text-2xl font-extrabold text-white uppercase font-heading mb-3 tracking-tighter">
-              Scouting & Tournaments Vault
-            </h2>
-
-            <p className="text-marble/70 text-sm leading-relaxed mb-8 max-w-sm">
-              Scouting data, match checklists, and detailed team Offensive Power
-              Ratings (OPRs) are restricted to verified ARES engineering
-              members.
-            </p>
-
             <button
+              type="button"
               onClick={loginWithGoogle}
-              className="w-full clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="shrink-0 clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-xs tracking-wider uppercase inline-flex items-center justify-center gap-2 px-6 py-3 shadow-xl cursor-pointer focus-visible:ring-2 focus-visible:ring-ares-cyan"
             >
               Sign In with Google
             </button>
-
-            {user && authorizedUser?.role === "unverified" && (
-              <div className="mt-6 p-4 bg-ares-red/10 border border-ares-red/30 rounded-lg flex items-start gap-2.5 text-left">
-                <ShieldAlert
-                  size={16}
-                  className="text-ares-gold shrink-0 mt-0.5"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="text-xs font-bold text-white uppercase">
-                    Verification Required
-                  </p>
-                  <p className="text-[11px] text-marble/60 mt-0.5">
-                    Your email ({user.email}) is authenticated, but a coach or
-                    administrator must approve your role before you can view
-                    team scouting vaults.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

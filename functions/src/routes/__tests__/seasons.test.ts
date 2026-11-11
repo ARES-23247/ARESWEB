@@ -177,6 +177,7 @@ describe("Seasons and awards admin API", () => {
       startYear: 2026,
       endYear: 2027,
       challengeName: "DECODE",
+      robotId: "ares-mk4",
       robotCadUrl: "https://cad.onshape.com/x",
       status: "draft",
     };
@@ -186,6 +187,7 @@ describe("Seasons and awards admin API", () => {
       expect.objectContaining({
         id: "season_2026",
         startYear: 2026,
+        robotId: "ares-mk4",
         status: "draft",
       }),
     );
@@ -201,6 +203,10 @@ describe("Seasons and awards admin API", () => {
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
 
     req.body = { startYear: 2026, challengeName: "X", id: "a/b" };
+    await handler(seasonsRouter, "/admin", "post")(req, res, next);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
+
+    req.body = { startYear: 2026, challengeName: "X", robotId: "bad/robot" };
     await handler(seasonsRouter, "/admin", "post")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
   });
