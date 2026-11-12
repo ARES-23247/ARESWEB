@@ -244,6 +244,7 @@ jobs:
         env:
           AREA_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           mkdir -p ci-report
           node scripts/affected-areas.mjs --base "${AREA_BASE:-origin/master}" --output ci-report/affected-areas.json --github-output "$GITHUB_OUTPUT"
 

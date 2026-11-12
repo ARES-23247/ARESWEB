@@ -43,6 +43,7 @@ describe("production deployment workflow", () => {
     const browsers = workflowJob("e2e-tests");
     expect(browsers).toContain("shard: [1, 2]");
     expect(browsers).toContain("fail-fast: false");
+    expect(browsers).toContain('git config --global --add safe.directory "$GITHUB_WORKSPACE"');
     expect(browsers).toContain("--shard=${{ matrix.shard }}/2");
     expect(browsers).toContain("--list-e2e ci-report/inventory.json");
     expect(browsers).toContain("name: e2e-shard-${{ matrix.shard }}");
