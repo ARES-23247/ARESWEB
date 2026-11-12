@@ -32,3 +32,20 @@ Every lesson citing the 19 changed files was reviewed against `git diff e495c305
 - All other referenced lessons remained accurate and received automated ARES 20.0.6 / Studio 7.0.73 / Starter 20.0.6 version and source-hash updates.
 
 Catalog provenance, lesson version text, `robotics-curriculum-plan.json`, `source-authorities.json`, and all three bounded `release-candidate.json` review digests were refreshed together. Historical screenshot identities, batch membership, and human-review gates (`mode: "review-candidate"`, `requiresHumanReview: true`) are preserved.
+
+---
+
+# Academy source refresh during PR #338 validation (November 11, late evening)
+
+During pull request `#338` validation, `pnpm run content:verify` detected that `ARES-Robotics` `main` merged PR `#115` (`studioVersion` `7.0.73` -> `7.0.74`, `aresVersion` unchanged at `20.0.6`). This refresh applies the standing maintenance approval in `AGENTS.md` to repository source files and unapproved review-candidate digests without mutating production Academy documents.
+
+- Previous official source: [`b58656596bec2f6e3b44b5470c80108dc647fe1c`](https://github.com/ARES-23247/ARES-Robotics/commit/b58656596bec2f6e3b44b5470c80108dc647fe1c), ARES 20.0.6 / Studio 7.0.73; FTC/FRC starters 20.0.6.
+- New official source: [`4c789f471cb7490f3d3995c2b449881543516a2e`](https://github.com/ARES-23247/ARES-Robotics/commit/4c789f471cb7490f3d3995c2b449881543516a2e), ARES 20.0.6 / Studio 7.0.74; FTC/FRC starters 20.0.6.
+- Release metadata and all 140 referenced Git blob hashes were resolved from a clean bare clone of `https://github.com/ARES-23247/ARES-Robotics.git` at `4c789f471cb7490f3d3995c2b449881543516a2e` and verified against GitHub via `content:verify`.
+
+## Reviewed source changes (`b5865659..4c789f47`)
+
+Only 1 of the 140 referenced catalog source paths changed across upstream merge `#115`:
+
+1. `release/ares-versions.properties` — bumps `studioVersion=7.0.74` while `aresVersion=20.0.6`, `ftcStarterVersion=20.0.6`, and `frcStarterVersion=20.0.6` remain unchanged. All other upstream changes in `#115` are additive Studio analytical widgets, dashboard crosshair/overlay helpers, path-planner HUD/history helpers, and split-pane/onboarding UX improvements outside the 140 referenced Academy source files.
+2. No instructional claims or safety boundaries in any referenced lesson were invalidated; 15 lessons citing `Studio 7.0.73` received automated `Studio 7.0.74` version-text updates alongside `catalog.json`, `robotics-curriculum-plan.json`, `source-authorities.json`, and `release-candidate.json`.

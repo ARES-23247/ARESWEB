@@ -4,13 +4,13 @@
   "repositories": {
     "ARES-Robotics": {
       "current": {
-        "revision": "ares-20.0.6-studio-7.0.73",
-        "commit": "b58656596bec2f6e3b44b5470c80108dc647fe1c"
+        "revision": "ares-20.0.6-studio-7.0.74",
+        "commit": "4c789f471cb7490f3d3995c2b449881543516a2e"
       },
       "approved": [
         {
-          "revision": "ares-20.0.6-studio-7.0.73",
-          "commit": "b58656596bec2f6e3b44b5470c80108dc647fe1c"
+          "revision": "ares-20.0.6-studio-7.0.74",
+          "commit": "4c789f471cb7490f3d3995c2b449881543516a2e"
         }
       ]
     }
