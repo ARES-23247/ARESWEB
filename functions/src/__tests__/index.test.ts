@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
@@ -53,8 +56,11 @@ process.env.ENCRYPTION_SECRET =
 
 import {
   API_ROUTE_GROUPS,
+  DEPLOYMENT_FINGERPRINT_LABEL,
+  deploymentLabelOptions,
   FUNCTION_SECRET_BINDINGS,
   GAME_SERVICE_SECRET_BINDINGS,
+  getDeploymentLabels,
   RUNTIME_SERVICE_ACCOUNTS,
   cleanupOldInquiries,
   cleanupWaggleGardens,
@@ -473,6 +479,30 @@ describe("Express App Endpoints", () => {
           }
         ).__endpoint.httpsTrigger.invoker,
       ).toEqual(["public"]);
+    }
+  });
+
+  it("attaches verified deployment fingerprint labels when release manifest is present", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ares-fn-fp-"));
+    try {
+      const missingPath = join(dir, "missing.json");
+      expect(getDeploymentLabels("publicApi", missingPath)).toBeUndefined();
+      expect(deploymentLabelOptions("publicApi", missingPath)).toEqual({});
+
+      const validFp = `v1-${"a".repeat(60)}`;
+      const manifestPath = join(dir, "deploy-fingerprints.json");
+      writeFileSync(
+        manifestPath,
+        JSON.stringify({ functions: { publicApi: validFp } }),
+      );
+      expect(deploymentLabelOptions("publicApi", manifestPath)).toEqual({
+        labels: { [DEPLOYMENT_FINGERPRINT_LABEL]: validFp },
+      });
+      expect(() => deploymentLabelOptions("driveApi", manifestPath)).toThrow(
+        "driveApi",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

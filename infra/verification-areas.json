@@ -1,17 +1,27 @@
 {
   "schemaVersion": 1,
-  "mode": "observe",
+  "mode": "enforce",
   "shared": [
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
+    "tsconfig.json",
+    "index.html",
     "functions/package*.json",
+    "functions/tsconfig.json",
+    "functions/Dockerfile*",
     "packages/*/package.json",
     "packages/ui/**",
     "packages/game-common/**",
     "src/App.tsx",
+    "src/main.tsx",
+    "src/vite-env.d.ts",
     "src/app/globals.css",
     "src/app/layout.tsx",
+    "src/app/page.tsx",
+    "src/components/ui/**",
+    "src/components/layout/**",
+    "src/components/navigation/**",
     "src/lib/api.ts",
     "src/lib/firebase*",
     "src/lib/auth*",
@@ -28,11 +38,21 @@
     ".github/**",
     "infra/**",
     "scripts/**",
+    "config/**",
+    "design/**",
+    "patches/**",
+    "tests/rules/**",
+    "e2e/fixtures/**",
+    "e2e/navigation.spec.ts",
+    "e2e/auth.spec.ts",
+    "e2e/pwa.spec.ts",
     "*.config.*",
     "firebase.json",
     "firestore.*",
     "storage.rules",
     "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
     ".agents/**"
   ],
   "smoke": [
@@ -40,6 +60,41 @@
     "e2e/auth.spec.ts"
   ],
   "areas": {
+    "docs": {
+      "paths": [
+        "docs/**",
+        "README.md",
+        "DEBUGGING.md",
+        "PROJECT.md",
+        "ORIGINAL_REQUEST.md"
+      ],
+      "e2e": [
+        "e2e/public-routes.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": []
+    },
+    "biobuzz": {
+      "paths": [
+        "packages/biobuzz/**",
+        "src/app/biobuzz/**",
+        "functions/src/lib/biobuzz*",
+        "functions/src/lib/__tests__/biobuzz*",
+        "functions/src/biobuzzServer*",
+        "functions/src/__tests__/biobuzz*",
+        "e2e/biobuzz*.spec.ts",
+        "src/test/[Bb]iobuzz*",
+        "src/test/*Biobuzz*"
+      ],
+      "e2e": [
+        "e2e/biobuzz*.spec.ts"
+      ],
+      "dependsOn": [],
+      "components": [
+        "hosting",
+        "biobuzz"
+      ]
+    },
     "waggle": {
       "paths": [
         "packages/waggle-way/**",
@@ -142,6 +197,8 @@
     "arcade": {
       "paths": [
         "src/app/arcade/**",
+        "src/components/games/**",
+        "public/images/games/**",
         "e2e/arcade.spec.ts",
         "e2e/games-fullscreen.spec.ts",
         "src/test/Arcade*",
@@ -152,6 +209,7 @@
         "e2e/games-fullscreen.spec.ts"
       ],
       "dependsOn": [
+        "biobuzz",
         "waggle",
         "buzzle",
         "buzzello",
@@ -165,6 +223,7 @@
     "editor": {
       "paths": [
         "src/components/editor/**",
+        "src/components/simulation/**",
         "src/components/Simulation*",
         "src/hooks/useSimulation*",
         "src/hooks/useCodeCompiler*",
@@ -195,6 +254,7 @@
         "src/app/academy/**",
         "src/app/dashboard/academy/**",
         "content/learning/**",
+        "public/academy/**",
         "src/lib/learning*",
         "src/lib/academy*",
         "src/hooks/useAcademyProgress*",
@@ -228,7 +288,12 @@
         "src/app/dashboard/seasons/**",
         "src/app/dashboard/profile/**",
         "src/app/dashboard/users/**",
+        "src/app/dashboard/announcements/**",
+        "src/app/dashboard/inquiries/**",
         "src/app/tournaments/**",
+        "src/app/join/**",
+        "src/app/leaderboard/**",
+        "src/components/events/**",
         "src/lib/pitModeOutbox*",
         "functions/src/routes/tasks*",
         "functions/src/routes/profile*",
@@ -236,9 +301,11 @@
         "functions/src/routes/tournament*",
         "functions/src/routes/portfolio*",
         "functions/src/routes/seasons*",
+        "functions/src/routes/announcements*",
+        "functions/src/routes/inquiries*",
         "functions/src/lib/ftcScout*",
         "e2e/tasks.spec.ts",
-        "e2e/events.spec.ts",
+        "e2e/event*.spec.ts",
         "e2e/championship.spec.ts",
         "e2e/email-roster.spec.ts",
         "functions/src/routes/__tests__/tasks*",
@@ -247,6 +314,8 @@
         "functions/src/routes/__tests__/tournament*",
         "functions/src/routes/__tests__/portfolio*",
         "functions/src/routes/__tests__/seasons*",
+        "functions/src/routes/__tests__/announcements*",
+        "functions/src/routes/__tests__/inquiries*",
         "functions/src/lib/__tests__/ftcScout*",
         "src/test/Task*",
         "src/test/DashboardTask*",
@@ -261,7 +330,7 @@
       ],
       "e2e": [
         "e2e/tasks.spec.ts",
-        "e2e/events.spec.ts",
+        "e2e/event*.spec.ts",
         "e2e/championship.spec.ts",
         "e2e/email-roster.spec.ts"
       ],
@@ -282,11 +351,15 @@
         "src/app/dashboard/videos/**",
         "src/app/dashboard/photos/**",
         "src/app/gallery/**",
+        "src/app/videos/**",
+        "src/app/docs/**",
         "src/components/docs/**",
+        "src/components/media/**",
         "functions/src/routes/photos*",
         "functions/src/routes/albums*",
         "functions/src/routes/videos*",
         "functions/src/routes/drive*",
+        "e2e/video-embed.spec.ts",
         "functions/src/routes/__tests__/photos*",
         "functions/src/routes/__tests__/albums*",
         "functions/src/routes/__tests__/videos*",
@@ -299,6 +372,7 @@
       ],
       "e2e": [
         "e2e/public-routes.spec.ts",
+        "e2e/video-embed.spec.ts",
         "e2e/editor.spec.ts"
       ],
       "dependsOn": [
@@ -314,8 +388,20 @@
     "public": {
       "paths": [
         "src/app/about/**",
+        "src/app/accessibility/**",
         "src/app/blog/**",
+        "src/app/brand/**",
+        "src/app/dashboard/areslib/**",
         "src/app/dashboard/blog/**",
+        "src/app/dashboard/outreach/**",
+        "src/app/dashboard/simulations/**",
+        "src/app/dashboard/sponsors/**",
+        "src/app/developer-api/**",
+        "src/app/location-morgantown/**",
+        "src/app/privacy/**",
+        "src/app/robotics-west-virginia/**",
+        "src/app/tech-stack/**",
+        "src/app/terms/**",
         "src/components/dashboard/BlogShareKitModal*",
         "src/lib/blogShareKit*",
         "src/app/outreach/**",
@@ -325,13 +411,19 @@
         "src/app/calendar/**",
         "src/lib/qrSvg*",
         "functions/src/routes/content*",
+        "functions/src/routes/feed*",
+        "functions/src/routes/og*",
         "functions/src/routes/robots*",
+        "functions/src/routes/sitemap*",
         "functions/src/routes/sponsors*",
         "functions/src/routes/outreach*",
         "e2e/public-routes.spec.ts",
         "e2e/championship.spec.ts",
         "functions/src/routes/__tests__/content*",
+        "functions/src/routes/__tests__/feed*",
+        "functions/src/routes/__tests__/og*",
         "functions/src/routes/__tests__/robots*",
+        "functions/src/routes/__tests__/sitemap*",
         "functions/src/routes/__tests__/sponsors*",
         "functions/src/routes/__tests__/outreach*",
         "src/test/About*",
@@ -360,6 +452,7 @@
     "commerce": {
       "paths": [
         "src/app/store/**",
+        "src/app/finance/**",
         "src/app/dashboard/store/**",
         "src/app/dashboard/finance/**",
         "functions/src/routes/store*",

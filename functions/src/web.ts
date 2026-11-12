@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
 import { injectMetadata, metadataForDocument, parseDynamicRoute, renderNotFound } from "./webRendering";
-import { RUNTIME_SERVICE_ACCOUNTS } from "./functionConfig";
+import { deploymentLabelOptions, RUNTIME_SERVICE_ACCOUNTS } from "./functionConfig";
 
 const SHELL_URL = "https://aresfirst-portal.web.app/dashboard";
 const HEALTH_PATH = "/__deployment-health/web";
@@ -102,6 +102,7 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
 }
 
 export const web = onRequest({
+  ...deploymentLabelOptions("web"),
   cors: false,
   invoker: "public",
   memory: "256MiB",

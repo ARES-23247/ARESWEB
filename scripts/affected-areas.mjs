@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { matchesGlob, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,7 +10,7 @@ const matches = (file, patterns) =>
 export function validateManifest(manifest) {
   if (
     manifest.schemaVersion !== 1 ||
-    manifest.mode !== "observe" ||
+    !["observe", "enforce"].includes(manifest.mode) ||
     !manifest.areas ||
     !Object.keys(manifest.areas).length
   )
@@ -44,7 +44,7 @@ export function validateManifest(manifest) {
   return manifest;
 }
 
-/** Observation only: unknown paths and shared changes always select the full suite. */
+/** Conservative selector: unknown paths and shared changes always select the full suite. */
 export function selectAreas(manifest, changed, inventory, reason) {
   validateManifest(manifest);
   const names = Object.keys(manifest.areas);
@@ -92,19 +92,21 @@ export function selectAreas(manifest, changed, inventory, reason) {
       !file.includes(".emulator.") &&
       (full || areas.some((name) => matches(file, manifest.areas[name].paths))),
   );
+  const potentialComponents = sorted(
+    areas.flatMap((name) => manifest.areas[name].components),
+  );
   return {
     schemaVersion: 1,
-    mode: "observe",
+    mode: manifest.mode,
     full,
     reasons: sorted(reasons),
     areas,
     changed: sorted(changed),
     e2e,
     unit: sorted(unit),
-    potentialComponents: sorted(
-      areas.flatMap((name) => manifest.areas[name].components),
-    ),
-    deploymentSelectionEnabled: false,
+    potentialComponents,
+    needsGameContainer: full || potentialComponents.includes("game"),
+    deploymentSelectionEnabled: manifest.mode === "enforce",
   };
 }
 
@@ -154,20 +156,24 @@ export function readChanges(
   }
 }
 
-export function buildCommands(plan, suite, root) {
+export function buildCommands(plan, suite, root, playwrightArgs = []) {
   if (!["unit", "e2e"].includes(suite))
     throw new Error("Choose --suite unit or e2e");
-  if (suite === "e2e")
+  if (suite === "e2e") {
+    if (!Array.isArray(plan.e2e) || !plan.e2e.length)
+      throw new Error("No browser tests selected");
     return [
       {
         cwd: root,
         args: [
           resolve(root, "node_modules/@playwright/test/cli.js"),
           "test",
-          ...plan.e2e,
+          ...(plan.full ? [] : plan.e2e),
+          ...playwrightArgs,
         ],
       },
     ];
+  }
   const frontend = plan.unit.filter((file) => !file.startsWith("functions/"));
   const backend = plan.unit
     .filter((file) => file.startsWith("functions/"))
@@ -209,37 +215,90 @@ export function main(
 ) {
   let base = "origin/master",
     output,
+    githubOutput,
+    planPath,
+    listE2ePath,
     suite,
     run = false;
+  const playwrightArgs = [];
   for (let index = 0; index < argv.length; index++) {
     const arg = argv[index];
     if (arg === "--run") run = true;
-    else if (["--base", "--output", "--suite"].includes(arg)) {
+    else if (arg.startsWith("--playwright-arg=")) {
+      const value = arg.slice("--playwright-arg=".length);
+      if (!value) throw new Error("--playwright-arg requires a value");
+      playwrightArgs.push(value);
+    } else if (
+      [
+        "--base",
+        "--output",
+        "--github-output",
+        "--plan",
+        "--list-e2e",
+        "--suite",
+        "--playwright-arg",
+      ].includes(arg)
+    ) {
       const value = argv[++index];
-      if (!value || value.startsWith("--"))
+      if (!value || (arg !== "--playwright-arg" && value.startsWith("--")))
         throw new Error(`${arg} requires a value`);
       if (arg === "--base") base = value;
       else if (arg === "--output") output = value;
+      else if (arg === "--github-output") githubOutput = value;
+      else if (arg === "--plan") planPath = value;
+      else if (arg === "--list-e2e") listE2ePath = value;
+      else if (arg === "--playwright-arg") playwrightArgs.push(value);
       else suite = value;
     } else throw new Error(`Unknown argument: ${arg}`);
   }
-  const manifest = JSON.parse(
-    readFileSync(resolve(root, "infra/verification-areas.json"), "utf8"),
-  );
-  const changes = readChanges(base, git);
-  const plan = {
-    ...selectAreas(
-      manifest,
-      changes.changed,
-      changes.inventory,
-      changes.reason,
-    ),
-    mergeBase: changes.mergeBase ?? null,
-  };
+
+  let plan;
+  if (planPath) {
+    plan = JSON.parse(readFileSync(resolve(root, planPath), "utf8"));
+    if (!Array.isArray(plan?.e2e) || !plan.e2e.length)
+      throw new Error("Invalid area plan: e2e list is required");
+  } else {
+    const manifest = JSON.parse(
+      readFileSync(resolve(root, "infra/verification-areas.json"), "utf8"),
+    );
+    const changes = readChanges(base, git);
+    plan = {
+      ...selectAreas(
+        manifest,
+        changes.changed,
+        changes.inventory,
+        changes.reason,
+      ),
+      mergeBase: changes.mergeBase ?? null,
+    };
+  }
+
   if (output) writeFileSync(output, `${JSON.stringify(plan, null, 2)}\n`);
-  log(JSON.stringify(plan, null, 2));
+  if (githubOutput) {
+    appendFileSync(
+      githubOutput,
+      `full=${plan.full}\nneeds_game_container=${Boolean(plan.needsGameContainer)}\n`,
+    );
+  }
+  if (!planPath) log(JSON.stringify(plan, null, 2));
+
+  if (listE2ePath) {
+    const listed = execute(
+      process.execPath,
+      [
+        resolve(root, "node_modules/@playwright/test/cli.js"),
+        "test",
+        "--list",
+        "--reporter=json",
+        ...(plan.full ? [] : plan.e2e),
+      ],
+      { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
+    );
+    writeFileSync(resolve(root, listE2ePath), listed);
+  }
+
   if (run) {
-    const commands = buildCommands(plan, suite, root);
+    const commands = buildCommands(plan, suite, root, playwrightArgs);
     execute(
       process.execPath,
       [resolve(root, "scripts/prepare-game-packages.mjs")],
