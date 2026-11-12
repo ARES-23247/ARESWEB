@@ -264,7 +264,7 @@ jobs:
         # overlap independent browser contexts on 4-vCPU runners without dropping any coverage.
         run: |
           if [ "${{ steps.e2e-plan.outputs.full }}" = "true" ]; then
-            pnpm run test:e2e -- --shard=${{ matrix.shard }}/2 --workers=3
+            pnpm run test:e2e --shard=${{ matrix.shard }}/2 --workers=3
           else
             node scripts/affected-areas.mjs --plan ci-report/affected-areas.json --suite e2e --run --playwright-arg=--shard=${{ matrix.shard }}/2 --playwright-arg=--workers=3
           fi
