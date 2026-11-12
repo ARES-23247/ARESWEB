@@ -177,9 +177,13 @@ Coverage floors are ratchets, not targets. New utilities and API routes must mee
 Firebase Emulator Suite tests for Firestore or Storage rule behavior.
 
 For focused iteration, see [docs/AREA_TESTING_AND_RELEASE_PLAN.md](docs/AREA_TESTING_AND_RELEASE_PLAN.md)
-and `pnpm test:affected --base origin/master`. Area selection is currently
-observation-only in CI and does not replace the full handoff gate above. Browser
-CI runs two isolated shards; the aggregate gate requires their complete reports.
+and `pnpm test:affected --base origin/master`. Pull-request CI runs conservative
+area-selected browser specs across two isolated shards (defaulting to the full
+suite on shared or unmapped changes) while the aggregate gate requires complete
+shard reports; local handoffs still require the full gate above. Protected
+production deploys use cloud-verified `ares-fp` labels from
+`scripts/deployment-fingerprints.mjs` to skip unchanged backend services while
+running full resource, secret, IAM, readiness, Hosting, and live health checks.
 
 See `docs/SECURITY_OPERATIONS.md` for required secret and deployment controls.
 The protected workflow also checks runtime, security observability, Academy

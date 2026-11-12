@@ -47,12 +47,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Report affected areas without skipping checks
+      - name: Compute conservative affected-area verification plan
+        id: area-plan
         env:
           AREA_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           mkdir -p ci-report
-          node scripts/affected-areas.mjs --base "${AREA_BASE:-origin/master}" --output ci-report/affected-areas.json
+          node scripts/affected-areas.mjs --base "${AREA_BASE:-origin/master}" --output ci-report/affected-areas.json --github-output "$GITHUB_OUTPUT"
 
       - name: Upload area selection report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -139,6 +140,7 @@ jobs:
         run: node scripts/check-bundle-size.mjs
 
       - name: Verify standalone game container
+        if: steps.area-plan.outputs.needs_game_container == 'true'
         run: |
           docker build --file functions/Dockerfile.game --tag aresweb-game-ci .
           docker run --rm --entrypoint node aresweb-game-ci -e '
@@ -220,6 +222,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -235,10 +239,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Discover full browser inventory
+      - name: Select affected browser specs
+        id: e2e-plan
+        env:
+          AREA_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           mkdir -p ci-report
-          pnpm exec playwright test --list --reporter=json > ci-report/inventory.json
+          node scripts/affected-areas.mjs --base "${AREA_BASE:-origin/master}" --output ci-report/affected-areas.json --github-output "$GITHUB_OUTPUT"
+
+      - name: Discover selected browser inventory
+        run: node scripts/affected-areas.mjs --plan ci-report/affected-areas.json --list-e2e ci-report/inventory.json
 
       - name: Run local E2E suite
         # Leave time to upload traces and inventory even if the suite stalls.
@@ -251,7 +261,12 @@ jobs:
           ARES_E2E_SHARD: ${{ matrix.shard }}
         # Campaign rescues exercise real elapsed simulation time. Three workers
         # overlap independent browser contexts on 4-vCPU runners without dropping any coverage.
-        run: pnpm run test:e2e --shard=${{ matrix.shard }}/2 --workers=3
+        run: |
+          if [ "${{ steps.e2e-plan.outputs.full }}" = "true" ]; then
+            pnpm run test:e2e -- --shard=${{ matrix.shard }}/2 --workers=3
+          else
+            node scripts/affected-areas.mjs --plan ci-report/affected-areas.json --suite e2e --run --playwright-arg=--shard=${{ matrix.shard }}/2 --playwright-arg=--workers=3
+          fi
 
       - name: Upload required shard evidence
         if: always()
@@ -375,6 +390,9 @@ jobs:
       - name: Build Cloud Functions release
         run: pnpm --filter functions build
 
+      - name: Write backend deployment fingerprint manifest
+        run: node scripts/deployment-fingerprints.mjs --write-manifest functions/lib/deploy-fingerprints.json
+
       - name: Upload immutable release artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -454,7 +472,25 @@ jobs:
       - name: Wait for declared indexes to become ready
         run: node scripts/wait-release-ready.mjs --indexes
 
+      - name: Plan fingerprinted game Cloud Run deployment
+        id: game-plan
+        shell: bash
+        run: |
+          set +e
+          service_json="$(gcloud run services describe aresweb-game-api --project aresfirst-portal --region us-central1 --format=json 2>/dev/null)"
+          describe_exit=$?
+          set -e
+          if [ "$describe_exit" -ne 0 ]; then
+            service_json=""
+          fi
+          action="$(printf '%s' "$service_json" | node scripts/deployment-fingerprints.mjs --should-deploy-game --manifest functions/lib/deploy-fingerprints.json --service-json -)"
+          fingerprint="$(node scripts/deployment-fingerprints.mjs --print-fingerprint game --manifest functions/lib/deploy-fingerprints.json)"
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          echo "Game Cloud Run deployment action: $action ($fingerprint)"
+
       - name: Build and publish immutable game service image
+        if: steps.game-plan.outputs.action == 'deploy'
         shell: bash
         run: |
           game_image="$(node scripts/verify-game-cloud-run.mjs --print-image-uri "${{ github.sha }}")"
@@ -464,6 +500,7 @@ jobs:
           echo "GAME_IMAGE=$game_image" >> "$GITHUB_ENV"
 
       - name: Deploy bounded game Cloud Run service before switching routes
+        if: steps.game-plan.outputs.action == 'deploy'
         run: >-
           gcloud run deploy aresweb-game-api
           --project aresfirst-portal
@@ -484,6 +521,7 @@ jobs:
           --no-cpu-boost
           --ingress all
           --allow-unauthenticated
+          --update-labels "ares-fp=${{ steps.game-plan.outputs.fingerprint }}"
           --quiet
 
       - name: Reject production game service resource and IAM drift
@@ -499,10 +537,30 @@ jobs:
 
       - name: Read the verified BIOBUZZ launch configuration
         id: biobuzz-launch
-        run: echo "origin=$(node scripts/biobuzz-cloud-run.mjs --origin)" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: |
+          origin="$(node scripts/biobuzz-cloud-run.mjs --origin)"
+          echo "origin=$origin" >> "$GITHUB_OUTPUT"
+          if [ -n "$origin" ]; then
+            set +e
+            service_json="$(gcloud run services describe aresweb-biobuzz-sim --project aresfirst-portal --region us-central1 --format=json 2>/dev/null)"
+            describe_exit=$?
+            set -e
+            if [ "$describe_exit" -ne 0 ]; then
+              service_json=""
+            fi
+            action="$(printf '%s' "$service_json" | node scripts/deployment-fingerprints.mjs --should-deploy-biobuzz --manifest functions/lib/deploy-fingerprints.json --service-json -)"
+            fingerprint="$(node scripts/deployment-fingerprints.mjs --print-fingerprint biobuzz --manifest functions/lib/deploy-fingerprints.json)"
+          else
+            action="disabled"
+            fingerprint=""
+          fi
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          echo "BIOBUZZ deployment action: $action ($fingerprint)"
 
       - name: Obtain a short-lived BIOBUZZ drain token
-        if: steps.biobuzz-launch.outputs.origin != ''
+        if: steps.biobuzz-launch.outputs.action == 'deploy'
         id: biobuzz-drain-auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
@@ -515,12 +573,13 @@ jobs:
           export_environment_variables: false
 
       - name: Deploy BIOBUZZ after its launch gates are approved
+        if: steps.biobuzz-launch.outputs.action == 'deploy'
         env:
           BIOBUZZ_DEPLOYMENT_ID_TOKEN: ${{ steps.biobuzz-drain-auth.outputs.id_token }}
-        run: node scripts/biobuzz-cloud-run.mjs --deploy "${{ github.sha }}"
+        run: node scripts/biobuzz-cloud-run.mjs --deploy "${{ github.sha }}" "${{ steps.biobuzz-launch.outputs.fingerprint }}"
 
       - name: Obtain a fresh BIOBUZZ resume token after deployment
-        if: steps.biobuzz-launch.outputs.origin != ''
+        if: steps.biobuzz-launch.outputs.action == 'deploy'
         id: biobuzz-resume-auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
@@ -533,16 +592,29 @@ jobs:
           export_environment_variables: false
 
       - name: Verify BIOBUZZ again before reopening admission
-        if: steps.biobuzz-launch.outputs.origin != ''
+        if: steps.biobuzz-launch.outputs.action == 'deploy'
         env:
           BIOBUZZ_DEPLOYMENT_ID_TOKEN: ${{ steps.biobuzz-resume-auth.outputs.id_token }}
         run: node scripts/biobuzz-cloud-run.mjs --resume "${{ github.sha }}"
 
+      - name: Verify unchanged BIOBUZZ service contract and live health
+        if: steps.biobuzz-launch.outputs.action == 'skip'
+        run: node scripts/biobuzz-cloud-run.mjs --verify-live
+
       - name: Deploy isolated Functions before switching routes
+        id: functions-deploy
         shell: bash
         run: |
-          function_targets="$(node scripts/verify-production-deployment.mjs --print-deploy-targets)"
-          pnpm exec firebase deploy --only "$function_targets" --project aresfirst-portal --non-interactive
+          functions_inventory="$(pnpm exec firebase functions:list --project aresfirst-portal --json)"
+          function_targets="$(printf '%s' "$functions_inventory" | node scripts/deployment-fingerprints.mjs --select-functions --manifest functions/lib/deploy-fingerprints.json --functions-json -)"
+          if [ -n "$function_targets" ]; then
+            echo "Deploying changed or drifted Functions: $function_targets"
+            echo "targets=$function_targets" >> "$GITHUB_OUTPUT"
+            pnpm exec firebase deploy --only "$function_targets" --project aresfirst-portal --non-interactive
+          else
+            echo "targets=unchanged" >> "$GITHUB_OUTPUT"
+            echo "All declared Functions match verified deployment fingerprints; skipping Function redeploy."
+          fi
 
       - name: Reject production Function, secret, resource, and IAM drift
         run: >-
@@ -597,7 +669,10 @@ jobs:
           echo "- Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Site: https://aresfirst.org" >> "$GITHUB_STEP_SUMMARY"
           echo "- Artifact: release-${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Drift contract: build identity, all declared Functions and invoker policies, and the bounded game Cloud Run service" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Game Cloud Run: ${{ steps.game-plan.outputs.action }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- BIOBUZZ Cloud Run: ${{ steps.biobuzz-launch.outputs.action }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cloud Functions: ${{ steps.functions-deploy.outputs.targets }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Drift contract: build identity, all declared Functions and invoker policies, and the bounded game and BIOBUZZ Cloud Run services" >> "$GITHUB_STEP_SUMMARY"
           echo "- Live health: strict Firebase surface and public media checks" >> "$GITHUB_STEP_SUMMARY"
           echo "- Canonical domain: continuously checked by Google Cloud Monitoring" >> "$GITHUB_STEP_SUMMARY"
 

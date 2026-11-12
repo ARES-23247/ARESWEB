@@ -67,9 +67,9 @@ For X/Twitter, Facebook, Instagram, and LinkedIn blog announcements, ARESWEB
 uses a zero-SaaS Share Kit inside `/dashboard/blog` (keyless Web Share Intents
 paired with OpenGraph `/api/og` preview cards and a locally rendered `1080x1080`
 Instagram PNG card) rather than third-party social scheduling APIs. No Meta, X,
-or Buffer API keys are bound to Cloud Functions; any legacy `BUFFER_API_KEY`
-secret may be deleted after the consuming Function revision no longer references
-it.
+or Buffer API keys are bound to Cloud Functions; the retired `BUFFER_API_KEY`
+secret was deleted from Google Secret Manager on `2026-11-11` after deployment
+`c696ae2a` removed its last Function reference.
 
 ## 3. Confirm encryption and profile privacy
 
@@ -111,11 +111,15 @@ metric with:
 pnpm run appcheck:storage-observe -- --project aresfirst-portal --start 2026-08-24T06:29:00Z
 ```
 
-Do not interpret a short zero-traffic interval as approval to enforce. At the
-end of the window, rerun with `--require-ready`, then repeat the media inventory,
-production health check, public thumbnail/original checks, authenticated upload
-and editor flows, and direct Storage denial probes. Any observed verification
-requires classification before enforcement.
+Do not interpret a short zero-traffic interval as approval to enforce. As of
+`2026-11-11`, `--require-ready` confirmed `1,912` hours of continuous observation
+with `0` direct Storage verifications (`READY_FOR_MANUAL_ENFORCEMENT_REVIEW`),
+and `pnpm run media:inventory -- --project aresfirst-portal --bucket aresfirst-portal.firebasestorage.app`
+scanned all `747` records (`posts`, `events`, `albums`, `imported_photos`,
+`docs`, `photos`, `revisions`) with `0` direct Storage references. Before
+toggling Storage App Check enforcement in Firebase Console, repeat one manual
+authenticated upload/editor check and direct Storage denial probe. Any observed
+verification requires classification before enforcement.
 
 ## 5. Run the release gate
 

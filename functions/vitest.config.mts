@@ -15,6 +15,7 @@ export default defineConfig({
       // These deployment copies are generated verbatim and tested through the adapters below.
       exclude: ["src/generated/**", "**/*.{test,spec}.ts", "src/lib/__tests__/helpers/**"],
       thresholds: {
+        "src/functionConfig.ts": { lines: 85, functions: 100 },
         "src/lib/biobuzzRooms.ts": { lines: 85, functions: 100 },
         "src/apps/biobuzz.ts": { lines: 85, functions: 100 },
         "src/biobuzzServer.ts": { lines: 85, functions: 100 },

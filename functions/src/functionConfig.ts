@@ -1,3 +1,38 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+export const DEPLOYMENT_FINGERPRINT_LABEL = "ares-fp";
+const DEPLOYMENT_FINGERPRINT_PATTERN = /^v1-[a-f0-9]{60}$/u;
+
+export function getDeploymentLabels(
+  functionId: string,
+  manifestPath = process.env.ARES_DEPLOY_FINGERPRINTS_PATH ??
+    resolve(__dirname, "deploy-fingerprints.json"),
+): Record<string, string> | undefined {
+  if (!existsSync(manifestPath)) return undefined;
+  const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    functions?: Record<string, unknown>;
+  };
+  const value = parsed.functions?.[functionId];
+  if (
+    typeof value !== "string" ||
+    !DEPLOYMENT_FINGERPRINT_PATTERN.test(value)
+  ) {
+    throw new Error(
+      `Missing or invalid deployment fingerprint for ${functionId}`,
+    );
+  }
+  return { [DEPLOYMENT_FINGERPRINT_LABEL]: value };
+}
+
+export function deploymentLabelOptions(
+  functionId: string,
+  manifestPath?: string,
+): { labels?: Record<string, string> } {
+  const labels = getDeploymentLabels(functionId, manifestPath);
+  return labels ? { labels } : {};
+}
+
 export const allowedOrigins = [
   "https://ares23247.web.app",
   "https://ares23247.firebaseapp.com",

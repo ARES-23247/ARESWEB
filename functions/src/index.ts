@@ -8,6 +8,7 @@ import { ApiError } from "./middleware/errorHandler";
 import { createLazyAppHandler } from "./lazyApp";
 import {
   allowedOrigins,
+  deploymentLabelOptions,
   FUNCTION_SECRET_BINDINGS,
   RUNTIME_SERVICE_ACCOUNTS,
 } from "./functionConfig";
@@ -15,8 +16,11 @@ import {
 export { web } from "./web";
 export {
   API_ROUTE_GROUPS,
+  DEPLOYMENT_FINGERPRINT_LABEL,
+  deploymentLabelOptions,
   FUNCTION_SECRET_BINDINGS,
   GAME_SERVICE_SECRET_BINDINGS,
+  getDeploymentLabels,
   RUNTIME_SERVICE_ACCOUNTS,
 } from "./functionConfig";
 
@@ -49,6 +53,7 @@ const communicationsHandler = createLazyAppHandler(
 export const publicApi = onRequest(
   {
     ...commonOptions,
+    ...deploymentLabelOptions("publicApi"),
     memory: "512MiB",
     timeoutSeconds: 60,
     serviceAccount: RUNTIME_SERVICE_ACCOUNTS.publicApi,
@@ -59,6 +64,7 @@ export const publicApi = onRequest(
 export const coreApi = onRequest(
   {
     ...commonOptions,
+    ...deploymentLabelOptions("coreApi"),
     memory: "512MiB",
     timeoutSeconds: 60,
     serviceAccount: RUNTIME_SERVICE_ACCOUNTS.coreApi,
@@ -69,6 +75,7 @@ export const coreApi = onRequest(
 export const mediaApi = onRequest(
   {
     ...commonOptions,
+    ...deploymentLabelOptions("mediaApi"),
     memory: "1GiB",
     timeoutSeconds: 300,
     concurrency: 10,
@@ -80,6 +87,7 @@ export const mediaApi = onRequest(
 export const driveApi = onRequest(
   {
     ...commonOptions,
+    ...deploymentLabelOptions("driveApi"),
     memory: "512MiB",
     timeoutSeconds: 60,
     serviceAccount: RUNTIME_SERVICE_ACCOUNTS.driveApi,
@@ -90,6 +98,7 @@ export const driveApi = onRequest(
 export const communicationsApi = onRequest(
   {
     ...commonOptions,
+    ...deploymentLabelOptions("communicationsApi"),
     memory: "512MiB",
     timeoutSeconds: 60,
     serviceAccount: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
@@ -100,6 +109,7 @@ export const communicationsApi = onRequest(
 
 export const cleanupOldInquiries = onSchedule(
   {
+    ...deploymentLabelOptions("cleanupOldInquiries"),
     schedule: "0 0 * * *",
     retryCount: 3,
     minBackoffSeconds: 60,
@@ -153,6 +163,7 @@ export const cleanupOldInquiries = onSchedule(
 /** Game-owned retention is independent of public traffic and cannot scan descendants. */
 export const cleanupWaggleGardens = onSchedule(
   {
+    ...deploymentLabelOptions("cleanupWaggleGardens"),
     schedule: "every 15 minutes",
     timeZone: "Etc/UTC",
     retryCount: 0,
@@ -189,6 +200,7 @@ export const cleanupWaggleGardens = onSchedule(
  */
 export const refreshPublicSitemap = onSchedule(
   {
+    ...deploymentLabelOptions("refreshPublicSitemap"),
     schedule: "every 30 minutes",
     retryCount: 3,
     minBackoffSeconds: 60,
@@ -209,6 +221,7 @@ export const refreshPublicSitemap = onSchedule(
 /** Refreshes public simulation registry/source artifacts outside request paths. */
 export const refreshSimulationArtifacts = onSchedule(
   {
+    ...deploymentLabelOptions("refreshSimulationArtifacts"),
     schedule: "every 30 minutes",
     retryCount: 3,
     minBackoffSeconds: 60,
@@ -231,6 +244,7 @@ export const refreshSimulationArtifacts = onSchedule(
 // overdue and imminent task due dates for the team's kanban stream.
 export const taskDueDigest = onSchedule(
   {
+    ...deploymentLabelOptions("taskDueDigest"),
     schedule: "0 7 * * *",
     timeZone: "America/New_York",
     memory: "256MiB",
@@ -257,6 +271,7 @@ export const taskDueDigest = onSchedule(
 
 export const syncGoogleDriveChanges = onSchedule(
   {
+    ...deploymentLabelOptions("syncGoogleDriveChanges"),
     schedule: "every 6 hours",
     memory: "256MiB",
     timeoutSeconds: 120,

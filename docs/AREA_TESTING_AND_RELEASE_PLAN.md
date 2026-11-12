@@ -1,6 +1,6 @@
 # ARESWEB affected-area testing and deployment proposal
 
-Status: approved staged implementation, 2026-09-07. Baseline: master 18ccb310. The first change implements observation, local scoped runs, full-suite browser sharding, and release readiness. Selective CI/deployment and package extraction remain gated on measured evidence; no quality gate is removed.
+Status: active enforcement, updated 2026-11-11. Selective PR browser/container CI (`infra/verification-areas.json` in `enforce` mode) and cloud-label-fingerprinted backend deployment (`scripts/deployment-fingerprints.mjs`) are live under the unchanged required test gate and full production drift/health verification.
 
 ## Objective
 
@@ -100,11 +100,9 @@ After backend deployment and the unchanged full IAM/resource/secret drift checks
 
 `Verify Current Production` is a manual, read-only GitHub workflow on master. It runs the existing full health and browser-security scripts against the current production site, without deploy credentials, new images, a Hosting switch, or inquiry storage. It creates a separate verification result; it does not rewrite an earlier failed deployment or prove that a requested commit is deployed. Its SHA is a unique probe identifier. Normal releases still follow protected CI and require deployment authorization.
 
-## Remaining rollout gates
+## Rollout status (2026-11-11)
 
-1. Collect area-selection reports alongside full successful runs, including focused game, Academy, task/API and shared changes. Investigate the mobile skip-link failure from a trace if it recurs.
-2. Expand the manifest and split other broad tests when reports show meaningful savings. Prove transitive imports, generated sources and dynamic routes are covered before enabling selective PR jobs. Update agent/CI handoff policy only at that point.
-3. Introduce component content fingerprints and a durable ledger of each component's last successful deployment. Unknown or incomplete ledgers must deploy the affected components conservatively. Test partial failure recovery and dependency/config changes before skipping any deployment. Keep full drift validation and one coherent Hosting artifact.
-4. Extract further private workspace packages only where measurements show independent development/build benefits. A new package does not imply a new production service.
-
-This staged delivery is intentionally explicit: the first change shortens broad browser CI and speeds local iteration, but does not yet claim that an Academy edit skips unrelated CI or that backend deployments are selective.
+1. Expanded `infra/verification-areas.json` (`mode: "enforce"`) to cover isolated areas (`docs`, `biobuzz`, `academy`, `team`, `media`, `public`, `commerce`, `integrations`, `editor`, `arcade`, and individual games) while retaining fail-closed `full: true` selection for shared platform, security, config, dependency, and unmapped paths.
+2. Enabled selective Playwright spec discovery and sharded execution in pull-request CI (`e2e-tests`, always including `e2e/navigation.spec.ts` and `e2e/auth.spec.ts` smoke) and conditional standalone game container verification (`needs_game_container`), under the unchanged `Required Test Gate` and `check-e2e-shards.mjs`.
+3. Enabled cloud-truthful `ares-fp` label fingerprints via `scripts/deployment-fingerprints.mjs` across `aresweb-game-api`, `aresweb-biobuzz-sim`, and all 12 Cloud Functions (`functions/src/functionConfig.ts`). Missing, drifted, or non-Ready live resources always redeploy conservatively; unchanged Ready services skip redundant rebuild/redeploy while unconditional resource, secret, IAM, readiness, Hosting, and live browser smoke gates run on every release.
+4. Additional workspace package extraction remains optional and driven only by measured build/development benefit.

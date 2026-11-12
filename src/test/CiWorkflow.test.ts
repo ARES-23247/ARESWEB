@@ -39,11 +39,12 @@ function workflowJob(id: string): string {
 }
 
 describe("production deployment workflow", () => {
-  it("requires complete isolated browser shards while area selection stays observational", () => {
+  it("requires complete isolated browser shards over conservative area selection", () => {
     const browsers = workflowJob("e2e-tests");
     expect(browsers).toContain("shard: [1, 2]");
     expect(browsers).toContain("fail-fast: false");
     expect(browsers).toContain("--shard=${{ matrix.shard }}/2");
+    expect(browsers).toContain("--list-e2e ci-report/inventory.json");
     expect(browsers).toContain("name: e2e-shard-${{ matrix.shard }}");
     expect(browsers).toContain("if-no-files-found: error");
     const jobTimeout = Number(browsers.match(/^    timeout-minutes: (\d+)/m)?.[1]);
@@ -54,13 +55,23 @@ describe("production deployment workflow", () => {
     expect(workflowJob("test-gate")).toContain("node scripts/check-e2e-shards.mjs ci-report");
     const verify = workflowJob("verify");
     expect(verify).toContain("scripts/affected-areas.mjs");
+    expect(verify).toContain("steps.area-plan.outputs.needs_game_container == 'true'");
     expect(verify).toContain("pnpm run test:coverage");
     expect(verify).toContain("pnpm --filter functions test:coverage");
     expect(verify).not.toContain("outputs.areas");
   });
 
-  it("waits for indexes and HTTP readiness before Hosting, preserving strict verification", () => {
+  it("fingerprints backend components while preserving unconditional drift, readiness, and Hosting gates", () => {
+    const releaseBuild = workflowJob("release-build");
+    expect(releaseBuild).toContain(
+      "node scripts/deployment-fingerprints.mjs --write-manifest functions/lib/deploy-fingerprints.json",
+    );
     const deploy = workflowJob("deploy-production");
+    expect(deploy).toContain("--should-deploy-game");
+    expect(deploy).toContain("--should-deploy-biobuzz");
+    expect(deploy).toContain("--select-functions");
+    expect(workflowStep("Reject production game service resource and IAM drift")).not.toContain("if:");
+    expect(workflowStep("Reject production Function, secret, resource, and IAM drift")).not.toContain("if:");
     const indexes = deploy.indexOf("wait-release-ready.mjs --indexes");
     const game = deploy.indexOf("wait-release-ready.mjs --game-origin");
     const hosting = deploy.indexOf("--only hosting,firestore:rules,storage");
