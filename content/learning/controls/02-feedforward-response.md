@@ -11,7 +11,7 @@ and [Read a Telemetry Graph Like a Scientist](/academy/read-a-telemetry-graph?pa
 first. You should be able to label units, read a graph, and change one test value at a time.
 
 This lesson has two web activities. The first is an invented control model. The second traces one
-feedforward-only step from ARES 20.0.6. Studio examples match Studio 7.0.73. The source links are
+feedforward-only step from ARES 20.0.6. Studio examples match Studio 7.0.74. The source links are
 pinned to the exact monorepo commit used for this lesson. Neither activity runs a motor or approves
 a robot setting.
 
