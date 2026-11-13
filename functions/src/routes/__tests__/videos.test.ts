@@ -150,6 +150,27 @@ describe("videos routes", () => {
     expect(res.json.mock.calls[0][0].videos).toHaveLength(2);
   });
 
+  it("refills active videos across archived gaps when scanning", async () => {
+    queryGet
+      .mockResolvedValueOnce({
+        docs: [
+          { id: "v_del_1", data: () => ({ videoId: "abcdefghijk", isDeleted: 1 }) },
+          { id: "v_del_2", data: () => ({ videoId: "lmnopqrstuv", isDeleted: 1 }) },
+        ],
+      })
+      .mockResolvedValueOnce({
+        docs: [
+          { id: "v_act_1", data: () => ({ videoId: "abcdefghijk", isDeleted: 0, title: "Active 1" }) },
+          { id: "v_act_2", data: () => ({ videoId: "lmnopqrstuv", isDeleted: 0, title: "Active 2" }) },
+        ],
+      });
+    await handler("/", "get")({ query: { limit: "1" } }, res, next);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.videos.map((v: { id: string }) => v.id)).toEqual(["v_act_1"]);
+    expect(payload.hasMore).toBe(true);
+    expect(payload.nextCursor).toBe("v_act_1");
+  });
+
   it("rejects an invalid YouTube link on create", async () => {
     await handler("/", "post")({ body: { title: "Bad", videoId: "bad" } }, res, next);
     expect(next.mock.calls[0][0]).toMatchObject({ status: 400 });

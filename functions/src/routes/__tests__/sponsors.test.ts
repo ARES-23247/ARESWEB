@@ -92,7 +92,7 @@ describe("Sponsors Router Backend Endpoints", () => {
           data: () => ({
             name: "Titanium Partner",
             tier: "Titanium",
-            logoUrl: "https://titanium.com/logo.png",
+            logoUrl: "https://images.unsplash.com/photo-titanium",
             websiteUrl: "https://titanium.com",
             isActive: true,
           }),
@@ -171,6 +171,51 @@ describe("Sponsors Router Backend Endpoints", () => {
         sponsors: [expect.objectContaining({ logoUrl: null, websiteUrl: null })],
       });
     });
+
+    it("strips off-CSP external URLs like github.com while keeping internal proxy logos", async () => {
+      const mockCollection = adminDb.collection as any;
+      mockCollection().where.mockReturnValue({
+        limit: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue({
+          docs: [
+            {
+              id: "zulip_legacy",
+              data: () => ({
+                name: "Zulip",
+                tier: "Gold",
+                logoUrl: "https://github.com/zulip/zulip/blob/main/logo.svg",
+                websiteUrl: "https://zulip.com",
+                isActive: true,
+              }),
+            },
+            {
+              id: "zulip_asset",
+              data: () => ({
+                name: "Zulip Hosted",
+                tier: "Gold",
+                logoAssetId: "123e4567-e89b-42d3-a456-426614174000",
+                logoStoragePath: "public-media/sponsors/123e4567-e89b-42d3-a456-426614174000.webp",
+                logoUrl: null,
+                websiteUrl: "https://zulip.com",
+                isActive: true,
+              }),
+            },
+          ],
+        }),
+      });
+
+      await getHandler("/", "get")(req, res, next);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        sponsors: [
+          expect.objectContaining({ id: "zulip_legacy", logoUrl: null }),
+          expect.objectContaining({
+            id: "zulip_asset",
+            logoUrl: "/api/photos/public/sponsor-logo/zulip_asset",
+          }),
+        ],
+      });
+    });
   });
 
   describe("GET /api/sponsors/admin - Fetch all sponsors for admin", () => {
@@ -197,7 +242,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockCollection = adminDb.collection as any;
       mockCollection().get.mockResolvedValue({ docs: mockDocs });
 
-      const handler = getHandler("/admin", "get", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "get", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
@@ -216,7 +261,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         id: "sp_exist",
         name: "ARES Partner Ltd",
         tier: "Gold",
-        logoUrl: "https://ares.org/logo.png",
+        logoUrl: "https://images.unsplash.com/photo-ares",
         websiteUrl: "https://ares.org",
         isActive: true,
       };
@@ -224,7 +269,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.update).toHaveBeenCalledWith(
@@ -247,7 +292,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.set).toHaveBeenCalledWith(
@@ -283,7 +328,7 @@ describe("Sponsors Router Backend Endpoints", () => {
           }),
         } as any);
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
@@ -305,7 +350,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         .mockResolvedValueOnce({ exists: true, data: () => ({}) } as any)
         .mockResolvedValueOnce({ exists: false } as any);
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
       expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
       expect(mockDocRef.update).not.toHaveBeenCalled();
@@ -316,7 +361,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         tier: "Bronze",
       };
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
@@ -331,7 +376,7 @@ describe("Sponsors Router Backend Endpoints", () => {
         tier: "Platinum",
       };
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
@@ -347,13 +392,26 @@ describe("Sponsors Router Backend Endpoints", () => {
         logoUrl: "invalid-url",
       };
 
-      const handler = getHandler("/admin", "post", ["ensureAdmin"]);
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
       const err = next.mock.calls[0][0];
       expect(err.message).toBe("Logo URL must be an https:// URL.");
       expect(err.status).toBe(400);
+    });
+
+    it("rejects off-CSP external logo URLs on POST /admin", async () => {
+      req.body = {
+        name: "Zulip",
+        tier: "Gold",
+        logoUrl: "https://github.com/zulip/zulip/blob/main/logo.svg",
+      };
+
+      const handler = getHandler("/admin", "post", ["ensureMentorOrAdmin"]);
+      await handler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
     });
   });
 
@@ -364,7 +422,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
 
-      const handler = getHandler("/admin/:id", "delete", ["ensureAdmin"]);
+      const handler = getHandler("/admin/:id", "delete", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
@@ -383,7 +441,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
 
-      const handler = getHandler("/admin/:id", "delete", ["ensureAdmin"]);
+      const handler = getHandler("/admin/:id", "delete", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
@@ -399,7 +457,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: true } as any);
 
-      const handler = getHandler("/admin/:id/restore", "patch", ["ensureAdmin"]);
+      const handler = getHandler("/admin/:id/restore", "patch", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(mockDocRef.update).toHaveBeenCalledWith(expect.objectContaining({
@@ -419,7 +477,7 @@ describe("Sponsors Router Backend Endpoints", () => {
       const mockDocRef = adminDb.collection("").doc("");
       vi.mocked(mockDocRef.get).mockResolvedValue({ exists: false } as any);
 
-      const handler = getHandler("/admin/:id/restore", "patch", ["ensureAdmin"]);
+      const handler = getHandler("/admin/:id/restore", "patch", ["ensureMentorOrAdmin"]);
       await handler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 404 }));

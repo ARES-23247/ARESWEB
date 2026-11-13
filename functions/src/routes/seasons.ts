@@ -1,7 +1,8 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
-import { ensureAdmin, type AuthenticatedRequest } from "../middleware/auth";
+import { toPlainText } from "../lib/contentFormatters";
+import { ensureAdmin, ensureMentorOrAdmin, type AuthenticatedRequest } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 
@@ -71,6 +72,15 @@ function optionalRobotId(value: unknown): string | null {
   return value.trim();
 }
 
+const DEFAULT_ROBOT_PLACEHOLDER =
+  "Describe the robot's design, mechanisms, and season highlights...";
+
+function seasonRichText(value: unknown, max: number): string | null {
+  const plain = toPlainText(value, max).trim();
+  if (!plain || plain === DEFAULT_ROBOT_PLACEHOLDER) return null;
+  return plain;
+}
+
 function seasonDto(id: string, data: Record<string, unknown>) {
   const rawRobotId = typeof data.robotId === "string" ? data.robotId.trim() : "";
   return {
@@ -81,9 +91,9 @@ function seasonDto(id: string, data: Record<string, unknown>) {
     robotId: rawRobotId && SAFE_ROBOT_ID.test(rawRobotId) ? rawRobotId : null,
     robotName: text(data.robotName, 120) || null,
     robotImage: safeHttpsUrlOrNull(data.robotImage),
-    robotDescription: text(data.robotDescription, 2_000) || null,
+    robotDescription: seasonRichText(data.robotDescription, 2_000),
     robotCadUrl: safeHttpsUrlOrNull(data.robotCadUrl),
-    summary: text(data.summary, 2_000) || null,
+    summary: seasonRichText(data.summary, 2_000),
     albumUrl: safeHttpsUrlOrNull(data.albumUrl),
     albumCover: safeHttpsUrlOrNull(data.albumCover),
     status: statusValue(data.status),
@@ -96,7 +106,7 @@ function awardDto(id: string, data: Record<string, unknown>) {
     title: text(data.title, 160),
     eventName: text(data.eventName, 160),
     date: typeof data.date === "string" ? data.date : "",
-    description: text(data.description, 1_000) || null,
+    description: seasonRichText(data.description, 1_000),
     iconType: text(data.iconType, 40) || "trophy",
     seasonId: typeof data.seasonId === "string" ? data.seasonId : null,
     status: statusValue(data.status),
@@ -185,28 +195,28 @@ awardsRouter.get(
   }),
 );
 
-// GET /api/seasons/admin - all seasons incl. archived (admin)
+// GET /api/seasons/admin - all seasons incl. archived (mentor/coach/admin)
 seasonsRouter.get(
   "/admin",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (_req, res) => {
     res.json({ seasons: await listDtos("seasons", true, seasonDto) });
   }),
 );
 
-// GET /api/awards/admin - all awards incl. archived (admin)
+// GET /api/awards/admin - all awards incl. archived (mentor/coach/admin)
 awardsRouter.get(
   "/admin",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (_req, res) => {
     res.json({ awards: await listDtos("awards", true, awardDto) });
   }),
 );
 
-// POST /api/seasons/admin - create or update a season (admin)
+// POST /api/seasons/admin - create or update a season (mentor/coach/admin)
 seasonsRouter.post(
   "/admin",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     const input = req.body as SeasonWriteInput;
     const startYear = year(input.startYear, "Start year");
@@ -251,9 +261,9 @@ seasonsRouter.post(
       robotId: optionalRobotId(input.robotId),
       robotName: text(input.robotName, 120) || null,
       robotImage: optionalHttpsUrl(input.robotImage),
-      robotDescription: text(input.robotDescription, 2_000) || null,
+      robotDescription: seasonRichText(input.robotDescription, 2_000),
       robotCadUrl: optionalHttpsUrl(input.robotCadUrl),
-      summary: text(input.summary, 2_000) || null,
+      summary: seasonRichText(input.summary, 2_000),
       albumUrl: optionalHttpsUrl(input.albumUrl),
       albumCover: optionalHttpsUrl(input.albumCover),
       status: statusValue(input.status),
@@ -272,10 +282,10 @@ seasonsRouter.post(
   }),
 );
 
-// POST /api/awards/admin - create or update an award (admin)
+// POST /api/awards/admin - create or update an award (mentor/coach/admin)
 awardsRouter.post(
   "/admin",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     const input = req.body as AwardWriteInput;
     const title = text(input.title, 160);
@@ -316,7 +326,7 @@ awardsRouter.post(
       title,
       eventName,
       date,
-      description: text(input.description, 1_000) || null,
+      description: seasonRichText(input.description, 1_000),
       iconType: text(input.iconType, 40) || "trophy",
       seasonId,
       status: statusValue(input.status),
@@ -380,7 +390,7 @@ async function permanentlyDeleteArchivedAward(id: unknown, actorUid: string) {
 // DELETE /api/seasons/admin/:id - archive a season
 seasonsRouter.delete(
   "/admin/:id",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     await archiveOrRestore("seasons", req.params.id, true);
     res.json({ success: true });
@@ -390,7 +400,7 @@ seasonsRouter.delete(
 // PATCH /api/seasons/admin/:id/restore - restore a season
 seasonsRouter.patch(
   "/admin/:id/restore",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     await archiveOrRestore("seasons", req.params.id, false);
     res.json({ success: true });
@@ -400,7 +410,7 @@ seasonsRouter.patch(
 // DELETE /api/awards/admin/:id - archive an award
 awardsRouter.delete(
   "/admin/:id",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     await archiveOrRestore("awards", req.params.id, true);
     res.json({ success: true });
@@ -410,7 +420,7 @@ awardsRouter.delete(
 // PATCH /api/awards/admin/:id/restore - restore an award
 awardsRouter.patch(
   "/admin/:id/restore",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     await archiveOrRestore("awards", req.params.id, false);
     res.json({ success: true });

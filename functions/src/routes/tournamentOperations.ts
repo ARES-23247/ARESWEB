@@ -8,6 +8,7 @@ import {
   ensureAuth,
   ensureTeamMember,
 } from "../middleware/auth";
+import { distributedQuota } from "../middleware/distributedQuota";
 import { ApiError } from "../middleware/errorHandler";
 import { requireRouteParam, validate } from "../middleware/validation";
 
@@ -513,10 +514,19 @@ export function registerTournamentOperationsRoutes(
     }),
   );
 
+  const syncFtcScoutQuota = distributedQuota({
+    scope: "tournament-ftcscout-sync",
+    limit: 15,
+    windowMs: 15 * 60 * 1000,
+    identity: "user",
+    secretEnvironmentVariable: "ABUSE_HMAC_SECRET",
+  });
+
   router.post(
     "/:id/sync-ftcscout",
     ensureAuth,
     ensureAdminOrCoach,
+    syncFtcScoutQuota,
     validate(syncFtcScoutSchema),
     asyncHandler(async (req, res) => {
       const tournamentId = requireRouteParam(req.params.id, "tournament ID");

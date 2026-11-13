@@ -267,7 +267,11 @@ router.post(
       return;
     }
 
-    const taskId = topic.replace("Task-", "").trim();
+    const taskId = topic.slice("Task-".length).trim();
+    if (!/^[A-Za-z0-9_-]{1,160}$/u.test(taskId)) {
+      res.json({ content: "" });
+      return;
+    }
     const taskRef = adminDb.collection("tasks").doc(taskId);
     const taskSnap = await taskRef.get();
 

@@ -23,6 +23,12 @@ describe("sanitizeOnshapeText", () => {
       "bold linkurl code",
     );
   });
+
+  it("neutralizes @mentions to prevent Zulip broadcast pings", () => {
+    expect(sanitizeOnshapeText("@all @**everyone** check @here")).toBe(
+      "@\u200Ball @\u200Beveryone check @\u200Bhere",
+    );
+  });
 });
 
 describe("formatOnshapeEvent", () => {

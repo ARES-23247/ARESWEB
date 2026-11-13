@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ensureAuth, ensureAdmin, ensureTeamMember, AuthenticatedRequest } from "../auth";
+import { ensureAuth, ensureAdmin, ensureMentorOrAdmin, ensureTeamMember, AuthenticatedRequest } from "../auth";
 import { globalErrorHandler, ApiError } from "../errorHandler";
 import { Response, NextFunction } from "express";
 import { adminAuth, adminDb } from "../../lib/firebase-admin";
@@ -230,6 +230,56 @@ describe("Auth Middleware", () => {
       const err = vi.mocked(next).mock.calls[0][0] as ApiError;
       expect(err.status).toBe(403);
       expect(req.user).toBeUndefined();
+    });
+  });
+
+  describe("ensureMentorOrAdmin middleware", () => {
+    it("allows admin, coach, and mentor roles and sets authorizationRole", async () => {
+      for (const role of ["admin", "coach", "mentor"] as const) {
+        vi.clearAllMocks();
+        req.headers!.authorization = "Bearer token";
+        const mockDecoded = { uid: `${role}-uid` };
+        vi.mocked(adminAuth.verifyIdToken).mockResolvedValue(mockDecoded as any);
+        vi.mocked(adminDb.collection("").doc("").get).mockResolvedValue({
+          exists: true,
+          data: () => ({ role }),
+        } as any);
+
+        await ensureMentorOrAdmin(req as AuthenticatedRequest, res as Response, next);
+        expect(req.user).toEqual(mockDecoded);
+        expect(req.authorizationRole).toBe(role);
+        expect(next).toHaveBeenCalledWith();
+      }
+    });
+
+    it("reuses req.user when invoked after ensureAuth without re-verifying header", async () => {
+      req.user = { uid: "mentor-preauth" } as any;
+      vi.mocked(adminDb.collection("").doc("").get).mockResolvedValue({
+        exists: true,
+        data: () => ({ role: "mentor" }),
+      } as any);
+
+      await ensureMentorOrAdmin(req as AuthenticatedRequest, res as Response, next);
+      expect(adminAuth.verifyIdToken).not.toHaveBeenCalled();
+      expect(req.authorizationRole).toBe("mentor");
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it("rejects member, archived mentor, and unauthorized users", async () => {
+      for (const docSnap of [
+        { exists: false },
+        { exists: true, data: () => ({ role: "member" }) },
+        { exists: true, data: () => ({ role: "mentor", isDeleted: 1 }) },
+      ]) {
+        vi.clearAllMocks();
+        req.headers!.authorization = "Bearer token";
+        vi.mocked(adminAuth.verifyIdToken).mockResolvedValue({ uid: "u1" } as any);
+        vi.mocked(adminDb.collection("").doc("").get).mockResolvedValue(docSnap as any);
+
+        await ensureMentorOrAdmin(req as AuthenticatedRequest, res as Response, next);
+        const err = vi.mocked(next).mock.calls[0][0] as ApiError;
+        expect(err.status).toBe(403);
+      }
     });
   });
 

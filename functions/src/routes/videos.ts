@@ -217,18 +217,64 @@ router.get("/public", asyncHandler(async (req, res) => {
   });
 }));
 
+const MAX_VIDEO_SCAN_DOCUMENTS = 250;
+
 router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const limit = parseLimit(req.query.limit, 30, 50);
   const includeArchived = req.query.includeArchived === "true";
-  let query: FirebaseFirestore.Query = adminDb.collection("videos").orderBy("createdAt", "desc");
-  query = await applyCursor(query, req.query.cursor);
-  const snapshot = await query.limit(limit + 1).get();
-  const records = snapshot.docs.filter((doc) => includeArchived || doc.data().isDeleted !== 1);
-  const page = records.slice(0, limit);
+  const baseQuery: FirebaseFirestore.Query = adminDb.collection("videos").orderBy("createdAt", "desc");
+  let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined;
+  if (typeof req.query.cursor === "string" && req.query.cursor) {
+    if (!/^[A-Za-z0-9_-]{1,200}$/.test(req.query.cursor)) throw new ApiError(400, "Invalid video cursor.");
+    const cursorSnap = await adminDb.collection("videos").doc(req.query.cursor).get();
+    if (!cursorSnap.exists) throw new ApiError(400, "Video cursor was not found.");
+    scanCursor = cursorSnap;
+  }
+
+  const visible: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let scanned = 0;
+  let exhausted = false;
+
+  while (visible.length <= limit && scanned < MAX_VIDEO_SCAN_DOCUMENTS && !exhausted) {
+    const fetchSize = scanned === 0
+      ? limit + 1
+      : Math.min(Math.max(limit + 1, 25), MAX_VIDEO_SCAN_DOCUMENTS - scanned);
+    let pageQuery: FirebaseFirestore.Query = baseQuery;
+    if (scanCursor) {
+      pageQuery = pageQuery.startAfter(scanCursor);
+    }
+    const snapshot = await pageQuery.limit(fetchSize).get();
+    const rawDocs = snapshot?.docs ?? [];
+    if (rawDocs.length === 0) {
+      exhausted = true;
+      break;
+    }
+
+    for (const doc of rawDocs) {
+      scanCursor = doc;
+      scanned += 1;
+      if (includeArchived || doc.data().isDeleted !== 1) {
+        visible.push(doc);
+      }
+      if (visible.length > limit || scanned >= MAX_VIDEO_SCAN_DOCUMENTS) {
+        break;
+      }
+    }
+
+    if (rawDocs.length < fetchSize) {
+      exhausted = true;
+    }
+  }
+
+  const hasMore = visible.length > limit || (!exhausted && scanned >= MAX_VIDEO_SCAN_DOCUMENTS);
+  const page = visible.slice(0, limit);
+  const nextCursor = hasMore
+    ? (page.length > 0 ? page[page.length - 1]?.id ?? null : scanCursor?.id ?? null)
+    : null;
   res.json({
     videos: page.map((doc) => toVideoDto(doc.id, doc.data())),
-    hasMore: snapshot.docs.length > limit,
-    nextCursor: snapshot.docs.length > limit ? snapshot.docs[limit - 1]?.id ?? null : null,
+    hasMore,
+    nextCursor,
   });
 }));
 

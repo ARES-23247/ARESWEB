@@ -1,7 +1,37 @@
 import type { Router } from "express";
+import { FieldPath, type QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { adminDb } from "../lib/firebase-admin";
 import { asyncHandler } from "../lib/utils";
 import { ensureTeamMember } from "../middleware/auth";
+
+const ROSTER_PAGE_SIZE = 400;
+const MAX_ROSTER_PAGES = 10;
+
+async function fetchPaginatedRosterCollection(
+  collectionName: "authorized_users" | "user_profiles",
+): Promise<QueryDocumentSnapshot[]> {
+  const docs: QueryDocumentSnapshot[] = [];
+  let cursor: QueryDocumentSnapshot | undefined;
+  for (let page = 0; page < MAX_ROSTER_PAGES; page++) {
+    let query = adminDb
+      .collection(collectionName)
+      .orderBy(FieldPath.documentId())
+      .limit(ROSTER_PAGE_SIZE);
+    if (cursor) {
+      query = adminDb
+        .collection(collectionName)
+        .orderBy(FieldPath.documentId())
+        .startAfter(cursor)
+        .limit(ROSTER_PAGE_SIZE);
+    }
+    const snapshot = await query.get();
+    const pageDocs = snapshot?.docs ?? [];
+    docs.push(...pageDocs);
+    if (pageDocs.length < ROSTER_PAGE_SIZE) break;
+    cursor = pageDocs[pageDocs.length - 1];
+  }
+  return docs;
+}
 
 interface DeduplicatedRosterMember {
   identifier: string;
@@ -139,18 +169,18 @@ export function registerProfileRosterRoutes(router: Router): void {
   router.get(
     "/about-roster",
     asyncHandler(async (_req, res) => {
-      const [snapshot, authorizationSnapshot] = await Promise.all([
+      const [snapshot, authDocs] = await Promise.all([
         adminDb
           .collection("user_profiles")
           .where("showOnAbout", "in", [true, 1])
           .orderBy("__name__")
-          .limit(100)
+          .limit(300)
           .get(),
-        adminDb.collection("authorized_users").limit(500).get(),
+        fetchPaginatedRosterCollection("authorized_users"),
       ]);
-      const activeAuthMap = authorizationSnapshot?.docs
+      const activeAuthMap = authDocs.length
         ? new Map(
-            authorizationSnapshot.docs
+            authDocs
               .filter((document) => hasActiveAuthorization(document.data()))
               .map((document) => [document.id, document.data()]),
           )
@@ -238,16 +268,16 @@ export function registerProfileRosterRoutes(router: Router): void {
     "/team-roster",
     ensureTeamMember,
     asyncHandler(async (_req, res) => {
-      const [snapshot, authorizationSnapshot] = await Promise.all([
-        adminDb.collection("user_profiles").limit(300).get(),
-        adminDb.collection("authorized_users").limit(500).get(),
+      const [profileDocs, authDocs] = await Promise.all([
+        fetchPaginatedRosterCollection("user_profiles"),
+        fetchPaginatedRosterCollection("authorized_users"),
       ]);
       const activeUids = new Set(
-        authorizationSnapshot.docs
+        authDocs
           .filter((document) => hasActiveAuthorization(document.data()))
           .map((document) => document.id),
       );
-      const membersRaw = snapshot.docs
+      const membersRaw = profileDocs
         .filter((document) => {
           const data = document.data();
           return (

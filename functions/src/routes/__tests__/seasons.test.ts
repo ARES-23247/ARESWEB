@@ -413,4 +413,93 @@ describe("Seasons and awards admin API", () => {
     expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ status: 400 }));
     expect(mocks.transactionDelete).not.toHaveBeenCalled();
   });
+
+  it("extracts plain text from legacy Tiptap robot descriptions and clears empty placeholders", async () => {
+    const placeholderDoc = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "Describe the robot's design, mechanisms, and season highlights...",
+            },
+          ],
+        },
+      ],
+    });
+    const realDoc = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Turret shooter with odometry pods." }],
+        },
+      ],
+    });
+    mocks.get.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "season_2026",
+          data: () => ({
+            startYear: 2026,
+            challengeName: "DECODE",
+            robotDescription: placeholderDoc,
+            status: "published",
+            isDeleted: 0,
+          }),
+        },
+        {
+          id: "season_2025",
+          data: () => ({
+            startYear: 2025,
+            challengeName: "INTO THE DEEP",
+            robotDescription: realDoc,
+            status: "published",
+            isDeleted: 0,
+          }),
+        },
+      ],
+    });
+
+    await handler(seasonsRouter, "/", "get")(req, res, next);
+    const { seasons } = res.json.mock.calls[0][0];
+    expect(seasons).toEqual([
+      expect.objectContaining({ id: "season_2026", robotDescription: null }),
+      expect.objectContaining({
+        id: "season_2025",
+        robotDescription: "Turret shooter with odometry pods.",
+      }),
+    ]);
+
+    req.body = {
+      id: "season_2026",
+      startYear: 2026,
+      challengeName: "DECODE",
+      robotDescription: placeholderDoc,
+    };
+    await handler(seasonsRouter, "/admin", "post")(req, res, next);
+    expect(mocks.set).toHaveBeenCalledWith(
+      expect.objectContaining({ robotDescription: null }),
+    );
+  });
+
+  it("allows mentor/coach/admin on seasons/awards lifecycle routes while reserving permanent delete for admin", () => {
+    for (const [router, path, method] of [
+      [seasonsRouter, "/admin", "get"],
+      [seasonsRouter, "/admin", "post"],
+      [seasonsRouter, "/admin/:id", "delete"],
+      [seasonsRouter, "/admin/:id/restore", "patch"],
+      [awardsRouter, "/admin", "get"],
+      [awardsRouter, "/admin", "post"],
+      [awardsRouter, "/admin/:id", "delete"],
+      [awardsRouter, "/admin/:id/restore", "patch"],
+    ] as const) {
+      const route = router.stack.find(
+        (entry) => entry.route?.path === path && entry.route.methods[method],
+      )?.route;
+      expect(route?.stack.map((entry) => entry.name)).toContain("ensureMentorOrAdmin");
+    }
+  });
 });

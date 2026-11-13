@@ -156,6 +156,38 @@ describe("Outreach Router Backend Endpoints", () => {
         nextCursor: null,
       });
     });
+
+    it("clamps negative limit queries to 1 and authorizes mentors on /admin routes", async () => {
+      const mockCollection = adminDb.collection as any;
+      mockCollection().get.mockResolvedValueOnce({
+        docs: [
+          { id: "out1", data: () => ({ title: "Demo 1", date: "2026-04-02", isDeleted: 0 }) },
+          { id: "out2", data: () => ({ title: "Demo 2", date: "2026-04-01", isDeleted: 0 }) },
+        ],
+      });
+
+      req.query = { limit: "-5" };
+      await getHandler("/admin", "get")(req, res, next);
+      expect(mockCollection().orderBy().limit).toHaveBeenCalledWith(50);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logs: [expect.objectContaining({ id: "out1" })],
+          hasMore: true,
+        }),
+      );
+
+      for (const [path, method] of [
+        ["/admin", "get"],
+        ["/admin", "post"],
+        ["/admin/:id", "delete"],
+        ["/admin/:id/restore", "patch"],
+      ] as const) {
+        const layer = outreachRouter.stack.find(
+          (entry) => entry.route?.path === path && (entry.route as any).methods[method],
+        );
+        expect(layer?.route?.stack.map((entry) => entry.name)).toContain("ensureMentorOrAdmin");
+      }
+    });
   });
 
   describe("POST /api/outreach/admin - Create or update log", () => {

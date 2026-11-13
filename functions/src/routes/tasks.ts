@@ -2,6 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
 import { sendZulipMessage } from "../lib/zulip";
+import { sanitizeZulipInlineText } from "../lib/taskDigest";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import type { AuthenticatedRequest } from "../middleware/auth";
@@ -36,7 +37,10 @@ const notificationSchema = z.object({
 
 function safeAuthorLabel(req: AuthenticatedRequest): string {
   const claimedName = typeof req.user?.name === "string" ? req.user.name.trim() : "";
-  const normalized = claimedName.replace(/[\r\n*_`<>]/g, "").slice(0, 80);
+  const normalized = claimedName
+    .replace(/[\r\n*_`<>]/g, "")
+    .replace(/@/g, "@\u200B")
+    .slice(0, 80);
   return normalized || "ARES Team Member";
 }
 
@@ -72,19 +76,26 @@ router.post("/notify", ensureTeamMember, asyncHandler(async (req, res) => {
   let content = "";
 
   const taskLink = `https://aresfirst.org/dashboard/tasks?task=${encodeURIComponent(taskId)}`;
+  const safeTitle = sanitizeZulipInlineText(title) || "Untitled task";
+  const safeDescription = description ? sanitizeZulipInlineText(description) : "";
+  const safePriority = sanitizeZulipInlineText(priority || "medium") || "medium";
+  const safeSubteam = sanitizeZulipInlineText(subteam || "software") || "software";
+  const safeStatus = sanitizeZulipInlineText(status || "unknown") || "unknown";
+  const safeDueDate = dueDate ? sanitizeZulipInlineText(dueDate) : "";
+
   if (action === "create") {
     content = [
-      `🚀 **New Task Created:** ${title}`,
-      description ? `\n${description}` : "",
-      `**Priority:** ${priority || "medium"}`,
-      `**Subteam:** ${subteam || "software"}`,
-      dueDate ? `**Due:** ${dueDate}` : "",
+      `🚀 **New Task Created:** ${safeTitle}`,
+      safeDescription ? `\n${safeDescription}` : "",
+      `**Priority:** ${safePriority}`,
+      `**Subteam:** ${safeSubteam}`,
+      safeDueDate ? `**Due:** ${safeDueDate}` : "",
       `[Open task card](${taskLink})`
     ].filter(Boolean).join("\n");
   } else if (action === "move") {
     content = [
-      `🔄 **Task Status Updated:** ${title} is now in **${status || "unknown"}**`,
-      dueDate ? `**Due:** ${dueDate}` : "",
+      `🔄 **Task Status Updated:** ${safeTitle} is now in **${safeStatus}**`,
+      safeDueDate ? `**Due:** ${safeDueDate}` : "",
       `[Open task card](${taskLink})`
     ].filter(Boolean).join("\n");
   } else {

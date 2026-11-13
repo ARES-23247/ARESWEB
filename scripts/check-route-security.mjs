@@ -21,6 +21,7 @@ const authorizationMiddleware = new Set([
   "ensureTeamMember",
   "ensureAdmin",
   "ensureAdminOrCoach",
+  "ensureMentorOrAdmin",
 ]);
 
 const explicitNonFirebaseRoutes = new Map([

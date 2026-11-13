@@ -416,6 +416,9 @@ router.post(
   }),
 );
 
+const MAX_PIN_USER_FAILURES = 5;
+const MAX_PIN_TOTAL_FAILURES = 25;
+
 router.post(
   "/manage/:id/checkin-code",
   ensureTeamMember,
@@ -439,6 +442,8 @@ router.post(
       expiresAt,
       createdBy: req.user!.uid,
       createdAt,
+      failedAttemptsByUid: {},
+      totalFailedAttempts: 0,
     });
     batch.set(adminDb.collection("audit_logs").doc(), {
       action: "calendar.event.checkin_code_created",
@@ -466,27 +471,75 @@ router.post(
       throw new ApiError(409, "This event is archived.", "EVENT_ARCHIVED");
     }
     const { code } = req.body as z.infer<typeof selfCheckinSchema>;
-    const codeSnap = await adminDb.collection("event_checkin_codes").doc(id).get();
-    const codeData = codeSnap.data() as Record<string, unknown> | undefined;
-    const expiresMs = codeData?.expiresAt ? Date.parse(String(codeData.expiresAt)) : 0;
+    const uid = req.user!.uid;
+    const codeRef = adminDb.collection("event_checkin_codes").doc(id);
 
-    if (!codeSnap.exists || !codeData || !Number.isFinite(expiresMs) || expiresMs <= Date.now()) {
+    const outcome = await adminDb.runTransaction(async (tx) => {
+      const codeSnap = await tx.get(codeRef);
+      const codeData = codeSnap.data();
+      const expiresMs = codeData?.expiresAt ? Date.parse(String(codeData.expiresAt)) : 0;
+
+      if (!codeSnap.exists || !codeData || !Number.isFinite(expiresMs) || expiresMs <= Date.now()) {
+        throw new ApiError(
+          403,
+          "No active Lab PIN for this session. Ask a mentor to project a fresh code.",
+          "PIN_EXPIRED",
+        );
+      }
+
+      const rawMap = isPlainObject(codeData.failedAttemptsByUid)
+        ? (codeData.failedAttemptsByUid as Record<string, unknown>)
+        : {};
+      const userFailures = typeof rawMap[uid] === "number" && Number.isFinite(rawMap[uid])
+        ? Math.max(0, Math.floor(rawMap[uid] as number))
+        : 0;
+      const totalFailures = typeof codeData.totalFailedAttempts === "number" && Number.isFinite(codeData.totalFailedAttempts)
+        ? Math.max(0, Math.floor(codeData.totalFailedAttempts))
+        : 0;
+
+      if (userFailures >= MAX_PIN_USER_FAILURES || totalFailures >= MAX_PIN_TOTAL_FAILURES) {
+        throw new ApiError(
+          429,
+          "Too many incorrect Lab PIN attempts. Ask a mentor to generate a fresh PIN.",
+          "PIN_LOCKED",
+        );
+      }
+
+      const expectedHex = String(codeData.codeHash ?? "");
+      const actualHex = hashCheckinPin(String(codeData.saltHex ?? ""), id, code);
+      const expectedBuf = Buffer.from(expectedHex, "hex");
+      const actualBuf = Buffer.from(actualHex, "hex");
+      if (expectedBuf.length === 0 || expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) {
+        const nextUserFailures = userFailures + 1;
+        const nextTotalFailures = totalFailures + 1;
+        tx.update(codeRef, {
+          failedAttemptsByUid: { ...rawMap, [uid]: nextUserFailures },
+          totalFailedAttempts: nextTotalFailures,
+        });
+        if (nextUserFailures >= MAX_PIN_USER_FAILURES || nextTotalFailures >= MAX_PIN_TOTAL_FAILURES) {
+          return "locked" as const;
+        }
+        return "invalid" as const;
+      }
+
+      if (userFailures > 0) {
+        const nextMap = { ...rawMap };
+        delete nextMap[uid];
+        tx.update(codeRef, { failedAttemptsByUid: nextMap });
+      }
+      return "ok" as const;
+    });
+
+    if (outcome === "locked") {
       throw new ApiError(
-        403,
-        "No active Lab PIN for this session. Ask a mentor to project a fresh code.",
-        "PIN_EXPIRED",
+        429,
+        "Too many incorrect Lab PIN attempts. Ask a mentor to generate a fresh PIN.",
+        "PIN_LOCKED",
       );
     }
-
-    const expectedHex = String(codeData.codeHash ?? "");
-    const actualHex = hashCheckinPin(String(codeData.saltHex ?? ""), id, code);
-    const expectedBuf = Buffer.from(expectedHex, "hex");
-    const actualBuf = Buffer.from(actualHex, "hex");
-    if (expectedBuf.length === 0 || expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) {
+    if (outcome === "invalid") {
       throw new ApiError(403, "Incorrect 4-digit Lab PIN.", "INVALID_PIN");
     }
-
-    const uid = req.user!.uid;
     const profileSnap = await adminDb.collection("user_profiles").doc(uid).get();
     const rawNickname =
       typeof profileSnap.data()?.nickname === "string"

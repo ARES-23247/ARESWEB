@@ -2,7 +2,7 @@ import cors from "cors";
 import express, { type Router } from "express";
 import rateLimit from "express-rate-limit";
 import { enforceAppCheck, observeAppCheck } from "./middleware/appCheck";
-import { ensureAdmin, ensureTeamMember } from "./middleware/auth";
+import { ensureMentorOrAdmin, ensureTeamMember } from "./middleware/auth";
 import { distributedQuota } from "./middleware/distributedQuota";
 import { photoAiGenerationBudget } from "./middleware/aiBudget";
 import { globalErrorHandler } from "./middleware/errorHandler";
@@ -81,7 +81,7 @@ export function createApiApp({
     );
     app.use(
       "/api/photos/sponsor-logo",
-      ensureAdmin,
+      ensureMentorOrAdmin,
       distributedQuota({ scope: "sponsor-logo-upload", limit: 20, windowMs: 15 * 60 * 1000 }),
       express.raw({
         type: ["image/jpeg", "image/png", "image/webp"],

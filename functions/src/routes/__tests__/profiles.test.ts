@@ -318,6 +318,39 @@ describe("Profiles Router Backend Endpoints", () => {
         members: [{ uid: "active", nickname: "Active Member", avatar: "" }],
       });
     });
+
+    it("paginates team-roster collections past 400 documents via FieldPath.documentId cursors", async () => {
+      const mockCollection = adminDb.collection as any;
+      const page1Profiles = Array.from({ length: 400 }, (_, i) => ({
+        id: `u_${String(i).padStart(3, "0")}`,
+        data: () => ({ nickname: `Member ${i}`, isDeleted: 0 }),
+      }));
+      const page2Profiles = [
+        { id: "u_400", data: () => ({ nickname: "Member 400", isDeleted: 0 }) },
+      ];
+      const page1Auth = Array.from({ length: 400 }, (_, i) => ({
+        id: `u_${String(i).padStart(3, "0")}`,
+        data: () => ({ role: "member", isDeleted: 0 }),
+      }));
+      const page2Auth = [
+        { id: "u_400", data: () => ({ role: "mentor", isDeleted: 0 }) },
+      ];
+
+      mockCollection()
+        .get.mockResolvedValueOnce({ docs: page1Profiles })
+        .mockResolvedValueOnce({ docs: page1Auth })
+        .mockResolvedValueOnce({ docs: page2Profiles })
+        .mockResolvedValueOnce({ docs: page2Auth });
+
+      await getHandler("/team-roster", "get")(req, res, next);
+
+      expect(mockCollection().orderBy().startAfter).toHaveBeenCalledTimes(2);
+      expect(res.json.mock.calls[0][0].members).toHaveLength(401);
+      expect(res.json.mock.calls[0][0].members[400]).toMatchObject({
+        uid: "u_400",
+        nickname: "Member 400",
+      });
+    });
   });
 
   describe("POST /api/profiles/admin/users - Firebase Auth synchronization", () => {

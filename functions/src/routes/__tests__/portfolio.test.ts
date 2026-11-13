@@ -32,7 +32,13 @@ function makeQuery(name: keyof typeof mockCollections) {
     limit: vi.fn(() => chain),
     get: vi.fn(async () => {
       const entries = Object.entries(mockCollections[name] ?? {}).filter(([, data]) =>
-        filters.every((f) => (f.op === "==" ? data[f.field] === f.value : true)),
+        filters.every((f) => {
+          if (f.op === "==") return data[f.field] === f.value;
+          if (f.op === "in" && Array.isArray(f.value)) {
+            return f.value.includes(data[f.field]);
+          }
+          return true;
+        }),
       );
       return {
         empty: entries.length === 0,
@@ -164,25 +170,31 @@ describe("Phase 3 — Engineering Portfolio & FTC Award Evidence Hub API", () =>
     mockCollections.robots = {
       ares_mk4: {
         name: "ARES MK-IV",
-        season: "2026-2027",
-        cadUrl: "https://cad.onshape.com/documents/abc",
+        seasonName: "2026-2027",
+        onshapeUrl: "https://cad.onshape.com/documents/abc",
         updatedAt: "2026-10-20T00:00:00.000Z",
       },
     };
     mockCollections.tasks = {
       task_1: {
         title: "Calibrate Odometry Wheel Radius",
-        category: "Software",
-        status: "done",
+        subteam: "Software",
+        status: "completed",
         assignedTo: "raw_secret_uid_never_expose",
         updatedAt: "2026-10-18T00:00:00.000Z",
+      },
+      task_legacy: {
+        title: "Legacy Done Task",
+        category: "Mechanical",
+        status: "done",
+        updatedAt: "2026-10-17T00:00:00.000Z",
       },
     };
     mockCollections.outreach_logs = {
       out_1: {
         event: "Library Robotics Demo",
         hours: 18,
-        impacted: 120,
+        peopleReached: 120,
         date: "2026-10-05",
       },
     };
@@ -232,7 +244,23 @@ describe("Phase 3 — Engineering Portfolio & FTC Award Evidence Hub API", () =>
     expect(rawJson).not.toContain("coach_uid_secret");
     expect(rawJson).not.toContain("Deleted Draft");
     expect(rawJson).not.toContain("Voided Tx");
-    expect(getRes.body.candidates.length).toBe(7);
+    expect(getRes.body.candidates.length).toBe(8);
+    expect(getRes.body.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "robot:ares_mk4",
+          subtitle: "2026-2027 • Onshape CAD Linked",
+        }),
+        expect.objectContaining({
+          id: "task:task_1",
+          subtitle: "Software • Completed",
+        }),
+        expect.objectContaining({
+          id: "outreach:out_1",
+          subtitle: expect.stringContaining("120 community members reached"),
+        }),
+      ]),
+    );
 
     // Persist curated award claims + 15-page outline + Control Award sheet
     const updatedAwards = getRes.body.workspace.awards.map(

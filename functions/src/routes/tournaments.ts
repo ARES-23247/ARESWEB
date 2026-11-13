@@ -7,6 +7,7 @@ import {
   AuthenticatedRequest,
   currentAuthorizationRole,
   ensureAuth,
+  ensureMentorOrAdmin,
   ensureTeamMember,
 } from "../middleware/auth";
 import { requireRouteParam, validate } from "../middleware/validation";
@@ -511,7 +512,7 @@ router.get(
 registerTournamentOperationsRoutes(router, {
   getActiveTournament,
   tournamentDto: (id, data) => tournamentDto(id, data as TournamentRecord),
-  ensureAdminOrCoach,
+  ensureAdminOrCoach: ensureMentorOrAdmin,
 });
 
 router.get(
@@ -532,7 +533,7 @@ router.get(
 router.post(
   "/",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   validate(createTournamentSchema),
   asyncHandler(async (req, res) => {
     const document = adminDb.collection("tournaments").doc();
@@ -555,7 +556,7 @@ router.post(
 router.put(
   "/:id",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   validate(updateTournamentSchema),
   asyncHandler(async (req, res) => {
     const { snapshot, ref } = await getActiveTournament(req.params.id);
@@ -579,7 +580,7 @@ router.put(
 router.delete(
   "/:id",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     const { ref } = await getActiveTournament(req.params.id);
     await ref.update({ isDeleted: 1, updatedAt: new Date().toISOString() });
@@ -590,7 +591,7 @@ router.delete(
 router.post(
   "/:id/matches",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   validate(createTournamentMatchSchema),
   asyncHandler(async (req, res) => {
     await getActiveTournament(req.params.id);
@@ -613,7 +614,7 @@ router.post(
 router.put(
   "/:id/matches/:matchId/completion",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   validate(matchCompletionSchema),
   asyncHandler(async (req, res) => {
     const input = req.body as z.infer<typeof matchCompletionSchema>;
@@ -637,7 +638,7 @@ router.put(
 router.put(
   "/:id/matches/:matchId",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   validate(updateTournamentMatchSchema),
   asyncHandler(async (req, res) => {
     const input = req.body as z.infer<typeof updateTournamentMatchSchema>;
@@ -662,7 +663,7 @@ router.put(
 router.delete(
   "/:id/matches/:matchId",
   ensureAuth,
-  ensureAdminOrCoach,
+  ensureMentorOrAdmin,
   validate(archiveTournamentMatchSchema),
   asyncHandler(async (req, res) => {
     const input = req.body as z.infer<typeof archiveTournamentMatchSchema>;

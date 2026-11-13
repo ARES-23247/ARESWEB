@@ -99,6 +99,39 @@ export async function ensureAdmin(req: AuthenticatedRequest, _res: Response, nex
   }
 }
 
+export async function ensureMentorOrAdmin(
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction,
+) {
+  try {
+    const decodedToken =
+      req.user?.uid && !req.headers?.authorization
+        ? req.user
+        : await extractAndVerifyToken(req);
+    const userDoc = await loadAuthorizationDoc(decodedToken);
+    if (!userDoc.exists) {
+      return next(new ApiError(403, "Forbidden: User not authorized"));
+    }
+    const userData = userDoc.data();
+    const role = normalizeActiveRole(userData?.role);
+    if (
+      isArchivedAuthorization(userData) ||
+      (role !== "admin" && role !== "coach" && role !== "mentor")
+    ) {
+      return next(new ApiError(403, "Forbidden: Insufficient privileges"));
+    }
+    req.user = decodedToken;
+    req.authorizationRole = role;
+    next();
+  } catch (err: unknown) {
+    logger.error("auth", "Mentor/admin verification failed", {
+      error: errorMessage(err),
+    });
+    next(err);
+  }
+}
+
 export async function ensureTeamMember(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   try {
     if (req.user && req.authorizationRole && ACTIVE_ROLES.has(req.authorizationRole)) {

@@ -224,6 +224,15 @@ describe("Inquiries Router Backend Endpoints", () => {
       }));
     });
 
+    it("uses the default limit and clamps negative limits to 1", async () => {
+      req.query = { limit: "-5" };
+      const collection = adminDb.collection("inquiries") as any;
+      collection.get.mockResolvedValue({ docs: [] });
+
+      await getHandler("/", "get")(req, res, next);
+      expect(collection.limit).toHaveBeenCalledWith(2);
+    });
+
     it("rejects malformed or missing pagination cursors with 400 INVALID_CURSOR", async () => {
       req.query = { cursor: "bad/cursor" };
       await getHandler("/", "get")(req, res, next);

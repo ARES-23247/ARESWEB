@@ -8,6 +8,7 @@ const store = vi.hoisted(() => ({
   pitStates: new Map<string, Record<string, unknown>>(),
   profiles: new Map<string, Record<string, unknown>>(),
   authUsers: new Map<string, Record<string, unknown>>(),
+  quotas: new Map<string, Record<string, unknown>>(),
 }));
 
 const mockFetchFtcScout = vi.hoisted(() => vi.fn());
@@ -82,8 +83,18 @@ vi.mock("../../lib/firebase-admin", () => {
         if (name === "tournament_pit_states") return makeCollection(store.pitStates);
         if (name === "user_profiles") return makeCollection(store.profiles);
         if (name === "authorized_users") return makeCollection(store.authUsers);
+        if (name === "internal_api_quotas") return makeCollection(store.quotas);
         throw new Error(`Unexpected collection ${name}`);
       }),
+      runTransaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          get: async (ref: { get: () => Promise<unknown> }) => ref.get(),
+          set: async (ref: { set: (data: Record<string, unknown>, opts?: { merge?: boolean }) => Promise<void> }, data: Record<string, unknown>, opts?: { merge?: boolean }) =>
+            ref.set(data, opts),
+          update: async (ref: { update: (data: Record<string, unknown>) => Promise<void> }, data: Record<string, unknown>) =>
+            ref.update(data),
+        }),
+      ),
     },
   };
 });
@@ -156,6 +167,7 @@ async function invokeRoute(
 
 describe("Tournament Championship Operations Routes", () => {
   beforeEach(() => {
+    process.env.ABUSE_HMAC_SECRET = "test_abuse_hmac_secret_must_be_32_characters_minimum";
     store.tournaments.clear();
     store.matches.clear();
     store.pitScouting.clear();
@@ -163,6 +175,7 @@ describe("Tournament Championship Operations Routes", () => {
     store.pitStates.clear();
     store.profiles.clear();
     store.authUsers.clear();
+    store.quotas.clear();
     vi.clearAllMocks();
 
     store.tournaments.set("tourney_1", {
