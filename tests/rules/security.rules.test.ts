@@ -146,7 +146,7 @@ describe("Firestore zero-trust rules", () => {
     }
   });
 
-  it("allows publishers to permanently delete only archived awards", async () => {
+  it("blocks direct client deletion and writes on awards even when archived (mutations use /api/awards/admin)", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("coach-user", "coach");
     await seedAuthorizedUser("mentor-user", "mentor");
@@ -172,8 +172,8 @@ describe("Firestore zero-trust rules", () => {
     const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
 
     await assertFails(deleteDoc(doc(adminDb, "awards", "active-award")));
-    await assertSucceeds(deleteDoc(doc(adminDb, "awards", "archived-award")));
-    await assertSucceeds(deleteDoc(doc(coachDb, "awards", "coach-archived-award")));
+    await assertFails(deleteDoc(doc(adminDb, "awards", "archived-award")));
+    await assertFails(deleteDoc(doc(coachDb, "awards", "coach-archived-award")));
     await assertFails(deleteDoc(doc(mentorDb, "awards", "mentor-archived-award")));
   });
 
@@ -1248,7 +1248,7 @@ describe("Firestore zero-trust rules", () => {
     );
   });
 
-  it("limits seasons and awards writes and archived deletes to admin and coach roles", async () => {
+  it("blocks all direct client writes on seasons and awards (mutations use Express DTO APIs)", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("coach-user", "coach");
     await seedAuthorizedUser("mentor-user", "mentor");
@@ -1261,14 +1261,6 @@ describe("Firestore zero-trust rules", () => {
       name: "2023-2024",
       isDeleted: 1,
     });
-    await seedDocument("seasons", "coach-archived-season", {
-      name: "2022-2023",
-      isDeleted: 1,
-    });
-    await seedDocument("seasons", "mentor-archived-season", {
-      name: "2021-2022",
-      isDeleted: 1,
-    });
     await seedDocument("awards", "existing-award", {
       name: "Inspire Award",
       isDeleted: 0,
@@ -1278,91 +1270,40 @@ describe("Firestore zero-trust rules", () => {
     const coachDb = testEnvironment.authenticatedContext("coach-user").firestore();
     const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
     const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const publicDb = testEnvironment.unauthenticatedContext().firestore();
 
-    await assertSucceeds(
-      setDoc(doc(adminDb, "seasons", "admin-season"), {
-        name: "Admin Season",
-        isDeleted: 0,
-      }),
-    );
-    await assertSucceeds(
-      setDoc(doc(coachDb, "seasons", "coach-season"), {
-        name: "Coach Season",
-        isDeleted: 0,
-      }),
-    );
-    await assertSucceeds(
-      updateDoc(doc(adminDb, "seasons", "active-season"), {
-        name: "Updated by Admin",
-      }),
-    );
-    await assertSucceeds(
-      updateDoc(doc(coachDb, "seasons", "active-season"), {
-        name: "Updated by Coach",
-      }),
-    );
-    await assertFails(
-      setDoc(doc(mentorDb, "seasons", "mentor-season"), {
-        name: "Mentor Season",
-        isDeleted: 0,
-      }),
-    );
-    await assertFails(
-      updateDoc(doc(mentorDb, "seasons", "active-season"), {
-        name: "Updated by Mentor",
-      }),
-    );
-    await assertFails(
-      setDoc(doc(memberDb, "seasons", "member-season"), {
-        name: "Member Season",
-        isDeleted: 0,
-      }),
-    );
-    await assertFails(deleteDoc(doc(adminDb, "seasons", "active-season")));
-    await assertFails(deleteDoc(doc(coachDb, "seasons", "active-season")));
-    await assertSucceeds(deleteDoc(doc(adminDb, "seasons", "admin-archived-season")));
-    await assertSucceeds(deleteDoc(doc(coachDb, "seasons", "coach-archived-season")));
-    await assertFails(deleteDoc(doc(mentorDb, "seasons", "mentor-archived-season")));
+    await assertSucceeds(getDoc(doc(memberDb, "seasons", "active-season")));
+    await assertSucceeds(getDoc(doc(memberDb, "awards", "existing-award")));
+    await assertFails(getDoc(doc(publicDb, "seasons", "active-season")));
+    await assertFails(getDoc(doc(publicDb, "awards", "existing-award")));
 
-    await assertSucceeds(
-      setDoc(doc(adminDb, "awards", "admin-award"), {
-        name: "Think Award",
-        isDeleted: 0,
-      }),
-    );
-    await assertSucceeds(
-      setDoc(doc(coachDb, "awards", "coach-award"), {
-        name: "Connect Award",
-        isDeleted: 0,
-      }),
-    );
-    await assertSucceeds(
-      updateDoc(doc(adminDb, "awards", "existing-award"), {
-        name: "Updated Inspire",
-      }),
-    );
-    await assertSucceeds(
-      updateDoc(doc(coachDb, "awards", "existing-award"), {
-        name: "Coach Updated Inspire",
-      }),
-    );
-    await assertFails(
-      setDoc(doc(mentorDb, "awards", "mentor-award"), {
-        name: "Mentor Award",
-        isDeleted: 0,
-      }),
-    );
-    await assertFails(
-      updateDoc(doc(mentorDb, "awards", "existing-award"), {
-        name: "Mentor Updated",
-      }),
-    );
-    await assertFails(
-      setDoc(doc(memberDb, "awards", "member-award"), {
-        name: "Member Award",
-        isDeleted: 0,
-      }),
-    );
+    for (const db of [adminDb, coachDb, mentorDb, memberDb]) {
+      await assertFails(
+        setDoc(doc(db, "seasons", "direct-season"), {
+          name: "Direct Season",
+          isDeleted: 0,
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(db, "seasons", "active-season"), {
+          name: "Direct Update",
+        }),
+      );
+      await assertFails(deleteDoc(doc(db, "seasons", "admin-archived-season")));
+
+      await assertFails(
+        setDoc(doc(db, "awards", "direct-award"), {
+          name: "Direct Award",
+          isDeleted: 0,
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(db, "awards", "existing-award"), {
+          name: "Direct Award Update",
+        }),
+      );
+      await assertFails(deleteDoc(doc(db, "awards", "existing-award")));
+    }
   });
 
   it("validates event signup payloads while blocking member self-promotion of attended and allowing mentor/coach/admin roll call", async () => {
@@ -1501,7 +1442,7 @@ describe("Firestore zero-trust rules", () => {
 });
 
 describe("Robot fleet rules", () => {
-  it("keeps admin, coach, and mentor edits aligned while forbidding hard deletes", async () => {
+  it("forbids all direct client writes while keeping team reads authorized", async () => {
     await seedAuthorizedUser("admin-user", "admin");
     await seedAuthorizedUser("coach-user", "coach");
     await seedAuthorizedUser("mentor-user", "mentor");
@@ -1526,23 +1467,23 @@ describe("Robot fleet rules", () => {
       .authenticatedContext("member-user")
       .firestore();
 
-    // Raw documents are team-only; the public website uses the robots DTO API.
+    // Raw documents are team-only; writes go exclusively through validated Cloud Functions APIs.
     await assertFails(getDoc(doc(publicDb, "robots", "active")));
     await assertFails(getDoc(doc(publicDb, "robots", "archived")));
     await assertSucceeds(getDoc(doc(memberDb, "robots", "active")));
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(adminDb, "robots", "admin-created"), {
         name: "Admin",
         isDeleted: 0,
       }),
     );
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(coachDb, "robots", "coach-created"), {
         name: "Coach",
         isDeleted: 0,
       }),
     );
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(mentorDb, "robots", "mentor-created"), {
         name: "Mentor",
         isDeleted: 0,
@@ -1554,10 +1495,13 @@ describe("Robot fleet rules", () => {
         isDeleted: 0,
       }),
     );
-    await assertSucceeds(
+    await assertFails(
+      updateDoc(doc(adminDb, "robots", "active"), { isDeleted: 1 }),
+    );
+    await assertFails(
       updateDoc(doc(mentorDb, "robots", "active"), { isDeleted: 1 }),
     );
-    await assertSucceeds(
+    await assertFails(
       updateDoc(doc(coachDb, "robots", "archived"), { isDeleted: 0 }),
     );
     await assertFails(deleteDoc(doc(adminDb, "robots", "active")));

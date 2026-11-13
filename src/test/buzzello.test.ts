@@ -20,7 +20,7 @@ import {
   selectBuzzelloAiMove,
   type BuzzelloBoard,
   type BuzzelloCell,
-} from "@/lib/buzzello";
+} from "@ares/buzzello/rules";
 
 function emptyBoard(): BuzzelloCell[] {
   return Array.from({ length: BUZZELLO_CELL_COUNT }, () => null);

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import { Scale, BookOpen, CreditCard, ShieldAlert } from "lucide-react";
 
 import { siteConfig } from "@/lib/site-config";
@@ -9,7 +9,8 @@ import SEO from "@/components/SEO";
 
 export default function TermsPage() {
   return (
-    <motion.div 
+    <MotionConfig reducedMotion="user">
+      <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -113,5 +114,6 @@ export default function TermsPage() {
         </div>
       </div>
     </motion.div>
+    </MotionConfig>
   );
 }

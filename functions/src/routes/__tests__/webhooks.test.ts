@@ -134,6 +134,37 @@ describe("Webhooks Router Backend Endpoints", () => {
       expect(mocks.taskGet).not.toHaveBeenCalled();
     });
 
+    it("rejects traversal Task- topics and preserves Task- prefixes inside IDs", async () => {
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "message",
+        message: {
+          topic: "Task-../bad",
+          content: "Attempt",
+          sender_full_name: "Coach",
+        },
+      };
+      await getHandler("/zulip", "post")(req, res, next);
+      expect(res.json).toHaveBeenCalledWith({ content: "" });
+      expect(mocks.taskGet).not.toHaveBeenCalled();
+
+      vi.clearAllMocks();
+      req.body = {
+        token: "correct-webhook-token",
+        trigger: "message",
+        message: {
+          topic: "Task-Task-123",
+          content: "Double prefix comment",
+          sender_full_name: "Coach",
+        },
+      };
+      mocks.taskGet.mockResolvedValue({ exists: true });
+      await getHandler("/zulip", "post")(req, res, next);
+      const tasksCollection = vi.mocked((await import("../../lib/firebase-admin")).adminDb.collection).mock.results.at(0)?.value;
+      expect(tasksCollection.doc).toHaveBeenCalledWith("Task-123");
+      expect(mocks.transactionCreate).toHaveBeenCalled();
+    });
+
     it("syncs a verified Zulip comment to an existing task", async () => {
       req.body = {
         token: "correct-webhook-token",

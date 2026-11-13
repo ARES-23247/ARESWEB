@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 
 import SEO from "@/components/SEO";
 
 export default function AccessibilityPage() {
   return (
-    <div className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian py-12 md:py-16">
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen bg-obsidian text-white selection:bg-ares-gold selection:text-obsidian py-12 md:py-16">
       <SEO 
         title="Accessibility & Web Standards" 
         description="How ARES 23247 reviews and improves website accessibility for students, families, and community visitors."
@@ -129,5 +130,6 @@ export default function AccessibilityPage() {
 
       </div>
     </div>
+    </MotionConfig>
   );
 }

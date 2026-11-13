@@ -503,7 +503,7 @@ export default function CalendarPage() {
 
                         <Link to={eventDetailHref(event)} className="block space-y-1 cursor-pointer">
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono text-marble/60">
+                            <span className="text-[10px] font-mono text-marble/60">
                               {new Date(event.dateStart).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
@@ -511,7 +511,7 @@ export default function CalendarPage() {
                               })}
                             </span>
                             <span
-                              className={`px-1 rounded text-[5px] font-black uppercase tracking-widest opacity-60 ${
+                              className={`px-1 rounded text-[10px] font-black uppercase tracking-widest ${
                                 event.category === "outreach"
                                   ? "bg-ares-gold/20 text-ares-gold"
                                   : event.category === "competition"
@@ -523,13 +523,13 @@ export default function CalendarPage() {
                             </span>
                           </div>
 
-                          <h4 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">
+                          <h3 className="text-xs font-black text-marble/85 leading-tight uppercase font-heading group-hover:text-white transition-colors">
                             {event.title}
-                          </h4>
-                          {cleanDesc && <p className="text-[10px] text-marble/55 leading-relaxed">{cleanDesc}</p>}
+                          </h3>
+                          {cleanDesc && <p className="text-[10px] text-marble/65 leading-relaxed">{cleanDesc}</p>}
 
                           {event.location && (
-                            <p className="text-[8px] text-ares-bronze flex items-center gap-1 mt-1">
+                            <p className="text-[10px] text-ares-bronze flex items-center gap-1 mt-1">
                               <MapPin size={8} className="text-ares-red" /> {event.location}
                             </p>
                           )}

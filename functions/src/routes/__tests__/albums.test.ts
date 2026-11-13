@@ -145,6 +145,27 @@ describe("albums routes", () => {
       await handler("/", "get")({ query: { limit: ["20"] } }, res, next);
       expect(albumQuery.limit).toHaveBeenCalledWith(31);
 
+      vi.clearAllMocks();
+      queryGet
+        .mockResolvedValueOnce({
+          docs: [
+            album("del-1", { title: "Archived 1", isDeleted: 1 }),
+            album("del-2", { title: "Archived 2", isDeleted: 1 }),
+          ],
+        })
+        .mockResolvedValueOnce({
+          docs: [
+            album("act-1", { title: "Active 1" }),
+            album("act-2", { title: "Active 2" }),
+          ],
+        });
+      await handler("/", "get")({ query: { limit: "1" } }, res, next);
+      expect(res.json.mock.calls[0][0]).toMatchObject({
+        albums: [expect.objectContaining({ id: "act-1" })],
+        hasMore: true,
+        nextCursor: "act-1",
+      });
+
       next.mockClear();
       await expectApiError("/", "get", { query: { cursor: "bad cursor" } }, 400, "Invalid album cursor.");
       next.mockClear();

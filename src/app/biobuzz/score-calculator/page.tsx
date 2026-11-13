@@ -7,7 +7,7 @@ import {
   ALLIANCES, COUNT_FIELDS, STANDARD_THRESHOLDS, emptyMatch, scoreFlower,
   scoreMatch, validCount, validThresholds, validateMatch,
   type Alliance, type CountField, type Element, type Thresholds,
-} from "@/lib/biobuzzScoring";
+} from "@ares/biobuzz/scoring";
 
 const control = "min-h-11 rounded-lg border border-marble/40 bg-obsidian px-3 py-2 text-marble focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-gold";
 const button = `${control} font-semibold hover:bg-white/10 disabled:opacity-50`;

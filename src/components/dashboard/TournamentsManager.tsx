@@ -31,7 +31,7 @@ export default function TournamentsManager() {
       Boolean(
         user &&
         authorizedUser &&
-        ["admin", "coach"].includes(authorizedUser.role),
+        ["admin", "coach", "mentor"].includes(authorizedUser.role),
       ),
     [user, authorizedUser],
   );

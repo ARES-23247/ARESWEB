@@ -50,42 +50,54 @@ vi.mock("../../lib/firebase-admin", () => {
     subcollections?: Record<string, (docId: string) => unknown>,
   ) {
     let seq = 1;
-    const buildQuery = (predicate: (doc: Record<string, unknown>) => boolean) => ({
-      where: (field: string, op: string, val: unknown) =>
-        buildQuery((doc) => predicate(doc) && (op === "==" ? doc[field] === val : true)),
-      orderBy: () => buildQuery(predicate),
-      startAfter: () => buildQuery(predicate),
-      limit: (max: number) => ({
-        get: async () => ({
-          empty: false,
-          docs: [...map.entries()]
-            .filter(([, data]) => predicate(data))
-            .slice(0, max)
-            .map(([id, data]) => ({
-              id,
-              exists: true,
-              data: () => data,
-            })),
+    const buildQuery = (
+      predicate: (doc: Record<string, unknown>) => boolean,
+      afterId?: string,
+      ordered = false,
+    ) => {
+      const resolveDocs = (max?: number) => {
+        let entries = [...map.entries()].filter(([, data]) => predicate(data));
+        if (ordered) entries.sort(([a], [b]) => a.localeCompare(b));
+        if (afterId !== undefined) {
+          const idx = entries.findIndex(([id]) => id === afterId);
+          entries = idx >= 0 ? entries.slice(idx + 1) : entries;
+        }
+        if (typeof max === "number") entries = entries.slice(0, max);
+        return entries.map(([id, data]) => ({
+          id,
+          exists: true,
+          data: () => data,
+        }));
+      };
+      return {
+        where: (field: string, op: string, val: unknown) =>
+          buildQuery(
+            (doc) => predicate(doc) && (op === "==" ? doc[field] === val : true),
+            afterId,
+            ordered,
+          ),
+        orderBy: () => buildQuery(predicate, afterId, true),
+        startAfter: (cursor: { id?: string }) =>
+          buildQuery(predicate, cursor?.id, ordered),
+        limit: (max: number) => ({
+          get: async () => {
+            const docs = resolveDocs(max);
+            return { empty: docs.length === 0, docs };
+          },
         }),
-      }),
-      get: async () => {
-        const docs = [...map.entries()]
-          .filter(([, data]) => predicate(data))
-          .map(([id, data]) => ({
-            id,
-            exists: true,
-            data: () => data,
-          }));
-        return { empty: docs.length === 0, docs };
-      },
-    });
+        get: async () => {
+          const docs = resolveDocs();
+          return { empty: docs.length === 0, docs };
+        },
+      };
+    };
 
     return {
       doc: (id?: string) =>
         makeDocRef(map, id ?? `doc_${seq++}`, subcollections),
       where: (field: string, op: string, val: unknown) =>
         buildQuery((doc) => (op === "==" ? doc[field] === val : true)),
-      orderBy: () => buildQuery(() => true),
+      orderBy: () => buildQuery(() => true, undefined, true),
       limit: (max: number) => buildQuery(() => true).limit(max),
     };
   }
@@ -103,6 +115,18 @@ vi.mock("../../lib/firebase-admin", () => {
       bucket: () => ({ name: "aresweb-test.appspot.com" }),
     },
     adminDb: {
+      runTransaction: async <T>(
+        work: (tx: {
+          get: (r: { get: () => Promise<unknown> }) => Promise<unknown>;
+          update: (r: { update: (d: Record<string, unknown>) => Promise<unknown> }, d: Record<string, unknown>) => void;
+        }) => Promise<T>,
+      ) =>
+        work({
+          get: (r) => r.get(),
+          update: (r, d) => {
+            void r.update(d);
+          },
+        }),
       batch: () => {
         const ops: Array<() => Promise<unknown>> = [];
         return {
@@ -418,5 +442,75 @@ describe("Phase 2 — Coach Travel/Safety Readiness & Fast Practice Attendance",
       nickname: "Alan",
       attended: true,
     });
+  });
+
+  it("locks Lab PIN after 5 wrong attempts with 429 PIN_LOCKED and resets on fresh PIN", async () => {
+    const pinResp = await invoke(calendarRouter, "post", "/manage/:id/checkin-code", {
+      params: { id: "practice_nov10" },
+      uid: "mentor_grace",
+      role: "mentor",
+    });
+    const firstCode = (pinResp.res.payload as { code: string }).code;
+    const wrongCode = firstCode === "9999" ? "1000" : "9999";
+
+    for (let i = 1; i <= 4; i++) {
+      const attempt = await invoke(calendarRouter, "post", "/manage/:id/self-checkin", {
+        params: { id: "practice_nov10" },
+        uid: "student_ada",
+        role: "member",
+        body: { code: wrongCode },
+      });
+      expect(attempt.error).toMatchObject({ status: 403, code: "INVALID_PIN" });
+    }
+
+    const fifthAttempt = await invoke(calendarRouter, "post", "/manage/:id/self-checkin", {
+      params: { id: "practice_nov10" },
+      uid: "student_ada",
+      role: "member",
+      body: { code: wrongCode },
+    });
+    expect(fifthAttempt.error).toMatchObject({ status: 429, code: "PIN_LOCKED" });
+
+    // Even the correct PIN is rejected once locked out.
+    const lockedGoodAttempt = await invoke(calendarRouter, "post", "/manage/:id/self-checkin", {
+      params: { id: "practice_nov10" },
+      uid: "student_ada",
+      role: "member",
+      body: { code: firstCode },
+    });
+    expect(lockedGoodAttempt.error).toMatchObject({ status: 429, code: "PIN_LOCKED" });
+
+    // Generating a fresh PIN resets the lockout counters.
+    const resetPinResp = await invoke(calendarRouter, "post", "/manage/:id/checkin-code", {
+      params: { id: "practice_nov10" },
+      uid: "mentor_grace",
+      role: "mentor",
+    });
+    const freshCode = (resetPinResp.res.payload as { code: string }).code;
+    const validAfterReset = await invoke(calendarRouter, "post", "/manage/:id/self-checkin", {
+      params: { id: "practice_nov10" },
+      uid: "student_ada",
+      role: "member",
+      body: { code: freshCode },
+    });
+    expect(validAfterReset.error).toBeNull();
+  });
+
+  it("paginates authorized_users beyond 200 entries in travel-readiness", async () => {
+    for (let i = 0; i < 205; i++) {
+      const uid = `bulk_student_${String(i).padStart(3, "0")}`;
+      store.authUsers.set(uid, { role: "member", isDeleted: 0 });
+      store.profiles.set(uid, { nickname: `Student ${i}`, memberType: "student" });
+    }
+
+    const summaryResp = await invoke(profileRouter, "get", "/admin/travel-readiness", {
+      uid: "coach_1",
+      role: "coach",
+    });
+    expect(summaryResp.error).toBeNull();
+    const payload = summaryResp.res.payload as { members: Array<{ id: string }> };
+    // 205 bulk students + 4 seeded users from beforeEach = 209 active members
+    expect(payload.members.length).toBeGreaterThanOrEqual(208);
+    expect(payload.members.some((m) => m.id === "bulk_student_204")).toBe(true);
   });
 });

@@ -52,7 +52,7 @@ export default function AnalyticsConsentBanner() {
   return (
     <section
       aria-labelledby="analytics-consent-title"
-      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-xl border border-white/20 bg-obsidian p-4 text-white shadow-2xl shadow-black/70 sm:bottom-5 sm:p-5"
+      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-xl border border-white/20 bg-obsidian p-4 text-white shadow-2xl shadow-black/70 sm:bottom-5 sm:p-5 print:hidden"
     >
       <div className="sm:flex sm:items-start sm:justify-between sm:gap-6">
         <div className="max-w-2xl">

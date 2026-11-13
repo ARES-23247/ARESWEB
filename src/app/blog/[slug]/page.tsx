@@ -99,7 +99,12 @@ export default function BlogPostPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-obsidian text-marble">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Loading article"
+        className="flex justify-center items-center min-h-screen bg-obsidian text-marble"
+      >
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
       </div>
     );
@@ -117,6 +122,7 @@ export default function BlogPostPage() {
         />
         <div className="mx-auto max-w-3xl">
           <PublicDataState
+            titleAs="h1"
             title={
               loadError ? "Unable to Load Blog Post" : "Blog Post Not Found"
             }

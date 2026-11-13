@@ -671,21 +671,23 @@ describe("TournamentsManager", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not give mentors tournament write controls", async () => {
+  it("allows mentors to open tournament write controls", async () => {
     mockAuth({
       user: { uid: "mentor-uid", email: "mentor@example.com" },
       authorizedUser: { email: "mentor@example.com", role: "mentor" },
       loading: false,
     });
 
-    renderWithProviders(<TournamentsManager />);
+    await act(async () => {
+      renderWithProviders(<TournamentsManager />);
+    });
 
     expect(
-      screen.getByText(/Unauthorized Terminal Access/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /Add Tournament/i }),
+      screen.queryByText(/Unauthorized Terminal Access/i),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Add Tournament/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders manager control panel and lists tournaments for admins", async () => {

@@ -97,9 +97,14 @@ export default function TournamentsFeedPage() {
   // Loader if auth state is initializing
   if (authLoading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Authenticating tournament access"
+        className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble"
+      >
         <div className="w-10 h-10 border-4 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-ares-gold/85 animate-pulse font-heading">
+        <p className="text-[10px] font-black uppercase tracking-widest text-ares-gold/85 motion-safe:animate-pulse font-heading">
           Authenticating Terminal...
         </p>
       </div>

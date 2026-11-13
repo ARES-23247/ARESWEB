@@ -10,7 +10,9 @@ import {
   enqueueTournamentMutation,
   flushTournamentOutbox,
   generateOutboxId,
+  isPermanentOutboxError,
   listTournamentOutbox,
+  PitOutboxQuotaError,
   type PitOutboxMutation,
 } from "@/lib/pitModeOutbox";
 import {
@@ -26,6 +28,7 @@ import type {
 
 interface TournamentScoutingHubProps {
   tournamentId: string;
+  userUid?: string | null;
   scoutingBundle: TournamentScoutingBundle | undefined;
   isLoading: boolean;
   onRefresh: () => void;
@@ -33,13 +36,14 @@ interface TournamentScoutingHubProps {
 
 export function TournamentScoutingHub({
   tournamentId,
+  userUid,
   scoutingBundle,
   isLoading,
   onRefresh,
 }: TournamentScoutingHubProps) {
   const [activeTab, setActiveTab] = useState<"stand" | "pit" | "rollup">("stand");
   const [outbox, setOutbox] = useState<PitOutboxMutation[]>(() =>
-    listTournamentOutbox(tournamentId),
+    listTournamentOutbox(tournamentId, userUid),
   );
   const [isFlushing, setIsFlushing] = useState(false);
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
@@ -74,13 +78,26 @@ export function TournamentScoutingHub({
     flushingRef.current = true;
     setIsFlushing(true);
     try {
-      const result = await flushTournamentOutbox(tournamentId, {
-        submitPit: submitPitScouting,
-        submitStand: submitStandScouting,
-        savePitState: saveTournamentPitState,
-      });
+      const result = await flushTournamentOutbox(
+        tournamentId,
+        {
+          submitPit: submitPitScouting,
+          submitStand: submitStandScouting,
+          savePitState: saveTournamentPitState,
+        },
+        userUid,
+      );
       setOutbox(result.remaining);
-      if (result.flushed > 0) {
+      if (result.rejected.length > 0 && result.flushed > 0) {
+        setStatusBanner(
+          `Synced ${result.flushed} offline report${result.flushed === 1 ? "" : "s"}, but rejected ${result.rejected.length}: ${result.rejected[0].message}`,
+        );
+        onRefresh();
+      } else if (result.rejected.length > 0) {
+        setStatusBanner(
+          `Removed ${result.rejected.length} rejected offline report${result.rejected.length === 1 ? "" : "s"}: ${result.rejected[0].message}`,
+        );
+      } else if (result.flushed > 0) {
         setStatusBanner(
           `Synced ${result.flushed} offline report${result.flushed === 1 ? "" : "s"} to team vault.`,
         );
@@ -90,21 +107,21 @@ export function TournamentScoutingHub({
       flushingRef.current = false;
       setIsFlushing(false);
     }
-  }, [onRefresh, tournamentId]);
+  }, [onRefresh, tournamentId, userUid]);
 
   useEffect(() => {
-    setOutbox(listTournamentOutbox(tournamentId));
-  }, [tournamentId]);
+    setOutbox(listTournamentOutbox(tournamentId, userUid));
+  }, [tournamentId, userUid]);
 
   useEffect(() => {
     const handleOnline = () => {
-      if (listTournamentOutbox(tournamentId).length > 0) {
+      if (listTournamentOutbox(tournamentId, userUid).length > 0) {
         void syncOutboxNow();
       }
     };
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
-  }, [syncOutboxNow, tournamentId]);
+  }, [syncOutboxNow, tournamentId, userUid]);
 
   const handleStandSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -131,17 +148,35 @@ export function TournamentScoutingHub({
       await submitStandScouting(tournamentId, payload);
       setStatusBanner(`Recorded ${trimmedMatch} observation for #${trimmedTeam}.`);
       onRefresh();
-    } catch {
-      const nextQueue = enqueueTournamentMutation({
-        id: submissionId,
-        tournamentId,
-        kind: "stand_scouting",
-        payload,
-      });
-      setOutbox(nextQueue);
-      setStatusBanner(
-        "Venue network unreachable — saved to Offline Pit Outbox and will sync automatically.",
-      );
+    } catch (err) {
+      if (isPermanentOutboxError(err)) {
+        setStatusBanner(
+          `Observation not saved: ${err instanceof Error ? err.message : "Server rejected submission."}`,
+        );
+        return;
+      }
+      try {
+        const nextQueue = enqueueTournamentMutation(
+          {
+            id: submissionId,
+            tournamentId,
+            kind: "stand_scouting",
+            payload,
+          },
+          userUid,
+        );
+        setOutbox(nextQueue);
+        setStatusBanner(
+          "Venue network unreachable — saved to Offline Pit Outbox and will sync automatically.",
+        );
+      } catch (queueErr) {
+        setStatusBanner(
+          queueErr instanceof PitOutboxQuotaError
+            ? "Offline storage is full — clear old data or reconnect to submit."
+            : "Could not save offline observation.",
+        );
+        return;
+      }
     }
 
     setStandTeam("");
@@ -173,16 +208,34 @@ export function TournamentScoutingHub({
       await submitPitScouting(tournamentId, payload);
       setStatusBanner(`Saved Pit Scouting card for #${trimmedTeam}.`);
       onRefresh();
-    } catch {
-      const nextQueue = enqueueTournamentMutation({
-        tournamentId,
-        kind: "pit_scouting",
-        payload,
-      });
-      setOutbox(nextQueue);
-      setStatusBanner(
-        "Venue network unreachable — Pit Scouting card queued in Offline Pit Outbox.",
-      );
+    } catch (err) {
+      if (isPermanentOutboxError(err)) {
+        setStatusBanner(
+          `Pit card not saved: ${err instanceof Error ? err.message : "Server rejected submission."}`,
+        );
+        return;
+      }
+      try {
+        const nextQueue = enqueueTournamentMutation(
+          {
+            tournamentId,
+            kind: "pit_scouting",
+            payload,
+          },
+          userUid,
+        );
+        setOutbox(nextQueue);
+        setStatusBanner(
+          "Venue network unreachable — Pit Scouting card queued in Offline Pit Outbox.",
+        );
+      } catch (queueErr) {
+        setStatusBanner(
+          queueErr instanceof PitOutboxQuotaError
+            ? "Offline storage is full — clear old data or reconnect to save Pit card."
+            : "Could not queue offline Pit Scouting card.",
+        );
+        return;
+      }
     }
 
     setPitTeam("");

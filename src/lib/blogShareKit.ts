@@ -83,6 +83,7 @@ export function buildBlogShareCaption(post: BlogSharePostInput): string {
 }
 
 export function buildInstagramCaption(post: BlogSharePostInput): string {
+  const postUrl = buildCanonicalBlogUrl(post.slug);
   const title = cleanText(post.title, "New ARES 23247 Engineering Update");
   const summary = truncateClean(
     cleanText(
@@ -95,7 +96,7 @@ export function buildInstagramCaption(post: BlogSharePostInput): string {
   return [
     `🤖 ${title}${authorLine}`,
     summary,
-    `Read the full post at aresfirst.org/blog/${post.slug.trim()} (link in bio)`,
+    `Read the full post at ${postUrl} (link in bio)`,
     `${DEFAULT_HASHTAGS} #OMGrobots #STEM`,
   ].join("\n\n");
 }

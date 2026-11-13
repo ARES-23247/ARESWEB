@@ -2,7 +2,7 @@
 
 import { logger } from "@/utils/logger";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
   ArrowLeftRight,
   Award,
@@ -191,7 +191,8 @@ export default function FinanceLedgerPage() {
     : `Showing ${filteredTransactions.length} matching record${filteredTransactions.length === 1 ? "" : "s"} from ${transactions.length} loaded.`;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-obsidian py-24 text-marble">
+    <MotionConfig reducedMotion="user">
+      <div className="relative min-h-screen w-full overflow-hidden bg-obsidian py-24 text-marble">
       <SEO
         title="Financial Transparency Ledger"
         description="Public financial accountability board and ledger for ARES 23247 FIRST® Tech Challenge robotics team."
@@ -447,5 +448,6 @@ export default function FinanceLedgerPage() {
         </footer>
       </div>
     </div>
+    </MotionConfig>
   );
 }

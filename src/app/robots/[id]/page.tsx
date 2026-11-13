@@ -40,6 +40,7 @@ export default function RobotDetailPage() {
           <div className="mx-auto max-w-3xl">
             <PublicDataState
               title="Unable to load this robot"
+              titleAs="h1"
               message="The published robot record could not be reached. Check your connection and try again."
               diagnostic={loadError instanceof Error ? loadError.message : String(loadError)}
               onRetry={() => void refetch()}
@@ -152,7 +153,7 @@ export default function RobotDetailPage() {
           return (
           <section
             aria-label="Printable Judge and Pit Technical Sheet"
-            className="mb-12 rounded-2xl border-2 border-ares-gold/40 bg-black/80 p-8 shadow-2xl print:border-black print:bg-white print:text-black"
+            className="ares-print-sheet mb-12 rounded-2xl border-2 border-ares-gold/40 bg-black/80 p-8 shadow-2xl print:border-black print:bg-white print:text-black"
           >
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6 mb-6 print:border-black/20">
               <div>

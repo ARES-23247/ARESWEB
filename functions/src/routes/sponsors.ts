@@ -6,7 +6,7 @@ import {
   safeSponsorLogoPath,
   sponsorLogoGatewayUrl,
 } from "../lib/publicMedia";
-import { ensureAdmin } from "../middleware/auth";
+import { ensureMentorOrAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { requireRouteParam } from "../middleware/validation";
@@ -52,7 +52,7 @@ interface SponsorWriteRequest {
 function toSponsorDto(id: string, data: SponsorDocument, includeLifecycle: boolean) {
   const managedPath = safeSponsorLogoPath(data.logoStoragePath)
     ?? managedSponsorLogoPath(data.logoUrl, adminStorage.bucket().name);
-  const sourceLogoUrl = safeHttpsUrl(data.logoUrl);
+  const sourceLogoUrl = safeAllowedLogoUrl(data.logoUrl);
   const dto = {
     id,
     name: typeof data.name === "string" ? data.name : "",
@@ -112,7 +112,7 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/sponsors/admin - Fetch all sponsors (admin only)
-router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
+router.get("/admin", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const snapshot = await adminDb.collection("sponsors").limit(200).get();
   
   const sponsors = snapshot.docs.map((doc) =>
@@ -133,6 +133,60 @@ router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/sponsors/admin - Create or update sponsor (admin only)
+// Mirrors Content-Security-Policy img-src in firebase.json so saved external
+// sponsor logos cannot be blocked by browser CSP on the public sponsors page.
+const ALLOWED_EXTERNAL_LOGO_HOST_SUFFIXES = [
+  "firebasestorage.googleapis.com",
+  "storage.googleapis.com",
+  "api.dicebear.com",
+  "googleusercontent.com",
+  "google.com",
+  "ytimg.com",
+  "img.youtube.com",
+  "images.unsplash.com",
+  "aresfirst.org",
+  "ares23247.web.app",
+  "aresfirst-portal.web.app",
+] as const;
+
+function isAllowedExternalLogoHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return ALLOWED_EXTERNAL_LOGO_HOST_SUFFIXES.some(
+    (suffix) => host === suffix || host.endsWith(`.${suffix}`),
+  );
+}
+
+function safeAllowedLogoUrl(value: unknown): string | null {
+  const safeUrl = safeHttpsUrl(value);
+  if (!safeUrl) return null;
+  try {
+    const parsed = new URL(safeUrl);
+    return isAllowedExternalLogoHost(parsed.hostname) ? safeUrl : null;
+  } catch {
+    return null;
+  }
+}
+
+function requireAllowedLogoUrl(value: unknown): string {
+  const safeUrl = requireHttpsUrl(value, "Logo URL");
+  if (!safeUrl) {
+    throw new ApiError(400, "Logo URL must be an https:// URL.");
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(safeUrl);
+  } catch {
+    throw new ApiError(400, "Logo URL must be an https:// URL.");
+  }
+  if (!isAllowedExternalLogoHost(parsed.hostname)) {
+    throw new ApiError(
+      400,
+      "Upload the sponsor logo directly or use an ARES/Firebase Storage image URL instead of an external webpage host.",
+    );
+  }
+  return parsed.toString();
+}
+
 const SAFE_DOC_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{1,80}$/;
 
 function requireHttpsUrl(value: unknown, label: string): string | null {
@@ -197,14 +251,14 @@ async function resolveLogoFields(
     return existingLogoFields(existing);
   }
 
-  const safeLogoUrl = requireHttpsUrl(logoUrl, "Logo URL");
+  const safeLogoUrl = requireAllowedLogoUrl(logoUrl);
   const managedPath = managedSponsorLogoPath(safeLogoUrl, adminStorage.bucket().name);
   return managedPath
     ? { logoAssetId: null, logoStoragePath: managedPath, logoUrl: null }
     : { logoAssetId: null, logoStoragePath: null, logoUrl: safeLogoUrl };
 }
 
-router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/admin", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const { id, name, tier, logoUrl, logoAssetId, websiteUrl, isActive } = req.body as SponsorWriteRequest;
 
   if (!name || !name.trim() || name.trim().length > 120) {
@@ -266,7 +320,7 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // DELETE /api/sponsors/admin/:id - Archive sponsor (admin only)
-router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
+router.delete("/admin/:id", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const id = requireRouteParam(req.params.id, "sponsor ID");
 
   const docRef = adminDb.collection("sponsors").doc(id);
@@ -288,7 +342,7 @@ router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
 }));
 
 // PATCH /api/sponsors/admin/:id/restore - Restore an archived sponsor (admin only)
-router.patch("/admin/:id/restore", ensureAdmin, asyncHandler(async (req, res) => {
+router.patch("/admin/:id/restore", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const id = requireRouteParam(req.params.id, "sponsor ID");
   const docRef = adminDb.collection("sponsors").doc(id);
   const docSnap = await docRef.get();

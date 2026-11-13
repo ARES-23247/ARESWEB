@@ -573,12 +573,9 @@ service cloud.firestore {
     // team-only so fields outside the DTO can never leak publicly.
     match /robots/{robotId} {
       allow read: if isAuthorized();
-      allow create: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
-                    request.resource.data.isDeleted == 0;
-      allow update: if (hasRole('admin') || hasRole('coach') || hasRole('mentor')) &&
-                    request.resource.data.isDeleted in [0, 1];
-      // Fleet history is retained. Decommission and restore use the isDeleted flag.
-      allow delete: if false;
+      // All robot mutations and fleet lifecycle actions route through the
+      // /api/robots Express DTO APIs.
+      allow write: if false;
     }
 
     // Runtime configuration is read and changed only through audited DTO APIs.
@@ -660,22 +657,20 @@ service cloud.firestore {
 
     // seasons
     match /seasons/{seasonId} {
-      // Public readers use the explicit /api/seasons DTO boundary.
+      // Public readers use the explicit /api/seasons DTO boundary. All season
+      // mutations, archival, and restore actions route through the
+      // /api/seasons/admin Express DTO APIs (supporting admin/coach/mentor).
       allow read: if isAuthorized();
-      allow create, update: if hasRole('admin') || hasRole('coach');
-      allow delete: if (hasRole('admin') || hasRole('coach')) &&
-        resource.data.get('isDeleted', 0) == 1;
+      allow write: if false;
     }
 
     // awards
     match /awards/{awardId} {
-      // Public readers use the explicit /api/awards DTO boundary.
+      // Public readers use the explicit /api/awards DTO boundary. All award
+      // mutations, archival, restore, and permanent deletion of archived awards
+      // route through the /api/awards/admin Express DTO APIs.
       allow read: if isAuthorized();
-      allow create, update: if hasRole('admin') || hasRole('coach');
-      // Permanent deletion is reserved for already-archived records and mirrors
-      // the audited admin API. Active awards must be archived first.
-      allow delete: if (hasRole('admin') || hasRole('coach')) &&
-        resource.data.get('isDeleted', 0) == 1;
+      allow write: if false;
     }
 
 

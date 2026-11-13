@@ -351,7 +351,7 @@ describe("Express App Endpoints", () => {
 
   it("authenticates and quotas sponsor logos before allocating the raw upload body", () => {
     const expectedNames = [
-      "ensureAdmin",
+      "ensureMentorOrAdmin",
       "enforceDistributedQuota",
       "rawParser",
     ];

@@ -184,7 +184,7 @@ async function loadCandidateArtifacts(): Promise<CandidateArtifactDto[]> {
     await Promise.all([
       adminDb.collection("posts").limit(80).get(),
       adminDb.collection("robots").limit(30).get(),
-      adminDb.collection("tasks").where("status", "==", "done").limit(80).get(),
+      adminDb.collection("tasks").where("status", "in", ["completed", "done"]).limit(80).get(),
       adminDb.collection("outreach_logs").limit(80).get(),
       adminDb.collection("finance_transactions").limit(80).get(),
       adminDb.collection("sponsors").limit(50).get(),
@@ -212,8 +212,9 @@ async function loadCandidateArtifacts(): Promise<CandidateArtifactDto[]> {
   for (const doc of robotsSnap.docs) {
     const data = doc.data() as Record<string, unknown>;
     if (data.isDeleted === 1) continue;
-    const season = safeText(data.season, "FTC Robot", 40);
-    const hasCad = typeof data.cadUrl === "string" && data.cadUrl.startsWith("https://");
+    const season = safeText(data.seasonName ?? data.season, "FTC Robot", 40);
+    const cadCandidate = data.onshapeUrl ?? data.cadViewerUrl ?? data.cadUrl;
+    const hasCad = typeof cadCandidate === "string" && cadCandidate.startsWith("https://");
     candidates.push({
       id: `robot:${doc.id}`,
       kind: "robot",
@@ -231,7 +232,7 @@ async function loadCandidateArtifacts(): Promise<CandidateArtifactDto[]> {
       id: `task:${doc.id}`,
       kind: "task",
       title: safeText(data.title, "Completed Engineering Task", 160),
-      subtitle: `${safeText(data.category, "Operations", 60)} • Completed`,
+      subtitle: `${safeText(data.subteam ?? data.category, "Operations", 60)} • Completed`,
       date: safeText(data.updatedAt ?? data.createdAt, "", 40),
       href: "/dashboard/tasks",
     });
@@ -241,8 +242,9 @@ async function loadCandidateArtifacts(): Promise<CandidateArtifactDto[]> {
     const data = doc.data() as Record<string, unknown>;
     if (data.isDeleted === 1) continue;
     const hours = typeof data.hours === "number" && Number.isFinite(data.hours) ? data.hours : 0;
+    const rawImpacted = data.peopleReached ?? data.impacted;
     const impacted =
-      typeof data.impacted === "number" && Number.isFinite(data.impacted) ? data.impacted : 0;
+      typeof rawImpacted === "number" && Number.isFinite(rawImpacted) ? rawImpacted : 0;
     candidates.push({
       id: `outreach:${doc.id}`,
       kind: "outreach",

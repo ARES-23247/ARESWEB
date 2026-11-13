@@ -41,9 +41,9 @@ describe("prerendered route shells", () => {
 
   it("keeps the rich homepage fallback body for the home shell only", () => {
     const home = renderStaticShell(shell, cast(routes[0]));
-    expect(bodyText(home)).toContain("ares analytics");
+    expect(bodyText(home)).toContain("ares robotics studio");
     const other = renderStaticShell(shell, cast(routes.find((m) => m[0] === "/about")!));
-    expect(bodyText(other)).not.toContain("ares analytics");
+    expect(bodyText(other)).not.toContain("ares robotics studio");
   });
 
   it("emits each route's canonical URL and respects the noindex flag", () => {

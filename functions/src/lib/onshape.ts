@@ -28,7 +28,11 @@ const MAX_TOPIC_LENGTH = 60;
 /** Remove markdown metacharacters from untrusted display text. */
 export function sanitizeOnshapeText(value: string | undefined): string {
   if (typeof value !== "string") return "";
-  return value.replace(/[[\]()`*_~>#]/g, "").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/[[\]()`*_~>#]/g, "")
+    .replace(/@/g, "@\u200B")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function truncateTopic(value: string): string {

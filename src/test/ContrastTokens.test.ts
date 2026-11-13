@@ -92,8 +92,12 @@ describe("semantic contrast tokens", () => {
       ).toBeGreaterThanOrEqual(contract.accessibility.normalTextMinimumContrast);
     }
 
-    expect(css).toContain('.clipped-button:hover:not([class*="hover:text-"])');
-    expect(css).toContain('.clipped-button-sm:hover:not([class*="hover:text-"])');
+    expect(css).toContain(
+      '.clipped-button:hover:not([class*="hover:bg-"]):not([class*="hover:text-"])',
+    );
+    expect(css).toContain(
+      '.clipped-button-sm:hover:not([class*="hover:bg-"]):not([class*="hover:text-"])',
+    );
     expect(css).toContain('.hover\\:bg-ares-bronze:hover:not([class*="hover:text-"])');
     expect(css).toContain("color: var(--ares-on-bright-accent);");
   });

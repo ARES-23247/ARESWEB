@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/api", () => ({ authenticatedFetch: vi.fn() }));
 
 import { authenticatedFetch } from "@/lib/api";
-import { createBuzzleGame } from "@/lib/buzzle";
+import { createBuzzleGame } from "@ares/buzzle/rules";
 import {
   createOnlineBuzzleGame,
   findOnlineBuzzleMatch,

@@ -144,7 +144,7 @@ router.get("/pending-exists", ensureAdmin, asyncHandler(async (_req, res) => {
 
 // GET /api/inquiries
 router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
-  const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);
+  const limitVal = Math.max(1, Math.min(parseInt(req.query?.limit as string) || 50, 100));
   const cursor = req.query?.cursor as string | undefined;
 
   let query = adminDb.collection("inquiries").orderBy("createdAt", "desc").limit(limitVal + 1);

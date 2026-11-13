@@ -47,7 +47,12 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function SponsorsManagerPage() {
-  const { user } = useAuth();
+  const { user, authorizedUser } = useAuth();
+  const canManage = Boolean(
+    user &&
+      authorizedUser &&
+      ["admin", "coach", "mentor"].includes(authorizedUser.role),
+  );
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,7 +80,10 @@ export default function SponsorsManagerPage() {
   const [isActive, setIsActive] = useState(true);
 
   const fetchSponsors = useCallback(async () => {
-    if (!user) return;
+    if (!canManage) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -93,7 +101,7 @@ export default function SponsorsManagerPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [canManage]);
 
   useEffect(() => {
     void fetchSponsors();
@@ -311,6 +319,19 @@ export default function SponsorsManagerPage() {
 
     return matchesSearch && matchesTier && matchesStatus;
   });
+
+  if (!canManage) {
+    return (
+      <div className="glass-card border border-white/10 p-8 rounded-2xl text-center space-y-3">
+        <h1 className="text-xl font-black uppercase font-heading text-white">
+          Access Restricted
+        </h1>
+        <p className="text-sm text-marble/75">
+          Coach, Mentor, or Admin permissions are required to manage team sponsors.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

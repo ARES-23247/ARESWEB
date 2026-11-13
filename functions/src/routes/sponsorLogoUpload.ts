@@ -10,7 +10,7 @@ import {
   safeSponsorLogoPath,
 } from "../lib/publicMedia";
 import { asyncHandler } from "../lib/utils";
-import { ensureAdmin, type AuthenticatedRequest } from "../middleware/auth";
+import { ensureMentorOrAdmin, type AuthenticatedRequest } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 
 const router = express.Router();
@@ -109,7 +109,7 @@ router.get(
 
 router.get(
   "/admin/sponsor-logo/:sponsorId",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     const sponsorId = routeId(req.params.sponsorId, "sponsor ID");
     await streamLogo(
@@ -123,7 +123,7 @@ router.get(
 
 router.get(
   "/admin/sponsor-logo-assets/:assetId",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   asyncHandler(async (req, res) => {
     const assetId = routeId(req.params.assetId, "sponsor logo asset ID", SAFE_ASSET_ID);
     const snapshot = await adminDb.collection("media_assets").doc(assetId).get();
@@ -141,7 +141,7 @@ router.get(
 
 router.post(
   "/sponsor-logo",
-  ensureAdmin,
+  ensureMentorOrAdmin,
   sponsorLogoLimiter,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const mimeType = req.get("Content-Type")?.split(";", 1)[0]?.trim().toLowerCase() ?? "";

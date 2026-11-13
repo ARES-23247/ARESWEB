@@ -125,13 +125,7 @@ function includesPublishedPhoto(data: Record<string, unknown>, photoId: string):
   return mediaPhotoIds.includes(photoId);
 }
 
-async function withCursor(query: FirebaseFirestore.Query, cursor: unknown): Promise<FirebaseFirestore.Query> {
-  if (typeof cursor !== "string" || !cursor) return query;
-  const id = safeId(cursor, "photo cursor");
-  const snapshot = await adminDb.collection("imported_photos").doc(id).get();
-  if (!snapshot.exists) throw new ApiError(400, "Photo cursor was not found.");
-  return query.startAfter(snapshot);
-}
+const MAX_PHOTO_SCAN_DOCUMENTS = 250;
 
 router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const limit = parseLimit(req.query.limit, 30, 50);
@@ -139,17 +133,62 @@ router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const albumId = typeof req.query.albumId === "string" && req.query.albumId
     ? safeId(req.query.albumId, "album ID")
     : undefined;
-  let query: FirebaseFirestore.Query = adminDb.collection("imported_photos");
-  if (albumId) query = query.where("albumId", "==", albumId);
-  query = query.orderBy("importedAt", "desc");
-  query = await withCursor(query, req.query.cursor);
-  const snapshot = await query.limit(limit + 1).get();
-  const visible = snapshot.docs.filter((doc) => includeArchived || doc.data().isDeleted !== 1);
+  let baseQuery: FirebaseFirestore.Query = adminDb.collection("imported_photos");
+  if (albumId) baseQuery = baseQuery.where("albumId", "==", albumId);
+  baseQuery = baseQuery.orderBy("importedAt", "desc");
+
+  let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined;
+  if (typeof req.query.cursor === "string" && req.query.cursor) {
+    const id = safeId(req.query.cursor, "photo cursor");
+    const snapshot = await adminDb.collection("imported_photos").doc(id).get();
+    if (!snapshot.exists) throw new ApiError(400, "Photo cursor was not found.");
+    scanCursor = snapshot;
+  }
+
+  const visible: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let scanned = 0;
+  let exhausted = false;
+
+  while (visible.length <= limit && scanned < MAX_PHOTO_SCAN_DOCUMENTS && !exhausted) {
+    const fetchSize = scanned === 0
+      ? limit + 1
+      : Math.min(Math.max(limit + 1, 25), MAX_PHOTO_SCAN_DOCUMENTS - scanned);
+    let pageQuery: FirebaseFirestore.Query = baseQuery;
+    if (scanCursor) {
+      pageQuery = pageQuery.startAfter(scanCursor);
+    }
+    const snapshot = await pageQuery.limit(fetchSize).get();
+    const rawDocs = snapshot?.docs ?? [];
+    if (rawDocs.length === 0) {
+      exhausted = true;
+      break;
+    }
+
+    for (const doc of rawDocs) {
+      scanCursor = doc;
+      scanned += 1;
+      if (includeArchived || doc.data().isDeleted !== 1) {
+        visible.push(doc);
+      }
+      if (visible.length > limit || scanned >= MAX_PHOTO_SCAN_DOCUMENTS) {
+        break;
+      }
+    }
+
+    if (rawDocs.length < fetchSize) {
+      exhausted = true;
+    }
+  }
+
+  const hasMore = visible.length > limit || (!exhausted && scanned >= MAX_PHOTO_SCAN_DOCUMENTS);
   const page = visible.slice(0, limit);
+  const nextCursor = hasMore
+    ? (page.length > 0 ? page[page.length - 1]?.id ?? null : scanCursor?.id ?? null)
+    : null;
   res.json({
     photos: page.map((doc) => photoDto(doc.id, doc.data())),
-    hasMore: snapshot.docs.length > limit,
-    nextCursor: snapshot.docs.length > limit ? snapshot.docs[limit - 1]?.id ?? null : null,
+    hasMore,
+    nextCursor,
   });
 }));
 

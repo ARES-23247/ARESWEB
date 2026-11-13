@@ -198,6 +198,29 @@ describe("Tournaments Router Backend Endpoints", () => {
       expect(err.status).toBe(403);
       expect(err.message).toContain("admin or coach access");
     });
+
+    it("mounts ensureMentorOrAdmin on management routes and distributedQuota on sync-ftcscout", () => {
+      for (const [path, method] of [
+        ["/", "post"],
+        ["/:id", "put"],
+        ["/:id", "delete"],
+        ["/:id/matches", "post"],
+        ["/:id/matches/:matchId/completion", "put"],
+        ["/:id/matches/:matchId", "put"],
+        ["/:id/matches/:matchId", "delete"],
+        ["/:id/sync-ftcscout", "post"],
+      ] as const) {
+        const layer = tournamentsRouter.stack.find(
+          (entry) => entry.route?.path === path && (entry.route as any).methods[method],
+        );
+        expect(layer?.route?.stack.map((entry) => entry.name)).toContain("ensureMentorOrAdmin");
+      }
+
+      const syncLayer = tournamentsRouter.stack.find(
+        (entry) => entry.route?.path === "/:id/sync-ftcscout" && (entry.route as any).methods.post,
+      );
+      expect(syncLayer?.route?.stack.map((entry) => entry.name)).toContain("enforceDistributedQuota");
+    });
   });
 
   describe("GET /api/tournaments - Fetch active tournaments", () => {

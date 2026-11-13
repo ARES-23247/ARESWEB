@@ -78,7 +78,7 @@ export default function LearningMetadataFields({ draft, onChange }: LearningMeta
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <label htmlFor="learning-version">
           <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-marble/60">Applies to version</span>
-          <input id="learning-version" value={draft.appliesToVersion} onChange={(event) => onChange("appliesToVersion", event.target.value)} placeholder="e.g. ARES 9.3.6" className="w-full rounded border border-white/10 bg-black/60 px-3 py-2.5 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" />
+          <input id="learning-version" value={draft.appliesToVersion} onChange={(event) => onChange("appliesToVersion", event.target.value)} placeholder="e.g. ARES 20.0.6 / Studio 7.0.75" className="w-full rounded border border-white/10 bg-black/60 px-3 py-2.5 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan" />
         </label>
         <label htmlFor="learning-reviewed-at">
           <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-marble/60">Reviewed date</span>

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -23,6 +23,23 @@ function replace(file, before, after) {
   writeFileSync(target, source.replace(before, after));
 }
 
+function ensureFixtureTarget(relative) {
+  const target = path.join(fixture, relative);
+  if (existsSync(target)) return;
+  mkdirSync(relative.endsWith("/") ? target : path.dirname(target), { recursive: true });
+  if (!relative.endsWith("/")) writeFileSync(target, "fixture\n");
+}
+
+function collectMarkdownFiles(dir) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...collectMarkdownFiles(full));
+    else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
+  }
+  return out;
+}
+
 beforeEach(() => {
   fixture = mkdtempSync(prefix);
   for (const file of ["AGENTS.md", "GEMINI.md", "CLAUDE.md", ".gitignore", "package.json", ".agents", ".github/copilot-instructions.md", "docs/AGENT_SETUP.md"]) {
@@ -30,12 +47,24 @@ beforeEach(() => {
     mkdirSync(path.dirname(target), { recursive: true });
     cpSync(path.join(repository, file), target, { recursive: true });
   }
-  // Only map targets matter here; do not copy the application or its dependencies.
-  for (const [, relative] of readFileSync(path.join(fixture, "AGENTS.md"), "utf8").matchAll(/`((?:src|functions|scripts|infra|content|\.github)\/[^`\s]+)`/g)) {
-    const target = path.join(fixture, relative);
-    if (existsSync(target)) continue;
-    mkdirSync(relative.endsWith("/") ? target : path.dirname(target), { recursive: true });
-    if (!relative.endsWith("/")) writeFileSync(target, "fixture\n");
+  // Materialize map targets and relative links referenced by shared instructions and skill docs.
+  const docsToScan = [
+    path.join(fixture, "AGENTS.md"),
+    path.join(fixture, "docs/AGENT_SETUP.md"),
+    ...collectMarkdownFiles(path.join(fixture, ".agents/skills")),
+  ];
+  for (const absPath of docsToScan) {
+    const relDoc = path.relative(fixture, absPath).replaceAll("\\", "/");
+    const baseDir = path.posix.dirname(relDoc);
+    const source = readFileSync(absPath, "utf8");
+    for (const [, relative] of source.matchAll(/`((?:src|functions|packages|scripts|infra|content|docs|design|config|tests|e2e|\.github)\/[^`\s*<>]+)`/g)) {
+      ensureFixtureTarget(relative);
+    }
+    for (const [, linkTarget] of source.matchAll(/\[[^\]]+\]\(([^)#\s]+)(?:#[^)\s]*)?\)/g)) {
+      if (/^(?:https?:|mailto:|sidecar:|file:)/i.test(linkTarget)) continue;
+      const resolved = path.posix.normalize(baseDir === "." ? linkTarget : path.posix.join(baseDir, linkTarget));
+      if (!resolved.startsWith("..")) ensureFixtureTarget(resolved);
+    }
   }
   git("init", "--quiet");
   const globalExclude = path.join(fixture, ".git/info/test-global-exclude");
@@ -99,5 +128,22 @@ describe("shared agent configuration in real Git checkouts", () => {
   it("rejects copied policy accumulating in a tool entry point", () => {
     appendFileSync(path.join(fixture, "GEMINI.md"), "\n" + "duplicated policy ".repeat(100));
     expect(run().stderr).toContain("GEMINI.md must remain a thin entry point");
+  });
+  it("rejects undocumented workspace packages under packages/", () => {
+    mkdirSync(path.join(fixture, "packages/unlisted-game"), { recursive: true });
+    const result = run();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("AGENTS.md must document workspace package packages/unlisted-game/");
+  });
+  it("rejects missing repository paths and broken relative links inside shared skills", () => {
+    replace(
+      ".agents/skills/aresweb-comprehensive-audit/SKILL.md",
+      "[references/domain-checklists.md](references/domain-checklists.md)",
+      "[references/missing.md](references/missing.md) and `functions/src/missingRoute.ts`",
+    );
+    const result = run();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("links to missing relative path references/missing.md");
+    expect(result.stderr).toContain("references missing repository path functions/src/missingRoute.ts");
   });
 });

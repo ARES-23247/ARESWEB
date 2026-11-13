@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BuzzleWordHelp } from '@/components/games/BuzzleWordHelp';
-import { createBuzzleGame, getBuzzleCellIndex } from '@/lib/buzzle';
+import { BuzzleWordHelp } from '@ares/buzzle/help-panel';
+import { createBuzzleGame, getBuzzleCellIndex } from '@ares/buzzle/rules';
 
 const data = (word: string) => ({ en: [{ language: 'English', partOfSpeech: 'noun', definitions: [{ definition: `Fixture meaning of ${word}.` }] }] });
 

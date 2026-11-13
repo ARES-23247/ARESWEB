@@ -156,7 +156,7 @@ export default function SiteAnnouncementBanner() {
       aria-label={label}
       aria-live={announcement.severity === "urgent" ? "assertive" : "polite"}
       aria-atomic="true"
-      className={`fixed inset-x-0 top-0 z-[70] border-b-2 shadow-2xl ${ANNOUNCEMENT_SEVERITY_STYLES[announcement.severity]}`}
+      className={`fixed inset-x-0 top-0 z-[70] border-b-2 shadow-2xl print:hidden ${ANNOUNCEMENT_SEVERITY_STYLES[announcement.severity]}`}
     >
       <div className="mx-auto flex min-h-14 max-w-7xl items-start gap-3 px-3 py-3 sm:items-center sm:px-6">
         <Icon aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 sm:mt-0" />

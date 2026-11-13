@@ -229,7 +229,7 @@ export default function DashboardLayout({
       <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <div className="hidden md:block shrink-0 self-stretch flex flex-col">
+      <div className="hidden md:block shrink-0 self-stretch flex flex-col print:hidden">
         <DashboardSidebar />
       </div>
 
@@ -268,7 +268,7 @@ export default function DashboardLayout({
         {/* Mobile top-nav header */}
         <header
           style={{ top: "var(--site-announcement-height, 0px)" }}
-          className="sticky z-30 flex items-center justify-between border-b border-white/5 bg-black/40 px-4 py-3 backdrop-blur-md md:hidden sm:px-6 sm:py-4"
+          className="sticky z-30 flex items-center justify-between border-b border-white/5 bg-black/40 px-4 py-3 backdrop-blur-md md:hidden sm:px-6 sm:py-4 print:hidden"
         >
           <span className="text-lg font-black tracking-tighter text-white font-heading">
             ARES{" "}

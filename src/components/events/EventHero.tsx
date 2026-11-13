@@ -63,7 +63,7 @@ export default function EventHero({
             className={`w-fit px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded ${
               isPast
                 ? "bg-white/10 text-marble/60"
-                : "bg-ares-red/20 text-white border border-ares-red/35 shadow-[0_0_15px_rgba(192,0,0,0.3)] animate-pulse"
+                : "bg-ares-red/20 text-white border border-ares-red/35 shadow-[0_0_15px_rgba(192,0,0,0.3)] motion-safe:animate-pulse"
             }`}
           >
             {isPast ? "Historical Record" : "Upcoming Event"}

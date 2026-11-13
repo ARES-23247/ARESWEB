@@ -128,6 +128,22 @@ describe("Tasks Router Backend Endpoints", () => {
       );
     });
 
+    it("neutralizes @mentions inside task notification fields", async () => {
+      req.body = {
+        taskId: "123",
+        action: "create",
+        title: "Ping @all @**everyone**",
+        description: "Alert @here",
+      };
+
+      await invokeRoute("/notify", "post");
+
+      const sentMessage = vi.mocked(sendZulipMessage).mock.calls[0]?.[2] ?? "";
+      expect(sentMessage).toContain("@\u200Ball");
+      expect(sentMessage).not.toContain("@**everyone**");
+      expect(sentMessage).toContain("@\u200Bhere");
+    });
+
     it("should fail validation if action is missing", async () => {
       req.body = {
         taskId: "123",

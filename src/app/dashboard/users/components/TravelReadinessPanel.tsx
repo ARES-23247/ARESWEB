@@ -164,7 +164,7 @@ export default function TravelReadinessPanel() {
   return (
     <section
       aria-labelledby="travel-readiness-heading"
-      className="glass-card ares-cut border border-ares-cyan/30 bg-black/40 p-6 space-y-6 print:border-black print:bg-white print:text-black"
+      className="ares-print-sheet glass-card ares-cut border border-ares-cyan/30 bg-black/40 p-6 space-y-6 print:border-black print:bg-white print:text-black"
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 pb-4 print:border-black/20">
         <div>

@@ -37,7 +37,7 @@ vi.mock("../../lib/firebase-admin", () => ({
 }));
 vi.mock("node:stream/promises", () => ({ pipeline: streamPipeline }));
 vi.mock("../../middleware/auth", () => ({
-  ensureAdmin: (_req: unknown, _res: unknown, next: () => void) => next(),
+  ensureMentorOrAdmin: (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 vi.mock("../../lib/imageImport", () => ({ validateImageMagicBytes: vi.fn() }));
 vi.mock("../../lib/photoDerivatives", () => ({
@@ -100,9 +100,9 @@ describe("sponsor logo upload route", () => {
     });
   });
 
-  it("registers adult authorization and route-level throttling", () => {
+  it("registers mentor/coach/admin authorization and route-level throttling", () => {
     const layer = router.stack.find((entry) => entry.route?.path === "/sponsor-logo");
-    expect(layer?.route?.stack.map((entry) => entry.name)).toContain("ensureAdmin");
+    expect(layer?.route?.stack.map((entry) => entry.name)).toContain("ensureMentorOrAdmin");
     expect(layer?.route?.stack).toHaveLength(3);
   });
 

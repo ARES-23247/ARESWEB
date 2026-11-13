@@ -32,7 +32,7 @@ export function bucketByDueDate(dueDate: string, today: string): DueBucket | nul
   return null;
 }
 
-function sanitizeZulipInlineText(value: string): string {
+export function sanitizeZulipInlineText(value: string): string {
   return value
     .replace(/[\r\n]+/g, " ")
     .replace(/@/g, "@\u200B")

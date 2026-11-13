@@ -5,7 +5,10 @@ import SponsorsManagerPage from "../app/dashboard/sponsors/page";
 import OutreachManagerPage from "../app/dashboard/outreach/page";
 import { authenticatedFetch } from "../lib/api";
 
-const authState = vi.hoisted(() => ({ user: { uid: "admin-1" } }));
+const authState = vi.hoisted(() => ({
+  user: { uid: "admin-1" },
+  authorizedUser: { role: "admin" } as { role: string } | null,
+}));
 
 vi.mock("../context/AuthContext", () => ({
   useAuth: () => authState,
@@ -37,6 +40,8 @@ function response(body: object, status = 200, statusText = "OK"): Response {
 describe("partner lifecycle managers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.user = { uid: "admin-1" };
+    authState.authorizedUser = { role: "admin" };
     Object.defineProperties(URL, {
       createObjectURL: { configurable: true, value: vi.fn(() => "blob:sponsor-logo-preview") },
       revokeObjectURL: { configurable: true, value: vi.fn() },
@@ -200,5 +205,23 @@ describe("partner lifecycle managers", () => {
       { method: "PATCH" },
     ));
     expect(await screen.findByText(/Archived Demo was restored/i)).toBeInTheDocument();
+  });
+
+  it("permits mentors and blocks members without firing unauthorized admin requests", async () => {
+    authState.authorizedUser = { role: "mentor" };
+    vi.mocked(authenticatedFetch).mockResolvedValue(response({ sponsors: [], logs: [] }));
+
+    render(<SponsorsManagerPage />);
+    expect(await screen.findByRole("heading", { name: "Sponsors Manager" })).toBeInTheDocument();
+    expect(authenticatedFetch).toHaveBeenCalledWith("/api/sponsors/admin");
+
+    vi.clearAllMocks();
+    authState.authorizedUser = { role: "member" };
+    render(<OutreachManagerPage />);
+    expect(await screen.findByRole("heading", { name: "Access Restricted" })).toBeInTheDocument();
+    expect(authenticatedFetch).not.toHaveBeenCalled();
+
+    render(<SponsorsManagerPage />);
+    expect(authenticatedFetch).not.toHaveBeenCalled();
   });
 });

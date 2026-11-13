@@ -721,18 +721,35 @@ export function registerProfileAdminRoutes(router: Router): void {
 
   async function loadActiveTravelRoster() {
     const secret = getEncryptionSecret();
-    const authSnap = await adminDb
-      .collection("authorized_users")
-      .orderBy(FieldPath.documentId())
-      .limit(200)
-      .get();
+    const activeDocs: QueryDocumentSnapshot[] = [];
+    let authCursor: QueryDocumentSnapshot | undefined;
+    const TRAVEL_PAGE_SIZE = 200;
+    const MAX_TRAVEL_PAGES = 10;
 
-    const activeDocs = authSnap.docs.filter((doc) => {
-      const data = doc.data();
-      const deleted = data.isDeleted === 1 || data.isDeleted === true;
-      const normalized = normalizeAdminRole(data.role);
-      return !deleted && normalized.role !== "unverified";
-    });
+    for (let page = 0; page < MAX_TRAVEL_PAGES; page++) {
+      let authQuery = adminDb
+        .collection("authorized_users")
+        .orderBy(FieldPath.documentId())
+        .limit(TRAVEL_PAGE_SIZE);
+      if (authCursor) {
+        authQuery = adminDb
+          .collection("authorized_users")
+          .orderBy(FieldPath.documentId())
+          .startAfter(authCursor)
+          .limit(TRAVEL_PAGE_SIZE);
+      }
+      const authSnap = await authQuery.get();
+      for (const doc of authSnap.docs) {
+        const data = doc.data();
+        const deleted = data.isDeleted === 1 || data.isDeleted === true;
+        const normalized = normalizeAdminRole(data.role);
+        if (!deleted && normalized.role !== "unverified") {
+          activeDocs.push(doc);
+        }
+      }
+      if (authSnap.docs.length < TRAVEL_PAGE_SIZE) break;
+      authCursor = authSnap.docs[authSnap.docs.length - 1];
+    }
 
     const profileSnaps = await Promise.all(
       activeDocs.map((doc) =>

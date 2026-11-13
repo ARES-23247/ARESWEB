@@ -145,23 +145,64 @@ function slugify(title: string): string {
   return slug;
 }
 
+const MAX_ALBUM_SCAN_DOCUMENTS = 250;
+
 router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
   const parsed = typeof req.query.limit === "string" ? Number.parseInt(req.query.limit, 10) : Number.NaN;
   const limit = Number.isFinite(parsed) ? Math.max(1, Math.min(parsed, 50)) : 30;
   const includeArchived = req.query.includeArchived === "true";
-  let query: FirebaseFirestore.Query = adminDb.collection("albums").orderBy("createdAt", "desc");
+  const baseQuery = adminDb.collection("albums").orderBy("createdAt", "desc");
+  let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined;
   if (typeof req.query.cursor === "string" && req.query.cursor) {
     const cursor = await adminDb.collection("albums").doc(safeId(req.query.cursor, "album cursor")).get();
     if (!cursor.exists) throw new ApiError(400, "Album cursor was not found.");
-    query = query.startAfter(cursor);
+    scanCursor = cursor;
   }
-  const snapshot = await query.limit(limit + 1).get();
-  const visible = snapshot.docs.filter((doc) => includeArchived || doc.data().isDeleted !== 1);
+
+  const visible: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let scanned = 0;
+  let exhausted = false;
+
+  while (visible.length <= limit && scanned < MAX_ALBUM_SCAN_DOCUMENTS && !exhausted) {
+    const fetchSize = scanned === 0
+      ? limit + 1
+      : Math.min(Math.max(limit + 1, 25), MAX_ALBUM_SCAN_DOCUMENTS - scanned);
+    let pageQuery: FirebaseFirestore.Query = baseQuery;
+    if (scanCursor) {
+      pageQuery = pageQuery.startAfter(scanCursor);
+    }
+    const snapshot = await pageQuery.limit(fetchSize).get();
+    const rawDocs = snapshot?.docs ?? [];
+    if (rawDocs.length === 0) {
+      exhausted = true;
+      break;
+    }
+
+    for (const doc of rawDocs) {
+      scanCursor = doc;
+      scanned += 1;
+      if (includeArchived || doc.data().isDeleted !== 1) {
+        visible.push(doc);
+      }
+      if (visible.length > limit || scanned >= MAX_ALBUM_SCAN_DOCUMENTS) {
+        break;
+      }
+    }
+
+    if (rawDocs.length < fetchSize) {
+      exhausted = true;
+    }
+  }
+
+  const hasMore = visible.length > limit || (!exhausted && scanned >= MAX_ALBUM_SCAN_DOCUMENTS);
   const page = visible.slice(0, limit);
+  const nextCursor = hasMore
+    ? (page.length > 0 ? page[page.length - 1]?.id ?? null : scanCursor?.id ?? null)
+    : null;
   res.json({
     albums: page.map((doc) => albumDto(doc.id, doc.data())),
-    hasMore: snapshot.docs.length > limit,
-    nextCursor: snapshot.docs.length > limit ? snapshot.docs[limit - 1]?.id ?? null : null,
+    hasMore,
+    nextCursor,
   });
 }));
 

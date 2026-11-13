@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "../lib/firebase-admin";
-import { ensureAdmin } from "../middleware/auth";
+import { ensureMentorOrAdmin } from "../middleware/auth";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { requireRouteParam } from "../middleware/validation";
@@ -73,7 +73,7 @@ function toOutreachDto(id: string, data: OutreachLogDocument, includeLifecycle: 
 const MAX_OUTREACH_SCAN_DOCUMENTS = 300;
 
 async function getOutreachLogsHelper(req: express.Request, includeArchived: boolean) {
-  const limitVal = Math.min(parseInt(req.query?.limit as string) || 50, 100);
+  const limitVal = Math.max(1, Math.min(parseInt(req.query?.limit as string) || 50, 100));
   const cursor = req.query?.cursor as string | undefined;
   const collection = adminDb.collection("outreach_logs");
   let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined;
@@ -164,16 +164,16 @@ router.get("/", asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-// GET /api/outreach/admin - Fetch all outreach logs (admin only)
-router.get("/admin", ensureAdmin, asyncHandler(async (req, res) => {
+// GET /api/outreach/admin - Fetch all outreach logs (mentor/coach/admin)
+router.get("/admin", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const result = await getOutreachLogsHelper(req, true);
   res.json(result);
 }));
 
-// POST /api/outreach/admin - Create or update outreach log (admin only)
+// POST /api/outreach/admin - Create or update outreach log (mentor/coach/admin)
 const SAFE_DOC_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{1,80}$/;
 
-router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
+router.post("/admin", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const { id, title, date, location, hours, peopleReached, impactSummary, eventId } = req.body as OutreachWriteRequest;
 
   if (!title || typeof title !== "string" || !title.trim() || title.trim().length > 200) {
@@ -243,8 +243,8 @@ router.post("/admin", ensureAdmin, asyncHandler(async (req, res) => {
   res.json({ success: true, id: logId });
 }));
 
-// DELETE /api/outreach/admin/:id - Archive outreach log (admin only)
-router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
+// DELETE /api/outreach/admin/:id - Archive outreach log (mentor/coach/admin)
+router.delete("/admin/:id", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const id = requireRouteParam(req.params.id, "outreach ID");
 
   const docRef = adminDb.collection("outreach_logs").doc(id);
@@ -264,8 +264,8 @@ router.delete("/admin/:id", ensureAdmin, asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Outreach log archived successfully." });
 }));
 
-// PATCH /api/outreach/admin/:id/restore - Restore an archived outreach log (admin only)
-router.patch("/admin/:id/restore", ensureAdmin, asyncHandler(async (req, res) => {
+// PATCH /api/outreach/admin/:id/restore - Restore an archived outreach log (mentor/coach/admin)
+router.patch("/admin/:id/restore", ensureMentorOrAdmin, asyncHandler(async (req, res) => {
   const id = requireRouteParam(req.params.id, "outreach ID");
   const docRef = adminDb.collection("outreach_logs").doc(id);
   const docSnap = await docRef.get();

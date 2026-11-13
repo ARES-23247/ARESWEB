@@ -46,6 +46,7 @@ vi.mock("../../lib/firebase-admin", () => ({
 }));
 vi.mock("../../middleware/auth", () => ({
   ensureAdmin: (_req: unknown, _res: unknown, next: () => void) => next(),
+  ensureMentorOrAdmin: (_req: unknown, _res: unknown, next: () => void) => next(),
   ensureTeamMember: (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 vi.mock("../../lib/googleAuth", () => ({ getGooglePhotosAccessToken: vi.fn() }));
@@ -175,6 +176,28 @@ describe("photos routes", () => {
     it("uses the default limit for malformed input", async () => {
       await handler("/", "get")({ query: { limit: ["20"] } }, res, next);
       expect(query.limit).toHaveBeenCalledWith(31);
+    });
+
+    it("refills active photos across soft-deleted records up to the requested limit", async () => {
+      queryGet
+        .mockResolvedValueOnce({
+          docs: [
+            photo("del-1", { isDeleted: 1, publicUrl: "https://storage.googleapis.com/1.jpg" }),
+            photo("del-2", { isDeleted: 1, publicUrl: "https://storage.googleapis.com/2.jpg" }),
+          ],
+        })
+        .mockResolvedValueOnce({
+          docs: [
+            photo("act-1", { publicUrl: "https://storage.googleapis.com/3.jpg", importedAt: "2026-02-01" }),
+            photo("act-2", { publicUrl: "https://storage.googleapis.com/4.jpg", importedAt: "2026-02-02" }),
+          ],
+        });
+
+      await handler("/", "get")({ query: { limit: "1" } }, res, next);
+      const payload = res.json.mock.calls[0][0];
+      expect(payload.photos.map((item: { id: string }) => item.id)).toEqual(["act-1"]);
+      expect(payload.hasMore).toBe(true);
+      expect(payload.nextCursor).toBe("act-1");
     });
 
     it("rejects invalid filters and missing cursors", async () => {

@@ -64,9 +64,10 @@ ARES Guided Run Review keeps an observed difference separate from correlation an
 keeps missing signals visible. Those boundaries matter in strategy. A slower run does not prove a
 robot will be slow in a different match. A quiet alert list does not prove a robot is ready.
 
-The current ARES Match Strategy screen is explicitly a developer preview with sample values. It is
-not session-backed analysis and must not be used for decisions. This lesson uses invented values for
-the same reason: students can learn the reasoning structure without mistaking a demo for evidence.
+The ARES Match Strategy screen is backed by recorded DuckDB session, summary, telemetry, alert, and
+annotation records. It summarizes observed run evidence rather than predicting future matches. This
+lesson uses invented values so students learn the reasoning structure without claiming match
+predictions or exposing real team data.
 
 ## Hands-on activity
 
@@ -109,7 +110,7 @@ lesson score can still be the wrong choice when its sources, assumptions, rules,
 | Missing evidence is entered as zero | Mark it missing in the record; zero is a chosen rating, not a missing-data symbol. |
 | A plan has no recovery action | Add a bounded fallback and name the role that calls it. |
 | The notes judge another team | Replace personal judgments with robot observations and source limits. |
-| A sample screen is treated as live analysis | Stop and verify source, freshness, workspace, and session identity. |
+| An unverified screen is treated as live proof | Stop and verify source, freshness, workspace, and session identity. |
 
 ## Evidence artifact
 

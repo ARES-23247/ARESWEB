@@ -221,9 +221,16 @@ export function computeDeploymentFingerprints(
     "scripts/prepare-game-packages.mjs",
     "packages/buzzle/data/buzzle-words.txt",
     ...CANONICAL_GAME_RULE_FILES,
-    ...collectFunctionModuleClosure(root, ["functions/src/gameServer.ts"], {
-      fileCache,
-    }).filter((file) => !file.startsWith("functions/src/generated/games/")),
+    ...collectFunctionModuleClosure(
+      root,
+      [
+        "functions/src/gameServer.ts",
+        "functions/src/lib/waggleVerification.worker.ts",
+      ],
+      {
+        fileCache,
+      },
+    ).filter((file) => !file.startsWith("functions/src/generated/games/")),
   ];
   const game = hashComponentInputs(
     root,
