@@ -141,7 +141,11 @@ export function TournamentPitCommand({
 
   useEffect(() => {
     const handleOnline = () => {
-      if (listTournamentOutbox(tournament.id, userUid).length > 0) {
+      if (
+        listTournamentOutbox(tournament.id, userUid).some(
+          (m) => m.kind === "pit_state",
+        )
+      ) {
         void syncPendingPitState();
       }
     };

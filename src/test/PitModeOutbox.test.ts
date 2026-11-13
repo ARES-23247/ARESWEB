@@ -366,4 +366,42 @@ describe("pitModeOutbox", () => {
     expect(res.flushed).toBe(0);
     expect(res.remaining.map((m) => m.id)).toEqual(["pit_state_2", "pit_scout_2"]);
   });
+
+  it("coalesces concurrent flushTournamentOutbox calls on the same tournament and user", async () => {
+    enqueueTournamentMutation(
+      {
+        tournamentId: "t1",
+        id: "stand_coalesce",
+        kind: "stand_scouting",
+        payload: {
+          matchNumber: "QM8",
+          teamNumber: "23247",
+          alliance: "red",
+          autoScoreEstimate: 14,
+          teleopCycles: 3,
+          endgameTier: "none",
+          disconnected: false,
+          penalties: "none",
+          defenseRating: 0,
+        },
+      },
+      "uid_coalesce",
+    );
+
+    const submitStand = vi.fn(() => Promise.resolve().then(() => ({})));
+    const handlers = {
+      submitPit: vi.fn().mockResolvedValue({}),
+      submitStand,
+      savePitState: vi.fn().mockResolvedValue({}),
+    };
+
+    const [first, second] = await Promise.all([
+      flushTournamentOutbox("t1", handlers, "uid_coalesce"),
+      flushTournamentOutbox("t1", handlers, "uid_coalesce"),
+    ]);
+
+    expect(submitStand).toHaveBeenCalledTimes(1);
+    expect(first).toEqual({ flushed: 1, remaining: [], rejected: [] });
+    expect(second).toEqual({ flushed: 1, remaining: [], rejected: [] });
+  });
 });

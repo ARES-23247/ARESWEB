@@ -186,15 +186,19 @@ export interface OutboxRejectedItem {
   message: string;
 }
 
-export async function flushTournamentOutbox(
-  tournamentId: string,
-  handlers: OutboxFlushHandlers,
-  uid?: string | null,
-): Promise<{
+export interface OutboxFlushResult {
   flushed: number;
   remaining: PitOutboxMutation[];
   rejected: OutboxRejectedItem[];
-}> {
+}
+
+const inFlightFlushes = new Map<string, Promise<OutboxFlushResult>>();
+
+async function executeOutboxFlush(
+  tournamentId: string,
+  handlers: OutboxFlushHandlers,
+  uid?: string | null,
+): Promise<OutboxFlushResult> {
   const queue = listTournamentOutbox(tournamentId, uid);
   if (queue.length === 0) {
     return { flushed: 0, remaining: [], rejected: [] };
@@ -257,4 +261,21 @@ export async function flushTournamentOutbox(
   const remaining = [...mergedRetryable, ...addedDuringFlush].slice(-MAX_OUTBOX_ITEMS);
   writeTournamentOutbox(tournamentId, remaining, uid);
   return { flushed, remaining, rejected };
+}
+
+export function flushTournamentOutbox(
+  tournamentId: string,
+  handlers: OutboxFlushHandlers,
+  uid?: string | null,
+): Promise<OutboxFlushResult> {
+  const key = storageKey(tournamentId, uid);
+  const existing = inFlightFlushes.get(key);
+  if (existing) {
+    return existing;
+  }
+  const task = executeOutboxFlush(tournamentId, handlers, uid).finally(() => {
+    inFlightFlushes.delete(key);
+  });
+  inFlightFlushes.set(key, task);
+  return task;
 }
