@@ -3,6 +3,7 @@
 import { logger } from "@/utils/logger";
 import React, { useCallback, useEffect, useState } from "react";
 import { getAppCheckHeader } from "@/lib/firebaseAppCheck";
+import { safeContentImageUrl } from "@/lib/contentUrls";
 import { siteConfig } from "@/lib/site-config";
 import { Gem, Award, ShieldCheck, Zap, Package, ExternalLink, Heart, ArrowRight, RefreshCw } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -73,6 +74,12 @@ function safeHttpsUrl(value: unknown): string | undefined {
   }
 }
 
+function safeSponsorLogoUrl(value: unknown): string | undefined {
+  const safe = safeContentImageUrl(value);
+  if (!safe) return undefined;
+  return safe.startsWith("/") || /^https:\/\//i.test(safe) ? safe : undefined;
+}
+
 function parseSponsor(value: unknown, index: number): Sponsor | null {
   if (!isRecord(value) || typeof value.name !== "string" || !value.name.trim()) return null;
   if (typeof value.tier !== "string" || !SPONSOR_TIERS.includes(value.tier as SponsorTier)) return null;
@@ -80,7 +87,7 @@ function parseSponsor(value: unknown, index: number): Sponsor | null {
     key: `${value.tier}-${value.name.trim()}-${index}`,
     name: value.name.trim(),
     tier: value.tier as SponsorTier,
-    logoUrl: safeHttpsUrl(value.logoUrl),
+    logoUrl: safeSponsorLogoUrl(value.logoUrl),
     websiteUrl: safeHttpsUrl(value.websiteUrl),
   };
 }
