@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import { Shield, EyeOff, Server, Lock } from "lucide-react";
 
 import { siteConfig } from "@/lib/site-config";
@@ -10,7 +10,8 @@ import { AnalyticsConsentPreferencesButton } from "@/components/AnalyticsConsent
 
 export default function PrivacyPage() {
   return (
-    <motion.div
+    <MotionConfig reducedMotion="user">
+      <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -223,5 +224,6 @@ export default function PrivacyPage() {
         </div>
       </div>
     </motion.div>
+    </MotionConfig>
   );
 }

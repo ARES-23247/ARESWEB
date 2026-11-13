@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import DashboardPortfolioPage from "@/app/dashboard/portfolio/page";
 import { authenticatedFetch } from "@/lib/api";
+import { escapeSpreadsheetCsvCell } from "@/lib/outreachExport";
 
 vi.mock("@/lib/api", () => ({
   authenticatedFetch: vi.fn(),
@@ -195,5 +196,17 @@ describe("Phase 3 — Dashboard Engineering Portfolio & Awards Hub UI", () => {
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/Service unavailable/i);
+  });
+
+  it("neutralizes spreadsheet formula prefixes in exported CSV cells", () => {
+    expect(escapeSpreadsheetCsvCell('=HYPERLINK("https://evil.example","Click")')).toBe(
+      `"'=HYPERLINK(""https://evil.example"",""Click"")"`,
+    );
+    expect(escapeSpreadsheetCsvCell("+SUM(1,2)")).toBe(`"'+SUM(1,2)"`);
+    expect(escapeSpreadsheetCsvCell("-2+3")).toBe(`"'-2+3"`);
+    expect(escapeSpreadsheetCsvCell("@A1")).toBe(`"'@A1"`);
+    expect(escapeSpreadsheetCsvCell("\t=1")).toBe(`"'\t=1"`);
+    expect(escapeSpreadsheetCsvCell("\r=1")).toBe(`"' =1"`);
+    expect(escapeSpreadsheetCsvCell("Normal note")).toBe(`"Normal note"`);
   });
 });

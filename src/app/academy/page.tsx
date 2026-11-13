@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import {
   BookOpen,
   Edit2,
@@ -266,7 +266,8 @@ export default function AcademyPage() {
   }, [closeSearch]);
 
   return (
-    <div className="min-h-screen bg-obsidian text-white flex flex-col w-full">
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen bg-obsidian text-white flex flex-col w-full">
       <SEO
         title={
           currentDoc?.title
@@ -319,7 +320,7 @@ export default function AcademyPage() {
                 role="alert"
                 className="border border-ares-red/40 bg-ares-red/15 p-6 text-white"
               >
-                <h2 className="text-xl font-bold">Lesson library unavailable</h2>
+                <h1 className="text-xl font-bold">Lesson library unavailable</h1>
                 <p className="mt-2 text-sm text-marble/80">{listError}</p>
                 <button
                   type="button"
@@ -336,7 +337,7 @@ export default function AcademyPage() {
                 role="alert"
                 className="border border-ares-red/40 bg-ares-red/15 p-6 text-white"
               >
-                <h2 className="text-xl font-bold">Lesson unavailable</h2>
+                <h1 className="text-xl font-bold">Lesson unavailable</h1>
                 <p className="mt-2 text-sm text-marble/80">{docError}</p>
                 <button
                   type="button"
@@ -373,9 +374,9 @@ export default function AcademyPage() {
             {!slug && !listLoading && !listError && allDocs.length === 0 && (
               <div className="text-center py-20">
                 <BookOpen size={48} className="text-white/20 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">
+                <h1 className="text-2xl font-bold text-white mb-2">
                   No Lessons Yet
-                </h2>
+                </h1>
                 <p className="text-white/60">
                   Educational lessons will appear here once they are seeded into
                   the database.
@@ -590,14 +591,14 @@ export default function AcademyPage() {
                       </div>
                       <React.Suspense
                         fallback={
-                          <div className="h-64 flex items-center justify-center text-xs text-marble/40">
+                          <div className="h-64 flex items-center justify-center text-xs text-marble/65">
                             Loading logic diagram...
                           </div>
                         }
                       >
                         <AutonomousLogicDiagram />
                       </React.Suspense>
-                      <p className="text-[10px] text-marble/30 text-center uppercase tracking-widest font-mono">
+                      <p className="text-[10px] text-marble/65 text-center uppercase tracking-widest font-mono">
                         ARES-FLOW Engine v1.0 // Node-based State Machine
                         Visualization
                       </p>
@@ -761,5 +762,6 @@ export default function AcademyPage() {
         </div>
       </div>
     </div>
+    </MotionConfig>
   );
 }

@@ -494,7 +494,12 @@ export default function EventDetailPage() {
 
   if (loadingEvent) {
     return (
-      <div className="w-full min-h-screen bg-obsidian text-marble flex items-center justify-center">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Loading event"
+        className="w-full min-h-screen bg-obsidian text-marble flex items-center justify-center"
+      >
         <div className="w-12 h-12 border-4 border-white/10 border-t-ares-red rounded-full animate-spin"></div>
       </div>
     );
@@ -511,6 +516,7 @@ export default function EventDetailPage() {
           />
           <div className="mx-auto max-w-3xl">
             <PublicDataState
+              titleAs="h1"
               title="Unable to load this event"
               message="The event record could not be reached. Check your connection and try again."
               diagnostic={eventLoadError}

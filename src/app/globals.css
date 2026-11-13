@@ -80,45 +80,51 @@ h1, h2, h3, h4, .font-heading {
   background-position: top;
 }
 
-.clipped-button,
-.clipped-button-sm {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all 0.3s ease;
-  background: var(--ares-red);
-  color: white;
-  border: 1px solid var(--ares-bronze);
-  cursor: pointer;
-}
+@layer components {
+  .clipped-button,
+  .clipped-button-sm {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    background: var(--ares-red);
+    color: white;
+    border: 1px solid var(--ares-bronze);
+    cursor: pointer;
+  }
 
-.clipped-button {
-  padding: 12px 32px;
-  border-radius: 24px 4px; /* ares-cut */
-}
+  .clipped-button {
+    padding: 12px 32px;
+    border-radius: 24px 4px; /* ares-cut */
+  }
 
-.clipped-button-sm {
-  padding: 8px 24px;
-  border-radius: 16px 4px; /* ares-cut-sm */
-}
+  .clipped-button-sm {
+    padding: 8px 24px;
+    border-radius: 16px 4px; /* ares-cut-sm */
+  }
 
-.clipped-button:hover,
-.clipped-button-sm:hover {
-  background: var(--ares-bronze);
-  border-color: var(--ares-red);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
-}
+  .clipped-button:hover,
+  .clipped-button-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(192, 0, 0, 0.3);
+  }
 
-/* Accessibility: Enforce dark foreground on bright bronze hover fills (WCAG AA 6.58:1) */
-.clipped-button:hover:not([class*="hover:text-"]),
-.clipped-button-sm:hover:not([class*="hover:text-"]),
-.hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
-  color: var(--ares-on-bright-accent);
+  .clipped-button:hover:not([class*="hover:bg-"]),
+  .clipped-button-sm:hover:not([class*="hover:bg-"]) {
+    background: var(--ares-bronze);
+    border-color: var(--ares-red);
+  }
+
+  /* Accessibility: Enforce dark foreground on bright bronze hover fills (WCAG AA 6.58:1) */
+  .clipped-button:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
+  .clipped-button-sm:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
+  .hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
+    color: var(--ares-on-bright-accent);
+  }
 }
 
 .ares-surface {
@@ -265,22 +271,31 @@ select option {
   outline-offset: 2px !important;
 }
 
-/* Print only the explicitly opened outreach or tournament report, not the dashboard behind it. */
+/* Print only the explicitly opened printable sheet or report, not surrounding UI chrome. */
 @media print {
-  body:has(.outreach-report-print, .tournament-match-print) * {
+  body:has(.outreach-report-print, .tournament-match-print, .ares-print-sheet) {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body:has(.outreach-report-print, .tournament-match-print, .ares-print-sheet) * {
     visibility: hidden;
   }
 
   body:has(.outreach-report-print) .outreach-report-print,
   body:has(.outreach-report-print) .outreach-report-print *,
   body:has(.tournament-match-print) .tournament-match-print,
-  body:has(.tournament-match-print) .tournament-match-print * {
+  body:has(.tournament-match-print) .tournament-match-print *,
+  body:has(.ares-print-sheet) .ares-print-sheet,
+  body:has(.ares-print-sheet) .ares-print-sheet * {
     visibility: visible;
   }
 
   body:has(.outreach-report-print) .outreach-report-print,
-  body:has(.tournament-match-print) .tournament-match-print {
+  body:has(.tournament-match-print) .tournament-match-print,
+  body:has(.ares-print-sheet) .ares-print-sheet {
     position: absolute;
     inset: 0;
+    width: 100%;
   }
 }

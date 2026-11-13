@@ -26,7 +26,7 @@ export default function Footer() {
     <footer
       role="contentinfo"
       aria-label="Site Footer"
-      className="w-full bg-obsidian text-marble border-t border-ares-bronze/20 pt-16 pb-8 overflow-hidden relative"
+      className="w-full bg-obsidian text-marble border-t border-ares-bronze/20 pt-16 pb-8 overflow-hidden relative print:hidden"
     >
       {/* Meander accent for footer bottom */}
       <GreekMeander
@@ -459,7 +459,7 @@ export default function Footer() {
             </div>
             <div className="pt-4 flex items-center gap-3">
               <ShieldCheck size={24} className="text-ares-cyan opacity-40" />
-              <p className="text-[9px] text-marble/60 leading-tight uppercase font-medium">
+              <p className="text-[10px] text-marble/65 leading-tight uppercase font-medium">
                 Official ARES Portal. All student data is protected under{" "}
                 <em>FIRST</em>® YPP.
               </p>
@@ -479,13 +479,13 @@ export default function Footer() {
             </span>
             <span className="opacity-80">23247. All Rights Reserved.</span>
           </p>
-          <p className="text-marble/60 text-[8px] uppercase tracking-widest">
+          <p className="text-marble/65 text-[10px] uppercase tracking-widest">
             Made with <span className="text-white">♥</span> in Morgantown, West
             Virginia
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[9px] font-bold uppercase tracking-[0.2em] text-marble">
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[10px] font-bold uppercase tracking-[0.2em] text-marble">
           <Link
             to="/accessibility"
             className="hover:text-ares-gold transition-colors flex items-center gap-2 group"

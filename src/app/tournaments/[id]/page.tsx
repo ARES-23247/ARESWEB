@@ -62,7 +62,7 @@ export default function TournamentDetailPage() {
       Boolean(
         user &&
         authorizedUser &&
-        ["admin", "coach"].includes(authorizedUser.role),
+        ["admin", "coach", "mentor"].includes(authorizedUser.role),
       ),
     [user, authorizedUser],
   );
@@ -269,9 +269,14 @@ export default function TournamentDetailPage() {
 
   if (authLoading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble">
-        <div className="w-10 h-10 border-4 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-ares-gold/85 animate-pulse font-heading">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Authenticating tournament access"
+        className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble"
+      >
+        <div aria-hidden="true" className="w-10 h-10 border-4 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-ares-gold/85 motion-safe:animate-pulse font-heading">
           Connecting Data Nodes...
         </p>
       </div>
@@ -320,8 +325,13 @@ export default function TournamentDetailPage() {
 
   if (isTournamentLoading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble">
-        <div className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Fetching tournament record"
+        className="flex flex-col justify-center items-center min-h-[60vh] bg-obsidian text-marble"
+      >
+        <div aria-hidden="true" className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
         <p className="text-xs uppercase tracking-widest font-black text-marble/60">
           Fetching Tournament Record...
         </p>
@@ -365,6 +375,7 @@ export default function TournamentDetailPage() {
           ) : (
             <PublicDataState
               title="Unable to load this tournament"
+              titleAs="h1"
               message="The scouting record could not be reached. Check your connection or sign in again, then retry."
               diagnostic={
                 tournamentError instanceof Error
@@ -490,6 +501,7 @@ export default function TournamentDetailPage() {
             <TournamentScoutingSection tournament={tournament} />
             <TournamentPitCommand
               tournament={tournament}
+              userUid={user?.uid}
               matches={matches}
               pitState={pitState}
               onSavePitState={async (next) => {
@@ -500,6 +512,7 @@ export default function TournamentDetailPage() {
             />
             <TournamentScoutingHub
               tournamentId={tournament.id}
+              userUid={user?.uid}
               scoutingBundle={scoutingBundle}
               isLoading={isScoutingLoading}
               onRefresh={() => void refetchScouting()}

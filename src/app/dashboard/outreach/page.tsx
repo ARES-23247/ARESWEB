@@ -58,7 +58,12 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function OutreachManagerPage() {
-  const { user } = useAuth();
+  const { user, authorizedUser } = useAuth();
+  const canManage = Boolean(
+    user &&
+      authorizedUser &&
+      ["admin", "coach", "mentor"].includes(authorizedUser.role),
+  );
   const [logs, setLogs] = useState<OutreachLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,7 +92,10 @@ export default function OutreachManagerPage() {
   const [calcLogMessage, setCalcLogMessage] = useState<string | null>(null);
 
   const fetchLogs = useCallback(async () => {
-    if (!user) return;
+    if (!canManage) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -105,10 +113,11 @@ export default function OutreachManagerPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [canManage]);
 
   // Listen for locations
   useEffect(() => {
+    if (!canManage) return;
     try {
       const locationsRef = collection(db, "locations");
       const unsubscribe = onSnapshot(locationsRef, (snapshot) => {
@@ -130,10 +139,11 @@ export default function OutreachManagerPage() {
       logger.error("Error listening to locations:", error);
       setOperationStatus({ kind: "error", message: "Locations could not be loaded.", diagnostic: getErrorMessage(error) });
     }
-  }, []);
+  }, [canManage]);
 
   // Listen for calendar events
   useEffect(() => {
+    if (!canManage) return;
     try {
       const eventsRef = collection(db, "events");
       const unsubscribe = onSnapshot(eventsRef, (snapshot) => {
@@ -163,7 +173,7 @@ export default function OutreachManagerPage() {
       logger.error("Error listening to calendar events:", error);
       setOperationStatus({ kind: "error", message: "Calendar events could not be loaded.", diagnostic: getErrorMessage(error) });
     }
-  }, []);
+  }, [canManage]);
 
   useEffect(() => {
     void fetchLogs();
@@ -369,6 +379,19 @@ export default function OutreachManagerPage() {
       setOperationStatus({ kind: "error", message: "The outreach log was not restored.", diagnostic: getErrorMessage(err) });
     }
   };
+
+  if (!canManage) {
+    return (
+      <div className="glass-card border border-white/10 p-8 rounded-2xl text-center space-y-3">
+        <h1 className="text-xl font-black uppercase font-heading text-white">
+          Access Restricted
+        </h1>
+        <p className="text-sm text-marble/75">
+          Coach, Mentor, or Admin permissions are required to manage the Outreach Ledger.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

@@ -3,13 +3,22 @@ import {
   AlertTriangle,
   BatteryCharging,
   CheckSquare,
+  CloudOff,
   Maximize2,
   Plus,
   RotateCcw,
   Wrench,
   X,
 } from "lucide-react";
-import { enqueueTournamentMutation, generateOutboxId } from "@/lib/pitModeOutbox";
+import {
+  enqueueTournamentMutation,
+  flushTournamentOutbox,
+  generateOutboxId,
+  isPermanentOutboxError,
+  listTournamentOutbox,
+  PitOutboxQuotaError,
+} from "@/lib/pitModeOutbox";
+import { submitPitScouting, submitStandScouting } from "@/lib/tournamentApi";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 import type {
   PitBattery,
@@ -55,6 +64,7 @@ const PIT_CHECKLIST_ITEMS = [
 
 interface TournamentPitCommandProps {
   tournament: Tournament;
+  userUid?: string | null;
   matches: TournamentMatch[];
   pitState: TournamentPitState | undefined;
   onSavePitState: (
@@ -64,6 +74,7 @@ interface TournamentPitCommandProps {
 
 export function TournamentPitCommand({
   tournament,
+  userUid,
   matches,
   pitState,
   onSavePitState,
@@ -93,6 +104,50 @@ export function TournamentPitCommand({
   const [triageSeverity, setTriageSeverity] = useState<"blocker" | "warn">("blocker");
   const [triageSubsystem, setTriageSubsystem] = useState("");
   const [triageSummary, setTriageSummary] = useState("");
+  const [hasPendingPitSync, setHasPendingPitSync] = useState(() =>
+    listTournamentOutbox(tournament.id, userUid).some((m) => m.kind === "pit_state"),
+  );
+  const [pitSyncNotice, setPitSyncNotice] = useState<string | null>(null);
+  const [isSyncingPit, setIsSyncingPit] = useState(false);
+
+  const syncPendingPitState = useCallback(async () => {
+    setIsSyncingPit(true);
+    try {
+      const result = await flushTournamentOutbox(
+        tournament.id,
+        {
+          submitPit: submitPitScouting,
+          submitStand: submitStandScouting,
+          savePitState: (_tid, next) => onSavePitState(next),
+        },
+        userUid,
+      );
+      setHasPendingPitSync(result.remaining.some((m) => m.kind === "pit_state"));
+      if (result.rejected.length > 0) {
+        setPitSyncNotice(`Pit change rejected by server: ${result.rejected[0].message}`);
+      } else if (result.flushed > 0) {
+        setPitSyncNotice(null);
+      }
+    } finally {
+      setIsSyncingPit(false);
+    }
+  }, [onSavePitState, tournament.id, userUid]);
+
+  useEffect(() => {
+    setHasPendingPitSync(
+      listTournamentOutbox(tournament.id, userUid).some((m) => m.kind === "pit_state"),
+    );
+  }, [tournament.id, userUid]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (listTournamentOutbox(tournament.id, userUid).length > 0) {
+        void syncPendingPitState();
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [syncPendingPitState, tournament.id, userUid]);
 
   useEffect(() => {
     if (!pitState) return;
@@ -152,12 +207,35 @@ export function TournamentPitCommand({
     };
     try {
       await onSavePitState(payload);
-    } catch {
-      enqueueTournamentMutation({
-        tournamentId: tournament.id,
-        kind: "pit_state",
-        payload,
-      });
+      setHasPendingPitSync(false);
+      setPitSyncNotice(null);
+    } catch (err) {
+      if (isPermanentOutboxError(err)) {
+        setPitSyncNotice(
+          `Pit update not saved: ${err instanceof Error ? err.message : "Server rejected change."}`,
+        );
+        return;
+      }
+      try {
+        const nextQueue = enqueueTournamentMutation(
+          {
+            tournamentId: tournament.id,
+            kind: "pit_state",
+            payload,
+          },
+          userUid,
+        );
+        setHasPendingPitSync(nextQueue.some((m) => m.kind === "pit_state"));
+        setPitSyncNotice(
+          "Venue network unreachable — Pit changes queued offline for automatic sync.",
+        );
+      } catch (queueErr) {
+        setPitSyncNotice(
+          queueErr instanceof PitOutboxQuotaError
+            ? "Offline storage is full — Pit changes could not be queued."
+            : "Offline Pit changes could not be queued.",
+        );
+      }
     }
   };
 
@@ -306,6 +384,23 @@ export function TournamentPitCommand({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {hasPendingPitSync && (
+            <div className="flex items-center gap-2 rounded-lg border border-ares-gold/40 bg-ares-gold/10 px-2.5 py-1">
+              <CloudOff size={12} className="text-ares-gold" aria-hidden="true" />
+              <span className="text-[10px] font-black uppercase tracking-wider text-ares-gold">
+                Pit changes queued
+              </span>
+              <button
+                type="button"
+                disabled={isSyncingPit}
+                onClick={() => void syncPendingPitState()}
+                className="rounded bg-ares-gold px-2 py-0.5 text-[10px] font-black uppercase text-obsidian hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                {isSyncingPit ? "Syncing..." : "Sync Now"}
+              </button>
+            </div>
+          )}
+
           <span
             className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
               isReady && openBlockers.length === 0
@@ -344,6 +439,16 @@ export function TournamentPitCommand({
           </button>
         </div>
       </div>
+
+      {pitSyncNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-lg border border-ares-gold/40 bg-ares-gold/10 px-3.5 py-2 text-xs text-white"
+        >
+          {pitSyncNotice}
+        </div>
+      )}
 
       {/* Synced Pre-Match Checklist */}
       <div className="grid grid-cols-1 gap-2.5">

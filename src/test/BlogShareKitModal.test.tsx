@@ -141,4 +141,22 @@ describe("BlogShareKitModal", () => {
       screen.queryByRole("button", { name: /Announce on Zulip & Bluesky/i }),
     ).not.toBeInTheDocument();
   });
+
+  it("shows an accessible error state instead of crashing when a draft has an invalid slug", () => {
+    render(
+      <BlogShareKitModal
+        post={{
+          slug: "../draft with spaces",
+          title: "Unsaved Draft",
+          status: "draft",
+        }}
+        isApprover
+        syndicatingSlug={null}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/valid/i);
+  });
 });

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import SeasonsPage from "../app/seasons/page";
+import SeasonsPage, { normalizeSeasonDescription } from "../app/seasons/page";
 import { fetchPublicAwards, fetchPublicSeasons } from "@/lib/publicContentApi";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
@@ -120,5 +120,90 @@ describe("SeasonsPage Team Legacy & Trophy Case UX", () => {
       expect(screen.getByRole("heading", { name: "INTO THE DEEP" })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Innovate Award Winner" })).toBeInTheDocument();
     });
+  });
+
+  it("extracts readable text from serialized Tiptap JSON and suppresses editor placeholder copy", async () => {
+    expect(
+      normalizeSeasonDescription(
+        JSON.stringify({
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Turret shooter with dual intake." }],
+            },
+          ],
+        }),
+      ),
+    ).toBe("Turret shooter with dual intake.");
+    expect(
+      normalizeSeasonDescription(
+        JSON.stringify({
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "Describe the robot's design, mechanisms, and season highlights...",
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    ).toBeNull();
+    expect(normalizeSeasonDescription("Direct summary text")).toBe("Direct summary text");
+
+    vi.mocked(fetchPublicSeasons).mockResolvedValue([
+      {
+        ...mockSeasons[0],
+        robotDescription: JSON.stringify({
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Linear extension with wrist pivot." }],
+            },
+          ],
+        }),
+      },
+      {
+        ...mockSeasons[0],
+        id: "season-placeholder",
+        startYear: 2026,
+        endYear: 2027,
+        challengeName: "DECODE",
+        robotName: "PHOBOS II",
+        robotDescription: JSON.stringify({
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "Describe the robot's design, mechanisms, and season highlights...",
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    ]);
+    vi.mocked(fetchPublicAwards).mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <SeasonsPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Linear extension with wrist pivot.")).toBeInTheDocument();
+    expect(screen.queryByText(/\{"type":"doc"/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Describe the robot's design, mechanisms, and season highlights/i),
+    ).not.toBeInTheDocument();
   });
 });

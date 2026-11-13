@@ -16,7 +16,7 @@ interface AsyncStateProps {
   children?: ReactNode;
   action?: ReactNode;
   className?: string;
-  titleAs?: "h2" | "h3" | "p";
+  titleAs?: "h1" | "h2" | "h3" | "p";
 }
 
 const icons = {

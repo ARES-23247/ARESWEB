@@ -21,6 +21,7 @@ import {
 import SEO from "@/components/SEO";
 import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
+import { escapeSpreadsheetCsvCell } from "@/lib/outreachExport";
 
 type ArtifactKind =
   | "studio_notebook"
@@ -124,13 +125,6 @@ function downloadTextFile(filename: string, content: string, mimeType: string) {
   anchor.click();
   document.body.removeChild(anchor);
   URL.revokeObjectURL(url);
-}
-
-function escapeCsvCell(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 export default function DashboardPortfolioPage() {
@@ -414,12 +408,12 @@ export default function DashboardPortfolioPage() {
     const rows = pages.map((page) =>
       [
         String(page.pageNumber),
-        escapeCsvCell(SECTION_LABELS[page.section]),
-        escapeCsvCell(page.status),
-        escapeCsvCell(page.ownerNickname),
-        escapeCsvCell(page.title),
+        escapeSpreadsheetCsvCell(SECTION_LABELS[page.section]),
+        escapeSpreadsheetCsvCell(page.status),
+        escapeSpreadsheetCsvCell(page.ownerNickname),
+        escapeSpreadsheetCsvCell(page.title),
         String(page.linkedArtifactIds.length),
-        escapeCsvCell(page.summaryNotes),
+        escapeSpreadsheetCsvCell(page.summaryNotes),
       ].join(","),
     );
     downloadTextFile(
@@ -1209,7 +1203,7 @@ export default function DashboardPortfolioPage() {
       </div>
 
       {/* Printable Judge Handout / Control Award Sheet (@media print) */}
-      <div className="hidden print:block bg-white text-black p-6 space-y-5">
+      <div className="ares-print-sheet hidden print:block bg-white text-black p-6 space-y-5">
         {printMode === "control_sheet" ? (
           <div className="space-y-4">
             <div className="border-b-2 border-black pb-3 flex items-baseline justify-between">

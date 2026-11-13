@@ -56,21 +56,76 @@ export default function BlogShareKitModal<T extends BlogSharePostInput = BlogSha
     };
     let cardDataUrl: string | null = null;
     try {
-      cardDataUrl = renderInstagramSquareCardDataUrl(input);
-    } catch {
-      cardDataUrl = null;
+      const canonicalUrl = buildCanonicalBlogUrl(post.slug);
+      const caption = buildBlogShareCaption(input);
+      const instagramCaption = buildInstagramCaption(input);
+      const intents = buildBlogWebShareIntents(input);
+      try {
+        cardDataUrl = renderInstagramSquareCardDataUrl(input);
+      } catch {
+        cardDataUrl = null;
+      }
+      return {
+        canonicalUrl,
+        caption,
+        instagramCaption,
+        intents,
+        cardDataUrl,
+        downloadFilename: `ares-23247-${post.slug.trim()}-instagram.png`,
+      };
+    } catch (error) {
+      return {
+        error:
+          error instanceof Error && error.message
+            ? error.message
+            : "This post needs a valid URL slug before sharing.",
+      };
     }
-    return {
-      canonicalUrl: buildCanonicalBlogUrl(post.slug),
-      caption: buildBlogShareCaption(input),
-      instagramCaption: buildInstagramCaption(input),
-      intents: buildBlogWebShareIntents(input),
-      cardDataUrl,
-      downloadFilename: `ares-23247-${post.slug}-instagram.png`,
-    };
   }, [post]);
 
   if (!post || !shareBundle) return null;
+
+  if ("error" in shareBundle) {
+    const errorModal = (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
+      >
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="blog-share-kit-error-title"
+          className="glass-card relative w-full max-w-lg rounded-2xl border border-ares-red/40 bg-obsidian p-6 text-left text-white shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+            <h2
+              id="blog-share-kit-error-title"
+              className="font-heading text-xl font-black tracking-tight text-white"
+            >
+              Unable to Open Share Kit
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              aria-label="Close Share Kit"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
+          <p role="alert" className="mt-4 text-sm text-marble/90">
+            {shareBundle.error}
+          </p>
+        </div>
+      </div>
+    );
+    return typeof document !== "undefined"
+      ? createPortal(errorModal, document.body)
+      : errorModal;
+  }
 
   const copyToClipboard = async (
     value: string,

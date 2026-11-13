@@ -51,12 +51,27 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
     // Type-specific validation
     switch (messageData.type) {
       case 'ARES_TELEMETRY':
-        // Validate telemetry key is a string and value is a number
-        if (typeof messageData.key !== 'string' || typeof messageData.value !== 'number') {
+        // Validate telemetry key is a string and value is a finite number
+        if (
+          typeof messageData.key !== 'string' ||
+          typeof messageData.value !== 'number' ||
+          !Number.isFinite(messageData.value)
+        ) {
           return null;
         }
         // Limit key length to prevent DoS
         if (messageData.key.length > 100) return null;
+        break;
+
+      case 'sim-fps':
+        if (
+          typeof messageData.fps !== 'number' ||
+          !Number.isFinite(messageData.fps) ||
+          messageData.fps < 0 ||
+          messageData.fps > 1000
+        ) {
+          return null;
+        }
         break;
 
       case 'sim-error':
@@ -82,9 +97,30 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
         if (messageData.dataUrl.length > 5 * 1024 * 1024) return null;
         break;
 
-      case 'sim-test-result':
-        if (!messageData.result || typeof messageData.result !== 'object') return null;
+      case 'sim-test-result': {
+        const raw = messageData.result;
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+        const candidate = raw as Record<string, unknown>;
+        if (
+          typeof candidate.name !== 'string' ||
+          candidate.name.length === 0 ||
+          candidate.name.length > 200 ||
+          typeof candidate.passed !== 'boolean'
+        ) {
+          return null;
+        }
+        const normalized: { name: string; passed: boolean; error?: string } = {
+          name: candidate.name,
+          passed: candidate.passed,
+        };
+        if (typeof candidate.error === 'string') {
+          normalized.error = candidate.error.length > 2000
+            ? candidate.error.slice(0, 2000) + '... (truncated)'
+            : candidate.error;
+        }
+        messageData.result = normalized;
         break;
+      }
     }
 
     return messageData as { type: string; [key: string]: unknown };
@@ -93,8 +129,8 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
   // Listen for runtime errors from the iframe
   const handleMessage = useCallback((event: MessageEvent) => {
     // A sandbox without allow-same-origin has an opaque origin ("null").
-    // Authenticate the sender by WindowProxy identity instead of trusting origin text.
-    if (event.source !== iframeRef.current?.contentWindow) {
+    // Check both opaque origin and WindowProxy identity.
+    if ((event.origin !== "null" && event.origin !== "") || event.source !== iframeRef.current?.contentWindow) {
       logger.warn('SimPreviewFrame: rejected message from unexpected source');
       return;
     }

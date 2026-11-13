@@ -3,7 +3,7 @@
 import { logger } from "@/utils/logger";
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import {
   Trophy,
   History,
@@ -26,6 +26,62 @@ import {
 
 type Season = PublicSeason;
 type Award = PublicAward & { year?: number };
+
+const DEFAULT_ROBOT_DESCRIPTION_PLACEHOLDER =
+  "describe the robot's design, mechanisms, and season highlights...";
+
+function collectTiptapText(node: unknown, out: string[]): void {
+  if (!node || typeof node !== "object") return;
+  const record = node as { type?: unknown; text?: unknown; content?: unknown };
+  if (typeof record.text === "string" && record.text.length > 0) {
+    out.push(record.text);
+  }
+  if (Array.isArray(record.content)) {
+    for (const child of record.content) {
+      collectTiptapText(child, out);
+    }
+    if (
+      typeof record.type === "string" &&
+      ["paragraph", "heading", "blockquote", "listItem"].includes(record.type)
+    ) {
+      out.push(" ");
+    }
+  }
+}
+
+export function normalizeSeasonDescription(
+  raw: string | null | undefined,
+): string | null {
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  if (!trimmed) return null;
+
+  let text = trimmed;
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        (parsed as { type?: unknown }).type === "doc"
+      ) {
+        const parts: string[] = [];
+        collectTiptapText(parsed, parts);
+        text = parts.join("");
+      }
+    } catch {
+      // Leave plain text untouched if not valid JSON.
+    }
+  }
+
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  if (
+    !collapsed ||
+    collapsed.toLowerCase() === DEFAULT_ROBOT_DESCRIPTION_PLACEHOLDER
+  ) {
+    return null;
+  }
+  return collapsed;
+}
 
 interface PublicCompetitionSummary {
   id: string;
@@ -150,6 +206,7 @@ export default function SeasonsPage() {
   };
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="flex flex-col w-full bg-obsidian min-h-screen text-marble relative overflow-hidden">
       <SEO
         title="Team Legacy"
@@ -249,11 +306,16 @@ export default function SeasonsPage() {
                             {season.summary}
                           </p>
                         )}
-                        {season.robotDescription && (
-                          <p className="text-marble/80 text-sm leading-relaxed mb-6">
-                            {season.robotDescription}
-                          </p>
-                        )}
+                        {(() => {
+                          const cleanRobotDescription = normalizeSeasonDescription(
+                            season.robotDescription,
+                          );
+                          return cleanRobotDescription ? (
+                            <p className="text-marble/80 text-sm leading-relaxed mb-6">
+                              {cleanRobotDescription}
+                            </p>
+                          ) : null;
+                        })()}
 
                         {(season.robotName || season.robotId) && (
                           <div
@@ -486,5 +548,6 @@ export default function SeasonsPage() {
         </div>
       </section>
     </div>
+    </MotionConfig>
   );
 }

@@ -104,7 +104,7 @@ export default function SponsorFactSheetSection({
       {open && (
         <section
           aria-label="Printable Team and Sponsorship Fact Sheet"
-          className="mt-4 rounded-2xl border-2 border-ares-gold/40 bg-black/80 p-6 sm:p-8 shadow-2xl print:border-black print:bg-white print:text-black"
+          className="ares-print-sheet mt-4 rounded-2xl border-2 border-ares-gold/40 bg-black/80 p-6 sm:p-8 shadow-2xl print:border-black print:bg-white print:text-black"
         >
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5 mb-5 print:border-black/20">
             <div>

@@ -7,6 +7,7 @@ interface PublicDataStateProps {
   message: string;
   diagnostic?: string;
   onRetry?: () => void;
+  titleAs?: "h1" | "h2" | "h3" | "p";
 }
 
 export function getPublicDiagnosticCode(diagnostic?: string): string | null {
@@ -28,7 +29,7 @@ export function getPublicDiagnosticCode(diagnostic?: string): string | null {
   return knownCodes.find(([pattern]) => pattern.test(normalized))?.[1] ?? "request-failed";
 }
 
-export function PublicDataState({ title, message, diagnostic, onRetry }: PublicDataStateProps) {
+export function PublicDataState({ title, message, diagnostic, onRetry, titleAs }: PublicDataStateProps) {
   const diagnosticCode = getPublicDiagnosticCode(diagnostic);
 
   return (
@@ -36,6 +37,7 @@ export function PublicDataState({ title, message, diagnostic, onRetry }: PublicD
       variant="error"
       title={title}
       message={message}
+      titleAs={titleAs}
       className="hero-card p-8"
       action={onRetry ? (
         <Button type="button" onClick={onRetry}>

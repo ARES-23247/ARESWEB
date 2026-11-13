@@ -27,8 +27,9 @@ export function computeOutreachStats<T extends OutreachExportRecord>(logs: T[]) 
 }
 
 export function escapeSpreadsheetCsvCell(value: unknown): string {
-  let text = String(value ?? "").replace(/[\r\n]+/g, " ");
-  if (/^\s*[=+\-@]/.test(text)) text = `'${text}`;
+  const raw = String(value ?? "");
+  const needsPrefix = /^[\t\r\n ]*[=+\-@]|^[\t\r]/u.test(raw);
+  const text = `${needsPrefix ? "'" : ""}${raw.replace(/[\r\n]+/g, " ")}`;
   return `"${text.replace(/"/g, '""')}"`;
 }
 
