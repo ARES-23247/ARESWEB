@@ -608,6 +608,17 @@ test.describe("Championship operations & public showcase (Phases 1–4)", () => 
       });
     });
 
+    await page.route("**/api/photos/public/sponsor-logo/zulip", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "image/png",
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      });
+    });
+
     await page.route("**/api/sponsors", async (route) => {
       await route.fulfill({
         status: 200,
@@ -618,6 +629,12 @@ test.describe("Championship operations & public showcase (Phases 1–4)", () => 
               name: "Mountaineer Precision Labs",
               tier: "Gold",
               websiteUrl: "https://example.org",
+            },
+            {
+              name: "Zulip",
+              tier: "In-Kind",
+              logoUrl: "/api/photos/public/sponsor-logo/zulip",
+              websiteUrl: "https://zulip.com/",
             },
           ],
         }),
@@ -677,6 +694,15 @@ test.describe("Championship operations & public showcase (Phases 1–4)", () => 
     });
 
     await page.goto("/sponsors");
+    const zulipLogo = page.getByRole("img", { name: "Zulip logo" });
+    await expect(zulipLogo).toBeVisible();
+    await expect
+      .poll(async () =>
+        zulipLogo.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
     await page
       .getByRole("button", { name: "Printable Team & Sponsor Fact Sheet" })
       .click();

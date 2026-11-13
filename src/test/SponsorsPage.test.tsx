@@ -178,4 +178,59 @@ describe("SponsorsPage partner directory and inquiry form", () => {
     );
     expect(scrollIntoView).toHaveBeenCalledTimes(2);
   });
+
+  it("renders managed root-relative sponsor logo gateway URLs and rejects unsafe logo URLs", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        response({
+          sponsors: [
+            {
+              name: "Zulip",
+              tier: "In-Kind",
+              logoUrl: "/api/photos/public/sponsor-logo/zulip",
+              websiteUrl: "https://zulip.com/",
+            },
+            {
+              name: "Protocol Relative Corp",
+              tier: "Bronze",
+              logoUrl: "//evil.example/logo.webp",
+            },
+            {
+              name: "Http Insecure Corp",
+              tier: "Bronze",
+              logoUrl: "http://insecure.example/logo.webp",
+            },
+            {
+              name: "Script Scheme Corp",
+              tier: "Bronze",
+              logoUrl: "javascript:alert(1)",
+            },
+            {
+              name: "No Leading Slash Corp",
+              tier: "Bronze",
+              logoUrl: "relative/no-leading-slash.webp",
+            },
+          ],
+        }),
+      ),
+    );
+    renderPage();
+
+    const zulipLogo = await screen.findByAltText("Zulip logo");
+    expect(zulipLogo).toHaveAttribute("src", "/api/photos/public/sponsor-logo/zulip");
+    expect(zulipLogo.parentElement?.querySelector(".fallback-text")).toHaveClass("hidden");
+
+    for (const name of [
+      "Protocol Relative Corp",
+      "Http Insecure Corp",
+      "Script Scheme Corp",
+      "No Leading Slash Corp",
+    ]) {
+      expect(screen.queryByAltText(`${name} logo`)).not.toBeInTheDocument();
+      const fallback = screen.getByText(name);
+      expect(fallback).toHaveClass("fallback-text");
+      expect(fallback).not.toHaveClass("hidden");
+    }
+  });
 });
