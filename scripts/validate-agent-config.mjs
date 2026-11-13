@@ -103,8 +103,16 @@ for (const skillName of canonicalSkills) {
   }
 }
 
-for (const match of guide.matchAll(/`((?:src|functions|scripts|infra|content|\.github)\/[^`\s]+)`/g)) {
+for (const match of guide.matchAll(/`((?:src|functions|packages|scripts|infra|content|docs|design|config|tests|e2e|\.github)\/[^`\s*<>]+)`/g)) {
   if (!(await exists(match[1]))) fail(`AGENTS.md references missing repository path ${match[1]}`);
+}
+
+if (await exists("packages")) {
+  for (const entry of await readdir(path.join(root, "packages"), { withFileTypes: true })) {
+    if (entry.isDirectory() && !guide.includes(`\`packages/${entry.name}/\``)) {
+      fail(`AGENTS.md must document workspace package packages/${entry.name}/`);
+    }
+  }
 }
 
 const rootPackage = JSON.parse(await read("package.json"));
@@ -138,6 +146,25 @@ async function collect(relativePath) {
 }
 await collect(".agents/skills");
 await collect(".agents/rules");
+
+for (const docFile of [...new Set(["AGENTS.md", "docs/AGENT_SETUP.md", ...[...required].filter((file) => file.startsWith(".agents/skills/") && file.endsWith(".md"))])]) {
+  const source = docFile === "AGENTS.md" ? guide : await read(docFile);
+  for (const match of source.matchAll(/`((?:src|functions|packages|scripts|infra|content|docs|design|config|tests|e2e|\.github)\/[^`\s*<>]+)`/g)) {
+    if (docFile !== "AGENTS.md" && !(await exists(match[1]))) {
+      fail(`${docFile} references missing repository path ${match[1]}`);
+    }
+  }
+  const baseDir = path.posix.dirname(docFile);
+  for (const match of source.matchAll(/\[[^\]]+\]\(([^)#\s]+)(?:#[^)\s]*)?\)/g)) {
+    const linkTarget = match[1];
+    if (/^(?:https?:|mailto:|sidecar:|file:)/i.test(linkTarget)) continue;
+    const resolved = path.posix.normalize(baseDir === "." ? linkTarget : path.posix.join(baseDir, linkTarget));
+    if (resolved.startsWith("..") || !(await exists(resolved))) {
+      fail(`${docFile} links to missing relative path ${linkTarget}`);
+    }
+  }
+}
+
 for (const skillName of canonicalSkills) {
   const metadataPath = `.agents/skills/${skillName}/agents/openai.yaml`;
   required.add(metadataPath);

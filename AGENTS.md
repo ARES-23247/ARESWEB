@@ -1,7 +1,7 @@
 # ARESWEB Agent Guide
 
 This repository is a Vite + React 19 frontend with Firebase Hosting, Firestore,
-Storage, second-generation Cloud Functions, and a Cloud Run game service. Read the relevant skill under
+Storage, second-generation Cloud Functions, and Cloud Run game services. Read the relevant skill under
 `.agents/skills/` before changing a protected area.
 
 The same `.agents/skills/` tree is the canonical workspace skill source for
@@ -19,12 +19,13 @@ not a Next.js router.
 | Frontend routes and build/PWA | `src/App.tsx`, `vite.config.ts`, `firebase.json` |
 | API composition and route security | `functions/src/apiApp.ts`, `functions/src/apps/`, `functions/src/routes/` |
 | Function exports and bindings | `functions/src/index.ts`, `functions/src/functionConfig.ts` |
-| Online game process | `functions/src/gameServer.ts`, `functions/src/apps/game.ts` |
-| Canonical game rules and UI | `packages/buzzle/`, `packages/buzzello/`, `packages/pollinator/` |
+| Online game processes | `functions/src/gameServer.ts`, `functions/src/apps/game.ts`, `functions/src/biobuzzServer.ts`, `functions/src/apps/biobuzz.ts` |
+| Canonical game rules and UI | `packages/biobuzz/`, `packages/buzzle/`, `packages/buzzello/`, `packages/buzzhex/`, `packages/pollinator/`, `packages/waggle-way/` |
 | Shared game geometry and UI primitives | `packages/game-common/`, `packages/ui/` |
 | Game deployment staging | `scripts/prepare-game-packages.mjs`, `docs/GAME_ARCHITECTURE.md` |
 | Authorization and data rules | `functions/src/middleware/auth.ts`, `firestore.rules`, `storage.rules` |
 | Academy source and release provenance | `content/learning/`, `scripts/validate-learning-catalog.mjs`, `scripts/migrate-learning-content.mjs` |
+| Selective CI and deploy fingerprints | `infra/verification-areas.json`, `scripts/affected-areas.mjs`, `scripts/deployment-fingerprints.mjs` |
 | Runtime, commands, deployment | `package.json`, `functions/package.json`, `.github/workflows/ci.yml`, `infra/gcp/production-deployment.json` |
 
 Read each skill whose boundary the task changes. These links are also the manual
@@ -55,13 +56,16 @@ includes the root website, `functions`, and `packages/*`. Read
 | Edit here | Owned behavior |
 | --- | --- |
 | `src/app/arcade/`, `src/App.tsx`, website navigation | Arcade discovery, routes, and navigation |
-| `src/app/buzzle/`, `src/app/buzzello/`, `src/app/pollen/` | Website route/SEO wrappers; Pollinator iframe and bounded score bridge |
-| `src/lib/buzzleOnline.ts`, `src/lib/buzzelloOnline.ts` | Bind game clients to the site's authenticated transport |
+| `src/app/biobuzz/`, `src/app/buzzle/`, `src/app/buzzello/`, `src/app/buzzhex/`, `src/app/pollen/`, `src/app/waggle-way/` | Website route/SEO wrappers; Pollinator iframe and bounded score bridge |
+| `src/lib/biobuzzOnline.ts`, `src/lib/buzzleOnline.ts`, `src/lib/buzzelloOnline.ts`, `src/lib/waggleCommunity.ts` | Bind game clients to the site's authenticated transport |
+| `packages/biobuzz/` | BIOBUZZ FTC-style match simulator, physics, rules, autos, and worker |
 | `packages/buzzle/` | Word-game rules, AI, workers, UI, dictionary, physical Word Tools, and canonical lexicon |
 | `packages/buzzello/` | Black/yellow strategy-game rules, AI, worker, UI, and online client |
+| `packages/buzzhex/` | Hex connection strategy rules, AI, worker, and UI |
 | `packages/pollinator/public/` | Pollinator scripts, physics, game UI, and assets |
+| `packages/waggle-way/` | Garden puzzle campaign, workshop, replay proof verification, and UI |
 | `packages/game-common/`, `packages/ui/` | Shared hex geometry/fullscreen behavior and UI primitives |
-| `functions/src/lib/`, `functions/src/apps/game.ts` | Existing authoritative online match adapters and game service |
+| `functions/src/lib/`, `functions/src/apps/game.ts`, `functions/src/apps/biobuzz.ts`, `functions/src/biobuzzServer.ts` | Authoritative online match adapters and Cloud Run game/BIOBUZZ services |
 
 - Keep game packages independent of website source and Firebase authentication.
   The website injects stable authenticated clients. Declare package exports and
@@ -77,14 +81,16 @@ includes the root website, `functions`, and `packages/*`. Read
   row-major local / column-major persisted conversion through
   `BUZZLE_ONLINE_INDICES`. Shared rules do not replace server validation,
   authorization, cryptographic randomness, or private rack filtering.
-- Keep `/arcade`, `/buzzle`, `/buzzello`, `/pollen`, and `/buzzle/word-tools`
+- Keep `/arcade`, `/biobuzz`, `/biobuzz/simulator`, `/buzzle`, `/buzzle/word-tools`,
+  `/buzzello`, `/buzzhex`, `/pollen`, `/waggle-way`, and `/waggle-way/community`
   stable. Pollinator remains a local game in an opaque iframe. Add any future
   online game adapter to the existing backend unless a different architecture
   is explicitly agreed; a new package alone does not require a new service.
 - Build from the repository root. Keep Functions' standalone npm deployment
-  lock and compiled artifact flow; the game Docker build also uses root context
-  with `functions/Dockerfile.game.dockerignore`. Follow the shared release
-  workflow rather than deploying packages separately.
+  lock and compiled artifact flow; the game and BIOBUZZ Docker builds also use
+  root context (`functions/Dockerfile.game.dockerignore`,
+  `functions/Dockerfile.biobuzz`). Follow the shared release workflow rather
+  than deploying packages separately.
 - In `src/app/globals.css`, keep all CSS `@import` statements consecutive and
   before Tailwind `@source`. Putting `@source` between imports drops the design
   tokens during compilation. Verify rendered colors in the built browser tests

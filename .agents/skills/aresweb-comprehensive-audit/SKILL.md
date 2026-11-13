@@ -1,39 +1,77 @@
 ---
 name: aresweb-comprehensive-audit
-description: Audit ARESWEB repository quality, technical debt, or suspected orphaned code and assets.
+description: Audit ARESWEB repository quality, technical debt, live production posture, or suspected orphaned code and assets.
 ---
 
-# ARESWEB audit
+# ARESWEB comprehensive audit
 
-Match the investigation to the requested scope. Use live source and configuration
-as evidence; record commit, branch, worktree state, date, runtime versions and
-commands used.
+Match the investigation to the requested scope. Derive architecture, routes,
+roles, and data boundaries directly from live source, configuration, and
+executed checks rather than historical reports or planning archives. Record the
+exact commit SHA, branch, initial worktree state, date, runtime versions, and
+commands executed.
 
-## Review scope
+## Reference playbooks
 
-For a broad repository audit, cover entry points, trust boundaries and primary
-user journeys across security/privacy, correctness, accessibility, performance,
-SEO, tests, maintainability, truthful UX and delivery controls. Check active
-routes, rules, registries, scripts, workflows, public assets and documentation.
-Team assets and claims must have authentic provenance, including hardware,
-3D parts, datasets, sponsors, alumni and awards.
+Read each checklist relevant to the audit scope before collecting evidence:
 
-For an orphan investigation, trace static/dynamic imports, lazy registries,
-routes, Firebase configuration, scripts, CI, tests, generated copies, dynamic
-URLs and documentation before declaring anything unused. Validate any authorized
-deletion with affected builds and tests.
+- Domain checklists (Security/Rules, Public UX/A11y/SEO/Print, Portal/Championship/Content, Arcade/CI/Orphans): [references/domain-checklists.md](references/domain-checklists.md)
+- Read-only live production & cloud checks (`https://aresfirst.org` + GCP/Firebase): [references/live-production-checks.md](references/live-production-checks.md)
+- Canonical report template & severity contract: [references/report-template.md](references/report-template.md)
 
-Run checks that resolve the investigation's uncertainties. Distinguish executed
-results from static inspection and inference. Use parallel specialists only
-when the user requests delegation and scopes are independent.
+## Baseline diagnostic commands
 
-## Deliverable
+Run applicable automated checks to separate hard facts from static inspection:
 
-Publish one deduplicated report under docs/audits/; keep temporary notes in
-scratch/. Each finding needs severity, confidence, exact file/line evidence,
-affected behavior, impact, remediation and an acceptance test. Separate confirmed
-defects from risks needing reproduction; reconcile contradictory findings.
+```text
+pnpm run validate:agents
+pnpm run check:route-security
+pnpm run validate:security-observability
+pnpm run validate:game-deployment
+pnpm run validate:functions-deploy-lock
+pnpm run content:verify
+pnpm run content:release-validate
+pnpm run test:release-tooling
+pnpm run lint
+pnpm --filter functions lint
+pnpm run typecheck
+pnpm run test:rules
+pnpm run test:functions-emulator
+pnpm run build
+node scripts/check-bundle-size.mjs
+pnpm audit --prod --audit-level=low
+```
 
-State the scope and evidence limits. Partial evidence does not establish total
-security, WCAG conformance or zero violations. An audit does not authorize
-deployment or production mutations.
+Include `pnpm run test:coverage`, `pnpm --filter functions test:coverage`, and
+`pnpm run test:e2e` when assessing full regression posture or verifying fixes.
+
+## Audit workflow
+
+1. **Inventory & baseline:** Capture git SHA, branch, clean/dirty state, tool
+   versions, and baseline check results.
+2. **Trace trust boundaries & primary journeys:** Check all four non-overlapping
+   domains in [references/domain-checklists.md](references/domain-checklists.md).
+   Team claims, 3D parts, hardware specs, sponsors, alumni, and awards must map
+   to authentic team records, explicit user data, or truthful empty states.
+3. **Orphan / dead-code protocol:** Never mark code or public assets orphaned
+   from a filename search alone. Check static/dynamic imports, lazy registries,
+   routes, Firebase rewrites, scripts, CI, tests, generated deployment copies,
+   dynamic URL construction, and documentation.
+4. **Live production checks (when authorized):** Follow
+   [references/live-production-checks.md](references/live-production-checks.md)
+   strictly read-only; never submit forms, mutate Firestore/Storage, or print
+   secret values.
+5. **Parallel delegation (when user-approved):** Stage up to four
+   non-overlapping specialist scopes (`Security/API/Rules`, `Public UX/A11y/Print`,
+   `Portal/Championship/Offline/Content`, `Arcade/Cloud Run/CI/Orphans`) plus an
+   optional read-only `browser` inspection. The lead agent must verify cited
+   files/lines, reconcile contradictions, and publish one deduplicated report.
+
+## Deliverable & evidence limits
+
+Publish one deduplicated Markdown report under `docs/audits/` using
+[references/report-template.md](references/report-template.md). Put scratch
+notes in root `scratch/` and clean them up when finished. Separate confirmed
+defects from risks needing reproduction; never claim total security, full
+WCAG conformance, or zero violations from partial evidence. An audit alone does
+not authorize app edits, merges, secret rotation, or production deployments.

@@ -1,8 +1,9 @@
 # Evidence-backed audit protocol
 
-Use the `aresweb-comprehensive-audit` skill for repository-wide reviews. Derive
-architecture, routes, roles, and data boundaries from live source and
-configuration rather than historical reports.
+Use the `aresweb-comprehensive-audit` skill and its playbooks under
+`.agents/skills/aresweb-comprehensive-audit/references/` for repository-wide
+reviews. Derive architecture, routes, roles, and data boundaries from live
+source and configuration rather than historical reports.
 
 Review security and youth privacy, correctness, WCAG 2.2 AA accessibility,
 performance, SEO, test fidelity, maintainability, documentation, delivery, and
