@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createBuzzleGame, type BuzzleTile } from "@/lib/buzzle";
-import { selectBuzzleAiMove } from "@/lib/buzzleAi";
+import { createBuzzleGame, type BuzzleTile } from "@ares/buzzle/rules";
+import { selectBuzzleAiMove } from "@ares/buzzle/ai";
 import { BuzzleTrie } from "@ares/buzzle/dictionary";
 
 function tile(letter: string, points: number, id = letter): BuzzleTile {

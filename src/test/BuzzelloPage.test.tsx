@@ -7,7 +7,7 @@ import {
   createBuzzelloInitialBoard,
   formatBuzzelloCoordinate,
   getBuzzelloLegalMoves,
-} from "@/lib/buzzello";
+} from "@ares/buzzello/rules";
 
 function renderPage() {
   return render(

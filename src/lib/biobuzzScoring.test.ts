@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyMatch, scoreMatch, scoreFlower, validateMatch, validThresholds, STANDARD_THRESHOLDS, type Element } from "./biobuzzScoring";
+import { emptyMatch, scoreMatch, scoreFlower, validateMatch, validThresholds, STANDARD_THRESHOLDS, type Element } from "@ares/biobuzz/scoring";
 
 describe("BIOBUZZ V1 scoring", () => {
   it("starts with zero match points and a qualification tie", () => {

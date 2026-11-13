@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BuzzleHelpMode } from '@/components/games/BuzzleHelpMode';
-import { createBuzzleGame, getBuzzleCellIndex } from '@/lib/buzzle';
+import { BuzzleHelpMode } from '@ares/buzzle/help-mode';
+import { createBuzzleGame, getBuzzleCellIndex } from '@ares/buzzle/rules';
 import type { BuzzleHint } from '@ares/buzzle/word-help';
 
 describe('BUZZLE hint worker lifecycle', () => {

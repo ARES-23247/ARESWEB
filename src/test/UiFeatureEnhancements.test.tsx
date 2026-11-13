@@ -359,7 +359,7 @@ describe("UI & Feature Enhancements", () => {
   });
 
   it("increments/decrements BIOBUZZ Score Calculator fields via stepper buttons and copies summary", async () => {
-    const { COUNT_FIELDS } = await import("@/lib/biobuzzScoring");
+    const { COUNT_FIELDS } = await import("@ares/biobuzz/scoring");
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 

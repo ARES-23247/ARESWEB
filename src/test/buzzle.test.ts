@@ -13,7 +13,7 @@ import {
   type BuzzlePlacement,
   type BuzzleBoardTile,
   type BuzzleTile,
-} from "@/lib/buzzle";
+} from "@ares/buzzle/rules";
 
 function tile(letter: string, points: number, id = letter): BuzzleTile {
   return { id, letter, points, blank: letter === "?" };

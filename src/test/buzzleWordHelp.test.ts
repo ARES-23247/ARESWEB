@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUZZLE_COORDINATES, analyzeBuzzlePlay, createBuzzleGame, getBuzzleCellIndex, type BuzzleTile, type BuzzleBoardTile, type BuzzlePlacement } from "@/lib/buzzle";
+import { BUZZLE_COORDINATES, analyzeBuzzlePlay, createBuzzleGame, getBuzzleCellIndex, type BuzzleTile, type BuzzleBoardTile, type BuzzlePlacement } from "@ares/buzzle/rules";
 import { findBuzzleTwoLetterHints, twoLetterWords, wordsOnBuzzleBoard } from "@ares/buzzle/word-help";
 
 const at = (q: number, r: number) => getBuzzleCellIndex(q, r)!;

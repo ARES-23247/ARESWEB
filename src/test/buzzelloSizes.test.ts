@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getBuzzelloRules, type BuzzelloPlayer } from "@/lib/buzzello";
+import { getBuzzelloRules, type BuzzelloPlayer } from "@ares/buzzello/rules";
 import { getBuzzelloServerRules } from "../../functions/src/lib/buzzelloGame";
 
 describe.each([61, 91])("BUZZELLO %i-cell edition", (size) => {

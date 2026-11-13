@@ -174,6 +174,14 @@ describe("cloud-truthful backend deployment fingerprints", () => {
     expect(driveClosure).not.toContain("functions/src/routes/sponsors.ts");
     expect(driveClosure).toContain("functions/src/routes/drive.ts");
     expect(publicClosure).not.toContain("functions/src/routes/drive.ts");
+
+    const gameClosure = collectFunctionModuleClosure(process.cwd(), [
+      "functions/src/gameServer.ts",
+      "functions/src/lib/waggleVerification.worker.ts",
+    ]);
+    expect(gameClosure).toContain("functions/src/lib/waggleVerification.worker.ts");
+    const workerHashA = hashComponentInputs(process.cwd(), { v: 1 }, gameClosure);
+    expect(workerHashA).toBeTruthy();
   });
 
   it("normalizes CRLF line endings and fails closed on dynamic or missing module specifiers", () => {

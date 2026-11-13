@@ -64,6 +64,16 @@ describe("conservative affected-area selection", () => {
       selectAreas(manifest, ["src/components/editor/Compiler.ts"], inventory)
         .areas,
     ).toEqual(["academy", "editor", "media", "public"]);
+    const simDashPlan = selectAreas(
+      manifest,
+      ["src/app/dashboard/simulations/page.tsx"],
+      inventory,
+    );
+    expect(simDashPlan.areas).toEqual(["academy", "editor", "media", "public"]);
+    expect(simDashPlan.e2e).toContain("e2e/editor.spec.ts");
+    expect(
+      selectAreas(manifest, ["src/lib/biobuzzOnline.ts"], inventory).areas,
+    ).toEqual(["arcade", "biobuzz"]);
     expect(
       selectAreas(
         manifest,
