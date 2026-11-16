@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@ares/ui": "workspace:*",
-    "lucide-react": "^1.70.0"
+    "lucide-react": "^1.72.0"
   },
   "peerDependencies": {
     "react": "^19.2.0"
