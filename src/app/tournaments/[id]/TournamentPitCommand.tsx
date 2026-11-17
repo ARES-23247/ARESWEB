@@ -236,7 +236,7 @@ export function TournamentPitCommand({
       } catch (queueErr) {
         setPitSyncNotice(
           queueErr instanceof PitOutboxQuotaError
-            ? "Offline storage is full — Pit changes could not be queued."
+            ? queueErr.message
             : "Offline Pit changes could not be queued.",
         );
       }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ANALYTICS_CONSENT_CHANGE_EVENT,
@@ -30,10 +30,19 @@ function useAnalyticsConsentChoice() {
 export default function AnalyticsConsentBanner() {
   const choice = useAnalyticsConsentChoice();
   const [isOpen, setIsOpen] = useState(() => choice === null);
+  const bannerRef = useRef<HTMLElement>(null);
+  const focusOnOpen = useRef(false);
 
   useEffect(() => {
     const handleChange = () => setIsOpen(false);
-    const handleOpen = () => setIsOpen(true);
+    const handleOpen = () => {
+      if (bannerRef.current) {
+        bannerRef.current.focus();
+        return;
+      }
+      focusOnOpen.current = true;
+      setIsOpen(true);
+    };
     window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, handleChange);
     window.addEventListener(ANALYTICS_CONSENT_OPEN_EVENT, handleOpen);
     return () => {
@@ -41,6 +50,13 @@ export default function AnalyticsConsentBanner() {
       window.removeEventListener(ANALYTICS_CONSENT_OPEN_EVENT, handleOpen);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (isOpen && focusOnOpen.current) {
+      focusOnOpen.current = false;
+      bannerRef.current?.focus();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -51,8 +67,10 @@ export default function AnalyticsConsentBanner() {
 
   return (
     <section
+      ref={bannerRef}
+      tabIndex={-1}
       aria-labelledby="analytics-consent-title"
-      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-xl border border-white/20 bg-obsidian p-4 text-white shadow-2xl shadow-black/70 sm:bottom-5 sm:p-5 print:hidden"
+      className="analytics-consent mx-auto my-2 w-[calc(100%-1.5rem)] max-w-3xl scroll-mt-[calc(6rem+var(--site-announcement-height,0px))] rounded-xl border border-white/20 bg-obsidian p-4 text-white sm:p-5 print:hidden"
     >
       <div className="sm:flex sm:items-start sm:justify-between sm:gap-6">
         <div className="max-w-2xl">
@@ -63,10 +81,8 @@ export default function AnalyticsConsentBanner() {
             Optional website analytics
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-marble/90">
-            Help us learn which pages are useful. If you allow analytics, Google
-            Analytics may store an analytics identifier in this browser to
-            measure visits and page views. Advertising and personalization stay
-            disabled. The website works the same either way.
+            Google Analytics can measure visits if you allow it. Advertising and
+            personalization stay disabled. You can use every page without cookies for analytics.
           </p>
           <Link
             to="/privacy"

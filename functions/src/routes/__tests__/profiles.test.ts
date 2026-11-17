@@ -132,6 +132,7 @@ describe("Profiles Router Backend Endpoints", () => {
         limit: vi.fn().mockReturnThis(),
       };
       mockWhere.mockReturnValue(queryMock);
+      mockCollection().get.mockResolvedValueOnce({ docs: [{ id: "m1", data: () => ({ role: "member" }) }] });
 
       const handler = getHandler("/about-roster", "get");
       await handler(req, res, next);
@@ -181,6 +182,7 @@ describe("Profiles Router Backend Endpoints", () => {
         limit: vi.fn().mockReturnThis(),
       };
       mockCollection().where.mockReturnValue(queryMock);
+      mockCollection().get.mockResolvedValueOnce({ docs: [{ id: "private-firebase-uid", data: () => ({ role: "member" }) }] });
 
       await getHandler("/about-roster", "get")(req, res, next);
 
@@ -211,11 +213,42 @@ describe("Profiles Router Backend Endpoints", () => {
         limit: vi.fn().mockReturnThis(),
       };
       mockCollection().where.mockReturnValue(queryMock);
+      mockCollection().get.mockResolvedValueOnce({
+        docs: [contactEmail, "a".repeat(32), "b".repeat(28), "short-id"].map((id) => ({
+          id,
+          data: () => ({ role: "member" }),
+        })),
+      });
 
       await getHandler("/about-roster", "get")(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({
         members: [expect.objectContaining({ nickname: "Firebase UID" })],
+      });
+    });
+
+    it("publishes only profiles with active authorization, including when the inventory is empty", async () => {
+      const collection = vi.mocked(adminDb.collection)("user_profiles") as any;
+      const profileQuery = {
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        get: vi.fn().mockResolvedValue({ docs: [
+          { id: "current", data: () => ({ nickname: "Current", memberType: "student" }) },
+          { id: "former", data: () => ({ nickname: "Former" }) },
+        ] }),
+      };
+      collection.where.mockReturnValue(profileQuery);
+      collection.get.mockResolvedValueOnce({ docs: [] }).mockResolvedValueOnce({ docs: [
+        { id: "current", data: () => ({ role: "member" }) },
+        { id: "former", data: () => ({ role: "member", isDeleted: 1 }) },
+      ] });
+
+      const handler = getHandler("/about-roster", "get");
+      await handler(req, res, next);
+      expect(res.json).toHaveBeenLastCalledWith({ members: [] });
+      await handler(req, res, next);
+      expect(res.json).toHaveBeenLastCalledWith({
+        members: [{ nickname: "Current", memberType: "student", avatar: "" }],
       });
     });
   });

@@ -96,6 +96,7 @@ const activeDocument = {
   link: "/calendar",
   linkLabel: "View calendar",
   isActive: true,
+  evergreen: true,
   revision: "revision-1",
   startsAt: null,
   endsAt: null,
@@ -146,11 +147,12 @@ describe("site announcement routes", () => {
     expect(JSON.stringify(res.payload)).not.toContain("updatedAt");
   });
 
-  it("does not expose inactive, future, or expired announcements", async () => {
+  it("does not expose inactive, future, expired, or undated legacy announcements", async () => {
     for (const document of [
       { ...activeDocument, isActive: false },
       { ...activeDocument, startsAt: "2999-01-01T00:00:00.000Z" },
       { ...activeDocument, endsAt: "2000-01-01T00:00:00.000Z" },
+      { ...activeDocument, evergreen: undefined },
     ]) {
       mocks.settingsGet.mockResolvedValueOnce({ exists: true, data: () => document });
       const { res } = await invoke("/", "get");
@@ -235,6 +237,8 @@ describe("site announcement routes", () => {
         isActive: true,
       },
       { message: "x".repeat(241), severity: "info", isActive: true },
+      { message: "Practice canceled tonight", severity: "important", isActive: true },
+      { message: "Update", severity: "info", isActive: true, evergreen: true, endsAt: "2999-01-01T00:00:00.000Z" },
       {
         message: "Update",
         severity: "info",

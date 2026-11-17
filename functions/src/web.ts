@@ -77,7 +77,7 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
 
   const route = parseDynamicRoute(req.path);
   if (!route) {
-    res.status(404).set("Cache-Control", "public, max-age=60").type("html").send(renderNotFound());
+    res.status(404).set("Cache-Control", "public, max-age=60, no-transform").type("html").send(renderNotFound());
     return;
   }
 
@@ -87,15 +87,15 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
       ? metadataForDocument(route, snapshot.data() as Record<string, unknown>)
       : null;
     if (!metadata) {
-      res.status(404).set("Cache-Control", "public, max-age=60").type("html").send(renderNotFound());
+      res.status(404).set("Cache-Control", "public, max-age=60, no-transform").type("html").send(renderNotFound());
       return;
     }
 
     const html = injectMetadata(await loadShell(), metadata);
-    res.status(200).set("Cache-Control", "no-cache, no-store, must-revalidate").type("html").send(html);
+    res.status(200).set("Cache-Control", "no-cache, no-store, must-revalidate, no-transform").type("html").send(html);
   } catch (error) {
     logger.error("web-render", "Unable to render a dynamic public page", error);
-    res.status(503).set("Cache-Control", "no-store").type("html").send(
+    res.status(503).set("Cache-Control", "no-store, no-transform").type("html").send(
       "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\"><title>Temporarily unavailable</title></head><body><main><h1>Temporarily unavailable</h1><p>Please try this page again shortly.</p></main></body></html>",
     );
   }

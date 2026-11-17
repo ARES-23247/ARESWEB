@@ -78,7 +78,8 @@ describe("dynamic web rendering", () => {
     });
     expect(rendered).toContain("Unsafe &lt;title&gt; &quot;value&quot;");
     expect(rendered).toContain("A&amp;B &lt;summary&gt;");
-    expect(rendered).toContain('rel="canonical" href="https://aresfirst.org/blog/safe"');
+    expect(rendered.match(/rel="canonical"/g)).toHaveLength(1);
+    expect(rendered).toContain('rel="canonical" href="https://aresfirst.org/blog/safe" data-prerender-seo');
     expect(rendered).toContain('property="og:type" content="article"');
     expect(rendered).toContain('name="twitter:card"');
   });

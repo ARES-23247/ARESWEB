@@ -271,6 +271,16 @@ select option {
   outline-offset: 2px !important;
 }
 
+@media screen and (min-width: 1024px) and (min-height: 760px) {
+  .analytics-consent {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 1.25rem;
+    z-index: 100;
+    box-shadow: 0 12px 40px #000b;
+  }
+}
+
 /* Print only the explicitly opened printable sheet or report, not surrounding UI chrome. */
 @media print {
   body:has(.outreach-report-print, .tournament-match-print, .ares-print-sheet) {

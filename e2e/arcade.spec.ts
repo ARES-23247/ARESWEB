@@ -40,5 +40,23 @@ test("Arcade sits beside Academy and groups games on desktop, tablet, and phone"
   await main.getByRole("link", { name: "BUZZLE Word Tools", exact: true }).click();
   await expect(page).toHaveURL(/\/buzzle\/word-tools$/);
   await expect(page.getByRole("heading", { name: "Word Tools", exact: true })).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(1);
   await expect(page.getByRole("link", { name: "3D print BUZZLE on Printables (opens in a new tab)", exact: true })).toBeVisible();
+});
+
+test("Arcade aliases open the simulator and the Waggle Way community shelf", async ({ page }) => {
+  await page.route("**/api/waggle-way/gardens*", (route) => route.fulfill({ json: { gardens: [], nextCursor: null } }));
+  await page.goto("/biobuzz", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/biobuzz\/simulator$/);
+  await expect(page.getByRole("heading", { name: /^BIOBUZZ simulator$/i, level: 1 })).toBeVisible();
+
+  const shelf = page.getByRole("dialog", { name: "Community gardens" });
+  await page.goto("/waggle-way/community", { waitUntil: "domcontentloaded" });
+  await expect(shelf).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(shelf).toBeHidden();
+  await page.getByRole("link", { name: "Story gardens", exact: true }).click();
+  await page.getByRole("link", { name: "Community", exact: true }).click();
+  await expect(page).toHaveURL(/\/waggle-way\/community$/);
+  await expect(shelf).toBeVisible();
 });

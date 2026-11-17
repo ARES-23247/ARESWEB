@@ -25,12 +25,12 @@ describe("Firebase Hosting crawl configuration", () => {
     );
 
     expect(indexHtml).toContain(
-      "<title>ARES 23247 | West Virginia Robotics Team (Morgantown, WV)</title>",
+      "<title data-prerender-seo>ARES 23247 | West Virginia Robotics Team (Morgantown, WV)</title>",
     );
     expect(indexHtml).toContain(
       "<h1>ARES 23247 — West Virginia Robotics Team in Morgantown</h1>",
     );
-    expect(indexHtml).not.toContain("<title>ARES Analytics</title>");
+    expect(indexHtml).not.toMatch(/<title\b[^>]*>ARES Analytics<\/title>/);
     expect(indexHtml).toMatch(
       /rel="alternate"\s+type="application\/rss\+xml"/u,
     );
@@ -55,6 +55,7 @@ describe("Firebase Hosting crawl configuration", () => {
     );
 
     expect(csp).toContain("script-src 'self'");
+    expect(broadRule?.headers.find(({ key }) => key === "Cache-Control")?.value).toContain("no-transform");
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
     expect(csp).toContain("script-src-attr 'none'");
     expect(csp).toContain(

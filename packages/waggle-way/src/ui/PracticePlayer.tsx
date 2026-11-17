@@ -40,18 +40,20 @@ export default function PracticePlayer({
   fullscreen,
   onExit,
   community,
+  openCommunity = false,
   onRemix,
 }: {
   fullscreen: ReturnType<typeof useGameFullscreen>;
   onExit: () => void;
   community?: CommunityClient;
+  openCommunity?: boolean;
   onRemix?: (source: CommunityParent) => void;
 }) {
   const [selected, setSelected] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [completedId, setCompletedId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [communityOpen, setCommunityOpen] = useState(false);
+  const [communityOpen, setCommunityOpen] = useState(openCommunity);
   const [communityGarden, setCommunityGarden] =
     useState<CommunityGarden | null>(null);
   const communityButton = useRef<HTMLButtonElement>(null);

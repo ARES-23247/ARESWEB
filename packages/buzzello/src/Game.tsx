@@ -925,7 +925,7 @@ export default function BuzzelloPage({
         : current.notice;
 
   return (
-    <main
+    <section
       ref={fullscreen.targetRef}
       className="game-fullscreen-target buzzello-shell min-h-screen bg-obsidian px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8"
       data-game-fullscreen={fullscreen.isFullscreen || undefined}
@@ -1683,6 +1683,6 @@ export default function BuzzelloPage({
           </div>
         </div>
       </DialogShell>
-    </main>
+    </section>
   );
 }

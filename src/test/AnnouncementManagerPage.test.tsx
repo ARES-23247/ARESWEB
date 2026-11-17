@@ -32,6 +32,7 @@ const managedAnnouncement = {
   startsAt: null,
   endsAt: null,
   isActive: true,
+  evergreen: false,
   updatedAt: "2026-08-14T12:00:00.000Z",
 };
 
@@ -52,6 +53,7 @@ describe("AnnouncementManagerPage", () => {
 
     const message = await screen.findByDisplayValue(managedAnnouncement.message);
     fireEvent.change(message, { target: { value: "Practice moved indoors." } });
+    fireEvent.change(screen.getByLabelText("Ends"), { target: { value: "2030-11-16T23:00" } });
     fireEvent.click(screen.getByRole("button", { name: "Save announcement" }));
 
     await screen.findByText(/announcement published/i);
@@ -68,8 +70,29 @@ describe("AnnouncementManagerPage", () => {
         link: "/calendar",
         linkLabel: "View calendar",
         isActive: true,
+        evergreen: false,
+        endsAt: new Date("2030-11-16T23:00").toISOString(),
       }),
     );
+  });
+
+  it("requires an expiry unless ongoing publication is selected explicitly", async () => {
+    render(<AnnouncementManagerPage />);
+    await screen.findByDisplayValue(managedAnnouncement.message);
+    const save = screen.getByRole("button", { name: "Save announcement" });
+    fireEvent.click(save);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/set an end time/i);
+    expect(mocks.authenticatedFetch).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Keep published until removed" }));
+    expect(screen.getByLabelText("Ends")).toBeDisabled();
+    fireEvent.click(save);
+    await waitFor(() => expect(mocks.authenticatedFetch).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(mocks.authenticatedFetch.mock.calls[1][1].body)).toMatchObject({
+      isActive: true,
+      evergreen: true,
+      endsAt: null,
+    });
   });
 
   it("requires both optional link fields before sending a request", async () => {

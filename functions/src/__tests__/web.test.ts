@@ -147,6 +147,6 @@ describe("dynamic web function", () => {
       response,
     );
     expect(response.status).toHaveBeenCalledWith(503);
-    expect(response.set).toHaveBeenCalledWith("Cache-Control", "no-store");
+    expect(response.set).toHaveBeenCalledWith("Cache-Control", "no-store, no-transform");
   });
 });

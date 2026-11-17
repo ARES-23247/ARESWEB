@@ -30,7 +30,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
+            "value": "no-cache, no-store, must-revalidate, no-transform"
           },
           {
             "key": "X-Content-Type-Options",
@@ -59,7 +59,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
+            "value": "no-cache, no-store, must-revalidate, no-transform"
           },
           {
             "key": "X-Frame-Options",
@@ -165,6 +165,13 @@
       }
     ],
     "trailingSlash": false,
+    "redirects": [
+      {
+        "source": "/biobuzz",
+        "destination": "/biobuzz/simulator",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "/biobuzz/simulator",
@@ -300,7 +307,7 @@
       },
       {
         "source": "/academy/playground",
-        "destination": "/index.html"
+        "destination": "/prerender/academy-playground.html"
       },
       {
         "source": "/blog/**",
@@ -369,6 +376,10 @@
       {
         "source": "/waggle-way",
         "destination": "/prerender/waggle-way.html"
+      },
+      {
+        "source": "/waggle-way/community",
+        "destination": "/prerender/waggle-way-community.html"
       },
       {
         "source": "/waggle-way/builder",

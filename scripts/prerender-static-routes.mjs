@@ -37,12 +37,18 @@ export const staticPageMetadata = [
   ["/waggle-way", "Waggle Way · Story gardens", "Guide a hive to flowers in thirty puzzles with dances, fans and shelter leaves, or build a local garden.", true, [
     ["Guide the hive", "Try thirty puzzles across Sunny Garden, Breezy Meadow, Glasshouse, Rainy Garden and Wildflower Valley in Waggle Way, or <a href=\"/waggle-way/builder\">open the garden workshop</a> to build and test a local puzzle."],
   ]],
+  ["/waggle-way/community", "Waggle Way · Community gardens", "Browse and play verified puzzles shared by the Waggle Way community.", true, [
+    ["Play community gardens", "Open the shelf to explore player-made gardens and try their puzzles in your browser. You can also play the <a href=\"/waggle-way\">story gardens</a> or build your own level in the <a href=\"/waggle-way/builder\">garden workshop</a>."],
+  ]],
   ["/waggle-way/builder", "Waggle Way · Garden workshop", "Build and test a local bee puzzle with dancing guides and fans.", true, [
     ["Build a garden", "Place a hive, flowers, guides, fans, branches, water, and shelter leaves. Supply extra tools for players to place. Save gardens in this browser, export a level file, or publish verified puzzles to the community shelf. <a href=\"/waggle-way\">Play the campaign puzzles</a>."],
   ]],
   ["/about", "About Us", "Meet the students, coaches, mentors, and alumni of ARES 23247 and learn about our robotics mission.", false, [
     ["Who we are", "ARES 23247 is the Appalachian Robotics & Engineering Society, a student-led FIRST® Tech Challenge team from Morgantown, West Virginia. Students design, build, and program competition robots while coaches and mentors guide engineering, business, and outreach work. <a href=\"/seasons\">See our seasons and legacy</a> or <a href=\"/join\">apply to join</a>."],
     ["What we value", "The team emphasizes gracious professionalism, hands-on engineering, and community impact. Explore our <a href=\"/outreach\">outreach programs</a> or meet <a href=\"/robots\">the robots we have built</a>."],
+  ]],
+  ["/academy/playground", "Simulation Playground", "Open, run, and share ARES robotics simulations in the browser.", true, [
+    ["Interactive robotics simulations", "Use the playground to open and run shared ARES robotics simulations in your browser. Enable JavaScript to interact with the simulations, or browse the lessons in <a href=\"/academy\">ARES Academy</a>."],
   ]],
   ["/brand", "Brand & Press Kit", "Official ARES 23247 logo assets, brand palette, typography, and media boilerplate.", false, [
     ["Assets and identity", "Download the official ARES 23247 logo assets and default social card, read the exact palette and typography used across this site, and use the approved boilerplate for press and sponsor materials. <a href=\"/about\">Learn about the team</a> or <a href=\"/sponsors\">become a sponsor</a>."],
@@ -169,10 +175,10 @@ export function renderStaticShell(shell, [route, pageTitle, description, noindex
   // replacing the old favicon fallback.
   const ogImage = `${baseUrl}/api/og?title=${encodeURIComponent(title)}`;
   let html = shell
-    .replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`)
-    .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${escapeHtml(description)}">`)
-    .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${escapeHtml(title)}">`)
-    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${escapeHtml(description)}">`)
+    .replace(/<title\b[^>]*>[^<]*<\/title>/i, `<title data-prerender-seo>${escapeHtml(title)}</title>`)
+    .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${escapeHtml(description)}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${escapeHtml(title)}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${escapeHtml(description)}" data-prerender-seo>`)
     // The Vite source shell carries the homepage canonical as its fallback;
     // every prerendered route must REPLACE it, never duplicate it.
     .replace(/<link\s+rel=["']canonical["'][^>]*>/i, "");
@@ -206,7 +212,7 @@ export function renderStaticShell(shell, [route, pageTitle, description, noindex
       description: "ARES 23247 is a FIRST Tech Challenge robotics team based in Morgantown, West Virginia.",
     })}</script>`,
     noindex ? `<meta name="robots" content="noindex, nofollow">` : "",
-  ].filter(Boolean).join("\n    ");
+  ].filter(Boolean).join("\n    ").replace(/<(link|meta|script)\b([^>]*?)>/g, "<$1$2 data-prerender-seo>");
   const rendered = html.replace("</head>", `    ${tags}\n  </head>`);
   // A second canonical (for example from a future index.html edit) would let
   // Google consolidate every route onto "/" — fail the build instead.

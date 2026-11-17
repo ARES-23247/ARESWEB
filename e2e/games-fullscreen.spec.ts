@@ -17,6 +17,7 @@ for (const game of games) {
     await page.getByRole("dialog", { name: game.setupDialog })
       .getByRole("button", { name: /Pass & Play/u })
       .click();
+    await expect(page.getByRole("main")).toHaveCount(1);
 
     await page.evaluate(() => {
       Object.defineProperty(document.documentElement, "requestFullscreen", {
@@ -26,7 +27,7 @@ for (const game of games) {
     });
 
     await page.getByRole("button", { name: "Enter full screen" }).click();
-    const shell = page.locator("main.game-fullscreen-target");
+    const shell = page.locator(".game-fullscreen-target");
     await expect(shell).toHaveAttribute("data-game-fullscreen", "true");
     await expect(page.getByRole("button", { name: "Exit full screen" })).toHaveAttribute("aria-pressed", "true");
 

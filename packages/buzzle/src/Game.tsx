@@ -666,7 +666,7 @@ export default function BuzzlePage({ online, physicalGameLink }: { online: Buzzl
   const startAnotherGameLabel = mode === "online" ? "New online game" : "Rematch";
 
   return (
-    <main
+    <section
       ref={fullscreen.targetRef}
       className="game-fullscreen-target buzzle-shell min-h-screen px-2 pb-16 pt-20 text-marble sm:px-5 sm:pt-28 lg:px-8"
       data-game-fullscreen={fullscreen.isFullscreen || undefined}
@@ -1080,6 +1080,6 @@ export default function BuzzlePage({ online, physicalGameLink }: { online: Buzzl
       {wordHelp && !handoffPending && !newGameOpen && !onlineSetupOpen && !gameOverOpen && <BuzzleWordHelp request={wordHelp} words={dictionary.words} board={game.board}
         loading={dictionary.status === "loading"} onRetry={() => { setDictionary({ status: "loading", words: null }); setDictionaryAttempt((attempt) => attempt + 1); }}
         onClose={() => setWordHelp(null)} returnFocusRef={helpFocusRef} />}
-    </main>
+    </section>
   );
 }

@@ -75,7 +75,11 @@ for (let offset = 0; offset < publicRoutes.length; offset += 5) {
       await expect(page).toHaveTitle(new RegExp(titlePart), {
         timeout: 15_000,
       });
-      await expect(page.locator("main").first()).toBeVisible();
+      await expect(page.getByRole("main")).toHaveCount(1);
+      await expect(page.getByRole("main")).toBeVisible();
+      const canonical = page.locator('head link[rel="canonical"]');
+      await expect(canonical).toHaveCount(1);
+      await expect(canonical).toHaveAttribute("href", `https://aresfirst.org${path}`);
       if (path === "/academy" || path === "/docs") {
         await expect(
           page.getByRole("heading", { name: "No Lessons Yet" }),
@@ -84,6 +88,20 @@ for (let offset = 0; offset < publicRoutes.length; offset += 5) {
     }
   });
 }
+
+test("navigation replaces the raw fallback with one set of current SEO tags", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator('head link[rel="canonical"]')).toHaveCount(1);
+  await expect(page.locator('head [data-prerender-seo]')).toHaveCount(0);
+  await page.getByRole("contentinfo").getByRole("link", { name: "Interactive Simulations", exact: true }).click();
+  await expect(page).toHaveURL(/\/academy\/playground$/);
+  await expect(page).toHaveTitle(/Simulation Playground/);
+  await expect(page.locator('head link[rel="canonical"]')).toHaveCount(1);
+  await expect(page.locator('head link[rel="canonical"]')).toHaveAttribute("href", "https://aresfirst.org/academy/playground");
+  await expect(page.locator('head meta[name="description"]')).toHaveCount(1);
+  await expect(page.locator('head meta[property="og:url"]')).toHaveAttribute("content", "https://aresfirst.org/academy/playground");
+  await expect(page.locator('head meta[name="robots"]')).toHaveAttribute("content", "noindex, follow");
+});
 
 test("same-origin gallery media renders without direct Storage traffic", async ({
   page,

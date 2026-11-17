@@ -8,19 +8,21 @@ import "./waggle-way.css";
 export default function Game({
   workshopLink,
   community,
+  openCommunity = false,
   onRemix,
 }: {
   workshopLink: ReactNode;
   community?: CommunityClient;
+  openCommunity?: boolean;
   onRemix?: (source: CommunityParent) => void;
 }) {
-  const [mode, setMode] = useState<"title" | "play">("title");
+  const [mode, setMode] = useState<"title" | "play">(openCommunity ? "play" : "title");
   const fullscreen = useGameFullscreen();
   const page = useRef<HTMLElement>(null);
   const previousMode = useRef(mode);
   useEffect(() => {
-    if (mode !== "title") page.current?.querySelector("h2")?.focus();
-    else if (previousMode.current !== "title")
+    if (mode === "play" && previousMode.current === "title") page.current?.querySelector("h2")?.focus();
+    else if (mode === "title" && previousMode.current !== "title")
       page.current
         ?.querySelector<HTMLButtonElement>("[data-start-garden]")
         ?.focus();
@@ -39,6 +41,7 @@ export default function Game({
           </header>
           <PracticePlayer
             community={community}
+            openCommunity={openCommunity}
             onRemix={onRemix}
             fullscreen={fullscreen}
             onExit={() => setMode("title")}

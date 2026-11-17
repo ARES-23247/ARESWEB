@@ -34,7 +34,7 @@ export default function BuzzleWordToolsPage({ physicalGameLink }: { physicalGame
     return () => { active = false; };
   }, []);
 
-  return <main className="buzzle-shell min-h-screen px-4 pb-16 pt-24 text-marble sm:px-6 sm:pt-32">
+  return <div className="buzzle-shell min-h-screen px-4 pb-16 pt-24 text-marble sm:px-6 sm:pt-32">
     
     <div className="mx-auto max-w-3xl">
       <header className="buzzle-hero mb-4 rounded-2xl p-4 sm:p-6">
@@ -53,5 +53,5 @@ export default function BuzzleWordToolsPage({ physicalGameLink }: { physicalGame
       </p>
       <BuzzleWordHelp standalone request={{ tab: "check" }} words={words} loading={loading} onRetry={() => { setLoading(true); setAttempt((value) => value + 1); }} />
     </div>
-  </main>;
+  </div>;
 }

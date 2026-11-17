@@ -183,11 +183,11 @@ export function injectMetadata(shell: string, metadata: PageMetadata): string {
 
   let rendered = shell
     .replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi, "")
-    .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
-    .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${description}">`)
-    .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${title}">`)
-    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${description}">`)
-    .replace(/<meta\s+property=["']og:type["'][^>]*>/i, `<meta property="og:type" content="${type}">`)
+    .replace(/<title\b[^>]*>[^<]*<\/title>/i, `<title data-prerender-seo>${title}</title>`)
+    .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${description}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${title}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${description}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:type["'][^>]*>/i, `<meta property="og:type" content="${type}" data-prerender-seo>`)
     .replace(/<div id="root">[\s\S]*?<\/main>\s*<\/div>|<div id="root"><\/div>/i, rootBody);
 
   const tags = [
@@ -198,7 +198,7 @@ export function injectMetadata(shell: string, metadata: PageMetadata): string {
     `<meta name="twitter:title" content="${title}">`,
     `<meta name="twitter:description" content="${description}">`,
     `<meta name="twitter:image" content="${image}">`,
-  ].join("\n    ");
+  ].join("\n    ").replace(/<(link|meta)\b([^>]*?)>/g, "<$1$2 data-prerender-seo>");
   rendered = rendered.replace("</head>", `    ${tags}\n  </head>`);
   return rendered;
 }

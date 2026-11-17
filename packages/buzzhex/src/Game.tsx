@@ -332,7 +332,7 @@ export default function BuzzhexGame({
   }
 
   return (
-    <main
+    <section
       ref={targetRef}
       className="buzzhex-shell game-fullscreen-target"
       data-game-fullscreen={isFullscreen || undefined}
@@ -874,6 +874,6 @@ export default function BuzzhexGame({
           <Button type="submit">Save names</Button>
         </form>
       </DialogShell>
-    </main>
+    </section>
   );
 }
