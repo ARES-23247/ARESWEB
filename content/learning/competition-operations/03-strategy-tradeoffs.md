@@ -64,10 +64,11 @@ ARES Guided Run Review keeps an observed difference separate from correlation an
 keeps missing signals visible. Those boundaries matter in strategy. A slower run does not prove a
 robot will be slow in a different match. A quiet alert list does not prove a robot is ready.
 
-The ARES Match Strategy screen is backed by recorded DuckDB session, summary, telemetry, alert, and
-annotation records. It summarizes observed run evidence rather than predicting future matches. This
-lesson uses invented values so students learn the reasoning structure without claiming match
-predictions or exposing real team data.
+In ARES Studio, Match Strategy opens a hub with Session Debrief, OPR & Scouting, Matchup
+Briefing, and Alliance Picklist. Session Debrief uses recorded DuckDB sessions, summaries,
+telemetry, alerts, and annotations. Read its observations separately from scouting estimates
+and matchup briefings. This lesson uses invented values to practice reasoning about evidence
+without making match predictions or exposing real team data.
 
 ## Hands-on activity
 
