@@ -191,19 +191,19 @@ export function renderStaticShell(shell, [route, pageTitle, description, noindex
     html = replaceRootContents(html, renderRouteBody(pageTitle, description, sections));
   }
   const tags = [
-    `<link rel="canonical" href="${canonical}">`,
-    `<meta property="og:url" content="${canonical}">`,
-    `<meta property="og:image" content="${ogImage}">`,
-    `<meta property="og:image:width" content="1200">`,
-    `<meta property="og:image:height" content="630">`,
-    `<meta property="og:image:alt" content="${escapeHtml(title)}">`,
-    `<meta name="twitter:card" content="summary_large_image">`,
-    `<meta name="twitter:title" content="${escapeHtml(title)}">`,
-    `<meta name="twitter:description" content="${escapeHtml(description)}">`,
-    `<meta name="twitter:image" content="${ogImage}">`,
+    `<link rel="canonical" href="${canonical}" data-prerender-seo>`,
+    `<meta property="og:url" content="${canonical}" data-prerender-seo>`,
+    `<meta property="og:image" content="${ogImage}" data-prerender-seo>`,
+    `<meta property="og:image:width" content="1200" data-prerender-seo>`,
+    `<meta property="og:image:height" content="630" data-prerender-seo>`,
+    `<meta property="og:image:alt" content="${escapeHtml(title)}" data-prerender-seo>`,
+    `<meta name="twitter:card" content="summary_large_image" data-prerender-seo>`,
+    `<meta name="twitter:title" content="${escapeHtml(title)}" data-prerender-seo>`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}" data-prerender-seo>`,
+    `<meta name="twitter:image" content="${ogImage}" data-prerender-seo>`,
     // Keep in sync with ORGANIZATION_SCHEMA in src/components/SEO.tsx; the
     // static copy serves crawlers and platforms that never execute the SPA.
-    `<script type="application/ld+json">${JSON.stringify({
+    `<script type="application/ld+json" data-prerender-seo>${JSON.stringify({
       "@context": "https://schema.org",
       "@type": "Organization",
       name: "ARES 23247",
@@ -211,8 +211,8 @@ export function renderStaticShell(shell, [route, pageTitle, description, noindex
       logo: `${baseUrl}/favicon.webp`,
       description: "ARES 23247 is a FIRST Tech Challenge robotics team based in Morgantown, West Virginia.",
     })}</script>`,
-    noindex ? `<meta name="robots" content="noindex, nofollow">` : "",
-  ].filter(Boolean).join("\n    ").replace(/<(link|meta|script)\b([^>]*?)>/g, "<$1$2 data-prerender-seo>");
+    noindex ? `<meta name="robots" content="noindex, nofollow" data-prerender-seo>` : "",
+  ].filter(Boolean).join("\n    ");
   const rendered = html.replace("</head>", `    ${tags}\n  </head>`);
   // A second canonical (for example from a future index.html edit) would let
   // Google consolidate every route onto "/" — fail the build instead.

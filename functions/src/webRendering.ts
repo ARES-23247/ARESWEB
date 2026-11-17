@@ -183,23 +183,23 @@ export function injectMetadata(shell: string, metadata: PageMetadata): string {
 
   let rendered = shell
     .replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi, "")
-    .replace(/<title\b[^>]*>[^<]*<\/title>/i, `<title data-prerender-seo>${title}</title>`)
-    .replace(/<meta\s+name=["']description["'][^>]*>/i, `<meta name="description" content="${description}" data-prerender-seo>`)
-    .replace(/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${title}" data-prerender-seo>`)
-    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${description}" data-prerender-seo>`)
+    .replace(/<title\b[^>]*>[^<]*<\/title>/i, () => `<title data-prerender-seo>${title}</title>`)
+    .replace(/<meta\s+name=["']description["'][^>]*>/i, () => `<meta name="description" content="${description}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:title["'][^>]*>/i, () => `<meta property="og:title" content="${title}" data-prerender-seo>`)
+    .replace(/<meta\s+property=["']og:description["'][^>]*>/i, () => `<meta property="og:description" content="${description}" data-prerender-seo>`)
     .replace(/<meta\s+property=["']og:type["'][^>]*>/i, `<meta property="og:type" content="${type}" data-prerender-seo>`)
-    .replace(/<div id="root">[\s\S]*?<\/main>\s*<\/div>|<div id="root"><\/div>/i, rootBody);
+    .replace(/<div id="root">[\s\S]*?<\/main>\s*<\/div>|<div id="root"><\/div>/i, () => rootBody);
 
   const tags = [
-    `<link rel="canonical" href="${canonicalUrl}">`,
-    `<meta property="og:url" content="${canonicalUrl}">`,
-    `<meta property="og:image" content="${image}">`,
-    `<meta name="twitter:card" content="summary_large_image">`,
-    `<meta name="twitter:title" content="${title}">`,
-    `<meta name="twitter:description" content="${description}">`,
-    `<meta name="twitter:image" content="${image}">`,
-  ].join("\n    ").replace(/<(link|meta)\b([^>]*?)>/g, "<$1$2 data-prerender-seo>");
-  rendered = rendered.replace("</head>", `    ${tags}\n  </head>`);
+    `<link rel="canonical" href="${canonicalUrl}" data-prerender-seo>`,
+    `<meta property="og:url" content="${canonicalUrl}" data-prerender-seo>`,
+    `<meta property="og:image" content="${image}" data-prerender-seo>`,
+    `<meta name="twitter:card" content="summary_large_image" data-prerender-seo>`,
+    `<meta name="twitter:title" content="${title}" data-prerender-seo>`,
+    `<meta name="twitter:description" content="${description}" data-prerender-seo>`,
+    `<meta name="twitter:image" content="${image}" data-prerender-seo>`,
+  ].join("\n    ");
+  rendered = rendered.replace("</head>", () => `    ${tags}\n  </head>`);
   return rendered;
 }
 
