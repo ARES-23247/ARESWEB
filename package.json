@@ -55,7 +55,7 @@
     "clsx": "^2.1.1",
     "dompurify": "^3.4.17",
     "firebase": "^12.18.0",
-    "framer-motion": "^13.2.0",
+    "framer-motion": "^14.14.0",
     "jszip": "^3.10.2",
     "leva": "^0.10.1",
     "lucide-react": "^1.70.0",
