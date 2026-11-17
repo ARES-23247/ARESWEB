@@ -178,13 +178,11 @@ export function registerProfileRosterRoutes(router: Router): void {
           .get(),
         fetchPaginatedRosterCollection("authorized_users"),
       ]);
-      const activeAuthMap = authDocs.length
-        ? new Map(
-            authDocs
-              .filter((document) => hasActiveAuthorization(document.data()))
-              .map((document) => [document.id, document.data()]),
-          )
-        : null;
+      const activeAuthMap = new Map(
+        authDocs
+          .filter((document) => hasActiveAuthorization(document.data()))
+          .map((document) => [document.id, document.data()]),
+      );
       const membersRaw = snapshot.docs
         .filter((doc) => {
           // The query cannot express a != filter alongside the IN clause, so
@@ -192,7 +190,7 @@ export function registerProfileRosterRoutes(router: Router): void {
           // defense in depth before any public field is mapped.
           const data = doc.data();
           return (
-            (!activeAuthMap || activeAuthMap.has(doc.id)) &&
+            activeAuthMap.has(doc.id) &&
             data.isDeleted !== 1 &&
             data.isDeleted !== true &&
             data.archived !== true
@@ -200,7 +198,7 @@ export function registerProfileRosterRoutes(router: Router): void {
         })
         .map((doc) => {
           const data = doc.data();
-          const authData = activeAuthMap?.get(doc.id);
+          const authData = activeAuthMap.get(doc.id);
           const candidateMemberType =
             typeof data.memberType === "string" && data.memberType.trim()
               ? data.memberType.trim().toLowerCase()

@@ -148,6 +148,7 @@ describe("UI & Feature Enhancements", () => {
           startsAt: null,
           endsAt: null,
           isActive: true,
+          evergreen: true,
           updatedAt: null,
         },
       }),
@@ -160,7 +161,7 @@ describe("UI & Feature Enhancements", () => {
     );
 
     expect(await screen.findByText("Live Banner Preview")).toBeInTheDocument();
-    expect(screen.getByText("Active on Public Site")).toBeInTheDocument();
+    expect(screen.getByText("Publishing enabled")).toBeInTheDocument();
     const preview = screen.getByLabelText("Banner visual preview");
     expect(preview).toHaveTextContent("Qualifier schedule posted.");
     expect(preview).toHaveTextContent("View schedule");

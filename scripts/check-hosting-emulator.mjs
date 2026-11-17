@@ -7,9 +7,19 @@ if (missing.status !== 404) process.exitCode = 1;
 const about = await fetch(`${origin}/about`);
 const aboutHtml = await about.text();
 console.log(`Static route status: ${about.status}`);
-if (about.status !== 200 || !aboutHtml.includes("<title>About Us | ARES 23247</title>")) {
+if (about.status !== 200 || !aboutHtml.includes("<title data-prerender-seo>About Us | ARES 23247</title>")
+  || !about.headers.get("cache-control")?.includes("no-transform")) {
   process.exitCode = 1;
 }
+
+const biobuzz = await fetch(`${origin}/biobuzz`, { redirect: "manual" });
+if (biobuzz.status !== 301 || !biobuzz.headers.get("location")?.endsWith("/biobuzz/simulator")) process.exitCode = 1;
+
+const playground = await fetch(`${origin}/academy/playground`);
+const playgroundHtml = await playground.text();
+if (playground.status !== 200
+  || !playgroundHtml.includes('rel="canonical" href="https://aresfirst.org/academy/playground"')
+  || !playgroundHtml.includes('name="robots" content="noindex, nofollow"')) process.exitCode = 1;
 
 const api = await fetch(`${origin}/api/definitely-missing`, {
   headers: { "x-forwarded-for": "127.0.0.1" },
@@ -25,6 +35,7 @@ for (const [path, title] of [
   ["/biobuzz/score-calculator", "BIOBUZZ Score Calculator"],
   ["/waggle-way", "Waggle Way"],
   ["/waggle-way/builder", "Waggle Way"],
+  ["/waggle-way/community", "Waggle Way · Community gardens"],
   ["/buzzhex", "BUZZHEX"],
 ]) {
   const response = await fetch(`${origin}${path}`);

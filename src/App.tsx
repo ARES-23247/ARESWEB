@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
-import AnalyticsConsentBanner from "@/components/AnalyticsConsentBanner";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import SEO from "@/components/SEO";
 
@@ -115,7 +114,6 @@ export default function App() {
       <HelmetProvider>
         <BrowserRouter>
           <AnalyticsTracker />
-          <AnalyticsConsentBanner />
           <AuthProvider>
             <LayoutWrapper>
               <OfflineIndicator />
@@ -132,6 +130,7 @@ export default function App() {
                   <Route path="/docs" element={<AcademyPage />} />
                   <Route path="/docs/:slug" element={<AcademyPage />} />
                   <Route path="/accessibility" element={<AccessibilityPage />} />
+                  <Route path="/biobuzz" element={<Navigate to="/biobuzz/simulator" replace />} />
                   <Route path="/biobuzz/simulator" element={<BiobuzzSimulatorPage />} />
                   <Route path="/biobuzz/score-calculator" element={<BiobuzzScoreCalculatorPage />} />
           <Route path="/brand" element={<BrandPage />} />
@@ -140,6 +139,7 @@ export default function App() {
                   <Route path="/buzzle/word-tools" element={<BuzzleWordToolsPage />} />
                   <Route path="/pollen" element={<PollenPage />} />
                   <Route path="/waggle-way" element={<WaggleWayPage />} />
+                  <Route path="/waggle-way/community" element={<WaggleWayPage openCommunity />} />
                   <Route path="/waggle-way/builder" element={<WaggleWayBuilderPage />} />
                   <Route path="/blog" element={<BlogFeedPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />

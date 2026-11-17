@@ -172,7 +172,7 @@ export function TournamentScoutingHub({
       } catch (queueErr) {
         setStatusBanner(
           queueErr instanceof PitOutboxQuotaError
-            ? "Offline storage is full — clear old data or reconnect to submit."
+            ? queueErr.message
             : "Could not save offline observation.",
         );
         return;
@@ -231,7 +231,7 @@ export function TournamentScoutingHub({
       } catch (queueErr) {
         setStatusBanner(
           queueErr instanceof PitOutboxQuotaError
-            ? "Offline storage is full — clear old data or reconnect to save Pit card."
+            ? queueErr.message
             : "Could not queue offline Pit Scouting card.",
         );
         return;

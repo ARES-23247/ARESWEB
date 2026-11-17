@@ -44,6 +44,7 @@ const announcementWriteSchema = z
     link: internalPathSchema.nullable().optional(),
     linkLabel: z.string().trim().max(40).nullable().optional(),
     isActive: z.boolean(),
+    evergreen: z.boolean().optional(),
     startsAt: z.string().datetime().nullable().optional(),
     endsAt: z.string().datetime().nullable().optional(),
   })
@@ -72,6 +73,20 @@ const announcementWriteSchema = z
         code: z.ZodIssueCode.custom,
         path: ["endsAt"],
         message: "End time must be after the start time.",
+      });
+    }
+    if (value.isActive && !value.endsAt && !value.evergreen) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["endsAt"],
+        message: "Set an end time or explicitly keep this announcement published until removed.",
+      });
+    }
+    if (value.evergreen && value.endsAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["endsAt"],
+        message: "Choose an end time or ongoing publication.",
       });
     }
   });
@@ -136,6 +151,7 @@ function isCurrentlyPublished(
   now: number,
 ): boolean {
   if (data.isActive !== true) return false;
+  if (announcement.endsAt === null && data.evergreen !== true) return false;
   if (announcement.startsAt && Date.parse(announcement.startsAt) > now) return false;
   if (announcement.endsAt && Date.parse(announcement.endsAt) <= now) return false;
   return true;
@@ -180,6 +196,7 @@ router.get(
         ? {
             ...announcement,
             isActive: data.isActive === true,
+            evergreen: data.evergreen === true,
             updatedAt: nullableString(data.updatedAt),
           }
         : null,
@@ -209,6 +226,7 @@ router.put(
         link: input.link ?? null,
         linkLabel: input.linkLabel ?? null,
         isActive: input.isActive,
+        evergreen: input.evergreen === true,
         startsAt: input.startsAt ?? null,
         endsAt: input.endsAt ?? null,
         revision,
@@ -224,6 +242,7 @@ router.put(
         revision,
         severity: input.severity,
         isActive: input.isActive,
+        evergreen: input.evergreen === true,
         startsAt: input.startsAt ?? null,
         endsAt: input.endsAt ?? null,
         linkConfigured: Boolean(input.link),

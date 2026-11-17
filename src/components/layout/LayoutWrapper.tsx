@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SkipLink from "@/components/SkipLink";
 import SiteAnnouncementBanner from "@/components/SiteAnnouncementBanner";
+import AnalyticsConsentBanner from "@/components/AnalyticsConsentBanner";
 import AuthErrorNotice from "@/components/navigation/AuthErrorNotice";
 
 export default function LayoutWrapper({
@@ -90,6 +91,12 @@ export default function LayoutWrapper({
       {routeAnnouncement}
     </div>
   );
+  const notices = (
+    <>
+      <AnalyticsConsentBanner />
+      <AuthErrorNotice />
+    </>
+  );
 
   // Waggle Way owns an immersive game shell with an explicit Arcade exit.
   // DashboardLayout renders its own main#main-content landmark after the sidebar.
@@ -103,14 +110,14 @@ export default function LayoutWrapper({
           className="flex-grow flex flex-col"
           style={{ paddingTop: "var(--site-announcement-height, 0px)" }}
         >
-          <AuthErrorNotice />
+          {notices}
           {children}
         </div>
       </div>
     );
   }
 
-  if (pathname === "/waggle-way" || pathname === "/waggle-way/builder") {
+  if (pathname === "/waggle-way" || pathname === "/waggle-way/builder" || pathname === "/waggle-way/community") {
     return (
       <div className="min-h-screen bg-obsidian text-marble flex flex-col">
         <SkipLink />
@@ -122,7 +129,7 @@ export default function LayoutWrapper({
           className="flex-grow flex flex-col focus:outline-none"
           style={{ paddingTop: "var(--site-announcement-height, 0px)" }}
         >
-          <AuthErrorNotice />
+          {notices}
           {children}
         </main>
       </div>
@@ -141,7 +148,7 @@ export default function LayoutWrapper({
         className="flex-grow focus:outline-none"
         style={{ paddingTop: "calc(6rem + var(--site-announcement-height, 0px))" }}
       >
-        <AuthErrorNotice />
+        {notices}
         {children}
       </main>
       <Footer />

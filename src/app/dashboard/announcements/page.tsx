@@ -12,6 +12,7 @@ import { logger } from "@/utils/logger";
 
 interface ManagedAnnouncement extends PublicAnnouncement {
   isActive: boolean;
+  evergreen: boolean;
   updatedAt: string | null;
 }
 
@@ -45,6 +46,7 @@ export default function AnnouncementManagerPage() {
   const [linkLabel, setLinkLabel] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
+  const [evergreen, setEvergreen] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [hasSettings, setHasSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +75,7 @@ export default function AnnouncementManagerPage() {
         setLinkLabel(current.linkLabel ?? "");
         setStartsAt(toLocalDateTime(current.startsAt));
         setEndsAt(toLocalDateTime(current.endsAt));
+        setEvergreen(current.evergreen === true);
         setIsActive(current.isActive);
       }
     } catch (error) {
@@ -113,6 +116,11 @@ export default function AnnouncementManagerPage() {
       setStatus({ kind: "error", message: "Provide both the optional link and its label, or leave both blank." });
       return;
     }
+    const endTime = evergreen ? null : toIsoDateTime(endsAt);
+    if (isActive && !evergreen && !endTime) {
+      setStatus({ kind: "error", message: "Set an end time or choose to keep this announcement published until removed." });
+      return;
+    }
 
     setIsSaving(true);
     setStatus(null);
@@ -126,8 +134,9 @@ export default function AnnouncementManagerPage() {
           link: link.trim() || null,
           linkLabel: linkLabel.trim() || null,
           isActive,
+          evergreen,
           startsAt: toIsoDateTime(startsAt),
-          endsAt: toIsoDateTime(endsAt),
+          endsAt: endTime,
         }),
       });
       const payload = (await response.json()) as ManagementResponse;
@@ -270,15 +279,19 @@ export default function AnnouncementManagerPage() {
           </fieldset>
 
           <fieldset className="grid gap-5 border-t border-white/10 pt-6 sm:grid-cols-2">
-            <legend className="px-2 text-sm font-black uppercase tracking-wide text-white">Optional schedule</legend>
+            <legend className="px-2 text-sm font-black uppercase tracking-wide text-white">Publication schedule</legend>
             <div>
               <label htmlFor="announcement-start" className="mb-2 block text-sm font-bold text-marble/85">Starts</label>
               <input id="announcement-start" type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/20 bg-obsidian px-4 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" />
             </div>
             <div>
               <label htmlFor="announcement-end" className="mb-2 block text-sm font-bold text-marble/85">Ends</label>
-              <input id="announcement-end" type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/20 bg-obsidian px-4 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan" />
+              <input id="announcement-end" type="datetime-local" value={endsAt} disabled={evergreen} onChange={(event) => setEndsAt(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/20 bg-obsidian px-4 py-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50" />
             </div>
+            <label className="flex items-center gap-3 text-sm font-bold text-white sm:col-span-2">
+              <input type="checkbox" checked={evergreen} onChange={(event) => setEvergreen(event.target.checked)} className="h-5 w-5 accent-ares-red" />
+              Keep published until removed
+            </label>
           </fieldset>
 
           <div className="border-t border-white/10 pt-6">
@@ -293,7 +306,7 @@ export default function AnnouncementManagerPage() {
                     : "border-white/20 bg-white/5 text-marble/65"
                 }`}
               >
-                {isActive ? "Active on Public Site" : "Draft / Hidden"}
+                {isActive && (evergreen || endsAt) ? "Publishing enabled" : "Draft / Hidden"}
               </span>
             </div>
             <div

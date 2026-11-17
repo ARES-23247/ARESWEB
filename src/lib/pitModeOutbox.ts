@@ -31,7 +31,7 @@ const STORAGE_KEY_PREFIX = "ares_pit_outbox_v2:";
 const MAX_OUTBOX_ITEMS = 60;
 
 export class PitOutboxQuotaError extends Error {
-  constructor(message = "Offline Pit Outbox storage is full.") {
+  constructor(message = "Offline storage is full. Reconnect to sync pending changes and try again.") {
     super(message);
     this.name = "PitOutboxQuotaError";
   }
@@ -110,12 +110,10 @@ function writeTournamentOutbox(
   try {
     window.localStorage.setItem(
       key,
-      JSON.stringify(items.slice(-MAX_OUTBOX_ITEMS)),
+      JSON.stringify(items),
     );
-  } catch (err) {
-    throw new PitOutboxQuotaError(
-      err instanceof Error ? err.message : "Offline Pit Outbox storage is full.",
-    );
+  } catch {
+    throw new PitOutboxQuotaError();
   }
 }
 
@@ -167,7 +165,10 @@ export function enqueueTournamentMutation(
     queuedAt,
   } as PitOutboxMutation;
 
-  const updated = [...filtered, entry].slice(-MAX_OUTBOX_ITEMS);
+  if (filtered.length >= MAX_OUTBOX_ITEMS) {
+    throw new PitOutboxQuotaError("The offline queue is full. Reconnect to sync pending changes before saving another entry.");
+  }
+  const updated = [...filtered, entry];
   writeTournamentOutbox(mutation.tournamentId, updated, uid);
   return updated;
 }
@@ -258,7 +259,7 @@ async function executeOutboxFlush(
     return true;
   });
 
-  const remaining = [...mergedRetryable, ...addedDuringFlush].slice(-MAX_OUTBOX_ITEMS);
+  const remaining = [...mergedRetryable, ...addedDuringFlush];
   writeTournamentOutbox(tournamentId, remaining, uid);
   return { flushed, remaining, rejected };
 }

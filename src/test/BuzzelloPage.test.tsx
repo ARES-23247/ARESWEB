@@ -48,7 +48,7 @@ describe("BUZZELLO page", () => {
 
   it("offers a viewport-filling mode with an Escape exit", () => {
     const { container } = renderPage();
-    const shell = container.querySelector("main");
+    const shell = container.querySelector(".game-fullscreen-target");
 
     fireEvent.click(screen.getByRole("button", { name: /pass & play/i }));
     fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));

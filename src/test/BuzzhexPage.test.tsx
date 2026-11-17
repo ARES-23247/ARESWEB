@@ -291,7 +291,8 @@ describe("BUZZHEX page", () => {
       .mockImplementation(() => {
         throw new Error("unavailable");
       });
-    page();
+    const { container } = page();
+    const fullscreenTarget = container.querySelector(".game-fullscreen-target");
     fireEvent.keyDown(cell("F6"), { key: "ArrowRight" });
     expect(cell("G6")).toHaveFocus();
     fireEvent.keyDown(cell("G6"), { key: "Enter" });
@@ -309,12 +310,12 @@ describe("BUZZHEX page", () => {
     ).toHaveAttribute("data-fit", "false");
     fireEvent.click(screen.getByRole("button", { name: "Fit board" }));
     fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));
-    expect(screen.getByRole("main")).toHaveAttribute(
+    expect(fullscreenTarget).toHaveAttribute(
       "data-game-fullscreen",
       "true",
     );
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.getByRole("main")).not.toHaveAttribute(
+    expect(fullscreenTarget).not.toHaveAttribute(
       "data-game-fullscreen",
     );
     write.mockRestore();

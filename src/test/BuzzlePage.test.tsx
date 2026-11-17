@@ -10,7 +10,7 @@ import BuzzlePage from "@/app/buzzle/page";
 describe("BUZZLE page", () => {
   it("offers a viewport-filling mode with an Escape exit", () => {
     const { container } = render(<BuzzlePage />);
-    const shell = container.querySelector("main");
+    const shell = container.querySelector(".game-fullscreen-target");
 
     fireEvent.click(screen.getByRole("button", { name: /Pass & Play/u }));
     fireEvent.click(screen.getByRole("button", { name: "Enter full screen" }));

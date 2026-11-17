@@ -289,6 +289,44 @@ describe("pitModeOutbox", () => {
     spy.mockRestore();
   });
 
+  it("preserves every pending entry at capacity and allows coalescing before sync", async () => {
+    const scope = { tournamentId: "t1" };
+    const uid = "scout";
+    const latestPit = { checklists: { QM1: ["battery"] }, batteries: [], triageItems: [] };
+    const stand = {
+      ...scope,
+      kind: "stand_scouting",
+      payload: {
+        matchNumber: "QM1", teamNumber: "23247", alliance: "red",
+        autoScoreEstimate: 10, teleopCycles: 3, endgameTier: "none",
+        disconnected: false, penalties: "none", defenseRating: 0,
+      },
+    } as const;
+    for (let index = 1; index < 60; index++) {
+      enqueueTournamentMutation({ ...stand, id: `stand-${index}` }, uid);
+    }
+    enqueueTournamentMutation({ ...scope, id: "pit-original", kind: "pit_state", payload: {
+      checklists: {}, batteries: [], triageItems: [],
+    } }, uid);
+    const pending = listTournamentOutbox("t1", uid);
+    expect(pending).toHaveLength(60);
+    expect(() => enqueueTournamentMutation({ ...stand, id: "stand-60" }, uid)).toThrow(/offline queue is full/i);
+    expect(listTournamentOutbox("t1", uid)).toEqual(pending);
+
+    enqueueTournamentMutation({ ...scope, id: "pit-latest", kind: "pit_state", payload: latestPit }, uid);
+    const handlers = {
+      submitPit: vi.fn().mockResolvedValue({}),
+      submitStand: vi.fn().mockResolvedValue({}),
+      savePitState: vi.fn().mockResolvedValue({}),
+    };
+    const result = await flushTournamentOutbox("t1", handlers, uid);
+    expect(result).toEqual({ flushed: 60, remaining: [], rejected: [] });
+    expect(handlers.submitStand.mock.calls.map(([, payload]) => payload.clientSubmissionId))
+      .toEqual(pending.slice(0, 59).map(({ id }) => id));
+    expect(handlers.savePitState).toHaveBeenCalledExactlyOnceWith("t1", latestPit);
+    expect(listTournamentOutbox("t1", uid)).toEqual([]);
+  });
+
   it("ignores malformed or cross-tournament entries and invalid JSON", () => {
     window.localStorage.setItem("ares_pit_outbox_v2:corrupt:anon", "{bad-json");
     expect(listTournamentOutbox("corrupt")).toEqual([]);

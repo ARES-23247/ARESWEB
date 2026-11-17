@@ -231,7 +231,14 @@ test.describe("Navigation & Accessibility E2E tests", () => {
   test("analytics choices are usable on mobile and can be changed from privacy", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 320, height: 568 });
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.route("**/api/announcements", (route) => route.fulfill({ json: {
+      announcement: {
+        message: "Practice moved indoors due to weather. Meet in the workshop at the usual time, bring your safety glasses, and check the team calendar for parking, arrival instructions, and any last-minute changes before leaving home.",
+        severity: "important", link: null, linkLabel: null,
+        revision: "mobile-testing", startsAt: null, endsAt: null,
+      },
+    } }));
     // The shared E2E fixture defaults unset consent to "denied" so routine
     // tests do not render the banner. Use an invalid, non-empty sentinel here:
     // this later init script replaces that default before the first app render,
@@ -281,6 +288,17 @@ test.describe("Navigation & Accessibility E2E tests", () => {
     expect(bounds.left).toBeGreaterThanOrEqual(0);
     expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
     expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth);
+
+    await expect(page.getByRole("status", { name: "Team announcement" })).toBeVisible();
+    const join = page.getByRole("main").getByRole("link", { name: "Join the Team", exact: true }).first();
+    await join.focus();
+    await expect(join).toBeFocused();
+    await expect(join).toBeInViewport();
+    await expect.poll(() => join.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return element.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+    })).toBe(true);
+    await expect(banner).toBeVisible();
 
     await banner.getByRole("button", { name: "Keep cookie-free" }).click();
     await expect(banner).toBeHidden();

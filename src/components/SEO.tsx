@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { useLayoutEffect } from "react";
 import { siteConfig } from "@/lib/site-config";
 
 const DEFAULT_KEYWORDS = [
@@ -247,6 +248,10 @@ export default function SEO({
     exactTitle || title.endsWith("ARES 23247")
       ? title
       : `${title} | ARES 23247`;
+  useLayoutEffect(() => {
+    document.head.querySelectorAll("[data-prerender-seo]").forEach((tag) => tag.remove());
+  }, []);
+
   const currentUrl = getCanonicalUrl(url);
   const socialImage = image || DEFAULT_IMAGE;
   const socialImageAlt = imageAlt || `${title} — ARES 23247`;

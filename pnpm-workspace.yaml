@@ -46,6 +46,9 @@ overrides:
   serialize-javascript: ^7.1.3
   'glob@>=9.0.0 <=14.0.1': ^14.0.2
   minimatch: 11.0.4
+  # ARESWEB uses Sucrase's transform API. Only its unused CLI imports tinyglobby,
+  # which brings picomatch's GHSA-fc5q-39xc-vjpf into the production graph.
+  'sucrase@3.35.1>tinyglobby': '-'
 
 patchedDependencies:
   # Superstatic's Hosting header matcher expects URL/glob separators on Windows too.
