@@ -195,7 +195,7 @@ export default function AnnouncementManagerPage() {
             Team announcements
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-marble/75">
-            Publish one short message across the site. When it goes live, it will also be posted to the Site announcements topic in Zulip’s #announcements channel.
+            When a message goes live on the site, the bot posts it in Zulip’s #announcements channel under Site announcements and tags every channel subscriber.
           </p>
         </div>
       </div>

@@ -11,7 +11,7 @@ vi.mock("../zulip", async (original) => ({
 import { deliverPendingAnnouncement } from "../siteAnnouncementDelivery";
 
 const notice = {
-  message: "Calendar update @all", severity: "urgent", revision: "r1",
+  message: "Calendar update @**all**", severity: "urgent", revision: "r1",
   link: "/calendar?season=(fall)", linkLabel: "View calendar", evergreen: true,
   isActive: true, zulipDelivery: "pending", zulipLeaseUntil: 0,
   updatedBy: "private-author",
@@ -28,11 +28,16 @@ describe("Zulip site announcements", () => {
     mocks.send.mockResolvedValue(true);
   });
 
-  it("posts a public message and canonical link, then acknowledges only its claim", async () => {
+  it.each([
+    ["info", "Information"],
+    ["important", "Important"],
+    ["urgent", "Urgent"],
+  ])("includes one channel-wide mention for a published %s notice", async (severity, priority) => {
+    mocks.get.mockResolvedValueOnce(snapshot({ ...notice, severity }));
     await deliverPendingAnnouncement();
     expect(mocks.update).toHaveBeenNthCalledWith(1, { zulipLeaseUntil: expect.any(Number) }, { lastUpdateTime: "original-version" });
     expect(mocks.send).toHaveBeenCalledWith("announcements", "Site announcements",
-      "**Urgent**\n\nCalendar update @\u200ball\n\n[View calendar](https://aresfirst.org/calendar?season=%28fall%29)");
+      `@**all** **${priority}**\n\nCalendar update @\u200b\\*\\*all\\*\\*\n\n[View calendar](https://aresfirst.org/calendar?season=%28fall%29)`);
     expect(mocks.update).toHaveBeenNthCalledWith(2, { zulipDelivery: "sent", zulipLeaseUntil: 0 }, { lastUpdateTime: "claimed-version" });
   });
 

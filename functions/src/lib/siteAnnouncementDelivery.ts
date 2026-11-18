@@ -29,7 +29,7 @@ export async function deliverPendingAnnouncement(): Promise<void> {
       .replaceAll("(", "%28").replaceAll(")", "%29");
     const label = formatText(notice.linkLabel ?? "Visit the team website");
     const priority = { info: "Information", important: "Important", urgent: "Urgent" }[notice.severity];
-    const content = `**${priority}**\n\n${formatText(notice.message)}\n\n[${label}](${url})`;
+    const content = `@**all** **${priority}**\n\n${formatText(notice.message)}\n\n[${label}](${url})`;
     if (!await sendZulipMessage("announcements", "Site announcements", content)) {
       throw new Error("Zulip did not accept the site announcement.");
     }
