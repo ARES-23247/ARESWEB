@@ -1,6 +1,6 @@
 import { logger } from "./logger";
 import { sendBlueskyPost } from "./bluesky";
-import { sendZulipMessage } from "./zulip";
+import { escapeZulipMarkdown, sendZulipMessage } from "./zulip";
 
 export const SYNDICATION_CHANNELS = ["zulip", "bluesky"] as const;
 export type SyndicationChannel = (typeof SYNDICATION_CHANNELS)[number];
@@ -30,12 +30,6 @@ function boundedPlainText(
     .trim()
     .slice(0, maxLength);
   return normalized || fallback;
-}
-
-function escapeZulipMarkdown(value: string): string {
-  return value
-    .replace(/@/gu, "@\u200B")
-    .replace(/([\\`*_{}\[\]()<>#+.!|~-])/gu, "\\$1");
 }
 
 async function deliverToZulip(

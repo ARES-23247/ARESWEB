@@ -5,14 +5,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   driveSyncMock,
+  announcementDeliveryMock,
   sitemapRefreshMock,
   simulationsRefreshMock,
   waggleCleanupMock,
 } = vi.hoisted(() => ({
   driveSyncMock: vi.fn(),
+  announcementDeliveryMock: vi.fn(),
   sitemapRefreshMock: vi.fn(),
   simulationsRefreshMock: vi.fn(),
   waggleCleanupMock: vi.fn(),
+}));
+vi.mock("../lib/siteAnnouncementDelivery", () => ({
+  deliverPendingAnnouncement: announcementDeliveryMock,
 }));
 vi.mock("../lib/waggleCommunityCleanup", () => ({
   cleanupWaggleCommunity: waggleCleanupMock,
@@ -67,6 +72,7 @@ import {
   communicationsApi,
   coreApi,
   driveApi,
+  deliverSiteAnnouncement,
   mediaApi,
   publicApi,
   refreshPublicSitemap,
@@ -205,6 +211,19 @@ describe("cleanupOldInquiries scheduled function", () => {
 });
 
 describe("public artifact refresh schedules", () => {
+  it("checks for pending site announcements each minute under the communications identity", async () => {
+    const endpoint = (deliverSiteAnnouncement as any).__endpoint;
+    expect(endpoint).toMatchObject({
+      concurrency: 1,
+      maxInstances: 1,
+      serviceAccountEmail: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
+      scheduleTrigger: { schedule: "* * * * *" },
+    });
+    expect(endpoint.secretEnvironmentVariables.map(({ key }: { key: string }) => key))
+      .toEqual(["ZULIP_BOT_EMAIL", "ZULIP_API_KEY"]);
+    await (deliverSiteAnnouncement as any).run({});
+    expect(announcementDeliveryMock).toHaveBeenCalledOnce();
+  });
   it("refreshes the sitemap with the public runtime and strict bounds", async () => {
     sitemapRefreshMock.mockResolvedValue(undefined);
     const endpoint = (refreshPublicSitemap as any).__endpoint;

@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const sendZulipMessageMock = vi.fn();
 const sendBlueskyPostMock = vi.fn();
 
-vi.mock("../zulip", () => ({
+vi.mock("../zulip", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../zulip")>(),
   sendZulipMessage: (...args: unknown[]) => sendZulipMessageMock(...args),
 }));
 

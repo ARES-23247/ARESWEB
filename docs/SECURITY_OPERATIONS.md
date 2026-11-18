@@ -382,6 +382,15 @@ the publishing user's ID or other Firestore metadata.
   details, private addresses, travel plans, or other personal information.
 - Use only internal links beginning with `/`. The API rejects external links so
   a compromised or mistaken announcement cannot become a phishing redirect.
+- The private `deliverSiteAnnouncement` job checks the current notice every minute
+  using the communications runtime and its Zulip bot credentials. It posts new
+  publications to `#announcements > Site announcements` during the public window.
+  Every priority includes a bot-generated channel-wide mention. The bot needs
+  permission to use wildcard mentions in that channel. Subscriber notification
+  preferences determine which alerts they receive.
+  Failed sends are retried while the revision remains eligible. If Zulip accepts
+  a post but acknowledgement fails, a retry can produce a duplicate. Removing
+  a banner leaves previously delivered messages in Zulip.
 - Scheduling is evaluated server-side. Disable an obsolete announcement from
   the manager instead of editing Firestore directly.
 - Direct client access to the `settings/siteAnnouncement` document remains

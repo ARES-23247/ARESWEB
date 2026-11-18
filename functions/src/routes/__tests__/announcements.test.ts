@@ -27,6 +27,7 @@ vi.mock("../../lib/firebase-admin", () => {
   const auditRef = {};
   return {
     adminDb: {
+      runTransaction: vi.fn(async (work) => work({ get: mocks.settingsGet, set: mocks.batchSet })),
       collection: vi.fn((name: string) => ({
         doc: vi.fn(() => (name === "settings" ? settingsRef : auditRef)),
       })),
@@ -223,8 +224,16 @@ describe("site announcement routes", () => {
       }),
     );
     expect(JSON.stringify(auditRecord)).not.toContain("Practice moved indoors");
-    expect(mocks.batchCommit).toHaveBeenCalledTimes(1);
+    expect(mocks.batchSet.mock.calls[0][1].zulipDelivery).toBe("pending");
     expect(res.payload).toEqual({ success: true, revision: expect.any(String) });
+  });
+
+  it.each(["pending", "sent"])("preserves an unchanged %s publication on a repeated save", async (zulipDelivery) => {
+    mocks.settingsGet.mockResolvedValueOnce({ data: () => ({ ...activeDocument, zulipDelivery }) });
+    const { message, severity, link, linkLabel, isActive, evergreen, startsAt, endsAt } = activeDocument;
+    const { res } = await invoke("/admin", "put", { message, severity, link, linkLabel, isActive, evergreen, startsAt, endsAt });
+    expect(res.payload).toEqual({ success: true, revision: activeDocument.revision });
+    expect(mocks.batchSet).not.toHaveBeenCalled();
   });
 
   it("rejects external links, oversized messages, and reversed schedules", async () => {
@@ -261,7 +270,7 @@ describe("site announcement routes", () => {
     expect(mocks.middlewareOrder).toEqual(["auth", "rate-limit"]);
     expect(mocks.batchSet).toHaveBeenCalledTimes(2);
     expect(mocks.batchSet.mock.calls[0][1]).toEqual(
-      expect.objectContaining({ isActive: false, revision: expect.any(String) }),
+      expect.objectContaining({ isActive: false, zulipDelivery: null, revision: expect.any(String) }),
     );
     expect(mocks.batchSet.mock.calls[1][1]).toEqual(
       expect.objectContaining({ action: "site_announcement.disabled" }),

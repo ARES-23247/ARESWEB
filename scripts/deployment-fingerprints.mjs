@@ -24,6 +24,7 @@ export const FUNCTION_EXTRA_ENTRIES = {
   refreshPublicSitemap: ["functions/src/routes/sitemap.ts"],
   refreshSimulationArtifacts: ["functions/src/routes/simulations.ts"],
   syncGoogleDriveChanges: [],
+  deliverSiteAnnouncement: ["functions/src/lib/siteAnnouncementDelivery.ts"],
   taskDueDigest: [],
   web: [],
 };

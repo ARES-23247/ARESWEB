@@ -104,6 +104,7 @@ describe("production deployment contract", () => {
       "publicApi",
       "refreshPublicSitemap",
       "refreshSimulationArtifacts",
+      "deliverSiteAnnouncement",
       "taskDueDigest",
       "web",
     ]);

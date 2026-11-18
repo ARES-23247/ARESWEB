@@ -305,6 +305,8 @@
         "functions/src/routes/portfolio*",
         "functions/src/routes/seasons*",
         "functions/src/routes/announcements*",
+        "functions/src/lib/siteAnnouncement*",
+        "functions/src/lib/__tests__/siteAnnouncement*",
         "functions/src/routes/inquiries*",
         "functions/src/lib/ftcScout*",
         "e2e/tasks.spec.ts",
@@ -345,6 +347,7 @@
         "coreApi",
         "publicApi",
         "communicationsApi",
+        "deliverSiteAnnouncement",
         "taskDueDigest"
       ]
     },
@@ -481,11 +484,13 @@
         "functions/src/routes/webhooks*",
         "functions/src/routes/zulip*",
         "functions/src/lib/socialSyndication*",
+        "functions/src/lib/zulip*",
         "functions/src/lib/bluesky*",
         "functions/src/routes/__tests__/studioIntegrations*",
         "functions/src/routes/__tests__/webhooks*",
         "functions/src/routes/__tests__/zulip*",
         "functions/src/lib/__tests__/socialSyndication*",
+        "functions/src/lib/__tests__/zulip*",
         "functions/src/lib/__tests__/bluesky*",
         "src/test/*Zulip*",
         "src/test/*Integration*"
@@ -496,6 +501,7 @@
       ],
       "dependsOn": [],
       "components": [
+        "deliverSiteAnnouncement",
         "communicationsApi"
       ]
     }
