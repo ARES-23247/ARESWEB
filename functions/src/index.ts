@@ -240,6 +240,26 @@ export const refreshSimulationArtifacts = onSchedule(
   },
 );
 
+export const deliverSiteAnnouncement = onSchedule(
+  {
+    ...deploymentLabelOptions("deliverSiteAnnouncement"),
+    schedule: "* * * * *",
+    timeZone: "Etc/UTC",
+    cpu: "gcf_gen1",
+    memory: "256MiB",
+    timeoutSeconds: 60,
+    concurrency: 1,
+    maxInstances: 1,
+    serviceAccount: RUNTIME_SERVICE_ACCOUNTS.communicationsApi,
+    secrets: ["ZULIP_BOT_EMAIL", "ZULIP_API_KEY"],
+    retryCount: 0,
+  },
+  async () => {
+    const { deliverPendingAnnouncement } = await import("./lib/siteAnnouncementDelivery");
+    await deliverPendingAnnouncement();
+  },
+);
+
 // Daily 07:00 America/New_York: summarize
 // overdue and imminent task due dates for the team's kanban stream.
 export const taskDueDigest = onSchedule(

@@ -22,6 +22,8 @@ export default defineConfig({
         "src/lib/waggle*.ts": { lines: 85, functions: 100 },
         "src/routes/waggleWay.ts": { lines: 85, functions: 100 },
         "src/lib/ftcScoutSync.ts": { lines: 85, functions: 100 },
+        "src/lib/siteAnnouncement.ts": { lines: 85, functions: 100 },
+        "src/lib/siteAnnouncementDelivery.ts": { lines: 85, functions: 100 },
         "src/routes/tournamentOperations.ts": { lines: 85, functions: 100 },
         "src/lib/contentVisibility.ts": {
           lines: 100,

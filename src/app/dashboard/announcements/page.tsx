@@ -195,7 +195,7 @@ export default function AnnouncementManagerPage() {
             Team announcements
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-marble/75">
-            Publish one short, high-priority message across every public and dashboard page. Visitors do not need to sign in.
+            Publish one short message across the site. When it goes live, it will also be posted to the Site announcements topic in Zulip’s #announcements channel.
           </p>
         </div>
       </div>

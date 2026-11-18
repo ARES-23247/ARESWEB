@@ -1,5 +1,11 @@
 import { logger } from "./logger";
 
+export function escapeZulipMarkdown(value: string): string {
+  return value
+    .replace(/@/gu, "@\u200B")
+    .replace(/([\\`*_{}\[\]()<>#+.!|~-])/gu, "\\$1");
+}
+
 export function getZulipCredentials() {
   let url = (process.env.ZULIP_URL || "").trim();
   const configuredEmail = (process.env.ZULIP_BOT_EMAIL || "").trim();
@@ -51,8 +57,7 @@ export async function sendZulipMessage(
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      logger.error("zulip", "Failed to send message", { status: res.status, error: errorText });
+      logger.error("zulip", "Failed to send message", { status: res.status });
       return false;
     }
 
