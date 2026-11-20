@@ -286,7 +286,7 @@ export function OutreachImpactFeed({ logs, isLoading, isRefreshing, error, onRef
                 <p className="text-xs text-marble/75 leading-relaxed max-w-2xl">{log.impactSummary ?? "Impact summary not provided"}</p>
               </div>
               <div className="bg-ares-red text-white py-3 px-5 rounded-2xl ares-cut text-center shadow-md shrink-0">
-                <span className="text-[8px] uppercase tracking-wider block opacity-70">Impact Reach</span>
+                <span className="text-[8px] uppercase tracking-wider block text-white/95">Impact Reach</span>
                 <span className="text-2xl font-black font-heading mt-0.5 block">{log.peopleReached ?? "Not recorded"}</span>
               </div>
             </div>

@@ -17,14 +17,18 @@ service cloud.firestore {
       return role in ['admin', 'coach', 'mentor', 'member', 'student', 'parent', 'lead'];
     }
 
+    function isActiveAuthorizationData(authData) {
+      return isActiveRole(authData.role) &&
+        authData.get('isDeleted', false) != true &&
+        authData.get('isDeleted', 0) != 1;
+    }
+
     // Require a known role and an active authorization record. Unknown values
     // fail closed instead of becoming members by accident.
     function isAuthorized() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
         exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid)) &&
-        isActiveRole(authorizationData().role) &&
-        authorizationData().get('isDeleted', false) != true &&
-        authorizationData().get('isDeleted', 0) != 1;
+        isActiveAuthorizationData(authorizationData());
     }
     
     // Helper function to check if the user has a specific role (e.g. 'admin')
@@ -34,7 +38,8 @@ service cloud.firestore {
     }
 
     function isContentPublisher() {
-      return hasRole('admin') || hasRole('coach') || hasRole('mentor');
+      return isAuthorized() &&
+        authorizationData().role in ['admin', 'coach', 'mentor'];
     }
 
     function isPendingContent(data) {
@@ -49,30 +54,97 @@ service cloud.firestore {
       );
     }
 
-    function hasValidPublishedSnapshotOnPendingUpdate() {
-      return resource.data.status == 'published' &&
-        request.resource.data.status == 'published' &&
-        request.resource.data.get('approvalStatus', '') == 'pending_approval' &&
-        request.resource.data.get('publishedSnapshot', null) is map && (
+    // Explicit allowlist of public content, media, and learning fields that may
+    // appear in publishedSnapshot. Mapping every allowlisted key to null lets
+    // snap.diff(emptySnap).changedKeys() identify non-null snapshot fields in
+    // O(1) without expanding 46 per-field predicates.
+    function emptyPublishedSnapshot() {
+      return {
+        'title': null,
+        'content': null,
+        'summary': null,
+        'category': null,
+        'library': null,
+        'slug': null,
+        'author': null,
+        'coverImage': null,
+        'fileUrl': null,
+        'fileName': null,
+        'fileType': null,
+        'mediaPhotoIds': null,
+        'snippet': null,
+        'thumbnail': null,
+        'authorAvatar': null,
+        'date': null,
+        'description': null,
+        'sortOrder': null,
+        'displayInAreslib': null,
+        'displayInMathCorner': null,
+        'displayInScienceCorner': null,
+        'isPortfolio': null,
+        'isExecutiveSummary': null,
+        'original_authorNickname': null,
+        'original_authorAvatar': null,
+        'searchIndexable': null,
+        'learningSchemaVersion': null,
+        'subject': null,
+        'topics': null,
+        'contentType': null,
+        'level': null,
+        'estimatedMinutes': null,
+        'pathMemberships': null,
+        'prerequisites': null,
+        'objectives': null,
+        'platforms': null,
+        'sourceReferences': null,
+        'appliesToVersion': null,
+        'reviewedAt': null,
+        'reviewedByLabel': null,
+        'safetyScope': null,
+        'instructionalContractVersion': null,
+        'createdAt': null,
+        'updatedAt': null,
+        'publishedAt': null,
+        'datePublished': null,
+      };
+    }
+
+    function matchesPublishedSnapshotInitialState(snap, prev, emptySnap) {
+      let snapDiff = snap.diff(prev);
+      return snapDiff.changedKeys().size() == 0 &&
+        snap.diff(emptySnap).changedKeys().difference(snapDiff.unchangedKeys()).size() == 0;
+    }
+
+    function hasValidPublishedSnapshotWithAllowlist(emptySnap) {
+      let allowedKeys = emptySnap.keys();
+      let prev = resource.data;
+      let next = request.resource.data;
+      let snap = next.get('publishedSnapshot', null);
+      return prev.get('status', '') == 'published' &&
+        next.get('status', '') == 'published' &&
+        next.get('approvalStatus', '') == 'pending_approval' &&
+        snap is map &&
+        snap.keys().hasOnly(allowedKeys) &&
+        // Because resolvePublishedContentData() merges { ...data, ...publishedSnapshot },
+        // no public/media/learning field may change on the root document unless
+        // that field is explicitly shadowed inside publishedSnapshot.
+        !next.diff(prev).affectedKeys().difference(snap.keys().toSet()).hasAny(allowedKeys) &&
+        // Defense-in-depth for webRendering.ts, which checks raw searchIndexable
+        // before resolving publishedSnapshot; staged edits may not flip it.
+        next.get('searchIndexable', null) == prev.get('searchIndexable', null) && (
           (
-            resource.data.get('approvalStatus', 'approved') == 'pending_approval' &&
-            resource.data.get('publishedSnapshot', null) is map &&
-            request.resource.data.publishedSnapshot == resource.data.publishedSnapshot
+            prev.get('approvalStatus', 'approved') == 'pending_approval' &&
+            prev.get('publishedSnapshot', null) is map &&
+            snap == prev.publishedSnapshot
           ) || (
-            resource.data.get('approvalStatus', 'approved') != 'pending_approval' &&
-            request.resource.data.publishedSnapshot.get('title', null) == resource.data.get('title', null) &&
-            request.resource.data.publishedSnapshot.get('content', null) == resource.data.get('content', null) &&
-            request.resource.data.publishedSnapshot.get('summary', null) == resource.data.get('summary', null) &&
-            request.resource.data.publishedSnapshot.get('category', null) == resource.data.get('category', null) &&
-            request.resource.data.publishedSnapshot.get('library', null) == resource.data.get('library', null) &&
-            request.resource.data.publishedSnapshot.get('slug', null) == resource.data.get('slug', null) &&
-            request.resource.data.publishedSnapshot.get('author', null) == resource.data.get('author', null) &&
-            request.resource.data.publishedSnapshot.get('coverImage', null) == resource.data.get('coverImage', null) &&
-            request.resource.data.publishedSnapshot.get('fileUrl', null) == resource.data.get('fileUrl', null) &&
-            request.resource.data.publishedSnapshot.get('fileName', null) == resource.data.get('fileName', null) &&
-            request.resource.data.publishedSnapshot.get('fileType', null) == resource.data.get('fileType', null)
+            prev.get('approvalStatus', 'approved') != 'pending_approval' &&
+            matchesPublishedSnapshotInitialState(snap, prev, emptySnap)
           )
         );
+    }
+
+    function hasValidPublishedSnapshotOnPendingUpdate() {
+      return hasValidPublishedSnapshotWithAllowlist(emptyPublishedSnapshot());
     }
 
     function contentOwnerId(collectionName, contentId) {
@@ -91,38 +163,36 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/content_owners/$(ownerId)).data.ownerUid == request.auth.uid;
     }
 
-    function isSafeMemberPendingFields(data) {
-      return isPendingContent(data) &&
-        !('publishedSnapshot' in data) &&
-        data.get('approvalStatus', 'pending_approval') != 'approved' &&
+    function isSafeMemberApprovalFields(data) {
+      return data.get('approvalStatus', 'pending_approval') != 'approved' &&
         data.get('isApproved', false) == false &&
         !('approvedBy' in data) &&
         !('approvedAt' in data) &&
         !('approvedByUid' in data) &&
         !('approvedByRole' in data);
+    }
+
+    function isSafeMemberPendingFields(data) {
+      return isPendingContent(data) &&
+        !('publishedSnapshot' in data) &&
+        isSafeMemberApprovalFields(data);
     }
 
     function isSafeMemberPendingUpdateFields(data) {
       return (
-          (isPendingContent(data) && !('publishedSnapshot' in data)) ||
+          (
+            resource.data.get('status', '') != 'published' &&
+            isPendingContent(data) &&
+            !('publishedSnapshot' in data)
+          ) ||
           hasValidPublishedSnapshotOnPendingUpdate()
         ) &&
-        data.get('approvalStatus', 'pending_approval') != 'approved' &&
-        data.get('isApproved', false) == false &&
-        !('approvedBy' in data) &&
-        !('approvedAt' in data) &&
-        !('approvedByUid' in data) &&
-        !('approvedByRole' in data);
+        isSafeMemberApprovalFields(data);
     }
 
     function isSafeMemberPendingOrStagedData(data) {
       return isPendingOrStagedContent(data) &&
-        data.get('approvalStatus', 'pending_approval') != 'approved' &&
-        data.get('isApproved', false) == false &&
-        !('approvedBy' in data) &&
-        !('approvedAt' in data) &&
-        !('approvedByUid' in data) &&
-        !('approvedByRole' in data);
+        isSafeMemberApprovalFields(data);
     }
 
     function isSafeMemberDraftWrite(data) {
@@ -157,19 +227,23 @@ service cloud.firestore {
       );
     }
 
-    function canUpdateContent(collectionName, contentId) {
-      return isContentPublisher() || (
-        isAuthorized() &&
+    function canMemberEditContentRecord(collectionName, contentId) {
+      return isAuthorized() &&
         resource.data.get('isDeleted', 0) == 0 &&
         request.resource.data.get('isDeleted', 0) == resource.data.get('isDeleted', 0) &&
-        isSafeMemberPendingUpdateFields(request.resource.data) &&
         preservesOrBindsAuthorId() &&
         request.resource.data.get('importedFrom', null) == resource.data.get('importedFrom', null) &&
         (
           isContentOwner(collectionName, contentId) ||
-          (resource.data.status == 'published' && isActiveMemberEditorOnPost()) ||
+          (resource.data.get('status', '') == 'published' && isActiveMemberEditorOnPost()) ||
           (isPendingOrStagedContent(resource.data) && hasPriorCollaborativePostState() && isActiveMemberEditorOnPost())
-        )
+        );
+    }
+
+    function canUpdateContent(collectionName, contentId) {
+      return isContentPublisher() || (
+        canMemberEditContentRecord(collectionName, contentId) &&
+        isSafeMemberPendingUpdateFields(request.resource.data)
       );
     }
 
@@ -189,12 +263,21 @@ service cloud.firestore {
     }
 
     function canUpdatePendingDoc(docSlug) {
+      let publisher = isContentPublisher();
       return (
-          (isPendingContent(request.resource.data) && !('publishedSnapshot' in request.resource.data)) ||
+          (
+            (publisher || resource.data.get('status', '') != 'published') &&
+            isPendingContent(request.resource.data) &&
+            !('publishedSnapshot' in request.resource.data)
+          ) ||
           hasValidPublishedSnapshotOnPendingUpdate()
         ) &&
-        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' &&
-        canUpdateContent('docs', docSlug);
+        request.resource.data.get('approvalStatus', 'pending_approval') != 'approved' && (
+          publisher || (
+            isSafeMemberApprovalFields(request.resource.data) &&
+            canMemberEditContentRecord('docs', docSlug)
+          )
+        );
     }
 
     function canChangeApprovedDocLifecycleOnly() {

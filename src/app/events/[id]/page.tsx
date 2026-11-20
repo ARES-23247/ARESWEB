@@ -549,15 +549,15 @@ export default function EventDetailPage() {
 
   const startDate = new Date(event.dateStart);
   const isPast = startDate < new Date();
+  const seoDescription =
+    toPlainText(event.description).trim().slice(0, 160) ||
+    `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`;
 
   return (
     <div className="w-full min-h-screen bg-obsidian text-marble py-8">
       <SEO
         title={event.title}
-        description={
-          event.description ||
-          `See the published ARES 23247 schedule for “${event.title}” on ${new Date(event.dateStart).toLocaleDateString()}.`
-        }
+        description={seoDescription}
         image={event.coverImage}
         type={
           event.category === "outreach" && event.publicVenue

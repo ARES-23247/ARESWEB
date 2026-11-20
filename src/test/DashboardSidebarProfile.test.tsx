@@ -220,4 +220,33 @@ describe("DashboardSidebar profile DTO", () => {
     expect(screen.getByRole("link", { name: /Manage Users/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Finance Ledger/i })).toBeInTheDocument();
   });
+
+  it("restricts unverified accounts to Command Center and My Profile only", async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "unverified_uid", displayName: "New Member", photoURL: null },
+      authorizedUser: { role: "unverified" },
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+      loginWithMockUser: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(authenticatedFetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({ exists: false, profile: { nickname: "", avatar: "" } }),
+    } as Response);
+
+    renderSidebar();
+    expect(await screen.findByRole("link", { name: /Command Center/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /My Profile/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Manage Blogs/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Manage Events/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Photo Manager/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Task Board/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Publishing & Media/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Administration/i })).not.toBeInTheDocument();
+  });
 });

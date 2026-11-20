@@ -5,7 +5,7 @@
     "initialCss": { "raw": 220000, "gzip": 33000 },
     "largestLazyJs": { "raw": 3000000, "gzip": 800000 },
     "totalRouteJs": { "raw": 8300000, "gzip": 2350000 },
-    "academyInteractiveJs": { "raw": 261000, "gzip": 95000 },
+    "academyInteractiveJs": { "raw": 280000, "gzip": 105000 },
     "largestAcademyInteractiveJs": { "raw": 8000, "gzip": 2600 },
     "editorRuntimeJs": { "raw": 13300000, "gzip": 3150000 },
     "largestEditorJs": { "raw": 7700000, "gzip": 1700000 }

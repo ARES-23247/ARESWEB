@@ -394,7 +394,7 @@ export default function Footer() {
               href={siteConfig.social.zulip}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-cyan transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-cyan hover:text-obsidian transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               aria-label="Zulip Team Chat"
             >
               <svg
@@ -422,7 +422,7 @@ export default function Footer() {
             </a>
             <a
               href={`mailto:${siteConfig.contact.email}`}
-              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-gold transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-ares-gold hover:text-obsidian transition-all hover:-translate-y-1 text-white border border-white/5 shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               aria-label="Email Us"
             >
               <Mail className="w-5 h-5" />

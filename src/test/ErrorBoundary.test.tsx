@@ -22,10 +22,13 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>
     );
 
+    expect(screen.getByRole("heading", { level: 1, name: "This section could not be displayed" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("This section could not be displayed");
     expect(screen.getByText(/support ID/i)).toBeVisible();
     expect(screen.getByText("Technical details").closest("details")).not.toHaveAttribute("open");
-    expect(screen.getByRole("button", { name: "Reload page" })).toBeVisible();
+    const reloadButton = screen.getByRole("button", { name: "Reload page" });
+    expect(reloadButton).toBeVisible();
+    expect(reloadButton).toHaveAttribute("type", "button");
   });
 
   it("recognizes deployment chunk failures without classifying ordinary errors", () => {

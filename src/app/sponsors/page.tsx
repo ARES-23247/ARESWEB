@@ -104,6 +104,7 @@ export default function SponsorsPage() {
   const [isLoadingSponsors, setIsLoadingSponsors] = useState(true);
   const [isRefreshingSponsors, setIsRefreshingSponsors] = useState(false);
   const [sponsorLoadError, setSponsorLoadError] = useState<string | null>(null);
+  const [failedLogoKeys, setFailedLogoKeys] = useState<Set<string>>(() => new Set());
 
   const loadSponsors = useCallback(async (isRefresh = false) => {
     if (isRefresh) setIsRefreshingSponsors(true);
@@ -117,6 +118,7 @@ export default function SponsorsPage() {
         throw new Error("HTTP 502: Invalid sponsor response");
       }
       setSponsors(payload.sponsors.map(parseSponsor).filter((sponsor): sponsor is Sponsor => sponsor !== null));
+      setFailedLogoKeys(new Set());
       setSponsorLoadError(null);
     } catch (error) {
       logger.error("Failed to load sponsors from the public API:", error);
@@ -200,7 +202,7 @@ export default function SponsorsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian text-white py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-obsidian text-white py-12 relative overflow-hidden print:overflow-visible print:py-0">
       <SEO title="Our Sponsors" description="Meet the corporate and local sponsors supporting ARES 23247. Learn how your organization can partner with us to sponsor youth STEM and robotics education." />
       {/* Background Ambience */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[600px] bg-ares-red/5 blur-[120px] rounded-full pointer-events-none" />
@@ -289,24 +291,29 @@ export default function SponsorsPage() {
 
                   <div className={`grid grid-cols-1 md:grid-cols-2 ${tier === 'Titanium' ? 'lg:grid-cols-2' : tier === 'Gold' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
                     {groupedSponsors[tier].map((s) => {
+                      const showLogo = Boolean(s.logoUrl) && !failedLogoKeys.has(s.key);
                       const sponsorContent = (
                         <>
-                          {s.logoUrl ? (
+                          {showLogo ? (
                             <img
                               src={s.logoUrl}
                               alt={`${s.name} logo`}
-                              loading="lazy"
                               decoding="async"
-                              onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                                event.currentTarget.parentElement?.querySelector(".fallback-text")?.classList.remove("hidden");
+                              onError={() => {
+                                setFailedLogoKeys((prev) => {
+                                  if (prev.has(s.key)) return prev;
+                                  const next = new Set(prev);
+                                  next.add(s.key);
+                                  return next;
+                                });
                               }}
-                              className="mb-4 max-h-20 max-w-full object-contain grayscale transition-all duration-500 group-hover:grayscale-0"
+                              className="mb-4 h-20 w-auto max-w-full object-contain grayscale transition-all duration-500 group-hover:grayscale-0"
                             />
-                          ) : null}
-                          <div className={`fallback-text mb-2 font-heading text-2xl font-black text-white/80 ${s.logoUrl ? "hidden" : ""}`}>
-                            {s.name}
-                          </div>
+                          ) : (
+                            <div className="fallback-text mb-2 font-heading text-2xl font-black text-white/90">
+                              {s.name}
+                            </div>
+                          )}
                           {s.websiteUrl && (
                             <div className="mt-auto flex items-center gap-1.5 text-white">
                               <span className="text-[10px] font-black uppercase tracking-widest">Visit website</span>

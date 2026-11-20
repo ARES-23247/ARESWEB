@@ -17,7 +17,7 @@ export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "border border-ares-red bg-ares-red text-white hover:bg-ares-bronze hover:border-ares-bronze",
+    "border border-ares-red bg-ares-red text-white hover:bg-ares-bronze hover:border-ares-bronze hover:text-obsidian",
   secondary:
     "border border-white/30 bg-white/5 text-white hover:border-ares-cyan hover:bg-white/10",
   gold:

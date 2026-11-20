@@ -227,6 +227,7 @@ describe("photos routes", () => {
         .mockResolvedValueOnce({ docs: [
           photo("active", {
             albumId: "album",
+            importedAt: "2026-01-02",
             publicUrl: "https://storage.googleapis.com/active.jpg",
             thumbnailUrl: "https://storage.googleapis.com/active-thumb.webp",
             thumbnailWidth: 480,
@@ -238,8 +239,15 @@ describe("photos routes", () => {
             description: "Finals",
             storagePath: "gallery/active.jpg",
           }),
-          photo("unsafe", { albumId: "album", publicUrl: "http://example.com/no.jpg" }),
-          photo("archived", { albumId: "album", publicUrl: "https://example.com/old.jpg", isDeleted: 1 }),
+          photo("unsafe", { albumId: "album", importedAt: "2026-01-01T12:00:00Z", publicUrl: "http://example.com/no.jpg" }),
+          photo("archived", { albumId: "album", importedAt: "2026-01-01T06:00:00Z", publicUrl: "https://example.com/old.jpg", isDeleted: 1 }),
+        ] })
+        .mockResolvedValueOnce({ docs: [
+          photo("active-next", {
+            albumId: "album",
+            importedAt: "2026-01-01",
+            publicUrl: "https://storage.googleapis.com/active-next.jpg",
+          }),
         ] });
 
       await handler("/public", "get")({ query: { limit: "1" } }, res, next);
@@ -297,6 +305,41 @@ describe("photos routes", () => {
         hasMore: true,
         nextCursor: "p-23",
       });
+    });
+
+    it("scans past consecutive archived photos instead of returning an empty stalled page", async () => {
+      const archivedBatch = Array.from({ length: 25 }, (_, i) =>
+        photo(`archived-${i}`, {
+          albumId: "album",
+          publicUrl: `https://example.com/a-${i}.jpg`,
+          importedAt: `2026-03-${String(25 - i).padStart(2, "0")}`,
+          isDeleted: 1,
+        }),
+      );
+      const activeBatch = Array.from({ length: 5 }, (_, i) =>
+        photo(`active-${i}`, {
+          albumId: "album",
+          publicUrl: `https://example.com/live-${i}.jpg`,
+          importedAt: `2026-02-${String(10 - i).padStart(2, "0")}`,
+          isDeleted: 0,
+        }),
+      );
+      queryGet
+        .mockResolvedValueOnce({ docs: [photo("album", { category: "Build", isDeleted: 0 })] })
+        .mockResolvedValueOnce({ docs: archivedBatch })
+        .mockResolvedValueOnce({ docs: activeBatch });
+
+      await handler("/public", "get")({ query: { limit: "24" } }, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        photos: expect.arrayContaining([
+          expect.objectContaining({ id: "active-0" }),
+          expect.objectContaining({ id: "active-4" }),
+        ]),
+        hasMore: false,
+        nextCursor: null,
+      });
+      expect(res.json.mock.calls[0][0].photos).toHaveLength(5);
     });
   });
 

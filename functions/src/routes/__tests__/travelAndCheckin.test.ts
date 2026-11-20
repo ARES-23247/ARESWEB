@@ -223,7 +223,12 @@ async function invoke(
   };
   const res = {
     statusCode: 200,
+    headers: {} as Record<string, string>,
     payload: undefined as unknown,
+    setHeader(key: string, value: string) {
+      this.headers[key.toLowerCase()] = value;
+      return this;
+    },
     status(code: number) {
       this.statusCode = code;
       return this;

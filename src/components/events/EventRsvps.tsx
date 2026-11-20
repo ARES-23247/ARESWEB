@@ -104,14 +104,14 @@ export default function EventRsvps({
           {/* RSVP Stats */}
           <div className="grid grid-cols-2 gap-4 border-y border-white/5 py-4">
             <div className="text-left">
-              <span className="text-[9px] font-black text-marble/45 uppercase tracking-wider block">Going / RSVP</span>
+              <span className="text-[9px] font-black text-marble/70 uppercase tracking-wider block">Going / RSVP</span>
               <span className="text-2xl font-black text-white mt-1 block">
                 {signups.length} <span className="text-xs font-bold text-marble/60">present</span>
               </span>
             </div>
             {event.isVolunteer === 1 && (
               <div className="text-left">
-                <span className="text-[9px] font-black text-marble/45 uppercase tracking-wider block">Volunteer Prep</span>
+                <span className="text-[9px] font-black text-marble/70 uppercase tracking-wider block">Volunteer Prep</span>
                 <span className="text-2xl font-black text-ares-gold mt-1 block">
                   {signups.reduce((acc, s) => acc + (s.prepHours || 0), 0)} <span className="text-xs font-bold text-marble/60">hrs</span>
                 </span>

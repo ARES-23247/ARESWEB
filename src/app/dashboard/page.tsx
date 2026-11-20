@@ -267,17 +267,28 @@ export default function DashboardHome() {
     };
 
     void loadEvents();
-    void loadPhotos();
+    if (isUnverified) {
+      setPhotos([]);
+      setPhotoError("");
+    } else {
+      void loadPhotos();
+    }
     void loadAnnouncement();
 
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [isUnverified]);
 
   // Fetch content counts once and keep a single bounded tasks listener synchronized.
   useEffect(() => {
     if (import.meta.env.MODE === "e2e") return;
+    if (isUnverified) {
+      setTasks([]);
+      setTaskError("");
+      setDatabaseState("connected");
+      return;
+    }
 
     const fetchCounts = async () => {
       try {
@@ -343,7 +354,7 @@ export default function DashboardHome() {
       );
       setDatabaseState("error");
     }
-  }, []);
+  }, [isUnverified]);
 
   const visibleTasks = useMemo(
     () => (tasks ?? []).filter((task) => task.isDeleted !== 1),
@@ -1074,14 +1085,18 @@ export default function DashboardHome() {
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
                 <span>
                   Access internal workspace:{" "}
-                  <strong className="text-white">Granted</strong>
+                  <strong className="text-white">
+                    {isUnverified ? "Pending verification" : "Granted"}
+                  </strong>
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-ares-red rounded-full shrink-0"></span>
                 <span>
                   Read tasks &amp; documents:{" "}
-                  <strong className="text-white">Granted</strong>
+                  <strong className="text-white">
+                    {isUnverified ? "Pending verification" : "Granted"}
+                  </strong>
                 </span>
               </li>
               <li className="flex items-center gap-2">
@@ -1106,56 +1121,72 @@ export default function DashboardHome() {
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                {
-                  to: "/dashboard/blog",
-                  label: "New Blog",
-                  icon: PenTool,
-                  color: "text-ares-red",
-                },
-                {
-                  to: "/dashboard/events",
-                  label: "Add Event",
-                  icon: Calendar,
-                  color: "text-ares-gold",
-                },
-                {
-                  to: "/dashboard/academy",
-                  label: "Academy Lesson",
-                  icon: GraduationCap,
-                  color: "text-ares-success",
-                },
-                {
-                  to: "/dashboard/simulations",
-                  label: "Sim IDE",
-                  icon: TerminalSquare,
-                  color: "text-ares-cyan",
-                },
-                {
-                  to: "/dashboard/documents",
-                  label: "Cloud Resources",
-                  icon: FileText,
-                  color: "text-ares-gold",
-                },
-                {
-                  to: "/dashboard/zulip",
-                  label: "Zulip Chat Hub",
-                  icon: MessageSquare,
-                  color: "text-ares-cyan",
-                },
-                {
-                  to: "/academy",
-                  label: "ARES Academy",
-                  icon: BookOpen,
-                  color: "text-ares-gold",
-                },
-                {
-                  to: "/dashboard/tasks",
-                  label: "All Team Tasks",
-                  icon: ClipboardList,
-                  color: "text-ares-red",
-                },
-              ].map(({ to, label, icon: Icon, color }) => (
+              {(isUnverified
+                ? [
+                    {
+                      to: "/dashboard/profile",
+                      label: "My Profile",
+                      icon: User,
+                      color: "text-ares-gold",
+                    },
+                    {
+                      to: "/academy",
+                      label: "ARES Academy",
+                      icon: BookOpen,
+                      color: "text-ares-cyan",
+                    },
+                  ]
+                : [
+                    {
+                      to: "/dashboard/blog",
+                      label: "New Blog",
+                      icon: PenTool,
+                      color: "text-ares-red",
+                    },
+                    {
+                      to: "/dashboard/events",
+                      label: "Add Event",
+                      icon: Calendar,
+                      color: "text-ares-gold",
+                    },
+                    {
+                      to: "/dashboard/academy",
+                      label: "Academy Lesson",
+                      icon: GraduationCap,
+                      color: "text-ares-success",
+                    },
+                    {
+                      to: "/dashboard/simulations",
+                      label: "Sim IDE",
+                      icon: TerminalSquare,
+                      color: "text-ares-cyan",
+                    },
+                    {
+                      to: "/dashboard/documents",
+                      label: "Cloud Resources",
+                      icon: FileText,
+                      color: "text-ares-gold",
+                    },
+                    {
+                      to: "/dashboard/zulip",
+                      label: "Zulip Chat Hub",
+                      icon: MessageSquare,
+                      color: "text-ares-cyan",
+                    },
+                    {
+                      to: "/academy",
+                      label: "ARES Academy",
+                      icon: BookOpen,
+                      color: "text-ares-gold",
+                    },
+                    {
+                      to: "/dashboard/tasks",
+                      label: "All Team Tasks",
+                      icon: ClipboardList,
+                      color: "text-ares-red",
+                    },
+                  ]
+              ).map(({ to, label, icon: Icon, color }) => (
                 <Link
                   key={to}
                   to={to}

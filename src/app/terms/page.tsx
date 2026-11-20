@@ -82,12 +82,12 @@ export default function TermsPage() {
               <h2 className="text-2xl font-bold font-heading">3. Sponsorships, Payments & Refunds</h2>
             </div>
             <p className="text-marble leading-relaxed mb-4">
-              Our website facilitates sponsorships and donations via our secure payment processor (Stripe).
+              Sponsorships and donations are coordinated directly through our team inquiry process rather than an on-site payment checkout.
             </p>
             <ul className="list-disc pl-6 text-marble space-y-2">
-              <li><strong>Payments:</strong> All transactions are processed securely. We do not directly store your credit card information.</li>
-              <li><strong>Donations:</strong> Sponsorships and donations are generally considered non-refundable contributions to support our educational mission.</li>
-              <li><strong>Refunds:</strong> If a payment was made in error, please contact us within 7 days of the transaction to request a refund. Refunds are granted at the sole discretion of {siteConfig.team.name} leadership and are subject to payment processor fees.</li>
+              <li><strong>Inquiries &amp; Contributions:</strong> Our website collects partnership inquiries only and does not process or store credit card or bank account details.</li>
+              <li><strong>Donations:</strong> Approved sponsorships and charitable contributions support our youth STEM educational mission and are generally non-refundable once received by our fiscal sponsor.</li>
+              <li><strong>Questions &amp; Corrections:</strong> If a contribution was sent in error or requires documentation, please contact {siteConfig.team.name} leadership within 7 days so we can assist you.</li>
             </ul>
           </section>
 
@@ -109,7 +109,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-16 text-center text-marble text-sm">
-          <p>Last updated: {new Date().toLocaleDateString()}</p>
+          <p>Last updated: November 20, 2026</p>
           <p>For legal inquiries, contact us at <a href={`mailto:${siteConfig.contact.email}`} className="text-marble hover:text-ares-red-light transition-colors font-bold tracking-widest uppercase">{siteConfig.contact.email}</a></p>
         </div>
       </div>

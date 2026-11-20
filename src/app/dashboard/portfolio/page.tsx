@@ -280,8 +280,15 @@ export default function DashboardPortfolioPage() {
     }
   };
 
+  const resolveEffectiveCandidateId = (selectedId: string | undefined): string => {
+    if (selectedId && filteredCandidates.some((cand) => cand.id === selectedId)) {
+      return selectedId;
+    }
+    return filteredCandidates[0]?.id ?? "";
+  };
+
   const handleAddArtifactToAward = (awardId: AwardEntry["awardId"]) => {
-    const picked = selectedCandidateByAward[awardId] || filteredCandidates[0]?.id;
+    const picked = resolveEffectiveCandidateId(selectedCandidateByAward[awardId]);
     if (!picked) return;
     setAwards((prev) =>
       prev.map((award) => {
@@ -319,7 +326,7 @@ export default function DashboardPortfolioPage() {
   };
 
   const handleAddArtifactToPage = (pageNumber: number) => {
-    const picked = selectedCandidateByPage[pageNumber] || filteredCandidates[0]?.id;
+    const picked = resolveEffectiveCandidateId(selectedCandidateByPage[pageNumber]);
     if (!picked) return;
     setPages((prev) =>
       prev.map((page) => {
@@ -412,7 +419,7 @@ export default function DashboardPortfolioPage() {
         escapeSpreadsheetCsvCell(page.status),
         escapeSpreadsheetCsvCell(page.ownerNickname),
         escapeSpreadsheetCsvCell(page.title),
-        String(page.linkedArtifactIds.length),
+        String(page.linkedArtifactIds.filter((id) => candidateById.has(id)).length),
         escapeSpreadsheetCsvCell(page.summaryNotes),
       ].join(","),
     );
@@ -917,11 +924,9 @@ export default function DashboardPortfolioPage() {
                           </label>
                           <select
                             id={`picker-award-${award.awardId}`}
-                            value={
-                              selectedCandidateByAward[award.awardId] ||
-                              filteredCandidates[0]?.id ||
-                              ""
-                            }
+                            value={resolveEffectiveCandidateId(
+                              selectedCandidateByAward[award.awardId],
+                            )}
                             onChange={(e) =>
                               setSelectedCandidateByAward((prev) => ({
                                 ...prev,
@@ -1124,11 +1129,9 @@ export default function DashboardPortfolioPage() {
                                 </label>
                                 <select
                                   id={`picker-page-${page.pageNumber}`}
-                                  value={
-                                    selectedCandidateByPage[page.pageNumber] ||
-                                    filteredCandidates[0]?.id ||
-                                    ""
-                                  }
+                                  value={resolveEffectiveCandidateId(
+                                    selectedCandidateByPage[page.pageNumber],
+                                  )}
                                   onChange={(e) =>
                                     setSelectedCandidateByPage((prev) => ({
                                       ...prev,

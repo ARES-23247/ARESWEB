@@ -144,6 +144,33 @@ describe("Zulip Integration Library", () => {
       expect(params.get("content")).toContain("https://aresfirst.org/dashboard/blog?tab=pending");
     });
 
+    it("escapes Markdown links, newlines, and @**all** wildcard mentions in title and author", async () => {
+      process.env.ZULIP_BOT_EMAIL = "bot@team.org";
+      process.env.ZULIP_API_KEY = "super-secret-api-key";
+      delete process.env.ZULIP_ADMIN_STREAM;
+
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const delivered = await sendZulipApprovalQueueNotification({
+        section: "Blog Posts",
+        title: "Alert\n\n@**all** [click](https://evil.example)",
+        contentId: "safe-id",
+        authorLabel: "@**everyone** Spoof",
+        dashboardPath: "//evil.example/phish",
+      });
+
+      expect(delivered).toBe(true);
+      const body = String(mockFetch.mock.calls[0]?.[1]?.body ?? "");
+      const content = new URLSearchParams(body).get("content") ?? "";
+      expect(content).not.toContain("@**all**");
+      expect(content).not.toContain("@**everyone**");
+      expect(content).toContain("@\u200B");
+      expect(content).toContain("\\[click\\]\\(https://evil\\.example\\)");
+      expect(content).toContain("https://aresfirst.org/dashboard");
+      expect(content).not.toContain("evil.example/phish");
+    });
+
     it("formats staged edits and falls back to generic team member actor when authorLabel is omitted", async () => {
       process.env.ZULIP_BOT_EMAIL = "bot@team.org";
       process.env.ZULIP_API_KEY = "super-secret-api-key";

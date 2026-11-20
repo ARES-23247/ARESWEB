@@ -177,7 +177,7 @@ export default function OutreachPage() {
       <OutreachVolunteerCta onRequestDemo={openModal} />
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div aria-hidden="true" className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeModal} />
           <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="outreach-dialog-title" aria-describedby="outreach-dialog-description" className="relative w-full max-w-xl bg-obsidian border border-white/10 p-8 md:p-12 ares-cut-lg shadow-2xl max-h-[90vh] overflow-y-auto z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
             <button type="button" aria-label="Close modal" onClick={closeModal} className="absolute top-6 right-6 rounded text-marble/75 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">

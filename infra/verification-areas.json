@@ -32,6 +32,8 @@
     "functions/src/apps/**",
     "functions/src/index.ts",
     "functions/src/functionConfig.ts",
+    "functions/src/lib/zulip.ts",
+    "functions/src/routes/calendarHelpers.ts",
     "functions/src/generated/**",
     "public/games/**",
     "public/data/**",
@@ -79,6 +81,7 @@
         "packages/biobuzz/**",
         "src/app/biobuzz/**",
         "src/lib/biobuzzOnline*",
+        "src/lib/biobuzzScoring*",
         "src/lib/__tests__/biobuzzOnline*",
         "functions/src/lib/biobuzz*",
         "functions/src/lib/__tests__/biobuzz*",
@@ -186,7 +189,7 @@
         "src/app/pollen/**",
         "e2e/pollen.spec.ts",
         "src/test/Pollinator*",
-        "src/test/Pollen*"
+        "src/test/[Pp]ollen*"
       ],
       "e2e": [
         "e2e/pollen.spec.ts"
@@ -234,13 +237,18 @@
         "src/app/dashboard/simulations/**",
         "src/lib/simulation*",
         "src/lib/__tests__/simulation*",
+        "public/sandbox/**",
+        "public/types/areslib.d.ts",
         "e2e/editor.spec.ts",
         "src/hooks/__tests__/useSimulation*",
         "src/hooks/__tests__/useCodeCompiler*",
         "src/hooks/__tests__/useMonacoEditor*",
         "src/test/*Editor*",
+        "src/test/[Ss]im*",
         "src/test/*Simulation*",
-        "src/test/*Compiler*"
+        "src/test/*Compiler*",
+        "src/test/useSimulation*",
+        "src/test/useMonacoEditor*"
       ],
       "e2e": [
         "e2e/editor.spec.ts"
@@ -265,6 +273,7 @@
         "src/lib/__tests__/learning*",
         "src/lib/__tests__/academy*",
         "src/hooks/__tests__/useAcademyProgress*",
+        "src/test/useAcademyProgress*",
         "src/test/Academy*",
         "src/test/Learning*",
         "src/test/*Lab*",
@@ -322,16 +331,27 @@
         "functions/src/routes/__tests__/announcements*",
         "functions/src/routes/__tests__/inquiries*",
         "functions/src/lib/__tests__/ftcScout*",
-        "src/test/Task*",
+        "src/test/[Tt]ask*",
+        "src/test/useTask*",
         "src/test/DashboardTask*",
         "src/test/Event*",
-        "src/test/Calendar*",
+        "src/test/useEvent*",
+        "src/test/[Cc]alendar*",
         "src/test/*Roster*",
         "src/test/DashboardProfile*",
+        "src/test/[Tt]ournament*",
         "src/test/*Tournament*",
         "src/test/*Portfolio*",
         "src/test/*Travel*",
-        "src/test/pitModeOutbox*"
+        "src/test/[Pp]itModeOutbox*",
+        "src/test/AnnouncementManagerPage*",
+        "src/test/InquiriesLifecyclePage*",
+        "src/test/PendingInquiryLifecycle*",
+        "src/test/usePendingInquiries*",
+        "src/test/JoinApplicationForm*",
+        "src/test/User*",
+        "src/test/emailRoster*",
+        "src/test/TeamToday*"
       ],
       "e2e": [
         "e2e/tasks.spec.ts",
@@ -370,11 +390,16 @@
         "functions/src/routes/__tests__/albums*",
         "functions/src/routes/__tests__/videos*",
         "functions/src/routes/__tests__/drive*",
-        "src/test/Doc*",
+        "src/test/[Dd]oc*",
+        "src/test/useDocument*",
+        "src/test/useDashboardDoc*",
+        "src/test/useGooglePhotosSync*",
         "src/test/*Photo*",
         "src/test/*Video*",
+        "src/test/[Mm]edia*",
         "src/test/*Media*",
-        "src/test/*Drive*"
+        "src/test/*GoogleDrive*",
+        "src/test/googleDrive*"
       ],
       "e2e": [
         "e2e/public-routes.spec.ts",
@@ -382,7 +407,8 @@
         "e2e/editor.spec.ts"
       ],
       "dependsOn": [
-        "editor"
+        "editor",
+        "integrations"
       ],
       "components": [
         "hosting",
@@ -435,8 +461,8 @@
         "src/test/Blog*",
         "src/test/blogShareKit*",
         "src/test/Sponsor*",
-        "src/test/Public*",
-        "src/test/Outreach*",
+        "src/test/[Pp]ublic*",
+        "src/test/[Oo]utreach*",
         "src/test/Phase4Showcase*",
         "src/test/qrSvg*"
       ],

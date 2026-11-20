@@ -516,7 +516,7 @@ export default function TournamentMatchesList({
                                   ? "text-ares-gold"
                                   : m.result === "lost"
                                     ? "rounded bg-ares-red px-1.5 py-0.5 text-white"
-                                    : "text-marble/40"
+                                    : "text-marble/70"
                               }`}
                             >
                               {m.result}

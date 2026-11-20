@@ -148,10 +148,10 @@ describe("SponsorsPage partner directory and inquiry form", () => {
 
     const logo = await screen.findByAltText("Logo Partner logo");
     fireEvent.error(logo);
-    expect(logo).not.toBeVisible();
-    expect(logo.parentElement?.querySelector(".fallback-text")).not.toHaveClass(
-      "hidden",
-    );
+    expect(screen.queryByAltText("Logo Partner logo")).not.toBeInTheDocument();
+    const fallback = screen.getByText("Logo Partner");
+    expect(fallback).toHaveClass("fallback-text");
+    expect(fallback).toBeVisible();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -219,7 +219,7 @@ describe("SponsorsPage partner directory and inquiry form", () => {
 
     const zulipLogo = await screen.findByAltText("Zulip logo");
     expect(zulipLogo).toHaveAttribute("src", "/api/photos/public/sponsor-logo/zulip");
-    expect(zulipLogo.parentElement?.querySelector(".fallback-text")).toHaveClass("hidden");
+    expect(zulipLogo.parentElement?.querySelector(".fallback-text")).toBeNull();
 
     for (const name of [
       "Protocol Relative Corp",

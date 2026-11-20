@@ -23,7 +23,7 @@ export default function PhotoLightbox({ selectedPhoto, onClose }: PhotoLightboxP
     : null;
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={selectedPhoto.filename} className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label={selectedPhoto.filename} className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
       
       <div ref={lightboxRef} className="relative z-10 w-full max-w-4xl bg-obsidian border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col justify-between max-h-[90vh]">

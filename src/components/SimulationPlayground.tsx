@@ -242,8 +242,13 @@ export default function SimulationPlayground() {
     handleSave,
   });
 
-  // Telemetry Hook
-  useSimulationTelemetry({
+  // Validated telemetry handlers forwarded exclusively from SimPreviewFrame
+  const {
+    onTelemetry: handleTelemetry,
+    onScreenshot: handleScreenshot,
+    onConsoleLog: handleConsoleLog,
+    onFps: handleFps,
+  } = useSimulationTelemetry({
     setTelemetry,
     setAttachedImage,
     setConsoleLogs,
@@ -444,6 +449,10 @@ export default function SimulationPlayground() {
                   handleFixWithAI={handleFixWithAI}
                   canUseAi={canUseAi}
                   handleTestResult={handleTestResult}
+                  onTelemetry={handleTelemetry}
+                  onScreenshot={handleScreenshot}
+                  onConsoleLog={handleConsoleLog}
+                  onFps={handleFps}
                   telemetry={telemetry}
                 />
               </Panel>

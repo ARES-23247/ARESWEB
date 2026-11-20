@@ -53,7 +53,17 @@ describe("BIOBUZZ deployment bounds",()=>{
   state.enabled=true;state.accepting=true;await main(["--verify-live"]);
   expect(fetch.mock.calls.filter(([url])=>url.endsWith("/internal/admission"))).toHaveLength(0);
   expect(spawnSync.mock.calls.some(([command])=>command==="docker")).toBe(false);
-  state.accepting=false;await expect(main(["--verify-live"])).rejects.toThrow("live health");
+  // Transient cold-start accepting:false on first probe recovers on retry.
+  let probe=0;
+  vi.stubGlobal("fetch",vi.fn(async()=>{
+    probe++;
+    return {ok:true,json:async()=>({version:1,accepting:probe>=2,active:0})};
+  }));
+  await main(["--verify-live"]);
+  expect(probe).toBe(2);
+  // Persistent accepting:false still fails closed.
+  vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({version:1,accepting:false,active:0})})));
+  await expect(main(["--verify-live"])).rejects.toThrow("live health");
  });
  it("supports the first deployment with admission closed until verification",async()=>{
   state.enabled=true;state.existing=false;await main(["--deploy",sha]);

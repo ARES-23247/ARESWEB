@@ -7,11 +7,13 @@ import {
   Wrench,
 } from "lucide-react";
 import {
+  clearSupersededOutboxMutations,
   enqueueTournamentMutation,
   flushTournamentOutbox,
   generateOutboxId,
   isPermanentOutboxError,
   listTournamentOutbox,
+  PIT_OUTBOX_CHANGED_EVENT,
   PitOutboxQuotaError,
   type PitOutboxMutation,
 } from "@/lib/pitModeOutbox";
@@ -23,6 +25,7 @@ import {
 import type {
   StandEndgameTier,
   StandPenaltyTier,
+  TournamentPitState,
   TournamentScoutingBundle,
 } from "@/types/tournament";
 
@@ -32,6 +35,9 @@ interface TournamentScoutingHubProps {
   scoutingBundle: TournamentScoutingBundle | undefined;
   isLoading: boolean;
   onRefresh: () => void;
+  onSavePitState?: (
+    next: Pick<TournamentPitState, "checklists" | "batteries" | "triageItems">,
+  ) => Promise<void>;
 }
 
 export function TournamentScoutingHub({
@@ -40,6 +46,7 @@ export function TournamentScoutingHub({
   scoutingBundle,
   isLoading,
   onRefresh,
+  onSavePitState,
 }: TournamentScoutingHubProps) {
   const [activeTab, setActiveTab] = useState<"stand" | "pit" | "rollup">("stand");
   const [outbox, setOutbox] = useState<PitOutboxMutation[]>(() =>
@@ -83,12 +90,17 @@ export function TournamentScoutingHub({
         {
           submitPit: submitPitScouting,
           submitStand: submitStandScouting,
-          savePitState: saveTournamentPitState,
+          savePitState: (tid, next) =>
+            onSavePitState ? onSavePitState(next) : saveTournamentPitState(tid, next),
         },
         userUid,
       );
       setOutbox(result.remaining);
-      if (result.rejected.length > 0 && result.flushed > 0) {
+      if (result.authExpired) {
+        setStatusBanner(
+          "Your sign-in session expired. Sign in again to upload queued offline scouting reports.",
+        );
+      } else if (result.rejected.length > 0 && result.flushed > 0) {
         setStatusBanner(
           `Synced ${result.flushed} offline report${result.flushed === 1 ? "" : "s"}, but rejected ${result.rejected.length}: ${result.rejected[0].message}`,
         );
@@ -107,10 +119,15 @@ export function TournamentScoutingHub({
       flushingRef.current = false;
       setIsFlushing(false);
     }
-  }, [onRefresh, tournamentId, userUid]);
+  }, [onRefresh, onSavePitState, tournamentId, userUid]);
 
   useEffect(() => {
-    setOutbox(listTournamentOutbox(tournamentId, userUid));
+    const syncList = () => setOutbox(listTournamentOutbox(tournamentId, userUid));
+    syncList();
+    window.addEventListener(PIT_OUTBOX_CHANGED_EVENT, syncList);
+    return () => {
+      window.removeEventListener(PIT_OUTBOX_CHANGED_EVENT, syncList);
+    };
   }, [tournamentId, userUid]);
 
   useEffect(() => {
@@ -206,6 +223,12 @@ export function TournamentScoutingHub({
 
     try {
       await submitPitScouting(tournamentId, payload);
+      const remaining = clearSupersededOutboxMutations(
+        tournamentId,
+        (m) => m.kind === "pit_scouting" && m.payload.teamNumber === trimmedTeam,
+        userUid,
+      );
+      setOutbox(remaining);
       setStatusBanner(`Saved Pit Scouting card for #${trimmedTeam}.`);
       onRefresh();
     } catch (err) {

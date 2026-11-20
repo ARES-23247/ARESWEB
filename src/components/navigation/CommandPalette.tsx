@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -107,6 +108,15 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
   const dialogRef = useFocusTrap<HTMLDivElement>(isOpen, closePalette);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         const isAcademyOrDocs =
@@ -183,109 +193,126 @@ export function CommandPalette({ isSignedIn, userRole }: CommandPaletteProps) {
         </kbd>
       </button>
 
-      {isOpen && (
-        <div
-          onClick={closePalette}
-          className="fixed inset-0 z-[80] flex items-start justify-center bg-black/80 px-4 pt-20 pb-8 backdrop-blur-sm"
-        >
+      {isOpen &&
+        createPortal(
           <div
-            ref={dialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="command-palette-title"
-            tabIndex={-1}
-            onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-obsidian shadow-2xl"
+            onClick={closePalette}
+            className="fixed inset-0 z-[120] flex items-start justify-center bg-black/80 px-4 pt-20 pb-8 backdrop-blur-sm"
           >
-            <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
-              <Search size={18} className="text-ares-gold shrink-0" aria-hidden="true" />
-              <label htmlFor="command-palette-input" id="command-palette-title" className="sr-only">
-                Quick jump to any portal page, tool, or game
-              </label>
-              <input
-                id="command-palette-input"
-                type="search"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setSelectedIndex(0);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setSelectedIndex((prev) =>
-                      filteredItems.length === 0 ? 0 : (prev + 1) % filteredItems.length,
-                    );
-                  } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setSelectedIndex((prev) =>
-                      filteredItems.length === 0
-                        ? 0
-                        : (prev - 1 + filteredItems.length) % filteredItems.length,
-                    );
-                  } else if (event.key === "Enter" && filteredItems[selectedIndex]) {
-                    event.preventDefault();
-                    handleSelect(filteredItems[selectedIndex]);
+            <div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="command-palette-title"
+              tabIndex={-1}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-obsidian shadow-2xl"
+            >
+              <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+                <Search size={18} className="text-ares-gold shrink-0" aria-hidden="true" />
+                <label htmlFor="command-palette-input" id="command-palette-title" className="sr-only">
+                  Quick jump to any portal page, tool, or game
+                </label>
+                <input
+                  id="command-palette-input"
+                  type="search"
+                  role="combobox"
+                  aria-expanded={true}
+                  aria-autocomplete="list"
+                  aria-controls="command-palette-listbox"
+                  aria-activedescendant={
+                    filteredItems[selectedIndex]
+                      ? `command-palette-option-${filteredItems[selectedIndex].id}`
+                      : undefined
                   }
-                }}
-                placeholder="Jump to page, robot fleet, academy, arcade..."
-                className="w-full bg-transparent text-sm text-white placeholder-marble/45 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={closePalette}
-                aria-label="Close quick jump search"
-                className="rounded p-1.5 text-marble/60 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setSelectedIndex(0);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      setSelectedIndex((prev) =>
+                        filteredItems.length === 0 ? 0 : (prev + 1) % filteredItems.length,
+                      );
+                    } else if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      setSelectedIndex((prev) =>
+                        filteredItems.length === 0
+                          ? 0
+                          : (prev - 1 + filteredItems.length) % filteredItems.length,
+                      );
+                    } else if (event.key === "Enter" && filteredItems[selectedIndex]) {
+                      event.preventDefault();
+                      handleSelect(filteredItems[selectedIndex]);
+                    }
+                  }}
+                  placeholder="Jump to page, robot fleet, academy, arcade..."
+                  className="w-full bg-transparent text-sm text-white placeholder-marble/65 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={closePalette}
+                  aria-label="Close quick jump search"
+                  className="rounded p-1.5 text-marble/70 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                >
+                  <X size={16} aria-hidden="true" />
+                </button>
+              </div>
+
+              <div
+                id="command-palette-listbox"
+                className="max-h-80 overflow-y-auto p-2"
+                role="listbox"
+                aria-label="Quick jump destinations"
               >
-                <X size={16} aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="max-h-80 overflow-y-auto p-2" role="listbox" aria-label="Quick jump destinations">
-              {filteredItems.length === 0 ? (
-                <p className="py-8 text-center text-xs text-marble/55">
-                  No matching destinations for &ldquo;{query}&rdquo;.
-                </p>
-              ) : (
-                filteredItems.map((item, index) => {
-                  const isSelected = index === selectedIndex;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      onMouseEnter={() => setSelectedIndex(index)}
-                      onClick={() => handleSelect(item)}
-                      className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                        isSelected
-                          ? "bg-ares-gold/15 text-white border border-ares-gold/30"
-                          : "border border-transparent text-marble/80 hover:bg-white/5"
-                      }`}
-                    >
-                      <span className="flex min-w-0 items-center gap-3">
-                        {getCategoryIcon(item.category, item.id)}
-                        <span className="truncate text-xs font-bold">{item.label}</span>
-                      </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <span className="rounded bg-white/5 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-marble/55">
-                          {item.category}
+                {filteredItems.length === 0 ? (
+                  <p className="py-8 text-center text-xs text-marble/70">
+                    No matching destinations for &ldquo;{query}&rdquo;.
+                  </p>
+                ) : (
+                  filteredItems.map((item, index) => {
+                    const isSelected = index === selectedIndex;
+                    return (
+                      <button
+                        key={item.id}
+                        id={`command-palette-option-${item.id}`}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                        onClick={() => handleSelect(item)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                          isSelected
+                            ? "bg-ares-gold/15 text-white border border-ares-gold/30"
+                            : "border border-transparent text-marble/80 hover:bg-white/5"
+                        }`}
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          {getCategoryIcon(item.category, item.id)}
+                          <span className="truncate text-xs font-bold">{item.label}</span>
                         </span>
-                        <ArrowUpRight size={13} className="text-marble/45" aria-hidden="true" />
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+                        <span className="flex shrink-0 items-center gap-2">
+                          <span className="rounded bg-white/5 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-marble/70">
+                            {item.category}
+                          </span>
+                          <ArrowUpRight size={13} className="text-marble/65" aria-hidden="true" />
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
 
-            <div className="flex items-center justify-between border-t border-white/10 bg-black/40 px-4 py-2 text-[10px] font-mono text-marble/55">
-              <span>↑↓ Navigate · Enter Open · Esc Close</span>
-              <span>{filteredItems.length} destinations</span>
+              <div className="flex items-center justify-between border-t border-white/10 bg-black/40 px-4 py-2 text-[10px] font-mono text-marble/70">
+                <span>↑↓ Navigate · Enter Open · Esc Close</span>
+                <span>{filteredItems.length} destinations</span>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

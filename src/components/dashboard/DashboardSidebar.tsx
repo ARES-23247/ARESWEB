@@ -161,7 +161,18 @@ export default function DashboardSidebar({
   const isUnverified =
     userRole === "unverified" || userRole === "Pending Verification";
 
-  const sections: SidebarSectionConfig[] = [
+  const sections: SidebarSectionConfig[] = isUnverified
+    ? [
+        {
+          id: "workspace",
+          title: "Overview",
+          items: [
+            { tab: "", icon: LayoutDashboard, label: "Command Center" },
+            { tab: "profile", icon: User, label: "My Profile" },
+          ],
+        },
+      ]
+    : [
     {
       id: "workspace",
       title: "Overview & Tasks",

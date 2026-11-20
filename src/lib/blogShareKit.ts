@@ -191,6 +191,106 @@ export function wrapCanvasLines(
   return lines.slice(0, maxLines);
 }
 
+function measureCanvasWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  fallbackCharWidth: number,
+): number {
+  if (typeof ctx.measureText === "function") {
+    return ctx.measureText(text).width;
+  }
+  return text.length * fallbackCharWidth;
+}
+
+function truncateMeasuredText(
+  ctx: CanvasRenderingContext2D,
+  rawText: string,
+  maxWidth: number,
+  fallbackCharWidth: number,
+): string {
+  const normalized = cleanText(rawText);
+  if (!normalized || maxWidth <= 0) return "";
+  if (measureCanvasWidth(ctx, normalized, fallbackCharWidth) <= maxWidth) {
+    return normalized;
+  }
+  let end = normalized.length - 1;
+  while (
+    end > 1 &&
+    measureCanvasWidth(ctx, `${normalized.slice(0, end).trimEnd()}…`, fallbackCharWidth) >
+      maxWidth
+  ) {
+    end -= 1;
+  }
+  return `${normalized.slice(0, Math.max(1, end)).trimEnd()}…`;
+}
+
+export function wrapMeasuredCanvasLines(
+  ctx: CanvasRenderingContext2D,
+  rawText: string,
+  maxWidth: number,
+  maxLines: number,
+  fallbackCharWidth: number,
+): string[] {
+  const normalized = cleanText(rawText);
+  if (!normalized || maxWidth <= 0 || maxLines <= 0) return [];
+
+  const words = normalized.split(" ");
+  const lines: string[] = [];
+  let current = "";
+
+  for (let i = 0; i < words.length; i += 1) {
+    let word = words[i] || "";
+
+    while (measureCanvasWidth(ctx, word, fallbackCharWidth) > maxWidth) {
+      if (current) {
+        lines.push(current);
+        current = "";
+        if (lines.length === maxLines) {
+          lines[maxLines - 1] = truncateMeasuredText(
+            ctx,
+            `${lines[maxLines - 1] || ""} ${word}`,
+            maxWidth,
+            fallbackCharWidth,
+          );
+          return lines;
+        }
+      }
+
+      if (lines.length === maxLines - 1) {
+        lines.push(truncateMeasuredText(ctx, word, maxWidth, fallbackCharWidth));
+        return lines;
+      }
+
+      let splitAt = word.length - 1;
+      while (
+        splitAt > 1 &&
+        measureCanvasWidth(ctx, word.slice(0, splitAt), fallbackCharWidth) > maxWidth
+      ) {
+        splitAt -= 1;
+      }
+      lines.push(word.slice(0, Math.max(1, splitAt)));
+      word = word.slice(Math.max(1, splitAt));
+    }
+
+    const candidate = current ? `${current} ${word}` : word;
+    if (measureCanvasWidth(ctx, candidate, fallbackCharWidth) <= maxWidth) {
+      current = candidate;
+    } else {
+      if (lines.length === maxLines - 1) {
+        lines.push(truncateMeasuredText(ctx, `${current} ${word}`, maxWidth, fallbackCharWidth));
+        return lines;
+      }
+      lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current) {
+    lines.push(current);
+  }
+  return lines.slice(0, maxLines);
+}
+
 function drawRoundedRectPath(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -275,12 +375,15 @@ export function renderInstagramSquareCardDataUrl(
   ctx.fillStyle = "#FFFFFF";
   ctx.textAlign = "left";
   ctx.font = "800 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("ARES 23247 • ENGINEERING BLOG", 136, 134);
+  ctx.fillText("ARES 23247 • ENGINEERING BLOG", 136, 134, 306);
 
-  // Category badge
+  // Category badge (measured to fit within right frame margin at x=992)
   const category = cleanText(post.category).slice(0, 26).toUpperCase();
   if (category) {
-    const catWidth = Math.min(Math.max(category.length * 13 + 44, 140), 420);
+    ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const fittedCategory = truncateMeasuredText(ctx, category, 472, 13);
+    const measuredCatTextWidth = measureCanvasWidth(ctx, fittedCategory, 13);
+    const catWidth = Math.min(Math.max(Math.ceil(measuredCatTextWidth) + 44, 140), 516);
     drawRoundedRectPath(ctx, 476, 104, catWidth, 48, 24);
     ctx.fillStyle = "rgba(229, 168, 35, 0.14)";
     ctx.fill();
@@ -289,43 +392,46 @@ export function renderInstagramSquareCardDataUrl(
     ctx.stroke();
 
     ctx.fillStyle = "#FFC857";
-    ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.fillText(category, 498, 134);
+    ctx.fillText(fittedCategory, 498, 134, catWidth - 44);
   }
 
-  // Wrapped Headline
-  const titleLines = wrapCanvasLines(
-    cleanText(post.title, "New ARES 23247 Engineering Post"),
-    22,
-    4,
-  );
+  // Wrapped Headline (measured against 904px usable content width)
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "900 62px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const titleLines = wrapMeasuredCanvasLines(
+    ctx,
+    cleanText(post.title, "New ARES 23247 Engineering Post"),
+    904,
+    4,
+    38,
+  );
   let cursorY = 270;
   for (const line of titleLines) {
-    ctx.fillText(line, 88, cursorY);
+    ctx.fillText(line, 88, cursorY, 904);
     cursorY += 76;
   }
 
-  // Wrapped Summary Excerpt
-  const summaryLines = wrapCanvasLines(
+  // Wrapped Summary Excerpt (measured against 904px usable content width)
+  ctx.fillStyle = "#CBD5E1";
+  ctx.font = "500 30px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const summaryLines = wrapMeasuredCanvasLines(
+    ctx,
     cleanText(
       post.description,
       "Read the full technical breakdown, CAD notes, and match insights from FIRST Tech Challenge Team 23247 ARES.",
     ),
-    42,
+    904,
     4,
+    17,
   );
-  ctx.fillStyle = "#CBD5E1";
-  ctx.font = "500 30px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   let summaryY = Math.max(cursorY + 28, 560);
   for (const line of summaryLines) {
     if (summaryY > 815) break;
-    ctx.fillText(line, 88, summaryY);
+    ctx.fillText(line, 88, summaryY, 904);
     summaryY += 44;
   }
 
-  // Footer divider + author + CTA pill
+  // Footer divider + author + CTA pill (byline truncated to 612px before CTA pill at x=724)
   ctx.beginPath();
   ctx.moveTo(88, 868);
   ctx.lineTo(992, 868);
@@ -339,11 +445,17 @@ export function renderInstagramSquareCardDataUrl(
 
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText(byline, 88, 922);
+  const fittedByline = truncateMeasuredText(ctx, byline, 612, 13);
+  ctx.fillText(fittedByline, 88, 922, 612);
 
   ctx.fillStyle = "#94A3B8";
   ctx.font = "500 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("Appalachian Robotics & Engineering Society • Morgantown, WV", 88, 958);
+  ctx.fillText(
+    "Appalachian Robotics & Engineering Society • Morgantown, WV",
+    88,
+    958,
+    612,
+  );
 
   drawRoundedRectPath(ctx, 724, 900, 268, 64, 14);
   ctx.fillStyle = "rgba(229, 168, 35, 0.16)";
@@ -355,7 +467,7 @@ export function renderInstagramSquareCardDataUrl(
   ctx.fillStyle = "#FFC857";
   ctx.textAlign = "center";
   ctx.font = "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("aresfirst.org/blog", 858, 940);
+  ctx.fillText("aresfirst.org/blog", 858, 940, 244);
   ctx.textAlign = "left";
 
   return canvas.toDataURL("image/png");

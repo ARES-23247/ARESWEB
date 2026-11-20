@@ -97,9 +97,9 @@ export default function RobotEditorModal({
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open && !isPending) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50" />
+        <Dialog.Overlay className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[120]" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto bg-obsidian border border-white/10 ares-cut-lg p-6 md:p-8 shadow-2xl focus:outline-none"
+          className="fixed left-1/2 top-1/2 z-[121] max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto bg-obsidian border border-white/10 ares-cut-lg p-6 md:p-8 shadow-2xl focus:outline-none"
           aria-describedby="robot-editor-description"
         >
           <Dialog.Close asChild>

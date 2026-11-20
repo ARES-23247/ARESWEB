@@ -26,6 +26,7 @@ import {
 
 export default function KanbanPage() {
   const { user, authorizedUser } = useAuth();
+  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
 
   const {
     tasks,
@@ -35,7 +36,7 @@ export default function KanbanPage() {
     loadError,
     overflowCount,
     overflowUnknown,
-  } = useTaskBoardData();
+  } = useTaskBoardData(canEdit);
   const [filterSubteam, setFilterSubteam] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
@@ -54,7 +55,6 @@ export default function KanbanPage() {
   const [operationError, setOperationError] = useState<TaskOperationError | null>(null);
   const [retryOperation, setRetryOperation] = useState<(() => Promise<unknown>) | null>(null);
 
-  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
   const canUseAi = canUseMemberAi( authorizedUser?.role);
 
   const executeTaskOperation = async (

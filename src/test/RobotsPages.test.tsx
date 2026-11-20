@@ -197,4 +197,36 @@ describe("Robots Feed & Detail Pages", () => {
     expect(await screen.findByRole("heading", { level: 1, name: /robot not found/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to fleet/i })).toHaveAttribute("href", "/robots");
   });
+
+  it("renders the Judge / Pit Sheet gracefully without crashing when a robot URL exceeds QR capacity", async () => {
+    const oversizeId = `ares-${"championship-configuration-".repeat(6)}v9`;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          success: true,
+          robot: { ...mockRobots[0], id: oversizeId },
+        }),
+      ),
+    );
+    const Wrapper = createWrapper();
+
+    render(
+      <Wrapper>
+        <MemoryRouter initialEntries={[`/robots/${oversizeId}`]}>
+          <Routes>
+            <Route path="/robots/:id" element={<RobotDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </Wrapper>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "ARES Prime" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /judge \/ pit sheet/i }));
+    expect(
+      screen.getByRole("region", { name: /printable judge and pit technical sheet/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Live CAD & Specs URL/i)).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /QR code for ARES Prime/i })).not.toBeInTheDocument();
+  });
 });

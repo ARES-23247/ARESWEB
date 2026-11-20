@@ -424,6 +424,8 @@ describe("useDocumentSync", () => {
       content: "Original live content",
       status: "published",
       approvalStatus: "approved",
+      authorId: "server-uid-excluded",
+      importedFrom: "google-drive",
     };
     firestoreMocks.runTransaction.mockImplementation(
       async (
@@ -456,20 +458,23 @@ describe("useDocumentSync", () => {
       ),
     );
 
-    expect(transactionSet).toHaveBeenNthCalledWith(
-      1,
-      expect.anything(),
+    const firstStagedPayload = transactionSet.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(firstStagedPayload).toEqual(
       expect.objectContaining({
         title: "Proposed Edit 1",
         status: "published",
         approvalStatus: "pending_approval",
-        publishedSnapshot: {
+        publishedSnapshot: expect.objectContaining({
           title: "Live Published Post",
           content: "Original live content",
-        },
+          category: null,
+          description: null,
+          mediaPhotoIds: null,
+        }),
       }),
-      { merge: true },
     );
+    expect(firstStagedPayload.publishedSnapshot).not.toHaveProperty("authorId");
+    expect(firstStagedPayload.publishedSnapshot).not.toHaveProperty("importedFrom");
 
     // Subsequent pending edit preserves the original publishedSnapshot
     existingDocData = {

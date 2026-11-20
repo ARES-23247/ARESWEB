@@ -35,6 +35,7 @@ export type PendingArchive =
 
 interface PhotoManagementDialogsProps {
   albums: ManagedAlbum[];
+  canContribute?: boolean;
   canManage: boolean;
   photo: ManagedPhoto | null;
   photoDraft: PhotoEditorDraft;
@@ -59,6 +60,7 @@ interface PhotoManagementDialogsProps {
 
 export default function PhotoManagementDialogs({
   albums,
+  canContribute = true,
   canManage,
   photo,
   photoDraft,
@@ -84,6 +86,7 @@ export default function PhotoManagementDialogs({
     <>
       <PhotoDetailsDialog
         albums={albums}
+        canContribute={canContribute}
         canManage={canManage}
         photo={photo}
         draft={photoDraft}
@@ -116,6 +119,7 @@ export default function PhotoManagementDialogs({
 
 interface PhotoDetailsDialogProps {
   albums: ManagedAlbum[];
+  canContribute: boolean;
   canManage: boolean;
   photo: ManagedPhoto | null;
   draft: PhotoEditorDraft;
@@ -129,6 +133,7 @@ interface PhotoDetailsDialogProps {
 
 function PhotoDetailsDialog({
   albums,
+  canContribute,
   canManage,
   photo,
   draft,
@@ -139,6 +144,14 @@ function PhotoDetailsDialog({
   onSave,
   onRequestArchive,
 }: PhotoDetailsDialogProps) {
+  const currentAlbum = photo?.albumId
+    ? albums.find((album) => album.id === photo.albumId)
+    : undefined;
+  const isReadOnlyPublicPhoto = Boolean(currentAlbum?.isPublic && !canManage);
+  const canEditDetails = canContribute && !isReadOnlyPublicPhoto;
+  const selectableAlbums = albums.filter(
+    (album) => !album.isArchived && (canManage || !album.isPublic || album.id === draft.albumId),
+  );
   return (
     <Dialog.Root
       open={Boolean(photo)}
@@ -245,24 +258,28 @@ function PhotoDetailsDialog({
                 <select
                   id="photo-album"
                   value={draft.albumId}
+                  disabled={!canEditDetails}
                   onChange={(event) =>
                     setDraft((current) => ({
                       ...current,
                       albumId: event.target.value,
                     }))
                   }
-                  className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                  className="w-full border border-white/15 bg-black/40 px-3 py-2 text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-60"
                 >
                   <option value="">No album</option>
-                  {albums
-                    .filter((album) => !album.isArchived)
-                    .map((album) => (
-                      <option key={album.id} value={album.id}>
-                        {album.title}
-                      </option>
-                    ))}
+                  {selectableAlbums.map((album) => (
+                    <option key={album.id} value={album.id}>
+                      {album.title}
+                    </option>
+                  ))}
                 </select>
               </div>
+              {isReadOnlyPublicPhoto && (
+                <p role="status" className="rounded border border-ares-gold/40 bg-ares-gold/10 px-3 py-2 text-xs text-ares-gold">
+                  This photo belongs to a public gallery album. Only coaches and administrators can edit or move public gallery photos.
+                </p>
+              )}
               <EditorError message={error} subject="Your changes" />
               <div className="flex flex-wrap justify-between gap-3 border-t border-white/10 pt-4">
                 {canManage && (
@@ -280,16 +297,18 @@ function PhotoDetailsDialog({
                       type="button"
                       className="border border-white/15 px-4 py-2 text-sm text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
                     >
-                      Cancel
+                      {canEditDetails ? "Cancel" : "Close"}
                     </button>
                   </Dialog.Close>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
-                  >
-                    {saving ? "Saving" : "Save details"}
-                  </button>
+                  {canEditDetails && (
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="bg-ares-red px-5 py-2 text-sm font-bold text-white focus-visible:ring-2 focus-visible:ring-ares-cyan disabled:opacity-50"
+                    >
+                      {saving ? "Saving" : "Save details"}
+                    </button>
+                  )}
                 </div>
               </div>
             </form>

@@ -7,9 +7,13 @@ vi.mock("../../middleware/auth", () => ({
 }));
 
 // Mock Zulip API Helpers
-vi.mock("../../lib/zulip", () => ({
-  sendZulipMessage: vi.fn().mockResolvedValue(true),
-}));
+vi.mock("../../lib/zulip", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/zulip")>();
+  return {
+    ...actual,
+    sendZulipMessage: vi.fn().mockResolvedValue(true),
+  };
+});
 
 describe("Tasks Router Backend Endpoints", () => {
   let req: any;
@@ -78,6 +82,27 @@ describe("Tasks Router Backend Endpoints", () => {
           message: "Comment forwarded to Zulip."
         })
       );
+    });
+
+    it("neutralizes nested mentions in task comments and rejects mention-only comments", async () => {
+      req.body = {
+        taskId: "123",
+        content: "Ping @**@**x**all** @*admins* about intake @everyone",
+      };
+
+      await invokeRoute("/comment", "post");
+
+      const sentMessage = vi.mocked(sendZulipMessage).mock.calls[0]?.[2] ?? "";
+      expect(sentMessage).toContain("Ping about intake");
+      expect(sentMessage).not.toContain("@**all**");
+      expect(sentMessage).not.toContain("@*admins*");
+      expect(sentMessage).not.toContain("@everyone");
+
+      vi.mocked(sendZulipMessage).mockClear();
+      req.body = { taskId: "123", content: "@**@**x**all**" };
+      await invokeRoute("/comment", "post");
+      expect(sendZulipMessage).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
     });
 
     it("should fail validation if fields are missing", async () => {

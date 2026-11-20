@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { ensureTeamMember } from "../middleware/auth";
-import { sendZulipMessage } from "../lib/zulip";
+import { sanitizeZulipUserText, sendZulipMessage } from "../lib/zulip";
 import { sanitizeZulipInlineText } from "../lib/taskDigest";
 import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
@@ -56,7 +56,7 @@ router.post("/comment", ensureTeamMember, asyncHandler(async (req: Authenticated
   const taskLink = `https://aresfirst.org/dashboard/tasks?task=${encodeURIComponent(taskId)}`;
   // Member-authored content must not trigger mentions or wildcard pings under
   // the bot identity (same policy as the inbound webhook).
-  const safeContent = content.replace(/@\*\*[^*]+\*\*/g, "").replace(/@all|@everyone/gi, "").replace(/\s+/g, " ").trim();
+  const safeContent = sanitizeZulipUserText(content);
   if (!safeContent) throw new ApiError(400, "Comment needs text besides mentions.");
   const messageContent = `💬 **${author}** (via Web):\n\n${safeContent}\n\n[Open task card](${taskLink})`;
 

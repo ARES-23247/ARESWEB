@@ -28,11 +28,23 @@ describe("email roster utilities", () => {
     expect(buildBccList(recipients, "outlook")).toBe("student@example.org; +alias@example.org");
   });
 
-  it("creates quoted CSV and neutralizes spreadsheet formulas", () => {
-    const csv = buildEmailRosterCsv(recipients);
+  it("creates quoted CSV and neutralizes spreadsheet formulas including leading whitespace", () => {
+    const csv = buildEmailRosterCsv([
+      ...recipients,
+      {
+        name: " =HYPERLINK(\"https://evil.example\")",
+        email: "\t+ws@example.org",
+        role: "member",
+        memberType: "student",
+        subteams: ["\r\n-Admin"],
+      },
+    ]);
     expect(csv).toContain('"Name","Email","Portal role","Member type","Subteams"');
     expect(csv).toContain('"\'=Formula ""Name"""');
     expect(csv).toContain('"\'+alias@example.org"');
+    expect(csv).toContain('"\' =HYPERLINK(""https://evil.example"")"');
+    expect(csv).toContain('"\'\t+ws@example.org"');
+    expect(csv).toContain('"\' -Admin"');
     expect(csv).toContain('"CAD; Mechanical"');
   });
 });

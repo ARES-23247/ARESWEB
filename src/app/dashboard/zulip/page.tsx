@@ -58,8 +58,13 @@ export default function DashboardZulipPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
 
   const canManage = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
+  const isUnverified = !authorizedUser || authorizedUser.role === "unverified";
 
   const loadStatus = useCallback(async () => {
+    if (isUnverified) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setNotice(null);
     try {
@@ -76,11 +81,24 @@ export default function DashboardZulipPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isUnverified]);
 
   useEffect(() => {
     void loadStatus();
   }, [loadStatus]);
+
+  if (isUnverified) {
+    return (
+      <section className="mx-auto max-w-3xl py-10" aria-labelledby="zulip-pending-heading">
+        <h1 id="zulip-pending-heading" className="font-heading text-3xl font-black uppercase text-white">
+          Zulip Chat Hub
+        </h1>
+        <p role="status" className="mt-6 rounded-xl border border-ares-gold/40 bg-ares-gold/10 p-5 text-sm text-white">
+          Your account is pending team verification. A coach or administrator must verify your membership before you can access the team Zulip workspace.
+        </p>
+      </section>
+    );
+  }
 
   const saveInviteUrl = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

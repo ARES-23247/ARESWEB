@@ -77,7 +77,7 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
         >
           <header className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 bg-ares-red rounded-full animate-ping shrink-0" />
+              <span aria-hidden="true" className="w-2.5 h-2.5 bg-ares-red rounded-full shrink-0" />
               <Dialog.Title className="text-sm font-black text-white uppercase tracking-wider m-0">
                 Select YouTube Video
               </Dialog.Title>
@@ -120,7 +120,7 @@ export default function VideoPickerModal({ isOpen, onClose, onSelect }: VideoPic
                 <p className="mt-1 font-mono text-[10px] text-white/80">{error}</p>
               </div>
             ) : filteredVideos.length === 0 ? (
-              <div className="py-20 text-center text-xs font-mono text-marble/35 border border-dashed border-white/10 rounded">
+              <div className="py-20 text-center text-xs font-mono text-marble/70 border border-dashed border-white/10 rounded">
                 No matching YouTube videos found
               </div>
             ) : (

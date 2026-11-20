@@ -8,6 +8,8 @@ import OutreachPage from "../app/outreach/page";
 import SponsorsPage from "../app/sponsors/page";
 import AccessibilityPage from "../app/accessibility/page";
 import PrivacyPage from "../app/privacy/page";
+import TermsPage from "../app/terms/page";
+import LocationMorgantownPage from "../app/location-morgantown/page";
 
 vi.mock("@/components/SEO", () => ({ default: () => null }));
 vi.mock("@/components/GreekMeander", () => ({ GreekMeander: () => null }));
@@ -209,5 +211,50 @@ describe("public truth and reliability pages", () => {
     resolveRefresh(jsonResponse({}, 503, "Service Unavailable"));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("HTTP 503"));
     expect(screen.getByRole("heading", { name: "ARES Member" })).toBeInTheDocument();
+  });
+
+  it("keeps /terms and /location-morgantown truthful and consistent with actual team offerings", () => {
+    const { unmount } = renderPage(<TermsPage />);
+    expect(document.body).not.toHaveTextContent(/Stripe/i);
+    expect(screen.getByText(/Last updated: November 20, 2026/i)).toBeInTheDocument();
+    unmount();
+
+    renderPage(<LocationMorgantownPage />);
+    expect(screen.getByRole("heading", { name: /Students \(Grades 6–12\)/i })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/Grades 7-12/i);
+  });
+
+  it("persists sponsor logo fallback text across React re-renders when a logo fails to load", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/api/sponsors")) {
+        return Promise.resolve(
+          jsonResponse({
+            sponsors: [
+              {
+                name: "Zulip",
+                tier: "Gold",
+                logoUrl: "https://example.org/broken-logo.svg",
+                websiteUrl: "https://zulip.com",
+              },
+            ],
+          }),
+        );
+      }
+      return Promise.resolve(jsonResponse({ logs: [], seasons: [], awards: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage(<SponsorsPage />);
+
+    const logo = await screen.findByRole("img", { name: "Zulip logo" });
+    fireEvent.error(logo);
+    expect(screen.queryByRole("img", { name: "Zulip logo" })).not.toBeInTheDocument();
+    expect(screen.getByText("Zulip")).toBeVisible();
+
+    // Triggering an unrelated state re-render preserves the React-managed fallback text.
+    fireEvent.change(screen.getAllByRole("textbox")[0], {
+      target: { value: "Re-render check" },
+    });
+    expect(screen.getByText("Zulip")).toBeVisible();
   });
 });

@@ -1,3 +1,5 @@
+import { escapeSpreadsheetCsvCell } from "@/lib/outreachExport";
+
 export type EmailRosterAudience = "all" | "students" | "parents" | "mentors" | "alumni";
 export type EmailRosterClient = "gmail" | "outlook";
 
@@ -57,11 +59,6 @@ export function buildBccList(recipients: EmailRosterRecipient[], client: EmailRo
   return recipients.map(recipient => recipient.email).join(client === "outlook" ? "; " : ", ");
 }
 
-function csvCell(value: string): string {
-  const formulaSafe = /^[=+\-@]/.test(value) ? `'${value}` : value;
-  return `"${formulaSafe.replace(/"/g, '""')}"`;
-}
-
 export function buildEmailRosterCsv(recipients: EmailRosterRecipient[]): string {
   const header = ["Name", "Email", "Portal role", "Member type", "Subteams"];
   const rows = recipients.map(recipient => [
@@ -71,5 +68,5 @@ export function buildEmailRosterCsv(recipients: EmailRosterRecipient[]): string 
     recipient.memberType,
     recipient.subteams.join("; "),
   ]);
-  return [header, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
+  return [header, ...rows].map(row => row.map(escapeSpreadsheetCsvCell).join(",")).join("\r\n");
 }

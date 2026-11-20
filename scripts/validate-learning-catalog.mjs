@@ -158,7 +158,12 @@ export function validateRoboticsCurriculumPlan(plan, catalog) {
     assert(typeof track.pathId === "string" && PATH_IDS.has(track.pathId), `${track.id}: track pathId is invalid.`);
     assert(Array.isArray(track.sourceRoots) && track.sourceRoots.length > 0,
       `${track.id}: at least one source root is required.`);
-    for (const sourceRoot of track.sourceRoots) assertSafeRepositoryPath(sourceRoot, `${track.id}.sourceRoots`);
+    const seenSourceRoots = new Set();
+    for (const sourceRoot of track.sourceRoots) {
+      assertSafeRepositoryPath(sourceRoot, `${track.id}.sourceRoots`);
+      assert(!seenSourceRoots.has(sourceRoot), `${track.id}: duplicate sourceRoot ${sourceRoot}.`);
+      seenSourceRoots.add(sourceRoot);
+    }
     assert(Array.isArray(track.lessons) && track.lessons.length > 0, `${track.id}: lessons must not be empty.`);
     for (const lesson of track.lessons) {
       assert(typeof lesson.id === "string" && /^[a-z0-9][a-z0-9-]*$/u.test(lesson.id),
@@ -334,11 +339,11 @@ export function assertStudentLedRobotVerificationLanguage(content, slug) {
 export function assertCurrentNamedAresVersions(content, slug, generatedFrom) {
   const namedVersions = [
     {
-      pattern: /\b(ARES(?:Lib|\s+FTC|\s+FRC)?|FTC Starter|FRC Starter|(?:ARES Robotics )?Studio)\s+v?(\d+\.\d+\.\d+)\b/giu,
+      pattern: /\b(ARES(?:Lib|[\s-]+FTC|[\s-]+FRC)?|FTC Starter|FRC Starter|(?:ARES Robotics )?Studio)\s+v?(\d+\.\d+\.\d+)\b/giu,
       expectedVersion(name) {
         if (/Studio$/iu.test(name)) return generatedFrom.studioVersion;
-        if (/^(?:ARES\s+)?FTC|^FTC Starter$/iu.test(name)) return generatedFrom.ftcStarterVersion;
-        if (/^(?:ARES\s+)?FRC|^FRC Starter$/iu.test(name)) return generatedFrom.frcStarterVersion;
+        if (/^(?:ARES[\s-]+)?FTC|^FTC Starter$/iu.test(name)) return generatedFrom.ftcStarterVersion;
+        if (/^(?:ARES[\s-]+)?FRC|^FRC Starter$/iu.test(name)) return generatedFrom.frcStarterVersion;
         return generatedFrom.aresVersion;
       },
     },
@@ -355,6 +360,16 @@ export function assertCurrentNamedAresVersions(content, slug, generatedFrom) {
       assert(
         match[2] === expected,
         `${slug}: ${match[0]} is stale; the current source authority declares ${expected}.`,
+      );
+    }
+  }
+  if (typeof generatedFrom.sourceCommit === "string" && /^[a-f0-9]{40}$/u.test(generatedFrom.sourceCommit)) {
+    const expectedPrefix = generatedFrom.sourceCommit.slice(0, 8);
+    for (const match of content.matchAll(/\bmonorepo\s+([a-f0-9]{7,40})\b/giu)) {
+      const candidate = match[1].toLowerCase();
+      assert(
+        generatedFrom.sourceCommit.startsWith(candidate),
+        `${slug}: ${match[0]} is stale; the current source authority commit starts with ${expectedPrefix}.`,
       );
     }
   }
@@ -623,6 +638,9 @@ export async function validateLearningCatalog({ write = false, verifyRemote = fa
     assert(content.length >= 300, `${slug}: Markdown is too short to be a useful lesson draft.`);
     assert(!/\bTODO\b|lorem ipsum|placeholder content/i.test(content), `${slug}: unresolved placeholder text is not allowed.`);
     assertCurrentNamedAresVersions(content, slug, catalog.generatedFrom);
+    if (typeof document.appliesToVersion === "string" && document.appliesToVersion.trim()) {
+      assertCurrentNamedAresVersions(document.appliesToVersion, `${slug} (appliesToVersion)`, catalog.generatedFrom);
+    }
     assertMiddleSchoolLearningQuality(content, slug);
     for (const image of validateLocalLearningImageReferences(content, slug)) {
       const imagePath = path.resolve(PUBLIC_ROOT, `.${image.pathname}`);

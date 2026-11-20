@@ -1,5 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
-import type { Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import { adminDb } from "./lib/firebase-admin";
 import { logger } from "./lib/logger";
@@ -55,15 +55,6 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
     return;
   }
 
-  // The in-process limiter needs a socket-backed request; unit tests drive
-  // the handler with bare mocks, so it is bypassed outside real runtimes.
-  if (process.env.NODE_ENV !== "test" && process.env.FUNCTIONS_EMULATOR !== "true") {
-    await new Promise<void>((resolve) => {
-      requestLimiter(req, res, () => resolve());
-    });
-    if (res.writableEnded) return;
-  }
-
   if (req.path === HEALTH_PATH) {
     try {
       await loadShell();
@@ -101,6 +92,21 @@ export async function handleWebRequest(req: Request, res: Response): Promise<voi
   }
 }
 
+export function createWebApp(limiter = requestLimiter): express.Express {
+  const app = express();
+  app.disable("x-powered-by");
+  app.set("trust proxy", 1);
+  if (process.env.FUNCTIONS_EMULATOR !== "true") {
+    app.use(limiter);
+  }
+  app.use((req, res) => {
+    void handleWebRequest(req, res);
+  });
+  return app;
+}
+
+export const webApp = createWebApp();
+
 export const web = onRequest({
   ...deploymentLabelOptions("web"),
   cors: false,
@@ -110,4 +116,4 @@ export const web = onRequest({
   concurrency: 40,
   maxInstances: 5,
   serviceAccount: RUNTIME_SERVICE_ACCOUNTS.web,
-}, handleWebRequest);
+}, webApp);

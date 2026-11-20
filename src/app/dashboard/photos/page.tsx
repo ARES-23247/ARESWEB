@@ -59,6 +59,7 @@ export default function DashboardPhotosPage() {
     albumFilter,
     showArchivedPhotos,
     showArchivedAlbums,
+    enabled: canContribute,
   });
   const [pendingArchive, setPendingArchive] = useState<PendingArchive | null>(
     null,
@@ -403,6 +404,22 @@ export default function DashboardPhotosPage() {
     await loadAlbums(false);
   };
 
+  if (!canContribute) {
+    return (
+      <div className="space-y-8 pb-20">
+        <PageHeader
+          eyebrow={<><ImageIcon size={14} aria-hidden="true" /> Team media</>}
+          title="Manage Photos"
+          description="Upload team photos, add useful alt text, build albums, and import from the team Google account."
+        />
+        <p className="flex items-center gap-2 border border-ares-gold/30 bg-ares-gold/10 p-5 text-sm text-marble">
+          <Shield size={16} aria-hidden="true" className="shrink-0 text-ares-gold" />{" "}
+          Team photo library access is enabled once a coach or administrator verifies your team account.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-20">
       <PageHeader
@@ -530,6 +547,7 @@ export default function DashboardPhotosPage() {
 
       <PhotoManagementDialogs
         albums={albums}
+        canContribute={canContribute}
         canManage={canManage}
         photo={photoEditor}
         photoDraft={photoDraft}

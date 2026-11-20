@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
@@ -452,6 +452,14 @@ describe("Express App Endpoints", () => {
     ).toEqual(
       expect.arrayContaining([...FUNCTION_SECRET_BINDINGS.communicationsApi]),
     );
+
+    // mediaApi does not hold Zulip/Bluesky secrets; syndication must live on communicationsApi.
+    expect(FUNCTION_SECRET_BINDINGS.mediaApi).not.toContain("ZULIP_API_KEY");
+    expect(FUNCTION_SECRET_BINDINGS.mediaApi).not.toContain("BLUESKY_APP_PASSWORD");
+    for (const routeFile of ["videos.ts", "photos.ts", "albums.ts"]) {
+      const source = readFileSync(resolve(__dirname, "..", "routes", routeFile), "utf8");
+      expect(source).not.toContain("socialSyndication");
+    }
   });
 
   it("runs every workload under its dedicated production identity", () => {

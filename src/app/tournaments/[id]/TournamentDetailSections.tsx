@@ -112,7 +112,7 @@ export function TournamentHero({
             <span className="text-4xl font-extrabold text-ares-gold mt-1 font-heading">
               {tournament.opr}
             </span>
-            <span className="text-[9px] text-marble/40 uppercase mt-1 tracking-wider font-semibold">
+            <span className="text-[9px] text-marble/70 uppercase mt-1 tracking-wider font-semibold">
               Offensive Power
             </span>
           </div>
@@ -642,7 +642,7 @@ export function TournamentPhotoLightbox({
       aria-modal="true"
       aria-labelledby="tournament-photo-caption"
       onClick={onClose}
-      className="fixed inset-0 bg-black/90 z-50 flex flex-col justify-center items-center p-6 cursor-zoom-out"
+      className="fixed inset-0 bg-black/90 z-[120] flex flex-col justify-center items-center p-6 cursor-zoom-out"
     >
       <div
         ref={dialogRef}

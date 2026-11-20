@@ -127,4 +127,19 @@ describe("BIOBUZZ room authority",()=>{
   expect(lone.close).toHaveBeenCalled();expect(nextHost.session.seat).toBe(0);
   h.rooms.close();
  });
+ it("evicts finished and interrupted rooms immediately under maxRooms capacity pressure",async()=>{
+  const persist=vi.fn().mockResolvedValue(undefined),h=harness(1,persist),a=h.client();
+  a.connection.receive({type:"configure",seats:["human","empty","empty","empty"]});
+  a.connection.receive({type:"ready",auto:null});
+  a.connection.receive({type:"start"});
+  h.advance(158*60+35);
+  await Promise.resolve();
+  expect(h.rooms.size).toBe(1);
+  const nextMatch=h.client();
+  expect(nextMatch.session.roomId).not.toBe(a.session.roomId);
+  h.rooms.interruptAll();
+  const afterInterrupt=h.client();
+  expect(afterInterrupt.session.roomId).not.toBe(nextMatch.session.roomId);
+  h.rooms.close();
+ });
 });

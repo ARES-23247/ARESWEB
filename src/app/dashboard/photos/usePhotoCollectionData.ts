@@ -18,12 +18,14 @@ interface UsePhotoCollectionDataOptions {
   albumFilter: string;
   showArchivedPhotos: boolean;
   showArchivedAlbums: boolean;
+  enabled?: boolean;
 }
 
 export function usePhotoCollectionData({
   albumFilter,
   showArchivedPhotos,
   showArchivedAlbums,
+  enabled = true,
 }: UsePhotoCollectionDataOptions) {
   const [photos, setPhotos] = useState<ManagedPhoto[]>([]);
   const [albums, setAlbums] = useState<ManagedAlbum[]>([]);
@@ -134,12 +136,20 @@ export function usePhotoCollectionData({
   );
 
   useEffect(() => {
+    if (!enabled) {
+      setLoadingPhotos(false);
+      return;
+    }
     void loadPhotos(false);
-  }, [loadPhotos]);
+  }, [enabled, loadPhotos]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoadingAlbums(false);
+      return;
+    }
     void loadAlbums(false);
-  }, [loadAlbums]);
+  }, [enabled, loadAlbums]);
 
   return {
     photos,

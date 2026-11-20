@@ -21,11 +21,15 @@ vi.mock("../../lib/firebase-admin", () => ({
   },
 }));
 
-vi.mock("../../lib/zulip", () => ({
-  getZulipCredentials: vi.fn(),
-  getZulipUsers: vi.fn(),
-  sendZulipMessage: vi.fn(),
-}));
+vi.mock("../../lib/zulip", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/zulip")>();
+  return {
+    ...actual,
+    getZulipCredentials: vi.fn(),
+    getZulipUsers: vi.fn(),
+    sendZulipMessage: vi.fn(),
+  };
+});
 
 const fetchMock = vi.fn();
 global.fetch = fetchMock;
@@ -208,7 +212,8 @@ describe("Zulip API integrity", () => {
     expect(res.json).not.toHaveBeenCalled();
   });
 
-  it("validates, trims, and sends a bounded message", async () => {
+  it("validates, trims, and sends a bounded message for admins on announcements", async () => {
+    req.authorizationRole = "admin";
     req.body = { stream: " announcements ", topic: " Welcome ", content: " Hello " };
     vi.mocked(sendZulipMessage).mockResolvedValueOnce(true);
 
@@ -221,7 +226,18 @@ describe("Zulip API integrity", () => {
     });
   });
 
+  it("forbids non-admin members from posting to announcements", async () => {
+    req.authorizationRole = "member";
+    req.body = { stream: "announcements", topic: "Site announcements", content: "Spoofed alert" };
+
+    await handler("/message", "post")(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
+    expect(sendZulipMessage).not.toHaveBeenCalled();
+  });
+
   it("rejects streams outside the team proxy allowlist", async () => {
+    req.authorizationRole = "member";
     req.body = { stream: "leadership", topic: "Private", content: "Hello" };
     await handler("/message", "post")(req, res, next);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
@@ -238,11 +254,12 @@ describe("Zulip API integrity", () => {
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
   });
 
-  it("neutralizes mentions and wildcard pings in outbound member content", async () => {
+  it("neutralizes nested mentions, group mentions, and wildcard pings in outbound content", async () => {
+    req.authorizationRole = "member";
     req.body = {
-      stream: "announcements",
-      topic: "Welcome",
-      content: "@**Coach** please review @all silent ping @everyone",
+      stream: "kanban",
+      topic: "Task-1",
+      content: "@**Coach** @**@**x**all** @*mentors* @_**all** please review @all silent ping @everyone",
     };
     vi.mocked(sendZulipMessage).mockResolvedValueOnce(true);
 
@@ -253,14 +270,16 @@ describe("Zulip API integrity", () => {
     expect(sent).not.toContain("@");
   });
 
-  it("rejects content that is empty after mention removal", async () => {
-    req.body = { stream: "announcements", topic: "Welcome", content: "@**Coach** @all" };
+  it("rejects content that is empty after nested mention removal", async () => {
+    req.authorizationRole = "member";
+    req.body = { stream: "kanban", topic: "Task-1", content: "@**@**x**all** @**Coach** @all" };
     await handler("/message", "post")(req, res, next);
 
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 400 }));
   });
 
   it("surfaces an upstream message failure", async () => {
+    req.authorizationRole = "coach";
     req.body = { stream: "announcements", topic: "Welcome", content: "Hello" };
     vi.mocked(sendZulipMessage).mockResolvedValueOnce(false);
 

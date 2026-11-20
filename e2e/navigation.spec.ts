@@ -411,7 +411,7 @@ test.describe("Navigation & Accessibility E2E tests", () => {
       await trigger.focus();
       await page.keyboard.press("Enter");
       const dialog = page.getByRole("dialog", { name: "Quick jump to any portal page, tool, or game" });
-      const search = dialog.getByRole("searchbox");
+      const search = dialog.getByRole("combobox");
       await expect(search).toBeFocused();
       await page.keyboard.press("Shift+Tab");
       await expect(dialog.getByRole("option").last()).toBeFocused();

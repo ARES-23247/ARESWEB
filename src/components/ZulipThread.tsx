@@ -154,7 +154,7 @@ export default function ZulipThread({ stream, topic, className }: ZulipThreadPro
               <div className="flex-grow min-w-0">
                 <div className="flex items-baseline gap-2 mb-1">
                   <span className="font-bold text-white">{msg.sender_full_name}</span>
-                  <span className="text-xs text-marble/40">{new Date(msg.timestamp * 1000).toLocaleString()}</span>
+                  <span className="text-xs text-marble/70">{new Date(msg.timestamp * 1000).toLocaleString()}</span>
                 </div>
                 <div
                   className="prose prose-sm prose-invert max-w-none text-marble/80 prose-p:my-1 prose-a:text-ares-cyan prose-a:no-underline hover:prose-a:underline"

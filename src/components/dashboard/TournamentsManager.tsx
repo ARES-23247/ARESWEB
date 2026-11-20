@@ -124,12 +124,12 @@ export default function TournamentsManager() {
           className="text-ares-gold w-12 h-12 mb-4"
           aria-hidden="true"
         />
-        <h2 className="text-lg font-bold text-white uppercase mb-2">
+        <h1 className="text-lg font-bold text-white uppercase mb-2">
           Unauthorized Terminal Access
-        </h2>
-        <p className="text-xs text-marble/60 leading-relaxed">
-          Tournament publishing and match changes require an administrator or
-          coach account.
+        </h1>
+        <p className="text-xs text-marble/70 leading-relaxed">
+          Tournament publishing and match changes require an administrator,
+          coach, or mentor account.
         </p>
       </div>
     );
@@ -139,10 +139,10 @@ export default function TournamentsManager() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-xl font-black uppercase text-white tracking-tight font-heading flex items-center gap-2">
+          <h1 className="text-xl font-black uppercase text-white tracking-tight font-heading flex items-center gap-2">
             <Trophy className="text-ares-gold" size={22} aria-hidden="true" />
             Tournaments Log Manager
-          </h2>
+          </h1>
           <p className="text-xs text-marble/60 mt-1">
             Add, update, or soft-delete active tournaments and OPR leaderboards.
           </p>

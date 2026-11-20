@@ -152,13 +152,13 @@ export default function SponsorFactSheetSection({
           </div>
 
           {loading ? (
-            <p role="status" className="text-xs font-bold text-ares-gold py-4">
+            <p role="status" className="text-xs font-bold text-ares-gold py-4 print:text-black">
               Loading live verified outreach, season, and award records…
             </p>
           ) : error ? (
             <div
               role="alert"
-              className="rounded-lg border border-ares-red/40 bg-ares-red/10 p-3 text-xs text-ares-red-light flex items-center gap-2"
+              className="rounded-lg border border-ares-red/40 bg-ares-red/10 p-3 text-xs text-ares-red-light flex items-center gap-2 print:border-black/30 print:bg-white print:text-black"
             >
               <AlertCircle size={14} aria-hidden="true" />
               <span>{error}</span>

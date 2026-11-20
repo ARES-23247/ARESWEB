@@ -5,12 +5,14 @@ import DashboardVideosPage from "@/app/dashboard/videos/page";
 import VideosPage from "@/app/videos/page";
 import { authenticatedFetch } from "@/lib/api";
 
+const mockAuth = vi.hoisted(() => ({
+  user: { uid: "admin" },
+  authorizedUser: { role: "admin" as string },
+  loading: false,
+}));
+
 vi.mock("@/context/AuthContext", () => ({
-  useAuth: () => ({
-    user: { uid: "admin" },
-    authorizedUser: { role: "admin" },
-    loading: false,
-  }),
+  useAuth: () => mockAuth,
   useOptionalAuth: () => undefined,
 }));
 vi.mock("@/lib/api", () => ({ authenticatedFetch: vi.fn() }));
@@ -78,6 +80,9 @@ function deferredResponse() {
 describe("media management pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuth.user = { uid: "admin" };
+    mockAuth.authorizedUser = { role: "admin" };
+    mockAuth.loading = false;
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -768,5 +773,56 @@ describe("media management pages", () => {
     expect(
       await screen.findByRole("heading", { name: "Competition 2026" }),
     ).toBeInTheDocument();
+  });
+
+  it("blocks photo fetches and shows verification guidance for unverified accounts", async () => {
+    mockAuth.authorizedUser = { role: "unverified" };
+    render(<DashboardPhotosPage />);
+
+    expect(
+      screen.getByText(/verifies your team account/i),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(authenticatedFetch).not.toHaveBeenCalled());
+  });
+
+  it("hides public albums from member upload/edit selectors and locks public-album photos to read-only", async () => {
+    mockAuth.authorizedUser = { role: "member" };
+    const privateAlbum = { ...album, id: "album-private", title: "Internal Pit Shots", isPublic: false };
+    const publicAlbum = { ...album, id: "album-public", title: "Public Competition Gallery", isPublic: true };
+    const privatePhoto = { ...photo, id: "photo-priv", caption: "Private pit photo", albumId: "album-private" };
+    const publicPhoto = { ...photo, id: "photo-pub", caption: "Public gallery photo", albumId: "album-public" };
+
+    vi.mocked(authenticatedFetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/photos?")) {
+        return response({ photos: [privatePhoto, publicPhoto], hasMore: false, nextCursor: null });
+      }
+      if (url.startsWith("/api/photos/albums?")) {
+        return response({ albums: [privateAlbum, publicAlbum], hasMore: false, nextCursor: null });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+
+    render(<DashboardPhotosPage />);
+    expect(await screen.findByRole("heading", { name: "Private pit photo" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Public gallery photo" })).toBeInTheDocument();
+
+    // Upload Album select excludes the public album for non-managers
+    const uploadAlbumSelect = screen.getByLabelText("Album", { selector: "#upload-album" }) as HTMLSelectElement;
+    const uploadOptions = Array.from(uploadAlbumSelect.options).map((opt) => opt.textContent);
+    expect(uploadOptions).toContain("Internal Pit Shots");
+    expect(uploadOptions).not.toContain("Public Competition Gallery");
+
+    // Only the private photo gets an Edit button; public-album photo displays read-only note
+    const editButtons = screen.getAllByRole("button", { name: "Edit photo details" });
+    expect(editButtons).toHaveLength(1);
+    expect(screen.getByText(/public gallery/i)).toBeInTheDocument();
+
+    // Opening Edit dialog on private photo also excludes public albums
+    fireEvent.click(editButtons[0]!);
+    const dialogAlbumSelect = screen.getByLabelText("Album", { selector: "#photo-album" }) as HTMLSelectElement;
+    const dialogOptions = Array.from(dialogAlbumSelect.options).map((opt) => opt.textContent);
+    expect(dialogOptions).toContain("Internal Pit Shots");
+    expect(dialogOptions).not.toContain("Public Competition Gallery");
   });
 });

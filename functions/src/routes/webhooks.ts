@@ -11,9 +11,10 @@ import {
   SYNDICATION_CHANNELS,
   SyndicationChannel,
   syndicatePublishedPost,
+  syndicatePublishedVideo,
 } from "../lib/socialSyndication";
 import { formatOnshapeEvent } from "../lib/onshape";
-import { sendZulipMessage } from "../lib/zulip";
+import { sanitizeZulipUserText, sendZulipMessage } from "../lib/zulip";
 
 const router = express.Router();
 const zulipWebhookSchema = z.object({
@@ -38,6 +39,17 @@ const syndicatePostSchema = z
       .min(1)
       .max(160)
       .regex(/^[A-Za-z0-9_-]+$/),
+  })
+  .strict();
+
+const syndicateVideoSchema = z
+  .object({
+    docId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .regex(/^video_[A-Za-z0-9_-]+$/),
   })
   .strict();
 
@@ -283,7 +295,7 @@ router.post(
       return;
     }
 
-    const cleanContent = message.content.replace(/@\*\*[^*]+\*\*/g, "").trim();
+    const cleanContent = sanitizeZulipUserText(message.content);
     if (!cleanContent) {
       res.json({ content: "" });
       return;
@@ -461,6 +473,163 @@ router.post(
       },
       { merge: true },
     );
+    res.json({
+      success: true,
+      syndication: deliveries,
+    });
+  }),
+);
+
+async function claimPublishedVideo(docId: string) {
+  const videoRef = adminDb.collection("videos").doc(docId);
+  const receiptRef = adminDb.collection(SYNDICATION_RECEIPTS).doc(`video__${docId}`);
+  const now = new Date();
+
+  return adminDb.runTransaction(async (transaction) => {
+    const [videoSnapshot, receiptSnapshot] = await Promise.all([
+      transaction.get(videoRef),
+      transaction.get(receiptRef),
+    ]);
+    if (!videoSnapshot.exists) {
+      throw new ApiError(404, "Video not found.");
+    }
+    const data = videoSnapshot.data() || {};
+    if (data.status !== "published" || data.isDeleted === 1 || data.isDeleted === true) {
+      throw new ApiError(409, "Only a published, active video can be announced.");
+    }
+
+    const title = optionalText(data.title, 160);
+    const version =
+      validIsoTimestamp(data.updatedAt) ||
+      validIsoTimestamp(data.createdAt) ||
+      validIsoTimestamp(videoSnapshot.createTime?.toDate().toISOString()) ||
+      now.toISOString();
+    if (!title) {
+      throw new ApiError(409, "The published video is missing a title.");
+    }
+
+    const receipt = receiptSnapshot.exists ? receiptSnapshot.data() || {} : {};
+    const deliveries = receiptDeliveries(receipt, version);
+    if (data.syndicatedAt && !receiptSnapshot.exists) {
+      return {
+        alreadyComplete: true,
+        version,
+        deliveries: { zulip: true, bluesky: true },
+      };
+    }
+    const channels = SYNDICATION_CHANNELS.filter((channel) => !deliveries[channel]);
+    if (channels.length === 0) {
+      return {
+        alreadyComplete: true,
+        version,
+        deliveries,
+      };
+    }
+    const startedAtMs =
+      typeof receipt.startedAt === "string" ? Date.parse(receipt.startedAt) : Number.NaN;
+    if (
+      receipt.version === version &&
+      receipt.status === "in_progress" &&
+      Number.isFinite(startedAtMs) &&
+      startedAtMs > now.getTime() - CLAIM_TIMEOUT_MS
+    ) {
+      return { pending: true, version };
+    }
+
+    transaction.set(receiptRef, {
+      version,
+      status: "in_progress",
+      deliveries,
+      startedAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+    return {
+      version,
+      channels,
+      deliveries,
+      payload: {
+        docId,
+        title,
+        version,
+        snippet: optionalText(data.description, 500),
+        thumbnail: optionalText(data.thumbnailUrl, 2_048),
+      },
+    };
+  });
+}
+
+// POST /api/webhooks/syndicate-video
+router.post(
+  "/syndicate-video",
+  syndicationIpLimiter,
+  ensureTeamMember,
+  syndicationLimiter,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (!req.authorizationRole || !PUBLISHER_ROLES.has(req.authorizationRole)) {
+      throw new ApiError(
+        403,
+        "Only an approved publisher can announce a video.",
+      );
+    }
+    const parsed = syndicateVideoSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, "Enter a valid published video ID.");
+    }
+
+    const claim = await claimPublishedVideo(parsed.data.docId);
+    if (claim.alreadyComplete) {
+      res.json({
+        success: true,
+        alreadySyndicated: true,
+        syndication: claim.deliveries,
+      });
+      return;
+    }
+    if (claim.pending || !claim.payload || !claim.channels || !claim.deliveries) {
+      res.status(202).json({ success: true, pending: true });
+      return;
+    }
+
+    const receiptRef = adminDb
+      .collection(SYNDICATION_RECEIPTS)
+      .doc(`video__${parsed.data.docId}`);
+    const videoRef = adminDb.collection("videos").doc(parsed.data.docId);
+    const result = await syndicatePublishedVideo(claim.payload, claim.channels);
+    const deliveries = { ...claim.deliveries, ...result.deliveries };
+    const allDelivered = SYNDICATION_CHANNELS.every((channel) => deliveries[channel]);
+    const completedAt = new Date().toISOString();
+
+    if (!allDelivered) {
+      await receiptRef.set(
+        {
+          version: claim.version,
+          status: "failed",
+          deliveries,
+          updatedAt: completedAt,
+        },
+        { merge: true },
+      );
+      res.status(207).json({
+        success: false,
+        error: "Some social channels did not accept the video announcement.",
+        syndication: deliveries,
+      });
+      return;
+    }
+
+    await Promise.all([
+      receiptRef.set(
+        {
+          version: claim.version,
+          status: "complete",
+          deliveries,
+          completedAt,
+          updatedAt: completedAt,
+        },
+        { merge: true },
+      ),
+      videoRef.set({ syndicatedAt: completedAt }, { merge: true }),
+    ]);
     res.json({
       success: true,
       syndication: deliveries,

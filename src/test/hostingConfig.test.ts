@@ -71,6 +71,52 @@ describe("Firebase Hosting crawl configuration", () => {
     expect(indexHtml).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 
+  it("isolates the simulation sandbox CSP without weakening the root app CSP", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),
+    ) as { hosting: { headers: HostingHeaderRule[] } };
+    const broadIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/!(assets){,/**}",
+    );
+    const sandboxIndex = config.hosting.headers.findIndex(
+      (rule) => rule.source === "/sandbox/**",
+    );
+    expect(broadIndex).toBeGreaterThanOrEqual(0);
+    expect(sandboxIndex).toBeGreaterThan(broadIndex);
+
+    const sandboxHeaders = config.hosting.headers[sandboxIndex].headers;
+    const sandboxCsp = sandboxHeaders.find(
+      (header) => header.key === "Content-Security-Policy",
+    )?.value;
+    expect(sandboxCsp).toContain("default-src 'none'");
+    expect(sandboxCsp).toContain("script-src 'self' blob:");
+    expect(sandboxCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    expect(sandboxCsp).not.toMatch(/script-src[^;]*'unsafe-eval'/);
+    expect(sandboxCsp).toContain("connect-src 'none'");
+    expect(sandboxCsp).toContain("frame-ancestors 'self'");
+    expect(sandboxHeaders).toContainEqual({
+      key: "X-Frame-Options",
+      value: "SAMEORIGIN",
+    });
+    expect(sandboxHeaders).toContainEqual({
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow",
+    });
+
+    const sandboxHtml = readFileSync(
+      resolve(process.cwd(), "public/sandbox/simulation-preview.html"),
+      "utf8",
+    );
+    expect(sandboxHtml).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
+    expect(sandboxHtml).toContain('src="/sandbox/simulation-preview.js"');
+
+    const aresTypes = readFileSync(
+      resolve(process.cwd(), "public/types/areslib.d.ts"),
+      "utf8",
+    );
+    expect(aresTypes).toContain("declare namespace ARESLib");
+  });
+
   it("denies unused browser capabilities at the hosting boundary", () => {
     const config = JSON.parse(
       readFileSync(resolve(process.cwd(), "firebase.json"), "utf8"),

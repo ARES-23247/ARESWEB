@@ -250,3 +250,97 @@ test("published blog post opens the Zero-Key Share Kit with Web Share Intents an
   await expect(dialog).toBeHidden();
   await expect(shareKitButton).toBeFocused();
 });
+
+test.describe("opaque simulation preview sandbox", () => {
+  test.use({ serviceWorkers: "allow" });
+
+  test("simulation playground serves ARESLib typings and runs its opaque preview sandbox cleanly", async ({
+    page,
+    request,
+  }) => {
+    const typingsResponse = await request.get("/types/areslib.d.ts");
+    expect(typingsResponse.status()).toBe(200);
+    const typingsBody = await typingsResponse.text();
+    expect(typingsBody).toContain("declare namespace ARESLib");
+
+    const pageErrors: string[] = [];
+    const cspViolations: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    page.on("console", (msg) => {
+      if (msg.type() === "error" && /content security policy/i.test(msg.text())) {
+        cspViolations.push(msg.text());
+      }
+    });
+
+    const typingsLoad = page.waitForResponse(
+      (res) => res.url().endsWith("/types/areslib.d.ts") && res.status() === 200,
+    );
+    await page.goto("/academy/playground", { waitUntil: "domcontentloaded" });
+    await typingsLoad;
+    const simFrame = page.locator('iframe[src="/sandbox/simulation-preview.html"]');
+    await expect(simFrame).toBeVisible({ timeout: 15_000 });
+    await expect(simFrame).toHaveAttribute("sandbox", "allow-scripts");
+    expect(cspViolations).toEqual([]);
+    expect(pageErrors).toEqual([]);
+  });
+});
+
+test("bronze hover CTA maintains dark foreground contrast on hover", async ({
+  page,
+  browserName,
+}) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  const supportsHover = await page.evaluate(
+    () => window.matchMedia("(hover: hover)").matches,
+  );
+  if (!supportsHover) {
+    return;
+  }
+
+  const bronzeHoverCta = page.locator('[class*="hover:bg-ares-bronze"]').first();
+  await expect(bronzeHoverCta).toBeVisible();
+  await bronzeHoverCta.hover();
+
+  if (browserName === "webkit") {
+    // Playwright headless WebKit on Windows does not always apply :hover styles via synthetic mouse moves.
+    // Verify the compiled stylesheet enforces the unlayered dark foreground rule for hover:bg-ares-bronze.
+    const ruleEnforcesDarkText = await page.evaluate(() => {
+      const sheets = Array.from(document.styleSheets);
+      const checkRules = (rules: CSSRuleList): boolean =>
+        Array.from(rules).some((rule) => {
+          if (rule instanceof CSSStyleRule) {
+            return (
+              rule.selectorText.includes("hover\\:bg-ares-bronze:hover") &&
+              rule.style.color.length > 0
+            );
+          }
+          if ("cssRules" in rule && rule.cssRules) {
+            return checkRules(rule.cssRules as CSSRuleList);
+          }
+          return false;
+        });
+      return sheets.some((sheet) => {
+        try {
+          return checkRules(sheet.cssRules);
+        } catch {
+          return false;
+        }
+      });
+    });
+    expect(ruleEnforcesDarkText).toBe(true);
+    return;
+  }
+
+  await expect
+    .poll(async () => {
+      await bronzeHoverCta.hover();
+      return bronzeHoverCta.evaluate((el) => {
+        const style = window.getComputedStyle(el);
+        return { color: style.color, backgroundColor: style.backgroundColor };
+      });
+    })
+    .toEqual({
+      color: "rgb(5, 7, 10)",
+      backgroundColor: "rgb(205, 127, 50)",
+    });
+});

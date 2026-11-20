@@ -80,7 +80,40 @@ describe("conservative affected-area selection", () => {
         ["functions/src/routes/studioIntegrations.ts"],
         inventory,
       ).areas,
-    ).toEqual(["integrations", "team"]);
+    ).toEqual(["integrations", "media", "public", "team"]);
+    // Cross-area backend helpers trigger full verification instead of partial skips.
+    expect(
+      selectAreas(manifest, ["functions/src/routes/calendarHelpers.ts"], inventory).full,
+    ).toBe(true);
+    expect(
+      selectAreas(manifest, ["functions/src/lib/zulip.ts"], inventory).full,
+    ).toBe(true);
+    // Case-sensitive POSIX unit-test globs match lowercase and uppercase test files accurately.
+    const extendedInventory = [
+      ...inventory,
+      "src/lib/biobuzzScoring.test.ts",
+      "src/test/PitModeOutbox.test.ts",
+      "src/test/AnnouncementManagerPage.test.tsx",
+      "src/test/pollenPhysics.test.ts",
+      "src/test/simulationApi.test.ts",
+      "src/test/DriverInputCurveLab.test.tsx",
+      "src/test/GoogleDriveLibraryBrowser.test.tsx",
+    ];
+    expect(
+      selectAreas(manifest, ["packages/biobuzz/src/core/engine.ts"], extendedInventory).unit,
+    ).toContain("src/lib/biobuzzScoring.test.ts");
+    const teamUnit = selectAreas(manifest, ["src/lib/pitModeOutbox.ts"], extendedInventory).unit;
+    expect(teamUnit).toContain("src/test/PitModeOutbox.test.ts");
+    expect(teamUnit).toContain("src/test/AnnouncementManagerPage.test.tsx");
+    expect(
+      selectAreas(manifest, ["packages/pollinator/public/js/physics.js"], extendedInventory).unit,
+    ).toContain("src/test/pollenPhysics.test.ts");
+    expect(
+      selectAreas(manifest, ["src/components/editor/SimPreviewFrame.tsx"], extendedInventory).unit,
+    ).toContain("src/test/simulationApi.test.ts");
+    const mediaUnit = selectAreas(manifest, ["functions/src/routes/drive.ts"], extendedInventory).unit;
+    expect(mediaUnit).toContain("src/test/GoogleDriveLibraryBrowser.test.tsx");
+    expect(mediaUnit).not.toContain("src/test/DriverInputCurveLab.test.tsx");
     const academyPlan = selectAreas(
       manifest,
       ["content/learning/catalog.json"],

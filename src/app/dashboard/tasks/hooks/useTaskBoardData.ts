@@ -84,7 +84,7 @@ interface TaskBoardData {
   overflowUnknown: boolean;
 }
 
-export function useTaskBoardData(): TaskBoardData {
+export function useTaskBoardData(enabled = true): TaskBoardData {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [teamProfiles, setTeamProfiles] = useState<MemberProfile[]>([]);
   const [isLive, setIsLive] = useState(false);
@@ -93,6 +93,7 @@ export function useTaskBoardData(): TaskBoardData {
   const [overflowUnknown, setOverflowUnknown] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
     if (import.meta.env.MODE === "e2e") {
       setTasks(E2E_TASK_FIXTURES);
       setIsLive(false);
@@ -128,10 +129,10 @@ export function useTaskBoardData(): TaskBoardData {
       setIsLive(false);
       setLoadError(error instanceof Error ? error.message : String(error));
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
-    if (import.meta.env.MODE === "e2e") return;
+    if (!enabled || import.meta.env.MODE === "e2e") return;
     void getCountFromServer(
       query(collection(db, "tasks"), limit(TASK_QUERY_LIMIT + 1)),
     )
@@ -145,9 +146,10 @@ export function useTaskBoardData(): TaskBoardData {
         logger.error("Unable to verify the task truncation count:", error);
         setOverflowUnknown(true);
       });
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     void authenticatedFetch("/api/profiles/team-roster")
       .then(async (response) => {
         if (!response.ok) {
@@ -159,7 +161,7 @@ export function useTaskBoardData(): TaskBoardData {
       .catch((error: unknown) => {
         logger.warn("Failed to fetch team roster from backend:", error);
       });
-  }, []);
+  }, [enabled]);
 
   return {
     tasks,

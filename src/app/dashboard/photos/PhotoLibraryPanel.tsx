@@ -84,6 +84,8 @@ export default function PhotoLibraryPanel({
   onLoadMore,
 }: PhotoLibraryPanelProps) {
   const activeAlbums = albums.filter((album) => !album.isArchived);
+  const uploadableAlbums = activeAlbums.filter((album) => canManage || !album.isPublic);
+  const publicAlbumIds = new Set(albums.filter((album) => album.isPublic).map((album) => album.id));
 
   return (
     <section
@@ -155,7 +157,7 @@ export default function PhotoLibraryPanel({
                 className="w-full border border-white/15 bg-obsidian px-3 py-2 text-xs text-white focus-visible:ring-2 focus-visible:ring-ares-cyan"
               >
                 <option value="">No album</option>
-                {activeAlbums.map((album) => (
+                {uploadableAlbums.map((album) => (
                   <option key={album.id} value={album.id}>
                     {album.title}
                   </option>
@@ -291,7 +293,9 @@ export default function PhotoLibraryPanel({
                     "Add alt text so everyone can understand this image."}
                 </p>
                 <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-                  {!photo.isArchived && (
+                  {canContribute &&
+                    !photo.isArchived &&
+                    (canManage || !photo.albumId || !publicAlbumIds.has(photo.albumId)) && (
                     <button
                       type="button"
                       onClick={() => onOpenPhoto(photo)}

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FieldValue } from "firebase-admin/firestore";
 
 const mocks = vi.hoisted(() => ({
   documentGet: vi.fn(),
@@ -442,7 +443,7 @@ describe("content approval routes", () => {
       expect.objectContaining({
         status: "published",
         approvalStatus: "approved",
-        publishedSnapshot: null,
+        publishedSnapshot: FieldValue.delete(),
       }),
     );
   });
@@ -458,6 +459,9 @@ describe("content approval routes", () => {
         title: "Live Post",
         content: "Approved content",
         summary: "Short summary",
+        mediaPhotoIds: null,
+        approvedBy: "forged-admin",
+        evilInjectedField: true,
       },
     };
     mocks.transactionGet.mockResolvedValueOnce({ exists: true, data: () => stagedPost });
@@ -475,11 +479,15 @@ describe("content approval routes", () => {
         title: "Live Post",
         content: "Approved content",
         summary: "Short summary",
+        mediaPhotoIds: FieldValue.delete(),
         status: "published",
         approvalStatus: "approved",
-        publishedSnapshot: null,
+        publishedSnapshot: FieldValue.delete(),
       }),
     );
+    const updatePayload = mocks.transactionUpdate.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+    expect(updatePayload).not.toHaveProperty("approvedBy");
+    expect(updatePayload).not.toHaveProperty("evilInjectedField");
     expect(mocks.transactionSet).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({

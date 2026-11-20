@@ -57,8 +57,18 @@ router.get(
       return;
     }
 
-    const data = snapshot.data() as AnnouncementDocument;
+    const data = snapshot.data() as AnnouncementDocument & {
+      zulipDelivery?: unknown;
+      zulipDeliveredAt?: unknown;
+      zulipAttempts?: unknown;
+    };
     const announcement = toAnnouncementDto(data);
+    const zulipDelivery =
+      data.zulipDelivery === "pending" ||
+      data.zulipDelivery === "sent" ||
+      data.zulipDelivery === "failed"
+        ? data.zulipDelivery
+        : null;
     res.json({
       success: true,
       announcement: announcement
@@ -67,6 +77,12 @@ router.get(
             isActive: data.isActive === true,
             evergreen: data.evergreen === true,
             updatedAt: nullableString(data.updatedAt),
+            zulipDelivery,
+            zulipDeliveredAt: nullableString(data.zulipDeliveredAt),
+            zulipAttempts:
+              typeof data.zulipAttempts === "number" && Number.isFinite(data.zulipAttempts)
+                ? data.zulipAttempts
+                : 0,
           }
         : null,
     });
@@ -107,10 +123,31 @@ router.put(
       ) {
         return current.revision;
       }
+      const contentUnchanged =
+        Boolean(current) &&
+        current?.isActive === true &&
+        notice.isActive &&
+        current.message === notice.message &&
+        current.severity === notice.severity &&
+        (current.link ?? null) === notice.link &&
+        (current.linkLabel ?? null) === notice.linkLabel;
+      const preserveDelivery =
+        contentUnchanged &&
+        (current?.zulipDelivery === "sent" || current?.zulipDelivery === "pending");
+
       transaction.set(announcementRef, {
-        ...notice, revision, updatedAt, updatedBy: actorUid,
-        zulipDelivery: notice.isActive ? "pending" : null,
-        zulipLeaseUntil: 0,
+        ...notice,
+        revision,
+        updatedAt,
+        updatedBy: actorUid,
+        ...(preserveDelivery
+          ? {}
+          : {
+              zulipDelivery: notice.isActive ? "pending" : null,
+              zulipLeaseUntil: 0,
+              zulipAttempts: 0,
+              zulipDeliveredAt: null,
+            }),
       }, { merge: true });
       transaction.set(auditRef, {
         action: "site_announcement.updated",
@@ -150,7 +187,16 @@ router.delete(
     const batch = adminDb.batch();
     batch.set(
       announcementRef,
-      { isActive: false, revision, updatedAt, updatedBy: actorUid, zulipDelivery: null, zulipLeaseUntil: 0 },
+      {
+        isActive: false,
+        revision,
+        updatedAt,
+        updatedBy: actorUid,
+        zulipDelivery: null,
+        zulipLeaseUntil: 0,
+        zulipAttempts: 0,
+        zulipDeliveredAt: null,
+      },
       { merge: true },
     );
     batch.set(auditRef, {

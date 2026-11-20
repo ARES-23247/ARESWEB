@@ -37,7 +37,7 @@ export default function EventVenueInfo({ event, locations }: EventVenueInfoProps
             <p className="text-[11px] text-marble/70 leading-relaxed mt-1 font-semibold">{address}</p>
           )}
           {description && (
-            <p className="text-[10px] text-marble/40 leading-relaxed italic mt-1.5">{description}</p>
+            <p className="text-[10px] text-marble/70 leading-relaxed italic mt-1.5">{description}</p>
           )}
         </div>
         
