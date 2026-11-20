@@ -122,9 +122,14 @@ h1, h2, h3, h4, .font-heading {
 
 /* Accessibility: Unlayered so dark foreground overrides @layer utilities text-white on bright bronze hover fills (WCAG AA 6.58:1) */
 .clipped-button:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
-.clipped-button-sm:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
-.hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
+.clipped-button-sm:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]) {
   color: var(--ares-on-bright-accent);
+}
+
+@media (hover: hover) {
+  .hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
+    color: var(--ares-on-bright-accent);
+  }
 }
 
 .ares-surface {

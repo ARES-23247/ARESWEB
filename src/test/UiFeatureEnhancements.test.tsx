@@ -161,7 +161,7 @@ describe("UI & Feature Enhancements", () => {
     );
 
     expect(await screen.findByText("Live Banner Preview")).toBeInTheDocument();
-    expect(screen.getByText("Publishing enabled")).toBeInTheDocument();
+    expect(screen.getByText("Live now")).toBeInTheDocument();
     const preview = screen.getByLabelText("Banner visual preview");
     expect(preview).toHaveTextContent("Qualifier schedule posted.");
     expect(preview).toHaveTextContent("View schedule");

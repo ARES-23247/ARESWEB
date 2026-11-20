@@ -21,7 +21,7 @@ describe("Quick Jump regressions", () => {
       const view = render(<MemoryRouter><CommandPalette isSignedIn={false} userRole="unverified" /></MemoryRouter>);
       fireEvent.click(screen.getByRole("button", { name: "Open quick jump search" }));
       act(() => vi.advanceTimersByTime(50));
-      const search = screen.getByRole("searchbox");
+      const search = screen.getByRole("combobox");
       expect(search).toHaveFocus();
       fireEvent.keyDown(search, { key: "Tab", shiftKey: true });
       const last = screen.getAllByRole("option").at(-1)!;
@@ -40,7 +40,7 @@ describe("Quick Jump regressions", () => {
     const trigger = screen.getByRole("button", { name: "Open quick jump search" });
     trigger.focus();
     fireEvent.click(trigger);
-    const input = screen.getByRole("searchbox");
+    const input = screen.getByRole("combobox");
     await waitFor(() => expect(input).toHaveFocus());
     const last = screen.getAllByRole("option").at(-1)!;
     fireEvent.keyDown(input, { key: "Tab", shiftKey: true });
@@ -61,8 +61,8 @@ describe("Quick Jump regressions", () => {
   it("opens the public simulation playground from search", () => {
     render(<MemoryRouter><CommandPalette isSignedIn={false} userRole="unverified" /><LocationProbe /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: "Open quick jump search" }));
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Interactive Simulations" } });
-    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Interactive Simulations" } });
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" });
     expect(screen.getByText("/academy/playground")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
