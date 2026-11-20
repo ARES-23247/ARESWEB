@@ -113,7 +113,6 @@
         for (let i = 0; i < exts.length; i += 1) {
           if (Object.prototype.hasOwnProperty.call(window.__modules, resolveName + "/index" + exts[i])) {
             resolveName = resolveName + "/index" + exts[i];
-            found = true;
             break;
           }
         }
