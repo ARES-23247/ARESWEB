@@ -337,7 +337,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                     />
                     <Upload size={24} className="text-marble/40" />
                     <span className="text-xs font-bold text-white">Select image from your device</span>
-                    <span className="text-[9px] text-marble/40 uppercase font-mono">JPG, PNG, or WEBP files permitted</span>
+                    <span className="text-[9px] text-marble/70 uppercase font-mono">JPG, PNG, or WEBP files permitted</span>
                   </label>
 
                   <div>
@@ -393,7 +393,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                         <span className="text-[10px] text-marble/55">Loading gallery files...</span>
                       </div>
                     ) : filteredPhotos.length === 0 ? (
-                      <div className="py-16 text-center text-[10px] font-mono text-marble/35 border border-dashed border-white/10 rounded">
+                      <div className="py-16 text-center text-[10px] font-mono text-marble/70 border border-dashed border-white/10 rounded">
                         No gallery photos found
                       </div>
                     ) : (
@@ -469,7 +469,7 @@ export default function PhotoPickerModal({ isOpen, onClose, onSelect, mode = "al
                         <span className="text-[10px] text-marble/55">Loading albums...</span>
                       </div>
                     ) : albums.length === 0 ? (
-                      <div className="py-16 text-center text-[10px] font-mono text-marble/35 border border-dashed border-white/10 rounded">
+                      <div className="py-16 text-center text-[10px] font-mono text-marble/70 border border-dashed border-white/10 rounded">
                         No albums found
                       </div>
                     ) : (

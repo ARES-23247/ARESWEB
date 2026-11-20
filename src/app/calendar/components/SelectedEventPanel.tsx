@@ -42,7 +42,7 @@ export function SelectedEventPanel({
 
       <div className="mt-6 space-y-3">
         {selectedDayEvents.length === 0 ? (
-          <div className="p-4 bg-white/5 border border-white/5 text-center text-marble/45 text-xs font-bold uppercase tracking-wider ares-cut-sm flex items-center justify-center gap-2">
+          <div className="p-4 bg-white/5 border border-white/5 text-center text-marble/70 text-xs font-bold uppercase tracking-wider ares-cut-sm flex items-center justify-center gap-2">
             <Info size={12} className="text-ares-bronze" /> Ready for Booking
           </div>
         ) : (
@@ -93,7 +93,7 @@ export function SelectedEventPanel({
                       <Pencil aria-hidden="true" size={8} />
                     </button>
                   )}
-                  <span className="text-[8px] font-mono text-marble/45 flex items-center gap-1">
+                  <span className="text-[8px] font-mono text-marble/70 flex items-center gap-1">
                     <Clock size={8} /> {formatEventTime(event.dateStart)}
                   </span>
                 </div>

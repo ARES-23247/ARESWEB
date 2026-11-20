@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useFocusTrap } from "@/lib/useFocusTrap";
 
 export interface AcademySearchResult {
@@ -35,7 +35,7 @@ export default function AcademySearchModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
+          className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
           onClick={onClose}
         >
           <motion.div
@@ -54,17 +54,25 @@ export default function AcademySearchModal({
               Search documentation
             </h2>
             <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-              <Search size={18} className="text-white/60" />
+              <Search aria-hidden="true" size={18} className="text-white/70" />
               <input
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
                 placeholder="Search documentation..."
                 aria-label="Search documentation"
-                className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/60"
+                className="flex-1 bg-transparent text-white outline-none text-lg placeholder:text-white/65"
               />
-              <kbd className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded font-mono">
+              <kbd className="hidden sm:inline-block text-xs bg-white/10 text-white/70 px-2 py-0.5 rounded font-mono">
                 ESC
               </kbd>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close documentation search"
+                className="rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
             </div>
             {searchResults.length > 0 && (
               <div className="max-h-80 overflow-y-auto">

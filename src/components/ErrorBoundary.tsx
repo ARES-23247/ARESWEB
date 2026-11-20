@@ -145,7 +145,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-white mb-2">This section could not be displayed</h2>
+          <h1 className="text-2xl font-bold tracking-tight text-white mb-2">This section could not be displayed</h1>
           <p className="text-white/60 text-center max-w-lg mb-6 leading-relaxed">
             Reload the page to try again. If the problem continues, share the support ID below with an ARES administrator.
           </p>
@@ -171,7 +171,8 @@ export default class ErrorBoundary extends Component<Props, State> {
               <pre className="mt-3 whitespace-pre-wrap break-words font-mono text-marble/70">{this.state.errorStr}</pre>
             </details>
           )}
-          <button 
+          <button
+            type="button"
             className="bg-white text-black font-bold px-8 py-3 ares-cut-sm hover:bg-ares-gold transition-colors tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-ares-gold ring-offset-2 ring-offset-obsidian shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:shadow-[0_0_20px_rgba(251,191,36,0.4)]"
             onClick={() => window.location.reload()}
           >

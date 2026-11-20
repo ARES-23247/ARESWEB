@@ -486,7 +486,7 @@ export function TournamentAlliancePlanner({
                                 {scout.disconnectRate}% DC
                               </span>
                             ) : (
-                              <span className="text-marble/45">No stand logs</span>
+                              <span className="text-marble/70">No stand logs</span>
                             )}
                           </td>
                           <td className="py-2.5 pr-3">

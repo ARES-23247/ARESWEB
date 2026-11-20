@@ -273,7 +273,7 @@ export default function PwaUpdatePrompt({
     <aside
       aria-live="polite"
       aria-labelledby="pwa-update-title"
-      className="fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-lg rounded-xl border border-white/15 bg-obsidian p-4 text-white shadow-2xl"
+      className="fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-lg rounded-xl border border-white/15 bg-obsidian p-4 text-white shadow-2xl print:hidden"
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 rounded-lg bg-ares-red p-2 text-white">

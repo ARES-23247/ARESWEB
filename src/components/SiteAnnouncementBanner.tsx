@@ -165,7 +165,7 @@ export default function SiteAnnouncementBanner() {
           {announcement.link && announcement.linkLabel && (
             <Link
               to={announcement.link}
-              className="mt-2 inline-flex min-h-11 items-center rounded border border-current px-3 py-2 text-xs font-black uppercase tracking-wide underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-0 sm:shrink-0"
+              className="mt-2 inline-flex min-h-11 items-center rounded border border-current px-3 py-2 text-xs font-black uppercase tracking-wide underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:mt-0 sm:shrink-0"
             >
               {announcement.linkLabel}
             </Link>
@@ -177,7 +177,7 @@ export default function SiteAnnouncementBanner() {
             rememberDismissal(announcement.revision);
             setAnnouncement(null);
           }}
-          className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:mt-0"
+          className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:mt-0"
           aria-label="Dismiss team announcement"
         >
           <X aria-hidden="true" size={22} />

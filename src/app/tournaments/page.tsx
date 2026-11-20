@@ -229,7 +229,7 @@ export default function TournamentsFeedPage() {
             </div>
             <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight font-heading mb-4 text-white">
               Tournament{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-ares-red-light to-ares-gold">
                 Scouting Vault
               </span>
             </h1>
@@ -318,7 +318,7 @@ export default function TournamentsFeedPage() {
           </div>
 
           <div className="bg-white/5 border border-white/10 ares-cut p-5 relative overflow-hidden backdrop-blur-sm flex flex-col justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
+            <span className="text-[10px] font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-ares-red-light to-ares-gold">
               Peak Team OPR
             </span>
             <span className="text-3xl md:text-4xl font-extrabold text-white mt-2 font-heading">
@@ -330,7 +330,7 @@ export default function TournamentsFeedPage() {
           </div>
 
           <div className="bg-white/5 border border-white/10 ares-cut p-5 relative overflow-hidden backdrop-blur-sm flex flex-col justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-ares-red to-ares-gold">
+            <span className="text-[10px] font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-ares-red-light to-ares-gold">
               Average Team OPR
             </span>
             <span className="text-3xl md:text-4xl font-extrabold text-white mt-2 font-heading">

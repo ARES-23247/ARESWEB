@@ -50,7 +50,7 @@ export default function SimulationPlaygroundConsoleTabs({
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
             bottomRightTab === 'console'
               ? 'text-ares-cyan border-b-2 border-ares-cyan bg-white/5'
-              : 'text-white/40 hover:text-white/60'
+              : 'text-white/70 hover:text-white/90'
           }`}
         >
           Console
@@ -60,7 +60,7 @@ export default function SimulationPlaygroundConsoleTabs({
           className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
             bottomRightTab === 'ai'
               ? 'text-ares-gold border-b-2 border-ares-gold bg-white/5'
-              : 'text-white/40 hover:text-white/60'
+              : 'text-white/70 hover:text-white/90'
           }`}
         >
           <Sparkles className="w-3 h-3" /> AI Chat

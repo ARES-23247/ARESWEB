@@ -49,13 +49,13 @@ export default function EventGallery({
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 id="photo-upload-input"
-                className="sr-only"
+                className="peer sr-only"
                 onChange={handleImageUpload}
                 disabled={uploadingImage}
               />
               <label
                 htmlFor="photo-upload-input"
-                className="px-3 py-1.5 border border-white/10 hover:border-ares-gold bg-white/5 hover:bg-white/10 text-marble hover:text-ares-gold text-[9px] font-black uppercase tracking-widest ares-cut-sm inline-flex items-center gap-1.5 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ares-cyan"
+                className="px-3 py-1.5 border border-white/10 hover:border-ares-gold bg-white/5 hover:bg-white/10 text-marble hover:text-ares-gold text-[9px] font-black uppercase tracking-widest ares-cut-sm inline-flex items-center gap-1.5 cursor-pointer transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ares-cyan"
               >
                 {uploadingImage ? (
                   <span className="w-3 h-3 border-2 border-ares-gold border-t-transparent rounded-full animate-spin"></span>

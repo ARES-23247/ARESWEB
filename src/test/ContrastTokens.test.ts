@@ -100,6 +100,25 @@ describe("semantic contrast tokens", () => {
     );
     expect(css).toContain('.hover\\:bg-ares-bronze:hover:not([class*="hover:text-"])');
     expect(css).toContain("color: var(--ares-on-bright-accent);");
+
+    // AUD-08: bronze-hover foreground rule MUST be unlayered (outside @layer components)
+    // so it overrides Tailwind v4 @layer utilities text-white.
+    const layerComponentsMatch = css.match(/@layer components\s*\{([\s\S]*?)\n\}/);
+    expect(layerComponentsMatch?.[1] ?? "").not.toContain(
+      ".hover\\:bg-ares-bronze:hover",
+    );
+
+    // AUD-16: light and gold surfaces override cyan focus outline to dark obsidian.
+    expect(css).toContain(".bg-ares-gold *:focus-visible");
+    expect(css).toContain("outline-color: var(--obsidian) !important;");
+
+    // AUD-17: same-element light-bg red rule is defined.
+    expect(css).toContain(".bg-white.text-ares-red");
+    expect(css).toContain(".bg-marble.text-ares-red");
+
+    // AUD-22: print sheet uses static multi-page flow instead of inset: 0 absolute clipping.
+    expect(css).toContain("position: static !important;");
+    expect(css).not.toContain("inset: 0;");
   });
 
   it("forbids arbitrary hex Tailwind color classes across src/app and src/components", () => {
@@ -147,8 +166,16 @@ describe("semantic contrast tokens", () => {
       join(process.cwd(), "src", "app", "dashboard", "events", "page.tsx"),
       join(process.cwd(), "src", "app", "dashboard", "simulations", "page.tsx"),
       join(process.cwd(), "src", "app", "dashboard", "sponsors", "page.tsx"),
+      join(process.cwd(), "src", "components", "events", "EventHero.tsx"),
+      join(process.cwd(), "src", "components", "navigation", "DesktopUserMenu.tsx"),
+      join(process.cwd(), "src", "components", "VideoPickerModal.tsx"),
     ]) {
-      expect(readFileSync(portalHeaderFile, "utf8")).not.toContain("animate-pulse");
+      const content = readFileSync(portalHeaderFile, "utf8");
+      expect(content, portalHeaderFile).not.toContain("animate-pulse");
+      expect(content, portalHeaderFile).not.toContain("animate-ping");
     }
+
+    const appSource = readFileSync(join(process.cwd(), "src", "App.tsx"), "utf8");
+    expect(appSource).toContain('<MotionConfig reducedMotion="user">');
   });
 });

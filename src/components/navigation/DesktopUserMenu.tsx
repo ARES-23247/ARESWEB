@@ -130,7 +130,6 @@ export function DesktopUserMenu({
             <span className="hidden text-xs font-bold uppercase tracking-wider text-white sm:inline">Portal</span>
             {hasPendingInquiries && (
               <span className="absolute -right-1 -top-1 z-10 flex h-2.5 w-2.5" aria-label="Pending inquiries">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ares-red opacity-75" aria-hidden="true" />
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-ares-red" aria-hidden="true" />
               </span>
             )}

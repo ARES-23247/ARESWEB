@@ -201,7 +201,7 @@ export default function BlogFeedPage() {
                       type="button"
                       aria-label={`Edit ${post.title}`}
                       onClick={() => handleOpenInlineEdit(post.slug)}
-                      className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-ares-gold/80 border border-white/10 rounded-lg transition-all text-white cursor-pointer z-10 hover:scale-105 active:scale-95 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
+                      className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-ares-gold hover:text-obsidian border border-white/10 rounded-lg transition-all text-white cursor-pointer z-10 hover:scale-105 active:scale-95 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
                       title="Edit Article"
                     >
                       <Pencil size={12} />

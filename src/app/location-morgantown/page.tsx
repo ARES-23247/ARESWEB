@@ -217,7 +217,7 @@ export default function LocationMorgantownPage() {
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white/5 p-8 border-l-4 border-ares-red">
-              <h3 className="text-2xl font-bold text-white mb-4">Students (Grades 7-12)</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Students (Grades 6–12)</h3>
               <ul className="space-y-3 text-marble/80">
                 <li className="flex items-start gap-3">
                   <span aria-hidden="true" className="text-ares-gold mt-1">✓</span>

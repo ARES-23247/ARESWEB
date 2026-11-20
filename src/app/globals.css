@@ -118,13 +118,13 @@ h1, h2, h3, h4, .font-heading {
     background: var(--ares-bronze);
     border-color: var(--ares-red);
   }
+}
 
-  /* Accessibility: Enforce dark foreground on bright bronze hover fills (WCAG AA 6.58:1) */
-  .clipped-button:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
-  .clipped-button-sm:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
-  .hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
-    color: var(--ares-on-bright-accent);
-  }
+/* Accessibility: Unlayered so dark foreground overrides @layer utilities text-white on bright bronze hover fills (WCAG AA 6.58:1) */
+.clipped-button:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
+.clipped-button-sm:hover:not([class*="hover:bg-"]):not([class*="hover:text-"]),
+.hover\:bg-ares-bronze:hover:not([class*="hover:text-"]) {
+  color: var(--ares-on-bright-accent);
 }
 
 .ares-surface {
@@ -234,9 +234,13 @@ select option {
 
 /* Accessibility: Enforce WCAG AA Contrast for ARES Red Text on Light Backgrounds */
 .bg-marble .text-ares-red,
+.bg-marble.text-ares-red,
 .marble-band .text-ares-red,
+.marble-band.text-ares-red,
 .marble-card .text-ares-red,
+.marble-card.text-ares-red,
 .bg-white .text-ares-red,
+.bg-white.text-ares-red,
 .text-obsidian .text-ares-red,
 [class*="bg-marble"] .text-ares-red,
 [class*="bg-white"] .text-ares-red,
@@ -265,10 +269,21 @@ select option {
   animation: scaleUp 0.2s ease-out;
 }
 
-/* Accessibility: Standard High-Contrast Cyan Focus Outline for Interactive Elements */
+/* Accessibility: Standard High-Contrast Focus Outlines (Cyan on Dark, Obsidian on Light/Gold) */
 *:focus-visible {
   outline: 2px solid var(--ares-cyan) !important;
   outline-offset: 2px !important;
+}
+
+.marble-band *:focus-visible,
+.marble-card *:focus-visible,
+.bg-marble *:focus-visible,
+.bg-marble:focus-visible,
+.bg-white *:focus-visible,
+.bg-white:focus-visible,
+.bg-ares-gold *:focus-visible,
+.bg-ares-gold:focus-visible {
+  outline-color: var(--obsidian) !important;
 }
 
 @media screen and (min-width: 1024px) and (min-height: 760px) {
@@ -281,31 +296,30 @@ select option {
   }
 }
 
-/* Print only the explicitly opened printable sheet or report, not surrounding UI chrome. */
+/* Print only the explicitly opened printable sheet or report, allowing natural multi-page flow. */
 @media print {
   body:has(.outreach-report-print, .tournament-match-print, .ares-print-sheet) {
     background: #ffffff !important;
     color: #000000 !important;
+    overflow: visible !important;
   }
 
-  body:has(.outreach-report-print, .tournament-match-print, .ares-print-sheet) * {
-    visibility: hidden;
-  }
-
-  body:has(.outreach-report-print) .outreach-report-print,
-  body:has(.outreach-report-print) .outreach-report-print *,
-  body:has(.tournament-match-print) .tournament-match-print,
-  body:has(.tournament-match-print) .tournament-match-print *,
-  body:has(.ares-print-sheet) .ares-print-sheet,
-  body:has(.ares-print-sheet) .ares-print-sheet * {
-    visibility: visible;
+  body:has(.outreach-report-print) *:not(.outreach-report-print):not(.outreach-report-print *):not(:has(.outreach-report-print)),
+  body:has(.tournament-match-print) *:not(.tournament-match-print):not(.tournament-match-print *):not(:has(.tournament-match-print)),
+  body:has(.ares-print-sheet) *:not(.ares-print-sheet):not(.ares-print-sheet *):not(:has(.ares-print-sheet)) {
+    display: none !important;
   }
 
   body:has(.outreach-report-print) .outreach-report-print,
   body:has(.tournament-match-print) .tournament-match-print,
   body:has(.ares-print-sheet) .ares-print-sheet {
-    position: absolute;
-    inset: 0;
-    width: 100%;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
   }
 }

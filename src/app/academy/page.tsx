@@ -438,7 +438,7 @@ export default function AcademyPage() {
                       </span>
                     </Link>
                     <ChevronRight size={12} />
-                    <span className="min-w-0 break-words text-ares-gold/60">
+                    <span className="min-w-0 break-words text-ares-gold/85">
                       {currentDoc.category}
                     </span>
                     <ChevronRight size={12} />
