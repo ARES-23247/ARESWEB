@@ -35,10 +35,18 @@ describe("Zulip site announcements", () => {
   ])("includes one channel-wide mention for a published %s notice", async (severity, priority) => {
     mocks.get.mockResolvedValueOnce(snapshot({ ...notice, severity }));
     await deliverPendingAnnouncement();
-    expect(mocks.update).toHaveBeenNthCalledWith(1, { zulipLeaseUntil: expect.any(Number) }, { lastUpdateTime: "original-version" });
+    expect(mocks.update).toHaveBeenNthCalledWith(
+      1,
+      { zulipLeaseUntil: expect.any(Number), zulipAttempts: 1 },
+      { lastUpdateTime: "original-version" },
+    );
     expect(mocks.send).toHaveBeenCalledWith("announcements", "Site announcements",
       `@**all** **${priority}**\n\nCalendar update @\u200b\\*\\*all\\*\\*\n\n[View calendar](https://aresfirst.org/calendar?season=%28fall%29)`);
-    expect(mocks.update).toHaveBeenNthCalledWith(2, { zulipDelivery: "sent", zulipLeaseUntil: 0 }, { lastUpdateTime: "claimed-version" });
+    expect(mocks.update).toHaveBeenNthCalledWith(
+      2,
+      { zulipDelivery: "sent", zulipLeaseUntil: 0, zulipDeliveredAt: expect.any(String) },
+      { lastUpdateTime: "claimed-version" },
+    );
   });
 
   it("waits for a scheduled publication, recovers an expired lease and uses the home link by default", async () => {
@@ -65,12 +73,23 @@ describe("Zulip site announcements", () => {
     expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  it("leaves a failed send recoverable and reports failure to the scheduler", async () => {
+  it("applies backoff on failed sends and stops at terminal failed state after max attempts", async () => {
     mocks.send.mockResolvedValueOnce(false);
     await expect(deliverPendingAnnouncement()).rejects.toThrow("Zulip did not accept");
-    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.update).toHaveBeenCalledTimes(2);
+    expect(mocks.update).toHaveBeenNthCalledWith(
+      2,
+      { zulipLeaseUntil: expect.any(Number) },
+      { lastUpdateTime: "claimed-version" },
+    );
+
+    mocks.get.mockResolvedValueOnce(snapshot({ ...notice, zulipAttempts: 4 }));
+    mocks.send.mockResolvedValueOnce(false);
     await deliverPendingAnnouncement();
-    expect(mocks.send).toHaveBeenCalledTimes(2);
+    expect(mocks.update).toHaveBeenLastCalledWith(
+      { zulipDelivery: "failed", zulipLeaseUntil: 0 },
+      { lastUpdateTime: "claimed-version" },
+    );
   });
 
   it("skips a stale claim and surfaces unexpected storage errors", async () => {

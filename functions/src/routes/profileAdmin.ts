@@ -386,6 +386,7 @@ export function registerProfileAdminRoutes(router: Router): void {
         });
 
         const lastDocument = pageDocs[pageDocs.length - 1];
+        res.setHeader("Cache-Control", "private, no-store");
         res.json({
           users,
           nextCursor:
@@ -476,6 +477,7 @@ export function registerProfileAdminRoutes(router: Router): void {
           };
         })
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      res.setHeader("Cache-Control", "private, no-store");
       res.json({ logs });
     }),
   );
@@ -821,6 +823,7 @@ export function registerProfileAdminRoutes(router: Router): void {
         };
       });
 
+      res.setHeader("Cache-Control", "private, no-store");
       res.json({
         members,
         tshirtCounts,
@@ -919,6 +922,7 @@ export function registerProfileAdminRoutes(router: Router): void {
         };
       });
 
+      res.setHeader("Cache-Control", "private, no-store");
       res.json({
         packetGeneratedAt,
         members,

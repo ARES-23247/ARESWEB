@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import express, { type NextFunction, type Response } from "express";
 import rateLimit from "express-rate-limit";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../lib/firebase-admin";
 import { reviewableDocumentDto } from "../lib/contentDtos";
 import { publicLearningMetadata } from "../lib/learningContent";
@@ -243,6 +244,66 @@ router.post(
   }),
 );
 
+const RESTORABLE_PUBLISHED_FIELDS = new Set([
+  "title",
+  "content",
+  "summary",
+  "category",
+  "library",
+  "slug",
+  "author",
+  "authorAvatar",
+  "coverImage",
+  "fileUrl",
+  "fileName",
+  "fileType",
+  "mediaPhotoIds",
+  "snippet",
+  "thumbnail",
+  "date",
+  "description",
+  "sortOrder",
+  "displayInAreslib",
+  "displayInMathCorner",
+  "displayInScienceCorner",
+  "isPortfolio",
+  "isExecutiveSummary",
+  "original_authorNickname",
+  "original_authorAvatar",
+  "searchIndexable",
+  "learningSchemaVersion",
+  "subject",
+  "topics",
+  "contentType",
+  "level",
+  "estimatedMinutes",
+  "pathMemberships",
+  "prerequisites",
+  "objectives",
+  "platforms",
+  "sourceReferences",
+  "appliesToVersion",
+  "reviewedAt",
+  "reviewedByLabel",
+  "safetyScope",
+  "instructionalContractVersion",
+  "createdAt",
+  "publishedAt",
+  "datePublished",
+]);
+
+function extractRestoredPublishedFields(
+  snapshot: Record<string, unknown>,
+): Record<string, unknown> {
+  const restored: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(snapshot)) {
+    if (RESTORABLE_PUBLISHED_FIELDS.has(key)) {
+      restored[key] = value === null ? FieldValue.delete() : value;
+    }
+  }
+  return restored;
+}
+
 router.post(
   "/discard-pending",
   ensureTeamMember,
@@ -266,13 +327,13 @@ router.post(
       if (data.approvalStatus !== "pending_approval" || !isPlainObject(data.publishedSnapshot)) {
         throw new ApiError(409, "No staged pending edit to discard.", "NO_STAGED_EDIT");
       }
-      const { publishedSnapshot: _nested, id: _id, ...restoredFields } = data.publishedSnapshot;
+      const restoredFields = extractRestoredPublishedFields(data.publishedSnapshot);
       transaction.update(documentRef, {
         ...restoredFields,
         status: "published",
         approvalStatus: "approved",
         isDeleted: 0,
-        publishedSnapshot: null,
+        publishedSnapshot: FieldValue.delete(),
         updatedAt: discardedAt,
       });
       transaction.set(auditRef, {
@@ -356,7 +417,9 @@ router.post(
         approvedAt,
         approvedByRole: req.authorizationRole,
         approvalDigest: actualDigest,
-        ...(isPlainObject(data.publishedSnapshot) ? { publishedSnapshot: null } : {}),
+        ...(isPlainObject(data.publishedSnapshot)
+          ? { publishedSnapshot: FieldValue.delete() }
+          : {}),
       });
       transaction.set(auditRef, {
         action: "content.approved",

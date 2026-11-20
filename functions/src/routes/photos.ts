@@ -215,15 +215,52 @@ router.get("/public", asyncHandler(async (req, res) => {
     { length: Math.ceil(albumIds.length / 30) },
     (_, index) => albumIds.slice(index * 30, index * 30 + 30),
   );
-  const snapshots = await Promise.all(albumChunks.map(async (ids) => {
-    let query: FirebaseFirestore.Query = adminDb.collection("imported_photos")
-      .where("albumId", "in", ids)
-      .orderBy("importedAt", "desc");
-    if (cursor) query = query.startAfter(cursor);
-    return query.limit(limit + 1).get();
+  const chunkResults = await Promise.all(albumChunks.map(async (ids) => {
+    const visibleDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let scanCursor: FirebaseFirestore.DocumentSnapshot | undefined = cursor ?? undefined;
+    let scanned = 0;
+    let exhausted = false;
+
+    while (visibleDocs.length <= limit && scanned < MAX_PHOTO_SCAN_DOCUMENTS && !exhausted) {
+      const fetchSize = scanned === 0
+        ? limit + 1
+        : Math.min(Math.max(limit + 1, 25), MAX_PHOTO_SCAN_DOCUMENTS - scanned);
+      let query: FirebaseFirestore.Query = adminDb.collection("imported_photos")
+        .where("albumId", "in", ids)
+        .orderBy("importedAt", "desc");
+      if (scanCursor) query = query.startAfter(scanCursor);
+      const snapshot = await query.limit(fetchSize).get();
+      const rawDocs = snapshot?.docs ?? [];
+      if (rawDocs.length === 0) {
+        exhausted = true;
+        break;
+      }
+
+      for (const doc of rawDocs) {
+        scanCursor = doc;
+        scanned += 1;
+        const data = doc.data();
+        if (
+          data.isDeleted !== 1 &&
+          (Boolean(safeHttpsUrl(data.publicUrl)) || Boolean(safeManagedPhotoPath(data.storagePath)))
+        ) {
+          visibleDocs.push(doc);
+        }
+        if (visibleDocs.length > limit || scanned >= MAX_PHOTO_SCAN_DOCUMENTS) {
+          break;
+        }
+      }
+
+      if (rawDocs.length < fetchSize) {
+        exhausted = true;
+      }
+    }
+
+    const chunkHasMore = visibleDocs.length > limit || (!exhausted && scanned >= MAX_PHOTO_SCAN_DOCUMENTS);
+    return { visibleDocs, chunkHasMore, scanCursor };
   }));
-  const candidates = snapshots.flatMap((snapshot) => snapshot.docs)
-    .filter((doc) => doc.data().isDeleted !== 1 && (Boolean(safeHttpsUrl(doc.data().publicUrl)) || Boolean(safeManagedPhotoPath(doc.data().storagePath))))
+  const candidates = chunkResults
+    .flatMap((result) => result.visibleDocs)
     .sort((left, right) => {
       const leftDate = typeof left.data().importedAt === "string" ? left.data().importedAt : "";
       const rightDate = typeof right.data().importedAt === "string" ? right.data().importedAt : "";
@@ -258,10 +295,19 @@ router.get("/public", asyncHandler(async (req, res) => {
       mediumUrl,
     };
   }).filter((photo) => photo.publicUrl);
+  const hasMore = candidates.length > limit || chunkResults.some((result) => result.chunkHasMore);
+  const fallbackCursor = chunkResults
+    .map((result) => result.scanCursor)
+    .filter((doc): doc is FirebaseFirestore.DocumentSnapshot => Boolean(doc))
+    .sort((left, right) => {
+      const leftDate = typeof left.data()?.importedAt === "string" ? String(left.data()?.importedAt) : "";
+      const rightDate = typeof right.data()?.importedAt === "string" ? String(right.data()?.importedAt) : "";
+      return leftDate.localeCompare(rightDate) || left.id.localeCompare(right.id);
+    })[0] ?? null;
   res.json({
     photos,
-    hasMore: candidates.length > limit || snapshots.some((snapshot) => snapshot.docs.length > limit),
-    nextCursor: page.length ? page[page.length - 1].id : null,
+    hasMore,
+    nextCursor: hasMore ? (page.length > 0 ? page[page.length - 1].id : fallbackCursor?.id ?? null) : null,
   });
 }));
 

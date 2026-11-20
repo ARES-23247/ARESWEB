@@ -93,6 +93,8 @@ function sanitizeAvatarUrl(value: unknown, sensitiveValues: unknown[]): string {
     // A malformed legacy URL is still checked in its original form below.
   }
 
+  if (comparableAvatar.includes("@")) return "";
+
   const exposesSensitiveSeed = sensitiveValues.some(
     (sensitiveValue) =>
       typeof sensitiveValue === "string" &&
@@ -234,6 +236,7 @@ export function registerProfileRosterRoutes(router: Router): void {
               doc.id,
               data.contactEmail,
               data.email,
+              authData?.email,
             ]),
             bio: safeRosterString(data.bio, 1_500),
             colleges: isStudent ? [] : safeRosterColleges(data.colleges, 10),
@@ -270,16 +273,16 @@ export function registerProfileRosterRoutes(router: Router): void {
         fetchPaginatedRosterCollection("user_profiles"),
         fetchPaginatedRosterCollection("authorized_users"),
       ]);
-      const activeUids = new Set(
+      const activeAuthMap = new Map(
         authDocs
           .filter((document) => hasActiveAuthorization(document.data()))
-          .map((document) => document.id),
+          .map((document) => [document.id, document.data()]),
       );
       const membersRaw = profileDocs
         .filter((document) => {
           const data = document.data();
           return (
-            activeUids.has(document.id) &&
+            activeAuthMap.has(document.id) &&
             data.isDeleted !== 1 &&
             data.isDeleted !== true &&
             data.archived !== true
@@ -287,6 +290,7 @@ export function registerProfileRosterRoutes(router: Router): void {
         })
         .map((doc) => {
           const data = doc.data();
+          const authData = activeAuthMap.get(doc.id);
           return {
             identifier: doc.id,
             nickname:
@@ -297,6 +301,7 @@ export function registerProfileRosterRoutes(router: Router): void {
               doc.id,
               data.contactEmail,
               data.email,
+              authData?.email,
             ]),
             contactEmail: data.contactEmail || "",
           };

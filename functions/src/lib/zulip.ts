@@ -6,6 +6,34 @@ export function escapeZulipMarkdown(value: string): string {
     .replace(/([\\`*_{}\[\]()<>#+.!|~-])/gu, "\\$1");
 }
 
+/**
+ * Removes Zulip user/group/wildcard mentions across arbitrary nesting depths
+ * and neutralizes any remaining `@` symbol so untrusted member text can never
+ * trigger mentions or channel-wide pings under the workspace bot identity.
+ */
+export function sanitizeZulipUserText(value: string): string {
+  let cleaned = value.replace(/[\p{Cc}\u202a-\u202e\u2066-\u2069]+/gu, " ");
+  let previous = "";
+  while (cleaned !== previous) {
+    previous = cleaned;
+    let innerPrev = "";
+    while (cleaned !== innerPrev) {
+      innerPrev = cleaned;
+      cleaned = cleaned
+        .replace(/@_?\*\*[^*@]+\*\*/gu, "")
+        .replace(/@_?\*[^*@]+\*/gu, "");
+    }
+    cleaned = cleaned
+      .replace(/@_?\*\*[^*]+\*\*/gu, "")
+      .replace(/@_?\*[^*]+\*/gu, "")
+      .replace(/(^|\s)@(?:all|everyone|channel|stream)\b/giu, "$1");
+  }
+  return cleaned
+    .replace(/@/gu, "@\u200B")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
 export function getZulipCredentials() {
   let url = (process.env.ZULIP_URL || "").trim();
   const configuredEmail = (process.env.ZULIP_BOT_EMAIL || "").trim();
@@ -97,11 +125,27 @@ export async function sendZulipApprovalQueueNotification(
   const actionLabel = input.isStagedEdit
     ? "submitted a pending edit to a published item"
     : "submitted an item for mentor/coach review";
-  const actor = input.authorLabel?.trim() || "An ARES team member";
-  const portalUrl = `https://aresfirst.org${input.dashboardPath}`;
+  const formatInline = (text: string) =>
+    escapeZulipMarkdown(
+      text.replace(/[\s\p{Cc}\u202a-\u202e\u2066-\u2069]+/gu, " ").trim(),
+    );
+  const safeSection = formatInline(input.section);
+  const safeTitle = formatInline(input.title);
+  const safeContentId = input.contentId
+    .replace(/[`@\r\n\p{Cc}\u202a-\u202e\u2066-\u2069]/gu, "")
+    .trim();
+  const actor = formatInline(input.authorLabel?.trim() || "An ARES team member");
+  const safePath =
+    typeof input.dashboardPath === "string" &&
+    input.dashboardPath.startsWith("/") &&
+    !input.dashboardPath.startsWith("//") &&
+    !/[\s\p{Cc}]/u.test(input.dashboardPath)
+      ? input.dashboardPath
+      : "/dashboard";
+  const portalUrl = `https://aresfirst.org${safePath}`;
   const content = [
-    `**[${input.section}] Pending Review: ${input.title}**`,
-    `${actor} ${actionLabel} (\`${input.contentId}\`).`,
+    `**[${safeSection}] Pending Review: ${safeTitle}**`,
+    `${actor} ${actionLabel} (\`${safeContentId}\`).`,
     `Review in dashboard: ${portalUrl}`,
   ].join("\n\n");
 

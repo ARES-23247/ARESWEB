@@ -5,6 +5,7 @@ import { adminDb } from "../lib/firebase-admin";
 import {
   getZulipCredentials,
   getZulipUsers,
+  sanitizeZulipUserText,
   sendZulipMessage,
 } from "../lib/zulip";
 import { logger } from "../lib/logger";
@@ -210,6 +211,7 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
     const zulipRes = await fetch(targetUrl, {
       method: "GET",
       headers: { Authorization: `Basic ${authHeader}` },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!zulipRes.ok) {
@@ -240,7 +242,7 @@ router.get("/topic", ensureTeamMember, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/zulip/message
-router.post("/message", ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/message", ensureTeamMember, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { stream, topic, content } = req.body as {
     stream?: unknown;
     topic?: unknown;
@@ -254,13 +256,21 @@ router.post("/message", ensureTeamMember, asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "Enter a valid stream, topic, and message.");
   }
+  const normalizedStream = stream.trim().toLowerCase();
   if (!isAllowedProxyStream(stream)) {
     throw new ApiError(403, "This stream is not available through the team proxy.");
   }
+  if (
+    normalizedStream === "announcements" &&
+    req.authorizationRole !== "admin" &&
+    req.authorizationRole !== "coach"
+  ) {
+    throw new ApiError(403, "Only admins and coaches may post to the announcements stream.");
+  }
 
   // Outbound member content must not be able to trigger @all/@everyone pings
-  // or user mentions under the bot identity.
-  const safeContent = content.replace(/@\*\*[^*]+\*\*/g, "").replace(/@all|@everyone/gi, "").replace(/\s+/g, " ").trim();
+  // or user/group mentions under the bot identity across arbitrary nesting.
+  const safeContent = sanitizeZulipUserText(content);
   if (!safeContent) {
     throw new ApiError(400, "Message content is empty after removing mentions.");
   }

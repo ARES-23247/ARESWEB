@@ -236,6 +236,25 @@ describe("site announcement routes", () => {
     expect(mocks.batchSet).not.toHaveBeenCalled();
   });
 
+  it("preserves sent Zulip delivery on schedule-only edits without triggering another channel ping", async () => {
+    mocks.settingsGet.mockResolvedValueOnce({
+      data: () => ({ ...activeDocument, zulipDelivery: "sent", zulipDeliveredAt: "2026-08-14T18:05:00.000Z" }),
+    });
+    const { message, severity, link, linkLabel, isActive } = activeDocument;
+    await invoke("/admin", "put", {
+      message,
+      severity,
+      link,
+      linkLabel,
+      isActive,
+      evergreen: false,
+      startsAt: null,
+      endsAt: "2026-08-20T01:00:00.000Z",
+    });
+    expect(mocks.batchSet).toHaveBeenCalledTimes(2);
+    expect(mocks.batchSet.mock.calls[0][1]).not.toHaveProperty("zulipDelivery");
+  });
+
   it("rejects external links, oversized messages, and reversed schedules", async () => {
     const invalidBodies = [
       {

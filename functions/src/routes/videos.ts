@@ -7,7 +7,6 @@ import { ApiError } from "../middleware/errorHandler";
 import { asyncHandler } from "../lib/utils";
 import { logger } from "../lib/logger";
 import { requireRouteParam } from "../middleware/validation";
-import { syndicatePublishedVideo } from "../lib/socialSyndication";
 
 const router = express.Router();
 const TEAM_UPLOADS_PLAYLIST_ID = "UUre4FN7UThyVd-biFk0n-Ig";
@@ -279,37 +278,17 @@ router.get("/", ensureTeamMember, asyncHandler(async (req, res) => {
 }));
 
 /**
- * Announces a video that just transitioned to published. The syndicatedAt
- * marker is written before announcing so a retried or re-saved edit never
- * double-posts; every channel links back to the on-site video hub.
+ * Determines whether a video just transitioned to published and has not yet
+ * been syndicated. Actual Zulip/Bluesky delivery runs on `communicationsApi`
+ * (`POST /api/webhooks/syndicate-video`), which holds those channel secrets.
  */
-async function announceNewlyPublishedVideo(
-  ref: FirebaseFirestore.DocumentReference,
-  docId: string,
+function shouldSyndicateVideo(
   before: FirebaseFirestore.DocumentData | undefined,
-  record: { title: string; description: string; thumbnailUrl: string; status: string; updatedAt: string },
-): Promise<void> {
-  if (record.status !== "published") return;
-  if (before?.status === "published" || before?.syndicatedAt) return;
-  await ref.update({ syndicatedAt: record.updatedAt });
-  try {
-    const result = await syndicatePublishedVideo({
-      title: record.title,
-      docId,
-      version: record.updatedAt,
-      snippet: record.description,
-      thumbnail: record.thumbnailUrl,
-    });
-    logger.info("videos", "Announced a published video on social channels", {
-      docId,
-      result,
-    });
-  } catch (error) {
-    logger.error("videos", "Video social announcement failed", {
-      docId,
-      reason: error instanceof Error ? error.name : "unknown",
-    });
-  }
+  record: { status: string },
+): boolean {
+  if (record.status !== "published") return false;
+  if (before?.status === "published" || before?.syndicatedAt) return false;
+  return true;
 }
 
 router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
@@ -329,8 +308,8 @@ router.post("/", ensureAdmin, asyncHandler(async (req, res) => {
     archivedAt: null,
   };
   await ref.set(record, { merge: true });
-  await announceNewlyPublishedVideo(ref, id, existing.data(), record);
-  res.status(201).json({ success: true, video: toVideoDto(id, record) });
+  const syndicateDocIds = shouldSyndicateVideo(existing.data(), record) ? [id] : [];
+  res.status(201).json({ success: true, video: toVideoDto(id, record), syndicateDocIds });
 }));
 
 router.patch("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
@@ -348,8 +327,8 @@ router.patch("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
     updatedAt: new Date().toISOString(),
   };
   await ref.set(updated, { merge: true });
-  await announceNewlyPublishedVideo(ref, id, snapshot.data(), updated);
-  res.json({ success: true, video: toVideoDto(id, { ...snapshot.data(), ...updated }) });
+  const syndicateDocIds = shouldSyndicateVideo(snapshot.data(), updated) ? [id] : [];
+  res.json({ success: true, video: toVideoDto(id, { ...snapshot.data(), ...updated }), syndicateDocIds });
 }));
 
 router.delete("/:videoId", ensureAdmin, asyncHandler(async (req, res) => {
@@ -388,7 +367,7 @@ async function fetchCompletePlaylist(apiKey: string): Promise<{ items: YoutubePl
     if (pageToken) url.searchParams.set("pageToken", pageToken);
     let response: globalThis.Response;
     try {
-      response = await fetch(url);
+      response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     } catch (error) {
       logger.error("videos", "YouTube request failed", { error: error instanceof Error ? error.message : String(error) });
       throw new ApiError(502, "YouTube is unreachable. No video records were changed.");
@@ -467,7 +446,6 @@ router.post(
       if (before && (before.syndicatedAt || before.status === "published")) continue;
       const createdAtMs = Date.parse(String(data.createdAt));
       if (!Number.isFinite(createdAtMs) || createdAtMs < syncCutoff) continue;
-      data.syndicatedAt = syncedAt;
       announceable.push({
         docId: id,
         title: String(data.title || ""),
@@ -500,26 +478,7 @@ router.post(
     archivedCount = archiveOperations.length;
   }
 
-  for (const video of announceable.slice(-SYNC_ANNOUNCE_MAX_POSTS)) {
-    try {
-      const result = await syndicatePublishedVideo({
-        title: video.title,
-        docId: video.docId,
-        version: syncedAt,
-        snippet: video.description,
-        thumbnail: video.thumbnailUrl,
-      });
-      logger.info("videos", "Announced a synced YouTube upload on social channels", {
-        docId: video.docId,
-        result,
-      });
-    } catch (error) {
-      logger.error("videos", "Sync announcement failed", {
-        docId: video.docId,
-        reason: error instanceof Error ? error.name : "unknown",
-      });
-    }
-  }
+  const syndicateDocIds = announceable.slice(-SYNC_ANNOUNCE_MAX_POSTS).map((video) => video.docId);
   if (announceable.length > SYNC_ANNOUNCE_MAX_POSTS) {
     logger.warn("videos", "Capped sync announcements", {
       announceable: announceable.length,
@@ -531,12 +490,14 @@ router.post(
     pagesFetched,
     upsertedCount: records.size,
     archivedCount,
+    syndicateCandidates: syndicateDocIds.length,
   });
   res.json({
     success: true,
     pagesFetched,
     addedUpdatedCount: records.size,
     archivedCount,
+    syndicateDocIds,
     archivalSkipped: records.size === 0,
     message: records.size === 0
       ? "YouTube returned no usable videos. Existing records were preserved."

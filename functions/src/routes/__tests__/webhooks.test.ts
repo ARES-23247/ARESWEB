@@ -6,11 +6,13 @@ const mocks = vi.hoisted(() => ({
   batchSet: vi.fn(),
   batchUpdate: vi.fn(),
   receiptSet: vi.fn(),
+  videoSet: vi.fn(),
   transactionGet: vi.fn(),
   transactionSet: vi.fn(),
   transactionCreate: vi.fn(),
   transactionUpdate: vi.fn(),
   syndicate: vi.fn(),
+  syndicateVideo: vi.fn(),
   zulipSend: vi.fn(),
 }));
 
@@ -18,6 +20,7 @@ vi.mock("../../lib/firebase-admin", () => ({
   adminDb: {
     collection: vi.fn((name: string) => {
       if (name === "posts") return { doc: vi.fn(() => ({ kind: "post" })) };
+      if (name === "videos") return { doc: vi.fn(() => ({ kind: "video", set: mocks.videoSet })) };
       if (name === "internal_social_syndication") {
         return {
           doc: vi.fn(() => ({ kind: "receipt", set: mocks.receiptSet })),
@@ -52,11 +55,16 @@ vi.mock("../../lib/firebase-admin", () => ({
 vi.mock("../../lib/socialSyndication", () => ({
   SYNDICATION_CHANNELS: ["zulip", "bluesky"],
   syndicatePublishedPost: (...args: unknown[]) => mocks.syndicate(...args),
+  syndicatePublishedVideo: (...args: unknown[]) => mocks.syndicateVideo(...args),
 }));
 
-vi.mock("../../lib/zulip", () => ({
-  sendZulipMessage: (...args: unknown[]) => mocks.zulipSend(...args),
-}));
+vi.mock("../../lib/zulip", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/zulip")>();
+  return {
+    ...actual,
+    sendZulipMessage: (...args: unknown[]) => mocks.zulipSend(...args),
+  };
+});
 
 import webhooksRouter, { syndicationQuotaKey } from "../webhooks";
 
@@ -655,6 +663,71 @@ describe("Webhooks Router Backend Endpoints", () => {
         syndication: { zulip: true, bluesky: false },
       });
       expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /api/webhooks/syndicate-video", () => {
+    const publishedVideo = {
+      title: "Robot Reveal 2026",
+      description: "Final drivetrain demo",
+      thumbnailUrl: "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg",
+      status: "published",
+      isDeleted: 0,
+      updatedAt: "2026-11-20T12:00:00.000Z",
+    };
+
+    it("rejects non-publisher roles", async () => {
+      req.authorizationRole = "member";
+      req.body = { docId: "video_abcdefghijk" };
+      await getHandler("/syndicate-video", "post")(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
+      expect(mocks.syndicateVideo).not.toHaveBeenCalled();
+    });
+
+    it("delivers video announcements through communicationsApi and stamps syndicatedAt only when complete", async () => {
+      req.authorizationRole = "coach";
+      req.body = { docId: "video_abcdefghijk" };
+      mocks.transactionGet
+        .mockResolvedValueOnce({ exists: true, data: () => publishedVideo })
+        .mockResolvedValueOnce({ exists: false, data: () => undefined });
+      mocks.syndicateVideo.mockResolvedValueOnce({
+        deliveries: { zulip: true, bluesky: true },
+      });
+
+      await getHandler("/syndicate-video", "post")(req, res, next);
+
+      expect(mocks.syndicateVideo).toHaveBeenCalledWith(
+        expect.objectContaining({ docId: "video_abcdefghijk", title: "Robot Reveal 2026" }),
+        ["zulip", "bluesky"],
+      );
+      expect(mocks.videoSet).toHaveBeenCalledWith(
+        { syndicatedAt: expect.any(String) },
+        { merge: true },
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        syndication: { zulip: true, bluesky: true },
+      });
+    });
+
+    it("returns 207 without stamping syndicatedAt when a channel fails", async () => {
+      req.authorizationRole = "admin";
+      req.body = { docId: "video_abcdefghijk" };
+      mocks.transactionGet
+        .mockResolvedValueOnce({ exists: true, data: () => publishedVideo })
+        .mockResolvedValueOnce({ exists: false, data: () => undefined });
+      mocks.syndicateVideo.mockResolvedValueOnce({
+        deliveries: { zulip: true, bluesky: false },
+      });
+
+      await getHandler("/syndicate-video", "post")(req, res, next);
+
+      expect(mocks.videoSet).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(207);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        syndication: { zulip: true, bluesky: false },
+      }));
     });
   });
 });

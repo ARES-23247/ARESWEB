@@ -106,19 +106,54 @@ export function contentOwnerDocumentId(
   return `${collectionName}__${slug}`;
 }
 
-const SNAPSHOT_EXCLUDED_KEYS = new Set([
-  "publishedSnapshot",
-  "status",
-  "approvalStatus",
-  "approvedBy",
-  "approvedAt",
-  "approvedByUid",
-  "approvedByRole",
-  "approvalDigest",
-  "isApproved",
-  "lastEditedByUid",
-  "isDeleted",
-]);
+const PUBLISHED_SNAPSHOT_ALLOWED_KEYS = [
+  "title",
+  "content",
+  "summary",
+  "category",
+  "library",
+  "slug",
+  "author",
+  "coverImage",
+  "fileUrl",
+  "fileName",
+  "fileType",
+  "mediaPhotoIds",
+  "snippet",
+  "thumbnail",
+  "authorAvatar",
+  "date",
+  "description",
+  "sortOrder",
+  "displayInAreslib",
+  "displayInMathCorner",
+  "displayInScienceCorner",
+  "isPortfolio",
+  "isExecutiveSummary",
+  "original_authorNickname",
+  "original_authorAvatar",
+  "searchIndexable",
+  "learningSchemaVersion",
+  "subject",
+  "topics",
+  "contentType",
+  "level",
+  "estimatedMinutes",
+  "pathMemberships",
+  "prerequisites",
+  "objectives",
+  "platforms",
+  "sourceReferences",
+  "appliesToVersion",
+  "reviewedAt",
+  "reviewedByLabel",
+  "safetyScope",
+  "instructionalContractVersion",
+  "createdAt",
+  "updatedAt",
+  "publishedAt",
+  "datePublished",
+] as const;
 
 export function extractPublishedDocSnapshot(
   existingData: Record<string, unknown>,
@@ -132,9 +167,13 @@ export function extractPublishedDocSnapshot(
     return existingData.publishedSnapshot as Record<string, unknown>;
   }
   const snapshot: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(existingData)) {
-    if (!SNAPSHOT_EXCLUDED_KEYS.has(key) && value !== undefined) {
-      snapshot[key] = value;
+  for (const key of PUBLISHED_SNAPSHOT_ALLOWED_KEYS) {
+    if (Object.hasOwn(existingData, key) && existingData[key] !== undefined) {
+      snapshot[key] = existingData[key];
+    } else if (key !== "searchIndexable") {
+      // Shadow absent-on-live editable fields as null so resolvePublishedContentData
+      // keeps the published view unchanged across both 1st and subsequent staged edits.
+      snapshot[key] = null;
     }
   }
   return snapshot;

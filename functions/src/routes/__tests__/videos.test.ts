@@ -7,9 +7,6 @@ const queryGet = vi.fn();
 const batchSet = vi.fn();
 const batchCommit = vi.fn();
 const doc = vi.fn(() => ({ get: docGet, set: docSet, update: docUpdate }));
-const syndicateVideo = vi.fn().mockResolvedValue({
-  deliveries: { zulip: true, bluesky: true },
-});
 const query: any = {
   where: vi.fn(() => query),
   orderBy: vi.fn(() => query),
@@ -23,9 +20,6 @@ vi.mock("../../lib/firebase-admin", () => ({
     collection: vi.fn(() => ({ ...query, doc })),
     batch: vi.fn(() => ({ set: batchSet, commit: batchCommit })),
   },
-}));
-vi.mock("../../lib/socialSyndication", () => ({
-  syndicatePublishedVideo: (...args: unknown[]) => syndicateVideo(...args),
 }));
 vi.mock("../../middleware/auth", () => ({
   ensureAdmin: (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -69,35 +63,39 @@ describe("videos routes", () => {
     ]);
   });
 
-  it("announces a newly created published video exactly once", async () => {
+  it("returns syndicateDocIds for a newly created published video without stamping syndicatedAt in mediaApi", async () => {
     docGet.mockResolvedValueOnce({ exists: false, data: () => ({}) });
     await handler("/", "post")({ body: { videoId: "abcdefghijk", title: "Fresh Upload", status: "published" } }, res, next);
-    expect(docUpdate).toHaveBeenCalledWith({ syndicatedAt: expect.any(String) });
-    expect(syndicateVideo).toHaveBeenCalledTimes(1);
-    expect(syndicateVideo).toHaveBeenCalledWith(expect.objectContaining({
-      docId: "video_abcdefghijk",
-      title: "Fresh Upload",
+    expect(docUpdate).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      syndicateDocIds: ["video_abcdefghijk"],
     }));
   });
 
-  it("does not announce a newly created draft", async () => {
+  it("does not request syndication for a newly created draft", async () => {
     docGet.mockResolvedValueOnce({ exists: false, data: () => ({}) });
     await handler("/", "post")({ body: { videoId: "abcdefghijk", title: "Draft Upload", status: "draft" } }, res, next);
-    expect(syndicateVideo).not.toHaveBeenCalled();
     expect(docUpdate).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      syndicateDocIds: [],
+    }));
   });
 
-  it("announces when an edit flips a draft to published", async () => {
+  it("returns syndicateDocIds when an edit flips a draft to published", async () => {
     docGet.mockResolvedValueOnce({ exists: true, data: () => ({ status: "draft", isDeleted: 0 }) });
     await handler("/:videoId", "patch")({ params: { videoId: "video_abcdefghijk" }, body: { videoId: "abcdefghijk", title: "Going Live", status: "published" } }, res, next);
-    expect(syndicateVideo).toHaveBeenCalledTimes(1);
-    expect(syndicateVideo).toHaveBeenCalledWith(expect.objectContaining({ title: "Going Live" }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      syndicateDocIds: ["video_abcdefghijk"],
+    }));
   });
 
   it("never re-announces an edit that keeps a video published", async () => {
     docGet.mockResolvedValueOnce({ exists: true, data: () => ({ status: "published", isDeleted: 0, syndicatedAt: "2026-08-01T00:00:00.000Z" }) });
     await handler("/:videoId", "patch")({ params: { videoId: "video_abcdefghijk" }, body: { videoId: "abcdefghijk", title: "Title Tweak", status: "published" } }, res, next);
-    expect(syndicateVideo).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      syndicateDocIds: [],
+    }));
   });
 
   it("returns a bounded public DTO without sync metadata", async () => {
@@ -349,7 +347,7 @@ describe("videos routes", () => {
     expect(stored.description.length).toBeLessThanOrEqual(2_000);
   });
 
-  it("announces only fresh uploads discovered by sync", async () => {
+  it("returns syndicateDocIds only for fresh uploads discovered by sync", async () => {
     process.env.YOUTUBE_API_KEY = "secret-key";
     const freshDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const item = (id: string, title: string, publishedAt: string) => ({
@@ -369,13 +367,12 @@ describe("videos routes", () => {
       ] }),
     }));
     queryGet.mockResolvedValueOnce({ docs: [] });
+    queryGet.mockResolvedValueOnce({ docs: [] });
 
     await handler("/sync", "post")({ user: { uid: "admin" } }, res, next);
 
-    expect(syndicateVideo).toHaveBeenCalledTimes(1);
-    expect(syndicateVideo).toHaveBeenCalledWith(expect.objectContaining({
-      docId: "video_freshvideo1",
-      title: "Fresh Upload",
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      syndicateDocIds: ["video_freshvideo1"],
     }));
   });
 

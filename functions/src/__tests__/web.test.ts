@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getDocument = vi.fn();
 vi.mock("../lib/firebase-admin", () => ({
@@ -10,7 +10,10 @@ vi.mock("../lib/logger", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-import { handleWebRequest, resetShellCacheForTests } from "../web";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import rateLimit from "express-rate-limit";
+import { createWebApp, handleWebRequest, resetShellCacheForTests } from "../web";
 
 const runWeb = handleWebRequest as unknown as (req: unknown, res: unknown) => Promise<void>;
 
@@ -31,7 +34,12 @@ function responseDouble() {
 describe("dynamic web function", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     resetShellCacheForTests();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("returns an injected shell for a published record", async () => {
@@ -148,5 +156,30 @@ describe("dynamic web function", () => {
     );
     expect(response.status).toHaveBeenCalledWith(503);
     expect(response.set).toHaveBeenCalledWith("Cache-Control", "no-store, no-transform");
+  });
+
+  it("mounts webApp with trust proxy: 1 and resolves 429 rate-limited requests immediately", async () => {
+    const app = createWebApp(rateLimit({
+      windowMs: 60_000,
+      max: 1,
+      message: { error: "Too many requests." },
+      standardHeaders: true,
+      legacyHeaders: false,
+    }));
+    expect(app.get("trust proxy")).toBe(1);
+
+    const server = createServer(app);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      const { port } = server.address() as AddressInfo;
+      const first = await fetch(`http://127.0.0.1:${port}/unknown/path`);
+      expect(first.status).toBe(404);
+      const second = await fetch(`http://127.0.0.1:${port}/unknown/path`, {
+        signal: AbortSignal.timeout(2_000),
+      });
+      expect(second.status).toBe(429);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
 });

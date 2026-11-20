@@ -91,6 +91,7 @@ describe("Profiles Router Backend Endpoints", () => {
     res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
+      setHeader: vi.fn(),
     };
     next = vi.fn();
   });
@@ -1370,6 +1371,30 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(err).toBeDefined();
       expect(err.status).toBe(400);
       expect(err.message).toContain("Validation failed");
+    });
+  });
+
+  describe("sanitizeAvatarUrl email-seed protection", () => {
+    it("strips DiceBear avatar URLs containing auth email seeds or @ symbols", async () => {
+      const { sanitizeAvatarUrl } = await import("../profileRoster");
+      expect(
+        sanitizeAvatarUrl(
+          "https://api.dicebear.com/9.x/bottts/svg?seed=student%40example.org",
+          ["uid-1", "encrypted-blob", undefined, "student@example.org"],
+        ),
+      ).toBe("");
+      expect(
+        sanitizeAvatarUrl(
+          "https://api.dicebear.com/9.x/bottts/svg?seed=someone@other.org",
+          ["uid-1"],
+        ),
+      ).toBe("");
+      expect(
+        sanitizeAvatarUrl(
+          "https://api.dicebear.com/9.x/bottts/svg?seed=CircuitFox",
+          ["uid-1", undefined, undefined, "student@example.org"],
+        ),
+      ).toBe("https://api.dicebear.com/9.x/bottts/svg?seed=CircuitFox");
     });
   });
 });

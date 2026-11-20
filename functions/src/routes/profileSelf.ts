@@ -33,12 +33,19 @@ export const profileUpdateSchema = z.object({
   avatar: z.string().trim().max(2048).refine(value => {
     if (!value) return true;
     try {
+      let decoded = value;
+      try {
+        decoded = decodeURIComponent(value);
+      } catch {
+        // Keep raw value for inspection below.
+      }
+      if (decoded.includes("@")) return false;
       const url = new URL(value);
       return url.protocol === "https:" && (url.hostname === "dicebear.com" || url.hostname.endsWith(".dicebear.com"));
     } catch {
       return false;
     }
-  }, "Avatar must be a secure DiceBear URL.").optional(),
+  }, "Avatar must be a secure DiceBear URL without email seeds.").optional(),
   bio: z.string().trim().max(1000).optional(),
   funFact: z.string().trim().max(300).optional(),
   favoriteFirstThing: z.string().trim().max(300).optional(),
@@ -266,6 +273,7 @@ router.get("/me", ensureTeamMember, asyncHandler(async (req: AuthenticatedReques
   if (!authorizationSnapshot.exists || authorizationSnapshot.data()?.isDeleted === 1) {
     throw new ApiError(403, "Forbidden: Active team membership is required.");
   }
+  res.setHeader("Cache-Control", "private, no-store");
   res.json(await profileDto(
     profileRef,
     profileSnapshot.exists ? profileSnapshot.data() || {} : {},
@@ -331,6 +339,7 @@ router.get("/admin/users/:userId/profile", ensureAdmin, asyncHandler(async (req:
   const [profileSnapshot, authorizationSnapshot] = await Promise.all([profileRef.get(), authorizationRef.get()]);
   if (!authorizationSnapshot.exists) throw new ApiError(404, "User not found.");
   const authEmail = safeString(authorizationSnapshot.data()?.email, 320).toLowerCase();
+  res.setHeader("Cache-Control", "private, no-store");
   res.json(await profileDto(
     profileRef,
     profileSnapshot.exists ? profileSnapshot.data() || {} : {},

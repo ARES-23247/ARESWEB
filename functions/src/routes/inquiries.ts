@@ -201,6 +201,7 @@ router.get("/", ensureAdmin, asyncHandler(async (req, res) => {
     };
   }));
 
+  res.setHeader("Cache-Control", "private, no-store");
   res.json({
     success: true,
     inquiries,

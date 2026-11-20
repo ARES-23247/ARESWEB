@@ -46,7 +46,7 @@ describe("profile privacy boundary", () => {
       params: {},
       body: {},
     };
-    res = { json: vi.fn().mockReturnThis() };
+    res = { json: vi.fn().mockReturnThis(), setHeader: vi.fn() };
     next = vi.fn();
   });
 
@@ -95,6 +95,7 @@ describe("profile privacy boundary", () => {
     await handler("/me", "get")(req, res, next);
 
     expect(next).not.toHaveBeenCalled();
+    expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "private, no-store");
     expect(res.json).toHaveBeenCalledWith({
       exists: true,
       profile: expect.objectContaining({

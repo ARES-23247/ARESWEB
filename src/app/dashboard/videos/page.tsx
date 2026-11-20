@@ -31,11 +31,12 @@ const EMPTY_DRAFT: VideoDraft = {
 
 export default function VideosManagementPage() {
   const { authorizedUser } = useAuth();
+  const isUnverified = !authorizedUser || authorizedUser.role === "unverified";
   const canManage = authorizedUser?.role === "admin" || authorizedUser?.role === "coach";
   const [videos, setVideos] = useState<ManagedVideo[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isUnverified);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -52,6 +53,11 @@ export default function VideosManagementPage() {
   const [syncing, setSyncing] = useState(false);
 
   const loadVideos = useCallback(async (append = false, targetCursor: string | null = null) => {
+    if (isUnverified) {
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
     if (append) setLoadingMore(true);
     else setLoading(true);
     setError(null);
@@ -72,7 +78,7 @@ export default function VideosManagementPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [showArchived]);
+  }, [isUnverified, showArchived]);
 
   useEffect(() => {
     void loadVideos(false);
@@ -108,6 +114,27 @@ export default function VideosManagementPage() {
     setEditorOpen(true);
   };
 
+  const announcePublishedVideos = async (docIds: unknown): Promise<string | null> => {
+    if (!Array.isArray(docIds) || docIds.length === 0) return null;
+    let partialFailures = 0;
+    for (const docId of docIds) {
+      if (typeof docId !== "string" || !docId) continue;
+      try {
+        const res = await authenticatedFetch("/api/webhooks/syndicate-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ docId }),
+        });
+        if (!res.ok || res.status === 207) partialFailures += 1;
+      } catch {
+        partialFailures += 1;
+      }
+    }
+    return partialFailures > 0
+      ? "Saved, but some social announcement channels could not be reached."
+      : null;
+  };
+
   const saveVideo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canManage || saving) return;
@@ -124,12 +151,16 @@ export default function VideosManagementPage() {
         body: JSON.stringify(draft),
       });
       if (!response.ok) throw await apiFailure(response, "Video could not be saved.");
-      const payload = await response.json() as { video: ManagedVideo };
+      const payload = await response.json() as { video: ManagedVideo; syndicateDocIds?: string[] };
       setVideos((current) => editing
         ? current.map((video) => video.id === editing.id ? payload.video : video)
         : [payload.video, ...current]);
       setEditorOpen(false);
-      setNotice(editing ? "Video changes saved." : "Video added to the library.");
+      const syndicateWarning = await announcePublishedVideos(payload.syndicateDocIds);
+      setNotice(
+        syndicateWarning ??
+          (editing ? "Video changes saved." : "Video added to the library."),
+      );
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -161,7 +192,16 @@ export default function VideosManagementPage() {
     try {
       const response = await authenticatedFetch(`/api/videos/${video.id}/restore`, { method: "POST" });
       if (!response.ok) throw await apiFailure(response, "Video could not be restored.");
-      setVideos((current) => current.filter((item) => item.id !== video.id));
+      const payload = (await response.json().catch(() => null)) as { video?: ManagedVideo } | null;
+      setVideos((current) =>
+        showArchived
+          ? current.map((item) =>
+              item.id === video.id
+                ? (payload?.video ?? { ...item, isArchived: false })
+                : item,
+            )
+          : current.filter((item) => item.id !== video.id),
+      );
       setNotice("Video restored. It is back in the active library.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -177,8 +217,13 @@ export default function VideosManagementPage() {
     try {
       const response = await authenticatedFetch("/api/videos/sync", { method: "POST" });
       if (!response.ok) throw await apiFailure(response, "YouTube sync failed.");
-      const payload = await response.json() as { message?: string };
-      setNotice(payload.message || "YouTube sync finished.");
+      const payload = await response.json() as { message?: string; syndicateDocIds?: string[] };
+      const syndicateWarning = await announcePublishedVideos(payload.syndicateDocIds);
+      setNotice(
+        syndicateWarning
+          ? `${payload.message || "YouTube sync finished."} ${syndicateWarning}`
+          : (payload.message || "YouTube sync finished."),
+      );
       await loadVideos(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -201,7 +246,13 @@ export default function VideosManagementPage() {
         </> : undefined}
       />
 
-      {!canManage && <p className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">You can view the team library. An admin or coach manages video links.</p>}
+      {isUnverified ? (
+        <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">
+          Pending role verification. An admin or coach must verify your account before you can access the team video library.
+        </p>
+      ) : (
+        !canManage && <p className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">You can view the team library. An admin or coach manages video links.</p>
+      )}
       {notice && <p role="status" className="border border-ares-gold/30 bg-ares-gold/10 p-4 text-sm text-marble">{notice}</p>}
       {error && <div role="alert" className="border border-ares-red bg-ares-red/15 p-4 text-white"><p className="text-sm font-bold">The video library was not changed.</p><p className="mt-1 break-words font-mono text-xs text-white/80">{error}</p><button type="button" onClick={() => void loadVideos(false)} className="mt-3 text-xs font-bold uppercase text-white underline focus-visible:ring-2 focus-visible:ring-ares-cyan">Try again</button></div>}
 

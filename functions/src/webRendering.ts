@@ -116,7 +116,7 @@ export function metadataForDocument(
   route: DynamicRoute,
   rawData: Record<string, unknown>,
 ): PageMetadata | null {
-  if (rawData.isDeleted === 1 || rawData.isDeleted === true || rawData.searchIndexable === false) return null;
+  if (rawData.isDeleted === 1 || rawData.isDeleted === true) return null;
   if (route.collection !== "robots" && rawData.status !== "published") return null;
 
   let data = rawData;
@@ -127,6 +127,7 @@ export function metadataForDocument(
   } else if (route.collection === "events") {
     data = resolvePublicEventData(rawData);
   }
+  if (data.searchIndexable === false) return null;
 
   if (route.kind === "academy" && data.displayInMathCorner !== 1 && data.displayInScienceCorner !== 1) return null;
   if (route.kind === "docs" && data.displayInAreslib !== 1) return null;

@@ -300,13 +300,26 @@ describe("Firestore zero-trust rules", () => {
         lastEditedByUid: "other-member",
       }),
     );
+    await assertFails(
+      updateDoc(doc(otherDb, "posts", "published-post"), {
+        title: "Student unpublish attempt without snapshot",
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        approvedBy: deleteField(),
+        approvedAt: deleteField(),
+        approvedByUid: deleteField(),
+        approvedByRole: deleteField(),
+        isApproved: deleteField(),
+        lastEditedByUid: "other-member",
+      }),
+    );
     await assertSucceeds(
       runTransaction(otherDb, async (transaction) => {
         transaction.set(
           doc(otherDb, "posts", "published-post"),
           {
             title: "Student edit awaiting mentor review",
-            status: "pending_approval",
+            status: "published",
             approvalStatus: "pending_approval",
             approvedBy: deleteField(),
             approvedAt: deleteField(),
@@ -314,6 +327,9 @@ describe("Firestore zero-trust rules", () => {
             approvedByRole: deleteField(),
             isApproved: deleteField(),
             lastEditedByUid: "other-member",
+            publishedSnapshot: {
+              title: "Reviewed update",
+            },
           },
           { merge: true },
         );
@@ -332,9 +348,12 @@ describe("Firestore zero-trust rules", () => {
           doc(otherDb, "posts", "published-post"),
           {
             title: "Student follow-up edit before mentor review",
-            status: "pending_approval",
+            status: "published",
             approvalStatus: "pending_approval",
             lastEditedByUid: "other-member",
+            publishedSnapshot: {
+              title: "Reviewed update",
+            },
           },
           { merge: true },
         );
@@ -439,16 +458,39 @@ describe("Firestore zero-trust rules", () => {
       updatedAt: "2026-08-21T12:00:00.000Z",
     }));
 
+    await assertFails(
+      updateDoc(doc(memberDb, "docs", "published-lesson"), {
+        content: "Member unpublish attempt",
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        approvedAt: deleteField(),
+        lastEditedByUid: "member-editor",
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(memberDb, "documents", "published-spec"), {
+        description: "Member unpublish attempt",
+        status: "pending_approval",
+        approvalStatus: "pending_approval",
+        approvedAt: deleteField(),
+        lastEditedByUid: "member-editor",
+      }),
+    );
+
     await assertSucceeds(
       runTransaction(memberDb, async (transaction) => {
         transaction.set(
           doc(memberDb, "docs", "published-lesson"),
           {
             content: "Member pending lesson edit",
-            status: "pending_approval",
+            status: "published",
             approvalStatus: "pending_approval",
             approvedAt: deleteField(),
             lastEditedByUid: "member-editor",
+            publishedSnapshot: {
+              title: "Published lesson",
+              content: "Original lesson",
+            },
           },
           { merge: true },
         );
@@ -468,10 +510,14 @@ describe("Firestore zero-trust rules", () => {
           doc(memberDb, "documents", "published-spec"),
           {
             description: "Member pending spec edit",
-            status: "pending_approval",
+            status: "published",
             approvalStatus: "pending_approval",
             approvedAt: deleteField(),
             lastEditedByUid: "member-editor",
+            publishedSnapshot: {
+              title: "Published spec",
+              description: "Original spec",
+            },
           },
           { merge: true },
         );
@@ -541,6 +587,386 @@ describe("Firestore zero-trust rules", () => {
         publishedSnapshot: {
           title: "Approved Blog Title",
           content: "Approved Blog Content",
+        },
+      }),
+    );
+  });
+
+  it("hardens staged publishedSnapshot edits against unpublishing, unreviewed live mutations, and key injection (AUD-01)", async () => {
+    await seedAuthorizedUser("member-attacker", "member");
+    await seedAuthorizedUser("mentor-reviewer", "mentor");
+    const memberDb = testEnvironment.authenticatedContext("member-attacker").firestore();
+    const mentorDb = testEnvironment.authenticatedContext("mentor-reviewer").firestore();
+
+    // 1. Direct unpublishing of published records by member is denied across posts, docs, documents
+    //    (even if the member originally owned the content_owners record).
+    for (const collectionName of ["posts", "docs", "documents"] as const) {
+      await seedDocument(collectionName, "live-record", {
+        title: "Live Record",
+        content: "Approved body",
+        description: "Approved description",
+        status: "published",
+        approvalStatus: "approved",
+        approvedBy: "Coach",
+        approvedAt: "2026-08-20T12:00:00.000Z",
+        isDeleted: 0,
+      });
+      await seedDocument("content_owners", `${collectionName}__live-record`, {
+        collectionName,
+        contentId: "live-record",
+        ownerUid: "member-attacker",
+        createdAt: "2026-08-19T12:00:00.000Z",
+      });
+
+      for (const nextStatus of ["draft", "pending", "pending_approval"] as const) {
+        await assertFails(
+          updateDoc(doc(memberDb, collectionName, "live-record"), {
+            title: "Unpublished by member",
+            status: nextStatus,
+            approvalStatus: "pending_approval",
+            approvedBy: deleteField(),
+            approvedAt: deleteField(),
+            lastEditedByUid: "member-attacker",
+          }),
+        );
+      }
+    }
+
+    // Publishers can still update published posts/documents directly and move docs to pending_approval
+    await assertSucceeds(
+      updateDoc(doc(mentorDb, "posts", "live-record"), {
+        title: "Publisher Direct Edit",
+        status: "published",
+        approvalStatus: "approved",
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(mentorDb, "documents", "live-record"), {
+        description: "Publisher Direct Spec Edit",
+        status: "published",
+        approvalStatus: "approved",
+      }),
+    );
+
+    // 2. Non-allowlisted keys inside publishedSnapshot are denied (both non-null and null values).
+    await seedDocument("posts", "snapshot-key-guard", {
+      title: "Approved Title",
+      content: "Approved Content",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    for (const forbiddenSnapshot of [
+      { title: "Approved Title", approvedBy: "Forged Coach" },
+      { title: "Approved Title", approvedByUid: "coach-uid" },
+      { title: "Approved Title", approvedByRole: "admin" },
+      { title: "Approved Title", approvedAt: "2026-08-20T12:00:00.000Z" },
+      { title: "Approved Title", isApproved: true },
+      { title: "Approved Title", isDeleted: 0 },
+      { title: "Approved Title", status: "published" },
+      { title: "Approved Title", approvalStatus: "approved" },
+      { title: "Approved Title", authorId: "member-attacker" },
+      { title: "Approved Title", importedFrom: "ares-robotics-studio" },
+      { title: "Approved Title", driveFileId: "1DRIVE_FORGED" },
+      { title: "Approved Title", publishedSnapshot: { title: "Nested" } },
+      { title: "Approved Title", evilKey: "injected" },
+      { title: "Approved Title", evilKey: null },
+    ]) {
+      await assertFails(
+        updateDoc(doc(memberDb, "posts", "snapshot-key-guard"), {
+          title: "Pending Title",
+          status: "published",
+          approvalStatus: "pending_approval",
+          lastEditedByUid: "member-attacker",
+          publishedSnapshot: forbiddenSnapshot,
+        }),
+      );
+    }
+
+    // 3. Unreviewed mutation of public/media fields on 1st AND 2nd staged edits is denied
+    //    unless the prior published value is preserved inside publishedSnapshot.
+    await seedDocument("posts", "media-protected-post", {
+      title: "Live Media Post",
+      content: "Live body",
+      snippet: "Approved snippet",
+      thumbnail: "https://aresfirst.org/thumb.webp",
+      description: "Approved description",
+      mediaPhotoIds: ["public-photo-1"],
+      authorAvatar: "https://aresfirst.org/avatar.webp",
+      date: "2026-08-20",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+
+    // 1st edit: mutating mediaPhotoIds/snippet/thumbnail/description without snapshotting them fails
+    for (const unguardedMutation of [
+      { mediaPhotoIds: ["public-photo-1", "private-photo-exfil"] },
+      { snippet: "Defaced live snippet" },
+      { thumbnail: "https://attacker.example/defaced.png" },
+      { description: "Defaced description" },
+      { authorAvatar: "https://attacker.example/spoof.png" },
+      { date: "2099-01-01" },
+    ]) {
+      await assertFails(
+        updateDoc(doc(memberDb, "posts", "media-protected-post"), {
+          title: "Draft Title",
+          ...unguardedMutation,
+          status: "published",
+          approvalStatus: "pending_approval",
+          lastEditedByUid: "member-attacker",
+          publishedSnapshot: {
+            title: "Live Media Post",
+          },
+        }),
+      );
+    }
+
+    // 1st edit: forging a snapshot field value (even when root field is untouched) fails
+    await assertFails(
+      updateDoc(doc(memberDb, "posts", "media-protected-post"), {
+        title: "Draft Title",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Live Media Post",
+          mediaPhotoIds: ["private-photo-exfil"],
+        },
+      }),
+    );
+
+    // 1st edit: legitimately staging title + content only (leaving other fields untouched) succeeds
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "posts", "media-protected-post"), {
+        title: "Draft Title v1",
+        content: "Draft body v1",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Live Media Post",
+          content: "Live body",
+        },
+      }),
+    );
+
+    // 2nd edit (subtle second-step bypass): mutating un-snapshotted fields while keeping
+    // publishedSnapshot identical MUST fail!
+    for (const secondStepMutation of [
+      { mediaPhotoIds: ["public-photo-1", "private-photo-exfil"] },
+      { snippet: "Second-step defaced snippet" },
+      { thumbnail: "https://attacker.example/step2.png" },
+      { description: "Second-step defaced description" },
+      { date: "2099-12-31" },
+    ]) {
+      await assertFails(
+        updateDoc(doc(memberDb, "posts", "media-protected-post"), {
+          title: "Draft Title v2",
+          ...secondStepMutation,
+          status: "published",
+          approvalStatus: "pending_approval",
+          lastEditedByUid: "member-attacker",
+          publishedSnapshot: {
+            title: "Live Media Post",
+            content: "Live body",
+          },
+        }),
+      );
+    }
+
+    // 2nd edit: modifying only fields that ARE preserved in publishedSnapshot succeeds
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "posts", "media-protected-post"), {
+        title: "Draft Title v2",
+        content: "Draft body v2",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Live Media Post",
+          content: "Live body",
+        },
+      }),
+    );
+
+    // 4. Absent fields on a published record: member cannot add mediaPhotoIds/snippet/thumbnail/description
+    //    without shadowing them as null in publishedSnapshot (and cannot forge non-null values in snapshot).
+    await seedDocument("posts", "sparse-published-post", {
+      title: "Sparse Live Post",
+      content: "Sparse live body",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    // Omitting mediaPhotoIds from snapshot while adding it on root fails
+    await assertFails(
+      updateDoc(doc(memberDb, "posts", "sparse-published-post"), {
+        title: "Sparse Draft",
+        mediaPhotoIds: ["private-photo-1"],
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Sparse Live Post",
+        },
+      }),
+    );
+    // Forging a non-null value in snapshot for an absent field fails
+    await assertFails(
+      updateDoc(doc(memberDb, "posts", "sparse-published-post"), {
+        title: "Sparse Draft",
+        mediaPhotoIds: ["private-photo-1"],
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Sparse Live Post",
+          mediaPhotoIds: ["forged-live-photo"],
+        },
+      }),
+    );
+    // Explicitly shadowing absent fields with null in publishedSnapshot succeeds on 1st and 2nd edits
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "posts", "sparse-published-post"), {
+        title: "Sparse Draft v1",
+        mediaPhotoIds: ["pending-photo-1"],
+        snippet: "Pending snippet",
+        thumbnail: "https://aresfirst.org/pending.webp",
+        description: "Pending description",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Sparse Live Post",
+          mediaPhotoIds: null,
+          snippet: null,
+          thumbnail: null,
+          description: null,
+        },
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "posts", "sparse-published-post"), {
+        title: "Sparse Draft v2",
+        mediaPhotoIds: ["pending-photo-1", "pending-photo-2"],
+        snippet: "Pending snippet v2",
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "Sparse Live Post",
+          mediaPhotoIds: null,
+          snippet: null,
+          thumbnail: null,
+          description: null,
+        },
+      }),
+    );
+
+    // 5. Academy / ARESLib docs learning metadata + searchIndexable guard (1st & 2nd edits)
+    await seedDocument("docs", "published-academy-doc", {
+      title: "PID Tuning",
+      content: "Approved lesson body",
+      description: "Approved lesson description",
+      displayInAreslib: 1,
+      displayInMathCorner: 0,
+      displayInScienceCorner: 0,
+      learningSchemaVersion: 1,
+      subject: "robotics-engineering",
+      objectives: ["Tune kP safely"],
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    // Mutating learning/visibility fields without snapshotting them fails
+    await assertFails(
+      updateDoc(doc(memberDb, "docs", "published-academy-doc"), {
+        title: "PID Tuning Draft",
+        displayInAreslib: 0,
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: { title: "PID Tuning" },
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(memberDb, "docs", "published-academy-doc"), {
+        title: "PID Tuning Draft",
+        objectives: ["Injected live objective"],
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: { title: "PID Tuning" },
+      }),
+    );
+    // Flipping searchIndexable on a staged edit is denied even if shadowed as null in snapshot
+    await assertFails(
+      updateDoc(doc(memberDb, "docs", "published-academy-doc"), {
+        title: "PID Tuning Draft",
+        searchIndexable: false,
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "PID Tuning",
+          searchIndexable: null,
+        },
+      }),
+    );
+    // Legitimate member staged edit preserving changed learning fields in snapshot succeeds
+    await assertSucceeds(
+      updateDoc(doc(memberDb, "docs", "published-academy-doc"), {
+        title: "PID Tuning Draft",
+        description: "Updated lesson description",
+        objectives: ["Tune kP safely", "Verify steady-state error"],
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "PID Tuning",
+          description: "Approved lesson description",
+          objectives: ["Tune kP safely"],
+        },
+      }),
+    );
+    // 2nd edit cannot touch un-snapshotted learningSchemaVersion or displayInAreslib
+    await assertFails(
+      updateDoc(doc(memberDb, "docs", "published-academy-doc"), {
+        title: "PID Tuning Draft v2",
+        learningSchemaVersion: 0,
+        status: "published",
+        approvalStatus: "pending_approval",
+        lastEditedByUid: "member-attacker",
+        publishedSnapshot: {
+          title: "PID Tuning",
+          description: "Approved lesson description",
+          objectives: ["Tune kP safely"],
+        },
+      }),
+    );
+    // Mentor staging an edit on docs also passes valid snapshot checks and is blocked from forging snapshot
+    await assertFails(
+      updateDoc(doc(mentorDb, "docs", "published-academy-doc"), {
+        title: "Mentor Draft",
+        status: "published",
+        approvalStatus: "pending_approval",
+        publishedSnapshot: {
+          title: "Forged Live Title",
+          description: "Approved lesson description",
+          objectives: ["Tune kP safely"],
+        },
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(mentorDb, "docs", "published-academy-doc"), {
+        title: "Mentor Draft",
+        status: "published",
+        approvalStatus: "pending_approval",
+        publishedSnapshot: {
+          title: "PID Tuning",
+          description: "Approved lesson description",
+          objectives: ["Tune kP safely"],
         },
       }),
     );
