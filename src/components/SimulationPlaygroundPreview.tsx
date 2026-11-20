@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from "react";
 import { TelemetryPanel } from "./editor/TelemetryPanel";
-import type { TestResult } from "./editor/SimConsole";
+import type { LogEntry, TestResult } from "./editor/SimConsole";
 
 const SimPreviewFrame = lazy(() => import("./editor/SimPreviewFrame"));
 
@@ -10,6 +10,10 @@ interface SimulationPlaygroundPreviewProps {
   compiledFiles: Record<string, string>;
   handleFixWithAI: (err: string) => void;
   handleTestResult: (result: TestResult) => void;
+  onTelemetry?: (sample: { key: string; value: number; timestamp: number }) => void;
+  onScreenshot?: (dataUrl: string) => void;
+  onConsoleLog?: (entry: LogEntry) => void;
+  onFps?: (fps: number) => void;
   telemetry: Record<string, Array<{ time: number; value: number }>>;
   canUseAi: boolean;
 }
@@ -20,13 +24,17 @@ export default function SimulationPlaygroundPreview({
   compiledFiles,
   handleFixWithAI,
   handleTestResult,
+  onTelemetry,
+  onScreenshot,
+  onConsoleLog,
+  onFps,
   telemetry,
   canUseAi,
 }: SimulationPlaygroundPreviewProps) {
   return (
     <div className="flex flex-col h-full w-full">
       <div className="px-3 py-1.5 border-b border-white/10 bg-obsidian-dark flex items-center gap-2 shrink-0">
-        <span className="text-white/40 text-xs font-mono">Live Preview</span>
+        <span className="text-white/75 text-xs font-mono">Live Preview</span>
         <div className={`w-2 h-2 rounded-full ${compileError ? 'bg-ares-danger' : 'bg-ares-cyan'}`} />
         {fps !== null && (
           <span className={`text-[10px] font-mono ml-auto ${fps >= 50 ? 'text-ares-cyan' : fps >= 30 ? 'text-ares-bronze' : 'text-ares-danger'}`}>
@@ -36,12 +44,16 @@ export default function SimulationPlaygroundPreview({
       </div>
       <div className="flex-1 min-h-0 relative flex flex-col">
         <div className="flex-1 min-h-0">
-          <Suspense fallback={<div className="flex items-center justify-center h-full bg-obsidian-dark text-white/40 text-sm">Loading preview...</div>}>
+          <Suspense fallback={<div className="flex items-center justify-center h-full bg-obsidian-dark text-white/75 text-sm">Loading preview...</div>}>
             <SimPreviewFrame
               compiledFiles={compiledFiles}
               compileError={compileError}
               onFixWithAI={canUseAi ? () => handleFixWithAI("") : undefined}
               onTestResult={handleTestResult}
+              onTelemetry={onTelemetry}
+              onScreenshot={onScreenshot}
+              onConsoleLog={onConsoleLog}
+              onFps={onFps}
             />
           </Suspense>
         </div>

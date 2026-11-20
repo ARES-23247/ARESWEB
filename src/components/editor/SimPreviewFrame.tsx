@@ -2,6 +2,11 @@ import { logger } from "@/utils/logger";
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import simulationPreviewRuntimeUrl from "./simulationPreviewRuntime?worker&url";
+import type { LogEntry, TestResult } from "./SimConsole";
+import {
+  isSafeScreenshotDataUrl,
+  isSafeTelemetryKey,
+} from "../../hooks/useSimulationTelemetry";
 
 interface SimPreviewFrameProps {
   /** Transpiled JavaScript code modules to execute in the sandbox */
@@ -11,439 +16,290 @@ interface SimPreviewFrameProps {
   /** Callback to trigger AI error fixing from the preview overlay */
   onFixWithAI?: () => void;
   /** Callback for test runner results */
-  onTestResult?: (result: { name: string; passed: boolean; error?: string }) => void;
+  onTestResult?: (result: TestResult) => void;
+  /** Callback for validated numeric telemetry samples from the sandbox */
+  onTelemetry?: (sample: { key: string; value: number; timestamp: number }) => void;
+  /** Callback for validated image data URL screenshots from the sandbox */
+  onScreenshot?: (dataUrl: string) => void;
+  /** Callback for validated console output from the sandbox */
+  onConsoleLog?: (entry: LogEntry) => void;
+  /** Callback for validated FPS updates from the sandbox */
+  onFps?: (fps: number) => void;
 }
+
+const VALID_CONSOLE_LEVELS = new Set<LogEntry["level"]>([
+  "log",
+  "warn",
+  "error",
+  "info",
+]);
+
+const SANDBOX_IFRAME_PATH = "/sandbox/simulation-preview.html";
 
 /**
  * Sandboxed iframe that renders a React component from transpiled JS code.
- * Uses srcdoc with React CDN + the user's component. Runtime errors
- * are captured via postMessage and displayed in the parent.
+ * Uses a static opaque-origin host document (/sandbox/simulation-preview.html)
+ * with no inline scripts so strict production CSP applies to the parent app
+ * while untrusted simulation code stays confined to an isolated opaque realm.
  */
-export default function SimPreviewFrame({ compiledFiles, compileError, onFixWithAI, onTestResult }: SimPreviewFrameProps) {
+export default function SimPreviewFrame({
+  compiledFiles,
+  compileError,
+  onFixWithAI,
+  onTestResult,
+  onTelemetry,
+  onScreenshot,
+  onConsoleLog,
+  onFps,
+}: SimPreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const compiledFilesRef = useRef(compiledFiles);
+  const compileErrorRef = useRef(compileError);
+  const isFirstRenderRef = useRef(true);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [runNonce, setRunNonce] = useState(0);
 
-  // Strict message type validation - only these types are accepted
-  const ALLOWED_MESSAGE_TYPES = useMemo(() => new Set([
-    'sim-error',
-    'sim-ready',
-    'ARES_TELEMETRY',
-    'ARES_SCREENSHOT',
-    'sim-console',
-    'sim-fps',
-    'sim-test-result'
-  ]), []);
+  compiledFilesRef.current = compiledFiles;
+  compileErrorRef.current = compileError;
 
-  /**
-   * Validate and sanitize incoming postMessage data.
-   * Returns null if data is invalid, otherwise returns sanitized data.
-   */
-  const sanitizeMessageData = (data: unknown, allowedTypes: Set<string>): { type: string; [key: string]: unknown } | null => {
-    if (!data || typeof data !== 'object') return null;
+  const ALLOWED_MESSAGE_TYPES = useMemo(
+    () =>
+      new Set([
+        "sim-sandbox-ready",
+        "sim-error",
+        "sim-ready",
+        "ARES_TELEMETRY",
+        "ARES_SCREENSHOT",
+        "sim-console",
+        "sim-fps",
+        "sim-test-result",
+      ]),
+    [],
+  );
 
-    const messageData = data as Record<string, unknown>;
+  const sanitizeMessageData = useCallback(
+    (
+      data: unknown,
+      allowedTypes: Set<string>,
+    ): { type: string; [key: string]: unknown } | null => {
+      if (!data || typeof data !== "object" || Array.isArray(data)) return null;
 
-    // Validate type field exists and is a string
-    if (typeof messageData.type !== 'string' || !allowedTypes.has(messageData.type)) {
-      return null;
-    }
+      const raw = data as Record<string, unknown>;
+      if (typeof raw.type !== "string" || !allowedTypes.has(raw.type)) {
+        return null;
+      }
 
-    // Type-specific validation
-    switch (messageData.type) {
-      case 'ARES_TELEMETRY':
-        // Validate telemetry key is a string and value is a finite number
-        if (
-          typeof messageData.key !== 'string' ||
-          typeof messageData.value !== 'number' ||
-          !Number.isFinite(messageData.value)
-        ) {
+      switch (raw.type) {
+        case "sim-sandbox-ready":
+        case "sim-ready":
+          return { type: raw.type };
+
+        case "ARES_TELEMETRY": {
+          if (
+            !isSafeTelemetryKey(raw.key) ||
+            typeof raw.value !== "number" ||
+            !Number.isFinite(raw.value)
+          ) {
+            return null;
+          }
+          const timestamp =
+            typeof raw.timestamp === "number" && Number.isFinite(raw.timestamp)
+              ? raw.timestamp
+              : Date.now();
+          return {
+            type: "ARES_TELEMETRY",
+            key: raw.key.trim(),
+            value: raw.value,
+            timestamp,
+          };
+        }
+
+        case "sim-fps": {
+          if (
+            typeof raw.fps !== "number" ||
+            !Number.isFinite(raw.fps) ||
+            raw.fps < 0 ||
+            raw.fps > 1000
+          ) {
+            return null;
+          }
+          return { type: "sim-fps", fps: raw.fps };
+        }
+
+        case "sim-error": {
+          if (typeof raw.message !== "string") return null;
+          const message =
+            raw.message.length > 10_000
+              ? `${raw.message.slice(0, 10_000)}... (truncated)`
+              : raw.message;
+          return { type: "sim-error", message };
+        }
+
+        case "sim-console": {
+          if (
+            typeof raw.level !== "string" ||
+            !VALID_CONSOLE_LEVELS.has(raw.level as LogEntry["level"]) ||
+            !Array.isArray(raw.args) ||
+            raw.args.length > 20
+          ) {
+            return null;
+          }
+          const args = raw.args.map((arg) => {
+            const text = typeof arg === "string" ? arg : String(arg);
+            return text.length > 2_000
+              ? `${text.slice(0, 2_000)}... (truncated)`
+              : text;
+          });
+          const timestamp =
+            typeof raw.timestamp === "number" && Number.isFinite(raw.timestamp)
+              ? raw.timestamp
+              : Date.now();
+          return {
+            type: "sim-console",
+            level: raw.level as LogEntry["level"],
+            args,
+            timestamp,
+          };
+        }
+
+        case "ARES_SCREENSHOT": {
+          if (!isSafeScreenshotDataUrl(raw.dataUrl)) return null;
+          return { type: "ARES_SCREENSHOT", dataUrl: raw.dataUrl };
+        }
+
+        case "sim-test-result": {
+          const candidate = raw.result;
+          if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+            return null;
+          }
+          const resultObj = candidate as Record<string, unknown>;
+          if (
+            typeof resultObj.name !== "string" ||
+            resultObj.name.length === 0 ||
+            resultObj.name.length > 200 ||
+            typeof resultObj.passed !== "boolean"
+          ) {
+            return null;
+          }
+          const normalized: TestResult = {
+            name: resultObj.name,
+            passed: resultObj.passed,
+          };
+          if (typeof resultObj.error === "string") {
+            normalized.error =
+              resultObj.error.length > 2_000
+                ? `${resultObj.error.slice(0, 2_000)}... (truncated)`
+                : resultObj.error;
+          }
+          return { type: "sim-test-result", result: normalized };
+        }
+
+        default:
           return null;
-        }
-        // Limit key length to prevent DoS
-        if (messageData.key.length > 100) return null;
-        break;
+      }
+    },
+    [],
+  );
 
-      case 'sim-fps':
-        if (
-          typeof messageData.fps !== 'number' ||
-          !Number.isFinite(messageData.fps) ||
-          messageData.fps < 0 ||
-          messageData.fps > 1000
-        ) {
-          return null;
-        }
-        break;
-
-      case 'sim-error':
-        // Validate message is a string and limit length
-        if (typeof messageData.message !== 'string') return null;
-        if (messageData.message.length > 10000) {
-          messageData.message = messageData.message.slice(0, 10000) + '... (truncated)';
-        }
-        break;
-
-      case 'sim-console':
-        // Validate args is an array
-        if (!Array.isArray(messageData.args)) return null;
-        // Limit number of console args to prevent DoS
-        if (messageData.args.length > 20) return null;
-        break;
-
-      case 'ARES_SCREENSHOT':
-        // Validate dataUrl is a string and looks like a data URL
-        if (typeof messageData.dataUrl !== 'string') return null;
-        if (!messageData.dataUrl.startsWith('data:image/')) return null;
-        // Limit data URL size to prevent DoS (5MB max)
-        if (messageData.dataUrl.length > 5 * 1024 * 1024) return null;
-        break;
-
-      case 'sim-test-result': {
-        const raw = messageData.result;
-        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-        const candidate = raw as Record<string, unknown>;
-        if (
-          typeof candidate.name !== 'string' ||
-          candidate.name.length === 0 ||
-          candidate.name.length > 200 ||
-          typeof candidate.passed !== 'boolean'
-        ) {
-          return null;
-        }
-        const normalized: { name: string; passed: boolean; error?: string } = {
-          name: candidate.name,
-          passed: candidate.passed,
-        };
-        if (typeof candidate.error === 'string') {
-          normalized.error = candidate.error.length > 2000
-            ? candidate.error.slice(0, 2000) + '... (truncated)'
-            : candidate.error;
-        }
-        messageData.result = normalized;
-        break;
+  const postCompiledBundle = useCallback(() => {
+    const targetWindow = iframeRef.current?.contentWindow;
+    if (!targetWindow || compileErrorRef.current) return;
+    const filesPayload: Record<string, string> = {};
+    for (const [filename, content] of Object.entries(compiledFilesRef.current)) {
+      if (typeof filename === "string" && typeof content === "string") {
+        filesPayload[filename] = content;
       }
     }
+    // Opaque sandbox has no target origin; payload holds only user-authored preview code.
+    targetWindow.postMessage(
+      {
+        type: "sim-run",
+        runtimeUrl: simulationPreviewRuntimeUrl,
+        compiledFiles: filesPayload,
+      },
+      "*",
+    );
+  }, []);
 
-    return messageData as { type: string; [key: string]: unknown };
-  };
+  const handleMessage = useCallback(
+    (event: MessageEvent) => {
+      // A sandbox without allow-same-origin has an opaque origin ("null").
+      // Check both opaque origin and exact WindowProxy identity.
+      if (
+        (event.origin !== "null" && event.origin !== "") ||
+        event.source !== iframeRef.current?.contentWindow
+      ) {
+        logger.warn("SimPreviewFrame: rejected message from unexpected source");
+        return;
+      }
 
-  // Listen for runtime errors from the iframe
-  const handleMessage = useCallback((event: MessageEvent) => {
-    // A sandbox without allow-same-origin has an opaque origin ("null").
-    // Check both opaque origin and WindowProxy identity.
-    if ((event.origin !== "null" && event.origin !== "") || event.source !== iframeRef.current?.contentWindow) {
-      logger.warn('SimPreviewFrame: rejected message from unexpected source');
-      return;
-    }
+      const sanitized = sanitizeMessageData(event.data, ALLOWED_MESSAGE_TYPES);
+      if (!sanitized) {
+        logger.warn("SimPreviewFrame: rejected message with invalid structure");
+        return;
+      }
 
-    // Sanitize and validate message structure
-    const sanitizedData = sanitizeMessageData(event.data, ALLOWED_MESSAGE_TYPES);
-    if (!sanitizedData) {
-      logger.warn('SimPreviewFrame: rejected message with invalid structure');
-      return;
-    }
-
-    switch (sanitizedData.type) {
-      case 'sim-error':
-        setRuntimeError(String(sanitizedData.message));
-        break;
-      case 'sim-ready':
-        setRuntimeError(null);
-        break;
-      case 'sim-test-result':
-        if (onTestResult) {
-          onTestResult(sanitizedData.result as { name: string; passed: boolean; error?: string });
-        }
-        break;
-      // ARES_TELEMETRY and sim-console are logged but not processed further
-      // ARES_SCREENSHOT is handled by screenshot request handler
-    }
-  }, [ALLOWED_MESSAGE_TYPES, onTestResult]);
+      switch (sanitized.type) {
+        case "sim-sandbox-ready":
+          postCompiledBundle();
+          break;
+        case "sim-error":
+          setRuntimeError(String(sanitized.message));
+          break;
+        case "sim-ready":
+          setRuntimeError(null);
+          break;
+        case "sim-test-result":
+          onTestResult?.(sanitized.result as TestResult);
+          break;
+        case "ARES_TELEMETRY":
+          onTelemetry?.({
+            key: sanitized.key as string,
+            value: sanitized.value as number,
+            timestamp: sanitized.timestamp as number,
+          });
+          break;
+        case "ARES_SCREENSHOT":
+          onScreenshot?.(sanitized.dataUrl as string);
+          break;
+        case "sim-console":
+          onConsoleLog?.({
+            level: sanitized.level as LogEntry["level"],
+            args: sanitized.args as string[],
+            timestamp: sanitized.timestamp as number,
+          });
+          break;
+        case "sim-fps":
+          onFps?.(sanitized.fps as number);
+          break;
+      }
+    },
+    [
+      ALLOWED_MESSAGE_TYPES,
+      onConsoleLog,
+      onFps,
+      onScreenshot,
+      onTelemetry,
+      onTestResult,
+      postCompiledBundle,
+      sanitizeMessageData,
+    ],
+  );
 
   useEffect(() => {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
 
-  // Build the iframe srcdoc whenever compiledFiles changes
+  // Mount a fresh sandbox realm whenever compiledFiles changes after initial render.
   useEffect(() => {
-    if (!iframeRef.current || compileError) return;
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+    if (compileError) return;
     setRuntimeError(null);
-
-    // Build CSS injection blocks from .css files
-    const cssBlocks = Object.entries(compiledFiles)
-      .filter(([filename]) => filename.endsWith('.css'))
-      .map(([filename, content]) => `<style data-file="${filename}">${content}</style>`)
-      .join('\n');
-
-    // Build the script blocks for each compiled file (skip CSS)
-    const moduleDefs = Object.entries(compiledFiles)
-      .filter(([filename]) => !filename.endsWith('.css'))
-      .map(([filename, code]) => {
-        // We use env preset, so it outputs CommonJS. We wrap it in a function.
-        return `
-      __modules['${filename}'] = function(require, module, exports) {
-        ${code}
-      };
-      `;
-      })
-      .join('\n');
-
-    const srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    #root {
-      width: 100%;
-      max-width: 800px;
-    }
-    .sim-error {
-      background: #3d1f1f;
-      border: 1px solid #f85149;
-      color: #f85149;
-      padding: 16px;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-    .sim-loading {
-      color: rgba(255,255,255,0.3);
-      font-size: 13px;
-      text-align: center;
-      padding: 32px;
-    }
-    /* Utility classes for sim authors */
-    .sim-container { padding: 24px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.03); }
-    .sim-title { font-size: 18px; font-weight: bold; color: #FFB81C; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
-    .sim-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
-    .sim-value { font-size: 24px; font-weight: bold; color: #00E5FF; font-family: monospace; }
-    .sim-slider { width: 100%; accent-color: #FFB81C; }
-    .sim-canvas { border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; }
-    .sim-btn { padding: 8px 16px; background: #FFB81C; color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.1em; }
-    .sim-btn:hover { background: #e8b84a; }
-    .sim-grid { display: grid; gap: 16px; }
-    .sim-flex { display: flex; gap: 12px; align-items: center; }
-</style>
-  ${cssBlocks}
-  <script>
-    // Virtual Module System & require MUST be defined before ares-physics.min.js loads
-    // so that its internal require('react') calls succeed.
-    window.__modules = {};
-    window.__cache = {};
-    window.__virtualModules = {};
-
-    // Test runner harness
-    window.test = function(name, fn) {
-      try {
-        fn();
-        window.parent.postMessage({ type: 'sim-test-result', result: { name, passed: true } }, '*');
-      } catch (e) {
-        window.parent.postMessage({ type: 'sim-test-result', result: { name, passed: false, error: e.message } }, '*');
-      }
-    };
-    
-    window.expect = function(actual) {
-      return {
-        toBe: function(expected) {
-          if (actual !== expected) throw new Error('Expected ' + expected + ' but got ' + actual);
-        },
-        toEqual: function(expected) {
-          if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error('Expected ' + JSON.stringify(expected) + ' but got ' + JSON.stringify(actual));
-        },
-        toBeCloseTo: function(expected, precision = 2) {
-          const pass = Math.abs(expected - actual) < Math.pow(10, -precision) / 2;
-          if (!pass) throw new Error('Expected ' + expected + ' to be close to ' + actual);
-        }
-      };
-    };
-    
-    function require(name) {
-      if (name === 'react') return window.React;
-      if (name === 'react-dom') return window.ReactDOM;
-      if (window.__virtualModules[name]) return window.__virtualModules[name].exports;
-      
-      let resolveName = name;
-      // Strip leading ./ or ../
-      if (resolveName.startsWith('./')) resolveName = resolveName.slice(2);
-      while (resolveName.startsWith('../')) resolveName = resolveName.slice(3);
-      
-      // Try exact match first
-      if (window.__modules[resolveName]) {
-        // Found exact match
-      } else {
-        // Try common extensions: .tsx, .jsx, .ts, .js
-        const exts = ['.tsx', '.jsx', '.ts', '.js'];
-        let found = false;
-        for (const ext of exts) {
-          if (window.__modules[resolveName + ext]) {
-            resolveName = resolveName + ext;
-            found = true;
-            break;
-          }
-        }
-        // Try index file in subdirectory
-        if (!found) {
-          for (const ext of exts) {
-            if (window.__modules[resolveName + '/index' + ext]) {
-              resolveName = resolveName + '/index' + ext;
-              found = true;
-              break;
-            }
-          }
-        }
-      }
-      
-      if (window.__cache[resolveName]) return window.__cache[resolveName].exports;
-      if (!window.__modules[resolveName]) {
-        const available = Object.keys(window.__modules).join(', ');
-        throw new Error('Module not found: ' + name + '. Available: [' + available + ']');
-      }
-      
-      const module = { exports: {} };
-      window.__cache[resolveName] = module;
-      window.__modules[resolveName](require, module, module.exports);
-      return module.exports;
-    }
-  </script>
-  <script src="${simulationPreviewRuntimeUrl}"></script>
-</head>
-<body>
-  <div id="root"><div class="sim-loading">Loading Environment...</div></div>
-  <script>
-    window.onerror = function(msg, source, line, col, error) {
-      window.parent.postMessage({ type: 'sim-error', message: String(msg) + (line ? ' (line ' + line + ')' : '') }, '*');
-      const root = document.getElementById('root');
-      root.textContent = '';
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'sim-error';
-      errorMessage.textContent = String(msg);
-      root.appendChild(errorMessage);
-      return true;
-    };
-    
-    ['log', 'warn', 'error', 'info'].forEach(level => {
-      const original = console[level];
-      console[level] = function(...args) {
-        window.parent.postMessage({
-          type: 'sim-console',
-          level,
-          args: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)),
-          timestamp: Date.now()
-        }, '*');
-        original.apply(console, args);
-      };
-    });
-    
-    // Now that scripts are loaded, populate the virtual modules with the global exports
-    window.__virtualModules["areslib"] = {
-      exports: {
-        useTelemetry: function(key, value) {
-          React.useEffect(() => {
-            window.parent.postMessage({ type: "ARES_TELEMETRY", key, value, timestamp: performance.now() }, "*");
-          }, [key, value]);
-        }
-      }
-    };
-    const createProxy = (moduleName) => new Proxy({}, {
-      get: function(target, prop) {
-        if (prop === '__esModule') return true;
-        const base = window.AresPhysics;
-        if (!base) return undefined;
-        
-        const mod = moduleName ? base[moduleName] : base;
-        if (prop === 'default') return mod;
-        return mod ? mod[prop] : undefined;
-      }
-    });
-
-    window.__virtualModules["three"] = { exports: createProxy('THREE') };
-    window.__virtualModules["@react-three/fiber"] = { exports: createProxy('R3F') };
-    window.__virtualModules["@react-three/drei"] = { exports: createProxy('Drei') };
-    window.__virtualModules["ares-physics"] = { exports: createProxy('') };
-
-    try {
-      if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-        throw new Error('The local React preview runtime failed to load. HTTP assets may be stale; refresh the page and try again.');
-      }
-      
-      ${moduleDefs}
-      
-      // Execute the entry point
-      let SimComponent;
-      
-      // Try standard entry points first
-      if (window.__modules['SimComponent.jsx']) {
-        const entryExports = require('SimComponent.jsx');
-        SimComponent = entryExports.default || entryExports.SimComponent || window.SimComponent;
-      } 
-      
-      // If not found, use the first available module that looks like a component
-      if (!SimComponent) {
-        const availableModules = Object.keys(window.__modules);
-        const entryFile = availableModules.find(f => f.endsWith('.tsx') || f.endsWith('.jsx') || f.endsWith('.js'));
-        
-        if (entryFile) {
-          const entryExports = require(entryFile);
-          SimComponent = entryExports.default || entryExports[entryFile.replace(/\\.[^/.]+$/, "")] || window.SimComponent;
-          
-          // Fallback: if it exports exactly one thing, use that
-          if (!SimComponent && Object.keys(entryExports).length === 1) {
-            SimComponent = entryExports[Object.keys(entryExports)[0]];
-          }
-        }
-      }
-      
-      if (typeof SimComponent !== 'undefined') {
-        var root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(SimComponent));
-        window.parent.postMessage({ type: 'sim-ready' }, '*');
-      } else {
-        throw new Error('SimComponent is not defined. Your code must export a default React component.');
-      }
-    } catch(e) {
-      window.parent.postMessage({ type: 'sim-error', message: e.message }, '*');
-      const root = document.getElementById('root');
-      root.textContent = '';
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'sim-error';
-      errorMessage.textContent = String(e.message);
-      root.appendChild(errorMessage);
-    }
-
-    // FPS counter
-    (function() {
-      let frames = 0;
-      let lastTime = performance.now();
-      function countFrame() {
-        frames++;
-        const now = performance.now();
-        if (now - lastTime >= 1000) {
-          window.parent.postMessage({ type: 'sim-fps', fps: frames }, '*');
-          frames = 0;
-          lastTime = now;
-        }
-        requestAnimationFrame(countFrame);
-      }
-      requestAnimationFrame(countFrame);
-    })();
-  </script>
-</body>
-</html>`;
-
-    iframeRef.current.srcdoc = srcdoc;
+    setRunNonce((prev) => prev + 1);
   }, [compiledFiles, compileError]);
 
   const displayError = compileError || runtimeError;
@@ -456,16 +312,19 @@ export default function SimPreviewFrame({ compiledFiles, compileError, onFixWith
           <pre className="whitespace-pre-wrap flex-1">{displayError}</pre>
           {onFixWithAI && (
             <button
+              type="button"
               onClick={onFixWithAI}
               className="shrink-0 ml-2 px-2.5 py-1 bg-ares-red hover:bg-ares-bronze text-white border border-white/30 rounded transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
             >
-              ✨ Fix with AI
+              Fix with AI
             </button>
           )}
         </div>
       )}
       <iframe
+        key={runNonce}
         ref={iframeRef}
+        src={SANDBOX_IFRAME_PATH}
         title="Simulation Preview"
         sandbox="allow-scripts"
         referrerPolicy="no-referrer"

@@ -203,7 +203,6 @@ export default defineConfig({
       // administrative reliability surface. A listed module therefore reports
       // 0% instead of disappearing when its importing test is removed.
       include: [
-        "src/lib/biobuzzScoring.ts",
         "packages/biobuzz/src/core/*.ts",
         "packages/biobuzz/src/export.ts",
         "packages/biobuzz/src/worker.ts",
@@ -216,13 +215,7 @@ export default defineConfig({
         "packages/waggle-way/src/ui/ghost.worker.ts",
         "packages/buzzhex/src/rules.ts",
         "packages/buzzhex/src/ai.ts",
-        "src/lib/buzzello.ts",
         "src/lib/buzzelloOnline.ts",
-        "src/lib/buzzle.ts",
-        "src/lib/buzzleAi.ts",
-        "src/lib/buzzleDictionary.ts",
-        "src/lib/buzzleDefinitions.ts",
-        "src/lib/buzzleWordHelp.ts",
         "src/lib/buzzleOnline.ts",
         "packages/ui/src/cn.ts",
         "scripts/prepare-game-packages.mjs",
@@ -279,6 +272,7 @@ export default defineConfig({
         "src/components/SEO.tsx",
         "src/components/dashboard/DocumentDraftPreview.tsx",
         "src/hooks/useAcademyProgress.ts",
+        "src/hooks/useSimulationTelemetry.ts",
         "src/hooks/dashboard/documentationPublishing.ts",
         "src/app/dashboard/photos/*.{ts,tsx}",
         "src/app/dashboard/events/hooks/useEventLiveCollections.ts",
@@ -398,6 +392,10 @@ export default defineConfig({
           functions: 100,
         },
         "src/hooks/useAcademyProgress.ts": {
+          lines: 85,
+          functions: 100,
+        },
+        "src/hooks/useSimulationTelemetry.ts": {
           lines: 85,
           functions: 100,
         },

@@ -38,6 +38,15 @@ export function verifyRevision(c,service,image){
     ||service.status?.traffic?.length!==1||service.status.traffic[0].percent!==100||service.status.traffic[0].revisionName!==service.status.latestReadyRevisionName)throw new Error("Deployed BIOBUZZ revision differs from its resource, secret, or traffic contract.");
 }
 async function health(origin){const response=await fetch(origin+"/health",{signal:AbortSignal.timeout(10000)});if(!response.ok)throw new Error("BIOBUZZ health check failed.");return response.json();}
+export async function verifyLiveHealth(origin,{attempts=4,delayMs=1000}={}){
+  for(let attempt=1;attempt<=attempts;attempt++){
+    const status=await health(origin);
+    if(status.version===1&&status.accepting)return status;
+    if(status.version!==1||attempt>=attempts)throw new Error("Unexpected BIOBUZZ live health.");
+    await new Promise(resolve=>setTimeout(resolve,delayMs));
+  }
+  throw new Error("Unexpected BIOBUZZ live health.");
+}
 function verifyInvoker(c){
   const policy=JSON.parse(run("gcloud",["run","services","get-iam-policy",c.serviceId,"--project",c.project,"--region",c.region,"--format=json"]));
   const invokers=policy.bindings?.filter(b=>b.role==="roles/run.invoker");
@@ -52,7 +61,7 @@ export async function main(args=process.argv.slice(2)){
   if(args[0]==="--verify-live"){
     const service=JSON.parse(run("gcloud",["run","services","describe",c.serviceId,"--project",c.project,"--region",c.region,"--format=json"]));
     verifyRevision(c,service);verifyInvoker(c);
-    const status=await health(c.publicOrigin);if(status.version!==1||!status.accepting)throw new Error("Unexpected BIOBUZZ live health.");
+    await verifyLiveHealth(c.publicOrigin,{delayMs:process.env.VITEST?10:1500});
     console.log("BIOBUZZ live service, IAM policy, and open admission verified.");return;
   }
   const image=`us-central1-docker.pkg.dev/${c.project}/aresweb-services/biobuzz-sim:${args[1]}`;

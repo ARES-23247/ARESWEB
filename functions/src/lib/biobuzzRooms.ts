@@ -36,7 +36,11 @@ export class BiobuzzRooms {
     if(action==="queue")room=[...this.rooms.values()].find(r=>r.public&&r.status==="waiting"&&r.players.some(p=>!p)&&this.now()-r.created<30000);
     if(!room){
       if(this.rooms.size>=this.options.maxRooms){
-        for(const existing of this.rooms.values())if(existing.status==="local-offer")this.remove(existing);
+        for(const existing of this.rooms.values()){
+          if(existing.status==="local-offer"||existing.status==="interrupted"||(existing.status==="finished"&&(existing.saved||existing.saveAttempts>=3))){
+            this.remove(existing);
+          }
+        }
       }
       if(this.rooms.size>=this.options.maxRooms)throw new ApiError(503,"Online simulator is at capacity. Try local practice.");
       const id=randomBytes(18).toString("hex"),invite=randomBytes(6).toString("hex").slice(0,8).toUpperCase();

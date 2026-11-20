@@ -13,6 +13,7 @@ functions_out/
 
 # Cache and build info
 .next/
+.tanstack/
 .wrangler/
 .eslintcache
 *.tsbuildinfo

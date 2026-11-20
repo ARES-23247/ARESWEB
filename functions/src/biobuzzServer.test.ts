@@ -137,4 +137,33 @@ describe("BIOBUZZ HTTP and WebSocket service",()=>{
     await vi.waitFor(()=>expect(running!.rooms.accepting).toBe(false),{timeout:17000,interval:200});
     expect((await post(origin,"create")).status).toBe(503);
   },20000);
+  it("awaits initial Firestore admission control on cold start before answering /health",async()=>{
+    vi.stubEnv("PORT","0");vi.stubEnv("BIOBUZZ_PUBLIC_ORIGIN","http://127.0.0.1:3028");vi.stubEnv("ENFORCE_APP_CHECK","true");
+    state.db.data.set("internal_biobuzz_control/service",{admissionOpen:true});
+    const origCollection=state.db.firestore.collection.bind(state.db.firestore);
+    vi.spyOn(state.db.firestore,"collection").mockImplementation((name:string)=>{
+      const col=origCollection(name);
+      if(name!=="internal_biobuzz_control")return col;
+      return {
+        ...col,
+        doc:(id:string)=>{
+          const d=col.doc(id);
+          return {...d,get:async()=>{await new Promise(r=>setTimeout(r,150));return d.get();}};
+        },
+      } as ReturnType<typeof origCollection>;
+    });
+    running=startBiobuzzServer();await once(running.server,"listening");
+    const origin="http://127.0.0.1:"+(running.server.address() as AddressInfo).port;
+    const firstHealth=await (await fetch(origin+"/health")).json();
+    expect(firstHealth).toMatchObject({version:1,accepting:true,active:0,rooms:0});
+  });
+  it("caps per-IP pending WebSocket handshakes while keeping /health available",async()=>{
+    vi.stubEnv("BIOBUZZ_MAX_ROOMS","1");
+    const origin=await start();
+    const pending:WebSocket[]=[];
+    for(let i=0;i<4;i++)pending.push(await socket(origin));
+    await expect(socket(origin)).rejects.toThrow("429");
+    expect((await fetch(origin+"/health")).status).toBe(200);
+    for(const ws of pending)ws.terminate();
+  });
 });
