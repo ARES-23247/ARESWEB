@@ -346,6 +346,31 @@ describe("learning catalog preparation", () => {
         ? { ...track, lessons: [{ ...track.lessons[0], id: plan.tracks[0].lessons[0].id }] }
         : track),
     }, catalog)).toThrow(/duplicates lesson/u);
+    expect(() => validateRoboticsCurriculumPlan({
+      ...plan,
+      tracks: plan.tracks.map((track, index) => index === 0
+        ? { ...track, sourceRoots: [track.sourceRoots[0], track.sourceRoots[0]] }
+        : track),
+    }, catalog)).toThrow(/duplicate sourceRoot/u);
+  });
+
+  it("rejects stale hyphenated ARES-FRC/ARES-FTC versions and stale monorepo commit prefixes", () => {
+    const generatedFrom = {
+      aresVersion: "20.0.6",
+      studioVersion: "7.0.80",
+      ftcStarterVersion: "20.0.6",
+      frcStarterVersion: "20.0.6",
+      sourceCommit: "34b7b605c128c0af9d0c991b144ebc80d51a7b32",
+    };
+    expect(() =>
+      assertCurrentNamedAresVersions("ARES 20.0.6; ARES-FRC 20.0.6; Studio 7.0.80; monorepo 34b7b605", "valid", generatedFrom),
+    ).not.toThrow();
+    expect(() =>
+      assertCurrentNamedAresVersions("ARES 20.0.6; ARES-FRC 12.0.0; Studio 7.0.80", "stale-frc", generatedFrom),
+    ).toThrow(/ARES-FRC 12\.0\.0 is stale/u);
+    expect(() =>
+      assertCurrentNamedAresVersions("ARES 20.0.6; ARES-FTC monorepo f3de343a", "stale-sha", generatedFrom),
+    ).toThrow(/monorepo f3de343a is stale/u);
   });
 
   it("allows only standalone simulations with declared fidelity into Academy lessons", () => {

@@ -4,14 +4,14 @@
   "requiresHumanReview": true,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "revision": "ares-20.0.6-studio-7.0.79",
-    "commit": "1df7d0805d82081d09119c0dad05ff059d1decaa"
+    "revision": "ares-20.0.6-studio-7.0.80",
+    "commit": "34b7b605c128c0af9d0c991b144ebc80d51a7b32"
   },
   "batches": [
     {
       "id": "published-refresh-construction-programming",
       "phase": "refresh-published",
-      "reviewDigest": "c501a0157aebcac7009009f439b64aecf8ae32829ab15e38a8d21b7b281a95e1",
+      "reviewDigest": "0194e1efeaf1d50305cfd37dbbd60feed018d754cc7c17570e5062c42795450c",
       "approvedSlugs": [
         "development-testing-and-release-validation",
         "electrical-battery-protection",
@@ -43,7 +43,7 @@
     {
       "id": "published-refresh-controls-competition-capstones",
       "phase": "refresh-published",
-      "reviewDigest": "7b2e6818875e6d2f9326d1a42843730b7dae40a1c76e0ef5168f64664f8a727b",
+      "reviewDigest": "df96af9d6f9c96278df5cb3175f69e397b603a0ab3c57ef6d30fda6f0c5a598c",
       "approvedSlugs": [
         "capstone-autonomous-mission",
         "capstone-competition-readiness",
@@ -71,7 +71,7 @@
     {
       "id": "published-refresh-foundations",
       "phase": "refresh-published",
-      "reviewDigest": "7aa43be277f3fe573e5ba7aff4ac777243cfda4326acdbb958110db6b97acaa9",
+      "reviewDigest": "3285b1d94f3b7f044dbbac2f878765210e582f7f5fe29792ca6f683c907c8c86",
       "approvedSlugs": [
         "ares-workspace-map",
         "areslib-fundamentals",

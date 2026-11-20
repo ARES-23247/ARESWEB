@@ -5,9 +5,9 @@
   "minimumPlannedLessons": 48,
   "sourceAuthority": {
     "repository": "ARES-Robotics",
-    "commit": "1df7d0805d82081d09119c0dad05ff059d1decaa",
+    "commit": "34b7b605c128c0af9d0c991b144ebc80d51a7b32",
     "aresVersion": "20.0.6",
-    "studioVersion": "7.0.79"
+    "studioVersion": "7.0.80"
   },
   "instructionalContract": {
     "targetReadingGrades": [6, 8],
@@ -82,7 +82,6 @@
         "ARES-Analytics/docs/start/HARDWARE_SETUP.md",
         "ARES-Analytics/docs/GUIDED_COMMISSIONING.md",
         "ARESLib-Kotlin/telemetry-schema/src/main/kotlin/com/areslib/telemetry/schema/HardwareTopology.kt",
-        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt",
         "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt"
       ],
       "lessons": [
