@@ -147,9 +147,15 @@ export default function RobotDetailPage() {
         {/* Printable Judge / Pit Summary Sheet */}
         {showPitSheet && (() => {
           const canonicalRobotUrl = `https://aresfirst.org/robots/${encodeURIComponent(robot.id)}`;
-          const qrMatrix = encodeQrMatrix(canonicalRobotUrl);
-          const qrViewBoxSize = qrMatrix.size + 4;
-          const qrPath = qrMatrixToSvgPath(qrMatrix, 2);
+          let qrViewBoxSize = 0;
+          let qrPath = "";
+          try {
+            const qrMatrix = encodeQrMatrix(canonicalRobotUrl);
+            qrViewBoxSize = qrMatrix.size + 4;
+            qrPath = qrMatrixToSvgPath(qrMatrix, 2);
+          } catch {
+            qrPath = "";
+          }
           return (
           <section
             aria-label="Printable Judge and Pit Technical Sheet"
@@ -169,18 +175,20 @@ export default function RobotDetailPage() {
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white p-2 text-black print:border-black">
-                  <svg
-                    role="img"
-                    aria-label={`QR code for ${robot.name} technical dossier`}
-                    viewBox={`0 0 ${qrViewBoxSize} ${qrViewBoxSize}`}
-                    className="h-16 w-16 shrink-0"
-                  >
-                    <rect width={qrViewBoxSize} height={qrViewBoxSize} fill="#ffffff" />
-                    <path d={qrPath} fill="#000000" />
-                  </svg>
+                  {qrPath ? (
+                    <svg
+                      role="img"
+                      aria-label={`QR code for ${robot.name} technical dossier`}
+                      viewBox={`0 0 ${qrViewBoxSize} ${qrViewBoxSize}`}
+                      className="h-16 w-16 shrink-0"
+                    >
+                      <rect width={qrViewBoxSize} height={qrViewBoxSize} fill="#ffffff" />
+                      <path d={qrPath} fill="#000000" />
+                    </svg>
+                  ) : null}
                   <div className="pr-1 text-left">
                     <span className="block text-[9px] font-black uppercase tracking-wider">
-                      Scan for Live CAD &amp; Specs
+                      {qrPath ? "Scan for Live CAD & Specs" : "Live CAD & Specs URL"}
                     </span>
                     <span className="block font-mono text-[10px] font-bold">
                       aresfirst.org/robots/{robot.id}

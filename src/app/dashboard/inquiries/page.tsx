@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { authenticatedFetch } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { PENDING_INQUIRIES_QUERY_KEY } from "@/lib/usePendingInquiries";
+import { escapeSpreadsheetCsvCell } from "@/lib/outreachExport";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { 
   MessageSquare, 
@@ -49,9 +50,7 @@ interface Inquiry {
 }
 
 function escapeCsvCell(value: unknown): string {
-  const raw = typeof value === "string" ? value : value == null ? "" : String(value);
-  const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
-  return `"${safe.replace(/"/g, '""')}"`;
+  return escapeSpreadsheetCsvCell(value);
 }
 
 export function buildInquiriesCsv(rows: Inquiry[]): string {

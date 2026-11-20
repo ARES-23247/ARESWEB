@@ -152,4 +152,55 @@ describe("InquiriesPage recoverable lifecycle", () => {
     expect(screen.getByText("Morgantown Library")).toBeInTheDocument();
     expect(screen.getByText("Public Library")).toBeInTheDocument();
   });
+
+  it("neutralizes spreadsheet formula payloads including leading whitespace in exported inquiries CSV", async () => {
+    vi.mocked(authenticatedFetch).mockReset();
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(
+      response({
+        inquiries: [
+          {
+            id: "inq-csv",
+            type: "general",
+            name: " =HYPERLINK(\"https://evil.example\")",
+            email: "\t+lead@example.org",
+            status: "pending",
+            metadata: { message: "\r\n-SUM(A1:A5)" },
+            createdAt: "2026-08-05T12:00:00.000Z",
+            isDeleted: false,
+          },
+        ],
+      }),
+    );
+
+    const capturedBlobs: Blob[] = [];
+    const createObjectUrlSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockImplementation((blob: Blob | MediaSource) => {
+        if (blob instanceof Blob) capturedBlobs.push(blob);
+        return "blob:mock-inquiries";
+      });
+    const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <InquiriesPage />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText(/HYPERLINK/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /export csv/i }));
+
+    expect(capturedBlobs).toHaveLength(1);
+    const csvText = await capturedBlobs[0]!.text();
+    expect(csvText).toContain(`"' =HYPERLINK(""https://evil.example"")"`);
+    expect(csvText).toContain(`"'\t+lead@example.org"`);
+    expect(csvText).toContain(`"' -SUM(A1:A5)"`);
+
+    createObjectUrlSpy.mockRestore();
+    revokeObjectUrlSpy.mockRestore();
+    clickSpy.mockRestore();
+  });
 });

@@ -516,6 +516,11 @@ export default function TournamentDetailPage() {
               scoutingBundle={scoutingBundle}
               isLoading={isScoutingLoading}
               onRefresh={() => void refetchScouting()}
+              onSavePitState={async (next) => {
+                if (!id) return;
+                const saved = await saveTournamentPitState(id, next);
+                queryClient.setQueryData(["tournament_pit_state", id], saved);
+              }}
             />
             <TournamentAlliancePlanner
               tournament={tournament}

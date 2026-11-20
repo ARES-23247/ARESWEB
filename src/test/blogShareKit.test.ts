@@ -7,6 +7,7 @@ import {
   buildInstagramCaption,
   renderInstagramSquareCardDataUrl,
   wrapCanvasLines,
+  wrapMeasuredCanvasLines,
 } from "@/lib/blogShareKit";
 
 describe("blogShareKit", () => {
@@ -155,5 +156,85 @@ describe("blogShareKit", () => {
     expect(() =>
       renderInstagramSquareCardDataUrl(samplePost, () => brokenCanvas),
     ).toThrow(/canvas/i);
+  });
+
+  it("measures pixel widths with ctx.measureText and enforces maxWidth bounds before the footer CTA pill", () => {
+    const fillTextCalls: Array<{ text: string; x: number; y: number; maxWidth?: number }> = [];
+    const gradientStub = { addColorStop: vi.fn() };
+    const ctxStub = {
+      fillStyle: "",
+      strokeStyle: "",
+      lineWidth: 1,
+      font: "",
+      textAlign: "left",
+      createLinearGradient: vi.fn(() => gradientStub),
+      createRadialGradient: vi.fn(() => gradientStub),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      arc: vi.fn(),
+      closePath: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      measureText: vi.fn((text: string) => {
+        // Simulate wide uppercase glyphs (48px each for headline font, 16px otherwise)
+        const charWidth = ctxStub.font.includes("62px") ? 48 : 16;
+        return { width: text.length * charWidth };
+      }),
+      fillText: vi.fn((text: string, x: number, y: number, maxWidth?: number) => {
+        fillTextCalls.push({ text, x, y, maxWidth });
+      }),
+    };
+    const fakeCanvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn(() => ctxStub),
+      toDataURL: vi.fn(() => "data:image/png;base64,MEASURED"),
+    } as unknown as HTMLCanvasElement;
+
+    const dataUrl = renderInstagramSquareCardDataUrl(
+      {
+        ...samplePost,
+        title: "WWWWWWWWWWWWWWWWWWWWWWWWWW CHAMPIONSHIP AUTONOMOUS ARCHITECTURE BREAKDOWN",
+        category: "ENGINEERING NOTEBOOK DEEP DIVE",
+        author: "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+        date: "November 20, 2026",
+      },
+      () => fakeCanvas,
+    );
+
+    expect(dataUrl).toBe("data:image/png;base64,MEASURED");
+    expect(ctxStub.measureText).toHaveBeenCalled();
+
+    // Every headline call uses maxWidth 904 and wraps wide glyphs within 904px
+    const headlineCalls = fillTextCalls.filter((call) => call.y >= 270 && call.y < 560 && call.x === 88);
+    expect(headlineCalls.length).toBeGreaterThanOrEqual(2);
+    for (const call of headlineCalls) {
+      expect(call.maxWidth).toBe(904);
+      expect(call.text.length * 48).toBeLessThanOrEqual(904);
+    }
+
+    // Byline call is truncated to fit 612px before the CTA pill at x=724
+    const bylineCall = fillTextCalls.find((call) => call.x === 88 && call.y === 922);
+    expect(bylineCall).toBeDefined();
+    expect(bylineCall?.maxWidth).toBe(612);
+    expect(bylineCall?.text.endsWith("…")).toBe(true);
+    expect((bylineCall?.text.length ?? 0) * 16).toBeLessThanOrEqual(612);
+
+    // Direct wrapMeasuredCanvasLines edge cases
+    expect(
+      wrapMeasuredCanvasLines(ctxStub as unknown as CanvasRenderingContext2D, "", 904, 3, 20),
+    ).toEqual([]);
+    const singleLong = wrapMeasuredCanvasLines(
+      { measureText: (t: string) => ({ width: t.length * 30 }) } as unknown as CanvasRenderingContext2D,
+      "SUPERLONGIDENTIFIERWITHOUTSPACES",
+      150,
+      2,
+      30,
+    );
+    expect(singleLong).toHaveLength(2);
+    expect(singleLong[1]?.endsWith("…")).toBe(true);
   });
 });

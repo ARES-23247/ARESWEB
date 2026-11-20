@@ -11,11 +11,13 @@ import {
   X,
 } from "lucide-react";
 import {
+  clearSupersededOutboxMutations,
   enqueueTournamentMutation,
   flushTournamentOutbox,
   generateOutboxId,
   isPermanentOutboxError,
   listTournamentOutbox,
+  PIT_OUTBOX_CHANGED_EVENT,
   PitOutboxQuotaError,
 } from "@/lib/pitModeOutbox";
 import { submitPitScouting, submitStandScouting } from "@/lib/tournamentApi";
@@ -85,14 +87,22 @@ export function TournamentPitCommand({
   );
   const matchKey = nextMatch?.matchNumber || "GENERAL";
 
+  const readPendingPitSnapshot = useCallback(() => {
+    const queued = listTournamentOutbox(tournament.id, userUid).find(
+      (m): m is Extract<ReturnType<typeof listTournamentOutbox>[number], { kind: "pit_state" }> =>
+        m.kind === "pit_state",
+    );
+    return queued?.payload ?? null;
+  }, [tournament.id, userUid]);
+
   const [checklists, setChecklists] = useState<Record<string, string[]>>(
-    () => pitState?.checklists ?? {},
+    () => readPendingPitSnapshot()?.checklists ?? pitState?.checklists ?? {},
   );
   const [batteries, setBatteries] = useState<PitBattery[]>(
-    () => pitState?.batteries ?? [],
+    () => readPendingPitSnapshot()?.batteries ?? pitState?.batteries ?? [],
   );
   const [triageItems, setTriageItems] = useState<PitTriageItem[]>(
-    () => pitState?.triageItems ?? [],
+    () => readPendingPitSnapshot()?.triageItems ?? pitState?.triageItems ?? [],
   );
   const [kioskOpen, setKioskOpen] = useState(false);
 
@@ -105,7 +115,7 @@ export function TournamentPitCommand({
   const [triageSubsystem, setTriageSubsystem] = useState("");
   const [triageSummary, setTriageSummary] = useState("");
   const [hasPendingPitSync, setHasPendingPitSync] = useState(() =>
-    listTournamentOutbox(tournament.id, userUid).some((m) => m.kind === "pit_state"),
+    Boolean(readPendingPitSnapshot()),
   );
   const [pitSyncNotice, setPitSyncNotice] = useState<string | null>(null);
   const [isSyncingPit, setIsSyncingPit] = useState(false);
@@ -123,7 +133,11 @@ export function TournamentPitCommand({
         userUid,
       );
       setHasPendingPitSync(result.remaining.some((m) => m.kind === "pit_state"));
-      if (result.rejected.length > 0) {
+      if (result.authExpired) {
+        setPitSyncNotice(
+          "Your sign-in session expired. Sign in again and retry sync to upload queued Pit changes.",
+        );
+      } else if (result.rejected.length > 0) {
         setPitSyncNotice(`Pit change rejected by server: ${result.rejected[0].message}`);
       } else if (result.flushed > 0) {
         setPitSyncNotice(null);
@@ -134,31 +148,39 @@ export function TournamentPitCommand({
   }, [onSavePitState, tournament.id, userUid]);
 
   useEffect(() => {
-    setHasPendingPitSync(
-      listTournamentOutbox(tournament.id, userUid).some((m) => m.kind === "pit_state"),
-    );
-  }, [tournament.id, userUid]);
+    const refreshFromOutbox = () => {
+      const pending = readPendingPitSnapshot();
+      setHasPendingPitSync(Boolean(pending));
+      if (pending) {
+        setChecklists(pending.checklists);
+        setBatteries(pending.batteries);
+        setTriageItems(pending.triageItems);
+      }
+    };
+    refreshFromOutbox();
+    window.addEventListener(PIT_OUTBOX_CHANGED_EVENT, refreshFromOutbox);
+    return () => {
+      window.removeEventListener(PIT_OUTBOX_CHANGED_EVENT, refreshFromOutbox);
+    };
+  }, [readPendingPitSnapshot]);
 
   useEffect(() => {
     const handleOnline = () => {
-      if (
-        listTournamentOutbox(tournament.id, userUid).some(
-          (m) => m.kind === "pit_state",
-        )
-      ) {
+      if (readPendingPitSnapshot()) {
         void syncPendingPitState();
       }
     };
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
-  }, [syncPendingPitState, tournament.id, userUid]);
+  }, [readPendingPitSnapshot, syncPendingPitState]);
 
   useEffect(() => {
     if (!pitState) return;
+    if (readPendingPitSnapshot()) return;
     setChecklists(pitState.checklists);
     setBatteries(pitState.batteries);
     setTriageItems(pitState.triageItems);
-  }, [pitState]);
+  }, [pitState, readPendingPitSnapshot]);
 
   const kioskTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -211,6 +233,11 @@ export function TournamentPitCommand({
     };
     try {
       await onSavePitState(payload);
+      clearSupersededOutboxMutations(
+        tournament.id,
+        (m) => m.kind === "pit_state",
+        userUid,
+      );
       setHasPendingPitSync(false);
       setPitSyncNotice(null);
     } catch (err) {
@@ -693,7 +720,7 @@ export function TournamentPitCommand({
           aria-label="Pit Command Kiosk Display"
           tabIndex={-1}
           ref={kioskRef}
-          className="fixed inset-0 z-50 bg-obsidian text-marble p-6 md:p-10 overflow-y-auto flex flex-col justify-between"
+          className="fixed inset-0 z-[120] bg-obsidian text-marble p-6 md:p-10 overflow-y-auto flex flex-col justify-between"
         >
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
             <div>

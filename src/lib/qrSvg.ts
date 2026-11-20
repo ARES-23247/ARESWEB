@@ -1,6 +1,6 @@
 /**
  * Zero-network ISO/IEC 18004 QR Code matrix & SVG path generator
- * (Versions 1–4, Byte Mode, Error Correction Level L, Mask 0).
+ * (Versions 1–6, Byte Mode, Error Correction Level L, Mask 0).
  */
 
 export interface QrMatrix {
@@ -13,15 +13,18 @@ interface VersionSpec {
   version: number;
   size: number;
   dataCodewords: number;
-  ecCodewords: number;
+  ecCodewordsPerBlock: number;
+  numBlocks: number;
   alignmentCenter: number | null;
 }
 
 const VERSION_SPECS: readonly VersionSpec[] = [
-  { version: 1, size: 21, dataCodewords: 19, ecCodewords: 7, alignmentCenter: null },
-  { version: 2, size: 25, dataCodewords: 34, ecCodewords: 10, alignmentCenter: 18 },
-  { version: 3, size: 29, dataCodewords: 55, ecCodewords: 15, alignmentCenter: 22 },
-  { version: 4, size: 33, dataCodewords: 80, ecCodewords: 20, alignmentCenter: 26 },
+  { version: 1, size: 21, dataCodewords: 19, ecCodewordsPerBlock: 7, numBlocks: 1, alignmentCenter: null },
+  { version: 2, size: 25, dataCodewords: 34, ecCodewordsPerBlock: 10, numBlocks: 1, alignmentCenter: 18 },
+  { version: 3, size: 29, dataCodewords: 55, ecCodewordsPerBlock: 15, numBlocks: 1, alignmentCenter: 22 },
+  { version: 4, size: 33, dataCodewords: 80, ecCodewordsPerBlock: 20, numBlocks: 1, alignmentCenter: 26 },
+  { version: 5, size: 37, dataCodewords: 108, ecCodewordsPerBlock: 26, numBlocks: 1, alignmentCenter: 30 },
+  { version: 6, size: 41, dataCodewords: 136, ecCodewordsPerBlock: 18, numBlocks: 2, alignmentCenter: 34 },
 ];
 
 // Format bits for ECC Level L (01) + Mask 0 (000) with BCH(15,5) ^ 0x5412 = 0x77C4
@@ -111,10 +114,28 @@ function buildCodewords(bytes: Uint8Array, spec: VersionSpec): Uint8Array {
     data[i] = (i - byteCount) % 2 === 0 ? 0xec : 0x11;
   }
 
-  const ec = computeReedSolomonRemainder(data, spec.ecCodewords);
-  const full = new Uint8Array(spec.dataCodewords + spec.ecCodewords);
-  full.set(data, 0);
-  full.set(ec, spec.dataCodewords);
+  const blockDataLen = spec.dataCodewords / spec.numBlocks;
+  const dataBlocks: Uint8Array[] = [];
+  const ecBlocks: Uint8Array[] = [];
+  for (let b = 0; b < spec.numBlocks; b += 1) {
+    const slice = data.subarray(b * blockDataLen, (b + 1) * blockDataLen);
+    dataBlocks.push(slice);
+    ecBlocks.push(computeReedSolomonRemainder(slice, spec.ecCodewordsPerBlock));
+  }
+
+  const totalCodewords = spec.dataCodewords + spec.ecCodewordsPerBlock * spec.numBlocks;
+  const full = new Uint8Array(totalCodewords);
+  let out = 0;
+  for (let i = 0; i < blockDataLen; i += 1) {
+    for (let b = 0; b < spec.numBlocks; b += 1) {
+      full[out++] = dataBlocks[b][i];
+    }
+  }
+  for (let i = 0; i < spec.ecCodewordsPerBlock; i += 1) {
+    for (let b = 0; b < spec.numBlocks; b += 1) {
+      full[out++] = ecBlocks[b][i];
+    }
+  }
   return full;
 }
 

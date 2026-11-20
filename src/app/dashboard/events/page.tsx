@@ -102,13 +102,18 @@ export default function EventsManagementPage({
   // Team Roster (for editor checking in members)
   const [teamMembers, setTeamMembers] = useState<{ uid: string; nickname: string; avatar: string }[]>([]);
 
-  const canEdit = !!(user && authorizedUser && authorizedUser.role !== "unverified");
+  const isUnverified = authorizedUser?.role === "unverified";
+  const canEdit = !!(user && authorizedUser && !isUnverified);
   const canPublishDirectly = useMemo(() => {
     return !!(user && authorizedUser && ["admin", "coach", "mentor"].includes(authorizedUser.role));
   }, [user, authorizedUser]);
 
   // Fetch team roster for quick check-ins
   useEffect(() => {
+    if (isUnverified) {
+      setTeamMembers([]);
+      return;
+    }
     const fetchRoster = async () => {
       try {
         const res = await authenticatedFetch("/api/profiles/team-roster");
@@ -131,9 +136,16 @@ export default function EventsManagementPage({
       }
     };
     fetchRoster();
-  }, []);
+  }, [isUnverified]);
 
   const loadManagementData = useCallback(async (cursor: string | null = null, append = false) => {
+    if (isUnverified) {
+      setEvents([]);
+      setNextCursor(null);
+      setIsLive(false);
+      setLoadError(null);
+      return;
+    }
     if (append) setIsLoadingMore(true);
     try {
       const result = await fetchManagedEvents(100, cursor, 190);
@@ -153,9 +165,13 @@ export default function EventsManagementPage({
     } finally {
       setIsLoadingMore(false);
     }
-  }, []);
+  }, [isUnverified]);
 
   useEffect(() => {
+    if (isUnverified) {
+      setLocations([]);
+      return;
+    }
     void loadManagementData();
     void fetchLocations()
       .then(setLocations)
@@ -163,7 +179,7 @@ export default function EventsManagementPage({
         logger.error("Unable to load managed locations:", error);
         setLoadError((current) => current || (error instanceof Error ? error.message : String(error)));
       });
-  }, [loadManagementData]);
+  }, [isUnverified, loadManagementData]);
 
   // Prefilled actions for calendar redirect links
   useEffect(() => {
@@ -524,6 +540,29 @@ export default function EventsManagementPage({
       return true;
     });
   }, [events, filterStatus, filterCategory, filterSearch, filterMonth, filterYear]);
+
+  if (isUnverified && !editorOnly) {
+    return (
+      <div className="space-y-6 w-full text-left">
+        <header className="border-b border-white/5 pb-6">
+          <p className="text-ares-gold font-bold uppercase tracking-widest text-xs mb-3 font-heading flex items-center gap-2">
+            <Activity size={12} aria-hidden="true" /> Operational Timelines
+          </p>
+          <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter font-heading">
+            Manage Events
+          </h1>
+        </header>
+        <div className="rounded-xl border border-ares-gold/30 bg-ares-gold/10 p-6 text-sm text-marble/85">
+          <p className="font-bold text-ares-gold uppercase tracking-wider text-xs mb-2">
+            Account Verification Required
+          </p>
+          <p>
+            Event scheduling and roster management are enabled once a coach or administrator verifies your team account.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={editorOnly ? "" : "space-y-10 w-full text-left"}>

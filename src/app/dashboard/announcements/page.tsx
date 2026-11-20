@@ -10,10 +10,15 @@ import {
 } from "@/components/SiteAnnouncementBanner";
 import { logger } from "@/utils/logger";
 
+type ZulipDeliveryState = "pending" | "sent" | "failed" | null;
+
 interface ManagedAnnouncement extends PublicAnnouncement {
   isActive: boolean;
   evergreen: boolean;
   updatedAt: string | null;
+  zulipDelivery?: ZulipDeliveryState;
+  zulipDeliveredAt?: string | null;
+  zulipAttempts?: number | null;
 }
 
 interface ManagementResponse {
@@ -21,6 +26,8 @@ interface ManagementResponse {
   error?: string;
   message?: string;
 }
+
+type AnnouncementLifecycle = "live" | "scheduled" | "expired" | "draft";
 
 function toLocalDateTime(isoValue: string | null): string {
   if (!isoValue) return "";
@@ -36,6 +43,56 @@ function toIsoDateTime(localValue: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+function computeLifecycle(params: {
+  isActive: boolean;
+  evergreen: boolean;
+  startsAt: string;
+  endsAt: string;
+  now?: Date;
+}): AnnouncementLifecycle {
+  if (!params.isActive) return "draft";
+  if (!params.evergreen && !params.endsAt) return "draft";
+  const now = params.now ?? new Date();
+  const startIso = toIsoDateTime(params.startsAt);
+  const endIso = params.evergreen ? null : toIsoDateTime(params.endsAt);
+  if (startIso && new Date(startIso) > now) return "scheduled";
+  if (endIso && new Date(endIso) <= now) return "expired";
+  return "live";
+}
+
+function contentSignature(fields: {
+  message: string;
+  severity: AnnouncementSeverity;
+  link: string;
+  linkLabel: string;
+}): string {
+  return [
+    fields.message.trim(),
+    fields.severity,
+    fields.link.trim(),
+    fields.linkLabel.trim(),
+  ].join("\u001f");
+}
+
+const LIFECYCLE_BADGE: Record<AnnouncementLifecycle, { label: string; className: string }> = {
+  live: {
+    label: "Live now",
+    className: "border-ares-success/40 bg-ares-success/15 text-ares-success",
+  },
+  scheduled: {
+    label: "Scheduled",
+    className: "border-ares-gold/40 bg-ares-gold/15 text-ares-gold",
+  },
+  expired: {
+    label: "Expired",
+    className: "border-ares-red/50 bg-ares-red/15 text-ares-red-light",
+  },
+  draft: {
+    label: "Draft / Hidden",
+    className: "border-white/20 bg-white/5 text-marble/70",
+  },
+};
+
 export default function AnnouncementManagerPage() {
   const { authorizedUser } = useAuth();
   const canManage =
@@ -48,10 +105,46 @@ export default function AnnouncementManagerPage() {
   const [endsAt, setEndsAt] = useState("");
   const [evergreen, setEvergreen] = useState(false);
   const [isActive, setIsActive] = useState(false);
+  const [serverIsActive, setServerIsActive] = useState(false);
+  const [serverZulipDelivery, setServerZulipDelivery] = useState<ZulipDeliveryState>(null);
+  const [serverZulipDeliveredAt, setServerZulipDeliveredAt] = useState<string | null>(null);
+  const [serverContentKey, setServerContentKey] = useState("");
   const [hasSettings, setHasSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+
+  const applyServerAnnouncement = useCallback((current: ManagedAnnouncement | null | undefined) => {
+    setHasSettings(Boolean(current));
+    if (!current) {
+      setServerIsActive(false);
+      setServerZulipDelivery(null);
+      setServerZulipDeliveredAt(null);
+      setServerContentKey("");
+      return;
+    }
+    const nextLink = current.link ?? "";
+    const nextLinkLabel = current.linkLabel ?? "";
+    setMessage(current.message);
+    setSeverity(current.severity);
+    setLink(nextLink);
+    setLinkLabel(nextLinkLabel);
+    setStartsAt(toLocalDateTime(current.startsAt));
+    setEndsAt(toLocalDateTime(current.endsAt));
+    setEvergreen(current.evergreen === true);
+    setIsActive(current.isActive);
+    setServerIsActive(current.isActive);
+    setServerZulipDelivery(current.zulipDelivery ?? null);
+    setServerZulipDeliveredAt(current.zulipDeliveredAt ?? null);
+    setServerContentKey(
+      contentSignature({
+        message: current.message,
+        severity: current.severity,
+        link: nextLink,
+        linkLabel: nextLinkLabel,
+      }),
+    );
+  }, []);
 
   const load = useCallback(async () => {
     if (!canManage) {
@@ -66,18 +159,7 @@ export default function AnnouncementManagerPage() {
       if (!response.ok) {
         throw new Error(payload.error || payload.message || "Announcement settings could not be loaded.");
       }
-      const current = payload.announcement;
-      setHasSettings(Boolean(current));
-      if (current) {
-        setMessage(current.message);
-        setSeverity(current.severity);
-        setLink(current.link ?? "");
-        setLinkLabel(current.linkLabel ?? "");
-        setStartsAt(toLocalDateTime(current.startsAt));
-        setEndsAt(toLocalDateTime(current.endsAt));
-        setEvergreen(current.evergreen === true);
-        setIsActive(current.isActive);
-      }
+      applyServerAnnouncement(payload.announcement);
     } catch (error) {
       logger.error("Announcement settings could not be loaded.");
       setStatus({
@@ -87,7 +169,7 @@ export default function AnnouncementManagerPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [canManage]);
+  }, [applyServerAnnouncement, canManage]);
 
   useEffect(() => {
     void load();
@@ -105,6 +187,15 @@ export default function AnnouncementManagerPage() {
       </section>
     );
   }
+
+  const lifecycle = computeLifecycle({ isActive, evergreen, startsAt, endsAt });
+  const currentContentKey = contentSignature({ message, severity, link, linkLabel });
+  const willRepingZulip =
+    isActive &&
+    serverIsActive &&
+    serverZulipDelivery === "sent" &&
+    serverContentKey !== "" &&
+    currentContentKey !== serverContentKey;
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -143,13 +234,23 @@ export default function AnnouncementManagerPage() {
       if (!response.ok) {
         throw new Error(payload.error || payload.message || "The announcement could not be saved.");
       }
-      setHasSettings(true);
-      setStatus({
-        kind: "success",
-        message: isActive
-          ? "Announcement published. It is now available across the public site."
-          : "Announcement saved as inactive.",
-      });
+      if (payload.announcement) {
+        applyServerAnnouncement(payload.announcement);
+      } else {
+        setHasSettings(true);
+        setServerIsActive(isActive);
+        setServerContentKey(currentContentKey);
+      }
+      const savedLifecycle = computeLifecycle({ isActive, evergreen, startsAt, endsAt });
+      const successMessage =
+        savedLifecycle === "scheduled"
+          ? "Announcement scheduled. It will appear across the public site at its start time."
+          : savedLifecycle === "expired"
+            ? "Announcement saved, but its end time is in the past so it is not currently visible."
+            : savedLifecycle === "live"
+              ? "Announcement published. It is now available across the public site."
+              : "Announcement saved as inactive.";
+      setStatus({ kind: "success", message: successMessage });
       window.dispatchEvent(new Event(ANNOUNCEMENT_UPDATED_EVENT));
     } catch (error) {
       logger.error("Announcement settings could not be saved.");
@@ -173,6 +274,8 @@ export default function AnnouncementManagerPage() {
         throw new Error(payload.error || payload.message || "The announcement could not be disabled.");
       }
       setIsActive(false);
+      setServerIsActive(false);
+      setServerZulipDelivery(null);
       setStatus({ kind: "success", message: "Announcement removed from the public site." });
       window.dispatchEvent(new Event(ANNOUNCEMENT_UPDATED_EVENT));
     } catch (error) {
@@ -224,6 +327,27 @@ export default function AnnouncementManagerPage() {
         </p>
       ) : (
         <form onSubmit={save} className="space-y-6 rounded-2xl border border-white/10 bg-black/30 p-4 shadow-2xl sm:p-7">
+          {hasSettings && serverZulipDelivery && (
+            <div
+              role="status"
+              className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs font-bold ${
+                serverZulipDelivery === "sent"
+                  ? "border-ares-success/40 bg-ares-success/10 text-ares-success"
+                  : serverZulipDelivery === "failed"
+                    ? "border-ares-red/50 bg-ares-red/15 text-ares-red-light"
+                    : "border-ares-cyan/40 bg-ares-cyan/10 text-ares-cyan"
+              }`}
+            >
+              <span>
+                {serverZulipDelivery === "sent"
+                  ? `Zulip #announcements: Sent${serverZulipDeliveredAt ? ` (${new Date(serverZulipDeliveredAt).toLocaleString()})` : ""}`
+                  : serverZulipDelivery === "failed"
+                    ? "Zulip #announcements: Delivery failed after retries — save an update to retry."
+                    : "Zulip #announcements: Queued for automatic delivery once live."}
+              </span>
+            </div>
+          )}
+
           <div>
             <label htmlFor="announcement-message" className="mb-2 block text-sm font-black uppercase tracking-wide text-white">
               Message
@@ -238,7 +362,7 @@ export default function AnnouncementManagerPage() {
               className="w-full rounded-xl border border-white/20 bg-obsidian px-4 py-3 text-base text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan"
               placeholder="Practice is moved to 7:00 PM tonight."
             />
-            <p className="mt-1 text-right text-xs text-marble/60">{message.length}/240</p>
+            <p className="mt-1 text-right text-xs text-marble/70">{message.length}/240</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -294,19 +418,24 @@ export default function AnnouncementManagerPage() {
             </label>
           </fieldset>
 
+          {willRepingZulip && (
+            <div role="note" className="flex items-start gap-2.5 rounded-xl border border-ares-gold/50 bg-ares-gold/10 px-4 py-3 text-xs font-bold text-ares-gold">
+              <AlertTriangle aria-hidden="true" size={16} className="mt-0.5 shrink-0" />
+              <span>
+                Saving changes to the message, priority, or link of an active banner will post a new @all broadcast in Zulip’s #announcements channel. Schedule-only edits will not re-ping Zulip.
+              </span>
+            </div>
+          )}
+
           <div className="border-t border-white/10 pt-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-ares-gold">
                 <Eye aria-hidden="true" size={14} /> Live Banner Preview
               </span>
               <span
-                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${
-                  isActive
-                    ? "border-ares-success/40 bg-ares-success/15 text-ares-success"
-                    : "border-white/20 bg-white/5 text-marble/65"
-                }`}
+                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${LIFECYCLE_BADGE[lifecycle].className}`}
               >
-                {isActive && (evergreen || endsAt) ? "Publishing enabled" : "Draft / Hidden"}
+                {LIFECYCLE_BADGE[lifecycle].label}
               </span>
             </div>
             <div
@@ -339,7 +468,7 @@ export default function AnnouncementManagerPage() {
             <button type="submit" disabled={isSaving} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-ares-red px-6 py-3 text-sm font-black uppercase tracking-wide text-white hover:bg-ares-bronze disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
               <Save aria-hidden="true" size={18} /> {isSaving ? "Saving…" : "Save announcement"}
             </button>
-            <button type="button" onClick={() => void disable()} disabled={isSaving || !hasSettings || !isActive} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-6 py-3 text-sm font-black uppercase tracking-wide text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
+            <button type="button" onClick={() => void disable()} disabled={isSaving || !hasSettings || !serverIsActive} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-6 py-3 text-sm font-black uppercase tracking-wide text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan">
               <Trash2 aria-hidden="true" size={18} /> Remove from site
             </button>
           </div>

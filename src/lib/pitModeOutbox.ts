@@ -29,12 +29,18 @@ export type PitOutboxMutation =
 
 const STORAGE_KEY_PREFIX = "ares_pit_outbox_v2:";
 const MAX_OUTBOX_ITEMS = 60;
+export const PIT_OUTBOX_CHANGED_EVENT = "ares:pit-outbox-changed";
 
 export class PitOutboxQuotaError extends Error {
   constructor(message = "Offline storage is full. Reconnect to sync pending changes and try again.") {
     super(message);
     this.name = "PitOutboxQuotaError";
   }
+}
+
+export function isAuthExpiredOutboxError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  return (error as { status?: unknown }).status === 401;
 }
 
 export function isPermanentOutboxError(error: unknown): boolean {
@@ -44,6 +50,7 @@ export function isPermanentOutboxError(error: unknown): boolean {
     typeof status === "number" &&
     status >= 400 &&
     status < 500 &&
+    status !== 401 &&
     status !== 408 &&
     status !== 429
   );
@@ -96,6 +103,13 @@ export function listTournamentOutbox(
   }
 }
 
+function notifyOutboxChanged(tournamentId: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(PIT_OUTBOX_CHANGED_EVENT, { detail: { tournamentId } }),
+  );
+}
+
 function writeTournamentOutbox(
   tournamentId: string,
   items: PitOutboxMutation[],
@@ -105,6 +119,7 @@ function writeTournamentOutbox(
   const key = storageKey(tournamentId, uid);
   if (items.length === 0) {
     window.localStorage.removeItem(key);
+    notifyOutboxChanged(tournamentId);
     return;
   }
   try {
@@ -112,9 +127,23 @@ function writeTournamentOutbox(
       key,
       JSON.stringify(items),
     );
+    notifyOutboxChanged(tournamentId);
   } catch {
     throw new PitOutboxQuotaError();
   }
+}
+
+export function clearSupersededOutboxMutations(
+  tournamentId: string,
+  matcher: (item: PitOutboxMutation) => boolean,
+  uid?: string | null,
+): PitOutboxMutation[] {
+  const existing = listTournamentOutbox(tournamentId, uid);
+  const remaining = existing.filter((item) => !matcher(item));
+  if (remaining.length !== existing.length) {
+    writeTournamentOutbox(tournamentId, remaining, uid);
+  }
+  return remaining;
 }
 
 export type PitOutboxEnqueueInput =
@@ -191,6 +220,7 @@ export interface OutboxFlushResult {
   flushed: number;
   remaining: PitOutboxMutation[];
   rejected: OutboxRejectedItem[];
+  authExpired: boolean;
 }
 
 const inFlightFlushes = new Map<string, Promise<OutboxFlushResult>>();
@@ -202,10 +232,11 @@ async function executeOutboxFlush(
 ): Promise<OutboxFlushResult> {
   const queue = listTournamentOutbox(tournamentId, uid);
   if (queue.length === 0) {
-    return { flushed: 0, remaining: [], rejected: [] };
+    return { flushed: 0, remaining: [], rejected: [], authExpired: false };
   }
 
   let flushed = 0;
+  let authExpired = false;
   const handledById = new Map<string, string>();
   const retryable: PitOutboxMutation[] = [];
   const rejected: OutboxRejectedItem[] = [];
@@ -225,7 +256,11 @@ async function executeOutboxFlush(
       flushed += 1;
       handledById.set(item.id, item.queuedAt);
     } catch (err) {
-      if (isPermanentOutboxError(err)) {
+      if (isAuthExpiredOutboxError(err)) {
+        authExpired = true;
+        handledById.set(item.id, item.queuedAt);
+        retryable.push(item);
+      } else if (isPermanentOutboxError(err)) {
         handledById.set(item.id, item.queuedAt);
         rejected.push({
           item,
@@ -261,7 +296,7 @@ async function executeOutboxFlush(
 
   const remaining = [...mergedRetryable, ...addedDuringFlush];
   writeTournamentOutbox(tournamentId, remaining, uid);
-  return { flushed, remaining, rejected };
+  return { flushed, remaining, rejected, authExpired };
 }
 
 export function flushTournamentOutbox(

@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  clearSupersededOutboxMutations,
   enqueueTournamentMutation,
   flushTournamentOutbox,
+  isAuthExpiredOutboxError,
   isPermanentOutboxError,
   listTournamentOutbox,
+  PIT_OUTBOX_CHANGED_EVENT,
   PitOutboxQuotaError,
 } from "@/lib/pitModeOutbox";
 
@@ -132,7 +135,7 @@ describe("pitModeOutbox", () => {
       submitStand,
       savePitState,
     });
-    expect(emptyAttempt).toEqual({ flushed: 0, remaining: [], rejected: [] });
+    expect(emptyAttempt).toEqual({ flushed: 0, remaining: [], rejected: [], authExpired: false });
 
     enqueueTournamentMutation({
       tournamentId: "t1",
@@ -320,7 +323,7 @@ describe("pitModeOutbox", () => {
       savePitState: vi.fn().mockResolvedValue({}),
     };
     const result = await flushTournamentOutbox("t1", handlers, uid);
-    expect(result).toEqual({ flushed: 60, remaining: [], rejected: [] });
+    expect(result).toEqual({ flushed: 60, remaining: [], rejected: [], authExpired: false });
     expect(handlers.submitStand.mock.calls.map(([, payload]) => payload.clientSubmissionId))
       .toEqual(pending.slice(0, 59).map(({ id }) => id));
     expect(handlers.savePitState).toHaveBeenCalledExactlyOnceWith("t1", latestPit);
@@ -439,7 +442,81 @@ describe("pitModeOutbox", () => {
     ]);
 
     expect(submitStand).toHaveBeenCalledTimes(1);
-    expect(first).toEqual({ flushed: 1, remaining: [], rejected: [] });
-    expect(second).toEqual({ flushed: 1, remaining: [], rejected: [] });
+    expect(first).toEqual({ flushed: 1, remaining: [], rejected: [], authExpired: false });
+    expect(second).toEqual({ flushed: 1, remaining: [], rejected: [], authExpired: false });
+  });
+
+  it("preserves queued mutations on 401 session expiry, supports superseding cleanup, and emits change events", async () => {
+    const events: string[] = [];
+    const listener = (event: Event) => {
+      events.push((event as CustomEvent<{ tournamentId: string }>).detail?.tournamentId ?? "");
+    };
+    window.addEventListener(PIT_OUTBOX_CHANGED_EVENT, listener);
+
+    enqueueTournamentMutation(
+      {
+        tournamentId: "t_auth",
+        id: "stand_auth",
+        kind: "stand_scouting",
+        payload: {
+          matchNumber: "QM9",
+          teamNumber: "23247",
+          alliance: "red",
+          autoScoreEstimate: 15,
+          teleopCycles: 6,
+          endgameTier: "high",
+          disconnected: false,
+          penalties: "none",
+          defenseRating: 0,
+        },
+      },
+      "uid_auth",
+    );
+    enqueueTournamentMutation(
+      {
+        tournamentId: "t_auth",
+        id: "pit_auth",
+        kind: "pit_state",
+        payload: { checklists: { QM9: ["battery"] }, batteries: [], triageItems: [] },
+      },
+      "uid_auth",
+    );
+
+    expect(isPermanentOutboxError({ status: 401 })).toBe(false);
+    expect(isAuthExpiredOutboxError({ status: 401 })).toBe(true);
+    expect(isAuthExpiredOutboxError({ status: 403 })).toBe(false);
+    expect(isAuthExpiredOutboxError(null)).toBe(false);
+
+    const flushResult = await flushTournamentOutbox(
+      "t_auth",
+      {
+        submitPit: vi.fn().mockResolvedValue({}),
+        submitStand: vi.fn().mockRejectedValue(Object.assign(new Error("Unauthorized"), { status: 401 })),
+        savePitState: vi.fn().mockRejectedValue(Object.assign(new Error("Unauthorized"), { status: 401 })),
+      },
+      "uid_auth",
+    );
+
+    expect(flushResult.authExpired).toBe(true);
+    expect(flushResult.flushed).toBe(0);
+    expect(flushResult.rejected).toEqual([]);
+    expect(flushResult.remaining).toHaveLength(2);
+
+    const afterNoOpClear = clearSupersededOutboxMutations(
+      "t_auth",
+      (item) => item.kind === "pit_scouting",
+      "uid_auth",
+    );
+    expect(afterNoOpClear).toHaveLength(2);
+
+    const afterClear = clearSupersededOutboxMutations(
+      "t_auth",
+      (item) => item.kind === "pit_state",
+      "uid_auth",
+    );
+    expect(afterClear.map((item) => item.id)).toEqual(["stand_auth"]);
+    expect(events).toContain("t_auth");
+
+    window.removeEventListener(PIT_OUTBOX_CHANGED_EVENT, listener);
   });
 });

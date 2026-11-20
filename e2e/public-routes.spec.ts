@@ -250,3 +250,39 @@ test("published blog post opens the Zero-Key Share Kit with Web Share Intents an
   await expect(dialog).toBeHidden();
   await expect(shareKitButton).toBeFocused();
 });
+
+test("simulation playground serves ARESLib typings and runs its opaque preview sandbox cleanly, and bronze hover maintains dark foreground contrast", async ({
+  page,
+  request,
+}) => {
+  const typingsResponse = await request.get("/types/areslib.d.ts");
+  expect(typingsResponse.status()).toBe(200);
+  const typingsBody = await typingsResponse.text();
+  expect(typingsBody).toContain("declare namespace ARESLib");
+
+  const pageErrors: string[] = [];
+  const cspViolations: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error" && /content security policy/i.test(msg.text())) {
+      cspViolations.push(msg.text());
+    }
+  });
+
+  await page.goto("/academy/playground", { waitUntil: "domcontentloaded" });
+  const simFrame = page.locator('iframe[src="/sandbox/simulation-preview.html"]');
+  await expect(simFrame).toBeVisible({ timeout: 15_000 });
+  await expect(simFrame).toHaveAttribute("sandbox", "allow-scripts");
+  expect(cspViolations).toEqual([]);
+  expect(pageErrors).toEqual([]);
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const bronzeHoverCta = page.locator('[class*="hover:bg-ares-bronze"]').first();
+  await expect(bronzeHoverCta).toBeVisible();
+  await bronzeHoverCta.hover();
+  await expect
+    .poll(() =>
+      bronzeHoverCta.evaluate((el) => window.getComputedStyle(el).color),
+    )
+    .toBe("rgb(26, 26, 26)");
+});

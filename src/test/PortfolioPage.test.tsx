@@ -209,4 +209,65 @@ describe("Phase 3 — Dashboard Engineering Portfolio & Awards Hub UI", () => {
     expect(escapeSpreadsheetCsvCell("\r=1")).toBe(`"' =1"`);
     expect(escapeSpreadsheetCsvCell("Normal note")).toBe(`"Normal note"`);
   });
+
+  it("counts only verified artifacts in CSV export and links the visible filtered artifact after switching filter", async () => {
+    const payloadWithOrphan = {
+      ...sampleWorkspacePayload,
+      workspace: {
+        ...sampleWorkspacePayload.workspace,
+        pages: sampleWorkspacePayload.workspace.pages.map((page) =>
+          page.pageNumber === 2
+            ? {
+                ...page,
+                linkedArtifactIds: ["post:deleted_orphan_id", "post:studio_1"],
+              }
+            : page,
+        ),
+      },
+    };
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(jsonResponse(payloadWithOrphan));
+
+    const capturedBlobs: Blob[] = [];
+    const createObjectUrlSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockImplementation((blob: Blob | MediaSource) => {
+        if (blob instanceof Blob) capturedBlobs.push(blob);
+        return "blob:mock-portfolio";
+      });
+    const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    render(
+      <HelmetProvider>
+        <MemoryRouter>
+          <DashboardPortfolioPage />
+        </MemoryRouter>
+      </HelmetProvider>,
+    );
+
+    expect(await screen.findByText("Inspire Award")).toBeInTheDocument();
+
+    // Export CSV — Page 2 has 1 orphaned ID + 1 verified ID, so LinkedArtifactCount must be 1 (not 2)
+    fireEvent.click(screen.getByRole("button", { name: /CSV Outline/i }));
+    expect(capturedBlobs).toHaveLength(1);
+    const csvText = await capturedBlobs[0]!.text();
+    expect(csvText).toContain(`2,"Hardware & CAD Engineering","missing","","Page 2 Blueprint",1,""`);
+
+    // Select a studio_notebook item in Inspire Award picker, then switch filter to "robot"
+    const inspirePicker = screen.getByLabelText("Select portal artifact for Inspire Award");
+    fireEvent.change(inspirePicker, { target: { value: "post:studio_1" } });
+    fireEvent.change(screen.getByLabelText(/Evidence Filter/i), { target: { value: "robot" } });
+
+    // Picker value must now reflect the visible filtered robot candidate and link ARES MK-IV (not hidden post:studio_1)
+    expect((inspirePicker as HTMLSelectElement).value).toBe("robot:ares_mk4");
+    const linkButtons = screen.getAllByRole("button", { name: /Link Evidence/i });
+    fireEvent.click(linkButtons[0]!);
+    expect(screen.getByRole("link", { name: /ARES MK-IV/i })).toBeInTheDocument();
+
+    createObjectUrlSpy.mockRestore();
+    revokeObjectUrlSpy.mockRestore();
+    clickSpy.mockRestore();
+  });
 });
