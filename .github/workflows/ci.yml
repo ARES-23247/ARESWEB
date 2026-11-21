@@ -214,7 +214,7 @@ jobs:
     # job never touches apt — hosted-runner package mirrors stalled three
     # times today and burned entire job budgets in Ign lines.
     container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
       # Firefox's sandbox needs user namespaces (clone), which the default
       # container seccomp profile denies with EPERM.
       options: --security-opt seccomp=unconfined
@@ -685,7 +685,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.deploy-production.result == 'success'
     timeout-minutes: 10
     container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
