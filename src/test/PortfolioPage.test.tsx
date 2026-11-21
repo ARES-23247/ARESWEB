@@ -266,6 +266,15 @@ describe("Phase 3 — Dashboard Engineering Portfolio & Awards Hub UI", () => {
     fireEvent.click(linkButtons[0]!);
     expect(screen.getByRole("link", { name: /ARES MK-IV/i })).toBeInTheDocument();
 
+    // Marking a page "verified" without any linked artifacts surfaces an explicit evidence warning
+    fireEvent.click(screen.getByRole("tab", { name: /15-Page Portfolio Storyboard/i }));
+    fireEvent.change(screen.getByLabelText("Page 3 status"), {
+      target: { value: "verified" },
+    });
+    expect(
+      screen.getByText(/Marked verified without linked portal evidence/i),
+    ).toBeInTheDocument();
+
     createObjectUrlSpy.mockRestore();
     revokeObjectUrlSpy.mockRestore();
     clickSpy.mockRestore();

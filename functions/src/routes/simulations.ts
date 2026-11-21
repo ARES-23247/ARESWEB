@@ -6,7 +6,11 @@ import { asyncHandler } from "../lib/utils";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../lib/logger";
 import { requireRouteParam } from "../middleware/validation";
-import { distributedAnonymousQuota } from "../middleware/distributedQuota";
+import {
+  distributedAnonymousQuota,
+  distributedQuota,
+} from "../middleware/distributedQuota";
+import { adminDb } from "../lib/firebase-admin";
 import {
   type PublicArtifact,
   readPublicArtifact,
@@ -95,9 +99,19 @@ function githubHeaders(accept = "application/vnd.github.v3.raw"): Record<string,
   return headers;
 }
 
+const GITHUB_FETCH_TIMEOUT_MS = 10_000;
+const gistCreateQuota = distributedQuota({
+  scope: "simulation-gist",
+  limit: 10,
+  windowMs: 60 * 60 * 1000,
+});
+
 async function fetchRepositoryText(path: string): Promise<Response> {
   const ghConfig = getGitHubConfig();
-  return fetch(`${ghConfig.apiBase}/contents/${path}`, { headers: githubHeaders() });
+  return fetch(`${ghConfig.apiBase}/contents/${path}`, {
+    headers: githubHeaders(),
+    signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
+  });
 }
 
 async function refreshRegistryArtifact(): Promise<PublicArtifact> {
@@ -189,7 +203,10 @@ router.get("/gist/:id", ensureTeamMember, asyncHandler(async (req, res) => {
   }
   const headers = githubHeaders("application/vnd.github.v3+json");
 
-  const ghRes = await fetch(`https://api.github.com/gists/${safeId}`, { headers });
+  const ghRes = await fetch(`https://api.github.com/gists/${safeId}`, {
+    headers,
+    signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
+  });
   if (!ghRes.ok) {
     throw new ApiError(404, "Gist not found");
   }
@@ -274,7 +291,7 @@ router.delete("/:id", ensureTeamMember, asyncHandler(async (_req: AuthenticatedR
 }));
 
 // POST /api/simulations/gist - Create a new GitHub Gist for a simulation
-router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
+router.post("/gist", ensureTeamMember, gistCreateQuota, asyncHandler(async (req: AuthenticatedRequest, res) => {
   const { name, files } = req.body as { name?: string; files: Record<string, string> };
   // Gists publish under the team account, so bounds are enforced before the
   // GitHub call: bounded name, a small file set, safe filenames, sized content.
@@ -323,6 +340,7 @@ router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
   const ghRes = await fetch("https://api.github.com/gists", {
     method: "POST",
     headers,
+    signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
     body: JSON.stringify({
       description: gistName,
       public: true,
@@ -335,6 +353,20 @@ router.post("/gist", ensureTeamMember, asyncHandler(async (req, res) => {
   }
 
   const gistResponse = await ghRes.json() as { id: string; html_url: string };
+  const actorUid = req.user?.uid ?? "unknown";
+  await adminDb.collection("audit_logs").doc().set({
+    action: "simulation.gist.create",
+    actorUid,
+    gistId: gistResponse.id,
+    fileCount: fileEntries.length,
+    totalBytes,
+    createdAt: new Date().toISOString(),
+  });
+  logger.info("simulations", "Created simulation Gist share", {
+    actorUid,
+    gistId: gistResponse.id,
+    fileCount: fileEntries.length,
+  });
   res.json({ success: true, gistId: gistResponse.id, url: gistResponse.html_url });
 }));
 

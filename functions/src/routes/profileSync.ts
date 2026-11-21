@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import type { Router } from "express";
+import type { RequestHandler, Router } from "express";
 import { z } from "zod";
 import { adminAuth, adminDb } from "../lib/firebase-admin";
 import { logger } from "../lib/logger";
@@ -103,27 +103,36 @@ function hasValidSyncSecret(
   );
 }
 
+const ensureProfileSyncSecret: RequestHandler = (req, _res, next) => {
+  const secret = process.env.PROFILE_SYNC_SECRET;
+  if (!secret) {
+    next(
+      new ApiError(
+        503,
+        "Profile synchronization is not configured on the server.",
+      ),
+    );
+    return;
+  }
+
+  const clientSecret = req.headers["x-sync-secret"];
+  if (!clientSecret || typeof clientSecret !== "string") {
+    next(new ApiError(401, "Unauthorized: Missing sync secret."));
+    return;
+  }
+  if (!hasValidSyncSecret(clientSecret, secret)) {
+    next(new ApiError(401, "Unauthorized: Invalid sync secret."));
+    return;
+  }
+  next();
+};
+
 export function registerProfileSyncRoutes(router: Router): void {
   router.post(
     "/sync",
+    ensureProfileSyncSecret,
     validate(profileSyncSchema),
     asyncHandler(async (req, res) => {
-      const secret = process.env.PROFILE_SYNC_SECRET;
-      if (!secret) {
-        throw new ApiError(
-          503,
-          "Profile synchronization is not configured on the server.",
-        );
-      }
-
-      const clientSecret = req.headers["x-sync-secret"];
-      if (!clientSecret || typeof clientSecret !== "string") {
-        throw new ApiError(401, "Unauthorized: Missing sync secret.");
-      }
-      if (!hasValidSyncSecret(clientSecret, secret)) {
-        throw new ApiError(401, "Unauthorized: Invalid sync secret.");
-      }
-
       const { userId, profile, email, role, name } = req.body as z.infer<
         typeof profileSyncSchema
       >;

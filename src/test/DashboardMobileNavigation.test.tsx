@@ -18,8 +18,12 @@ vi.mock("@/components/GreekMeander", () => ({
   GreekMeander: () => null,
 }));
 
+const mockSeo = vi.fn((_props: Record<string, unknown>) => null);
 vi.mock("@/components/SEO", () => ({
-  default: () => null,
+  default: (props: Record<string, unknown>) => {
+    mockSeo(props);
+    return null;
+  },
 }));
 
 vi.mock("@/components/dashboard/DashboardSidebar", async () => {
@@ -130,5 +134,54 @@ describe("Dashboard mobile navigation", () => {
       ).not.toBeInTheDocument();
       expect(trigger).toHaveFocus();
     });
+  });
+
+  it("tracks the current dashboard route pathname in noindex SEO metadata and exposes loading status", () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      authorizedUser: null,
+      loading: true,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout,
+      loginWithMockUser: vi.fn(),
+    });
+
+    const { rerender } = render(
+      <MemoryRouter initialEntries={["/dashboard/photos"]}>
+        <DashboardLayout>
+          <h1>Photos</h1>
+        </DashboardLayout>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(mockSeo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ url: "/dashboard/photos", noindex: true }),
+    );
+
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "admin-user" } as never,
+      authorizedUser: { role: "admin" } as never,
+      loading: false,
+      authError: null,
+      clearAuthError: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout,
+      loginWithMockUser: vi.fn(),
+    });
+
+    rerender(
+      <MemoryRouter initialEntries={["/dashboard/photos"]}>
+        <DashboardLayout>
+          <h1>Photos</h1>
+        </DashboardLayout>
+      </MemoryRouter>,
+    );
+
+    expect(mockSeo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ url: "/dashboard/photos", noindex: true }),
+    );
   });
 });

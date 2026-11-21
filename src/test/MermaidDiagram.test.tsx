@@ -2,25 +2,28 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import MermaidDiagram from "../components/docs/MermaidDiagram";
 
+const reactFlowPropsSpy = vi.fn();
+
 vi.mock("@xyflow/react", () => ({
   MarkerType: { ArrowClosed: "arrowclosed" },
   Position: { Left: "left", Right: "right", Top: "top", Bottom: "bottom" },
-  ReactFlow: ({
-    nodes,
-    edges,
-  }: {
-    nodes: Array<{ id: string; data: { label: string } }>;
-    edges: Array<{ id: string; label?: string }>;
-  }) => (
-    <div data-testid="flowchart-canvas">
-      {nodes.map((node) => (
-        <span key={node.id}>{node.data.label}</span>
-      ))}
-      {edges.map((edge) => (
-        <span key={edge.id}>{edge.label}</span>
-      ))}
-    </div>
-  ),
+  ReactFlow: (props: {
+    nodes: Array<{ id: string; data: { label: string }; style?: Record<string, unknown> }>;
+    edges: Array<{ id: string; label?: string; style?: Record<string, unknown>; labelBgStyle?: Record<string, unknown> }>;
+  }) => {
+    reactFlowPropsSpy(props);
+    const { nodes, edges } = props;
+    return (
+      <div data-testid="flowchart-canvas">
+        {nodes.map((node) => (
+          <span key={node.id}>{node.data.label}</span>
+        ))}
+        {edges.map((edge) => (
+          <span key={edge.id}>{edge.label}</span>
+        ))}
+      </div>
+    );
+  },
 }));
 
 describe("MermaidDiagram", () => {
@@ -37,6 +40,20 @@ describe("MermaidDiagram", () => {
     );
     expect(screen.getByText("Start")).toBeInTheDocument();
     expect(screen.getByText("Safe?")).toBeInTheDocument();
+
+    const lastProps = reactFlowPropsSpy.mock.calls.at(-1)?.[0];
+    expect(lastProps.nodes[0].style).toMatchObject({
+      border: "1px solid #6B7B98",
+      background: "#161A22",
+      color: "#E8ECF4",
+    });
+    expect(lastProps.nodes[1].style).toMatchObject({
+      border: "2px solid #FFB81C",
+      background: "#1E2330",
+      color: "#E8ECF4",
+    });
+    expect(lastProps.edges[0].style).toMatchObject({ stroke: "#8B9BB8" });
+    expect(lastProps.edges[0].labelBgStyle).toMatchObject({ fill: "#0D0F14" });
   });
 
   it("uses the concise aria comment instead of diagram syntax", () => {

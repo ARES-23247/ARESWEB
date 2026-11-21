@@ -319,9 +319,9 @@ export default function RobotDetailPage() {
           <div className="lg:col-span-1">
             <div className="bg-obsidian border border-white/10 ares-cut-lg shadow-2xl overflow-hidden sticky top-28 group">
               <div className="bg-gradient-to-r from-ares-red to-obsidian p-6 border-b border-ares-bronze/30">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white flex items-center gap-3 font-heading">
+                <h2 className="text-xl font-black uppercase tracking-[0.2em] text-white flex items-center gap-3 font-heading">
                   <Cpu aria-hidden="true" size={20} className="group-hover:rotate-90 transition-transform duration-500 text-ares-gold" /> Tech Specs
-                </h3>
+                </h2>
               </div>
               
               <div className="p-8 space-y-8 bg-black/10">

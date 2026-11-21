@@ -257,6 +257,20 @@ router.post(
     if (!req.is("application/json")) {
       throw new ApiError(415, "Content-Type must be application/json.", "STUDIO_CONTENT_TYPE_REQUIRED");
     }
+
+    const token = parseAuthorization(req.get("Authorization"));
+    const installationRef = adminDb.collection(INSTALLATION_COLLECTION).doc(token.installationId);
+    const installationSnapshot = await installationRef.get();
+    if (!installationSnapshot.exists) {
+      throw new ApiError(401, "The Studio installation token is invalid or inactive.", "STUDIO_TOKEN_INVALID");
+    }
+    const installationData = installationSnapshot.data() as StudioInstallation;
+    assertInstallationAuthorized(
+      token.installationId,
+      token.tokenSecret,
+      installationData,
+    );
+
     const parsed = notebookEntrySchema.safeParse(req.body);
     if (!parsed.success) {
       throw new ApiError(400, "The notebook draft payload is invalid.", "STUDIO_PAYLOAD_INVALID");
@@ -265,6 +279,12 @@ router.post(
     if (entry.reviewState !== "APPROVED") {
       throw new ApiError(409, "Only human-approved notebook entries may be submitted.", "STUDIO_APPROVAL_REQUIRED");
     }
+    assertInstallationAuthorized(
+      token.installationId,
+      token.tokenSecret,
+      installationData,
+      entry,
+    );
     const computedHash = studioNotebookContentHash(entry);
     if (!constantTimeDigestEquals(entry.contentHash, computedHash)) {
       throw new ApiError(409, "The notebook content hash does not match the submitted content.", "STUDIO_CONTENT_HASH_MISMATCH");
@@ -273,19 +293,6 @@ router.post(
     if (idempotencyKey !== `${entry.entryId}:${entry.contentHash}`) {
       throw new ApiError(400, "A matching Idempotency-Key is required.", "STUDIO_IDEMPOTENCY_KEY_INVALID");
     }
-
-    const token = parseAuthorization(req.get("Authorization"));
-    const installationRef = adminDb.collection(INSTALLATION_COLLECTION).doc(token.installationId);
-    const installationSnapshot = await installationRef.get();
-    if (!installationSnapshot.exists) {
-      throw new ApiError(401, "The Studio installation token is invalid or inactive.", "STUDIO_TOKEN_INVALID");
-    }
-    assertInstallationAuthorized(
-      token.installationId,
-      token.tokenSecret,
-      installationSnapshot.data() as StudioInstallation,
-      entry,
-    );
 
     const now = new Date();
     const nowIso = now.toISOString();

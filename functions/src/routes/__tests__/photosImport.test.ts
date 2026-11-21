@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import router from "../photosImport";
+import router, { sanitizeImportFilename } from "../photosImport";
 
 const { mockBatchSet, mockBatchUpdate, mockBatchCommit } = vi.hoisted(() => ({
   mockBatchSet: vi.fn(),
@@ -149,7 +149,10 @@ describe("Photos Import Router Backend Endpoints", () => {
 
     expect(fetch).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      expect.objectContaining({
+        redirect: "error",
+        signal: expect.any(AbortSignal),
+      }),
     );
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
@@ -216,5 +219,43 @@ describe("Photos Import Router Backend Endpoints", () => {
         error: "Google Photos download failed with status 503: ",
       }],
     });
+  });
+
+  it("sanitizes untrusted picker filenames against path traversal and control characters", async () => {
+    expect(sanitizeImportFilename("../../evil/dir\\IMG_01\u0000.HEIC", "id-1")).toBe("IMG_01.jpg");
+    expect(sanitizeImportFilename("...///...", "id-2")).toBe("photo-id-2.jpg");
+    expect(sanitizeImportFilename("robot shot (finals)!.webp", "id-3")).toBe("robot-shot-finals-.jpg");
+    expect(sanitizeImportFilename("raw-file-without-ext", "id-4")).toBe("raw-file-without-ext.jpg");
+    expect(sanitizeImportFilename(undefined, "id-5")).toBe("photo-id-5.jpg");
+
+    const handler = getHandler("/import", "post");
+    req = {
+      body: {
+        items: [
+          {
+            id: "photo-safe",
+            baseUrl: "https://lh3.googleusercontent.com/safe",
+            filename: "../../escape/nested/match photo.HEIC",
+          },
+        ],
+        albumName: "Competition",
+      },
+    };
+    res = { json: vi.fn() };
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      arrayBuffer: async () => new ArrayBuffer(8),
+    } as Response);
+
+    await handler(req, res);
+
+    expect(storePhotoAssets).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        path: expect.stringMatching(/^gallery\/sanitized-album\/\d{4}-\d{2}-\d{2}\/photo-safe-match-photo\.jpg$/),
+      }),
+      expect.anything(),
+      expect.anything(),
+    );
   });
 });

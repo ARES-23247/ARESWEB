@@ -112,18 +112,27 @@ export default function BlogFeedPage() {
             </a>
             {canEdit && (
               <button
+                type="button"
                 onClick={handleOpenInlineCreate}
                 className="clipped-button bg-ares-red text-white hover:bg-ares-bronze font-black text-xs uppercase tracking-widest py-3 px-5 inline-flex items-center gap-2 cursor-pointer shadow-xl shrink-0"
               >
-                <Plus size={16} /> New Blog Post
+                <Plus aria-hidden="true" size={16} /> New Blog Post
               </button>
             )}
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"></div>
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex justify-center items-center py-20"
+          >
+            <div
+              aria-hidden="true"
+              className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ares-red"
+            ></div>
+            <span className="sr-only">Loading articles…</span>
           </div>
         ) : loadError ? (
           <PublicDataState
@@ -165,9 +174,9 @@ export default function BlogFeedPage() {
                       </div>
                       <div className="p-6 flex-grow flex flex-col justify-between">
                         <div>
-                          <h4 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red-light transition-colors">
+                          <h2 className="text-xl font-bold text-white mb-2 group-hover:text-ares-red-light transition-colors">
                             {post.title}
-                          </h4>
+                          </h2>
                           <p className="text-sm text-white/60 line-clamp-3 mb-4">
                             {post.snippet}
                           </p>

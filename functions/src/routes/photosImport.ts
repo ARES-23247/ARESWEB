@@ -26,6 +26,31 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+export function sanitizeImportFilename(rawFilename: unknown, fallbackId: string): string {
+  const safeFallback = `photo-${fallbackId}.jpg`;
+  if (typeof rawFilename !== "string") return safeFallback;
+
+  const baseSegment = rawFilename
+    .replace(/[\p{Cc}\u202a-\u202e\u2066-\u2069]/gu, "")
+    .split(/[/\\]+/u)
+    .pop()
+    ?.trim() ?? "";
+
+  const cleaned = baseSegment
+    .replace(/[^A-Za-z0-9._-]+/gu, "-")
+    .replace(/\.{2,}/gu, ".")
+    .replace(/^[.-]+|[.-]+$/gu, "")
+    .slice(0, 120);
+
+  if (!cleaned) return safeFallback;
+
+  const normalized = /\.(heic|heif|png|webp|jpeg|jpg)$/iu.test(cleaned)
+    ? cleaned.replace(/\.(heic|heif|png|webp|jpeg|jpg)$/iu, ".jpg")
+    : `${cleaned.slice(0, 116)}.jpg`;
+
+  return normalized === ".jpg" ? safeFallback : normalized;
+}
+
 // POST /api/photos/import
 router.post(
   "/import",
@@ -105,14 +130,13 @@ router.post(
     await Promise.all(
       chunk.map(async (item) => {
         const baseUrl = item.baseUrl || item.mediaFile?.baseUrl;
-        let filename = item.filename || item.mediaFile?.filename || `photo-${item.id}.jpg`;
-
         // Google Photos API returns a JPEG when downscaling via =w2048-h2048.
-        // Force mimeType to image/jpeg and map extensions to .jpg (including HEIC/PNG/WEBP).
-        const lowerName = filename.toLowerCase();
-        if (lowerName.endsWith(".heic") || lowerName.endsWith(".heif") || lowerName.endsWith(".png") || lowerName.endsWith(".webp") || lowerName.endsWith(".jpeg")) {
-          filename = filename.replace(/\.(heic|heif|png|webp|jpeg)$/i, ".jpg");
-        }
+        // Sanitize untrusted picker filenames before using them in GCS keys and
+        // normalize image extensions to .jpg.
+        const filename = sanitizeImportFilename(
+          item.filename || item.mediaFile?.filename,
+          item.id,
+        );
         const mimeType = "image/jpeg";
 
         let storedForItem: StoredPhotoAssets | null = null;
@@ -150,6 +174,7 @@ router.post(
           const downloadUrl = `${safeBaseUrl}=w2048-h2048`;
           const downloadRes = await fetch(downloadUrl, {
             headers: { Authorization: `Bearer ${googleToken}` },
+            redirect: "error",
             signal: AbortSignal.timeout(20_000),
           });
 

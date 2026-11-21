@@ -156,7 +156,31 @@ describe("BlogShareKitModal", () => {
       />,
     );
 
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveAttribute("tabIndex", "-1");
     expect(screen.getByRole("alert")).toHaveTextContent(/valid/i);
+  });
+
+  it("sets tabIndex={-1} on the dialog and shows an accessible alert when clipboard writes fail", async () => {
+    writeTextMock.mockRejectedValueOnce(new Error("Clipboard permission denied"));
+
+    render(
+      <BlogShareKitModal
+        post={publishedPost}
+        isApprover
+        syndicatingSlug={null}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: /Share Kit: State Finals Recap/i,
+    });
+    expect(dialog).toHaveAttribute("tabIndex", "-1");
+
+    fireEvent.click(screen.getByRole("button", { name: /Copy Caption & Link/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Clipboard access was blocked/i,
+    );
   });
 });

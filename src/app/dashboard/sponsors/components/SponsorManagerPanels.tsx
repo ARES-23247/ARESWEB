@@ -155,7 +155,7 @@ export function SponsorList({
 }: SponsorListProps) {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/5 ares-cut gap-4">
+      <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/5 ares-cut gap-4">
         <RefreshCw aria-hidden="true" size={36} className="text-ares-red animate-spin" />
         <span className="text-xs font-bold uppercase tracking-widest text-marble/55">Loading sponsor ledger...</span>
       </div>

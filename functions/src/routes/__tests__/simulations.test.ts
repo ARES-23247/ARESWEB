@@ -27,19 +27,22 @@ vi.mock("../../lib/publicArtifactCache", () => ({
   writePublicArtifact: artifactMocks.write,
 }));
 
+const { mockAdminDocGet, mockAdminDocSet } = vi.hoisted(() => ({
+  mockAdminDocGet: vi.fn(),
+  mockAdminDocSet: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock Firebase Admin
-vi.mock("../../lib/firebase-admin", () => {
-  const mockGet = vi.fn();
-  return {
-    adminDb: {
-      collection: vi.fn().mockReturnValue({
-        doc: vi.fn().mockReturnValue({
-          get: mockGet,
-        }),
+vi.mock("../../lib/firebase-admin", () => ({
+  adminDb: {
+    collection: vi.fn().mockReturnValue({
+      doc: vi.fn().mockReturnValue({
+        get: mockAdminDocGet,
+        set: mockAdminDocSet,
       }),
-    },
-  };
-});
+    }),
+  },
+}));
 
 describe("Simulations Router Backend Endpoints", () => {
   let req: any;
@@ -124,6 +127,7 @@ describe("Simulations Router Backend Endpoints", () => {
           headers: expect.objectContaining({
             Authorization: "Bearer mock-pat-key",
           }),
+          signal: expect.any(AbortSignal),
         })
       );
       expect(res.json).toHaveBeenCalledWith({
@@ -423,7 +427,7 @@ describe("Simulations Router Backend Endpoints", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "https://api.github.com/gists/0123456789abcdef0123",
-        expect.any(Object)
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
       expect(res.json).toHaveBeenCalledWith({
         simulation: expect.objectContaining({
@@ -451,7 +455,17 @@ describe("Simulations Router Backend Endpoints", () => {
   });
 
   describe("POST /api/simulations/gist - Create Gist share", () => {
-    it("should create a public gist and return its URL", async () => {
+    it("mounts ensureTeamMember and per-user distributedQuota on POST /gist", () => {
+      const routeLayer = simulationsRouter.stack.find(
+        (layer) => layer.route?.path === "/gist" && (layer.route as any).methods.post,
+      );
+      expect(routeLayer).toBeDefined();
+      const stackNames = routeLayer!.route!.stack.map((layer) => layer.name);
+      expect(stackNames[0]).toBe("ensureTeamMember");
+      expect(stackNames[1]).toBe("enforceDistributedQuota");
+    });
+
+    it("should create a public gist, record an audit log, and return its URL", async () => {
       req.body = {
         name: "My Shareable Sim",
         files: { "index.tsx": "export default function Sim() {}" },
@@ -472,6 +486,7 @@ describe("Simulations Router Backend Endpoints", () => {
         "https://api.github.com/gists",
         expect.objectContaining({
           method: "POST",
+          signal: expect.any(AbortSignal),
           headers: expect.objectContaining({
             Authorization: "Bearer mock-pat-key",
           }),
@@ -481,6 +496,14 @@ describe("Simulations Router Backend Endpoints", () => {
             files: { "index.tsx": { content: "export default function Sim() {}" } },
           }),
         })
+      );
+      expect(mockAdminDocSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "simulation.gist.create",
+          actorUid: "user_123",
+          gistId: "0123456789abcdef0123456789abcdef",
+          fileCount: 1,
+        }),
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,

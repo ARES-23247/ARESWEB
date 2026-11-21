@@ -43,9 +43,9 @@ export default function Footer() {
               to="/"
               className="block text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan rounded px-1 w-fit"
             >
-              <h3 className="text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-gold transition-colors">
+              <span className="block text-4xl font-bold text-white font-heading tracking-tight group-hover:text-ares-gold transition-colors">
                 ARES
-              </h3>
+              </span>
               <p className="text-ares-bronze text-sm font-bold uppercase tracking-widest mt-1">
                 Appalachian Robotics & Engineering Society
               </p>
@@ -102,9 +102,9 @@ export default function Footer() {
 
         {/* Team & Calendar */}
         <div>
-          <h4 className="text-white font-bold uppercase text-[10px] tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 flex items-center gap-2">
-            <Users size={12} className="text-ares-cyan" /> Organization
-          </h4>
+          <h2 className="text-white font-bold uppercase text-[10px] tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 flex items-center gap-2">
+            <Users aria-hidden="true" size={12} className="text-ares-cyan" /> Organization
+          </h2>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
             <li>
               <Link
@@ -220,9 +220,9 @@ export default function Footer() {
 
         {/* Resources & Content */}
         <div>
-          <h4 className="text-white font-bold uppercase text-[10px] tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 flex items-center gap-2">
-            <BookOpen size={12} className="text-ares-gold" /> Resources
-          </h4>
+          <h2 className="text-white font-bold uppercase text-[10px] tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 flex items-center gap-2">
+            <BookOpen aria-hidden="true" size={12} className="text-ares-gold" /> Resources
+          </h2>
           <ul className="flex flex-col gap-3 text-[11px] font-bold uppercase tracking-widest text-marble/80">
             <li>
               <Link to="/biobuzz/score-calculator" className="flex min-h-11 items-center gap-2 transition-colors hover:text-ares-gold">BIOBUZZ Score Calculator</Link>
@@ -311,9 +311,9 @@ export default function Footer() {
 
         {/* Social Media / Contact */}
         <div>
-          <h4 className="text-white font-bold uppercase text-[10px] tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 flex items-center gap-2">
-            <Globe size={12} className="text-ares-cyan" /> Social Media
-          </h4>
+          <h2 className="text-white font-bold uppercase text-[10px] tracking-[0.3em] mb-6 font-heading border-b border-ares-bronze/20 pb-2 flex items-center gap-2">
+            <Globe aria-hidden="true" size={12} className="text-ares-cyan" /> Social Media
+          </h2>
           <div className="flex flex-wrap gap-2 mb-8">
             <a
               href={siteConfig.social.instagram}

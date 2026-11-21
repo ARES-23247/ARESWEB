@@ -265,23 +265,34 @@ export default function AcademyPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [closeSearch]);
 
+  const isUnknownLesson = Boolean(
+    slug && !docLoading && !docError && !currentDoc && !listError,
+  );
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen bg-obsidian text-white flex flex-col w-full">
       <SEO
         title={
-          currentDoc?.title
-            ? `${currentDoc.title} — ${isAresLib ? "ARESLib" : "ARES Academy"}`
-            : isAresLib
-              ? "ARESLib Documentation"
-              : "ARES Academy"
+          isUnknownLesson
+            ? isAresLib
+              ? "Document Not Found — ARESLib"
+              : "Lesson Not Found — ARES Academy"
+            : currentDoc?.title
+              ? `${currentDoc.title} — ${isAresLib ? "ARESLib" : "ARES Academy"}`
+              : isAresLib
+                ? "ARESLib Documentation"
+                : "ARES Academy"
         }
         description={
-          currentDoc?.description ||
-          (isAresLib
-            ? "ARESLib documentation, control loops, and API references."
-            : "ARES Academy lessons and interactive simulations.")
+          isUnknownLesson
+            ? "This lesson may have moved, been archived, or never existed."
+            : currentDoc?.description ||
+              (isAresLib
+                ? "ARESLib documentation, control loops, and API references."
+                : "ARES Academy lessons and interactive simulations.")
         }
+        noindex={isUnknownLesson}
       />
       <EducationalCredentialSchema credentials={ARES_CREDENTIALS} />
 
@@ -310,8 +321,16 @@ export default function AcademyPage() {
             className={`min-w-0 flex-1 px-6 pb-16 pt-24 lg:px-12 ${slug ? "mx-auto max-w-4xl xl:mx-0 xl:max-w-3xl" : "max-w-none"}`}
           >
             {docLoading && slug && (
-              <div className="flex justify-center items-center py-20">
-                <div className="w-10 h-10 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin"></div>
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex justify-center items-center py-20"
+              >
+                <div
+                  aria-hidden="true"
+                  className="w-10 h-10 border-4 border-ares-red/30 border-t-ares-red rounded-full animate-spin"
+                ></div>
+                <span className="sr-only">Loading lesson…</span>
               </div>
             )}
 

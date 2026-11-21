@@ -196,7 +196,7 @@ export default function JoinPage() {
           <div className="bg-marble text-obsidian ares-cut-lg p-6 md:p-12 shadow-2xl relative overflow-hidden">
             
             {/* Tabs Toggle */}
-            <div className="flex flex-wrap gap-4 mb-10 relative z-10">
+            <div role="group" aria-label="Choose inquiry type" className="flex flex-wrap gap-4 mb-10 relative z-10">
               <button
                 type="button"
                 onClick={() => { setRole("student"); setSubmitStatus("idle"); }}

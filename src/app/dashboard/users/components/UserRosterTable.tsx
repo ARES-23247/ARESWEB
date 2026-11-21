@@ -51,8 +51,8 @@ export default function UserRosterTable({
 }: UserRosterTableProps) {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 glass-card ares-cut border border-white/5">
-        <RefreshCw size={24} className="animate-spin text-ares-gold mb-4" />
+      <div role="status" aria-live="polite" className="flex flex-col items-center justify-center p-20 glass-card ares-cut border border-white/5">
+        <RefreshCw aria-hidden="true" size={24} className="animate-spin text-ares-gold mb-4" />
         <span className="text-xs uppercase tracking-widest text-marble/60 font-bold">
           Querying Roster Database...
         </span>
