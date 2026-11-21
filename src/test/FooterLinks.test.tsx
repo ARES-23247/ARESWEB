@@ -60,4 +60,15 @@ describe("Footer social links", () => {
     expect(screen.getByRole("link", { name: "Interactive Simulations" })).toHaveAttribute("href", "/academy/playground");
     expect(screen.getByRole("link", { name: /Official Store/i })).toHaveAttribute("href", "/store");
   });
+
+  it("uses semantic h2 section headings without skipping heading levels", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Footer />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(3);
+    expect(container.querySelectorAll("h3, h4")).toHaveLength(0);
+  });
 });

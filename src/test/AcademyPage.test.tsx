@@ -9,7 +9,13 @@ import {
   PublicContentApiError,
 } from "@/lib/publicContentApi";
 
-vi.mock("@/components/SEO", () => ({ default: () => null }));
+const mockSeo = vi.fn((_props: Record<string, unknown>) => null);
+vi.mock("@/components/SEO", () => ({
+  default: (props: Record<string, unknown>) => {
+    mockSeo(props);
+    return null;
+  },
+}));
 vi.mock("@/components/EducationalCredentialSchema", () => ({
   default: () => null,
   ARES_CREDENTIALS: [],
@@ -446,7 +452,7 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
     expect(await screen.findByText("Thank you! We will use your feedback to improve this page.")).toBeInTheDocument();
   });
 
-  it("renders 404 state when the requested lesson slug does not exist", async () => {
+  it("renders 404 state and noindex SEO metadata when the requested lesson slug does not exist", async () => {
     vi.mocked(fetchPublicDocuments).mockResolvedValue(mockDocsList);
     vi.mocked(fetchPublicDocument).mockRejectedValue(
       new PublicContentApiError(404, "Published document not found."),
@@ -461,5 +467,11 @@ describe("AcademyPage Documentation & Interactive Lessons UX", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Lesson not found" })).toBeInTheDocument();
+    expect(mockSeo).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: "Lesson Not Found — ARES Academy",
+        noindex: true,
+      }),
+    );
   });
 });

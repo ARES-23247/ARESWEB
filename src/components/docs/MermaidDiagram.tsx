@@ -88,10 +88,10 @@ export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
         borderRadius: node.kind === "decision" ? 22 : 8,
         border:
           node.kind === "decision"
-            ? "2px solid #fbbf24"
-            : "1px solid #52525b",
-        background: node.kind === "decision" ? "#29220d" : "#121217",
-        color: "#f8fafc",
+            ? "2px solid #FFB81C"
+            : "1px solid #6B7B98",
+        background: node.kind === "decision" ? "#1E2330" : "#161A22",
+        color: "#E8ECF4",
         fontSize: 13,
         fontWeight: 700,
         lineHeight: 1.3,
@@ -105,14 +105,14 @@ export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
       target: edge.target,
       label: edge.label,
       type: "smoothstep",
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#a1a1aa" },
+      markerEnd: { type: MarkerType.ArrowClosed, color: "#8B9BB8" },
       style: {
-        stroke: "#a1a1aa",
+        stroke: "#8B9BB8",
         strokeWidth: 1.5,
         ...(edge.dashed ? { strokeDasharray: "6 5" } : {}),
       },
-      labelStyle: { fill: "#f8fafc", fontSize: 11, fontWeight: 700 },
-      labelBgStyle: { fill: "#18181b", fillOpacity: 0.95 },
+      labelStyle: { fill: "#E8ECF4", fontSize: 11, fontWeight: 700 },
+      labelBgStyle: { fill: "#0D0F14", fillOpacity: 0.95 },
       labelBgPadding: [4, 3],
     }));
     const vertical = parsed.direction === "TD" || parsed.direction === "TB";

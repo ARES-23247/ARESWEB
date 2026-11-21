@@ -112,6 +112,8 @@ async function pickerFetch(path: string, init?: RequestInit): Promise<globalThis
   const googleToken = await getGooglePhotosAccessToken();
   const response = await fetch(`${PICKER_API_BASE}${path}`, {
     ...init,
+    redirect: "error",
+    signal: AbortSignal.timeout(15_000),
     headers: {
       Authorization: `Bearer ${googleToken}`,
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
@@ -248,6 +250,8 @@ router.delete("/picker/:sessionId", ensureAdmin, asyncHandler(async (req, res) =
   const response = await fetch(`${PICKER_API_BASE}/sessions/${sessionId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${googleToken}` },
+    redirect: "error",
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok && response.status !== 404) {
     logger.warn("photos", "Google Photos picker cleanup failed", { status: response.status });

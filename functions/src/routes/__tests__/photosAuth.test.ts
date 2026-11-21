@@ -161,6 +161,8 @@ describe("Google Photos connection routes", () => {
       "https://photospicker.googleapis.com/v1/sessions",
       expect.objectContaining({
         method: "POST",
+        redirect: "error",
+        signal: expect.any(AbortSignal),
         headers: expect.objectContaining({ Authorization: "Bearer access-token", "Content-Type": "application/json" }),
       }),
     );
@@ -391,7 +393,12 @@ describe("Google Photos connection routes", () => {
     await handler("/picker/:sessionId", "delete")({ params: { sessionId: "session_1" } }, res, next);
     expect(fetchMock).toHaveBeenCalledWith(
       "https://photospicker.googleapis.com/v1/sessions/session_1",
-      { method: "DELETE", headers: { Authorization: "Bearer access-token" } },
+      expect.objectContaining({
+        method: "DELETE",
+        redirect: "error",
+        signal: expect.any(AbortSignal),
+        headers: { Authorization: "Bearer access-token" },
+      }),
     );
     expect(res.json).toHaveBeenCalledWith({ success: true });
   });

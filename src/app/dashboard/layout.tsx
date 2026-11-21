@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useAuth } from "@/context/AuthContext";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -22,6 +23,7 @@ export default function DashboardLayout({
     loginWithMockUser,
     logout,
   } = useAuth();
+  const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mockAuthEnabled = import.meta.env.DEV || import.meta.env.MODE === "e2e";
 
@@ -32,12 +34,17 @@ export default function DashboardLayout({
         id="main-content"
         className="min-h-screen bg-obsidian flex flex-col items-center justify-center relative overflow-hidden"
       >
+        <SEO title="Command Center" url={pathname} noindex={true} />
         {/* Animated Background Gradients */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-ares-red/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-ares-gold/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div className="z-10 flex flex-col items-center gap-6">
-          <div className="relative flex items-center justify-center">
+        <div
+          role="status"
+          aria-live="polite"
+          className="z-10 flex flex-col items-center gap-6"
+        >
+          <div className="relative flex items-center justify-center" aria-hidden="true">
             {/* Spinning Gold Gear */}
             <div className="w-16 h-16 border-4 border-ares-gold/20 border-t-ares-gold rounded-full animate-spin"></div>
             {/* Inner Red Pulsing Ring */}
@@ -67,7 +74,7 @@ export default function DashboardLayout({
         id="main-content"
         className="min-h-screen bg-obsidian flex flex-col items-center justify-center p-6 relative overflow-hidden"
       >
-        <SEO title="Administrative Gate" noindex={true} />
+        <SEO title="Administrative Gate" url={pathname} noindex={true} />
         {/* Beautiful background patterns */}
         <div
           className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-20"
@@ -110,10 +117,11 @@ export default function DashboardLayout({
             </p>
 
             <button
+              type="button"
               onClick={loginWithGoogle}
               className="w-full clipped-button bg-ares-red hover:bg-ares-bronze transition-all text-white font-bold text-sm tracking-wider uppercase inline-flex items-center justify-center gap-3 py-3.5 shadow-xl hover:shadow-[0_0_20px_rgba(192,0,0,0.3)] active:scale-95 cursor-pointer"
             >
-              <LogIn size={16} /> Sign In with Google
+              <LogIn aria-hidden="true" size={16} /> Sign In with Google
             </button>
 
             {mockAuthEnabled && (
@@ -225,7 +233,12 @@ export default function DashboardLayout({
   // 3. Authenticated Dashboard Layout
   return (
     <DashboardNotificationsProvider>
-      <SEO title="Command Center" description="ARES 23247 team operations dashboard." noindex />
+      <SEO
+        title="Command Center"
+        description="ARES 23247 team operations dashboard."
+        url={pathname}
+        noindex
+      />
       <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <div className="flex w-full min-h-screen bg-obsidian text-marble relative">
       {/* ─── DESKTOP SIDEBAR ─── */}
@@ -280,6 +293,7 @@ export default function DashboardLayout({
           <div className="flex items-center gap-3">
             <Dialog.Trigger asChild>
               <button
+                type="button"
                 className="flex h-11 w-11 items-center justify-center bg-white/5 border border-white/10 ares-cut-sm text-ares-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-ares-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian cursor-pointer"
                 aria-label="Open sidebar menu"
               >

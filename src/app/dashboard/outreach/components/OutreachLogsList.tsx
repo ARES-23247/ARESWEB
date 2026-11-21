@@ -88,17 +88,18 @@ export default function OutreachLogsList({
 
       {/* List display */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/5 ares-cut gap-4">
-          <RefreshCw size={36} className="text-ares-red animate-spin" />
+        <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/5 ares-cut gap-4">
+          <RefreshCw aria-hidden="true" size={36} className="text-ares-red animate-spin" />
           <span className="text-xs font-bold uppercase tracking-widest text-marble/55">
             Loading impact logs...
           </span>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-ares-red/10 border border-ares-red/20 ares-cut gap-4 text-center">
-          <AlertCircle size={36} className="text-ares-red" />
+        <div role="alert" className="flex flex-col items-center justify-center py-16 bg-ares-red/10 border border-ares-red/20 ares-cut gap-4 text-center">
+          <AlertCircle aria-hidden="true" size={36} className="text-ares-red" />
           <span className="text-sm font-bold bg-ares-red text-white px-3 py-1.5 rounded">{error}</span>
           <button
+            type="button"
             onClick={onFetchLogs}
             className="px-4 py-2 bg-ares-red text-white text-xs font-black uppercase tracking-wider ares-cut-sm shadow-md cursor-pointer font-bold"
           >

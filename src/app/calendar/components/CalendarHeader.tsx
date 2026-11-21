@@ -42,7 +42,7 @@ export function CalendarHeader({ canEdit, filter, isLoading, isLive, eventCount,
             <Plus aria-hidden="true" size={11} /> New Event
           </button>
         )}
-        <div className="flex flex-wrap gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5" aria-label="Filter calendar events">
+        <div role="group" className="flex flex-wrap gap-1.5 bg-black/45 p-1 rounded-lg border border-white/5" aria-label="Filter calendar events">
           {(["all", "internal", "outreach", "competition"] as const).map((category) => (
             <button
               type="button"

@@ -346,12 +346,14 @@ export default function TournamentsFeedPage() {
         <section className="flex flex-col md:flex-row gap-4 items-center justify-between border-b border-white/5 pb-6 mb-10">
           {/* Tabs */}
           <div
+            role="group"
             className="flex gap-2 w-full md:w-auto bg-black/40 p-1 ares-cut-sm border border-white/5"
             aria-label="Filter tournaments by status"
           >
             {(["all", "upcoming", "past"] as const).map((tab) => (
               <button
                 key={tab}
+                type="button"
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={activeTab === tab}
                 className={`flex-1 md:flex-none px-5 py-2 text-xs font-black uppercase tracking-wider ares-cut-sm transition-all cursor-pointer ${

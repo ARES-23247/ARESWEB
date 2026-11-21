@@ -258,13 +258,14 @@ export default function SponsorsPage() {
         {sponsors.length === 0 && !sponsorLoadError ? (
           <div className="glass-card hero-card max-w-xl mx-auto p-10 border border-white/10 text-center space-y-6 shadow-2xl">
             <Gem aria-hidden="true" className="text-ares-gold w-12 h-12 mx-auto" />
-            <h3 className="text-xl font-extrabold text-white uppercase tracking-tight font-heading">
+            <h2 className="text-xl font-extrabold text-white uppercase tracking-tight font-heading">
               No partners are published yet
-            </h3>
+            </h2>
             <p className="text-marble/70 text-xs leading-relaxed max-w-sm mx-auto font-semibold">
               This list will show organizations after the team reviews and publishes each partner record.
             </p>
             <button
+              type="button"
               onClick={() => {
                 document.getElementById("sponsor-form-section")?.scrollIntoView?.({ behavior: "smooth" });
               }}

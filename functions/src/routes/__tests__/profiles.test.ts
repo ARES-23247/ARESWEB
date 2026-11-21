@@ -751,20 +751,46 @@ describe("Profiles Router Backend Endpoints", () => {
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it("fails closed for missing or incorrect synchronization secrets", async () => {
-      const handler = getHandler("/sync", "post");
-      req.body = { userId: "sync_uid", profile: { nickname: "CircuitFox" } };
+    it("fails closed for missing or incorrect synchronization secrets before body validation", async () => {
+      const routeLayer = profilesRouter.stack.find(
+        (layer) =>
+          layer.route &&
+          layer.route.path === "/sync" &&
+          (layer.route as any).methods.post,
+      );
+      expect(routeLayer).toBeDefined();
+      const stack = routeLayer!.route!.stack;
+      const runSyncStack = async (requestObj: any, responseObj: any) => {
+        for (let i = 0; i < stack.length - 1; i += 1) {
+          const err = await new Promise<any>((resolve) => {
+            stack[i].handle(requestObj, responseObj, (middlewareErr?: any) =>
+              resolve(middlewareErr ?? null),
+            );
+          });
+          if (err) return err;
+        }
+        let handlerErr: any = null;
+        await stack[stack.length - 1].handle(
+          requestObj,
+          responseObj,
+          (err?: any) => {
+            handlerErr = err ?? null;
+          },
+        );
+        return handlerErr;
+      };
+
+      // Invalid body MUST still fail with 503/401 before schema validation runs.
+      req.body = { userId: "invalid uid with spaces" };
 
       delete process.env.PROFILE_SYNC_SECRET;
-      await handler(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(
-        expect.objectContaining({ status: 503 }),
-      );
+      const missingConfigErr = await runSyncStack(req, res);
+      expect(missingConfigErr).toEqual(expect.objectContaining({ status: 503 }));
 
       process.env.PROFILE_SYNC_SECRET = "expected-secret";
       req.headers = {};
-      await handler(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(
+      const missingHeaderErr = await runSyncStack(req, res);
+      expect(missingHeaderErr).toEqual(
         expect.objectContaining({
           status: 401,
           message: expect.stringContaining("Missing"),
@@ -772,8 +798,8 @@ describe("Profiles Router Backend Endpoints", () => {
       );
 
       req.headers = { "x-sync-secret": "incorrect-secret" };
-      await handler(req, res, next);
-      expect(next).toHaveBeenLastCalledWith(
+      const invalidHeaderErr = await runSyncStack(req, res);
+      expect(invalidHeaderErr).toEqual(
         expect.objectContaining({
           status: 401,
           message: expect.stringContaining("Invalid"),

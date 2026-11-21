@@ -249,8 +249,16 @@ describe("ARES Robotics Studio notebook integration", () => {
     expect(result.next).toHaveBeenCalledWith(expect.objectContaining({ status: 415 }));
     result = await invoke(approved, { body: { ...approved, unknown: true } });
     expect(result.next).toHaveBeenCalledWith(expect.objectContaining({ code: "STUDIO_PAYLOAD_INVALID" }));
-    result = await invoke(approved, { get: vi.fn(() => undefined) });
+    result = await invoke(approved, {
+      get: vi.fn((name: string) => (name.toLowerCase() === "authorization" ? `Bearer ${TOKEN}` : undefined)),
+    });
     expect(result.next).toHaveBeenCalledWith(expect.objectContaining({ code: "STUDIO_IDEMPOTENCY_KEY_INVALID" }));
+    // Unauthenticated requests with malformed payloads must fail with 401 before payload validation/hashing.
+    result = await invoke(approved, {
+      body: { malformed: true },
+      get: vi.fn(() => undefined),
+    });
+    expect(result.next).toHaveBeenCalledWith(expect.objectContaining({ status: 401, code: "STUDIO_TOKEN_REQUIRED" }));
 
     mocks.installationGet.mockResolvedValueOnce(snapshot(false));
     result = await invoke(approved);

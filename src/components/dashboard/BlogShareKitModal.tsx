@@ -39,9 +39,11 @@ export default function BlogShareKitModal<T extends BlogSharePostInput = BlogSha
   const [copiedField, setCopiedField] = useState<
     "caption" | "link" | "instagram" | null
   >(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   useEffect(() => {
     setCopiedField(null);
+    setCopyError(null);
   }, [post?.slug]);
 
   const shareBundle = useMemo(() => {
@@ -88,17 +90,18 @@ export default function BlogShareKitModal<T extends BlogSharePostInput = BlogSha
   if ("error" in shareBundle) {
     const errorModal = (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) onClose();
         }}
       >
         <div
           ref={dialogRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-labelledby="blog-share-kit-error-title"
-          className="glass-card relative w-full max-w-lg rounded-2xl border border-ares-red/40 bg-obsidian p-6 text-left text-white shadow-2xl"
+          className="glass-card relative w-full max-w-lg rounded-2xl border border-ares-red/40 bg-obsidian p-6 text-left text-white shadow-2xl focus:outline-none"
         >
           <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
             <h2
@@ -133,9 +136,13 @@ export default function BlogShareKitModal<T extends BlogSharePostInput = BlogSha
   ) => {
     try {
       await navigator.clipboard.writeText(value);
+      setCopyError(null);
       setCopiedField(field);
     } catch {
       setCopiedField(null);
+      setCopyError(
+        "Clipboard access was blocked by your browser. Select and copy the text manually below.",
+      );
     }
   };
 
@@ -143,17 +150,18 @@ export default function BlogShareKitModal<T extends BlogSharePostInput = BlogSha
 
   const modal = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="blog-share-kit-title"
-        className="glass-card relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/15 bg-obsidian p-6 text-left text-white shadow-2xl"
+        className="glass-card relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/15 bg-obsidian p-6 text-left text-white shadow-2xl focus:outline-none"
       >
         <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
           <div>
@@ -187,6 +195,15 @@ export default function BlogShareKitModal<T extends BlogSharePostInput = BlogSha
           {copiedField === "link" && "Blog post link copied to clipboard."}
           {copiedField === "instagram" && "Instagram caption copied to clipboard."}
         </div>
+
+        {copyError && (
+          <p
+            role="alert"
+            className="mt-4 rounded-xl border border-ares-red/45 bg-ares-red/15 px-4 py-2.5 text-xs font-semibold text-white"
+          >
+            {copyError}
+          </p>
+        )}
 
         <div className="mt-6 space-y-6">
           {/* 1-Click Browser Compose Intents */}

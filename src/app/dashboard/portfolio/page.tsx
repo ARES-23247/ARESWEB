@@ -970,12 +970,25 @@ export default function DashboardPortfolioPage() {
                     const pageArtifacts = page.linkedArtifactIds
                       .map((id) => candidateById.get(id))
                       .filter((item): item is CandidateArtifact => Boolean(item));
+                    const isUnbackedVerified =
+                      page.status === "verified" && pageArtifacts.length === 0;
 
                     return (
                       <div
                         key={page.pageNumber}
                         className="glass-card border border-white/10 p-4 rounded-xl space-y-3"
                       >
+                        {isUnbackedVerified && (
+                          <div
+                            role="status"
+                            className="flex items-center gap-2 rounded-lg border border-ares-gold/40 bg-ares-gold/10 px-3 py-1.5 text-[11px] font-bold text-ares-gold"
+                          >
+                            <AlertCircle size={13} aria-hidden="true" />
+                            <span>
+                              Marked verified without linked portal evidence — attach a verified artifact before judging.
+                            </span>
+                          </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                           <div className="md:col-span-2 flex items-center gap-2">
                             <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ares-red/20 border border-ares-red/40 font-mono text-xs font-black text-white">

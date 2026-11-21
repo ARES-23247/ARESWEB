@@ -108,8 +108,15 @@ export default function TournamentsManager() {
 
   if (authLoading) {
     return (
-      <div className="flex flex-col justify-center items-center py-20 text-marble/55">
-        <div className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4" />
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex flex-col justify-center items-center py-20 text-marble/55"
+      >
+        <div
+          aria-hidden="true"
+          className="w-8 h-8 border-2 border-ares-red/35 border-t-ares-red rounded-full animate-spin mb-4"
+        />
         <span className="text-xs uppercase tracking-widest font-black">
           Loading administrative states...
         </span>
