@@ -18,7 +18,7 @@ By the end, you will be able to:
 - use a rejection reason without pretending it names every failed check; and
 - plan a private, repeatable camera test at surveyed field points.
 
-This lesson matches ARES 20.0.6 and Studio 7.0.80. Its source links point to one reviewed commit in
+This lesson matches ARES 20.0.7 and Studio 7.0.82. Its source links point to one reviewed commit in
 the ARES Robotics monorepo.
 
 The lab uses a short checklist and straight-line math. Its detailed gate explanations are teaching
@@ -87,7 +87,7 @@ those explanations are not current ARES runtime strings.
 
 Next, the Store chooses uncertainty values. It uses each positive camera-reported standard
 deviation when available. Otherwise it uses configured values or defaults of `0.05 m`, `0.05 m`,
-and `0.1 rad`. MegaTag2 is treated as a translation-only update: heading gets almost no influence.
+and `0.1 rad`. MegaTag2 is treated as a translation-only update: heading is not observed.
 The current default NIS limit is about `9.21` for this two-part update. A full three-part pose uses
 `18.0` by default in the Store. These values are software defaults, not proof that they fit a
 physical camera.
