@@ -166,7 +166,7 @@ export default function MermaidDiagram({ code, label }: MermaidDiagramProps) {
             zoomOnPinch={false}
             preventScrolling={false}
             proOptions={{ hideAttribution: true }}
-            colorMode="dark"
+            forceColorMode="dark"
           />
         </div>
       </div>
