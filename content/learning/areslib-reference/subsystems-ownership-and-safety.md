@@ -4,7 +4,7 @@
 
 An ARES subsystem owns one robot job. It might move an arm, spin an intake, or read a sensor. This
 page helps you choose who owns its source. It also helps you trace its parts and check its safe
-behavior. It applies to ARES 20.0.7, ARES FTC 20.0.7, and Studio 7.0.82.
+behavior. It applies to ARES 20.0.8, ARES FTC 20.0.8, and Studio 7.0.83.
 
 Read [ARESLib Architecture and Ownership](/docs/areslib-fundamentals) first. Learn what an action,
 reducer, controller, and adapter do. Use the longer
