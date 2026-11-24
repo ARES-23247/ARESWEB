@@ -1865,6 +1865,588 @@ describe("Firestore zero-trust rules", () => {
     );
     await assertSucceeds(deleteDoc(layoutRef));
   });
+
+  it("denies unlisted collections and nested subcollections via the explicit catch-all rule", async () => {
+    await seedAuthorizedUser("catchall-member", "member");
+    await seedAuthorizedUser("catchall-admin", "admin");
+    await seedDocument("unlisted_collection", "secret-doc", { flag: true });
+    await seedDocument("posts", "parent-post", {
+      title: "Parent Post",
+      status: "published",
+      isDeleted: 0,
+    });
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), "posts", "parent-post", "unlisted_sub", "secret-note"),
+        { secret: "hidden" },
+      );
+    });
+
+    const contexts = [
+      testEnvironment.unauthenticatedContext().firestore(),
+      testEnvironment.authenticatedContext("catchall-member").firestore(),
+      testEnvironment.authenticatedContext("catchall-admin").firestore(),
+    ];
+
+    for (const db of contexts) {
+      for (const path of [
+        ["unlisted_collection", "secret-doc"],
+        ["posts", "parent-post", "unlisted_sub", "secret-note"],
+      ] as const) {
+        const refDoc =
+          path.length === 2
+            ? doc(db, path[0], path[1])
+            : doc(db, path[0], path[1], path[2], path[3]);
+        const refCol =
+          path.length === 2
+            ? collection(db, path[0])
+            : collection(db, path[0], path[1], path[2]);
+        await assertFails(getDoc(refDoc));
+        await assertFails(getDocs(refCol));
+        await assertFails(setDoc(refDoc, { injected: true }));
+        await assertFails(updateDoc(refDoc, { injected: true }));
+        await assertFails(deleteDoc(refDoc));
+      }
+    }
+  });
+
+  it("hardens docs_feedback against empty fields, non-int values, and mutations", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("admin-user", "admin");
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+
+    const validFeedback = {
+      slug: "areslib-fundamentals",
+      isHelpful: 0,
+      comment: "Needs one more code example",
+      isResolved: 0,
+      createdAt: "2026-11-21T12:00:00.000Z",
+    };
+
+    const createdRef = doc(memberDb, "docs_feedback", "fb_valid_zero");
+    await assertSucceeds(setDoc(createdRef, validFeedback));
+    await assertSucceeds(getDoc(createdRef));
+
+    // Reject empty slug, empty/oversized createdAt, non-int isHelpful/isResolved, oversized id, extra keys
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_empty_slug"), {
+        ...validFeedback,
+        slug: "",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_empty_created"), {
+        ...validFeedback,
+        createdAt: "",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_long_created"), {
+        ...validFeedback,
+        createdAt: "2".repeat(41),
+      }),
+    );
+    for (const badHelpful of [true, "1", 0.5, 2, -1]) {
+      await assertFails(
+        setDoc(doc(memberDb, "docs_feedback", `fb_bad_helpful_${String(badHelpful)}`), {
+          ...validFeedback,
+          isHelpful: badHelpful,
+        }),
+      );
+    }
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_bad_resolved_float"), {
+        ...validFeedback,
+        isResolved: 0.5,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_bad_resolved_one"), {
+        ...validFeedback,
+        isResolved: 1,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "f".repeat(161)), validFeedback),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "docs_feedback", "fb_extra"), {
+        ...validFeedback,
+        extra: "injected",
+      }),
+    );
+
+    // Explicit update/delete deny even for admin
+    await assertFails(updateDoc(doc(adminDb, "docs_feedback", "fb_valid_zero"), { isResolved: 1 }));
+    await assertFails(deleteDoc(doc(adminDb, "docs_feedback", "fb_valid_zero")));
+  });
+
+  it("validates content revision schemas and bounds without breaking pending blog post revisions", async () => {
+    await seedAuthorizedUser("member-author", "member");
+    await seedAuthorizedUser("mentor-reviewer", "mentor");
+    await seedAuthorizedUser("admin-user", "admin");
+    const memberDb = testEnvironment.authenticatedContext("member-author").firestore();
+    const mentorDb = testEnvironment.authenticatedContext("mentor-reviewer").firestore();
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+
+    const fullClientRevision = (revId: string, uid: string) => ({
+      id: revId,
+      title: "Season Kickoff Pending Post",
+      description: "Summary of our kickoff brainstorm",
+      content: "# Kickoff\n\nDetailed notes.",
+      category: "Engineering",
+      sortOrder: 1,
+      status: "pending_approval",
+      displayInAreslib: 0,
+      displayInMathCorner: 0,
+      displayInScienceCorner: 0,
+      isPortfolio: 0,
+      isExecutiveSummary: 0,
+      fileUrl: "",
+      createdAt: "2026-11-21T12:00:00.000Z",
+      author: "Member Author",
+      date: "2026-11-21",
+      thumbnail: "/api/photos/public/content/posts/kickoff-draft/photo-1/medium",
+      mediaPhotoIds: ["photo-1"],
+      learningSchemaVersion: 1,
+      metadataStatus: "complete",
+      subject: "robotics-engineering",
+      topics: ["drivetrain", "cad"],
+      contentType: "lesson",
+      level: "beginner",
+      estimatedMinutes: 25,
+      pathMemberships: [{ pathId: "robotics-foundations", order: 1 }],
+      prerequisites: ["intro-safety"],
+      objectives: ["Design a rigid chassis"],
+      platforms: ["ftc"],
+      sourceReferences: [{ label: "ARESLib", url: "https://aresfirst.org/areslib" }],
+      appliesToVersion: "v2.0",
+      reviewedAt: "2026-11-21",
+      reviewedByLabel: "Mentor",
+      safetyScope: "none",
+      editedBy: uid,
+      editedByName: "Member Author",
+      editedByAvatar: "https://api.dicebear.com/9.x/bottts/svg?seed=member-author",
+      timestamp: "2026-11-21T12:00:00.000Z",
+    });
+
+    // Full useDocumentSync-shaped transaction succeeds for pending blog posts, docs, and documents
+    for (const collectionName of ["posts", "docs", "documents"] as const) {
+      const slug = `pending-${collectionName}-entry`;
+      const revId = "rev_1732190400000";
+      await assertSucceeds(
+        runTransaction(memberDb, async (tx) => {
+          tx.set(doc(memberDb, collectionName, slug), {
+            title: "Season Kickoff Pending Post",
+            status: "pending_approval",
+            approvalStatus: "pending_approval",
+            isDeleted: 0,
+          });
+          tx.set(doc(memberDb, "content_owners", `${collectionName}__${slug}`), {
+            collectionName,
+            contentId: slug,
+            ownerUid: "member-author",
+            createdAt: "2026-11-21T12:00:00.000Z",
+          });
+          tx.set(
+            doc(memberDb, collectionName, slug, "revisions", revId),
+            fullClientRevision(revId, "member-author"),
+          );
+        }),
+      );
+
+      // Oversized revisionId
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "r".repeat(161)),
+          { editedBy: "member-author", timestamp: "2026-11-21T12:05:00.000Z" },
+        ),
+      );
+      // Injected non-allowlisted key
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_extra_key"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            approvedBy: "Forged Mentor",
+          },
+        ),
+      );
+      // Spoofed editedBy
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_spoofed"),
+          { editedBy: "mentor-reviewer", timestamp: "2026-11-21T12:05:00.000Z" },
+        ),
+      );
+      // Empty timestamp
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_empty_ts"),
+          { editedBy: "member-author", timestamp: "" },
+        ),
+      );
+      // Mismatched id
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_mismatch"),
+          { id: "other_id", editedBy: "member-author", timestamp: "2026-11-21T12:05:00.000Z" },
+        ),
+      );
+      // Oversized title & editedByName & editedByAvatar
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_big_title"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            title: "T".repeat(301),
+          },
+        ),
+      );
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_big_name"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            editedByName: "N".repeat(161),
+          },
+        ),
+      );
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_big_avatar"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            editedByAvatar: "A".repeat(2001),
+          },
+        ),
+      );
+      // Invalid types & list element bounds
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_bad_types"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            displayInAreslib: true,
+          },
+        ),
+      );
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_bad_topic"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            topics: ["x".repeat(1621)],
+          },
+        ),
+      );
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_nonstring_topic"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            topics: [123],
+          },
+        ),
+      );
+      await assertFails(
+        setDoc(
+          doc(memberDb, collectionName, slug, "revisions", "rev_bad_minutes"),
+          {
+            editedBy: "member-author",
+            timestamp: "2026-11-21T12:05:00.000Z",
+            estimatedMinutes: 0,
+          },
+        ),
+      );
+      // Orphaned revision under non-existent parent denied even for publisher
+      await assertFails(
+        setDoc(
+          doc(mentorDb, collectionName, "does-not-exist", "revisions", "rev_orphan"),
+          { editedBy: "mentor-reviewer", timestamp: "2026-11-21T12:05:00.000Z" },
+        ),
+      );
+      // Revisions remain immutable even for admin
+      await assertFails(
+        updateDoc(doc(adminDb, collectionName, slug, "revisions", revId), {
+          title: "Rewritten history",
+        }),
+      );
+      await assertFails(
+        deleteDoc(doc(adminDb, collectionName, slug, "revisions", revId)),
+      );
+    }
+  });
+
+  it("enforces strict schema, element bounds, and update consistency on user layouts", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("admin-user", "admin");
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+    const layoutRef = doc(memberDb, "user_profiles", "member-user", "layouts", "board");
+
+    // Accepts valid columns + updatedAt and full 50-item list
+    await assertSucceeds(
+      setDoc(layoutRef, {
+        columns: Array.from({ length: 50 }, (_, index) => `col-${index}`),
+        updatedAt: "2026-11-21T12:00:00.000Z",
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(layoutRef, {
+        columns: ["todo", "done"],
+        updatedAt: "2026-11-21T12:05:00.000Z",
+      }),
+    );
+
+    // Blocks arbitrary keys / storage abuse on create and update
+    await assertFails(
+      setDoc(doc(memberDb, "user_profiles", "member-user", "layouts", "polluted"), {
+        columns: ["todo"],
+        arbitraryBlob: "X".repeat(10000),
+      }),
+    );
+    await assertFails(updateDoc(layoutRef, { injectedKey: "bad" }));
+    await assertFails(updateDoc(layoutRef, { columns: deleteField() }));
+
+    // Blocks non-string or oversized column entries and invalid updatedAt
+    await assertFails(updateDoc(layoutRef, { columns: [123] }));
+    await assertFails(updateDoc(layoutRef, { columns: ["c".repeat(4051)] }));
+    await assertFails(updateDoc(layoutRef, { updatedAt: "" }));
+    await assertFails(updateDoc(layoutRef, { updatedAt: "u".repeat(41) }));
+    await assertFails(
+      setDoc(doc(memberDb, "user_profiles", "member-user", "layouts", "l".repeat(81)), {
+        columns: [],
+      }),
+    );
+
+    // Owner-only isolation holds even against admin
+    await assertFails(
+      getDoc(doc(adminDb, "user_profiles", "member-user", "layouts", "board")),
+    );
+    await assertFails(
+      updateDoc(doc(adminDb, "user_profiles", "member-user", "layouts", "board"), {
+        columns: [],
+      }),
+    );
+  });
+
+  it("hardens tasks, task comments, task revisions, event signups, content_owners, and approved doc archival", async () => {
+    await seedAuthorizedUser("member-user", "member");
+    await seedAuthorizedUser("other-member", "member");
+    await seedAuthorizedUser("mentor-user", "mentor");
+    await seedAuthorizedUser("admin-user", "admin");
+    const memberDb = testEnvironment.authenticatedContext("member-user").firestore();
+    const otherDb = testEnvironment.authenticatedContext("other-member").firestore();
+    const mentorDb = testEnvironment.authenticatedContext("mentor-user").firestore();
+    const adminDb = testEnvironment.authenticatedContext("admin-user").firestore();
+
+    // 1. Tasks: non-empty createdAt, int isDeleted, bounded string assignees on create & update
+    const validTask = {
+      id: "hardened-task",
+      title: "Inspect chassis",
+      description: "Verify fasteners",
+      status: "todo",
+      priority: "high",
+      subteam: "hardware",
+      assignees: Array.from({ length: 50 }, (_, index) => `uid-${index}`),
+      subtasks: [],
+      archived: false,
+      isDeleted: 0,
+      createdAt: "2026-11-21T12:00:00.000Z",
+    };
+    const taskRef = doc(memberDb, "tasks", "hardened-task");
+    await assertSucceeds(setDoc(taskRef, validTask));
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "empty-created"), {
+        ...validTask,
+        id: "empty-created",
+        createdAt: "",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "float-deleted"), {
+        ...validTask,
+        id: "float-deleted",
+        isDeleted: 0.5,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "bad-assignee-len"), {
+        ...validTask,
+        id: "bad-assignee-len",
+        assignees: ["u".repeat(6451)],
+      }),
+    );
+    await assertFails(updateDoc(taskRef, { assignees: [42] }));
+    await assertFails(updateDoc(taskRef, { assignees: ["u".repeat(6451)] }));
+    await assertFails(updateDoc(taskRef, { isDeleted: 0.5 }));
+
+    // 2. Task comments: non-empty createdAt + validator consistency on author-only update/delete
+    const commentRef = doc(memberDb, "tasks", "hardened-task", "comments", "c-1");
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "hardened-task", "comments", "c-empty-ts"), {
+        authorUid: "member-user",
+        content: "Missing timestamp",
+        source: "web",
+        createdAt: "",
+      }),
+    );
+    await assertSucceeds(
+      setDoc(commentRef, {
+        id: "c-1",
+        authorUid: "member-user",
+        author: "Member",
+        content: "Initial comment",
+        source: "web",
+        createdAt: "2026-11-21T12:00:00.000Z",
+      }),
+    );
+    await assertSucceeds(updateDoc(commentRef, { content: "Edited comment" }));
+    await assertFails(updateDoc(commentRef, { content: "x".repeat(4001) }));
+    await assertFails(updateDoc(commentRef, { authorUid: "other-member" }));
+    await assertFails(
+      updateDoc(doc(otherDb, "tasks", "hardened-task", "comments", "c-1"), {
+        content: "Hijacked edit",
+      }),
+    );
+    await seedDocument("tasks/hardened-task/comments", "zulip-comment", {
+      author: "Zulip Bot",
+      content: "Synced from Zulip",
+      source: "zulip",
+      createdAt: "2026-11-21T12:01:00.000Z",
+    });
+    await assertFails(
+      updateDoc(doc(memberDb, "tasks", "hardened-task", "comments", "zulip-comment"), {
+        content: "Tampered Zulip comment",
+      }),
+    );
+    await assertFails(
+      deleteDoc(doc(memberDb, "tasks", "hardened-task", "comments", "zulip-comment")),
+    );
+
+    // 3. Task revisions: non-empty createdAt + bounded string elements inside fields
+    await assertSucceeds(
+      setDoc(doc(memberDb, "tasks", "hardened-task", "revisions", "rev-fields-ok"), {
+        action: "updated",
+        actorUid: "member-user",
+        actorName: "Member",
+        createdAt: "2026-11-21T12:02:00.000Z",
+        fields: ["title", "due date"],
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "hardened-task", "revisions", "rev-empty-ts"), {
+        action: "updated",
+        actorUid: "member-user",
+        actorName: "Member",
+        createdAt: "",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "hardened-task", "revisions", "rev-big-field"), {
+        action: "updated",
+        actorUid: "member-user",
+        actorName: "Member",
+        createdAt: "2026-11-21T12:02:00.000Z",
+        fields: ["f".repeat(973)],
+      }),
+    );
+    await assertFails(
+      setDoc(doc(memberDb, "tasks", "hardened-task", "revisions", "rev-nonstring-field"), {
+        action: "updated",
+        actorUid: "member-user",
+        actorName: "Member",
+        createdAt: "2026-11-21T12:02:00.000Z",
+        fields: [99],
+      }),
+    );
+
+    // 4. Event signups: require parent event existence, non-empty payload, and immutable userId
+    await assertFails(
+      setDoc(doc(mentorDb, "events", "nonexistent-event", "signups", "member-user"), {
+        userId: "member-user",
+        attended: true,
+      }),
+    );
+    await seedDocument("events", "hardened-event", {
+      title: "Build Day",
+      status: "published",
+      isDeleted: 0,
+    });
+    const signupRef = doc(memberDb, "events", "hardened-event", "signups", "member-user");
+    await assertFails(setDoc(signupRef, {}));
+    await assertSucceeds(
+      setDoc(signupRef, {
+        userId: "member-user",
+        nickname: "Member",
+        attended: false,
+      }),
+    );
+    await assertFails(updateDoc(signupRef, { userId: deleteField() }));
+    await assertFails(updateDoc(signupRef, { nickname: "n".repeat(101) }));
+    await assertFails(updateDoc(signupRef, { bringing: "b".repeat(301) }));
+    await assertFails(updateDoc(signupRef, { prepHours: 501 }));
+
+    // 5. content_owners: reject empty createdAt and deny updates/deletes even for admin
+    await assertFails(
+      runTransaction(memberDb, async (tx) => {
+        tx.set(doc(memberDb, "posts", "empty-owner-ts"), {
+          title: "Draft",
+          status: "pending_approval",
+          approvalStatus: "pending_approval",
+          isDeleted: 0,
+        });
+        tx.set(doc(memberDb, "content_owners", "posts__empty-owner-ts"), {
+          collectionName: "posts",
+          contentId: "empty-owner-ts",
+          ownerUid: "member-user",
+          createdAt: "",
+        });
+      }),
+    );
+    await seedDocument("content_owners", "posts__seeded-owner", {
+      collectionName: "posts",
+      contentId: "seeded-owner",
+      ownerUid: "member-user",
+      createdAt: "2026-11-21T12:00:00.000Z",
+    });
+    await assertFails(
+      updateDoc(doc(adminDb, "content_owners", "posts__seeded-owner"), {
+        ownerUid: "admin-user",
+      }),
+    );
+    await assertFails(
+      deleteDoc(doc(adminDb, "content_owners", "posts__seeded-owner")),
+    );
+
+    // 6. Approved docs lifecycle-only update rejects non-int isDeleted and empty/oversized updatedAt
+    await seedDocument("docs", "approved-lifecycle-guard", {
+      title: "Approved Doc",
+      status: "published",
+      approvalStatus: "approved",
+      isDeleted: 0,
+    });
+    const approvedDocRef = doc(mentorDb, "docs", "approved-lifecycle-guard");
+    await assertFails(updateDoc(approvedDocRef, { isDeleted: true }));
+    await assertFails(updateDoc(approvedDocRef, { isDeleted: 0.5 }));
+    await assertFails(updateDoc(approvedDocRef, { updatedAt: "" }));
+    await assertFails(updateDoc(approvedDocRef, { updatedAt: "u".repeat(41) }));
+    await assertSucceeds(
+      updateDoc(approvedDocRef, {
+        isDeleted: 1,
+        updatedAt: "2026-11-21T12:10:00.000Z",
+      }),
+    );
+  });
 });
 
 describe("Robot fleet rules", () => {
@@ -2136,5 +2718,29 @@ describe("Storage zero-trust rules", () => {
     await assertFails(
       uploadBytes(ref(mentorStorage, "cad/mentor.step"), cadBytes),
     );
+  });
+
+  it("denies reads and writes on arbitrary unlisted paths via the explicit catch-all rule", async () => {
+    await seedAuthorizedUser("storage-member", "member");
+    await seedAuthorizedUser("storage-admin", "admin");
+    const payload = new Uint8Array([115, 101, 99, 114, 101, 116]);
+    const storages = [
+      testEnvironment.unauthenticatedContext().storage(),
+      testEnvironment.authenticatedContext("storage-member").storage(),
+      testEnvironment.authenticatedContext("storage-admin").storage(),
+    ];
+
+    for (const storage of storages) {
+      for (const path of [
+        "unlisted-prefix/secret.txt",
+        "nested/unlisted/path/object.bin",
+      ]) {
+        const target = ref(storage, path);
+        await assertFails(
+          uploadBytes(target, payload, { contentType: "text/plain" }),
+        );
+        await assertFails(getBytes(target));
+      }
+    }
   });
 });

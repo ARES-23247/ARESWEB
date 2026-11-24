@@ -41,5 +41,11 @@ service firebase.storage {
     match /fields/{allPaths=**} {
       allow read, write: if false;
     }
+
+    // Fail closed for every other Storage path; browser media uses authenticated,
+    // publication-aware same-origin API routes backed by the Admin SDK.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
   }
 }

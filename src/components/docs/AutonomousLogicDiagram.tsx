@@ -139,7 +139,7 @@ export default function AutonomousLogicDiagram() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
-        colorMode="dark"
+        forceColorMode="dark"
       >
         <Background color="#333" gap={20} />
         <Controls />

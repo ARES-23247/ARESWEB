@@ -4,8 +4,8 @@ packages:
   - "packages/*"
 optimisticRepeatInstall: false
 overrides:
-  dompurify: ^3.4.18
-  monaco-editor>dompurify: ^3.4.18
+  dompurify: ^3.5.0
+  monaco-editor>dompurify: ^3.5.0
   hono: ^4.13.11
   js-yaml: ^4.3.2
   morgan: ^1.12.1

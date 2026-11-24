@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
 process.env.ENCRYPTION_SECRET = "dummy-encryption-secret-must-be-32-chars-long";

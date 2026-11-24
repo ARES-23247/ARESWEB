@@ -8,7 +8,7 @@ those three ideas without treating a clean simulation as proof of a physical rob
 
 Read [ARESLib architecture and ownership](/docs/areslib-fundamentals) first. It helps to know that a
 pose has X, Y, and heading. Keep the current routines, localization, and coordinate sources open.
-This page applies to ARES 20.0.7 and Studio 7.0.82.
+This page applies to ARES 20.0.8 and Studio 7.0.83.
 
 ## Vocabulary
 
